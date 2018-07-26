@@ -10,11 +10,16 @@ import typing
 from builtins import str
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
+
+try:
+    import spacy
+except ImportError:
+    spacy = None
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +34,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    requires = ["spacy_doc", "tokens"]
+    requires = ["tokens"]
 
     defaults = {
         # BILOU_flag determines whether to use BILOU tagging or not.
@@ -42,34 +47,38 @@ class CRFEntityExtractor(EntityExtractor):
         # features to use for each word, for example, 'title' in
         # array before will have the feature
         # "is the preceding word in title case?"
+        # POS features require spaCy to be installed
         "features": [
-            ["low", "title", "upper", "pos", "pos2"],
-            ["bias", "low", "word3", "word2", "upper",
-             "title", "digit", "pos", "pos2", "pattern"],
-            ["low", "title", "upper", "pos", "pos2"]],
+            ["low", "title", "upper"],
+            ["bias", "low", "prefix5", "prefix2", "suffix5", "suffix3",
+             "suffix2", "upper", "title", "digit", "pattern"],
+            ["low", "title", "upper"]],
 
         # The maximum number of iterations for optimization algorithms.
         "max_iterations": 50,
 
         # weight of theL1 regularization
-        "L1_c": 1,
+        "L1_c": 0.1,
 
         # weight of the L2 regularization
-        "L2_c": 1e-3
+        "L2_c": 0.1
     }
 
     function_dict = {
         'low': lambda doc: doc[0].lower(),
         'title': lambda doc: doc[0].istitle(),
-        'word3': lambda doc: doc[0][-3:],
-        'word2': lambda doc: doc[0][-2:],
-        'word1': lambda doc: doc[0][-1:],
+        'prefix5': lambda doc: doc[0][:5],
+        'prefix2': lambda doc: doc[0][:2],
+        'suffix5': lambda doc: doc[0][-5:],
+        'suffix3': lambda doc: doc[0][-3:],
+        'suffix2': lambda doc: doc[0][-2:],
+        'suffix1': lambda doc: doc[0][-1:],
         'pos': lambda doc: doc[1],
         'pos2': lambda doc: doc[1][:2],
         'bias': lambda doc: 'bias',
         'upper': lambda doc: doc[0].isupper(),
         'digit': lambda doc: doc[0].isdigit(),
-        'pattern': lambda doc: str(doc[3]) if doc[3] is not None else 'N/A',
+        'pattern': lambda doc: doc[3],
     }
 
     def __init__(self, component_config=None, ent_tagger=None):
@@ -81,6 +90,25 @@ class CRFEntityExtractor(EntityExtractor):
 
         self._validate_configuration()
 
+        self._check_pos_features_and_spacy()
+
+    def _check_pos_features_and_spacy(self):
+        import itertools
+        features = self.component_config.get("features", [])
+        fts = set(itertools.chain.from_iterable(features))
+        self.pos_features = ('pos' in fts or 'pos2' in fts)
+        if self.pos_features:
+            self._check_spacy()
+
+    @staticmethod
+    def _check_spacy():
+        if spacy is None:
+            raise ImportError(
+                'Failed to import `spaCy`. '
+                '`spaCy` is required for POS features '
+                'See https://spacy.io/usage/ for installation'
+                'instructions.')
+
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
             raise ValueError("Need an odd number of crf feature "
@@ -88,7 +116,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def required_packages(cls):
-        return ["sklearn_crfsuite", "sklearn", "spacy"]
+        return ["sklearn_crfsuite", "sklearn"]
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig) -> None
@@ -100,6 +128,7 @@ class CRFEntityExtractor(EntityExtractor):
         # checks whether there is at least one
         # example with an entity annotation
         if training_data.entity_examples:
+            self._check_spacy_doc(training_data.training_examples[0])
 
             # filter out pre-trained entity examples
             filtered_entity_examples = self.filter_trainable_entities(
@@ -120,8 +149,20 @@ class CRFEntityExtractor(EntityExtractor):
             dataset.append(self._from_json_to_crf(example, entity_offsets))
         return dataset
 
+    def _check_spacy_doc(self, message):
+        if self.pos_features and message.get("spacy_doc") is None:
+            raise InvalidConfigError(
+                'Could not find `spacy_doc` attribute for '
+                'message {}\n'
+                'POS features require a pipeline component '
+                'that provides `spacy_doc` attributes, i.e. `nlp_spacy`. '
+                'See https://nlu.rasa.com/pipeline.html#nlp-spacy '
+                'for details'.format(message.text))
+
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
+
+        self._check_spacy_doc(message)
 
         extracted = self.add_extractor_name(self.extract_entities(message))
         message.set("entities", message.get("entities", []) + extracted,
@@ -169,12 +210,20 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return "", 0.0
 
-    @staticmethod
-    def _create_entity_dict(sentence_doc, start, end, entity, confidence):
+    def _create_entity_dict(self, tokens, start, end, entity, confidence):
+        if self.pos_features:
+            _start = tokens[start].idx
+            _end = tokens[start:end + 1].end_char
+            value = tokens[start:end + 1].text
+        else:
+            _start = tokens[start].offset
+            _end = tokens[end].end
+            value = ' '.join(t.text for t in tokens[start:end + 1])
+
         return {
-            'start': sentence_doc[start].idx,
-            'end': sentence_doc[start:end + 1].end_char,
-            'value': sentence_doc[start:end + 1].text,
+            'start': _start,
+            'end': _end,
+            'value': value,
             'entity': entity,
             'confidence': confidence
         }
@@ -244,30 +293,33 @@ class CRFEntityExtractor(EntityExtractor):
     def _from_crf_to_json(self, message, entities):
         # type: (Message, List[Any]) -> List[Dict[Text, Any]]
 
-        sentence_doc = message.get("spacy_doc")
+        if self.pos_features:
+            tokens = message.get("spacy_doc")
+        else:
+            tokens = message.get("tokens")
 
-        if len(sentence_doc) != len(entities):
+        if len(tokens) != len(entities):
             raise Exception('Inconsistency in amount of tokens '
-                            'between crfsuite and spacy')
+                            'between crfsuite and message')
 
         if self.component_config["BILOU_flag"]:
             return self._convert_bilou_tagging_to_entity_result(
-                    sentence_doc, entities)
+                tokens, entities)
         else:
             # not using BILOU tagging scheme, multi-word entities are split.
             return self._convert_simple_tagging_to_entity_result(
-                    sentence_doc, entities)
+                tokens, entities)
 
-    def _convert_bilou_tagging_to_entity_result(self, sentence_doc, entities):
+    def _convert_bilou_tagging_to_entity_result(self, tokens, entities):
         # using the BILOU tagging scheme
         json_ents = []
         word_idx = 0
-        while word_idx < len(sentence_doc):
+        while word_idx < len(tokens):
             end_idx, confidence, entity_label = self._handle_bilou_label(
                     word_idx, entities)
 
             if end_idx is not None:
-                ent = self._create_entity_dict(sentence_doc,
+                ent = self._create_entity_dict(tokens,
                                                word_idx,
                                                end_idx,
                                                entity_label,
@@ -278,16 +330,22 @@ class CRFEntityExtractor(EntityExtractor):
                 word_idx += 1
         return json_ents
 
-    def _convert_simple_tagging_to_entity_result(self, sentence_doc, entities):
+    def _convert_simple_tagging_to_entity_result(self, tokens, entities):
         json_ents = []
 
-        for word_idx in range(len(sentence_doc)):
+        for word_idx in range(len(tokens)):
             entity_label, confidence = self.most_likely_entity(
                     word_idx, entities)
-            word = sentence_doc[word_idx]
+            word = tokens[word_idx]
             if entity_label != 'O':
-                ent = {'start': word.idx,
-                       'end': word.idx + len(word),
+                if self.pos_features:
+                    start = word.idx
+                    end = word.idx + len(word)
+                else:
+                    start = word.offset
+                    end = word.end
+                ent = {'start': start,
+                       'end': end,
                        'value': word.text,
                        'entity': entity_label,
                        'confidence': confidence}
@@ -337,6 +395,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         configured_features = self.component_config["features"]
         sentence_features = []
+
         for word_idx in range(len(sentence)):
             # word before(-1), current word(0), next word(+1)
             feature_span = len(configured_features)
@@ -357,9 +416,16 @@ class CRFEntityExtractor(EntityExtractor):
                     prefix = prefixes[f_i_from_zero]
                     features = configured_features[f_i_from_zero]
                     for feature in features:
-                        # append each feature to a feature vector
-                        value = self.function_dict[feature](word)
-                        word_features[prefix + ":" + feature] = value
+                        if feature == "pattern":
+                            # add all regexes as a feature
+                            regex_patterns = self.function_dict[feature](word)
+                            for p_name, matched in regex_patterns.items():
+                                feature_name = prefix + ":" + feature + ":" + p_name
+                                word_features[feature_name] = matched
+                        else:
+                            # append each feature to a feature vector
+                            value = self.function_dict[feature](word)
+                            word_features[prefix + ":" + feature] = value
             sentence_features.append(word_features)
         return sentence_features
 
@@ -375,17 +441,24 @@ class CRFEntityExtractor(EntityExtractor):
                           ):
         # type: (...) -> List[Tuple[Text, Text, Text, Text]]
         """Convert json examples to format of underlying crfsuite."""
-        from spacy.gold import GoldParse
 
-        doc = message.get("spacy_doc")
-        gold = GoldParse(doc, entities=entity_offsets)
-        ents = [l[5] for l in gold.orig_annot]
+        if self.pos_features:
+            from spacy.gold import GoldParse
+
+            doc = message.get("spacy_doc")
+            gold = GoldParse(doc, entities=entity_offsets)
+            ents = [l[5] for l in gold.orig_annot]
+        else:
+            tokens = message.get("tokens")
+            ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
+
         if '-' in ents:
-            logger.warn("Misaligned entity annotation in sentence '{}'. "
-                        "Make sure the start and end values of the "
-                        "annotated training examples end at token "
-                        "boundaries (e.g. don't include trailing "
-                        "whitespaces).".format(doc.text))
+            logger.warning("Misaligned entity annotation in sentence '{}'. "
+                           "Make sure the start and end values of the "
+                           "annotated training examples end at token "
+                           "boundaries (e.g. don't include trailing "
+                           "whitespaces or punctuation)."
+                           "".format(message.text))
         if not self.component_config["BILOU_flag"]:
             for i, label in enumerate(ents):
                 if self._bilou_from_label(label) in {"B", "I", "U", "L"}:
@@ -395,15 +468,47 @@ class CRFEntityExtractor(EntityExtractor):
         return self._from_text_to_crf(message, ents)
 
     @staticmethod
+    def _bilou_tags_from_offsets(tokens, entities, missing='O'):
+        # From spacy.spacy.GoldParse, under MIT License
+        starts = {token.offset: i for i, token in enumerate(tokens)}
+        ends = {token.end: i for i, token in enumerate(tokens)}
+        bilou = ['-' for _ in tokens]
+        # Handle entity cases
+        for start_char, end_char, label in entities:
+            start_token = starts.get(start_char)
+            end_token = ends.get(end_char)
+            # Only interested if the tokenization is correct
+            if start_token is not None and end_token is not None:
+                if start_token == end_token:
+                    bilou[start_token] = 'U-%s' % label
+                else:
+                    bilou[start_token] = 'B-%s' % label
+                    for i in range(start_token + 1, end_token):
+                        bilou[i] = 'I-%s' % label
+                    bilou[end_token] = 'L-%s' % label
+        # Now distinguish the O cases from ones where we miss the tokenization
+        entity_chars = set()
+        for start_char, end_char, label in entities:
+            for i in range(start_char, end_char):
+                entity_chars.add(i)
+        for n, token in enumerate(tokens):
+            for i in range(token.offset, token.end):
+                if i in entity_chars:
+                    break
+            else:
+                bilou[n] = missing
+
+        return bilou
+
+    @staticmethod
     def __pattern_of_token(message, i):
-        if message.get("tokens"):
-            return message.get("tokens")[i].get("pattern")
+        if message.get("tokens") is not None:
+            return message.get("tokens")[i].get("pattern", {})
         else:
-            return None
+            return {}
 
     @staticmethod
     def __tag_of_token(token):
-        import spacy
         if spacy.about.__version__ > "2" and token._.has("tag"):
             return token._.get("tag")
         else:
@@ -414,10 +519,14 @@ class CRFEntityExtractor(EntityExtractor):
         """Takes a sentence and switches it to crfsuite format."""
 
         crf_format = []
-        for i, token in enumerate(message.get("spacy_doc")):
+        if self.pos_features:
+            tokens = message.get("spacy_doc")
+        else:
+            tokens = message.get("tokens")
+        for i, token in enumerate(tokens):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
-            tag = self.__tag_of_token(token)
+            tag = self.__tag_of_token(token) if self.pos_features else None
             crf_format.append((token.text, tag, entity, pattern))
         return crf_format
 

@@ -1,10 +1,9 @@
 # Rasa NLU
 [![Join the chat at https://gitter.im/RasaHQ/rasa_nlu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RasaHQ/rasa_nlu?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_nlu)
+[![Build Status](https://travis-ci.com/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
 [![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://nlu.rasa.com/)
-[![roadmap badge](https://img.shields.io/badge/visit%20the-roadmap-blue.svg)](https://github.com/RasaHQ/rasa_nlu/projects/2)
 
 Rasa NLU (Natural Language Understanding) is a tool for understanding what is being said in short pieces of text.
 For example, taking a short message like:
@@ -41,7 +40,7 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 
 # Quick Install
 
-Fur the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.com/installation.html)
+For the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.com/installation.html)
 
 **Via Docker Image**
 From docker hub:
@@ -110,7 +109,7 @@ curl 'http://localhost:5000/parse?q=hello&project=test_model'
 # FAQ
 
 ### Who is it for?
-The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://luis.ai), or [Dialogflow](https://dialogflow.com). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](https://nlu.rasa.com/http.html). If your project is written in Python you can [simply import the relevant classes](https://nlu.rasa.com/python.html). If you're currently using wit/LUIS/Dialogflow, you just:
+The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://www.luis.ai), or [Dialogflow](https://dialogflow.com). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](https://nlu.rasa.com/http.html). If your project is written in Python you can [simply import the relevant classes](https://nlu.rasa.com/python.html). If you're currently using wit/LUIS/Dialogflow, you just:
 
 1. Download your app data from wit, LUIS, or Dialogflow and feed it into Rasa NLU
 2. Run Rasa NLU on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.

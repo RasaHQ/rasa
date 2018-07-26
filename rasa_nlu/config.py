@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import logging
 import os
 
@@ -10,7 +11,7 @@ import six
 import yaml
 from builtins import object
 # Describes where to search for the config file if no location is specified
-from typing import Text
+from typing import Text, Optional, Dict, Any, List
 
 from rasa_nlu import utils
 from rasa_nlu.utils import json_to_string
@@ -22,7 +23,6 @@ DEFAULT_CONFIG = {
     "pipeline": [],
     "data": None,
 }
-
 
 logger = logging.getLogger(__name__)
 
@@ -53,25 +53,49 @@ def load(filename=None, **kwargs):
         return RasaNLUModelConfig(kwargs)
 
 
-def override_defaults(defaults, custom):
-    cfg = defaults or {}
+def override_defaults(
+        defaults,  # type: Optional[Dict[Text, Any]]
+        custom  # type: Optional[Dict[Text, Any]]
+):
+    # type: (...) -> Dict[Text, Any]
+    if defaults:
+        cfg = copy.deepcopy(defaults)
+    else:
+        cfg = {}
+
     if custom:
         cfg.update(custom)
     return cfg
 
 
 def make_path_absolute(path):
+    # type: (Text) -> Text
     if path and not os.path.isabs(path):
         return os.path.join(os.getcwd(), path)
     else:
         return path
 
 
+def component_config_from_pipeline(
+        name,  # type: Text
+        pipeline,  # type: List[Dict[Text, Any]]
+        defaults=None  # type: Optional[Dict[Text, Any]]
+):
+    # type: (...) -> Dict[Text, Any]
+    for c in pipeline:
+        if c.get("name") == name:
+            return override_defaults(defaults, c)
+    else:
+        return override_defaults(defaults, {})
+
+
 class RasaNLUModelConfig(object):
     DEFAULT_PROJECT_NAME = "default"
 
     def __init__(self, configuration_values=None):
-
+        """Create a model configuration, optionally overridding
+        defaults with a dictionary ``configuration_values``.
+        """
         if not configuration_values:
             configuration_values = {}
 
@@ -134,11 +158,7 @@ class RasaNLUModelConfig(object):
         return json_to_string(self.__dict__, indent=4)
 
     def for_component(self, name, defaults=None):
-        for c in self.pipeline:
-            if c.get("name") == name:
-                return override_defaults(defaults, c)
-        else:
-            return defaults or {}
+        return component_config_from_pipeline(name, self.pipeline, defaults)
 
     @property
     def component_names(self):

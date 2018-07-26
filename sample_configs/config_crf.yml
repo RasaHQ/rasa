@@ -3,11 +3,10 @@ language: "en"
 pipeline:
 - name: "nlp_spacy"
   model: "en"
+- name: "tokenizer_spacy"
 - name: "ner_spacy"
-- name: "ner_ngrams"
-  max_number_of_ngrams: 7
 - name: "ner_duckling_http"
-  url: "http://my_url"
+  url: "http://duckling:8000"
   dimensions:
   - "NUMBER"
 - name: "ner_crf"
