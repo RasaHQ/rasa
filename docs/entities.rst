@@ -60,7 +60,7 @@ Regular Expressions (regex)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can use regular expressions to help the CRF model learn to recognize entities.
-In the :ref:`dataformat` you can provide a list of regular expressions, each of which provides
+In the :ref:`section_dataformat` you can provide a list of regular expressions, each of which provides
 the ``ner_crf`` with an extra binary feature, which says if the regex was found (1) or not (0). 
 
 For example, the names of German streets often end in ``strasse``. By adding this as a regex,
