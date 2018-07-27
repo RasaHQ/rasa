@@ -67,17 +67,33 @@ You can also configure the http server to fetch models from another URL:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 --model_server_url http://my-server.com/models/default_core@latest -o out.log
+    $ python -m rasa_core.server -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 --endpoints my_endpoints.yaml -o out.log
 
-With one new parameter
+The model server is specified in an ``EndpointConfig`` file (``my_endpoints
+.yaml``), where you specify the server URL Rasa Core regularly queries for
+zipped Rasa Core models
 
-- ``--model_server_url`` which is the URL of the server Rasa Core regularly queries for zipped Rasa Core models
+.. code-block:: yaml
+
+    model:
+      url: http://my-server.com/models/default_core@latest
 
 .. note::
 
     Your model server must provide zipped Rasa Core models, and have
-    ``{"model_hash": <hash_string>}`` as one of its headers.
-    It must also support ``HEAD`` requests delivering this header.
+    ``{"ETag": <model_hash_string>}`` as one of its headers.
+
+Rasa Core sends requests to your model server with an ``If-None-Match``
+header that contains the current model hash. If your model server can
+provide a model with a different hash from the one you sent, it should send it
+in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
+Core expects an empty response with a ``204`` status code.
+
+An example request Rasa Core might make to your model server looks like this
+
+.. code-block:: bash
+
+      $ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default_core@latest
 
 .. _http_start_conversation:
 

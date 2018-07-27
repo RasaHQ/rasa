@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
+
 import pytest
 import responses
 
@@ -91,7 +93,7 @@ def test_agent_with_model_server(tmpdir, zipped_moodbot_model):
     responses.add(responses.HEAD,
                   model_server_url,
                   headers={"model_hash": "somehash"})
-    with open(zipped_moodbot_model, 'rb') as f:
+    with io.open(zipped_moodbot_model, 'rb') as f:
         responses.add(responses.GET,
                       model_server_url,
                       headers={"model_hash": model_hash},

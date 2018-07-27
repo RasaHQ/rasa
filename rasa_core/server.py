@@ -23,6 +23,7 @@ from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import EndpointConfig
 from rasa_core.version import __version__
 
 if typing.TYPE_CHECKING:
@@ -139,8 +140,8 @@ def _create_agent(
         interpreter,  # type: Union[Text,NLI,None]
         action_factory=None,  # type: Optional[Text]
         tracker_store=None,  # type: Optional[TrackerStore]
-        model_server=None,  # type: Optional[Text]
-        generator=None
+        model_server=None,  # type: Optional[EndpointConfig]
+        generator=None # type: Optional[EndpointConfig]
 ):
     # type: (...) -> Optional[Agent]
     try:
@@ -165,7 +166,6 @@ def create_app(model_directory,  # type: Text
                action_factory=None,  # type: Optional[Text]
                auth_token=None,  # type: Optional[Text]
                tracker_store=None,  # type: Optional[TrackerStore]
-               model_server=None,  # type: Optional[Text]
                endpoints=None
                ):
     """Class representing a Rasa Core HTTP server."""
@@ -184,6 +184,8 @@ def create_app(model_directory,  # type: Text
 
     nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
 
+    model_endpoint = utils.read_endpoint_config(endpoints, "model")
+
     tracker_store = tracker_store
 
     action_factory = action_factory
@@ -193,7 +195,7 @@ def create_app(model_directory,  # type: Text
     # this needs to be an array, so we can modify it in the nested functions...
     _agent = [_create_agent(model_directory, interpreter,
                             action_factory, tracker_store,
-                            model_server, nlg_endpoint)]
+                            model_endpoint, nlg_endpoint)]
 
     def agent():
         if _agent and _agent[0]:
@@ -455,7 +457,6 @@ if __name__ == '__main__':
                      cmdline_args.log_file,
                      cmdline_args.cors,
                      auth_token=cmdline_args.auth_token,
-                     model_server=cmdline_args.model_server,
                      endpoints=cmdline_args.endpoints)
 
     logger.info("Started http server on port %s" % cmdline_args.port)

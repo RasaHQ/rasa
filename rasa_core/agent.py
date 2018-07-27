@@ -6,13 +6,13 @@ from __future__ import unicode_literals
 import logging
 import os
 import shutil
-import time
 import zipfile
 from threading import Thread
 
-import requests
 import six
+import time
 import typing
+from requests.exceptions import ConnectionError, InvalidURL
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -28,8 +28,8 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_nlu.utils import is_url
 from rasa_core.utils import EndpointConfig
+from rasa_nlu.utils import is_url
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class Agent(object):
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Union[NLI, Text, None]
-            model_server=None,  # type: Optional[Text]
+            model_server=None,  # type: Optional[EndpointConfig]
             path=None,  # type: Optional[Text]
             action_factory=None,  # type: Optional[Text]
             model_hash=None,  # type: Optional[Text]
@@ -84,7 +84,7 @@ class Agent(object):
              interpreter=None,  # type: Union[NLI, Text, None]
              tracker_store=None,  # type: Optional[TrackerStore]
              action_factory=None,  # type: Optional[Text]
-             model_server=None,  # type: Optional[Text]
+             model_server=None,  # type: Optional[EndpointConfig]
              generator=None  # type: Union[EndpointConfig, NLG]
              ):
         # type: (...) -> Agent
@@ -109,7 +109,7 @@ class Agent(object):
                     action_factory=action_factory,
                     model_directory=path
                 )
-            except Exception as e:
+            except ConnectionError as e:
                 logger.exception("Could not retrieve model from server "
                                  "URL: `{}`\nTrying to load from "
                                  "path `{}` instead.".format(e, path))
@@ -479,37 +479,27 @@ class Agent(object):
                 "policies, or a policy ensemble".format(passed_type))
 
     @staticmethod
-    def _get_model_hash(model_server, header='model_hash'):
-        # type: (Text, Text) -> Optional[Text]
-        head = requests.head(model_server)
-        head.raise_for_status()
-        return head.headers.get(header)
-
-    @staticmethod
-    def init_model_from_server(model_server,  # type: Text
+    def init_model_from_server(model_server,  # type: EndpointConfig
                                action_factory,  # type: Text
                                model_directory  # type: Text
                                ):
         # type: (...) -> Optional[(Domain, PolicyEnsemble, Text)]
         """Initialises a Rasa Core model from a URL."""
 
-        if not is_url(model_server):
-            raise requests.exceptions.InvalidURL(model_server)
-        try:
-            new_hash = Agent._get_model_hash(model_server)
-            Agent._pull_model(model_server, model_directory)
-            domain_path = os.path.join(os.path.abspath(model_directory),
-                                       "domain.yml")
-            domain = TemplateDomain.load(domain_path, action_factory)
-            policy_ensemble = PolicyEnsemble.load(model_directory)
-            return domain, policy_ensemble, new_hash
-        except Exception as e:
-            logger.exception("Could not retrieve model from server "
-                             "URL {}:\n{}".format(model_server, e))
-            raise e
+        if not is_url(model_server.url):
+            raise InvalidURL(model_server.url)
+
+        new_hash = Agent._pull_model_and_return_hash(
+            model_server, model_directory, None)
+        domain_path = os.path.join(os.path.abspath(model_directory),
+                                   "domain.yml")
+        domain = TemplateDomain.load(domain_path, action_factory)
+        policy_ensemble = PolicyEnsemble.load(model_directory)
+
+        return domain, policy_ensemble, new_hash
 
     def _update_model_from_server(self,
-                                  model_server,  # type: Text
+                                  model_server,  # type: EndpointConfig
                                   action_factory,  # type: Text
                                   model_directory  # type: Text
                                   ):
@@ -517,11 +507,11 @@ class Agent(object):
         """Loads a zipped Rasa Core model from a URL."""
 
         if not is_url(model_server):
-            raise requests.exceptions.InvalidURL(model_server)
-        new_hash = Agent._get_model_hash(model_server)
-        if new_hash != self.model_hash:
-            self.model_hash = new_hash
-            self._pull_model(model_server, model_directory)
+            raise InvalidURL(model_server)
+
+        new_model_dir = self._pull_model_and_return_hash(
+            model_server, model_directory, self.model_hash)
+        if new_model_dir:
             domain_path = os.path.join(os.path.abspath(model_directory),
                                        "domain.yml")
             self.domain = TemplateDomain.load(domain_path, action_factory)
@@ -531,15 +521,28 @@ class Agent(object):
                          "URL {}".format(model_server))
 
     @staticmethod
-    def _pull_model(model_server, model_directory):
-        # type: (Text, Text) -> None
-        response = requests.get(model_server)
+    def _pull_model_and_return_hash(model_server, model_directory, model_hash):
+        # type: (EndpointConfig, Text, Text) -> None
+        """Queries the model server and returns the value of the response's
+
+        <ETag> header which contains the model hash."""
+
+        header = {"If-None-Match": model_hash}
+        response = model_server.request(headers=header)
         response.raise_for_status()
+
+        if response.status_code == 204:
+            logger.debug("Model server returned 204 status code, indicating "
+                         "that no new model is available for hash {}"
+                         "".format(model_hash))
+            return response.headers.get("ETag")
 
         zip_ref = zipfile.ZipFile(IOReader(response.content))
         zip_ref.extractall(model_directory)
         logger.debug("Unzipped model to {}"
                      "".format(os.path.abspath(model_directory)))
+
+        return response.headers.get("ETag")
 
     def _run_model_pulling_worker(self, wait):
         while True:
