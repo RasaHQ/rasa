@@ -320,7 +320,7 @@ def read_yaml_string(string):
         import ruamel.yaml
 
         yaml_parser = ruamel.yaml.YAML(typ="safe")
-        yaml_parser.allow_unicode = True
+        yaml_parser.version = "1.1"
         yaml_parser.unicode_supplementary = True
 
         return yaml_parser.load(string)
@@ -339,7 +339,7 @@ def _dump_yaml(obj, output):
         yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
         yaml_writer.unicode_supplementary = True
         yaml_writer.default_flow_style = False
-        yaml_writer.allow_unicode = True
+        yaml_writer.version = "1.1"
 
         yaml_writer.dump(obj, output)
 

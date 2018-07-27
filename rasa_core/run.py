@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+import os
 
 from builtins import str
 from typing import Optional, Union, Text
@@ -160,7 +161,7 @@ def interpreter_from_args(
         return nlu_model
 
     if nlu_model:
-        name_parts = nlu_model.split("/")
+        name_parts = os.path.split(nlu_model)
     else:
         name_parts = []
 
@@ -173,9 +174,9 @@ def interpreter_from_args(
             return NaturalLanguageInterpreter.create(nlu_model)
     elif len(name_parts) == 2:
         if nlu_endpoint:
-            return RasaNLUHttpInterpreter(name_parts[0],
+            return RasaNLUHttpInterpreter(name_parts[1],
                                           nlu_endpoint,
-                                          name_parts[1])
+                                          name_parts[0])
         else:
             return NaturalLanguageInterpreter.create(nlu_model)
     else:
@@ -185,7 +186,7 @@ def interpreter_from_args(
                             "specify the model to use with "
                             "`--nlu project/model`.")
         else:
-            return None
+            return NaturalLanguageInterpreter.create(nlu_model)
 
 
 def main(model_directory, nlu_model=None, channel=None, port=None,
