@@ -72,6 +72,7 @@ class DialogueStateTracker(object):
         self.follow_up_action = None
         self.latest_action_name = None
         self.latest_message = None
+        # Stores the most recent message sent by the user
         self.latest_bot_utterance = None
         self._reset()
 
@@ -304,7 +305,7 @@ class DialogueStateTracker(object):
     ###
     # Internal methods for the modification of the trackers state. Should
     # only be called by events, not directly. Rather update the tracker
-    # with an event that in its ``apply_on`` method modifies the tracker.
+    # with an event that in its ``apply_to`` method modifies the tracker.
     ###
     def _reset(self):
         # type: () -> None

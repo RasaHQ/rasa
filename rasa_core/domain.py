@@ -22,13 +22,14 @@ from typing import Text
 
 from rasa_core import utils
 from rasa_core.actions import Action
-from rasa_core.actions.action import ActionListen, ActionRestart
+from rasa_core.actions.action import (ActionListen, ActionRestart,
+                                      ActionDefaultFallback)
 from rasa_core.actions.factories import (
     action_factory_by_name,
     ensure_action_name_uniqueness)
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core.utils import read_yaml_file
+from rasa_core.utils import read_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     A Domain subclass provides the actions the bot can take, the intents
     and entities it can recognise"""
 
-    DEFAULT_ACTIONS = [ActionListen(), ActionRestart()]
+    DEFAULT_ACTIONS = [ActionListen(), ActionRestart(),
+                       ActionDefaultFallback()]
 
     def __init__(self, store_entities_as_slots=True,
                  restart_intent="restart"):
@@ -222,16 +224,19 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             self.slot_states + \
             self.prev_action_states
 
-    @staticmethod
-    def get_parsing_states(tracker):
+    def get_parsing_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
 
         state_dict = {}
 
-        # Set all found entities with the state value 1.0
+        # Set all found entities with the state value 1.0, unless they should
+        # be ignored for the current intent
         for entity in tracker.latest_message.entities:
-            key = "entity_{0}".format(entity["entity"])
-            state_dict[key] = 1.0
+            intent_name = tracker.latest_message.intent.get("name")
+            should_use_entity = self._intents[intent_name]['use_entities']
+            if should_use_entity:
+                key = "entity_{0}".format(entity["entity"])
+                state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
@@ -390,33 +395,38 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
 
 class TemplateDomain(Domain):
+
     @classmethod
     def load(cls, filename, action_factory=None):
         if not os.path.isfile(filename):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(filename)))
+        return cls.load_from_yaml(read_file(filename), action_factory=action_factory)
 
-        cls.validate_domain_yaml(filename)
-        data = read_yaml_file(filename)
+    @classmethod
+    def load_from_yaml(cls, yaml, action_factory=None):
+        cls.validate_domain_yaml(yaml)
+        data = read_yaml_string(yaml)
         utter_templates = cls.collect_templates(data.get("templates", {}))
         if not action_factory:
             action_factory = data.get("action_factory", None)
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        return TemplateDomain(
-                data.get("intents", []),
-                data.get("entities", []),
-                slots,
-                utter_templates,
-                data.get("actions", []),
-                data.get("action_names", []),
-                action_factory,
-                **additional_arguments
+        intents = cls.collect_intents(data.get("intents", {}))
+        return cls(
+            intents,
+            data.get("entities", []),
+            slots,
+            utter_templates,
+            data.get("actions", []),
+            data.get("action_names", []),
+            action_factory,
+            **additional_arguments
         )
 
     @classmethod
-    def validate_domain_yaml(cls, filename):
+    def validate_domain_yaml(cls, yaml):
         """Validate domain yaml."""
         from pykwalify.core import Core
 
@@ -425,7 +435,8 @@ class TemplateDomain(Domain):
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        c = Core(source_data=utils.read_yaml_file(filename),
+        source_data = utils.read_yaml_string(yaml)
+        c = Core(source_data=source_data,
                  schema_files=[schema_file])
         try:
             c.validate(raise_exception=True)
@@ -434,7 +445,7 @@ class TemplateDomain(Domain):
                              "Make sure the file is correct, to do so"
                              "take a look at the errors logged during "
                              "validation previous to this exception. "
-                             "".format(os.path.abspath(filename)))
+                             "".format(os.path.abspath(input)))
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -448,6 +459,16 @@ class TemplateDomain(Domain):
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
+
+    @staticmethod
+    def collect_intents(intent_list):
+        intents = {}
+        for intent in intent_list:
+            if isinstance(intent, dict):
+                intents.update(intent)
+            else:
+                intents.update({intent: {'use_entities': True}})
+        return intents
 
     @staticmethod
     def collect_templates(yml_templates):
@@ -496,14 +517,13 @@ class TemplateDomain(Domain):
     def _slot_definitions(self):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
-    def persist(self, filename):
+    def as_dict(self):
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
         action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
-
         domain_data = {
             "config": additional_config,
-            "intents": self.intents,
+            "intents": [{k: v} for k, v in self._intents.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
@@ -511,8 +531,15 @@ class TemplateDomain(Domain):
             "action_names": action_names,  # names in stories
             "action_factory": self._factory_name
         }
+        return domain_data
 
+    def persist(self, filename):
+        domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
+
+    def as_yaml(self):
+        domain_data = self.as_dict()
+        return utils.dump_obj_as_yaml_to_string(domain_data)
 
     @utils.lazyproperty
     def templates(self):
@@ -524,7 +551,7 @@ class TemplateDomain(Domain):
 
     @utils.lazyproperty
     def intents(self):
-        return self._intents
+        return sorted(self._intents.keys())
 
     @utils.lazyproperty
     def entities(self):

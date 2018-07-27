@@ -9,6 +9,7 @@ import pytest
 from rasa_core import training
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.utils import read_file
 from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
@@ -117,7 +118,7 @@ def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = TemplateDomain.load(domain_file)
     assert len(domain.intents) == 10
-    assert len(domain.actions) == 5
+    assert len(domain.actions) == 6
 
 
 def test_utter_templates():
@@ -133,8 +134,8 @@ def test_utter_templates():
 
 def test_restaurant_domain_is_valid():
     # should raise no exception
-    TemplateDomain.validate_domain_yaml(
-            'examples/restaurantbot/restaurant_domain.yml')
+    TemplateDomain.validate_domain_yaml(read_file(
+            'examples/restaurantbot/restaurant_domain.yml'))
 
 
 def test_custom_slot_type(tmpdir):
@@ -157,12 +158,33 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
         slots:
             custom:
              type: tests.conftest.Unknown
-        
+
         templates:
             utter_greet:
              - hey there!
-        
+
         actions:
             - utter_greet""")
     with pytest.raises(ValueError):
         TemplateDomain.load(domain_path)
+
+
+def test_domain_to_yaml():
+    test_yaml = """action_factory: null
+action_names:
+- utter_greet
+actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+intents: []
+slots: {}
+templates:
+  utter_greet:
+  - text: hey there!"""
+    domain = TemplateDomain.load_from_yaml(test_yaml)
+    # python 3 and 2 are different here, python 3 will have a leading set 
+    # of --- at the begining of the yml
+    assert domain.as_yaml().strip().endswith(test_yaml.strip())
+    domain = TemplateDomain.load_from_yaml(domain.as_yaml())

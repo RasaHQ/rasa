@@ -45,6 +45,18 @@ def test_can_read_test_story(default_domain):
     assert tracker.events[4] == ActionExecuted("action_listen")
 
 
+def test_can_read_test_story_with_checkpoint_after_or(default_domain):
+    trackers = training.load_data(
+            "data/test_stories/stories_checkpoint_after_or.md",
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
+    # there should be only 2 trackers
+    assert len(trackers) == 2
+
+
 def test_persist_and_read_test_story_graph(tmpdir, default_domain):
     graph = training.extract_story_graph("data/test_stories/stories.md",
                                          default_domain)
@@ -134,9 +146,9 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     # deterministic way but should always be 3 or
     assert len(training_trackers) == 3 or len(training_trackers) == 4
 
-    # if we have 4 trackers, there is going to be one example more for label 2
-    num_twos = len(training_trackers) - 1
-    assert Counter(y) == {0: 6, 1: 2, 2: num_twos, 3: 1, 4: 3}
+    # if we have 4 trackers, there is going to be one example more for label 3
+    num_threes = len(training_trackers) - 1
+    assert Counter(y) == {0: 6, 1: 2, 3: num_threes, 4: 1, 5: 3}
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):

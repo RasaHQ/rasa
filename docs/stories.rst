@@ -1,35 +1,54 @@
 .. _stories:
 
-Stories - The Training Data
-===========================
+Story Data Format
+=================
 
-A training data sample for the dialogue system is called a **story**. This
-shows you how to define them and how to visualise them.
+
+A training example for the Rasa Core dialogue system is called a **story**. 
+This is a guide to the story data format.
+
+.. note::
+
+   You can also **spread your stories across multiple files** and specify the
+   folder containing the files for most of the scripts (e.g. training,
+   visualization). The stories will be treated as if they would have
+   been part of one large file.
+
 
 Format
 ------
 
-Here's an example from the bAbi data:
+Here's an example from the `bAbI <https://research.fb.com/downloads/babi/>`_ data (converted into Rasa stories):
 
 .. code-block:: md
 
-   ## story_07715946                     <!-- name of the story - just for debugging -->
+   ## story_07715946    <!-- name of the story - just for debugging -->
    * greet
       - action_ask_howcanhelp
    * inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
       - action_on_it                     
       - action_ask_cuisine
    * inform{"cuisine": "spanish"}
-      - action_ask_numpeople             <!-- action of the bot to execute -->
+      - action_ask_numpeople        <!-- action that the bot should execute -->
    * inform{"people": "six"}
       - action_ack_dosearch
 
 
 This is what we call a **story**. A story starts with a name preceded by two
-hashes ``## story_03248462``, this is arbitrary but can be used for debugging.
+hashes ``## story_03248462``.
+You can call the story anything you like, but it can be very useful for debugging
+to give them descriptive names!
 The end of a story is denoted by a newline, and then a new story starts again with ``##``.
 
-You can use ``> checkpoints`` to modularize and simplify your training data:
+
+Checkpoints
+-----------
+
+You can use ``> checkpoints`` to modularize and simplify your training data.
+Checkpoints can be useful, but **do not overuse them**. Using lots of checkpoints
+can quickly make your example stories hard to understand. It makes sense to use them 
+if a story block is repeated very often in different stories, but stories *without* 
+checkpoints are easier to read and write.
 
 .. code-block:: md
 
@@ -48,61 +67,22 @@ You can use ``> checkpoints`` to modularize and simplify your training data:
     * deny
       - action_handle_denial
 
-.. note::
 
-   You can also **spread your stories across multiple files** and specify the
-   folder containing the files for most of the scripts (e.g. training,
-   visualization). The stories will be treated as if they would have
-   been part of one large file.
+``OR`` Statements
+-----------------
 
-.. _story-visualization:
+Another way to write shorter stories, or to handle multiple intents the same way, is 
+to use an ``OR`` statement. For example if you ask the user to confirm something, 
+and we want to treat the ``affirm`` and ``thankyou`` intents in the same way.
+The story below will be converted into two stories at training time. 
+Just like checkpoints, ``OR`` statements can be useful, but if you are using 
+a lot of them, it is probably better to restructure your domain and/or intents.
 
-Visualization of Stories
-------------------------
-Sometimes it is helpful to get an overview of the conversational paths that
-are described within a story file. To make debugging easier and to ease
-discussions about bot flows, you can visualize the content of a story file.
+.. code-block:: md
 
-.. note::
-   For this to
-   work, you need to **install graphviz**. These are the instructions to do that
-   on OSX, for other systems the instructions might be slightly different:
+    ## story
+    ...
+      - utter_ask_confirm
+    * affirm OR thankyou
+      - action_handle_affirmation
 
-   .. code-block:: bash
-
-      brew install graphviz
-      pip install pygraphviz --install-option="--include-path=/usr/include/graphviz" \
-        --install-option="--library-path=/usr/lib/graphviz/"
-
-As soon as this is installed you can visualize stories like this:
-
-..  code-block:: bash
-
-   cd examples/concertbot/
-   python -m rasa_core.visualize -d concert_domain.yml -s data/stories.md -o graph.png
-
-This will run through the stories of the ``concertbot`` example in
-``data/stories.md`` and create a graph stored in the
-output image ``graph.png``.
-
-.. image:: _static/images/concert_stories.png
-
-We can also run the visualisation directly from code. For this example, we can
-create a ``visualize.py`` in ``examples/concertbot`` with the following code:
-
-.. literalinclude:: ../examples/concertbot/visualize.py
-
-Which will create the same image as the above python script call. The shown
-graph is still very simple, but the graphs can get quite complex.
-
-If you want to replace the messages from the stories file, which usually look
-like ``greet`` with real messages e.g. ``Hello``, you can pass in a Rasa
-NLU training data instance to replace them with messages from your training
-data.
-
-.. note::
-
-   The story visualization needs to load your domain. If you have
-   any custom actions written in python make sure they are part of the python
-   path, and can be loaded by the visualization script using the module path
-   given for the action in the domain (e.g. ``actions.ActionSearchVenues``).

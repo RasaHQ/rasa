@@ -21,6 +21,7 @@ from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies import Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
@@ -28,11 +29,13 @@ from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_nlu.utils import is_url
+from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+    from rasa_core.nlg import NaturalLanguageGenerator as NLG
 
 if six.PY2:
     from StringIO import StringIO as IOReader
@@ -41,27 +44,29 @@ else:
 
 
 class Agent(object):
-    """Public interface for common things to do.
+    """The Agent class provides a convenient interface for the most important
+     Rasa Core functionality.
 
-     This includes e.g. train an assistant (online or offline mode),
-     handle messages with an assistant, load a dialogue model,
-     get the next action, handle channel or toggle memoization"""
+     This includes training, handling messages, loading a dialogue model,
+     getting the next action, and handling a channel."""
 
     def __init__(
             self,
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Union[NLI, Text, None]
-            tracker_store=None,  # type: Optional[TrackerStore]
             model_server=None,  # type: Optional[Text]
             path=None,  # type: Optional[Text]
             action_factory=None,  # type: Optional[Text]
-            model_hash=None  # type: Optional[Text]
+            model_hash=None,  # type: Optional[Text]
+            generator=None,  # type: Union[EndpointConfig, NLG]
+            tracker_store=None  # type: Optional[TrackerStore]
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(
             tracker_store, self.domain)
         self.path = path
@@ -79,7 +84,8 @@ class Agent(object):
              interpreter=None,  # type: Union[NLI, Text, None]
              tracker_store=None,  # type: Optional[TrackerStore]
              action_factory=None,  # type: Optional[Text]
-             model_server=None  # type: Optional[Text]
+             model_server=None,  # type: Optional[Text]
+             generator=None  # type: Union[EndpointConfig, NLG]
              ):
         # type: (...) -> Agent
         """Load a persisted model from the passed path."""
@@ -118,17 +124,17 @@ class Agent(object):
             _hash = None
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
-        _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
 
         return cls(domain=domain,
                    policies=ensemble,
-                   interpreter=_interpreter,
-                   tracker_store=_tracker_store,
+                   interpreter=interpreter,
                    model_server=model_server,
                    path=path,
                    action_factory=action_factory,
-                   model_hash=_hash)
+                   model_hash=_hash,
+                   generator=generator,
+                   tracker_store=_tracker_store)
 
     def handle_message(
             self,
@@ -145,9 +151,9 @@ class Agent(object):
         function first and the return value is then used as the
         input for the dialogue engine.
 
-        The return value of this function depends on the `output_channel`. If
-        the output channel is not set, set to `None`, or set
-        to `CollectingOutputChannel` this function will return the messages
+        The return value of this function depends on the ``output_channel``. If
+        the output channel is not set, set to ``None``, or set
+        to ``CollectingOutputChannel`` this function will return the messages
         the bot wants to respond.
 
         :Example:
@@ -171,7 +177,7 @@ class Agent(object):
             sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Dict[Text, Any]
-        """Start to process a messages, returning the next action to take. """
+        """Start to process messages, returning the next action to take. """
 
         # Creates a new processor for the agent and starts the
         # message handling
@@ -216,10 +222,10 @@ class Agent(object):
         """Toggles the memoization on and off.
 
         If a memoization policy is present in the ensemble, this will toggle
-        the prediction of that policy. When set to `false` the Memoization
+        the prediction of that policy. When set to ``False`` the Memoization
         policies present in the policy ensemble will not make any predictions.
         Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. `KerasPolicy`). Useful to test prediction
+        from a different policy (e.g. ``KerasPolicy``). Useful to test prediction
         capabilities of an ensemble when ignoring memorized turns from the
         training data."""
 

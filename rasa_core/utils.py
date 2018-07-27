@@ -4,10 +4,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import inspect
 import io
 import json
 import logging
 import os
+import requests
+
+from requests.auth import HTTPBasicAuth
+
+import rasa_core
 import sys
 from hashlib import sha1
 from random import Random
@@ -17,6 +23,11 @@ import six
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
+
+if six.PY2:
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -72,14 +83,6 @@ def module_path_from_instance(inst):
     # type: (Any) -> Text
     """Return the module path of an instances class."""
     return inst.__module__ + "." + inst.__class__.__name__
-
-
-def all_subclasses(cls):
-    # type: (Any) -> List[Any]
-    """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [g for s in cls.__subclasses__()
-                                   for g in all_subclasses(s)]
 
 
 def dump_obj_as_json_to_file(filename, obj):
@@ -304,42 +307,54 @@ def fix_yaml_loader():
 
 def read_yaml_file(filename):
     """Read contents of `filename` interpreting them as yaml."""
+    return read_yaml_string(read_file(filename))
 
+
+def read_yaml_string(string):
     if six.PY2:
         import yaml
 
         fix_yaml_loader()
-        return yaml.load(read_file(filename, "utf-8"))
+        return yaml.load(string)
     else:
         import ruamel.yaml
 
         yaml_parser = ruamel.yaml.YAML(typ="safe")
-        yaml_parser.allow_unicode = True
+        yaml_parser.version = "1.1"
         yaml_parser.unicode_supplementary = True
 
-        return yaml_parser.load(read_file(filename))
+        return yaml_parser.load(string)
 
 
-def dump_obj_as_yaml_to_file(filename, obj):
-    """Writes data (python dict) to the filename in yaml repr."""
-
+def _dump_yaml(obj, output):
     if six.PY2:
         import yaml
 
-        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-            yaml.safe_dump(obj, yaml_file,
-                           default_flow_style=False,
-                           allow_unicode=True)
+        yaml.safe_dump(obj, output,
+                       default_flow_style=False,
+                       allow_unicode=True)
     else:
         import ruamel.yaml
 
         yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
         yaml_writer.unicode_supplementary = True
         yaml_writer.default_flow_style = False
-        yaml_writer.allow_unicode = True
+        yaml_writer.version = "1.1"
 
-        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-            yaml_writer.dump(obj, yaml_file)
+        yaml_writer.dump(obj, output)
+
+
+def dump_obj_as_yaml_to_file(filename, obj):
+    """Writes data (python dict) to the filename in yaml repr."""
+    with io.open(filename, 'w', encoding="utf-8") as output:
+        _dump_yaml(obj, output)
+
+
+def dump_obj_as_yaml_to_string(obj):
+    """Writes data (python dict) to a yaml string."""
+    str_io = StringIO()
+    _dump_yaml(obj, str_io)
+    return str_io.getvalue()
 
 
 def read_file(filename, encoding="utf-8"):
@@ -419,3 +434,139 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
             remaining[k] = v
 
     return extracted, remaining
+
+
+def arguments_of(func):
+    """Return the parameters of the function `func` as a list of their names."""
+
+    try:
+        # python 3.x is used
+        return inspect.signature(func).parameters.keys()
+    except AttributeError:
+        # python 2.x is used
+        return inspect.getargspec(func).args
+
+
+def concat_url(base, subpath):
+    # type: (Text, Optional[Text]) -> Text
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
+    if subpath:
+        url = base
+        if not base.endswith("/"):
+            url += "/"
+        if subpath.startswith("/"):
+            subpath = subpath[1:]
+        return url + subpath
+    else:
+        return base
+
+
+def all_subclasses(cls):
+    # type: (Any) -> List[Any]
+    """Returns all known (imported) subclasses of a class."""
+
+    return cls.__subclasses__() + [g for s in cls.__subclasses__()
+                                   for g in all_subclasses(s)]
+
+
+def read_endpoint_config(filename, endpoint_type):
+    # type: (Text, Text) -> Optional[rasa_core.utils.EndpointConfig]
+    """Read an endpoint configuration file from disk and extract one config. """
+
+    if not filename:
+        return None
+
+    content = read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
+
+
+class EndpointConfig(object):
+    """Configuration for an external HTTP endpoint."""
+
+    def __init__(self, url, params=None, headers=None, basic_auth=None,
+                 token=None, token_name="token"):
+        self.url = url
+        self.params = params if params else {}
+        self.headers = headers if headers else {}
+        self.basic_auth = basic_auth
+        self.token = token
+        self.token_name = token_name
+
+    def request(self,
+                method="post",  # type: Text
+                subpath=None,  # type: Optional[Text]
+                content_type="application/json",  # type: Text
+                **kwargs  # type: Dict[Text, Any]
+                ):
+        """Send a HTTP request to the endpoint.
+
+        All additional arguments will get passed through
+        to `requests.request`."""
+
+        # create the appropriate headers
+        headers = self.headers.copy()
+        if content_type:
+            headers["Content-Type"] = content_type
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
+
+        # create authentication parameters
+        if self.basic_auth:
+            auth = HTTPBasicAuth(self.basic_auth["username"],
+                                 self.basic_auth["password"])
+        else:
+            auth = None
+
+        url = concat_url(self.url, subpath)
+
+        # construct GET parameters
+        params = self.params.copy()
+
+        # set the authentication token if present
+        if self.token:
+            params[self.token_name] = self.token
+
+        if "params" in kwargs:
+            params.update(kwargs["params"])
+            del kwargs["params"]
+
+        return requests.request(method,
+                                url,
+                                headers=headers,
+                                params=params,
+                                auth=auth,
+                                **kwargs)
+
+    @classmethod
+    def from_dict(cls, data):
+        return EndpointConfig(
+                data.get("url"),
+                data.get("params"),
+                data.get("headers"),
+                data.get("basic_auth"),
+                data.get("token"),
+                data.get("token_name"))
+
+    def __eq__(self, other):
+        if isinstance(self, type(other)):
+            return (other.url == self.url and
+                    other.params == self.params and
+                    other.headers == self.headers and
+                    other.basic_auth == self.basic_auth and
+                    other.token == self.token and
+                    other.token_name == self.token_name)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

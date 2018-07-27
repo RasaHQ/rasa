@@ -18,7 +18,7 @@ install:
 - pip list
 script:
 - travis_wait py.test tests --cov rasa_core --pep8 -v
-# - cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
+ #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
 - openssl aes-256-cbc -K $encrypted_050c822e99ef_key -iv $encrypted_050c822e99ef_iv
   -in docs/key.enc -out docs/key -d
@@ -26,13 +26,16 @@ after_success:
 jobs:
   include:
   - stage: docs
-    if: fork = false
+    if: fork = false AND branch = "master"
     install:
     - sudo apt-get update
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1 sphinxcontrib-httpdomain==1.5.0
-      nbsphinx==0.2.13
+    - pip install sphinx==1.7.5 sphinx-autobuild==0.6.0 sphinxcontrib-httpdomain==1.5.0  sphinxcontrib-programoutput==0.11 
+      nbsphinx==0.3.2 sphinxcontrib-websupport==1.1.0
+    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+    - pip install https://storage.googleapis.com/docs-theme/rasabaster-0.7.10.tar.gz
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     - pip install -e .
+    - pip list
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
     - openssl aes-256-cbc
@@ -45,7 +48,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs docs .
+    - sphinx-versioning push docs newdocs . -- -b dirhtml -A html_theme=rasabaster
   - stage: deploy
     install: skip
     script: skip
