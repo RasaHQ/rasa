@@ -590,11 +590,11 @@ class EmbeddingPolicy(Policy):
         alignment_history = []
 
         if self.is_using_attention():
-            alignment_history = final_state.alignment_history
+            alignment_history_from_state = final_state.alignment_history
             if self.num_attentions() == 1:
-                alignment_history = [alignment_history]
+                alignment_history_from_state = [alignment_history_from_state]
 
-            for alignments in alignment_history:
+            for alignments in alignment_history_from_state:
                 # reshape to (batch, time, memory_time)
                 alignments = tf.transpose(alignments.stack(), [1, 0, 2])
                 alignment_history.append(alignments)
@@ -1298,8 +1298,8 @@ class TimedNTM(object):
         self.inter_gate = tf.layers.Dense(
                 units=1,
                 activation=tf.sigmoid,
-                name=self.name + '/inter_gate')
-
+                name=self.name + '/inter_gate'
+        )
         # if use sparsemax instead of softmax for probs or gate
         self.sparse_attention = sparse_attention
 
@@ -1308,7 +1308,8 @@ class TimedNTM(object):
             self.shift_weight = tf.layers.Dense(
                     units=2 * attn_shift_range + 1,
                     activation=tf.nn.softmax,
-                    name=(self.name + '/shift_weight'))
+                    name=self.name + '/shift_weight'
+            )
         else:
             self.shift_weight = None
 
@@ -1317,7 +1318,8 @@ class TimedNTM(object):
                 units=1,
                 activation=lambda a: tf.nn.softplus(a) + 1,
                 bias_initializer=tf.constant_initializer(1),
-                name=(self.name + '/gamma_sharp'))
+                name=self.name + '/gamma_sharp'
+        )
 
     def __call__(self, cell_output, scores, scores_state, ignore_mask):
         # apply exponential moving average with interpolation gate weight
@@ -1384,7 +1386,7 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     """Computes the attention and alignments limited by time
         for a given attention_mechanism.
 
-        Modified helper form tensorflow."""
+        Modified helper method form tensorflow."""
 
     scores, _ = attention_mechanism(cell_output, state=attention_state)
 
@@ -1434,38 +1436,16 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
 
 
 class TimeAttentionWrapperState(
-        collections.namedtuple("AttentionWrapperState",
-                               ("cell_state",
-                                "attention",
-                                "time",
-                                "alignments",
-                                "alignment_history",
-                                "attention_state",
-                                "all_hidden_cell_states"))):
-    """
-        modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
-        see there for description of the parameters
-    """
+        collections.namedtuple(
+                "TimeAttentionWrapperState",
+                tf.contrib.seq2seq.AttentionWrapperState._fields +
+                ("all_hidden_cell_states",))):  # added
+    """Modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
+        see there for description of the parameters"""
 
     def clone(self, **kwargs):
-        """Clone this object, overriding components provided by kwargs.
-        The new state fields' shape must match original state fields' shape.
-        This
-        will be validated, and original fields' shape will be propagated to new
-        fields.
-        Example:
-        ```python
-        initial_state = attention_wrapper.zero_state(dtype=..., batch_size=...)
-        initial_state = initial_state.clone(cell_state=encoder_state)
-        ```
-        Args:
-          **kwargs: Any properties of the state object to replace in the
-          returned
-            `AttentionWrapperState`.
-        Returns:
-          A new `AttentionWrapperState` whose properties are the same as
-          this one, except any overridden properties as provided in `kwargs`.
-        """
+        """Copied  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
+            see there for description of the parameters"""
 
         def with_same_shape(old, new):
             """Check and set new tensor's shape."""
@@ -1561,8 +1541,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     def output_size(self):
         if self._output_attention:
             return (self._attention_layer_size
-                    + 2
-                    * self._cell.output_size
+                    + 2 * self._cell.output_size
                     + 2
                     + 4)
         else:
@@ -1570,74 +1549,37 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
     @property
     def state_size(self):
-        """The `state_size` property of `AttentionWrapper`.
+        """The `state_size` property of `TimeAttentionWrapper`.
         Returns:
-          An `AttentionWrapperState` tuple containing shapes used by this
+          A `TimeAttentionWrapperState` tuple containing shapes used by this
           object.
         """
 
-        if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
-            hidden_state_size = self._cell.state_size.c
-        else:
-            hidden_state_size = self._cell.state_size
+        # use AttentionWrapperState from superclass
+        state_size = super(TimeAttentionWrapper, self).state_size
+
+        all_hidden_cell_states = \
+                self._cell.state_size if self._copy_attn_to_out else None
 
         return TimeAttentionWrapperState(
-                cell_state=self._cell.state_size,
-                time=tf.TensorShape([]),
-                attention=self._attention_layer_size,
-                alignments=self._item_or_tuple(
-                        a.alignments_size for a in self._attention_mechanisms),
-                attention_state=self._item_or_tuple(
-                        a.state_size for a in self._attention_mechanisms),
-                alignment_history=self._item_or_tuple(
-                        a.alignments_size if self._alignment_history else ()
-                        for a in self._attention_mechanisms),
-                # sometimes a TensorArray
-                all_hidden_cell_states=hidden_state_size)  # TensorArray
+                cell_state=state_size.cell_state,
+                time=state_size.time,
+                attention=state_size.attention,
+                alignments=state_size.alignments,
+                attention_state=state_size.attention_state,
+                alignment_history=state_size.alignment_history,
+                all_hidden_cell_states=all_hidden_cell_states)
 
     def zero_state(self, batch_size, dtype):
-        """Return an initial (zero) state tuple for this `AttentionWrapper`.
-        **NOTE** Please see the initializer documentation for details of how
-        to call `zero_state` if using an `AttentionWrapper` with a
-        `BeamSearchDecoder`.
-        Args:
-          batch_size: `0D` integer tensor: the batch size.
-          dtype: The internal state data type.
-        Returns:
-          An `AttentionWrapperState` tuple containing zeroed out tensors and,
-          possibly, empty `TensorArray` objects.
-        Raises:
-          ValueError: (or, possibly at runtime, InvalidArgument), if
-            `batch_size` does not match the output size of the encoder passed
-            to the wrapper object at initialization time.
-        """
-        from tensorflow.python.ops.rnn_cell_impl import _zero_state_tensors
+        """Modified  from tensorflow's zero_state
+            see there for description of the parameters"""
+
+        # use AttentionWrapperState from superclass
+        zero_state = super(TimeAttentionWrapper,
+                           self).zero_state(batch_size, dtype)
 
         with tf.name_scope(type(self).__name__ + "ZeroState",
                            values=[batch_size]):
-            if self._initial_cell_state is not None:
-                cell_state = self._initial_cell_state
-            else:
-                cell_state = self._cell.zero_state(batch_size, dtype)
-            error_message = (
-                "When calling zero_state of AttentionWrapper {}: "
-                "Non-matching batch sizes between the memory "
-                "(encoder output) and the requested batch size.  "
-                "Are you using the BeamSearchDecoder?  If so, make sure "
-                "your encoder output has "
-                "been tiled to beam_width via "
-                "tf.contrib.seq2seq.tile_batch, and "
-                "the batch_size= argument passed to zero_state is "
-                "batch_size * beam_width.").format(self._base_name)
-            with tf.control_dependencies(
-                    self._batch_size_checks(batch_size, error_message)):
-                cell_state = tf.contrib.framework.nest.map_structure(
-                        lambda s: tf.identity(s, name="checked_cell_state"),
-                        cell_state)
-            initial_alignments = [
-                attention_mechanism.initial_alignments(batch_size, dtype)
-                for attention_mechanism in self._attention_mechanisms]
-
             if self._copy_attn_to_out:
                 if isinstance(self._cell.state_size,
                               tf.contrib.rnn.LSTMStateTuple):
@@ -1645,46 +1587,35 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                             tf.TensorArray(dtype, size=self._dialogue_len + 1,
                                            dynamic_size=False,
                                            clear_after_read=False
-                                           ).write(0, cell_state.c),
+                                           ).write(0, zero_state.cell_state.c),
                             tf.TensorArray(dtype, size=self._dialogue_len + 1,
                                            dynamic_size=False,
                                            clear_after_read=False
-                                           ).write(0, cell_state.h)
+                                           ).write(0, zero_state.cell_state.h)
                     )
                 else:
                     all_hidden_cell_states = tf.TensorArray(
                             dtype, size=0,
                             dynamic_size=False,
                             clear_after_read=False
-                    ).write(0, cell_state)
+                    ).write(0, zero_state.cell_state)
             else:
                 # do not waste resources on storing history
                 all_hidden_cell_states = None
 
             return TimeAttentionWrapperState(
-                    cell_state=cell_state,
-                    time=tf.zeros([], dtype=tf.int32),
-                    attention=_zero_state_tensors(self._attention_layer_size,
-                                                  batch_size,
-                                                  dtype),
-                    alignments=self._item_or_tuple(initial_alignments),
-                    attention_state=self._item_or_tuple(
-                            attention_mechanism.initial_state(batch_size, dtype)
-                            for attention_mechanism in
-                            self._attention_mechanisms),
-                    alignment_history=self._item_or_tuple(
-                            tf.TensorArray(
-                                    dtype,
-                                    size=0,
-                                    dynamic_size=True,
-                                    element_shape=alignment.shape)
-                            if self._alignment_history else ()
-                            for alignment in initial_alignments),
+                    cell_state=zero_state.cell_state,
+                    time=zero_state.time,
+                    attention=zero_state.attention,
+                    alignments=zero_state.alignments,
+                    attention_state=zero_state.attention_state,
+                    alignment_history=zero_state.alignment_history,
                     all_hidden_cell_states=all_hidden_cell_states
             )
 
     @staticmethod
     def _apply_alignments_to_history(alignments, history_states, state):
+        """Helper method to apply attention probabilities to  rnn history"""
 
         expanded_alignments = tf.stop_gradient(tf.expand_dims(alignments, 1))
 
@@ -1707,11 +1638,11 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                              state, alignments, time):
         """Helper method to look into rnn history"""
 
+        # reshape to (batch, time, memory_time) and
         # do not include current time because
         # we do not want to pay attention to it,
-        # but we need to read it because of TensorArray
-
-        # reshape to (batch, time, memory_time)
+        # but we need to read it instead of
+        # adding conditional flow if time == 0
         prev_cell_states = tf.transpose(
                 prev_all_hidden_cell_states.gather(
                         tf.range(0, time + 1)), [1, 0, 2]
@@ -1743,22 +1674,22 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         Args:
           inputs: (Possibly nested tuple of) Tensor, the input at this time
           step.
-          state: An instance of `AttentionWrapperState` containing
+          state: An instance of `TimeAttentionWrapperState` containing
             tensors from the previous time step.
 
         Returns:
           A tuple `(attention_or_cell_output, next_state)`, where:
 
           - `attention_or_cell_output` depending on `output_attention`.
-          - `next_state` is an instance of `AttentionWrapperState`
+          - `next_state` is an instance of `TimeAttentionWrapperState`
              containing the state calculated at this time step.
 
         Raises:
-          TypeError: If `state` is not an instance of `AttentionWrapperState`.
+          TypeError: If `state` is not an instance of `TimeAttentionWrapperState`.
         """
         if not isinstance(state, TimeAttentionWrapperState):
             raise TypeError("Expected state to be instance of "
-                            "AttentionWrapperState. "
+                            "TimeAttentionWrapperState. "
                             "Received type {} instead.".format(type(state)))
 
         # Step 1: Calculate attention based on
