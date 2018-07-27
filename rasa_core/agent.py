@@ -430,7 +430,7 @@ class Agent(object):
         self._ensure_agent_is_prepared()
         return MessageProcessor(
             self.interpreter, self.policy_ensemble, self.domain,
-            self.tracker_store, message_preprocessor=preprocessor)
+            self.tracker_store, self.nlg, message_preprocessor=preprocessor)
 
     @staticmethod
     def _create_domain(domain):
@@ -506,8 +506,8 @@ class Agent(object):
         # type: (...) -> Optional[(Domain, PolicyEnsemble, Text)]
         """Loads a zipped Rasa Core model from a URL."""
 
-        if not is_url(model_server):
-            raise InvalidURL(model_server)
+        if not is_url(model_server.url):
+            raise InvalidURL(model_server.url)
 
         new_model_dir = self._pull_model_and_return_hash(
             model_server, model_directory, self.model_hash)
@@ -526,9 +526,8 @@ class Agent(object):
         """Queries the model server and returns the value of the response's
 
         <ETag> header which contains the model hash."""
-
         header = {"If-None-Match": model_hash}
-        response = model_server.request(headers=header)
+        response = model_server.request(method="GET", headers=header)
         response.raise_for_status()
 
         if response.status_code == 204:

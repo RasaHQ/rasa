@@ -11,6 +11,7 @@ import responses
 from rasa_core.agent import Agent
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.policies.memoization import AugmentedMemoizationPolicy
+from rasa_core.utils import EndpointConfig
 
 
 def test_agent_train(tmpdir, default_domain):
@@ -88,19 +89,20 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
 
 @responses.activate
 def test_agent_with_model_server(tmpdir, zipped_moodbot_model):
-    model_server_url = 'http://server.com/model/default_core@latest'
     model_hash = 'somehash'
-    responses.add(responses.HEAD,
-                  model_server_url,
-                  headers={"model_hash": "somehash"})
+    model_endpoint_config = EndpointConfig.from_dict(
+        {"url": 'http://server.com/model/default_core@latest'}
+    )
+
+    # mock a response that returns a zipped model
     with io.open(zipped_moodbot_model, 'rb') as f:
         responses.add(responses.GET,
-                      model_server_url,
-                      headers={"model_hash": model_hash},
+                      model_endpoint_config.url,
+                      headers={"ETag": model_hash},
                       body=f.read(),
                       content_type='application/zip',
                       stream=True)
     agent = Agent.load(path=tmpdir.strpath,
-                       model_server=model_server_url)
+                       model_server=model_endpoint_config)
     assert agent.model_hash == model_hash
-    assert agent.model_server == model_server_url
+    assert agent.model_server == model_endpoint_config
