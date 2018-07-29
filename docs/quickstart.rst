@@ -205,12 +205,32 @@ If you are running these commands locally, run:
 
 If you are running the cells here in the docs, run this cell:
 
-.. runnable::
 
+.. runnable::
+   import IPython
+   from IPython.display import clear_output
    from rasa_core.agent import Agent
-   from rasa_core.channels.console import ConsoleInputChannel
+   import time
+
+   messages = ["Hi! you can chat in this window. Type 'stop' to end the conversation."]
    agent = Agent.load('models/dialogue')
-   agent.handle_channel(ConsoleInputChannel())
+
+   def chatlogs_html(messages):
+       messages_html = "".join(["&lt;p&gt;{}&lt;/p&gt;".format(m) for m in messages])
+       chatbot_html = """&lt;div class="chat-window" {}&lt;/div&gt;""".format(messages_html)
+       return chatbot_html
+
+
+   while True:
+       clear_output()
+       display(IPython.display.HTML(chatlogs_html(messages)))
+       time.sleep(0.3)
+       a = input()
+       messages.append(a)
+       if a == 'stop':
+           break
+       responses = agent.handle_message(a)
+       messages.extend(responses)
 
 
 5. Add NLU
