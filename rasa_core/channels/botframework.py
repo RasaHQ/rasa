@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
-from requests import post
+import requests
 import datetime
 
 from flask import Blueprint, request, jsonify
@@ -16,6 +16,9 @@ from rasa_core.channels.channel import UserMessage, OutputChannel
 from rasa_core.channels.rest import HttpInputComponent
 
 logger = logging.getLogger(__name__)
+
+MICROSOFT_OAUTH2_URL = 'https://login.microsoftonline.com'
+MICROSOFT_OAUTH2_PATH = 'botframework.com/oauth2/v2.0/token'
 
 
 class BotFramework(OutputChannel):
@@ -26,19 +29,17 @@ class BotFramework(OutputChannel):
 
     def __init__(self, bf_id, bf_secret, conversation, bot_id,
                  service_url):
-        # type: (Text, Text, Dict[Text]) -> None
+        # type: (Text, Text, Dict[Text], Text, Text) -> None
 
         self.bf_id = bf_id
         self.bf_secret = bf_secret
         self.conversation = conversation
-        self.global_uri = "%sv3/" % service_url
+        self.global_uri = "{}v3/".format(service_url)
         self.bot_id = bot_id
 
     def get_headers(self):
         if BotFramework.token_expiration_date < datetime.datetime.now():
-            microsoft_oauth2_url = 'https://login.microsoftonline.com'
-            microsoft_oauth2_path = 'botframework.com/oauth2/v2.0/token'
-            uri = "%s/%s" % (microsoft_oauth2_url, microsoft_oauth2_path)
+            uri = "{}/{}".format(MICROSOFT_OAUTH2_URL, MICROSOFT_OAUTH2_PATH)
             grant_type = 'client_credentials'
             scope = 'https://api.botframework.com/.default'
             payload = {'client_id': self.bf_id,
@@ -46,7 +47,7 @@ class BotFramework(OutputChannel):
                        'grant_type': grant_type,
                        'scope': scope}
 
-            token_response = post(uri, data=payload)
+            token_response = requests.post(uri, data=payload)
             if token_response.ok:
                 token_data = token_response.json()
                 access_token = token_data['access_token']
@@ -65,8 +66,8 @@ class BotFramework(OutputChannel):
     def send(self, recipient_id, message_data):
         # type: (Text, Dict[Text, Any]) -> None
 
-        post_message_uri = self.global_uri + 'conversations/%s/activities' \
-                                             % self.conversation['id']
+        post_message_uri = self.global_uri + \
+            'conversations/{}/activities'.format(self.conversation['id'])
         data = {"type": "message",
                 "recipient": {
                     "id": recipient_id
@@ -81,7 +82,7 @@ class BotFramework(OutputChannel):
 
         data.update(message_data)
         headers = self.get_headers()
-        send_response = post(post_message_uri,
+        send_response = requests.post(post_message_uri,
                              headers=headers,
                              data=json.dumps(data))
 
