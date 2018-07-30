@@ -9,12 +9,13 @@ import logging
 import warnings
 
 from builtins import str
-from typing import Text, Optional, List, Tuple
+from typing import Text, Optional, List
 
-from rasa_core import utils, evaluate
+from rasa_core import utils, evaluate, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage, CollectingOutputChannel, console
+from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.trackers import DialogueStateTracker
 
@@ -96,7 +97,7 @@ def replay_events(tracker, agent):
 
 
 def load_tracker_from_json(tracker_dump, domain):
-    # type: (Text, Agent) -> DialogueStateTracker
+    # type: (Text, Domain) -> DialogueStateTracker
     """Read the json dump from the file and instantiate a tracker it."""
 
     tracker_json = json.loads(utils.read_file(tracker_dump))
@@ -106,29 +107,40 @@ def load_tracker_from_json(tracker_dump, domain):
                                           domain.slots)
 
 
-def recreate_agent(model_directory,  # type: Text
-                   nlu_model=None,  # type: Optional[Text]
-                   tracker_dump=None,  # type: Optional[Text]
-                   endpoints=None
-                   ):
-    # type: (...) -> Tuple[Agent, DialogueStateTracker]
-    """Recreate an agent instance."""
+def serve_application(model_directory,  # type: Text
+                      nlu_model=None,  # type: Optional[Text]
+                      tracker_dump=None,  # type: Optional[Text]
+                      port=constants.DEFAULT_SERVER_PORT,
+                      endpoints=None,
+                      ):
+    from rasa_core import run
 
     action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
-
     nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
+    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
 
-    logger.debug("Loading Rasa Core Agent")
-    agent = Agent.load(model_directory, nlu_model,
-                       generator=nlg_endpoint,
-                       action_endpoint=action_endpoint)
+    nlu = run.interpreter_from_args(nlu_model, nlu_endpoint)
 
-    logger.debug("Finished loading agent. Loading stories now.")
+    input_channels = [run.create_http_input_channel("cmdline", None)]
 
-    tracker = load_tracker_from_json(tracker_dump, agent.domain)
+    http_server = run.start_server(model_directory, nlu, input_channels,
+                                   None, None, action_endpoint, nlg_endpoint,
+                                   port)
+
+    agent = http_server.application.agent()
+
+    tracker = load_tracker_from_json(tracker_dump,
+                                     agent.domain)
+
+    run.start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop,
+                         sender_id=tracker.sender_id)
+
     replay_events(tracker, agent)
 
-    return agent, tracker
+    try:
+        http_server.serve_forever()
+    except Exception as exc:
+        logger.exception(exc)
 
 
 if __name__ == '__main__':
@@ -138,13 +150,12 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
-    agent, tracker = recreate_agent(cmdline_args.core,
-                                    cmdline_args.nlu,
-                                    cmdline_args.tracker_dump)
-
     print(utils.wrap_with_color(
-            "You can now continue the dialogue. "
-            "Use '/stop' to exit the conversation.",
+            "We'll recreate the dialogue state. After that you can chat "
+            "with the bot, continuing the input conversation.",
             utils.bcolors.OKGREEN + utils.bcolors.UNDERLINE))
 
-    agent.handle_channel(ConsoleInputChannel(tracker.sender_id))
+    serve_application(cmdline_args.core,
+                      cmdline_args.nlu,
+                      cmdline_args.port,
+                      cmdline_args.endpoints)

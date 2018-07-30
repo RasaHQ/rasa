@@ -24,7 +24,6 @@ from rasa_core.interpreter import (
     RasaNLUHttpInterpreter)
 from rasa_core.utils import read_yaml_file
 
-
 logger = logging.getLogger()  # get the root logger
 
 
@@ -162,18 +161,19 @@ def create_http_input_channel(channel, credentials_file):
             raise Exception("Unknown input channel for running main.")
 
 
-def start_cmdline_io(server_url, on_finish):
+def start_cmdline_io(server_url, on_finish, **kwargs):
+    kwargs["server_url"] = server_url
+    kwargs["on_finish"] = on_finish
+
     p = Thread(target=console.record_messages,
-               kwargs={
-                   "server_url": server_url,
-                   "on_finish": on_finish})
+               kwargs=kwargs)
     p.start()
 
 
 def interpreter_from_args(
         nlu_model,  # type: Union[Text, NaturalLanguageInterpreter, None]
         nlu_endpoint  # type: Optional[EndpointConfig]
-        ):
+):
     # type: (...) -> Optional[NaturalLanguageInterpreter]
     """Create an interpreter from the commandline arguments.
 
