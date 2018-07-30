@@ -19,15 +19,15 @@ logger = logging.getLogger(__name__)
 class TwilioOutput(Client, OutputChannel):
     """Output channel for Twilio"""
 
+    @classmethod
+    def name(cls):
+        return "twilio"
+
     def __init__(self, account_sid, auth_token, twilio_number):
         super(TwilioOutput, self).__init__(account_sid, auth_token)
         self.twilio_number = twilio_number
         self.send_retry = 0
         self.max_retry = 5
-
-    @classmethod
-    def name(cls):
-        return "twilio"
 
     def send_text_message(self, recipient_number, text):
         """Sends text message"""
@@ -57,15 +57,15 @@ class TwilioOutput(Client, OutputChannel):
 class TwilioInput(InputChannel):
     """Twilio input channel"""
 
+    @classmethod
+    def name(cls):
+        return "twilio"
+
     def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):
         self.account_sid = account_sid
         self.auth_token = auth_token
         self.twilio_number = twilio_number
         self.debug_mode = debug_mode
-
-    @classmethod
-    def name(cls):
-        return "twilio"
 
     def blueprint(self, on_new_message):
         twilio_webhook = Blueprint('twilio_webhook', __name__)

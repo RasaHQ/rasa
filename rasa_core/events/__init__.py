@@ -416,10 +416,11 @@ class Restarted(Event):
 
 # noinspection PyProtectedMember
 class UserUtteranceReverted(Event):
-    """Bot undoes its last action.
-
-    Shouldn't be used during actual user interactions, mostly for train.
-    As a side effect the ``Tracker``'s last turn is removed."""
+    """Bot reverts everything until before the most recent user message. 
+    
+    The bot will revert all events after the latest `UserUttered`, this 
+    also means that the last event on the tracker is usually `action_listen` 
+    and the bot is waiting for a new user message."""
 
     type_name = "rewind"
 
@@ -545,8 +546,11 @@ class ReminderScheduled(Event):
 class ActionReverted(Event):
     """Bot undoes its last action.
 
-    Shouldn't be used during actual user interactions, mostly for train.
-    As a side effect the ``Tracker``'s last turn is removed."""
+    The bot everts everything until before the most recent action.
+    This includes the action itself, as well as any events that 
+    action created, like set slot events - the bot will now 
+    predict a new action using the state before the most recent 
+    action."""
 
     type_name = "undo"
 

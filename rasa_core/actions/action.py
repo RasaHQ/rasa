@@ -24,6 +24,8 @@ ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
 
+ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
+
 
 def ensure_action_name_uniqueness(actions):
     actual_action_names = set()  # used to collect unique action names
@@ -135,8 +137,26 @@ class ActionRestart(Action):
         from rasa_core.events import Restarted
 
         # only utter the template if it is available
-        dispatcher.utter_template("utter_restart", tracker, silent_fail=True)
+        dispatcher.utter_template("utter_restart", tracker,
+                                  silent_fail=True)
         return [Restarted()]
+
+
+class ActionDefaultFallback(Action):
+    """Executes the fallback action and goes back to the previous state
+    of the dialogue"""
+
+    def name(self):
+        return ACTION_DEFAULT_FALLBACK_NAME
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import UserUtteranceReverted
+
+        if domain.random_template_for("utter_default") is not None:
+            dispatcher.utter_template("utter_default", tracker,
+                                      silent_fail=True)
+
+        return [UserUtteranceReverted()]
 
 
 class RemoteAction(Action):

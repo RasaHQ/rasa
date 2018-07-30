@@ -10,6 +10,11 @@ import io
 import json
 import logging
 import os
+import requests
+
+from requests.auth import HTTPBasicAuth
+
+import rasa_core
 import sys
 from hashlib import sha1
 from random import Random
@@ -316,7 +321,7 @@ def read_yaml_string(string):
         import ruamel.yaml
 
         yaml_parser = ruamel.yaml.YAML(typ="safe")
-        yaml_parser.allow_unicode = True
+        yaml_parser.version = "1.1"
         yaml_parser.unicode_supplementary = True
 
         return yaml_parser.load(string)
@@ -327,15 +332,15 @@ def _dump_yaml(obj, output):
         import yaml
 
         yaml.safe_dump(obj, output,
-                           default_flow_style=False,
-                           allow_unicode=True)
+                       default_flow_style=False,
+                       allow_unicode=True)
     else:
         import ruamel.yaml
 
         yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
         yaml_writer.unicode_supplementary = True
         yaml_writer.default_flow_style = False
-        yaml_writer.allow_unicode = True
+        yaml_writer.version = "1.1"
 
         yaml_writer.dump(obj, output)
 
@@ -455,6 +460,14 @@ def arguments_of(func):
 
 
 def concat_url(base, subpath):
+    # type: (Text, Optional[Text]) -> Text
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
     if subpath:
         url = base
         if not base.endswith("/"):
@@ -475,6 +488,9 @@ def all_subclasses(cls):
 
 
 def read_endpoint_config(filename, endpoint_type):
+    # type: (Text, Text) -> Optional[rasa_core.utils.EndpointConfig]
+    """Read an endpoint configuration file from disk and extract one config. """
+
     if not filename:
         return None
 
@@ -486,23 +502,37 @@ def read_endpoint_config(filename, endpoint_type):
 
 
 class EndpointConfig(object):
+    """Configuration for an external HTTP endpoint."""
+
     def __init__(self, url, params=None, headers=None, basic_auth=None,
-                 token=None):
+                 token=None, token_name="token"):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
         self.basic_auth = basic_auth
         self.token = token
+        self.token_name = token_name
 
-    def request(self, json_data=None,
-                subpath=None,
-                method="post"):
-        from requests.auth import HTTPBasicAuth
-        import requests
+    def request(self,
+                method="post",  # type: Text
+                subpath=None,  # type: Optional[Text]
+                content_type="application/json",  # type: Text
+                **kwargs  # type: Dict[Text, Any]
+                ):
+        """Send a HTTP request to the endpoint.
 
+        All additional arguments will get passed through
+        to `requests.request`."""
+
+        # create the appropriate headers
         headers = self.headers.copy()
-        headers["Content-Type"] = "application/json"
+        if content_type:
+            headers["Content-Type"] = content_type
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
 
+        # create authentication parameters
         if self.basic_auth:
             auth = HTTPBasicAuth(self.basic_auth["username"],
                                  self.basic_auth["password"])
@@ -511,12 +541,23 @@ class EndpointConfig(object):
 
         url = concat_url(self.url, subpath)
 
+        # construct GET parameters
+        params = self.params.copy()
+
+        # set the authentication token if present
+        if self.token:
+            params[self.token_name] = self.token
+
+        if "params" in kwargs:
+            params.update(kwargs["params"])
+            del kwargs["params"]
+
         return requests.request(method,
                                 url,
                                 headers=headers,
-                                params=self.params,
+                                params=params,
                                 auth=auth,
-                                json=json_data)
+                                **kwargs)
 
     @classmethod
     def from_dict(cls, data):
@@ -525,4 +566,19 @@ class EndpointConfig(object):
                 data.get("params"),
                 data.get("headers"),
                 data.get("basic_auth"),
-                data.get("token"))
+                data.get("token"),
+                data.get("token_name"))
+
+    def __eq__(self, other):
+        if isinstance(self, type(other)):
+            return (other.url == self.url and
+                    other.params == self.params and
+                    other.headers == self.headers and
+                    other.basic_auth == self.basic_auth and
+                    other.token == self.token and
+                    other.token_name == self.token_name)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 class TelegramOutput(Bot, OutputChannel):
     """Output channel for Telegram"""
 
-    def __init__(self, access_token):
-        super(TelegramOutput, self).__init__(access_token)
-
     @classmethod
     def name(cls):
         return "telegram"
+
+    def __init__(self, access_token):
+        super(TelegramOutput, self).__init__(access_token)
 
     def send_text_message(self, recipient_id, message):
         return self.send_message(recipient_id, message)
@@ -76,15 +76,15 @@ class TelegramOutput(Bot, OutputChannel):
 class TelegramInput(InputChannel):
     """Telegram input channel"""
 
+    @classmethod
+    def name(cls):
+        return "telegram"
+
     def __init__(self, access_token, verify, webhook_url, debug_mode=True):
         self.access_token = access_token
         self.verify = verify
         self.webhook_url = webhook_url
         self.debug_mode = debug_mode
-
-    @classmethod
-    def name(cls):
-        return "telegram"
 
     @staticmethod
     def _is_location(message):

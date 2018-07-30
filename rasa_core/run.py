@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+import os
 from threading import Thread
 
 from builtins import str
@@ -17,11 +18,12 @@ from rasa_core.channels.mattermost import MattermostInput
 from rasa_core.channels.slack import SlackInput
 from rasa_core.channels.telegram import TelegramInput
 from rasa_core.channels.twilio import TwilioInput
-from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
+from rasa_core import constants
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     RasaNLUHttpInterpreter)
 from rasa_core.utils import read_yaml_file
+
 
 logger = logging.getLogger()  # get the root logger
 
@@ -42,7 +44,7 @@ def create_argument_parser():
             help="nlu model to run")
     parser.add_argument(
             '-p', '--port',
-            default=DEFAULT_SERVER_PORT,
+            default=constants.DEFAULT_SERVER_PORT,
             type=int,
             help="port to run the server at")
     parser.add_argument(
@@ -168,8 +170,25 @@ def start_cmdline_io(server_url, on_finish):
     p.start()
 
 
-def interpreter_from_args(nlu_model, nlu_endpoint):
-    name_parts = nlu_model.split("/")
+def interpreter_from_args(
+        nlu_model,  # type: Union[Text, NaturalLanguageInterpreter, None]
+        nlu_endpoint  # type: Optional[EndpointConfig]
+        ):
+    # type: (...) -> Optional[NaturalLanguageInterpreter]
+    """Create an interpreter from the commandline arguments.
+
+    Depending on which values are passed for model and endpoint, this
+    will create the corresponding interpreter (either loading the model
+    locally or setting up an endpoint based interpreter)."""
+
+    if isinstance(nlu_model, NaturalLanguageInterpreter):
+        return nlu_model
+
+    if nlu_model:
+        name_parts = os.path.split(nlu_model)
+    else:
+        name_parts = []
+
     if len(name_parts) == 1:
         if nlu_endpoint:
             # using the default project name
@@ -179,9 +198,9 @@ def interpreter_from_args(nlu_model, nlu_endpoint):
             return NaturalLanguageInterpreter.create(nlu_model)
     elif len(name_parts) == 2:
         if nlu_endpoint:
-            return RasaNLUHttpInterpreter(name_parts[0],
+            return RasaNLUHttpInterpreter(name_parts[1],
                                           nlu_endpoint,
-                                          name_parts[1])
+                                          name_parts[0])
         else:
             return NaturalLanguageInterpreter.create(nlu_model)
     else:
@@ -191,7 +210,12 @@ def interpreter_from_args(nlu_model, nlu_endpoint):
                             "specify the model to use with "
                             "`--nlu project/model`.")
         else:
-            return None
+            return NaturalLanguageInterpreter.create(nlu_model)
+
+
+def main(model_directory, nlu_model=None, channel=None, port=None,
+         credentials_file=None, nlg_endpoint=None, nlu_endpoint=None):
+    """Run the agent."""
 
 
 def start_server(model_directory, nlu, input_channels,
@@ -206,7 +230,7 @@ def start_server(model_directory, nlu, input_channels,
 
     http_server = WSGIServer(('0.0.0.0', port), app)
     logger.info("Rasa Core server is up and running on "
-                "{}".format(DEFAULT_SERVER_URL))
+                "{}".format(constants.DEFAULT_SERVER_URL))
     http_server.start()
     return http_server
 
@@ -214,15 +238,15 @@ def start_server(model_directory, nlu, input_channels,
 def serve_application(model_directory,
                       nlu_model=None,
                       channel=None,
-                      port=DEFAULT_SERVER_PORT,
+                      port=constants.DEFAULT_SERVER_PORT,
                       credentials_file=None,
                       cors=None,
                       endpoints=None,
                       auth_token=None
                       ):
     action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
-    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg_endpoint")
-    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu_endpoint")
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
+    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
 
     nlu = interpreter_from_args(nlu_model, nlu_endpoint)
 
@@ -236,7 +260,7 @@ def serve_application(model_directory,
                                port)
 
     if channel == "cmdline":
-        start_cmdline_io(DEFAULT_SERVER_URL, http_server.stop)
+        start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop)
 
     try:
         http_server.serve_forever()

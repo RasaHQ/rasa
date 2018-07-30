@@ -118,7 +118,7 @@ def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = TemplateDomain.load(domain_file)
     assert len(domain.intents) == 10
-    assert len(domain.actions) == 5
+    assert len(domain.actions) == 6
 
 
 def test_utter_templates():
@@ -158,11 +158,11 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
         slots:
             custom:
              type: tests.conftest.Unknown
-        
+
         templates:
             utter_greet:
              - hey there!
-        
+
         actions:
             - utter_greet""")
     with pytest.raises(ValueError):
@@ -180,5 +180,9 @@ slots: {}
 templates:
   utter_greet:
   - text: hey there!"""
+
     domain = TemplateDomain.from_yaml(test_yaml)
-    assert test_yaml.strip() == domain.as_yaml().strip()
+    # python 3 and 2 are different here, python 3 will have a leading set
+    # of --- at the beginning of the yml
+    assert domain.as_yaml().strip().endswith(test_yaml.strip())
+    domain = TemplateDomain.from_yaml(domain.as_yaml())

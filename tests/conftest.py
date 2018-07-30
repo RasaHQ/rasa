@@ -16,7 +16,7 @@ from rasa_core.channels import CollectingOutputChannel, RestInput
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
 from rasa_core.policies.memoization import \
     MemoizationPolicy, AugmentedMemoizationPolicy
@@ -32,6 +32,8 @@ logging.basicConfig(level="DEBUG")
 DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
+
+DEFAULT_ENDPOINTS_FILE = "data/example_endpoints.yml"
 
 
 class CustomSlot(Slot):
@@ -63,19 +65,9 @@ def default_agent_path(default_agent, tmpdir_factory):
 
 
 @pytest.fixture
-def default_nlg(default_domain):
-    return TemplatedNaturalLanguageGenerator(default_domain.templates)
-
-
-@pytest.fixture
 def default_dispatcher_collecting(default_nlg):
     bot = CollectingOutputChannel()
     return Dispatcher("my-sender", bot, default_nlg)
-
-
-@pytest.fixture
-def default_nlg(default_domain):
-    return TemplatedNaturalLanguageGenerator(default_domain.templates)
 
 
 @pytest.fixture
@@ -132,6 +124,11 @@ def core_server(tmpdir_factory):
     return server.create_app(model_path,
                              interpreter=RegexInterpreter(),
                              input_channels=[RestInput()])
+
+
+@pytest.fixture
+def default_nlg(default_domain):
+    return TemplatedNaturalLanguageGenerator(default_domain.templates)
 
 
 @pytest.fixture

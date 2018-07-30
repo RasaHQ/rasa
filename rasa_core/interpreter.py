@@ -12,6 +12,7 @@ import requests
 from builtins import str
 from typing import Text, List, Dict, Any
 
+from rasa_core import constants
 from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -164,13 +165,14 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
     def __init__(self, model_name=None, endpoint=None, project_name='default'):
         # type: (Text, EndpointConfig, Text) -> None
+
         self.model_name = model_name
         self.project_name = project_name
 
         if endpoint:
             self.endpoint = endpoint
         else:
-            self.endpoint = EndpointConfig('http://localhost:5000')
+            self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
     def parse(self, text):
         """Parse a text message.

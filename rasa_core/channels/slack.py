@@ -19,15 +19,15 @@ logger = logging.getLogger(__name__)
 class SlackBot(SlackClient, OutputChannel):
     """A Slack communication channel"""
 
+    @classmethod
+    def name(cls):
+        return "slack"
+
     def __init__(self, token, slack_channel=None):
         # type: (Text, Optional[Text]) -> None
 
         self.slack_channel = slack_channel
         super(SlackBot, self).__init__(token)
-
-    @classmethod
-    def name(cls):
-        return "slack"
 
     def send_text_message(self, recipient_id, message):
         recipient = self.slack_channel or recipient_id
@@ -72,6 +72,10 @@ class SlackBot(SlackClient, OutputChannel):
 class SlackInput(InputChannel):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
 
+    @classmethod
+    def name(cls):
+        return "slack"
+
     def __init__(self, slack_token, slack_channel=None,
                  errors_ignore_retry=None):
         # type: (Text, Optional[Text], Optional[List[Text]]) -> None
@@ -96,10 +100,6 @@ class SlackInput(InputChannel):
         self.slack_token = slack_token
         self.slack_channel = slack_channel
         self.errors_ignore_retry = errors_ignore_retry or ('http_timeout',)
-
-    @classmethod
-    def name(cls):
-        return "slack"
 
     @staticmethod
     def _is_user_message(slack_event):

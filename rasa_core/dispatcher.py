@@ -10,9 +10,13 @@ import typing
 from typing import Text, List, Dict, Any, Optional
 
 from rasa_core.channels import OutputChannel
-from rasa_core.nlg.generator import NaturalLanguageGenerator
+from rasa_core.nlg import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_core.trackers import DialogueStateTracker
+
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -28,6 +32,7 @@ class Element(dict):
                   if key in self.__acceptable_keys}
 
         super(Element, self).__init__(*args, **kwargs)
+
 
 # Makes a named tuple with entries text and data
 BotMessage = namedtuple("BotMessage", "text data")
@@ -131,12 +136,14 @@ class Dispatcher(object):
                                           tracker,
                                           silent_fail,
                                           **kwargs)
-        if message:
-            if "buttons" not in message:
-                message["buttons"] = buttons
-            else:
-                message["buttons"].extend(buttons)
-            self.utter_response(message)
+        if not message:
+            return
+
+        if "buttons" not in message:
+            message["buttons"] = buttons
+        else:
+            message["buttons"].extend(buttons)
+        self.utter_response(message)
 
     def utter_template(self,
                        template,  # type: Text
@@ -152,8 +159,10 @@ class Dispatcher(object):
                                           silent_fail,
                                           **kwargs)
 
-        if message:
-            self.utter_response(message)
+        if not message:
+            return
+
+        self.utter_response(message)
 
     def _generate_response(
             self,

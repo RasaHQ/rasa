@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 import typing
-from builtins import range
+from builtins import range, str
 from typing import Optional, Any, List
 
 from rasa_core import utils

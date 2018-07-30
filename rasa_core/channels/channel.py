@@ -61,8 +61,8 @@ class InputChannel(object):
 
     @classmethod
     def name(cls):
-        raise NotImplementedError("Every input channel needs a name to "
-                                  "identify it.")
+        """Every input channel needs a name to identify it."""
+        return cls.__name__
 
     def url_prefix(self):
         return self.name()
@@ -85,8 +85,8 @@ class OutputChannel(object):
 
     @classmethod
     def name(cls):
-        raise NotImplementedError("Every output channel needs a name to "
-                                  "identify it.")
+        """Every output channel needs a name to identify it."""
+        return cls.__name__
 
     def send_response(self, recipient_id, message):
         # type: (Text, Dict[Text, Any]) -> None
@@ -216,6 +216,12 @@ class RestInput(InputChannel):
 
         queue.put("DONE")
 
+    def _extract_sender(self, req):
+        return req.json.get("sender", None)
+
+    def _extract_message(self, req):
+        return req.json.get("message", None)
+
     def stream_response(self, on_new_message, text, sender_id):
         from multiprocessing import Queue
 
@@ -240,9 +246,8 @@ class RestInput(InputChannel):
 
         @custom_webhook.route("/webhook", methods=['POST'])
         def receive():
-            payload = request.json
-            sender_id = payload.get("sender", None)
-            text = payload.get("message", None)
+            sender_id = self._extract_sender(request)
+            text = self._extract_message(request)
             should_use_stream = utils.bool_arg("stream", default=False)
 
             if should_use_stream:

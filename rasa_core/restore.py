@@ -116,7 +116,7 @@ def recreate_agent(model_directory,  # type: Text
 
     action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
 
-    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg_endpoint")
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
 
     logger.debug("Loading Rasa Core Agent")
     agent = Agent.load(model_directory, nlu_model,

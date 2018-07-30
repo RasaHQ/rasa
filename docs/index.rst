@@ -71,6 +71,7 @@ The Rasa Core dialogue engine
    customactions
    slots
    slotfilling
+   responses
    interactive_learning
    fallbacks
    policies

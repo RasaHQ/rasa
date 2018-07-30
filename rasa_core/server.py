@@ -3,12 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import argparse
 import logging
 import os
 import tempfile
 import zipfile
 from functools import wraps
 
+import typing
 from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
@@ -26,9 +28,6 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
-
-from typing import Union
-import typing
 
 if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
@@ -58,7 +57,7 @@ def ensure_loaded_agent(agent):
 
 def request_parameters():
     if request.method == 'GET':
-        return request.args
+        return request.args.to_dict()
     else:
 
         try:
@@ -88,10 +87,10 @@ def requires_auth(token=None):
 
 def _create_agent(
         model_directory,  # type: Text
-        interpreter,  # type: Union[Text, NaturalLanguageInterpreter, None]
+        interpreter,  # type: Union[Text, NLI, None]
         action_endpoint=None,  # type: Optional[EndpointConfig]
         tracker_store=None,  # type: Optional[TrackerStore]
-        nlg_endpoint=None
+        generator=None
 ):
     # type: (...) -> Optional[Agent]
     try:
@@ -99,7 +98,7 @@ def _create_agent(
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
                           action_endpoint=action_endpoint,
-                          generator=nlg_endpoint)
+                          generator=generator)
     except Exception as e:
         logger.error("Failed to load any agent model. Running "
                      "Rasa Core server with out loaded model now. {}"
@@ -113,10 +112,10 @@ def create_app(model_directory,  # type: Optional[Text]
                cors_origins=None,  # type: Optional[List[Text]]
                auth_token=None,  # type: Optional[Text]
                tracker_store=None,  # type: Optional[TrackerStore]
-               action_endpoint=None,
-               nlg_endpoint=None
+               endpoints=None
                ):
     """Class representing a Rasa Core HTTP server."""
+    from rasa_core import run
 
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
@@ -124,8 +123,16 @@ def create_app(model_directory,  # type: Optional[Text]
     if not cors_origins:
         cors_origins = []
 
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
+
+    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
+
+    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
+
+    _interpreter = run.interpreter_from_args(interpreter, nlu_endpoint)
+
     # this needs to be an array, so we can modify it in the nested functions...
-    _agent = [_create_agent(model_directory, interpreter, action_endpoint,
+    _agent = [_create_agent(model_directory, _interpreter, action_endpoint,
                             tracker_store, nlg_endpoint)]
 
     def agent():
@@ -283,14 +290,16 @@ def create_app(model_directory,  # type: Optional[Text]
             return jsonify(domain)
         elif accepts.endswith("yml"):
             domain_yaml = agent().domain.as_yaml()
-            return Response(domain_yaml, status=200,
+            return Response(domain_yaml,
+                            status=200,
                             content_type="application/x-yml")
         else:
             return Response(
                     """Invalid accept header. Domain can be provided 
-                    as json ("Accept: application/json") or yml 
-                    ("Accept: application/x-yml"). Make sure you've set 
-                    the appropriate Accept header.""", status=406)
+                    as json ("Accept: application/json")  
+                    or yml ("Accept: application/x-yml"). 
+                    Make sure you've set the appropriate Accept header.""",
+                    status=406)
 
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
@@ -429,7 +438,8 @@ def create_app(model_directory,  # type: Optional[Text]
         logger.debug("Unzipped model to {}".format(
                 os.path.abspath(model_directory)))
 
-        _agent[0] = _create_agent(model_directory, interpreter, tracker_store)
+        _agent[0] = _create_agent(model_directory, interpreter, tracker_store,
+                                  action_endpoint, nlg_endpoint)
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 

@@ -235,78 +235,76 @@ class StoryGraph(object):
         # type: () -> StoryGraph
         """Create a graph with the cyclic edges removed from this graph."""
 
-        if not self.cyclic_edge_ids:
-            return self
-
         story_end_checkpoints = self.story_end_checkpoints.copy()
         cyclic_edge_ids = self.cyclic_edge_ids
         # we need to remove the start steps and replace them with steps ending
         # in a special end checkpoint
         story_steps = {s.id: s for s in self.story_steps}
 
-        # we are going to do this in a recursive way. we are going to remove
-        # one cycle and then we are going to let the cycle detection run again
-        # this is not inherently necessary so if this becomes a performance
-        # issue, we can change it. It is actually enough to run the cycle
-        # detection only once and then remove one cycle after another, but
-        # since removing the cycle is done by adding / removing edges and nodes
-        # the logic is a lot easier if we only need to make sure the change is
-        # consistent if we only change one compared to changing all of them.
-
         # collect all overlapping checkpoints
         # we will remove unused start ones
         all_overlapping_cps = set()
 
-        for s, e in cyclic_edge_ids:
-            cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
-            prefix = GENERATED_CHECKPOINT_PREFIX + CHECKPOINT_CYCLE_PREFIX
-            # need abbreviations otherwise they are not visualized well
-            sink_cp_name = prefix + "SINK_" + cid
-            connector_cp_name = prefix + "CONN_" + cid
-            source_cp_name = prefix + "SRC_" + cid
-            story_end_checkpoints[sink_cp_name] = source_cp_name
+        if self.cyclic_edge_ids:
+            # we are going to do this in a recursive way. we are going to remove
+            # one cycle and then we are going to let the cycle detection run again
+            # this is not inherently necessary so if this becomes a performance
+            # issue, we can change it. It is actually enough to run the cycle
+            # detection only once and then remove one cycle after another, but
+            # since removing the cycle is done by adding / removing edges and nodes
+            # the logic is a lot easier if we only need to make sure the change is
+            # consistent if we only change one compared to changing all of them.
 
-            overlapping_cps = self.overlapping_checkpoint_names(
-                    story_steps[s].end_checkpoints,
-                    story_steps[e].start_checkpoints)
+            for s, e in cyclic_edge_ids:
+                cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
+                prefix = GENERATED_CHECKPOINT_PREFIX + CHECKPOINT_CYCLE_PREFIX
+                # need abbreviations otherwise they are not visualized well
+                sink_cp_name = prefix + "SINK_" + cid
+                connector_cp_name = prefix + "CONN_" + cid
+                source_cp_name = prefix + "SRC_" + cid
+                story_end_checkpoints[sink_cp_name] = source_cp_name
 
-            all_overlapping_cps.update(overlapping_cps)
+                overlapping_cps = self.overlapping_checkpoint_names(
+                        story_steps[s].end_checkpoints,
+                        story_steps[e].start_checkpoints)
 
-            # change end checkpoints of starts
-            start = story_steps[s].create_copy(use_new_id=False)
-            start.end_checkpoints = [cp
-                                     for cp in start.end_checkpoints
-                                     if cp.name not in overlapping_cps]
-            start.end_checkpoints.append(Checkpoint(sink_cp_name))
-            story_steps[s] = start
+                all_overlapping_cps.update(overlapping_cps)
 
-            needs_connector = False
+                # change end checkpoints of starts
+                start = story_steps[s].create_copy(use_new_id=False)
+                start.end_checkpoints = [cp
+                                         for cp in start.end_checkpoints
+                                         if cp.name not in overlapping_cps]
+                start.end_checkpoints.append(Checkpoint(sink_cp_name))
+                story_steps[s] = start
 
-            for k, step in list(story_steps.items()):
-                additional_ends = []
-                for original_cp in overlapping_cps:
-                    for cp in step.start_checkpoints:
-                        if cp.name == original_cp:
-                            if k == e:
-                                cp_name = source_cp_name
-                            else:
-                                cp_name = connector_cp_name
-                                needs_connector = True
+                needs_connector = False
 
-                            if not self._is_checkpoint_in_list(
-                                    cp_name, cp.conditions,
-                                    step.start_checkpoints):
-                                # add checkpoint only if it was not added
-                                additional_ends.append(
-                                        Checkpoint(cp_name, cp.conditions))
+                for k, step in list(story_steps.items()):
+                    additional_ends = []
+                    for original_cp in overlapping_cps:
+                        for cp in step.start_checkpoints:
+                            if cp.name == original_cp:
+                                if k == e:
+                                    cp_name = source_cp_name
+                                else:
+                                    cp_name = connector_cp_name
+                                    needs_connector = True
 
-                if additional_ends:
-                    updated = step.create_copy(use_new_id=False)
-                    updated.start_checkpoints.extend(additional_ends)
-                    story_steps[k] = updated
+                                if not self._is_checkpoint_in_list(
+                                        cp_name, cp.conditions,
+                                        step.start_checkpoints):
+                                    # add checkpoint only if it was not added
+                                    additional_ends.append(
+                                            Checkpoint(cp_name, cp.conditions))
 
-            if needs_connector:
-                start.end_checkpoints.append(Checkpoint(connector_cp_name))
+                    if additional_ends:
+                        updated = step.create_copy(use_new_id=False)
+                        updated.start_checkpoints.extend(additional_ends)
+                        story_steps[k] = updated
+
+                if needs_connector:
+                    start.end_checkpoints.append(Checkpoint(connector_cp_name))
 
         # the process above may generate unused checkpoints
         # we need to find them and remove them
@@ -340,6 +338,7 @@ class StoryGraph(object):
                            for cp_name in unused_cps
                            if cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)}
 
+        k_to_remove = set()
         for k, step in story_steps.items():
             # changed all ends
             updated = step.create_copy(use_new_id=False)
@@ -350,7 +349,17 @@ class StoryGraph(object):
             updated.end_checkpoints = self._checkpoint_difference(
                     updated.end_checkpoints, unused_genr_cps)
 
+            if (step.start_checkpoints and not updated.start_checkpoints or
+                    step.end_checkpoints and not updated.end_checkpoints):
+                # remove story step if the generated checkpoints
+                # were the only ones
+                k_to_remove.add(k)
+
             story_steps[k] = updated
+
+        # remove unwanted story steps
+        for k in k_to_remove:
+            del story_steps[k]
 
     @staticmethod
     def _is_checkpoint_in_list(checkpoint_name, conditions, cps):

@@ -161,7 +161,7 @@ class PolicyEnsemble(object):
         from packaging import version
 
         model_version = metadata.get("rasa_core", "0.0.0")
-        if version.parse(model_version) < version.parse("0.9.0"):
+        if version.parse(model_version) < version.parse("0.10.0a3"):
             raise UnsupportedDialogueModelError(
                 "The model version is to old to be "
                 "loaded by this Rasa Core instance. "
