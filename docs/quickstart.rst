@@ -230,7 +230,9 @@ If you are running the cells here in the docs, run this cell:
        if a == 'stop':
            break
        responses = agent.handle_message(a)
-       messages.extend(responses)
+       for r in responses:
+           messages.append(r.get("text"))
+
 
 
 5. Add NLU
