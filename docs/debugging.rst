@@ -83,7 +83,7 @@ As soon as this is installed you can visualize stories with this command:
 ..  code-block:: bash
 
    cd examples/concertbot/
-   python -m rasa_core.visualize -d concert_domain.yml -s data/stories.md -o graph.png
+   python -m rasa_core.visualize -d domain.yml -s data/stories.md -o graph.png
 
 This will run through the stories of the ``concertbot`` example in
 ``data/stories.md`` and create a graph stored in the

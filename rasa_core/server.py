@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import argparse
 import logging
 import os
 import tempfile
@@ -11,22 +10,20 @@ import zipfile
 from functools import wraps
 
 import typing
-from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
 from typing import Union, Text, Optional, List
 
-from rasa_core import events, utils
-from rasa_core.events import Event
-from rasa_core.utils import EndpointConfig
+from rasa_core import utils, constants
 from rasa_core.agent import Agent
 from rasa_core.channels import (
     CollectingOutputChannel, InputChannel,
     UserMessage)
 from rasa_core.channels import channel
-from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.events import Event
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import EndpointConfig
 from rasa_core.version import __version__
 
 if typing.TYPE_CHECKING:
@@ -106,7 +103,7 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory,  # type: Optional[Text]
+def create_app(model_directory=None,  # type: Optional[Text]
                interpreter=None,  # type: Union[Text, NLI, None]
                input_channels=None,  # type: Optional[List[InputChannel]]
                cors_origins=None,  # type: Optional[List[Text]]
@@ -169,7 +166,10 @@ def create_app(model_directory,  # type: Optional[Text]
     def version():
         """respond with the version number of the installed rasa core."""
 
-        return jsonify({'version': __version__})
+        return jsonify({
+            "version": __version__,
+            "minimum_compatible_version": constants.MINIMUM_COMPATIBLE_VERSION
+        })
 
     # <sender_id> can be be 'default' if there's only 1 client
     @app.route("/conversations/<sender_id>/execute",
@@ -267,40 +267,6 @@ def create_app(model_directory,  # type: Optional[Text]
                 only_events_after_latest_restart=use_history)
         return jsonify(state)
 
-    @app.route("/domain", methods=['GET', 'OPTIONS'])
-    @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
-    @ensure_loaded_agent(agent)
-    def retrieve_domain():
-        """Get a dump of a conversations tracker including its events."""
-
-        domain = agent().domain
-        return jsonify(domain.as_dict())
-
-    @app.route("/domain",
-               methods=['GET', 'OPTIONS'])
-    @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
-    @ensure_loaded_agent(agent)
-    def get_domain():
-        """Get current domain in yaml or json format."""
-        accepts = request.headers.get("Accept", default="application/json")
-        if accepts.endswith("json"):
-            domain = agent().domain.as_dict()
-            return jsonify(domain)
-        elif accepts.endswith("yml"):
-            domain_yaml = agent().domain.as_yaml()
-            return Response(domain_yaml,
-                            status=200,
-                            content_type="application/x-yml")
-        else:
-            return Response(
-                    """Invalid accept header. Domain can be provided 
-                    as json ("Accept: application/json")  
-                    or yml ("Accept: application/x-yml"). 
-                    Make sure you've set the appropriate Accept header.""",
-                    status=406)
-
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
@@ -330,34 +296,6 @@ def create_app(model_directory,  # type: Optional[Text]
 
         except Exception as e:
             logger.exception("Caught an exception during respond.")
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
-
-    @app.route("/model/finetune",
-               methods=['POST', 'OPTIONS'])
-    @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
-    @ensure_loaded_agent(agent)
-    def continue_training():
-        request.headers.get("Accept")
-        epochs = request.args.get("epochs", 30)
-        batch_size = request.args.get("batch_size", 5)
-        request_params = request.get_json(force=True)
-        tracker = DialogueStateTracker.from_dict(UserMessage.DEFAULT_SENDER_ID,
-                                                 request_params,
-                                                 agent().domain.slots)
-
-        try:
-            # Fetches the appropriate bot response in a json format
-            responses = agent().continue_training([tracker],
-                                                  epochs=epochs,
-                                                  batch_size=batch_size)
-            return jsonify(responses)
-
-        except Exception as e:
-            logger.exception("Caught an exception during prediction.")
             return Response(jsonify(error="Server failure. Error: {}"
                                           "".format(e)),
                             status=500,
@@ -412,7 +350,7 @@ def create_app(model_directory,  # type: Optional[Text]
                             status=500,
                             content_type="application/json")
 
-    @app.route("/load", methods=['POST', 'OPTIONS'])
+    @app.route("/model", methods=['POST', 'OPTIONS'])
     @requires_auth(auth_token)
     @cross_origin(origins=cors_origins)
     def load_model():
@@ -443,35 +381,59 @@ def create_app(model_directory,  # type: Optional[Text]
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 
+    @app.route("/model/domain",
+               methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def get_domain():
+        """Get current domain in yaml or json format."""
+        accepts = request.headers.get("Accept", default="application/json")
+        if accepts.endswith("json"):
+            domain = agent().domain.as_dict()
+            return jsonify(domain)
+        elif accepts.endswith("yml"):
+            domain_yaml = agent().domain.as_yaml()
+            return Response(domain_yaml,
+                            status=200,
+                            content_type="application/x-yml")
+        else:
+            return Response(
+                    """Invalid accept header. Domain can be provided 
+                    as json ("Accept: application/json")  
+                    or yml ("Accept: application/x-yml"). 
+                    Make sure you've set the appropriate Accept header.""",
+                    status=406)
+
+    @app.route("/model/finetune",
+               methods=['POST', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def continue_training():
+        request.headers.get("Accept")
+        epochs = request.args.get("epochs", 30)
+        batch_size = request.args.get("batch_size", 5)
+        request_params = request.get_json(force=True)
+        tracker = DialogueStateTracker.from_dict(UserMessage.DEFAULT_SENDER_ID,
+                                                 request_params,
+                                                 agent().domain.slots)
+
+        try:
+            # Fetches the appropriate bot response in a json format
+            responses = agent().continue_training([tracker],
+                                                  epochs=epochs,
+                                                  batch_size=batch_size)
+            return jsonify(responses)
+
+        except Exception as e:
+            logger.exception("Caught an exception during prediction.")
+            return Response(jsonify(error="Server failure. Error: {}"
+                                          "".format(e)),
+                            status=500,
+                            content_type="application/json")
+
     if input_channels:
         channel.register_blueprints(input_channels, app, handle_message,
                                     route="/webhooks/")
     return app
-
-
-if __name__ == '__main__':
-    from rasa_core import run
-
-    # Running as standalone python application
-    arg_parser = run.create_argument_parser()
-    cmdline_args = arg_parser.parse_args()
-
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.WARN)
-
-    # Setting up the color scheme of logger
-    utils.configure_colored_logging(cmdline_args.loglevel)
-    utils.configure_file_logging(cmdline_args.loglevel,
-                                 cmdline_args.log_file)
-
-    logger.info("Rasa process starting")
-
-    # Setting up the rasa_core application framework
-    # Running the server at 'this' address with the
-    # rasa_core application framework
-    run.start_server(cmdline_args.core,
-                     cmdline_args.nlu,
-                     cmdline_args.connector,
-                     cmdline_args.port,
-                     cmdline_args.credentials,
-                     cmdline_args.cors)

@@ -219,20 +219,19 @@ def interpreter_from_args(
             return NaturalLanguageInterpreter.create(nlu_model)
 
 
-def main(model_directory, nlu_model=None, channel=None, port=None,
-         credentials_file=None, nlg_endpoint=None, nlu_endpoint=None):
+def start_server(model_directory, nlu, input_channels,
+                 cors, auth_token, endpoints, port):
     """Run the agent."""
 
-
-def start_server(model_directory, nlu, input_channels,
-                 cors, auth_token, action_endpoint, nlg_endpoint, port):
     app = server.create_app(model_directory,
                             nlu,
                             input_channels,
                             cors,
                             auth_token=auth_token,
-                            action_endpoint=action_endpoint,
-                            nlg_endpoint=nlg_endpoint)
+                            endpoints=endpoints)
+
+    if logger.isEnabledFor(logging.DEBUG):
+        utils.list_routes(app)
 
     http_server = WSGIServer(('0.0.0.0', port), app)
     logger.info("Rasa Core server is up and running on "
@@ -250,10 +249,6 @@ def serve_application(model_directory,
                       endpoints=None,
                       auth_token=None
                       ):
-    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
-    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
-    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
-
     nlu = interpreter_from_args(nlu_model, nlu_endpoint)
 
     if channel:
@@ -261,9 +256,8 @@ def serve_application(model_directory,
     else:
         input_channels = []
 
-    http_server = start_server(model_directory, nlu, input_channels,
-                               cors, auth_token, action_endpoint, nlg_endpoint,
-                               port)
+    http_server = start_server(model_directory, nlu_model, input_channels,
+                               cors, auth_token, endpoints, port)
 
     if channel == "cmdline":
         start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop)

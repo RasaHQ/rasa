@@ -3,34 +3,30 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import argparse
 import io
 import logging
 from threading import Thread
 
-import requests
-
 import numpy as np
+import requests
 from gevent.pywsgi import WSGIServer
 from typing import Any, Text, Dict, List, Optional, Tuple
 
-from rasa_core import utils, run, server
+from rasa_core import utils, server
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage, console
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
-from rasa_core.events import (
-    UserUtteranceReverted, Event)
+from rasa_core.events import Event
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
-from rasa_core.policies.online_trainer import (
-    DEFAULT_FILE_EXPORT_PATH)
-from rasa_core.run import interpreter_from_args
 from rasa_core.training.structures import Story
 from rasa_core.utils import EndpointConfig
 
-MAX_VISUAL_HISTORY = 3
 
 logger = logging.getLogger(__name__)
 
+MAX_VISUAL_HISTORY = 3
+
+DEFAULT_FILE_EXPORT_PATH = "stories.md"
 
 def _request_intent_from_user(tracker_dump, intents):
     # take in some argument and ask which intent it should have been
@@ -329,65 +325,82 @@ def predict_till_next_listen(endpoint,  # type: EndpointConfig
 def record_messages(endpoint,
                     sender_id=UserMessage.DEFAULT_SENDER_ID,
                     max_message_limit=None,
-                    on_finish=None):
+                    on_finish=None,
+                    get_next_message=None):
     """Read messages from the command line and print bot responses."""
 
-    exit_text = INTENT_MESSAGE_PREFIX + 'stop'
-
-    utils.print_color("Bot loaded. Type a message and press enter "
-                      "(use '{}' to exit). ".format(exit_text),
-                      utils.bcolors.OKGREEN)
-
     try:
-        domain = retrieve_domain(endpoint)
-    except requests.exceptions.ConnectionError:
-        logger.exception("Failed to connect to rasa core server at '{}'. "
-                         "Is the server running?".format(endpoint.url))
-        return
+        exit_text = INTENT_MESSAGE_PREFIX + 'stop'
 
-    intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+        if not get_next_message:
+            # default to reading messages from the command line
+            get_next_message = console.get_cmd_input
 
-    num_messages = 0
-    finished = False
-    while (not finished and
-           not console.is_msg_limit_reached(num_messages, max_message_limit)):
-        print("Next user input:")
-        text = console.get_cmd_input()
-        if text == exit_text:
-            break
+        utils.print_color("Bot loaded. Type a message and press enter "
+                          "(use '{}' to exit). ".format(exit_text),
+                          utils.bcolors.OKGREEN)
 
-        send_message(endpoint, sender_id, text)
-        finished = predict_till_next_listen(endpoint,
-                                            intents,
-                                            sender_id)
+        try:
+            domain = retrieve_domain(endpoint)
+        except requests.exceptions.ConnectionError:
+            logger.exception("Failed to connect to rasa core server at '{}'. "
+                             "Is the server running?".format(endpoint.url))
+            return
 
-        num_messages += 1
+        intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
-    if on_finish:
-        on_finish()
+        num_messages = 0
+        finished = False
+        while (not finished and
+               not utils.is_limit_reached(num_messages, max_message_limit)):
+            print("Next user input:")
+            text = get_next_message()
+            if text == exit_text:
+                break
+
+            send_message(endpoint, sender_id, text)
+            finished = predict_till_next_listen(endpoint,
+                                                intents,
+                                                sender_id)
+
+            num_messages += 1
+    except Exception:
+        logger.exception("An exception occurred while recording messages.")
+        raise
+    finally:
+        if on_finish:
+            on_finish()
 
 
-def start_online_learning_io(endpoint, on_finish):
+def start_online_learning_io(endpoint, on_finish, get_next_message=None):
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
-                   "on_finish": on_finish})
+                   "on_finish": on_finish,
+                   "get_next_message": get_next_message})
     p.start()
 
 
-def serve_application(agent):
-    app = server.create_app(None)
+def serve_agent(agent, serve_forever=True, get_next_message=None):
+    app = server.create_app()
     app.set_agent(agent)
 
+    return serve_application(app, serve_forever, get_next_message)
+
+
+def serve_application(app, serve_forever=True, get_next_message=None):
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    start_online_learning_io(endpoint, http_server.stop)
+    start_online_learning_io(endpoint, http_server.stop, get_next_message)
 
-    try:
-        http_server.serve_forever()
-    except Exception as exc:
-        logger.exception(exc)
+    if serve_forever:
+        try:
+            http_server.serve_forever()
+        except Exception as exc:
+            logger.exception(exc)
+
+    return http_server

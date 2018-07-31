@@ -14,7 +14,7 @@ if __name__ == '__main__':
     training_data_file = 'data/stories.md'
     model_path = 'models/dialogue'
 
-    agent = Agent("concert_domain.yml",
+    agent = Agent("domain.yml",
                   policies=[MemoizationPolicy(), KerasPolicy()])
 
     training_data = agent.load_data(training_data_file)

@@ -7,11 +7,16 @@ how you can migrate from one version to another.
 
 0.10.x to 0.11.0
 --------------
-- `rasa_core.channels.direct` output channel package removed.
-  `CollectingOutputChannel` moved to `rasa_core.channels.channel`
-- `HttpInputComponent` renamed to `InputChannel` & moved to
-  `rasa_core.channels.channel.InputChannel`
-- removed package `rasa_core.channels.rest`
+- ``rasa_core.channels.direct`` output channel package removed.
+  ``CollectingOutputChannel`` moved to ``rasa_core.channels.channel``
+- ``HttpInputComponent`` renamed to ``InputChannel`` & moved to
+  ``rasa_core.channels.channel.InputChannel``
+- removed package ``rasa_core.channels.rest``,
+  please use ``rasa_core.channels.RestInput`` instead
+- domain actions list now needs to always contain the actions names instead of
+  the classpath
+- remove file input channel ``rasa_core.channels.file.FileInputChannel``
+
 
 0.9.x to 0.10.0
 ---------------

@@ -10,6 +10,8 @@ import io
 import json
 import logging
 import os
+import re
+
 import requests
 
 from requests.auth import HTTPBasicAuth
@@ -369,6 +371,30 @@ def is_training_data_empty(X):
     return X.shape[0] == 0
 
 
+def list_routes(app):
+    """List all available routes of a flask web server."""
+    from six.moves.urllib.parse import unquote
+    from flask import url_for
+
+    output = {}
+    with app.test_request_context():
+        for rule in app.url_map.iter_rules():
+
+            options = {}
+            for arg in rule.arguments:
+                options[arg] = "[{0}]".format(arg)
+
+            methods = ', '.join(rule.methods)
+
+            url = url_for(rule.endpoint, **options)
+            line = unquote(
+                "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
+            output[url] = line
+
+        url_table = "\n".join(output[url] for url in sorted(output))
+        logger.debug("Available web server routes: \n{}".format(url_table))
+
+
 def zip_folder(folder):
     """Create an archive from a folder."""
     import tempfile
@@ -499,6 +525,27 @@ def read_endpoint_config(filename, endpoint_type):
         return EndpointConfig.from_dict(content[endpoint_type])
     else:
         return None
+
+
+def is_limit_reached(num_messages, limit):
+    return limit is not None and num_messages >= limit
+
+
+def read_lines(filename, max_line_limit=None, line_pattern=".*"):
+    """Read messages from the command line and print bot responses."""
+
+    line_filter = re.compile(line_pattern)
+
+    with io.open(filename, 'r') as f:
+        num_messages = 0
+        for line in f:
+            m = line_filter.match(line)
+            if m is not None:
+                yield m.group(1 if m.lastindex else 0)
+                num_messages += 1
+
+            if is_limit_reached(num_messages, max_line_limit):
+                break
 
 
 class EndpointConfig(object):

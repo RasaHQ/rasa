@@ -4,16 +4,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
-import logging
 
 from builtins import str
 
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.channels import online
-from rasa_core.interpreter import RasaNLUInterpreter, RegexInterpreter
-from rasa_core.featurizers import \
-    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
+from rasa_core.training import online
+from rasa_core.featurizers import (
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 
@@ -96,7 +94,6 @@ def create_argument_parser():
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
-                         use_online_learning=False,
                          nlu_model_path=None,
                          endpoints=None,
                          max_history=None,
@@ -109,11 +106,12 @@ def train_dialogue_model(domain_file, stories_file, output_path,
 
     agent = Agent(domain_file,
                   action_endpoint=action_endpoint,
+                  interpreter=nlu_model_path,
                   policies=[
-                    MemoizationPolicy(max_history=max_history),
-                    KerasPolicy(MaxHistoryTrackerFeaturizer(
-                            BinarySingleStateFeaturizer(),
-                            max_history=max_history))])
+                      MemoizationPolicy(max_history=max_history),
+                      KerasPolicy(MaxHistoryTrackerFeaturizer(
+                              BinarySingleStateFeaturizer(),
+                              max_history=max_history))])
 
     data_load_args, kwargs = utils.extract_args(kwargs,
                                                 {"use_story_concatenation",
@@ -121,20 +119,10 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "augmentation_factor",
                                                  "remove_duplicates",
                                                  "debug_plots"})
+
     training_data = agent.load_data(stories_file, **data_load_args)
-
-    if use_online_learning:
-        if nlu_model_path:
-            agent.interpreter = RasaNLUInterpreter(nlu_model_path)
-        else:
-            agent.interpreter = RegexInterpreter()
-
     agent.train(training_data, **kwargs)
-
     agent.persist(output_path, dump_flattened_stories)
-
-    if use_online_learning:
-        online.serve_application(agent)
 
     return agent
 
@@ -155,12 +143,14 @@ if __name__ == '__main__':
         "debug_plots": cmdline_args.debug_plots
     }
 
-    train_dialogue_model(cmdline_args.domain,
-                         cmdline_args.stories,
-                         cmdline_args.out,
-                         cmdline_args.online,
-                         cmdline_args.nlu,
-                         cmdline_args.endpoints,
-                         cmdline_args.history,
-                         cmdline_args.dump_stories,
-                         additional_arguments)
+    agent = train_dialogue_model(cmdline_args.domain,
+                                 cmdline_args.stories,
+                                 cmdline_args.out,
+                                 cmdline_args.nlu,
+                                 cmdline_args.endpoints,
+                                 cmdline_args.history,
+                                 cmdline_args.dump_stories,
+                                 additional_arguments)
+
+    if cmdline_args.online:
+        online.serve_agent(agent)

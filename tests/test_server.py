@@ -16,7 +16,7 @@ from freezegun import freeze_time
 from pytest_localserver.http import WSGIServer
 
 import rasa_core
-from rasa_core import server, events
+from rasa_core import server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
@@ -62,6 +62,8 @@ def test_version(app):
     content = response.get_json()
     assert response.status_code == 200
     assert content.get("version") == rasa_core.__version__
+    assert (content.get(
+        "minimum_compatible_version") == constants.MINIMUM_COMPATIBLE_VERSION)
 
 
 @freeze_time("2018-01-01")

@@ -3,9 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import contextlib
 import io
+import itertools
+import os
+import sys
 
 import jsonpickle
+import six
 
 from rasa_core.domain import TemplateDomain
 from rasa_core.trackers import DialogueStateTracker
@@ -35,3 +40,34 @@ def write_text_to_file(tmpdir, filename, text):
     with io.open(path, "w") as f:
         f.write(text)
     return path
+
+
+@contextlib.contextmanager
+def cwd(path):
+    CWD = os.getcwd()
+
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(CWD)
+
+
+@contextlib.contextmanager
+def mocked_cmd_input(package, text):
+    if isinstance(text, six.string_types):
+        text = [text]
+
+    text_generator = itertools.cycle(text)
+    i = package.input
+
+    def mocked_input(_=None):
+        value = text_generator.next()
+        print("wrote '{}' to input".format(value))
+        return value
+
+    package.input = mocked_input
+    try:
+        yield
+    finally:
+        package.input = i

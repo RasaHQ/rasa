@@ -93,7 +93,6 @@ def trained_moodbot_path():
             domain_file="examples/moodbot/domain.yml",
             stories_file="examples/moodbot/data/stories.md",
             output_path=model_path,
-            use_online_learning=False,
             nlu_model_path=None,
             max_history=None,
             kwargs=None
