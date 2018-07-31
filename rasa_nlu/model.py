@@ -25,6 +25,8 @@ from rasa_nlu.utils import create_dir, write_json_to_file
 
 logger = logging.getLogger(__name__)
 
+MINIMUM_COMPATIBLE_VERSION = "0.13.0a2"
+
 
 class InvalidProjectError(Exception):
     """Raised when a model failed to load.
@@ -254,11 +256,14 @@ class Interpreter(object):
         return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
 
     @staticmethod
-    def ensure_model_compatibility(metadata):
+    def ensure_model_compatibility(metadata, version_to_check=None):
         from packaging import version
 
+        if version_to_check is None:
+            version_to_check = MINIMUM_COMPATIBLE_VERSION
+
         model_version = metadata.get("rasa_nlu_version", "0.0.0")
-        if version.parse(model_version) < version.parse("0.13.0a2"):
+        if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
                 "The model version is to old to be "
                 "loaded by this Rasa NLU instance. "
