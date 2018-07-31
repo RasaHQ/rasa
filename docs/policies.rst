@@ -137,7 +137,7 @@ Keras Policy
 
 The ``KerasPolicy`` uses a neural network implemented in `Keras <http://keras.io>`_ to
 select the next action.
-The deafult architecture is based on an LSTM, but you can override the 
+The default architecture is based on an LSTM, but you can override the 
 ``KerasPolicy.model_architecture`` method to implement your own architecture. 
 
 
