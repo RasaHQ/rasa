@@ -351,7 +351,7 @@ def create_app(model_directory,  # type: Optional[Text]
 
         try:
             # Fetches the appropriate bot response in a json format
-            responses = agent().continue_training(tracker,
+            responses = agent().continue_training([tracker],
                                                   epochs=epochs,
                                                   batch_size=batch_size)
             return jsonify(responses)

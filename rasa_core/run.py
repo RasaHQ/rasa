@@ -11,14 +11,9 @@ from threading import Thread
 from builtins import str
 from gevent.pywsgi import WSGIServer
 
-from rasa_core import utils, server
-from rasa_core.channels import RestInput, console
-from rasa_core.channels.facebook import FacebookInput
-from rasa_core.channels.mattermost import MattermostInput
-from rasa_core.channels.slack import SlackInput
-from rasa_core.channels.telegram import TelegramInput
-from rasa_core.channels.twilio import TwilioInput
 from rasa_core import constants
+from rasa_core import utils, server
+from rasa_core.channels import console
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     RasaNLUHttpInterpreter)
@@ -108,6 +103,7 @@ def _create_external_channel(channel, credentials_file):
     # the commandline input channel is the only one that doesn't need any
     # credentials
     if channel == "cmdline":
+        from rasa_core.channels import RestInput
         return RestInput()
 
     if credentials_file is None:
@@ -116,26 +112,36 @@ def _create_external_channel(channel, credentials_file):
     credentials = read_yaml_file(credentials_file)
 
     if channel == "facebook":
+        from rasa_core.channels.facebook import FacebookInput
+
         return FacebookInput(
                 credentials.get("verify"),
                 credentials.get("secret"),
                 credentials.get("page-access-token"))
     elif channel == "slack":
+        from rasa_core.channels.slack import SlackInput
+
         return SlackInput(
                 credentials.get("slack_token"),
                 credentials.get("slack_channel"))
     elif channel == "telegram":
+        from rasa_core.channels.telegram import TelegramInput
+
         return TelegramInput(
                 credentials.get("access_token"),
                 credentials.get("verify"),
                 credentials.get("webhook_url"))
     elif channel == "mattermost":
+        from rasa_core.channels.mattermost import MattermostInput
+
         return MattermostInput(
                 credentials.get("url"),
                 credentials.get("team"),
                 credentials.get("user"),
                 credentials.get("pw"))
     elif channel == "twilio":
+        from rasa_core.channels.twilio import TwilioInput
+
         return TwilioInput(
                 credentials.get("account_sid"),
                 credentials.get("auth_token"),

@@ -86,6 +86,10 @@ def create_argument_parser():
             default=False,
             action='store_true',
             help="If enabled, save flattened stories to a file")
+    parser.add_argument(
+            '--endpoints',
+            default=None,
+            help="Configuration file for the connectors as a yml file")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -94,16 +98,22 @@ def create_argument_parser():
 def train_dialogue_model(domain_file, stories_file, output_path,
                          use_online_learning=False,
                          nlu_model_path=None,
+                         endpoints=None,
                          max_history=None,
                          dump_flattened_stories=False,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
 
-    agent = Agent(domain_file, policies=[
-        MemoizationPolicy(max_history=max_history),
-        KerasPolicy(MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                                max_history=max_history))])
+    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
+
+    agent = Agent(domain_file,
+                  action_endpoint=action_endpoint,
+                  policies=[
+                    MemoizationPolicy(max_history=max_history),
+                    KerasPolicy(MaxHistoryTrackerFeaturizer(
+                            BinarySingleStateFeaturizer(),
+                            max_history=max_history))])
 
     data_load_args, kwargs = utils.extract_args(kwargs,
                                                 {"use_story_concatenation",
@@ -150,6 +160,7 @@ if __name__ == '__main__':
                          cmdline_args.out,
                          cmdline_args.online,
                          cmdline_args.nlu,
+                         cmdline_args.endpoints,
                          cmdline_args.history,
                          cmdline_args.dump_stories,
                          additional_arguments)

@@ -46,10 +46,11 @@ class Agent(object):
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Union[NLI, Text, None]
             generator=None,  # type: Union[EndpointConfig, NLG]
-            tracker_store=None  # type: Optional[TrackerStore]
+            tracker_store=None,  # type: Optional[TrackerStore]
+            action_endpoint=None,  # type: Optional[EndpointConfig]
     ):
         # Initializing variables with the passed parameters.
-        self.domain = self._create_domain(domain)
+        self.domain = self._create_domain(domain, action_endpoint)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
@@ -60,9 +61,9 @@ class Agent(object):
     def load(cls,
              path,  # type: Text
              interpreter=None,  # type: Union[NLI, Text, None]
+             generator=None,  # type: Union[EndpointConfig, NLG]
              tracker_store=None,  # type: Optional[TrackerStore]
              action_endpoint=None,  # type: Optional[EndpointConfig]
-             generator=None  # type: Union[EndpointConfig, NLG]
              ):
         # type: (...) -> Agent
         """Load a persisted model from the passed path."""
@@ -85,7 +86,8 @@ class Agent(object):
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
 
-        return cls(domain, ensemble, interpreter, generator, tracker_store)
+        return cls(domain, ensemble, interpreter,
+                   generator, tracker_store, action_endpoint)
 
     def handle_message(
             self,
@@ -373,11 +375,11 @@ class Agent(object):
                 self.tracker_store, self.nlg, message_preprocessor=preprocessor)
 
     @staticmethod
-    def _create_domain(domain):
+    def _create_domain(domain, action_endpoint=None):
         # type: (Union[Domain, Text]) -> Domain
 
         if isinstance(domain, string_types):
-            return TemplateDomain.load(domain)
+            return TemplateDomain.load(domain, action_endpoint)
         elif isinstance(domain, Domain):
             return domain
         else:

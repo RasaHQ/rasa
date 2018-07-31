@@ -123,7 +123,7 @@ def send_message(endpoint, sender_id, message, parse_data=None):
         "parse_data": parse_data
     }
 
-    r = endpoint.request(payload,
+    r = endpoint.request(json=payload,
                          method="post",
                          subpath="/conversations/{}/messages".format(sender_id))
 
@@ -166,7 +166,7 @@ def send_action(endpoint, sender_id, action_name):
     payload = {"action": action_name}
     subpath = "/conversations/{}/execute".format(sender_id)
 
-    r = endpoint.request(payload,
+    r = endpoint.request(json=payload,
                          method="post",
                          subpath=subpath)
 
@@ -182,7 +182,7 @@ def send_events(endpoint, sender_id, events):
     # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
-    r = endpoint.request(events,
+    r = endpoint.request(json=events,
                          method="put",
                          subpath=subpath)
 
@@ -197,7 +197,7 @@ def send_events(endpoint, sender_id, events):
 def send_finetune(endpoint, events):
     # type: (EndpointConfig, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
-    r = endpoint.request(events,
+    r = endpoint.request(json=events,
                          method="post",
                          subpath="/model/finetune")
 
@@ -345,6 +345,8 @@ def record_messages(endpoint,
                          "Is the server running?".format(endpoint.url))
         return
 
+    intents = [next(iter(i)) for i in (domain.get("intents") or [])]
+
     num_messages = 0
     finished = False
     while (not finished and
@@ -356,7 +358,7 @@ def record_messages(endpoint,
 
         send_message(endpoint, sender_id, text)
         finished = predict_till_next_listen(endpoint,
-                                            domain.get("intents"),
+                                            intents,
                                             sender_id)
 
         num_messages += 1

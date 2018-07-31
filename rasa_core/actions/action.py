@@ -4,14 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-import os
 
 import requests
 import typing
-from requests.auth import HTTPBasicAuth
 from typing import List, Text, Optional
 
-from rasa_core import events, utils
+from rasa_core import events
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -219,7 +217,7 @@ class RemoteAction(Action):
                             "".format(self.name()))
 
         try:
-            response = self.action_endpoint.request(json, method="post")
+            response = self.action_endpoint.request(json=json, method="post")
             response.raise_for_status()
             response_data = response.json()
 
