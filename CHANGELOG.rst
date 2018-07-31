@@ -59,6 +59,8 @@ Added
 - added ability to create domain from yaml string and export a domain to a yaml string
 - added server endpoint to fetch domain as json or yaml
 - new default action ActionDefaultFallback
+- event streaming to a ``RabbitMQ`` message broker using ``Pika``
+- docs section on event brokers
 
 Changed
 -------

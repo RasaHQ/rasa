@@ -392,9 +392,9 @@ class Agent(object):
             return domain
         else:
             raise ValueError(
-                    "Invalid param `domain`. Expected a path to a domain "
-                    "specification or a domain instance. But got "
-                    "type '{}' with value '{}'".format(type(domain), domain))
+                "Invalid param `domain`. Expected a path to a domain "
+                "specification or a domain instance. But got "
+                "type '{}' with value '{}'".format(type(domain), domain))
 
     @staticmethod
     def create_tracker_store(store, domain):
