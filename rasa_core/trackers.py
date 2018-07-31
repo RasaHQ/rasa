@@ -8,12 +8,10 @@ import io
 import logging
 from collections import deque
 
-import jsonpickle
 import typing
 from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
-from rasa_core import utils
 from rasa_core import events
 from rasa_core.conversation import Dialogue
 from rasa_core.events import UserUttered, ActionExecuted, \
@@ -32,7 +30,7 @@ class DialogueStateTracker(object):
 
     @classmethod
     def from_dict(cls, sender_id, dump_as_dict, domain):
-        # type: (Text, List[Dict[Text, Any]]) -> DialogueStateTracker
+        # type: (Text, List[Dict[Text, Any]], Domain) -> DialogueStateTracker
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
@@ -191,6 +189,7 @@ class DialogueStateTracker(object):
     def applied_events(self):
         # type: () -> List[Event]
         """Returns all actions that should be applied - w/o reverted events."""
+
         def undo_till_previous(event_type, done_events):
             """Removes events from `done_events` until `event_type` is found."""
             # list gets modified - hence we need to copy events!

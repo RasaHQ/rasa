@@ -55,6 +55,7 @@ install_requires = [
     'twilio~=6.0',
     'mattermostwrapper~=2.0',
     'colorhash~=1.0',
+    'responses~=0.9.0'
 ]
 
 extras_requires = {

@@ -9,6 +9,7 @@ pytest-cov==2.5.1
 pytest_localserver==0.4.1
 treq==17.8.0
 freezegun==0.3.10
+responses==0.9.0
 
 # other
 matplotlib==2.2.2

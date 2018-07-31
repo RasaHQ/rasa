@@ -274,9 +274,8 @@ class RemoteAgent(object):
                     logger.error("Rasa Core did not return an action. "
                                  "Response: {}".format(response))
                     break
-
-        except Exception:
-            logger.exception("Failed to process message.")
+        except Exception as e:
+            logger.exception("Failed to process message:\n{}".format(e))
         else:
             logger.info("Done processing message")
 
@@ -285,7 +284,8 @@ class RemoteAgent(object):
              path,  # type: Text
              core_endpoint,  # type: EndpointConfig
              nlg_endpoint=None,  # type: EndpointConfig
-             action_factory=None  # type: Optional[Text]
+             action_factory=None,  # type: Optional[Text]
+             max_retries=5  # type: int
              ):
         # type: (...) -> RemoteAgent
 
@@ -299,6 +299,6 @@ class RemoteAgent(object):
                                      action_factory)
 
         core_client = RasaCoreClient(core_endpoint)
-        core_client.upload_model(path, max_retries=5)
+        core_client.upload_model(path, max_retries=max_retries)
 
         return RemoteAgent(domain, core_client, nlg_endpoint)

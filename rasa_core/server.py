@@ -15,13 +15,15 @@ from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
 from gevent.pywsgi import WSGIServer
-from typing import Union, Text, Optional
+from typing import Text, Optional
+from typing import Union
 
 from rasa_core import utils, events, run
 from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import EndpointConfig
 from rasa_core.version import __version__
 
 if typing.TYPE_CHECKING:
@@ -34,41 +36,40 @@ def create_argument_parser():
     """Parse all the command line arguments for the server script."""
 
     parser = argparse.ArgumentParser(
-            description='starts server to serve an agent')
+        description='starts server to serve an agent')
     parser.add_argument(
-            '-d', '--core',
-            required=True,
-            type=str,
-            help="core model to run with the server")
+        '-d', '--core',
+        required=True,
+        type=str,
+        help="core model directory to run with the server")
     parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            help="nlu model to run with the server")
+        '-s', '--model_server',
+        type=str,
+        help="URL from which to pull a Core models")
     parser.add_argument(
-            '-p', '--port',
-            type=int,
-            default=5005,
-            help="port to run the server at")
+        '-u', '--nlu',
+        type=str,
+        help="nlu model to run with the server")
     parser.add_argument(
-            '--cors',
-            nargs='*',
-            type=str,
-            help="enable CORS for the passed origin. "
-                 "Use * to whitelist all origins")
+        '-p', '--port',
+        type=int,
+        default=5005,
+        help="port to run the server at")
     parser.add_argument(
-            '--auth_token',
-            type=str,
-            help="Enable token-based authentication. Requests need to provide "
-                 "the token to be accepted.")
+        '--cors',
+        nargs='*',
+        type=str,
+        help="enable CORS for the passed origin. "
+             "Use * to whitelist all origins")
     parser.add_argument(
-            '-o', '--log_file',
-            type=str,
-            default="rasa_core.log",
-            help="store log file in specified file")
+        '-o', '--log_file',
+        type=str,
+        default="rasa_core.log",
+        help="store log file in specified file")
     parser.add_argument(
-            '--endpoints',
-            default=None,
-            help="Configuration file for the connectors as a yml file")
+        '--endpoints',
+        default=None,
+        help="Configuration file for the connectors as a yml file")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -83,9 +84,9 @@ def ensure_loaded_agent(agent):
             __agent = agent()
             if not __agent:
                 return Response(
-                        "No agent loaded. To continue processing, a model "
-                        "of a trained agent needs to be loaded.",
-                        status=503)
+                    "No agent loaded. To continue processing, a model "
+                    "of a trained agent needs to be loaded.",
+                    status=503)
 
             return f(*args, **kwargs)
 
@@ -139,7 +140,8 @@ def _create_agent(
         interpreter,  # type: Union[Text,NLI,None]
         action_factory=None,  # type: Optional[Text]
         tracker_store=None,  # type: Optional[TrackerStore]
-        generator=None
+        model_server=None,  # type: Optional[EndpointConfig]
+        generator=None # type: Optional[EndpointConfig]
 ):
     # type: (...) -> Optional[Agent]
     try:
@@ -147,6 +149,7 @@ def _create_agent(
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
                           action_factory=action_factory,
+                          model_server=model_server,
                           generator=generator)
     except Exception as e:
         logger.warn("Failed to load any agent model. Running "
@@ -174,21 +177,25 @@ def create_app(model_directory,  # type: Text
 
     if not cors_origins:
         cors_origins = []
+
     model_directory = model_directory
 
     nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
 
     nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
 
+    model_endpoint = utils.read_endpoint_config(endpoints, "model")
+
     tracker_store = tracker_store
 
     action_factory = action_factory
 
-    _interpreter = run.interpreter_from_args(interpreter, nlu_endpoint)
+    interpreter = run.interpreter_from_args(interpreter, nlu_endpoint)
 
     # this needs to be an array, so we can modify it in the nested functions...
-    _agent = [_create_agent(model_directory, _interpreter,
-                            action_factory, tracker_store, nlg_endpoint)]
+    _agent = [_create_agent(model_directory, interpreter,
+                            action_factory, tracker_store,
+                            model_endpoint, nlg_endpoint)]
 
     def agent():
         if _agent and _agent[0]:
@@ -291,8 +298,8 @@ def create_app(model_directory,  # type: Text
 
         # dump and return tracker
         state = tracker.current_state(
-                should_include_events=should_include_events,
-                only_events_after_latest_restart=use_history)
+            should_include_events=should_include_events,
+            only_events_after_latest_restart=use_history)
         return jsonify(state)
 
     @app.route("/conversations/<sender_id>/tracker",
@@ -351,9 +358,9 @@ def create_app(model_directory,  # type: Text
             message = request_params.pop('q')
         else:
             return Response(
-                    jsonify(error="Invalid parse parameter specified."),
-                    status=400,
-                    mimetype="application/json")
+                jsonify(error="Invalid parse parameter specified."),
+                status=400,
+                mimetype="application/json")
 
         try:
             # Fetches the predicted action in a json format
@@ -425,7 +432,7 @@ def create_app(model_directory,  # type: Text
         zip_ref.extractall(model_directory)
         zip_ref.close()
         logger.debug("Unzipped model to {}".format(
-                os.path.abspath(model_directory)))
+            os.path.abspath(model_directory)))
 
         _agent[0] = _create_agent(model_directory, interpreter,
                                   action_factory, tracker_store, nlg_endpoint)

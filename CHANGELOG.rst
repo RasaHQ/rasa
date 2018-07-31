@@ -61,6 +61,9 @@ Added
 - new default action ActionDefaultFallback
 - event streaming to a ``RabbitMQ`` message broker using ``Pika``
 - docs section on event brokers
+- ``Agent()`` class supports a ``model_server`` ``EndpointConfig``, which it regularly queries to fetch dialogue models
+- this can be used with ``rasa_core.server`` with the ``--endpoint`` option (the key for this the model server config is ``model``)
+- docs on model fetching from a URL
 
 Changed
 -------

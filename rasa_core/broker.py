@@ -31,10 +31,13 @@ class PikaProducer(EventChannel):
         self._close()
 
     def _open_connection(self):
-        self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(self.host, credentials=self.credentials))
+        parameters = pika.ConnectionParameters(self.host,
+                                               credentials=self.credentials,
+                                               connection_attempts=20,
+                                               retry_delay=5)
+        self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
-        self.channel.queue_declare(self.queue)
+        self.channel.queue_declare(self.queue, durable=True)
 
     def _publish(self, body):
         self.channel.basic_publish('', self.queue, body)
