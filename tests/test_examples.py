@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import functools
 import os
 import sys
 
@@ -49,6 +50,7 @@ def test_concerts_online_example(tmpdir):
 
     with utilities.cwd("examples/concertbot"):
         msgs = iter(["/greet", "/greet", "/greet"])
+        msgs_f = functools.partial(next, msgs)
 
         with utilities.mocked_cmd_input(
                 utils,
@@ -64,7 +66,7 @@ def test_concerts_online_example(tmpdir):
             responses = agent.handle_text("/greet", sender_id="user1")
             assert responses[-1]['text'] == "hey there!"
 
-            online.serve_agent(agent, get_next_message=msgs.next)
+            online.serve_agent(agent, get_next_message=msgs_f)
 
             # the model should have been retrained and the model should now
             # directly respond with goodbye

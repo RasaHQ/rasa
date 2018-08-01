@@ -62,7 +62,7 @@ def mocked_cmd_input(package, text):
     i = package.input
 
     def mocked_input(_=None):
-        value = text_generator.next()
+        value = next(text_generator)
         print("wrote '{}' to input".format(value))
         return value
 
