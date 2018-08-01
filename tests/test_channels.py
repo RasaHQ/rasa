@@ -8,6 +8,7 @@ from builtins import str
 
 from rasa_core.channels import console
 from tests import utilities
+import json
 
 
 def test_console_input():
@@ -30,5 +31,5 @@ def test_console_input():
         assert (httpretty.latest_requests[-1].path ==
                 "/webhooks/rest/webhook?stream=true&token=")
 
-        assert (httpretty.latest_requests[-1].body ==
-                str("""{"message": "Test Input", "sender": "default"}"""))
+        assert (json.loads(httpretty.latest_requests[-1].body) ==
+                {"message": "Test Input", "sender": "default"})
