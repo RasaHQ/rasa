@@ -101,4 +101,5 @@ The Rasa Core dialogue engine
    :caption: Developer Documentation
 
    migrations
+   brokers
    changelog

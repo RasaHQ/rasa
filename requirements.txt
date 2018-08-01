@@ -28,3 +28,4 @@ python-telegram-bot==10.1.0
 twilio==6.14.0
 mattermostwrapper==2.1
 colorhash==1.0.2
+pika==0.11.2

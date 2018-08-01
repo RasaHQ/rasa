@@ -147,7 +147,8 @@ def request_prediction(endpoint, sender_id):
 
 def retrieve_domain(endpoint):
     r = endpoint.request(method="get",
-                         subpath="/domain")
+                         subpath="/domain",
+                         headers={"Accept": "application/json"})
 
     r.raise_for_status()
 
@@ -195,7 +196,7 @@ def send_finetune(endpoint, events):
 
     r = endpoint.request(json=events,
                          method="post",
-                         subpath="/model/finetune")
+                         subpath="/finetune")
 
     r.raise_for_status()
 

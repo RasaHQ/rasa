@@ -3,21 +3,25 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
+import itertools
+import json
 import logging
 
 import six.moves.cPickle as pickler
 from typing import Text, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.broker import EventChannel
 from rasa_core.trackers import DialogueStateTracker, ActionExecuted
 
 logger = logging.getLogger(__name__)
 
 
 class TrackerStore(object):
-    def __init__(self, domain):
+    def __init__(self, domain, event_broker=None):
+        # type: (Domain, Optional[EventChannel]) -> None
         self.domain = domain
+        self.event_broker = event_broker
 
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
@@ -47,6 +51,18 @@ class TrackerStore(object):
         # type: (Text) -> Optional[DialogueStateTracker]
         raise NotImplementedError()
 
+    def stream_events(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        old_tracker = self.retrieve(tracker.sender_id)
+        offset = len(old_tracker.events) if old_tracker else 0
+        evts = tracker.events
+        for evt in list(itertools.islice(evts, offset, len(evts))):
+            body = {
+                "sender_id": tracker.sender_id,
+            }
+            body.update(evt.as_dict())
+            self.event_broker.publish(json.dumps(body))
+
     def keys(self):
         # type: (Text) -> List[Text]
         raise NotImplementedError()
@@ -64,12 +80,13 @@ class TrackerStore(object):
 
 
 class InMemoryTrackerStore(TrackerStore):
-    def __init__(self, domain):
-
+    def __init__(self, domain, event_broker=None):
         self.store = {}
-        super(InMemoryTrackerStore, self).__init__(domain)
+        super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
     def save(self, tracker):
+        if self.event_broker:
+            self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
@@ -88,7 +105,6 @@ class InMemoryTrackerStore(TrackerStore):
 
 
 class RedisTrackerStore(TrackerStore):
-
     def keys(self):
         pass
 

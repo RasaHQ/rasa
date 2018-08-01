@@ -59,6 +59,11 @@ Added
 - added ability to create domain from yaml string and export a domain to a yaml string
 - added server endpoint to fetch domain as json or yaml
 - new default action ActionDefaultFallback
+- event streaming to a ``RabbitMQ`` message broker using ``Pika``
+- docs section on event brokers
+- ``Agent()`` class supports a ``model_server`` ``EndpointConfig``, which it regularly queries to fetch dialogue models
+- this can be used with ``rasa_core.server`` with the ``--endpoint`` option (the key for this the model server config is ``model``)
+- docs on model fetching from a URL
 
 Changed
 -------

@@ -12,7 +12,9 @@ from functools import wraps
 import typing
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
-from typing import Union, Text, Optional, List
+from typing import List
+from typing import Text, Optional
+from typing import Union
 
 from rasa_core import utils, constants
 from rasa_core.agent import Agent
@@ -87,7 +89,8 @@ def _create_agent(
         interpreter,  # type: Union[Text, NLI, None]
         action_endpoint=None,  # type: Optional[EndpointConfig]
         tracker_store=None,  # type: Optional[TrackerStore]
-        generator=None
+        generator=None,  # type: Optional[EndpointConfig]
+        model_server=None,  # type: Optional[EndpointConfig]
 ):
     # type: (...) -> Optional[Agent]
     try:
@@ -95,6 +98,7 @@ def _create_agent(
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
                           action_endpoint=action_endpoint,
+                          model_server=model_server,
                           generator=generator)
     except Exception as e:
         logger.error("Failed to load any agent model. Running "
@@ -126,11 +130,13 @@ def create_app(model_directory=None,  # type: Optional[Text]
 
     action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
 
-    _interpreter = run.interpreter_from_args(interpreter, nlu_endpoint)
+    model_endpoint = utils.read_endpoint_config(endpoints, "models")
+
+    interpreter = run.interpreter_from_args(interpreter, nlu_endpoint)
 
     # this needs to be an array, so we can modify it in the nested functions...
-    _agent = [_create_agent(model_directory, _interpreter, action_endpoint,
-                            tracker_store, nlg_endpoint)]
+    _agent = [_create_agent(model_directory, interpreter, action_endpoint,
+                            tracker_store, nlg_endpoint, model_endpoint)]
 
     def agent():
         if _agent and _agent[0]:
@@ -381,7 +387,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 
-    @app.route("/model/domain",
+    @app.route("/domain",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
@@ -405,7 +411,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
                     Make sure you've set the appropriate Accept header.""",
                     status=406)
 
-    @app.route("/model/finetune",
+    @app.route("/finetune",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
