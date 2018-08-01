@@ -123,7 +123,7 @@ def plot_histogram(hist_data):  # pragma: no cover
     plt.xlabel('Confidence')
     plt.ylabel('Number of Samples')
     fig = plt.gcf()
-    fig.set_size_inches(15, 15)
+    fig.set_size_inches(10, 10)
     fig.savefig(cmdline_args.histogram, bbox_inches='tight')
 
 
@@ -154,7 +154,7 @@ def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     return report, precision, f1, accuracy
 
 
-def remove_empty_intent_examples(targets, predictions):
+def remove_empty_intent_examples(targets, predictions, messages, confidences):
     """Removes those examples without intent."""
 
     targets = np.array(targets)
@@ -195,14 +195,15 @@ def show_nlu_errors(targets, preds, messages, conf):  # pragma: no cover
     """Log messages which result in wrong predictions and save them to file"""
 
     errors = {}
-    errors['nlu'] = [
+    # it could also be interesting to include entity-errors later, therefore we start with a "intent_errors" key
+    errors['intent_errors'] = [
         {"text": messages[i],
             "true_label": targets[i],
             "prediction": preds[i],
             "confidence": conf[i]}
         for i in range(len(messages)) if not (targets[i] == preds[i])]
 
-    if errors['nlu']:
+    if errors['intent_errors']:
         errors = json.dumps(errors, indent=4)
         logger.info("\n\nThese intent examples could not be classified "
                     "correctly \n{}".format(errors))
@@ -242,7 +243,7 @@ def evaluate_intents(targets, preds, messages, conf):  # pragma: no cover
                           title='Intent Confusion matrix')
     # save confusion matrix to file before showing it
     fig = plt.gcf()
-    fig.set_size_inches(15, 15)
+    fig.set_size_inches(10, 10)
     fig.savefig(cmdline_args.confmat, bbox_inches='tight')
 
     plt.show()
@@ -772,8 +773,6 @@ def return_entity_results(results, dataset_name):
 
 
 def main():
-    parser = create_argument_parser()
-    cmdline_args = parser.parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
@@ -812,4 +811,6 @@ def main():
 
 
 if __name__ == '__main__':  # pragma: no cover
+    parser = create_argument_parser()
+    cmdline_args = parser.parse_args()
     main()
