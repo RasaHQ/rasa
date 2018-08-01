@@ -135,7 +135,8 @@ html_theme_options = {
     'github_user': 'RasaHQ',
     'github_repo': 'rasa_nlu',
     'fixed_sidebar': True,
-    'product': "NLU"
+    'product': 'NLU',
+    'base_url': 'https://rasa.com/docs/nlu/master/'
 }
 #html_theme_options = {}
 
