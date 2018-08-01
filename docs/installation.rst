@@ -14,7 +14,7 @@ Setting up Rasa NLU
 ~~~~~~~~~~~~~~~~~~~
 The recommended way to install Rasa NLU is using pip:
 
-.. code-block:: bash
+.. copyable::
 
     pip install rasa_nlu
 
