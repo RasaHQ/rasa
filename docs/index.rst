@@ -37,8 +37,8 @@ You can see an independent benchmark comparing Rasa NLU to various closed source
    :caption: Getting Started
    :hidden:
 
+   Try It Out <quickstart>
    installation
-   quickstart
 
 
 .. toctree::

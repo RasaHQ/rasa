@@ -41,7 +41,8 @@ extensions = [
     'sphinxcontrib.httpdomain',
     'rasabaster.button',
     'rasabaster.card',
-    'rasabaster.copyable'
+    'rasabaster.copyable',
+    'rasabaster.runnable'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
