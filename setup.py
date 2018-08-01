@@ -24,6 +24,7 @@ tests_requires = [
     "matplotlib~=2.0",
     "pygraphviz~=1.0",
     "responses~=0.9.0",
+    "httpretty~=0.9.0"
 ]
 
 install_requires = [
