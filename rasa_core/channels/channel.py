@@ -65,12 +65,6 @@ class OutputChannel(object):
 
         self.send_text_message(recipient_id, "Image: {}".format(image_url))
 
-    def send_attachment(self, recipient_id, attachment):
-        # type: (Text, Text) -> None
-        """Sends an attachment. Default will just post the attachment as a string."""
-        
-        self.send_text_message(recipient_id, "Attachment: {}".format(attachment))
-
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
         # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
         """Sends buttons to the output.

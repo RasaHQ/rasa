@@ -27,7 +27,7 @@ class SlackBot(SlackClient, OutputChannel):
 
     def send_text_message(self, recipient_id, message):
         recipient = self.slack_channel or recipient_id
-        return super(SlackBot, self).api_call("chat.postMessage",
+        super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
                                        as_user=True, text=message)
 
@@ -35,17 +35,10 @@ class SlackBot(SlackClient, OutputChannel):
         image_attachment = [{"image_url": image_url,
                              "text": message}]
         recipient = self.slack_channel or recipient_id
-        return super(SlackBot, self).api_call("chat.postMessage",
+        super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
                                        as_user=True,
                                        attachments=image_attachment)
-
-    def send_attachment(self, recipient_id, attachment, message=""):
-        recipient = self.slack_channel or recipient_id
-        return super(SlackBot, self).api_call("chat.postMessage",
-                                       channel=recipient,
-                                       as_user=True, text=message,
-                                       attachments=attachment)
 
     def _convert_to_slack_buttons(self, buttons):
         return [{"text": b['title'],
@@ -70,6 +63,7 @@ class SlackBot(SlackClient, OutputChannel):
                                        as_user=True,
                                        text=message,
                                        attachments=button_attachment)
+
 
 class SlackInput(HttpInputComponent):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
