@@ -31,5 +31,6 @@ def test_console_input():
         assert (httpretty.latest_requests[-1].path ==
                 "/webhooks/rest/webhook?stream=true&token=")
 
-        assert (json.loads(str(httpretty.latest_requests[-1].body)) ==
-                {"message": "Test Input", "sender": "default"})
+        b = httpretty.latest_requests[-1].body.decode("utf-8")
+
+        assert json.loads(b) == {"message": "Test Input", "sender": "default"}
