@@ -54,9 +54,8 @@ def test_concerts_online_example(tmpdir):
                 utils,
                 text=["2",  # action is wrong
                       "5",  # choose utter_goodbye action
-                      "1"]  # yes action_listen is correct
-                     * 2  # repeat this twice
-                     + [
+                      "1"  # yes, action_listen is correct.
+                      ] * 2 + [  # repeat this twice
                          "0",  # export
                          story_path  # file path to export to
                      ]):
