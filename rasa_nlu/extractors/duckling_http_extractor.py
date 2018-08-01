@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import time
 
 import requests
 import simplejson
@@ -41,6 +42,13 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         # locale - if not set, we will use the language of the model
         "locale": None,
+
+        # timezone like Europe/Berlin - if not set the default timezone of Duckling is going to be used
+        "timezone": None,
+
+        # Reference time ("now") as a timestamp since UNIX epoch
+        # - if not set the current time of the Duckling server is going to be used
+        "reference_time": None
     }
 
     def __init__(self, component_config=None, language=None):
@@ -72,11 +80,16 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         return self.component_config.get("url")
 
-    def _duckling_parse(self, text):
+    def _duckling_parse(self, text, reference_time):
         """Sends the request to the duckling server and parses the result."""
 
         try:
-            payload = {"text": text, "locale": self._locale()}
+            payload = {
+                "text": text,
+                "locale": self._locale(),
+                "tz": self.component_config.get("timezone"),
+                "reftime": reference_time
+            }
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
             response = requests.post(self._url() + "/parse",
@@ -99,17 +112,29 @@ class DucklingHTTPExtractor(EntityExtractor):
                          "Error: {}".format(e))
             return []
 
+    @staticmethod
+    def _reference_time_from_message(message):
+        if message.time is not None:
+            try:
+                return int(message.time)
+            except ValueError as e:
+                logging.warning("Could not parse timestamp {}. Instead "
+                                "current UTC time will be passed to "
+                                "duckling. Error: {}".format(message.time, e))
+        # fallbacks to current time
+        return int(time.time())
+
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
         if self._url() is not None:
-            matches = self._duckling_parse(message.text)
+            matches = self._duckling_parse(message.text, self._reference_time_from_message(message))
             dimensions = self.component_config["dimensions"]
             relevant_matches = filter_irrelevant_matches(matches, dimensions)
             extracted = convert_duckling_format_to_rasa(relevant_matches)
         else:
             extracted = []
-            logger.warn("Duckling HTTP component in pipeline, but no "
+            logger.warning("Duckling HTTP component in pipeline, but no "
                         "`url` configuration in the config "
                         "file nor is `RASA_DUCKLING_HTTP_URL` "
                         "set as an environment variable.")
