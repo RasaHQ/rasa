@@ -55,7 +55,7 @@ def create_argument_parser():
 
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
-    
+
     parser.add_argument('--errors', required=False, default="errors.json",
                         help="output path for the json with wrong predictions")
 
