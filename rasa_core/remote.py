@@ -125,28 +125,6 @@ class RasaCoreClient(object):
                                               response.text))
             return None
 
-    def respond(self, sender_id, message):
-        # type: (Text, Text) -> Optional[Dict[Text, Any]]
-        """Send a parse request to a rasa core server."""
-
-        url = "/conversations/{}/respond".format(sender_id)
-
-        data = json.dumps({"query": message}, ensure_ascii=False)
-
-        response = self.core_endpoint.request(
-                subpath=url,
-                method="post",
-                data=data.encode("utf-8"),
-                headers={'Content-Type': 'application/json; charset=utf-8'}
-        )
-        if response.status_code == 200:
-            return response.json()
-        else:
-            logger.warn("Got a bad response from rasa core :( Status: {} "
-                        "Response: {}".format(response.status_code,
-                                              response.text))
-            return None
-
     def upload_model(self, model_dir, max_retries=1):
         # type: (Text, int) -> Optional[Dict[Text, Any]]
         """Upload a Rasa core model to the remote instance."""
