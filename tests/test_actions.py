@@ -43,11 +43,12 @@ def test_action_factory_module_import():
 def test_domain_action_instantiation():
     instantiated_actions = TemplateDomain.instantiate_actions(
             ["my_module.ActionTest", "utter_test"], None)
-    assert len(instantiated_actions) == 4
+    assert len(instantiated_actions) == 5
     assert instantiated_actions[0].name() == "action_listen"
     assert instantiated_actions[1].name() == "action_restart"
-    assert instantiated_actions[2].name() == "my_module.ActionTest"
-    assert instantiated_actions[3].name() == "utter_test"
+    assert instantiated_actions[2].name() == "action_default_fallback"
+    assert instantiated_actions[3].name() == "my_module.ActionTest"
+    assert instantiated_actions[4].name() == "utter_test"
 
 
 def test_action_factory_fails_on_duplicated_actions():

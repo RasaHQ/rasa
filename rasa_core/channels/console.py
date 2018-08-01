@@ -15,10 +15,6 @@ from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
 
-def is_msg_limit_reached(num_messages, limit):
-    return limit is not None and num_messages >= limit
-
-
 def print_bot_output(message, color=utils.bcolors.OKBLUE):
     utils.print_color(message.get("text"), color)
 
@@ -83,7 +79,7 @@ def record_messages(server_url=DEFAULT_SERVER_URL,
                       utils.bcolors.OKGREEN)
 
     num_messages = 0
-    while not is_msg_limit_reached(num_messages, max_message_limit):
+    while not utils.is_limit_reached(num_messages, max_message_limit):
         text = get_cmd_input()
         if text == exit_text:
             break

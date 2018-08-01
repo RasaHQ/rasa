@@ -36,16 +36,16 @@ For a more complete example domain, check the :doc:`quickstart`.
 Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-If the action server is running with your custom action modules loaded (see
-:ref:`customactions`) you need to add them to the actions list. A custom slot
-needs to be referenced by its module path. For example, if you have a custom
-action called ``my_awesome_action`` and a slot module ``my_slots`` containing
-the ``MyAwesomeSlot`` class, you would add this to your domain file:
+To reference custom actions and slots in your domain,
+you need to reference them by their module path.
+For example, if you have a module called ``my_actions`` containing
+a class ``MyAwesomeAction``, and module ``my_slots`` containing ``MyAwesomeSlot``,
+you would add these lines to the domain file:
 
 .. code-block:: yaml
 
    actions:
-     - my_awesome_action
+     - my_actions.MyAwesomeAction
      ...
 
    slots:
@@ -119,7 +119,7 @@ In custom code, you can retrieve a template by using:
 
       def run(self, dispatcher, tracker, domain):
          # send utter default template to user
-         dispatcher.utter_template("utter_default")
+         dispatcher.utter_template("utter_default", tracker)
          # ... other code
          return []
 
@@ -128,7 +128,7 @@ values for the fields by passing them as key word arguments to ``utter_template`
 
 .. code-block:: python
 
-  dispatcher.utter_template("utter_default", my_variable="my text")
+  dispatcher.utter_template("utter_default", tracker, my_variable="my text")
 
 Variations
 ----------
@@ -142,3 +142,24 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
     utter_greeting:
     - text: "Hey, {name}. How are you?"
     - text: "Hey, {name}. How is your day going?"
+
+Ignoring entities for certain intents
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you want entities to be ignored for certain intents, you can add the ``use_entities: false``
+parameter to the intent in your domain file like this:
+
+.. code-block:: yaml
+
+  intents:
+    - greet: {use_entities: false}
+
+This means that entities for those intents will be unfeaturized and therefore
+will not impact the next action predictions. This is useful when you have
+an intent where you don't care about the entities being picked up. If you list
+your intents as normal without this parameter, the entities will be featurized as normal.
+
+.. note::
+
+    If you really want these entities not to influence action prediction we
+    suggest you make the slots with the same name of type ``unfeaturized``

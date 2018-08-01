@@ -14,7 +14,7 @@ import typing
 from typing import Text, Optional, Any, List, Dict
 
 import rasa_core
-from rasa_core import utils, training
+from rasa_core import utils, training, constants
 from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 
@@ -157,18 +157,23 @@ class PolicyEnsemble(object):
         return metadata
 
     @staticmethod
-    def ensure_model_compatibility(metadata):
+    def ensure_model_compatibility(metadata, version_to_check=None):
         from packaging import version
 
+        if version_to_check is None:
+            version_to_check = constants.MINIMUM_COMPATIBLE_VERSION
+
         model_version = metadata.get("rasa_core", "0.0.0")
-        if version.parse(model_version) < version.parse("0.9.0"):
+        if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedDialogueModelError(
                 "The model version is to old to be "
                 "loaded by this Rasa Core instance. "
                 "Either retrain the model, or run with"
                 "an older version. "
-                "Model version: {} Instance version: {}"
-                "".format(model_version, rasa_core.__version__))
+                "Model version: {} Instance version: {} "
+                "Minimal compatible version: {}"
+                "".format(model_version, rasa_core.__version__,
+                          version_to_check))
 
     @classmethod
     def load(cls, path):

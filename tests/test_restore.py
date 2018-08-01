@@ -4,13 +4,18 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core import restore
+from rasa_core.agent import Agent
 
 
 def test_restoring_tracker(trained_moodbot_path, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
-    agent, tracker = restore.recreate_agent(trained_moodbot_path,
-                                            tracker_dump=tracker_dump)
+    agent = Agent.load(trained_moodbot_path)
+
+    tracker = restore.load_tracker_from_json(tracker_dump,
+                                             agent.domain)
+
+    restore.replay_events(tracker, agent)
 
     # makes sure there are no warnings. warnings are raised, if the models
     # predictions differ from the tracker when the dumped tracker is replayed

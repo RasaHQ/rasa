@@ -9,6 +9,8 @@ pytest-cov==2.5.1
 pytest_localserver==0.4.1
 treq==17.8.0
 freezegun==0.3.10
+responses==0.9.0
+httpretty==0.9.5
 
 # other
 matplotlib==2.2.2
@@ -19,4 +21,5 @@ sphinx-autobuild==0.7.1
 sphinxcontrib-versioning==2.2.1
 sphinxcontrib-httpdomain==1.6.1
 sphinxcontrib-programoutput==0.11
+https://storage.googleapis.com/docs-theme/rasabaster-0.7.10.tar.gz
 pygments==2.2.0

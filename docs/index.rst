@@ -71,6 +71,7 @@ The Rasa Core dialogue engine
    customactions
    slots
    slotfilling
+   responses
    interactive_learning
    fallbacks
    policies
@@ -100,4 +101,5 @@ The Rasa Core dialogue engine
    :caption: Developer Documentation
 
    migrations
+   brokers
    changelog

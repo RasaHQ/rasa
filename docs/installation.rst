@@ -59,7 +59,7 @@ We use Rasa NLU for intent classification & entity extraction. To get it, run
 
     pip install rasa_nlu[tensorflow]
 
-Full instructions can be found `here <https://nlu.rasa.com/installation.html>`_.
+Full instructions can be found `here <https://rasa.com/docs/nlu/installation/>`_.
 
 You can also use other NLU services like wit.ai, dialogflow, or LUIS. 
 In fact, you don't need to use NLU at all, if your messaging app uses buttons

@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
 from rasa_core.domain import TemplateDomain
-from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.trackers import DialogueStateTracker
 
 

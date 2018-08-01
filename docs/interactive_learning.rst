@@ -36,9 +36,9 @@ The Domain
 We will keep the concert domain simple, and won't add any slots just yet.
 We'll also only support these intents:
 ``"greet", "thankyou", "goodbye", "search_concerts", "search_venues",
-"compare_reviews"``. Here is the domain definition (``concert_domain.yml``):
+"compare_reviews"``. Here is the domain definition (``domain.yml``):
 
-.. literalinclude:: ../examples/concertbot/concert_domain.yml
+.. literalinclude:: ../examples/concertbot/domain.yml
     :linenos:
 
 Stateless Stories

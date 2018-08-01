@@ -3,13 +3,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import pytest
+import io
 
-import rasa_core
+import pytest
+import responses
+
 from rasa_core.agent import Agent
-from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
+from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.policies.memoization import AugmentedMemoizationPolicy
-from rasa_core.tracker_store import InMemoryTrackerStore
+from rasa_core.utils import EndpointConfig
 
 
 def test_agent_train(tmpdir, default_domain):
@@ -33,7 +35,8 @@ def test_agent_train(tmpdir, default_domain):
            [s.name for s in agent.domain.slots]
 
     # test policies
-    assert type(loaded.policy_ensemble) is type(agent.policy_ensemble)  # nopep8
+    assert type(loaded.policy_ensemble) is type(
+        agent.policy_ensemble)  # nopep8
     assert [type(p) for p in loaded.policy_ensemble.policies] == \
            [type(p) for p in agent.policy_ensemble.policies]
 
@@ -67,7 +70,8 @@ def test_deprecated_use_of_train(tmpdir, default_domain):
            [s.name for s in agent.domain.slots]
 
     # test policies
-    assert type(loaded.policy_ensemble) is type(agent.policy_ensemble)  # nopep8
+    assert type(loaded.policy_ensemble) is type(
+        agent.policy_ensemble)  # nopep8
     assert [type(p) for p in loaded.policy_ensemble.policies] == \
            [type(p) for p in agent.policy_ensemble.policies]
 
@@ -81,3 +85,24 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
         # try to load a model file from a data path, which is nonsense and
         # should fail properly
         agent.load(training_data_file)
+
+
+@responses.activate
+def test_agent_with_model_server(tmpdir, zipped_moodbot_model):
+    model_hash = 'somehash'
+    model_endpoint_config = EndpointConfig.from_dict(
+        {"url": 'http://server.com/model/default_core@latest'}
+    )
+
+    # mock a response that returns a zipped model
+    with io.open(zipped_moodbot_model, 'rb') as f:
+        responses.add(responses.GET,
+                      model_endpoint_config.url,
+                      headers={"ETag": model_hash},
+                      body=f.read(),
+                      content_type='application/zip',
+                      stream=True)
+    agent = Agent.load(path=tmpdir.strpath,
+                       model_server=model_endpoint_config)
+    assert agent.model_hash == model_hash
+    assert agent.model_server == model_endpoint_config

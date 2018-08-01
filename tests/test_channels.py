@@ -4,8 +4,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from httpretty import httpretty
+from builtins import str
 
 from rasa_core.channels import console
+from tests import utilities
+import json
 
 
 def test_console_input():
@@ -13,20 +16,21 @@ def test_console_input():
 
     # Overwrites the input() function and when someone else tries to read
     # something from the command line this function gets called.
-    rasa_core.channels.console.input = lambda _=None: "Test Input"
+    with utilities.mocked_cmd_input(rasa_core.channels.console,
+                                    text="Test Input"):
+        httpretty.register_uri(httpretty.POST,
+                               'https://abc.defg/webhooks/rest/webhook',
+                               body='')
 
-    httpretty.register_uri(httpretty.POST,
-                           'https://abc.defg/webhooks/rest/webhook',
-                           body='')
+        httpretty.enable()
+        console.record_messages(
+                server_url="https://abc.defg",
+                max_message_limit=3)
+        httpretty.disable()
 
-    httpretty.enable()
-    console.record_messages(
-            server_url="https://abc.defg",
-            max_message_limit=3)
-    httpretty.disable()
+        assert (httpretty.latest_requests[-1].path ==
+                "/webhooks/rest/webhook?stream=true&token=")
 
-    assert httpretty.latest_requests[-1].path == \
-       "/webhooks/rest/webhook?stream=true&token="
+        b = httpretty.latest_requests[-1].body.decode("utf-8")
 
-    assert httpretty.latest_requests[-1].body == \
-       """{"message": "Test Input", "sender": "default"}"""
+        assert json.loads(b) == {"message": "Test Input", "sender": "default"}

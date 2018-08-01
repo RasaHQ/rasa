@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
+import time
 import warnings
 from types import LambdaType
 
@@ -27,11 +28,10 @@ from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.nlg.generator import NaturalLanguageGenerator
+from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
-
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,7 @@ except UnknownTimeZoneError:
     logger.warn("apscheduler failed to start. "
                 "This is probably because your system timezone is not set"
                 "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
+
 
 class MessageProcessor(object):
     def __init__(self,
@@ -273,9 +274,18 @@ class MessageProcessor(object):
     def _run_action(self, action, tracker, dispatcher):
         # events and return values are used to update
         # the tracker state after an action has been taken
-        events = action.run(dispatcher, tracker, self.domain)
-        self.log_bot_utterances_on_tracker(tracker, dispatcher)
+        try:
+            events = action.run(dispatcher, tracker, self.domain)
+        except Exception as e:
+            logger.error("Encountered an exception while running action '{}'. "
+                         "Bot will continue, but the actions events are lost. "
+                         "Make sure to fix the exception in your custom "
+                         "code.".format(action.name()), )
+            logger.error(e, exc_info=True)
+            events = []
+
         self._log_action_on_tracker(tracker, action.name(), events)
+        self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._schedule_reminders(events, dispatcher)
 
         return self.should_predict_another_action(action.name(), events)
@@ -333,6 +343,11 @@ class MessageProcessor(object):
             tracker.update(ActionExecuted(action_name))
 
         for e in events:
+            # this makes sure the events are ordered by timestamp -
+            # since the event objects are created somewhere else,
+            # the timestamp would indicate a time before the time
+            # of the action executed
+            e.timestamp = time.time()
             tracker.update(e)
 
     def _get_tracker(self, sender_id):

@@ -5,19 +5,15 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+import os
 from threading import Thread
 
 from builtins import str
 from gevent.pywsgi import WSGIServer
 
+from rasa_core import constants
 from rasa_core import utils, server
-from rasa_core.channels import RestInput, console
-from rasa_core.channels.facebook import FacebookInput
-from rasa_core.channels.mattermost import MattermostInput
-from rasa_core.channels.slack import SlackInput
-from rasa_core.channels.telegram import TelegramInput
-from rasa_core.channels.twilio import TwilioInput
-from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
+from rasa_core.channels import console
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     RasaNLUHttpInterpreter)
@@ -42,7 +38,7 @@ def create_argument_parser():
             help="nlu model to run")
     parser.add_argument(
             '-p', '--port',
-            default=DEFAULT_SERVER_PORT,
+            default=constants.DEFAULT_SERVER_PORT,
             type=int,
             help="port to run the server at")
     parser.add_argument(
@@ -107,6 +103,7 @@ def _create_external_channel(channel, credentials_file):
     # the commandline input channel is the only one that doesn't need any
     # credentials
     if channel == "cmdline":
+        from rasa_core.channels import RestInput
         return RestInput()
 
     if credentials_file is None:
@@ -115,26 +112,36 @@ def _create_external_channel(channel, credentials_file):
     credentials = read_yaml_file(credentials_file)
 
     if channel == "facebook":
+        from rasa_core.channels.facebook import FacebookInput
+
         return FacebookInput(
                 credentials.get("verify"),
                 credentials.get("secret"),
                 credentials.get("page-access-token"))
     elif channel == "slack":
+        from rasa_core.channels.slack import SlackInput
+
         return SlackInput(
                 credentials.get("slack_token"),
                 credentials.get("slack_channel"))
     elif channel == "telegram":
+        from rasa_core.channels.telegram import TelegramInput
+
         return TelegramInput(
                 credentials.get("access_token"),
                 credentials.get("verify"),
                 credentials.get("webhook_url"))
     elif channel == "mattermost":
+        from rasa_core.channels.mattermost import MattermostInput
+
         return MattermostInput(
                 credentials.get("url"),
                 credentials.get("team"),
                 credentials.get("user"),
                 credentials.get("pw"))
     elif channel == "twilio":
+        from rasa_core.channels.twilio import TwilioInput
+
         return TwilioInput(
                 credentials.get("account_sid"),
                 credentials.get("auth_token"),
@@ -160,16 +167,34 @@ def create_http_input_channel(channel, credentials_file):
             raise Exception("Unknown input channel for running main.")
 
 
-def start_cmdline_io(server_url, on_finish):
+def start_cmdline_io(server_url, on_finish, **kwargs):
+    kwargs["server_url"] = server_url
+    kwargs["on_finish"] = on_finish
+
     p = Thread(target=console.record_messages,
-               kwargs={
-                   "server_url": server_url,
-                   "on_finish": on_finish})
+               kwargs=kwargs)
     p.start()
 
 
-def interpreter_from_args(nlu_model, nlu_endpoint):
-    name_parts = nlu_model.split("/")
+def interpreter_from_args(
+        nlu_model,  # type: Union[Text, NaturalLanguageInterpreter, None]
+        nlu_endpoint  # type: Optional[EndpointConfig]
+):
+    # type: (...) -> Optional[NaturalLanguageInterpreter]
+    """Create an interpreter from the commandline arguments.
+
+    Depending on which values are passed for model and endpoint, this
+    will create the corresponding interpreter (either loading the model
+    locally or setting up an endpoint based interpreter)."""
+
+    if isinstance(nlu_model, NaturalLanguageInterpreter):
+        return nlu_model
+
+    if nlu_model:
+        name_parts = os.path.split(nlu_model)
+    else:
+        name_parts = []
+
     if len(name_parts) == 1:
         if nlu_endpoint:
             # using the default project name
@@ -179,9 +204,9 @@ def interpreter_from_args(nlu_model, nlu_endpoint):
             return NaturalLanguageInterpreter.create(nlu_model)
     elif len(name_parts) == 2:
         if nlu_endpoint:
-            return RasaNLUHttpInterpreter(name_parts[0],
+            return RasaNLUHttpInterpreter(name_parts[1],
                                           nlu_endpoint,
-                                          name_parts[1])
+                                          name_parts[0])
         else:
             return NaturalLanguageInterpreter.create(nlu_model)
     else:
@@ -191,22 +216,26 @@ def interpreter_from_args(nlu_model, nlu_endpoint):
                             "specify the model to use with "
                             "`--nlu project/model`.")
         else:
-            return None
+            return NaturalLanguageInterpreter.create(nlu_model)
 
 
 def start_server(model_directory, nlu, input_channels,
-                 cors, auth_token, action_endpoint, nlg_endpoint, port):
+                 cors, auth_token, endpoints, port):
+    """Run the agent."""
+
     app = server.create_app(model_directory,
                             nlu,
                             input_channels,
                             cors,
                             auth_token=auth_token,
-                            action_endpoint=action_endpoint,
-                            nlg_endpoint=nlg_endpoint)
+                            endpoints=endpoints)
+
+    if logger.isEnabledFor(logging.DEBUG):
+        utils.list_routes(app)
 
     http_server = WSGIServer(('0.0.0.0', port), app)
     logger.info("Rasa Core server is up and running on "
-                "{}".format(DEFAULT_SERVER_URL))
+                "{}".format(constants.DEFAULT_SERVER_URL))
     http_server.start()
     return http_server
 
@@ -214,16 +243,12 @@ def start_server(model_directory, nlu, input_channels,
 def serve_application(model_directory,
                       nlu_model=None,
                       channel=None,
-                      port=DEFAULT_SERVER_PORT,
+                      port=constants.DEFAULT_SERVER_PORT,
                       credentials_file=None,
                       cors=None,
                       endpoints=None,
                       auth_token=None
                       ):
-    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
-    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg_endpoint")
-    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu_endpoint")
-
     nlu = interpreter_from_args(nlu_model, nlu_endpoint)
 
     if channel:
@@ -231,12 +256,11 @@ def serve_application(model_directory,
     else:
         input_channels = []
 
-    http_server = start_server(model_directory, nlu, input_channels,
-                               cors, auth_token, action_endpoint, nlg_endpoint,
-                               port)
+    http_server = start_server(model_directory, nlu_model, input_channels,
+                               cors, auth_token, endpoints, port)
 
     if channel == "cmdline":
-        start_cmdline_io(DEFAULT_SERVER_URL, http_server.stop)
+        start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop)
 
     try:
         http_server.serve_forever()

@@ -22,7 +22,7 @@ from typing import Text
 
 from rasa_core import utils
 from rasa_core.actions import Action, action
-from rasa_core.actions.action import ActionListen, ActionRestart
+from rasa_core.actions.action import ActionListen, ActionRestart, ActionDefaultFallback
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string
@@ -83,7 +83,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     A Domain subclass provides the actions the bot can take, the intents
     and entities it can recognise"""
 
-    DEFAULT_ACTIONS = [ActionListen(), ActionRestart()]
+    DEFAULT_ACTIONS = [ActionListen(), ActionRestart(),
+                       ActionDefaultFallback()]
 
     def __init__(self, store_entities_as_slots=True,
                  restart_intent="restart"):
@@ -219,16 +220,19 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             self.slot_states + \
             self.prev_action_states
 
-    @staticmethod
-    def get_parsing_states(tracker):
+    def get_parsing_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
 
         state_dict = {}
 
-        # Set all found entities with the state value 1.0
+        # Set all found entities with the state value 1.0, unless they should
+        # be ignored for the current intent
         for entity in tracker.latest_message.entities:
-            key = "entity_{0}".format(entity["entity"])
-            state_dict[key] = 1.0
+            intent_name = tracker.latest_message.intent.get("name")
+            should_use_entity = self._intents[intent_name]['use_entities']
+            if should_use_entity:
+                key = "entity_{0}".format(entity["entity"])
+                state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
@@ -407,14 +411,15 @@ class TemplateDomain(Domain):
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
+        intents = cls.collect_intents(data.get("intents", {}))
         return cls(
-                data.get("intents", []),
-                data.get("entities", []),
-                slots,
-                utter_templates,
-                data.get("actions", []),
-                action_endpoint,
-                **additional_arguments
+            intents,
+            data.get("entities", []),
+            slots,
+            utter_templates,
+            data.get("actions", []),
+            action_endpoint,
+            **additional_arguments
         )
 
     @classmethod
@@ -450,6 +455,16 @@ class TemplateDomain(Domain):
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
+
+    @staticmethod
+    def collect_intents(intent_list):
+        intents = {}
+        for intent in intent_list:
+            if isinstance(intent, dict):
+                intents.update(intent)
+            else:
+                intents.update({intent: {'use_entities': True}})
+        return intents
 
     @staticmethod
     def collect_templates(yml_templates):
@@ -503,7 +518,7 @@ class TemplateDomain(Domain):
 
         return {
             "config": additional_config,
-            "intents": self.intents,
+            "intents": [{k: v} for k, v in self._intents.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
@@ -528,7 +543,7 @@ class TemplateDomain(Domain):
 
     @utils.lazyproperty
     def intents(self):
-        return self._intents
+        return sorted(self._intents.keys())
 
     @utils.lazyproperty
     def entities(self):

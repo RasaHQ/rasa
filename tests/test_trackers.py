@@ -137,12 +137,24 @@ def test_tracker_state_regression_with_bot_utterance(default_agent):
         default_agent.handle_message("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
-    expected = ["action_listen", "greet", None, "utter_greet",
+    expected = ["action_listen", "greet", "utter_greet", None,
                 "action_listen", "greet", "action_listen"]
-    print([e.as_story_string() for e in tracker.events])
-    for e in tracker.events:
-        print(e)
+
     assert [e.as_story_string() for e in tracker.events] == expected
+
+
+def test_bot_utterance_comes_after_action_event(default_agent):
+    sender_id = "test_bot_utterance_comes_after_action_event"
+
+    default_agent.handle_message("/greet", sender_id=sender_id)
+
+    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+
+    # important is, that the 'bot' comes after the second 'action' and not
+    # before
+    expected = ['action', 'user', 'action', 'bot', 'action']
+
+    assert [e.type_name for e in tracker.events] == expected
 
 
 def test_tracker_entity_retrieval(default_domain):

@@ -4,14 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-import os
 
 import requests
 import typing
-from requests.auth import HTTPBasicAuth
 from typing import List, Text, Optional
 
-from rasa_core import events, utils
+from rasa_core import events
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -23,6 +21,8 @@ logger = logging.getLogger(__name__)
 ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
+
+ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
 
 def ensure_action_name_uniqueness(actions):
@@ -135,8 +135,26 @@ class ActionRestart(Action):
         from rasa_core.events import Restarted
 
         # only utter the template if it is available
-        dispatcher.utter_template("utter_restart", tracker, silent_fail=True)
+        dispatcher.utter_template("utter_restart", tracker,
+                                  silent_fail=True)
         return [Restarted()]
+
+
+class ActionDefaultFallback(Action):
+    """Executes the fallback action and goes back to the previous state
+    of the dialogue"""
+
+    def name(self):
+        return ACTION_DEFAULT_FALLBACK_NAME
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import UserUtteranceReverted
+
+        if domain.random_template_for("utter_default") is not None:
+            dispatcher.utter_template("utter_default", tracker,
+                                      silent_fail=True)
+
+        return [UserUtteranceReverted()]
 
 
 class RemoteAction(Action):
@@ -199,7 +217,7 @@ class RemoteAction(Action):
                             "".format(self.name()))
 
         try:
-            response = self.action_endpoint.request(json, method="post")
+            response = self.action_endpoint.request(json=json, method="post")
             response.raise_for_status()
             response_data = response.json()
 

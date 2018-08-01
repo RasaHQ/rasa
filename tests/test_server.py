@@ -16,7 +16,7 @@ from freezegun import freeze_time
 from pytest_localserver.http import WSGIServer
 
 import rasa_core
-from rasa_core import server, events
+from rasa_core import server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
@@ -26,6 +26,7 @@ from rasa_core.events import (
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.remote import RasaCoreClient
+from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
@@ -61,6 +62,8 @@ def test_version(app):
     content = response.get_json()
     assert response.status_code == 200
     assert content.get("version") == rasa_core.__version__
+    assert (content.get(
+        "minimum_compatible_version") == constants.MINIMUM_COMPATIBLE_VERSION)
 
 
 @freeze_time("2018-01-01")
@@ -146,7 +149,7 @@ def test_list_conversations(app):
 
 
 def test_remote_status(http_app):
-    client = RasaCoreClient(http_app, None)
+    client = RasaCoreClient(EndpointConfig(http_app))
 
     status = client.status()
 
@@ -154,7 +157,7 @@ def test_remote_status(http_app):
 
 
 def test_remote_clients(http_app):
-    client = RasaCoreClient(http_app, None)
+    client = RasaCoreClient(EndpointConfig(http_app))
 
     cid = str(uuid.uuid1())
     client.respond("/greet", cid)
@@ -166,7 +169,7 @@ def test_remote_clients(http_app):
 
 @pytest.mark.parametrize("event", test_events)
 def test_remote_append_events(http_app, event):
-    client = RasaCoreClient(http_app, None)
+    client = RasaCoreClient(EndpointConfig(http_app))
 
     cid = str(uuid.uuid1())
 

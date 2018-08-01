@@ -371,3 +371,20 @@ To use a custom channel, modify they ``rasa_core.run`` script, either adding you
 ``_create_external_channel`` function or directly overriding the ``input_channel`` variable defined in the 
 ``main`` function.
 
+To define a custom channel, you need to define a HTTP endpoint that will receive messages. 
+
+.. literalinclude:: ../rasa_core/channels/custom.py 
+   :pyobject: CustomInput
+
+To send a message, you would run a command like:
+
+.. code-block:: bash
+
+    curl -XPOST http://localhost:5000/webhook \
+      -d '{"sender": "user1", "message": "hello"}' \
+      -H "Content-type: application/json"
+
+To get responses, you also need an output channel which implements sending messages back to the user.
+
+.. literalinclude:: ../rasa_core/channels/custom.py 
+   :pyobject: CustomOutput

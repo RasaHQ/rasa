@@ -8,7 +8,7 @@ import logging
 
 import numpy as np
 from rasa_core.trackers import DialogueStateTracker
-from typing import Text, Any, Dict
+from typing import Text, Any, Dict, Optional, List
 
 from rasa_core.nlg.generator import NaturalLanguageGenerator
 
@@ -16,11 +16,19 @@ logger = logging.getLogger(__name__)
 
 
 class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
+    """Natural language generator that generates messages based on templates.
+
+    The templates can use variables to customize the utterances based on the
+    state of the dialogue."""
+
     def __init__(self, templates):
+        # type: (Dict[Text, List[Dict[Text, Any]]]) -> None
         self.templates = templates
 
     def _random_template_for(self, utter_action, output_channel):
-        # TODO: TB - make use of the additional information about the channel
+        # type: (Text, Text) -> Optional[Dict[Text, Any]]
+        """Select random template for the utter action from available ones."""
+
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
         else:
@@ -28,9 +36,19 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     def generate(self, template_name, tracker, output_channel, **kwargs):
         # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
-        """Retrieve a named template from the domain."""
+        """Generate a response for the requested template."""
 
         filled_slots = tracker.current_slot_values()
+        return self.generate_from_slots(template_name,
+                                        filled_slots,
+                                        output_channel,
+                                        **kwargs)
+
+    def generate_from_slots(self, template_name, filled_slots, output_channel,
+                            **kwargs):
+        # type: (Text, Dict[Text, Any], Text, **Any) -> Dict[Text, Any]
+        """Generate a response for the requested template."""
+
         # Fetching a random template for the passed template name
         r = copy.deepcopy(self._random_template_for(template_name,
                                                     output_channel))
@@ -41,8 +59,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
             return {"text": "Undefined utter template <{}>."
                             "".format(template_name)}
 
-    def _fill_template_text(self, template, filled_slots=None, **kwargs):
-        # type: (Text, **Any) -> Dict[Text, Any]
+    def _fill_template_text(
+            self,
+            template,  # type: Dict[Text, Any]
+            filled_slots=None,  # type: Optional[Dict[Text, Any]]
+            **kwargs  # type: **Any
+    ):
+        # type: (...) -> Dict[Text, Any]
         """"Combine slot values and key word arguments to fill templates."""
 
         # Getting the slot values in the template variables

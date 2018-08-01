@@ -85,7 +85,7 @@ and save it in a file called ``stories.md``.
      - utter_cheer_up
      - utter_did_that_help
    * mood_deny
-     - utter_goodbye\n
+     - utter_goodbye
 
    ## say goodbye
    * goodbye
@@ -148,9 +148,9 @@ So what do the different parts mean?
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``templates`` | template strings for the things your bot can say                                                     |
 +---------------+------------------------------------------------------------------------------------------------------+
-| ``intents``   | things you expect users to say. See `Rasa NLU <https://nlu.rasa.com>`_                               |
+| ``intents``   | things you expect users to say. See `Rasa NLU <https://rasa.com/docs/nlu/>`_                         |
 +---------------+------------------------------------------------------------------------------------------------------+
-| ``entities``  | pieces of info you want to extract from messages. See `Rasa NLU <https://nlu.rasa.com>`_             |
+| ``entities``  | pieces of info you want to extract from messages. See `Rasa NLU <https://rasa.com/docs/nlu/>`_       |
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``slots``     | information to keep track of during a conversation (e.g. a users age) - see :ref:`slots`             |
 +---------------+------------------------------------------------------------------------------------------------------+
@@ -221,7 +221,7 @@ Language Understanding (NLU) and transforms the message into structured output.
 In this example we are going to use Rasa NLU for this purpose.
 
 In Rasa NLU, we need to define the user messages our bot should be able to
-handle in the `Rasa NLU training data format <https://nlu.rasa.com/dataformat.html>`_.
+handle in the `Rasa NLU training data format <https://rasa.com/docs/nlu/dataformat/>`_.
 In this tutorial we are going to use Markdown Format for NLU training data.
 Let's create some intent examples in a file called ``nlu.md``:
 
@@ -293,7 +293,7 @@ NLU model:
 
 
 We can now train an NLU model using our examples (make sure to
-`install Rasa NLU <http://nlu.rasa.com/installation.html#setting-up-rasa-nlu>`_
+`install Rasa NLU <http://rasa.com/docs/nlu/installation/>`_
 first).
 
 Let's run
@@ -310,7 +310,7 @@ since this is specified in the train command.
 .. note::
 
    To learn more about Rasa NLU
-   head over to the `Rasa NLU documentation <https://nlu.rasa.com>`_.
+   head over to the `Rasa NLU documentation <https://rasa.com/docs/nlu/>`_.
 
 6. Talking To Your Bot
 ^^^^^^^^^^^^^^^^^^^^^^
