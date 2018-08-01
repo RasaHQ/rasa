@@ -38,19 +38,16 @@ def create_argument_parser():
             description='evaluate a Rasa NLU pipeline with cross '
                         'validation or on external data')
 
-    parser.add_argument('-d', '--data',
-                        required=True,
+    parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
 
-    parser.add_argument('--mode',
-                        default="evaluation",
+    parser.add_argument('--mode', default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-
                         help="model configurion file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
@@ -195,7 +192,8 @@ def show_nlu_errors(targets, preds, messages, conf):  # pragma: no cover
     """Log messages which result in wrong predictions and save them to file"""
 
     errors = {}
-    # it could also be interesting to include entity-errors later, therefore we start with a "intent_errors" key
+    # it could be interesting to include entity-errors later
+    # therefore we start with a "intent_errors" key
     errors['intent_errors'] = [
         {"text": messages[i],
             "true_label": targets[i],
