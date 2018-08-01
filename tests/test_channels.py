@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from httpretty import httpretty
+from builtins import str
 
 from rasa_core.channels import console
 from tests import utilities
@@ -30,4 +31,4 @@ def test_console_input():
                 "/webhooks/rest/webhook?stream=true&token=")
 
         assert (httpretty.latest_requests[-1].body ==
-                """{"message": "Test Input", "sender": "default"}""")
+                str("""{"message": "Test Input", "sender": "default"}"""))
