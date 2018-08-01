@@ -61,10 +61,9 @@ class RasaChatInput(HttpInputComponent):
         def receive():
             user = self.fetch_user(request)
             msg = request.json["message"]
-            out = CollectingOutputChannel()
-            on_new_message(UserMessage(msg, out,
+            on_new_message(UserMessage(msg, CollectingOutputChannel(),
                                        sender_id=user["username"]))
 
-            return jsonify(out.messages)
+            return jsonify({"status": "ok"})
 
         return rasa_chat
