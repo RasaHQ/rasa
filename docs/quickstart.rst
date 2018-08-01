@@ -61,6 +61,7 @@ If you are running locally, copy the text between the triple quotes (``"""``)
 and save it in a file called ``stories.md``.
 
 .. runnable:: 
+   :description: write-stories
 
    stories_md = """
    ## happy path
@@ -103,6 +104,8 @@ The domain defines the universe your bot lives in.
 Here is an example domain for our bot which we'll write to a file called ``domain.yml``:
 
 .. runnable:: 
+   :description: write-domain
+
    domain_yml = """
    intents:
      - greet
@@ -181,6 +184,7 @@ leave out the ``!`` at the start. This will train the dialogue model and store i
 into ``models/dialogue``.
 
 .. runnable::
+   :description: train-core
 
    !python -m rasa_core.train -d domain.yml -s stories.md -o models/dialogue
 
@@ -207,6 +211,8 @@ If you are running the cells here in the docs, run this cell:
 
 
 .. runnable::
+   :description: chat-without-nlu
+
    import IPython
    from IPython.display import clear_output
    from rasa_core.agent import Agent
@@ -250,6 +256,7 @@ In this tutorial we are going to use Markdown Format for NLU training data.
 Let's create some intent examples in a file called ``nlu.md``:
 
 .. runnable::
+   :description: chat-with-nlu
 
    nlu_md = """
    ## intent:greet
@@ -309,6 +316,8 @@ Furthermore, we need a configuration file, ``nlu_config.yml``, for the
 NLU model:
 
 .. runnable:: 
+   :description: write-nlu-config
+
    nlu_config = """
    language: en
    pipeline: tensorflow_embedding
@@ -323,6 +332,7 @@ first).
 Let's run
 
 .. runnable::
+   :description: train-nlu
 
    !python -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
 
@@ -352,6 +362,7 @@ If you are running these commands locally, run:
 If you are running the cells here in the docs, run this cell:
 
 .. runnable::
+   :description: chat-with-nlu
 
    from rasa_core.agent import Agent
    from rasa_core.channels.console import ConsoleInputChannel
