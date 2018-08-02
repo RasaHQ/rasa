@@ -91,21 +91,23 @@ Improving the quality of your training data will move the histogram bars to the 
 
 Entity Extraction
 -----------------
-For each entity extractor, the evaluation script logs its performance per entity type in your training data.
-So if you use ``ner_crf`` and ``ner_duckling`` in your pipeline, it will log two evaluation tables
+For each entity extractor, the evaluation script
+logs its performance per entity type in your training data.
+So if you use ``ner_crf`` and ``ner_duckling_http``
+in your pipeline, it will log two evaluation tables
 containing recall, precision, and f1 measure for each entity type.
 
-In the case ``ner_duckling`` we actually run the evaluation for each defined
-duckling dimension. If you use the ``time`` and ``ordinal`` dimensions, you would
-get two evaluation tables: one for ``ner_duckling (Time)`` and one for
-``ner_duckling (Ordinal)``.
+In the case ``ner_duckling_http`` we actually run the evaluation for
+each defined duckling dimension. If you use the ``time`` and ``ordinal``
+dimensions, you would get two evaluation tables: one for
+``ner_duckling_http (Time)`` and one for ``ner_duckling_http (Ordinal)``.
 
 ``ner_synonyms`` does not create an evaluation table, because it only changes the value of the found
 entities and does not find entity boundaries itself.
 
 Finally, keep in mind that entity types in your testing data have to match the output
-of the extraction components. This is particularly important for ``ner_duckling``, because it is not
-fit to your training data.
+of the extraction components. This is particularly important for
+``ner_duckling_http``, because it is not fit to your training data.
 
 
 Entity Scoring

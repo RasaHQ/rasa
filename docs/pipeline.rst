@@ -760,11 +760,12 @@ ner_crf
           # Specifies the L2 regularization coefficient.
           L2_c: 0.1
 
-.. _section_pipeline_duckling:
+.. _ner_duckling_http:
 
-ner_duckling
-~~~~~~~~~~~~
-:Short: Adds duckling support to the pipeline to unify entity types (e.g. to retrieve common date / number formats)
+ner_duckling_http
+~~~~~~~~~~~~~~~~~
+:Short: Duckling lets you extract common entities like dates,
+        amounts of money, distances, and others in a number of languages.
 :Outputs: appends ``entities``
 :Output-Example:
 
@@ -776,10 +777,17 @@ ner_duckling
                           "start": 48,
                           "value": "2017-04-10T00:00:00.000+02:00",
                           "confidence": 1.0,
-                          "extractor": "ner_duckling"}]
+                          "extractor": "ner_duckling_http"}]
         }
 
 :Description:
+    To use this component you need to run a duckling server. The easiest
+    option is to spin up a docker container using
+    ``docker run -p 8000:8000 rasa/duckling``.
+
+    Alternatively, you can install duckling directly on your
+    `machine and start the server <https://github.com/facebook/duckling#quickstart>`_.
+
     Duckling allows to recognize dates, numbers, distances and other structured entities
     and normalizes them (for a reference of all available entities
     see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_).
@@ -792,16 +800,24 @@ ner_duckling
     based system.
 
 :Configuration:
-    Configure which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` to extract.
-    A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
+    Configure which dimensions, i.e. entity types, the duckling component
+    to extract. A full list of available dimensions can be found in
+    the `duckling documentation <https://duckling.wit.ai/>`_.
 
     .. code-block:: yaml
 
         pipeline:
-        - name: "ner_duckling"
+        - name: "ner_duckling_http"
+          # url of the running duckling server
+          url: "http://localhost:8000"
           # dimensions to extract
           dimensions: ["time", "number", "amount-of-money", "distance"]
-
+          # allows you to configure the locale, by default the language is
+          # used
+          locale: "de_DE"
+          # if not set the default timezone of Duckling is going to be used
+          # needed to calculate dates from relative expressions like "tomorrow"
+          timezone: "Europe/Berlin"
 
 
 .. _section_component_lifecycle:

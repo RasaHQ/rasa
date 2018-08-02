@@ -34,6 +34,7 @@ Added
 - the ``/version`` endpoint returns a new field ``minimum_compatible_version``
 - added logging of intent prediction errors to evaluation script
 - added histogram of confidence scores to evaluation script
+- documentation for the ``ner_duckling_http`` component
 
 Changed
 -------
@@ -47,6 +48,9 @@ Changed
 Removed
 -------
 - dependence on spaCy when training ``ner_crf`` without POS features
+- documentation for the ``ner_duckling`` component - facebook doesn't maintain
+  the underlying clojure version of duckling anymore. component will be
+  removed in the next release.
 
 Fixed
 -----
