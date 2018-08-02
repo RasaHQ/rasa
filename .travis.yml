@@ -38,7 +38,7 @@ jobs:
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
-    - pip install -r alt_requirements/requirements_docs.txt
+    - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
     - pip install -e .
     - pip list
