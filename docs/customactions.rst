@@ -40,7 +40,7 @@ which might look like this:
 
 .. testcode::
 
-   from rasa_core_sdk.actions import Action
+   from rasa_core_sdk import Action
    from rasa_core_sdk.events import SlotSet
 
    class ActionCheckRestaurants(Action):
