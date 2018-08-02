@@ -11,9 +11,14 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- script parameter ``--quiet`` to set the log level to ``WARNING``
+- information about the python version a model has been trained with to the
+  model metadata
 
 Changed
 -------
+- default log level for all scripts has been changed from ``WARNING`` to
+  ``INFO``.
 
 Removed
 -------

@@ -249,7 +249,6 @@ def serve_application(model_directory,
                       endpoints=None,
                       auth_token=None
                       ):
-    nlu = interpreter_from_args(nlu_model, nlu_endpoint)
 
     if channel:
         input_channels = [create_http_input_channel(channel, credentials_file)]

@@ -30,7 +30,9 @@ class MattermostBot(MattermostAPI, OutputChannel):
         super(MattermostBot, self).login(user, pw)
 
     def send_text_message(self, recipient_id, message):
-        super(MattermostBot, self).post_channel(self.bot_channel, message)
+        for message_part in message.split("\n\n"):
+            super(MattermostBot, self).post_channel(self.bot_channel,
+                                                    message_part)
 
 
 class MattermostInput(InputChannel):

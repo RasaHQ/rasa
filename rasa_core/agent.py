@@ -175,10 +175,11 @@ class Agent(object):
             **kwargs
     ):
         # type: (...) -> Dict[Text, Any]
-        """Handle a single message."""
+        """Append a message to a dialogue - does not predict actions."""
 
         processor = self._create_processor(message_preprocessor)
-        return processor.log_message(message)
+        tracker = processor.log_message(message)
+        return tracker.current_state(should_include_events=True)
 
     def execute_action(
             self,
@@ -329,15 +330,13 @@ class Agent(object):
                             "directly to the policy instead. More info "
                             "https://core.rasa.com/migrations.html#x-to-0-9-0")
 
-        # TODO: DEPRECATED - remove in version 0.10
         if isinstance(training_trackers, string_types):
             # the user most likely passed in a file name to load training
             # data from
-            logger.warning("Passing a file name to `agent.train(...)` is "
-                           "deprecated. Rather load the data with "
-                           "`data = agent.load_data(file_name)` and pass it "
-                           "to `agent.train(data)`.")
-            training_trackers = self.load_data(training_trackers)
+            raise Exception("Passing a file name to `agent.train(...)` is "
+                            "not supported anymore. Rather load the data with "
+                            "`data = agent.load_data(file_name)` and pass it "
+                            "to `agent.train(data)`.")
 
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)

@@ -48,14 +48,14 @@ class RasaCoreClient(object):
     def tracker(self,
                 sender_id,  # type: Text
                 domain,  # type: Domain
-                only_events_after_latest_restart=False,  # type: bool
+                should_ignore_restarts=False,  # type: bool
                 include_events=True,  # type: bool
                 until=None  # type: Optional[int]
                 ):
         """Retrieve and recreate a tracker fetched from the remote instance."""
 
         tracker_json = self.tracker_json(
-                sender_id, only_events_after_latest_restart,
+                sender_id, should_ignore_restarts,
                 include_events, until)
 
         tracker = DialogueStateTracker.from_dict(
@@ -64,14 +64,14 @@ class RasaCoreClient(object):
 
     def tracker_json(self,
                      sender_id,  # type: Text
-                     use_history=True,  # type: bool
+                     should_ignore_restarts=True,  # type: bool
                      include_events=True,  # type: bool
                      until=None  # type: Optional[int]
                      ):
         """Retrieve a tracker's json representation from remote instance."""
 
         url = "/conversations/{}/tracker?ignore_restarts={}&events={}".format(
-                sender_id, use_history, include_events)
+                sender_id, should_ignore_restarts, include_events)
         if until:
             url += "&until={}".format(until)
 

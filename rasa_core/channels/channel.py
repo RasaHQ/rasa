@@ -164,8 +164,9 @@ class CollectingOutputChannel(OutputChannel):
             return None
 
     def send_text_message(self, recipient_id, message):
-        self.messages.append({"recipient_id": recipient_id,
-                              "text": message})
+        for message_part in message.split("\n\n"):
+            self.messages.append({"recipient_id": recipient_id,
+                                  "text": message_part})
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
         self.messages.append({"recipient_id": recipient_id,
@@ -187,8 +188,9 @@ class QueueOutputChannel(OutputChannel):
         self.messages = Queue() if not message_queue else message_queue
 
     def send_text_message(self, recipient_id, message):
-        self.messages.put({"recipient_id": recipient_id,
-                           "text": message})
+        for message_part in message.split("\n\n"):
+            self.messages.put({"recipient_id": recipient_id,
+                               "text": message_part})
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
         self.messages.put({"recipient_id": recipient_id,
