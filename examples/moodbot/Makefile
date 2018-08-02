@@ -11,7 +11,7 @@ train-nlu:
 	       --data ./data/nlu.md --path models/ --project nlu
 
 train-core:
-	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300 --debug
+	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300
 
 run-fb:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials fb_credentials.yml

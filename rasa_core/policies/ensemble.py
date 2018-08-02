@@ -7,9 +7,11 @@ import io
 import json
 import logging
 import os
+import sys
 from collections import defaultdict
 
 import numpy as np
+from builtins import str
 import typing
 from typing import Text, Optional, Any, List, Dict
 
@@ -126,6 +128,7 @@ class PolicyEnsemble(object):
         metadata = {
             "action_fingerprints": action_fingerprints,
             "rasa_core": rasa_core.__version__,
+            "python": ".".join([str(s) for s in sys.version_info[:3]]),
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names

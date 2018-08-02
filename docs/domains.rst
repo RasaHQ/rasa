@@ -45,12 +45,16 @@ you would add these lines to the domain file:
 .. code-block:: yaml
 
    actions:
-     - my_actions.MyAwesomeAction
+     - my_custom_action
      ...
 
    slots:
      - my_slots.MyAwesomeSlot
 
+
+The ``name`` function of ``MyAwesomeAction`` needs to return
+``my_custom_action`` in this example
+(for more details, see :ref:`customactions`).
 
 .. _utter_templates:
 
@@ -109,7 +113,7 @@ In custom code, you can retrieve a template by using:
 
 .. testsetup::
 
-   from rasa_core.actions import Action
+   from rasa_core_sdk.actions import Action
 
 .. testcode::
 

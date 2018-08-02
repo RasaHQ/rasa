@@ -5,26 +5,29 @@ Custom Actions
 
 There are two kinds of actions in Rasa Core. 
 The simplest are ``UtterActions``, which just send a message to the user.
-You define them by adding an entry to the action list in your :class:`rasa_core.domain.Domain`.
-There also needs to be a matching utterance. For example, if there's an action ``utter_greet``
-then there should also be an utterance template called ``utter_greet`` in your domain.
+You define them by adding an entry to the action list in
+your :class:`rasa_core.domain.Domain`. There also needs to be a matching
+utterance. For example, if there's an action ``utter_greet`` then there
+should also be an utterance template called ``utter_greet`` in your domain.
 
 **What about more complicated actions?**
-In general, an action can run any code you like. Custom actions can turn on the lights,
-add an event to a calendar, check a user's bank balance, or anything else you can imagine.
+In general, an action can run any code you like. Custom
+actions can turn on the lights, add an event to a calendar, check a
+user's bank balance, or anything else you can imagine.
 
 
 Custom Actions Written in Python
 --------------------------------
 
 In a restaurant bot, if the user says "show me a Mexican restaurant",
-your bot could execute the action ``ActionCheckRestaurants``, which might look like this:
+your bot could execute the action ``ActionCheckRestaurants``,
+which might look like this:
 
 
 .. testcode::
 
-   from rasa_core.actions import Action
-   from rasa_core.events import SlotSet
+   from rasa_core_sdk.actions import Action
+   from rasa_core_sdk.events import SlotSet
 
    class ActionCheckRestaurants(Action):
       def name(self):
