@@ -31,6 +31,7 @@ Added
 - add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)
 - add a feature for each regex in the training set for crf_entity_extractor
 - Current training processes count for server and projects.
+- the ``/version`` endpoint returns a new field ``minimum_compatible_version``
 
 Changed
 -------
@@ -38,6 +39,7 @@ Changed
 - ``whitespace_tokenizer`` ignores punctuation ``.,!?`` before whitespace or end of string
 - Allow multiple training processes per project
 - Changed AlreadyTrainingError to MaxTrainingError. The first one was used to indicate that the project was already training. The latest will show an error when the server isn't able to training more models.
+- ``Interpreter.ensure_model_compatibility`` takes a new parameters for the version to compare the model version against
 
 Removed
 -------

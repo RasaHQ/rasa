@@ -22,6 +22,7 @@ from rasa_nlu.data_router import (
 from rasa_nlu.train import TrainingException
 from rasa_nlu.utils import json_to_string
 from rasa_nlu.version import __version__
+from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -251,7 +252,10 @@ class RasaNLU(object):
         """Returns the Rasa server's version"""
 
         request.setHeader('Content-Type', 'application/json')
-        return json_to_string({'version': __version__})
+        return json_to_string(
+            {'version': __version__,
+             'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
+        )
 
     @app.route("/config", methods=['GET', 'OPTIONS'])
     @requires_auth

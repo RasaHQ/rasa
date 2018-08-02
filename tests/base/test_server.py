@@ -72,7 +72,8 @@ def test_config(app):
 def test_version(app):
     response = yield app.get("http://dummy-uri/version")
     rjs = yield response.json()
-    assert response.code == 200 and "version" in rjs
+    assert response.code == 200
+    assert set(rjs.keys()) == {"version", "minimum_compatible_version"}
 
 
 @pytest.mark.parametrize("response_test", [
