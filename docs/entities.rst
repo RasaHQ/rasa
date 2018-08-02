@@ -4,14 +4,14 @@ Entity Extraction
 =================
 
 
-================    ================  ========================    ===================================
-Component           Requires          Model           	          notes
-================    ================  ========================    ===================================
-``ner_crf``         sklearn-crfsuite  conditional random field    good for training custom entities
-``ner_spacy``       spaCy             averaged perceptron         provides pre-trained entities
-``ner_duckling``    duckling          context-free grammar        provides pre-trained entities
-``ner_mitie``       MITIE             structured SVM              good for training custom entities
-================    ================  ========================    ===================================
+=======================  ================  ========================    ===================================
+Component                Requires          Model           	           notes
+=======================  ================  ========================    ===================================
+``ner_crf``              sklearn-crfsuite  conditional random field    good for training custom entities
+``ner_spacy``            spaCy             averaged perceptron         provides pre-trained entities
+``ner_duckling_http``    running duckling  context-free grammar        provides pre-trained entities
+``ner_mitie``            MITIE             structured SVM              good for training custom entities
+=======================  ================  ========================    ===================================
 
 
 Custom Entities
@@ -48,12 +48,9 @@ objects that you can use, e.g.
 The list of supported langauges is `here <https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
 Duckling can also handle durations like "two hours", 
 amounts of money, distances, and ordinals. 
-Fortunately, there is also a
-`python wrapper <https://github.com/FraBle/python-duckling>`_ for
-duckling! You can use this component by installing the duckling
-package from PyPI and adding ``ner_duckling`` to your pipeline.
-Alternatively, you can run duckling separately (natively or in a docker container)
-and use the ``ner_duckling_http`` component. 
+Fortunately, there is a duckling docker container ready to use,
+that you just need to spin up and connect to Rasa NLU.
+(see :ref:`ner_duckling_http`)
 
 
 Regular Expressions (regex)
