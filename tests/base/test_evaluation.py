@@ -14,7 +14,7 @@ from rasa_nlu.evaluate import (
     remove_empty_intent_examples, get_entity_extractors,
     get_duckling_dimensions, known_duckling_dimensions,
     find_component, remove_duckling_extractors, drop_intents_below_freq,
-    run_cv_evaluation, substitute_labels)
+    run_cv_evaluation, substitute_labels, IntentEvaluationResult)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
@@ -241,17 +241,19 @@ def test_run_cv_evaluation():
 
 
 def test_empty_intent_removal():
-    targets = ["", "greet"]
-    predicted = ["restaurant_search", "greet"]
-    messages = ["I am hungry", "hello"]
-    conf = ["0.12345", "0.98765"]
-    targets_r, predicted_r, messages_r, conf_r = remove_empty_intent_examples(
-                                            targets, predicted, messages, conf)
+    intent_results = [
+        IntentEvaluationResult("", "restaurant_search",
+                               "I am hungry", 0.12345),
+        IntentEvaluationResult("greet", "greet",
+                               "hello", 0.98765)
+        ]
+    intent_results = remove_empty_intent_examples(intent_results)
 
-    assert targets_r == ["greet"]
-    assert predicted_r == ["greet"]
-    assert messages_r == ["hello"]
-    assert conf_r == ["0.98765"]
+    assert len(intent_results) == 1
+    assert intent_results[0].target == "greet"
+    assert intent_results[0].prediction == "greet"
+    assert intent_results[0].confidence == 0.98765
+    assert intent_results[0].message == "hello"
 
 
 def test_evaluate_entities():
