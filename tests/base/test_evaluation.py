@@ -246,7 +246,7 @@ def test_empty_intent_removal():
                                "I am hungry", 0.12345),
         IntentEvaluationResult("greet", "greet",
                                "hello", 0.98765)
-        ]
+    ]
     intent_results = remove_empty_intent_examples(intent_results)
 
     assert len(intent_results) == 1
