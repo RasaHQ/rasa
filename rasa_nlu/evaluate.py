@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
 import itertools
 import logging
 import shutil
@@ -10,6 +11,7 @@ from collections import defaultdict
 from collections import namedtuple
 
 import numpy as np
+import json
 
 from rasa_nlu import training_data, utils, config
 from rasa_nlu.config import RasaNLUModelConfig
@@ -36,19 +38,16 @@ def create_argument_parser():
             description='evaluate a Rasa NLU pipeline with cross '
                         'validation or on external data')
 
-    parser.add_argument('-d', '--data',
-                        required=True,
+    parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
 
-    parser.add_argument('--mode',
-                        default="evaluation",
+    parser.add_argument('--mode', default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-
                         help="model configurion file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
@@ -56,6 +55,15 @@ def create_argument_parser():
 
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
+
+    parser.add_argument('--errors', required=False, default="errors.json",
+                        help="output path for the json with wrong predictions")
+
+    parser.add_argument('--histogram', required=False, default="hist.png",
+                        help="output path for the confidence histogram")
+
+    parser.add_argument('--confmat', required=False, default="confmat.png",
+                        help="output path for the confusion matrix plot")
 
     utils.add_logging_option_arguments(parser, default=logging.INFO)
 
@@ -101,6 +109,21 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
+def plot_histogram(hist_data):  # pragma: no cover
+    """Plots a histogram of the confidence distribution of the predictions
+        and saves it to file"""
+    import matplotlib.pyplot as plt
+
+    plt.xlim([0, 1])
+    plt.hist(hist_data, bins=[0.05 * i for i in range(1, 21)])
+    plt.title('Intent Prediction Confidence Distribution')
+    plt.xlabel('Confidence')
+    plt.ylabel('Number of Samples')
+    fig = plt.gcf()
+    fig.set_size_inches(10, 10)
+    fig.savefig(cmdline_args.histogram, bbox_inches='tight')
+
+
 def log_evaluation_table(targets, predictions):  # pragma: no cover
     """Logs the sklearn evaluation metrics"""
     report, precision, f1, accuracy = get_evaluation_metrics(targets,
@@ -128,19 +151,21 @@ def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     return report, precision, f1, accuracy
 
 
-def remove_empty_intent_examples(targets, predictions):
+def remove_empty_intent_examples(targets, predictions, messages, confidences):
     """Removes those examples without intent."""
 
     targets = np.array(targets)
     mask = (targets != "") & (targets != None)  # noqa
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
+    messages = np.array(messages)[mask]
+    confidences = np.array(confidences)[mask]
 
     # substitute None values with empty string
     # to enable sklearn evaluation
     predictions[predictions == None] = ""  # noqa
 
-    return targets, predictions
+    return targets, predictions, messages, confidences
 
 
 def clean_intent_labels(labels):
@@ -163,9 +188,34 @@ def drop_intents_below_freq(td, cutoff=5):
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def evaluate_intents(targets, predictions):  # pragma: no cover
-    """Creates a confusion matrix and summary statistics for intent predictions.
+def show_nlu_errors(targets, preds, messages, conf):  # pragma: no cover
+    """Log messages which result in wrong predictions and save them to file"""
 
+    errors = {}
+    # it could be interesting to include entity-errors later
+    # therefore we start with a "intent_errors" key
+    errors['intent_errors'] = [
+        {"text": messages[i],
+            "true_label": targets[i],
+            "prediction": preds[i],
+            "confidence": conf[i]}
+        for i in range(len(messages)) if not (targets[i] == preds[i])]
+
+    if errors['intent_errors']:
+        errors = json.dumps(errors, indent=4)
+        logger.info("\n\nThese intent examples could not be classified "
+                    "correctly \n{}".format(errors))
+        with io.open(cmdline_args.errors, 'w') as error_file:
+            error_file.write(errors)
+        logger.info("Errors were saved to file {}.".format(cmdline_args.errors))
+    else:
+        logger.info("No prediction errors were found. You are AWESOME!")
+
+
+def evaluate_intents(targets, preds, messages, conf):  # pragma: no cover
+    """Creates a confusion matrix and summary statistics for intent predictions.
+    Log samples which could not be classified correctly and save them to file.
+    Creates a confidence histogram which is saved to file.
     Only considers those examples with a set intent.
     Others are filtered out."""
     from sklearn.metrics import confusion_matrix
@@ -174,17 +224,32 @@ def evaluate_intents(targets, predictions):  # pragma: no cover
 
     # remove empty intent targets
     num_examples = len(targets)
-    targets, predictions = remove_empty_intent_examples(targets, predictions)
+    targets, preds, messages, conf = remove_empty_intent_examples(
+                                                targets, preds, messages, conf)
+
     logger.info("Intent Evaluation: Only considering those "
                 "{} examples that have a defined intent out "
                 "of {} examples".format(targets.size, num_examples))
-    log_evaluation_table(targets, predictions)
+    log_evaluation_table(targets, preds)
 
-    cnf_matrix = confusion_matrix(targets, predictions)
-    labels = unique_labels(targets, predictions)
-    plot_confusion_matrix(cnf_matrix,
-                          classes=labels,
+    # log and save misclassified samples to file for debugging
+    show_nlu_errors(targets, preds, messages, conf)
+
+    cnf_matrix = confusion_matrix(targets, preds)
+    labels = unique_labels(targets, preds)
+    plot_confusion_matrix(cnf_matrix, classes=labels,
                           title='Intent Confusion matrix')
+    # save confusion matrix to file before showing it
+    fig = plt.gcf()
+    fig.set_size_inches(10, 10)
+    fig.savefig(cmdline_args.confmat, bbox_inches='tight')
+
+    plt.show()
+
+    # create histogram of confidence distribution, save to file and display
+    plt.gcf().clear()
+    hist = [conf[i] for i in range(len(messages)) if (targets[i] == preds[i])]
+    plot_histogram(hist)
 
     plt.show()
 
@@ -406,13 +471,29 @@ def extract_entities(result):  # pragma: no cover
     return result.get('entities', [])
 
 
+def extract_message(result):  # pragma: no cover
+    """Extracts the original message from a parsing result."""
+    return result.get('text', {})
+
+
+def extract_confidence(result):  # pragma: no cover
+    """Extracts the confidence from a parsing result."""
+    return result.get('intent', {}).get('confidence')
+
+
 def get_intent_predictions(interpreter, test_data):  # pragma: no cover
-    """Runs the model for the test set and extracts intent predictions"""
+    """Runs the model for the test set and extracts intent predictions.
+        Returns intent predictions, the original messages
+        and the confidences of the predictions"""
     intent_predictions = []
+    messages = []
+    confidences = []
     for e in test_data.training_examples:
         res = interpreter.parse(e.text, only_output_properties=False)
         intent_predictions.append(extract_intent(res))
-    return intent_predictions
+        messages.append(extract_message(res))
+        confidences.append(extract_confidence(res))
+    return intent_predictions, messages, confidences
 
 
 def get_entity_predictions(interpreter, test_data):  # pragma: no cover
@@ -517,9 +598,11 @@ def run_evaluation(data_path, model_path,
 
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
-        intent_predictions = get_intent_predictions(interpreter, test_data)
+        intent_predictions, messages, confidences = get_intent_predictions(
+                                                        interpreter, test_data)
         logger.info("Intent evaluation results:")
-        evaluate_intents(intent_targets, intent_predictions)
+        evaluate_intents(intent_targets, intent_predictions, messages,
+                         confidences)
 
     if extractors:
         entity_targets = get_entity_targets(test_data)
@@ -613,9 +696,11 @@ def compute_intent_metrics(interpreter, corpus):
     if not is_intent_classifier_present(interpreter):
         return {}
     intent_targets = get_intent_targets(corpus)
-    intent_predictions = get_intent_predictions(interpreter, corpus)
-    intent_targets, intent_predictions = remove_empty_intent_examples(
-            intent_targets, intent_predictions)
+    intent_predictions, messages, confidences = get_intent_predictions(
+                                                            interpreter, corpus)
+    intent_targets, intent_predictions, messages, confidences = \
+        remove_empty_intent_examples(intent_targets, intent_predictions,
+                                     messages, confidences)
 
     # compute fold metrics
     _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
@@ -686,8 +771,6 @@ def return_entity_results(results, dataset_name):
 
 
 def main():
-    parser = create_argument_parser()
-    cmdline_args = parser.parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
@@ -726,4 +809,6 @@ def main():
 
 
 if __name__ == '__main__':  # pragma: no cover
+    parser = create_argument_parser()
+    cmdline_args = parser.parse_args()
     main()

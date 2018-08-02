@@ -83,6 +83,10 @@ The evaluation script will log precision, recall, and f1 measure for
 each intent and once summarized for all.
 Furthermore, it creates a confusion matrix for you to see which
 intents are mistaken for which others.
+Samples which have not been predicted correctly are logged and saved to a file 
+called ``errors.json`` for easier debugging. 
+Finally, the evaluation script creates a histogram of the confidence distribution for all predictions. 
+Improving the quality of your training data will move the histogram bars to the right.
 
 
 Entity Extraction
