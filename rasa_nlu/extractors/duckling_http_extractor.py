@@ -43,12 +43,9 @@ class DucklingHTTPExtractor(EntityExtractor):
         # locale - if not set, we will use the language of the model
         "locale": None,
 
-        # timezone like Europe/Berlin - if not set the default timezone of Duckling is going to be used
-        "timezone": None,
-
-        # Reference time ("now") as a timestamp since UNIX epoch
-        # - if not set the current time of the Duckling server is going to be used
-        "reference_time": None
+        # timezone like Europe/Berlin
+        # if not set the default timezone of Duckling is going to be used
+        "timezone": None
     }
 
     def __init__(self, component_config=None, language=None):
@@ -80,16 +77,19 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         return self.component_config.get("url")
 
+    def _payload(self, text, reference_time):
+        return {
+            "text": text,
+            "locale": self._locale(),
+            "tz": self.component_config.get("timezone"),
+            "reftime": reference_time
+        }
+
     def _duckling_parse(self, text, reference_time):
         """Sends the request to the duckling server and parses the result."""
 
         try:
-            payload = {
-                "text": text,
-                "locale": self._locale(),
-                "tz": self.component_config.get("timezone"),
-                "reftime": reference_time
-            }
+            payload = self._payload(text, reference_time)
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
             response = requests.post(self._url() + "/parse",
@@ -128,16 +128,17 @@ class DucklingHTTPExtractor(EntityExtractor):
         # type: (Message, **Any) -> None
 
         if self._url() is not None:
-            matches = self._duckling_parse(message.text, self._reference_time_from_message(message))
+            reference_time = self._reference_time_from_message(message)
+            matches = self._duckling_parse(message.text, reference_time)
             dimensions = self.component_config["dimensions"]
             relevant_matches = filter_irrelevant_matches(matches, dimensions)
             extracted = convert_duckling_format_to_rasa(relevant_matches)
         else:
             extracted = []
             logger.warning("Duckling HTTP component in pipeline, but no "
-                        "`url` configuration in the config "
-                        "file nor is `RASA_DUCKLING_HTTP_URL` "
-                        "set as an environment variable.")
+                           "`url` configuration in the config "
+                           "file nor is `RASA_DUCKLING_HTTP_URL` "
+                           "set as an environment variable.")
 
         extracted = self.add_extractor_name(extracted)
         message.set("entities",
