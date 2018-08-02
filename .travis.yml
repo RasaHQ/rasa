@@ -56,6 +56,7 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: deploy
+    python: 3.6
     install: skip
     script: skip
     deploy:
