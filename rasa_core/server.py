@@ -258,8 +258,10 @@ def create_app(model_directory=None,  # type: Optional[Text]
         """Get a dump of a conversations tracker including its events."""
 
         # parameters
-        use_history = utils.bool_arg('ignore_restarts', default=False)
-        should_include_events = utils.bool_arg('events', default=True)
+        should_ignore_restarts = utils.bool_arg('ignore_restarts',
+                                                default=False)
+        should_include_events = utils.bool_arg('events',
+                                               default=True)
         until_time = request.args.get('until', None)
 
         # retrieve tracker and set to requested state
@@ -270,7 +272,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
         # dump and return tracker
         state = tracker.current_state(
                 should_include_events=should_include_events,
-                only_events_after_latest_restart=use_history)
+                should_ignore_restarts=should_ignore_restarts)
         return jsonify(state)
 
     @app.route("/conversations/<sender_id>/respond",
@@ -337,7 +339,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
 
         # TODO: TB - implement properly for agent / bot
         if sender != "user":
-            return Response(jsonify(error="Currently, onle user messages can "
+            return Response(jsonify(error="Currently, only user messages can "
                                           "be passed to this endpoint. "
                                           "Messages of sender '{}' can not be "
                                           "handled. ".format(sender)),

@@ -27,10 +27,11 @@ class TelegramOutput(Bot, OutputChannel):
         super(TelegramOutput, self).__init__(access_token)
 
     def send_text_message(self, recipient_id, message):
-        return self.send_message(recipient_id, message)
+        for message_part in message.split("\n\n"):
+            self.send_message(recipient_id, message_part)
 
     def send_image_url(self, recipient_id, image_url):
-        return self.send_photo(recipient_id, image_url)
+        self.send_photo(recipient_id, image_url)
 
     def send_text_with_buttons(self, recipient_id, text,
                                buttons, button_type="inline", **kwargs):
@@ -70,7 +71,7 @@ class TelegramOutput(Bot, OutputChannel):
                          'button type {}'.format(button_type))
             return
 
-        return self.send_message(recipient_id, text, reply_markup=reply_markup)
+        self.send_message(recipient_id, text, reply_markup=reply_markup)
 
 
 class TelegramInput(InputChannel):

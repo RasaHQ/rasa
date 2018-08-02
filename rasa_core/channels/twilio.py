@@ -31,7 +31,13 @@ class TwilioOutput(Client, OutputChannel):
 
     def send_text_message(self, recipient_number, text):
         """Sends text message"""
+
+        for message_part in text.split("\n\n"):
+            self._send_text(recipient_number, message_part)
+
+    def _send_text(self, recipient_number, text):
         from twilio.base.exceptions import TwilioRestException
+
         message = None
         try:
             while not message and self.send_retry < self.max_retry:

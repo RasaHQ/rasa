@@ -31,9 +31,10 @@ class SlackBot(SlackClient, OutputChannel):
 
     def send_text_message(self, recipient_id, message):
         recipient = self.slack_channel or recipient_id
-        super(SlackBot, self).api_call("chat.postMessage",
-                                       channel=recipient,
-                                       as_user=True, text=message)
+        for message_part in message.split("\n\n"):
+            super(SlackBot, self).api_call("chat.postMessage",
+                                           channel=recipient,
+                                           as_user=True, text=message_part)
 
     def send_image_url(self, recipient_id, image_url, message=""):
         image_attachment = [{"image_url": image_url,

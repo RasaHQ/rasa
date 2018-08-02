@@ -70,12 +70,7 @@ class MessageProcessor(object):
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
-        if self.message_preprocessor is not None:
-            message.text = self.message_preprocessor(message.text)
-        # we have a Tracker instance for each user
-        # which maintains conversation state
-        tracker = self._get_tracker(message.sender_id)
-        self._handle_message_with_tracker(message, tracker)
+        tracker = self.log_message(message)
         self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -100,7 +95,7 @@ class MessageProcessor(object):
                 "tracker": tracker.current_state(should_include_events=True)}
 
     def log_message(self, message):
-        # type: (UserMessage) -> Dict[Text, Any]
+        # type: (UserMessage) -> DialogueStateTracker
 
         # preprocess message if necessary
         if self.message_preprocessor is not None:
@@ -111,7 +106,7 @@ class MessageProcessor(object):
         self._handle_message_with_tracker(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
-        return tracker.current_state(should_include_events=True)
+        return tracker
 
     def execute_action(self, sender_id, action_name, dispatcher):
         # type: (Text, Text, Dispatcher) -> Optional[List[Text]]

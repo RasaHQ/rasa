@@ -10,6 +10,7 @@ import typing
 from typing import List, Text, Optional
 
 from rasa_core import events
+from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -150,9 +151,8 @@ class ActionDefaultFallback(Action):
     def run(self, dispatcher, tracker, domain):
         from rasa_core.events import UserUtteranceReverted
 
-        if domain.random_template_for("utter_default") is not None:
-            dispatcher.utter_template("utter_default", tracker,
-                                      silent_fail=True)
+        dispatcher.utter_template("utter_default", tracker,
+                                  silent_fail=True)
 
         return [UserUtteranceReverted()]
 
@@ -167,7 +167,7 @@ class RemoteAction(Action):
     def _action_call_format(self, tracker, domain):
         tracker_state = tracker.current_state(
                 should_include_events=True,
-                only_events_after_latest_restart=True)
+                should_ignore_restarts=True)
 
         return {
             "next_action": self._name,

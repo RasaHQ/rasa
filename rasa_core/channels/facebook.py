@@ -132,7 +132,8 @@ class MessengerBot(OutputChannel):
 
         logger.info("Sending message: " + message)
 
-        self.send(recipient_id, elements.Text(text=message))
+        for message_part in message.split("\n\n"):
+            self.send(recipient_id, elements.Text(text=message_part))
 
     def send_image_url(self, recipient_id, image_url):
         # type: (Text, Text) -> None
