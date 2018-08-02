@@ -1,3 +1,5 @@
+:desc: Try out Rasa NLU in the browser.
+
 .. _section_quickstart:
 
 .. _tutorial:

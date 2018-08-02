@@ -1,3 +1,4 @@
+:desc: Rasa NLU: frequently asked questions
 .. _section_faq:
 
 Frequently Asked Questions

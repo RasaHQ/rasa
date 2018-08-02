@@ -1,3 +1,4 @@
+:desc: Customizing Your Rasa NLU Configuration
 .. _section_configuration:
 
 Server Configuration

@@ -1,3 +1,4 @@
+:desc: Updating your Rasa NLU Project to a New Version
 Migration Guide
 ===============
 This page contains information about changes between major versions and

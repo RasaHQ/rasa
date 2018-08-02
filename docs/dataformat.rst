@@ -1,3 +1,4 @@
+:desc: The Rasa NLU Training Data Format
 .. _section_dataformat:
 
 Training Data Format

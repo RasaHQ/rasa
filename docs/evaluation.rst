@@ -1,3 +1,5 @@
+:desc: Evaluating ML models trained with Rasa NLU
+
 .. _section_evaluation:
 
 Evaluating and Improving Models

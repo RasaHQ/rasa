@@ -1,3 +1,4 @@
+:desc: Using Rasa NLU with Docker
 .. _section_docker:
 
 Running in Docker

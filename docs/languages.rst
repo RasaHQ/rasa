@@ -1,3 +1,4 @@
+:desc: Langauges Supported by Rasa NLU
 .. _section_languages:
 
 Language Support

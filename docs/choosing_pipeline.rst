@@ -1,3 +1,5 @@
+:desc: Setting up a Rasa NLU pipeline
+
 .. _choosing_pipeline:
 
 Choosing a Pipeline
