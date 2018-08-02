@@ -1,3 +1,5 @@
+:desc: How to Customize Your Rasa Core Configuration
+
 .. _section_server:
 
 Server Configuration
