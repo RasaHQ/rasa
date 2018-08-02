@@ -9,6 +9,21 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.13.0] - 2018-08-02
+^^^^^^^^^^^^^^^^^^^^^
+
 .. warning::
 
   This is a release **breaking backwards compatibility**.
@@ -20,15 +35,20 @@ Added
 - support for `tokenizer_jieba` load custom dictionary from config
 - allow pure json including pipeline configuration on train endpoint
 - doc link to a community contribution for Rasa NLU in Chinese
-- support for component ``count_vectors_featurizer`` use ``tokens`` feature provide by tokenizer
+- support for component ``count_vectors_featurizer`` use ``tokens``
+  feature provide by tokenizer
 - 2-character and a 5-character prefix features to ``ner_crf``
 - ``ner_crf`` with whitespaced tokens to ``tensorflow_embedding`` pipeline
 - predict empty string instead of None for intent name
 - update default parameters for tensorflow embedding classifier
-- do not predict anything if feature vector contains only zeros in tensorflow embedding classifier
-- change persistence keywords in tensorflow embedding classifier (make previously trained models impossible to load)
-- intent_featurizer_count_vectors adds features to text_features instead of overwriting them
-- add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)
+- do not predict anything if feature vector contains only zeros
+  in tensorflow embedding classifier
+- change persistence keywords in tensorflow embedding classifier
+  (make previously trained models impossible to load)
+- intent_featurizer_count_vectors adds features to text_features
+  instead of overwriting them
+- add basic OOV support to intent_featurizer_count_vectors (make
+  previously trained models impossible to load)
 - add a feature for each regex in the training set for crf_entity_extractor
 - Current training processes count for server and projects.
 - the ``/version`` endpoint returns a new field ``minimum_compatible_version``
@@ -39,10 +59,14 @@ Added
 Changed
 -------
 - L1 and L2 regularisation defaults in ``ner_crf`` both set to 0.1
-- ``whitespace_tokenizer`` ignores punctuation ``.,!?`` before whitespace or end of string
+- ``whitespace_tokenizer`` ignores punctuation ``.,!?`` before
+  whitespace or end of string
 - Allow multiple training processes per project
-- Changed AlreadyTrainingError to MaxTrainingError. The first one was used to indicate that the project was already training. The latest will show an error when the server isn't able to training more models.
-- ``Interpreter.ensure_model_compatibility`` takes a new parameters for the version to compare the model version against
+- Changed AlreadyTrainingError to MaxTrainingError. The first one was used
+  to indicate that the project was already training. The latest will show
+  an error when the server isn't able to training more models.
+- ``Interpreter.ensure_model_compatibility`` takes a new parameters for
+  the version to compare the model version against
 - confusion matrix plot gets saved to file automatically during evaluation
 
 Removed
@@ -54,16 +78,19 @@ Removed
 
 Fixed
 -----
-- Fixed Luis emulation output to add start, end position and confidence for each entity.
-- Fixed byte encoding issue where training data could not be loaded by URL in python 3.
+- Fixed Luis emulation output to add start, end position and
+  confidence for each entity.
+- Fixed byte encoding issue where training data could not be
+  loaded by URL in python 3.
 
 [0.12.3] - 2018-05-02
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- Returning used model name and project name in the response of ``GET /parse`` and ``POST /parse`` as ``model`` and ``project`` respectively.
+- Returning used model name and project name in the response
+  of ``GET /parse`` and ``POST /parse`` as ``model`` and ``project``
+  respectively.
 
 Fixed
 -----
