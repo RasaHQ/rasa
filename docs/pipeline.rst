@@ -764,8 +764,8 @@ ner_crf
 
 ner_duckling_http
 ~~~~~~~~~~~~~~~~~
-:Short: Adds duckling support to the pipeline to unify
-        entity types (e.g. to retrieve common date / number formats)
+:Short: Duckling lets you extract common entities like dates,
+        amounts of money, distances, and others in a number of languages.
 :Outputs: appends ``entities``
 :Output-Example:
 
@@ -781,8 +781,9 @@ ner_duckling_http
         }
 
 :Description:
-    To use this component you need to run a duckling server. Easiest is to
-    spin up a docker container using ``docker run -p 8000:8000 rasa/duckling``.
+    To use this component you need to run a duckling server. The easiest
+    option is to spin up a docker container using
+    ``docker run -p 8000:8000 rasa/duckling``.
 
     Alternatively, you can install duckling directly on your
     `machine and start the server <https://github.com/facebook/duckling#quickstart>`_.
