@@ -38,10 +38,8 @@ jobs:
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
-    - pip install sphinx==1.7.5 sphinx-autobuild==0.7.1 sphinxcontrib-programoutput==0.11 nbsphinx==0.3.2 sphinxcontrib-httpdomain==1.5.0
+    - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
-    - pip install https://storage.googleapis.com/docs-theme/rasabaster-0.7.10.tar.gz
-    - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     - pip install -e .
     - pip list
     script:

@@ -1,6 +1,6 @@
 
-Language Understanding with Rasa NLU
-====================================
+Rasa NLU: Language Understanding for chatbots and AI assistants
+===============================================================
 
 .. note::
     This is the documentation for version |release| of Rasa NLU. Please make sure you are reading the documentation 
@@ -8,7 +8,7 @@ Language Understanding with Rasa NLU
 
 
 
-Rasa NLU is an open-source tool for intent classification and entity extraction. For example, taking a sentence like
+Rasa NLU is an open-source natural language processing tool for intent classification and entity extraction in chatbots. For example, taking a sentence like
 
 .. code-block:: console
 
@@ -27,9 +27,16 @@ and returning structured data like
     }
 
 
-The intended audience is mainly people developing chatbots and voice apps.
+The target audience is developers building chatbots and voice apps.
+
+The main reasons for using open source NLU are that:
+
+- you don't have to hand over all your training data to Google, Microsoft, Amazon, or Facebook.
+- Machine Learning is not one-size-fits all. You can tweak and customize models for your training data.
+- Rasa NLU runs wherever you want, so you don't have to make an extra network request for every message that comes in.
+
 You can read about the advantages of using open source NLU in this `blog post <https://medium.com/rasa-blog/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
-You can see an independent benchmark comparing Rasa NLU to various closed source tools `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_. 
+You can see an independent benchmark comparing Rasa NLU to closed source alternatives `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_. 
 
 
 .. toctree::
@@ -37,8 +44,8 @@ You can see an independent benchmark comparing Rasa NLU to various closed source
    :caption: Getting Started
    :hidden:
 
+   Try It Out <quickstart>
    installation
-   quickstart
 
 
 .. toctree::

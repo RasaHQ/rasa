@@ -1,7 +1,12 @@
+:desc: Installing Rasa NLU on Mac, Windows, and Linux
+:meta_image: https://i.imgur.com/nGF1K8f.jpg
+
 .. _section_backends:
 
 Installation
 ============
+
+
 Prerequisites
 ~~~~~~~~~~~~~
 For windows
@@ -14,7 +19,7 @@ Setting up Rasa NLU
 ~~~~~~~~~~~~~~~~~~~
 The recommended way to install Rasa NLU is using pip:
 
-.. code-block:: bash
+.. copyable::
 
     pip install rasa_nlu
 

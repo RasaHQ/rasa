@@ -1,3 +1,4 @@
+:desc: How to build custom Rasa NLU components
 .. _section_customcomponents:
 
 Custom Components

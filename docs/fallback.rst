@@ -1,3 +1,4 @@
+:desc: Fallback and default actions in Rasa
 .. _section_fallback:
 
 Confidence and Fallback Intents

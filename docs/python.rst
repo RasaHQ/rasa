@@ -1,3 +1,4 @@
+:desc: How to use Rasa NLU in a Python project
 .. _section_python:
 
 Python API

@@ -1,3 +1,4 @@
+:desc: The Rasa NLU REST API
 .. _section_http:
 
 HTTP API

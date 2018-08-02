@@ -1,3 +1,4 @@
+:desc: Entity Extraction with Rasa NLU
 .. _section_entities:
 
 Entity Extraction

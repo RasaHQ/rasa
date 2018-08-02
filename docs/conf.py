@@ -40,7 +40,9 @@ extensions = [
     'sphinxcontrib.programoutput',
     'sphinxcontrib.httpdomain',
     'rasabaster.button',
-    'rasabaster.card'
+    'rasabaster.card',
+    'rasabaster.copyable',
+    'rasabaster.runnable'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -145,7 +147,7 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-#html_title = u'rasa_nlu v0.3.0'
+html_title = u''
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None

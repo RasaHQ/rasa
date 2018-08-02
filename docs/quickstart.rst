@@ -1,14 +1,19 @@
+:desc: Try out Rasa NLU in the browser.
+
 .. _section_quickstart:
 
 .. _tutorial:
 
-Quickstart
-==========
+Getting Started with Rasa NLU
+=============================
+
+In this tutorial you will create your first Rasa NLU bot. You can run all of the 
+code snippets in here directly, or you can install Rasa NLU and run the examples on your
+own machine.
 
 
-As an example we'll start a new project covering the domain
-of searching for restaurants. We'll start with an extremely simple
-model of those conversations. You can build up from there.
+As an example we'll start a new project to help people search for restaurants. 
+We'll start with an extremely simple model of those conversations. You can build up from there.
 
 Let's assume that `anything` our users say can be
 categorized into one of the following **intents**:
@@ -35,108 +40,170 @@ The second job is to label words like "chinese" and "North" as
 ``cuisine`` and ``location`` **entities**, respectively.
 In this tutorial we'll build a model which does exactly that.
 
-Preparing the Training Data
----------------------------
+1. Prepare your NLU Training Data
+---------------------------------
 
 Training data is essential for developing chatbots and voice apps. 
 The data is just a list of messages that you expect to receive, annotated with 
 the intent and entities Rasa NLU should learn to extract.
 
-The best way to get training data is
-from *real users*, and a good way to get it is to
+The best way to get training data is from *real users*, and a good way to get it is to
 `pretend to be the bot yourself <https://medium.com/rasa-blog/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308>`_.
-But to help get you started, we have some
-`data saved <https://github.com/RasaHQ/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.md>`_.
+But to help get you started, we have some demo data here.
+See :ref:`section_dataformat` for details of the data format.
+
+If you are running this in the docs, it may take a few seconds to start up.
+If you are running locally, copy the text between the triple quotes (``"""``)
+and save it in a file called ``nlu.md``.
+
+.. runnable::
+   :description: nlu-write-nlu-data
+
+   nlu_md = """
+   ## intent:greet
+   - hey
+   - hello
+   - hi
+   - good morning
+   - good evening
+   - hey there
+
+   ## intent:restaurant_search
+   - i'm looking for a place to eat
+   - I want to grab lunch
+   - I am searching for a dinner spot
+   - i'm looking for a place in the [north](location) of town
+   - show me [chinese](cuisine) restaurants
+   - show me a [mexican](cuisine) place in the [centre](location)
+   - i am looking for an [indian](cuisine) spot
+   - search for restaurants
+   - anywhere in the [west](location)
+   - anywhere near [18328](location)
+   - I am looking for [asian fusion](cuisine) food
+   - I am looking a restaurant in [29432](location)
+
+   ## intent:thankyou
+   - thanks! 
+   - thank you
+   - thx
+   - thanks very much
+   """
+   %store nlu_md > nlu.md
 
 
-You can provide training data as json or markdown. 
-We'll use markdown here because it's easier to read, but see :ref:`section_dataformat` for details.
-
-Download the file (markdown format) and open it, and you'll see a list of
-training examples, each composed of ``"text"``, ``"intent"`` and
-``"entities"``, as shown below. In your working directory, create a
-``data`` folder, and copy this ``demo-rasa.md`` file there.
-
-.. code-block:: md
-
-    ## intent:greet
-    - hey
-    - howdy
-    - hey there
-    ...
-
-
-.. code-block:: md
-
-    ## intent:restaurant_search
-    - i'm looking for a place to eat
-    - I want to grab lunch
-    - I am searching for a dinner spot
-    - i'm looking for a place in the [north](location) of town
-
-
-Examples are grouped by intent, and entities are annotated as markdown links.
-For details on the format see :ref:`section_dataformat`.
-
-.. _training_your_model:
-
-Training a New Model for your Project
+2. Define your Machine Learning Model
 -------------------------------------
 
-Now we're going to create a configuration file. Make sure first that
-you've set up a backend, see :ref:`section_backends`. Create a file
-called ``config.yml`` in your working directory which looks like this
- 
-.. literalinclude:: ../sample_configs/config_spacy.yml
-    :language: yaml
+Rasa NLU has a number of different components, which together make a pipeline. Create a markdown file with the pipeline you want to use. In this case, we're using the pre-defined ``tensorflow_embedding`` pipeline. If you are running this locally instead of here in the docs, copy the text between the (``"""``)
+and save it in a file called ``nlu_config.yml``.
 
-If you set up the tensorflow backend, you can use 
+.. runnable:: 
+   :description: nlu-write-nlu-config
 
-.. literalinclude:: ../sample_configs/config_embedding.yml
-    :language: yaml
-
-
-Now we can train your model by running:
-
-.. code-block:: console
-
-    $ python -m rasa_nlu.train \
-        --config config.yml \
-        --data data/examples/rasa/demo-rasa.json \
-        --path projects
-
-What do these parameters mean?
-
-- **config**: configuration of the machine learning model
-- **data**: file or folder that contains the training data. You can also
-  pull training data from a URL using ``--url`` instead.
-- **path**: path where the model will be saved
+   nlu_config = """
+   language: en
+   pipeline: tensorflow_embedding
+   """
+   %store nlu_config > nlu_config.yml
 
 
-Full details of the parameters are in :ref:`section_pipeline`
+Full details of the pipeline components are in :ref:`section_pipeline`
 
-After a few minutes, Rasa NLU will finish
-training, and you'll see a new folder named 
-``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp
-when training finished.
+
+3. Train your Machine Learning NLU model.
+-----------------------------------------
+
+To train a model, start the ``rasa_nlu.train`` command, and tell it where to find your configuration and your training data:
+
+If you are running this in your computer, leave out the ``!`` at the start.
+
+.. runnable::
+   :description: nlu-train-nlu
+
+   !python -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
+
+
+We are also passing the ``--project current`` and ``--fixed_model_name nlu`` parameters, this means the model will be saved at ``.models/current/nlu`` relative to your working directory.
+
 
 .. _tutorial_using_your_model:
 
-Using Your Model
-----------------
+4. Try it out!
+--------------
+
+There are two ways you can use your model, directly from python, or by starting a http server. 
+
+To use your new model in python, create an ``Interpreter`` object and pass a message to its ``parse()`` method.
+
+.. runnable::
+    :description: nlu-parse-nlu-python
+
+    from rasa_nlu.model import Interpreter
+    import json
+    interpreter = Interpreter.load("./models/current/nlu")
+    message = "let's see some italian restaurants"
+    result = interpreter.parse(message)
+    print(json.dumps(result, indent=2))
+
+
+5. Start your Rasa NLU HTTP Server
+----------------------------------
+
+
+Run this command to start your server:
+
+.. runnable::
+   :description: nlu-start-server
+
+   !python -m rasa_nlu.server --path projects
+
 
 By default, the server will look for all projects folders under the ``path``
-directory specified. When no project is specified, as in this example,
-a "default" one will be used, itself using the latest trained model.
 
-.. code-block:: console
+Let's try it out with a HTTP request:
 
-    $ python -m rasa_nlu.server --path projects
+.. runnable::
+   :description: nlu-curl-server
 
-More information about starting the server can be found in :ref:`section_http`.
+   !curl 'localhost:5000/parse?q=hello&project=current&model=nlu' | python -m json.tool
 
-You can then test your new model by sending a request. Open a new window
-on your terminal and run
+
+More information about starting the server can be found in :ref:`section_configuration`.
+
+6. Start Building
+-----------------
+
+Clone the starter pack 
+
+.. copyable::
+
+   git clone https://github.com/RasaHQ/starter-pack.git
+
+The starter pack gets you set up with the right file structure, sample configurations, plus
+links to more training data! 
+
+Bonus Material
+--------------
+
+With very little data, Rasa NLU can in certain cases
+already generalise concepts, for example:
+
+.. runnable:: 
+    :description: nlu-parse-2
+
+    from rasa_nlu.model import Interpreter
+    import json
+
+    interpreter = Interpreter.load("./models/current/nlu")
+    message = "I want some italian food"
+    result = interpreter.parse(message)
+    print(json.dumps(message), indent=2)
+
+
+even though there's nothing quite like this sentence in
+the examples used to train the model. To build a more robust app
+you will obviously want to use a lot more training data, so go and collect it!
+
 
 .. note::
 
@@ -144,101 +211,26 @@ on your terminal and run
     like single quotes. Use doublequotes and escape where necessary.
     ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool``
 
-.. code-block:: console
-
-    $ curl -X POST localhost:5000/parse -d '{"q":"I am looking for Mexican food"}' | python -m json.tool
-
-which should return 
-
-.. code-block:: json
-
-    {
-        "intent": {
-        "name": "restaurant_search",
-        "confidence": 0.8231117999072759
-        },
-        "entities": [
-            {
-                "start": 17,
-                "end": 24,
-                "value": "mexican",
-                "entity": "cuisine",
-                "extractor": "ner_crf",
-                "confidence": 0.875
-            }
-        ],
-        "intent_ranking": [
-            {
-                "name": "restaurant_search",
-                "confidence": 0.8231117999072759
-            },
-            {
-                "name": "affirm",
-                "confidence": 0.07618757211779097
-            },
-            {
-                "name": "goodbye",
-                "confidence": 0.06298664363805719
-            },
-            {
-                "name": "greet",
-                "confidence": 0.03771398433687609
-            }
-        ],
-        "text": "I am looking for Mexican food"
-    }
-
-If not all of the entities aren't
-found, don't panic! This tutorial is just a toy example, with far too
-little training data to expect good performance.
+Spend some time playing around with the commands above, sending some different test messages to Rasa NLU. 
+Remember that this is just a toy example, with just a little bit of training data. 
+To build a really great NLU system you'll want to collect a lot more real user messages.
 
 .. note::
 
-    Intent classification is independent of entity extraction, e.g.
-    in "I am looking for Chinese food" the entities might not be extracted,
-    though intent classification is correct.
+    Intent classification is independent of entity extraction. So sometimes
+    NLU will get the intent right but entities wrong, or the other way around. 
+    You need to provide enough data for both intents and entities. 
 
 Rasa NLU will also print a ``confidence`` value for the intent
 classification. Note that the ``spacy_sklearn`` backend tends to report very low confidence scores. 
-These are just a heuristic, not a true probability, and you shouldn't read too much into them.
+These are just a heuristic, not a true probability, and you shouldn't read too much into them. Read :ref:`section_fallback` for more details.
 
-You can use this to do some error handling in your chatbot (ex:
-asking the user again if the confidence is low) and it's also
-helpful for prioritising which intents need more training data.
 
 .. note::
     The output may contain additional information, depending on the
     pipeline you are using. For example, not all pipelines include the
     ``"intent_ranking"`` information
 
-
-With very little data, Rasa NLU can in certain cases
-already generalise concepts, for example:
-
-.. code-block:: console
-
-    $ curl -X POST localhost:5000/parse -d '{"q":"I want some italian food"}' | python -m json.tool
-    {
-        "intent": {
-            "name": "restaurant_search",
-            "confidence": 0.5792111723774511
-        },
-        "entities": [
-            {
-                "entity": "cuisine",
-                "value": "italian",
-                "start": 12,
-                "end": 19,
-                "extractor": "ner_crf",
-                "confidence": 0.875
-            }
-        ],
-        "text": "I want some italian food"
-    }
-
-even though there's nothing quite like this sentence in
-the examples used to train the model. To build a more robust app
-you will obviously want to use a lot more training data, so go and collect it!
 
 .. raw:: html 
    :file: poll.html

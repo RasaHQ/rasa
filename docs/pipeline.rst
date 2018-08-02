@@ -1,3 +1,4 @@
+:desc: Understanding a Rasa NLU Pipeline
 .. _section_pipeline:
 
 Pipeline and Component Configuration
