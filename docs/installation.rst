@@ -16,7 +16,7 @@ Install Rasa Core
 -----------------
 The recommended way to install Rasa Core is using pip:
 
-.. code-block:: bash
+.. copyable:: 
 
     pip install rasa_core
 

@@ -1,3 +1,5 @@
+:desc: Tips for Debugging a Rasa bot
+
 .. _debugging:
 
 Debugging

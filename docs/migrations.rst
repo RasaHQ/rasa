@@ -1,3 +1,5 @@
+:desc: Upgrading your Rasa Core Project
+
 .. _migration:
 
 Migration Guide

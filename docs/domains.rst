@@ -1,3 +1,4 @@
+:desc: Understanding Rasa Core Domains
 .. _domain:
 
 Domain Format
