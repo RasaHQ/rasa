@@ -76,9 +76,9 @@ If you want to specify the intent confidence you can use
 
 .. code-block:: bash
 
-    /deny@1.1
+    /deny@0.825
 
-Which feeds the intent ``greet`` with confidence ``1.1``.  Combining confidence
+Which feeds the intent ``greet`` with confidence ``0.825``.  Combining confidence
 and entities
 
 .. code-block:: bash
