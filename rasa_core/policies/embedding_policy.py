@@ -121,7 +121,7 @@ class EmbeddingPolicy(Policy):
             y_for_no_action=None,  # type: Optional[tf.Tensor]
             y_for_action_listen=None,  # type: Optional[tf.Tensor]
             similarity_op=None,  # type: Optional[tf.Tensor]
-            alignment_history=None,  # type: Optional[List[[tf.Tensor]]
+            alignment_history=None,  # type: Optional[tf.Tensor]
             user_embed=None,  # type: Optional[tf.Tensor]
             bot_embed=None,  # type: Optional[tf.Tensor]
             slot_embed=None,  # type: Optional[tf.Tensor]
@@ -168,8 +168,7 @@ class EmbeddingPolicy(Policy):
         self.sim_op = similarity_op
 
         # store attention probability distribution as
-        # a list of tensors for each attention type
-        # of length self.num_attentions
+        # concatenated tensor of each attention types
         self.alignment_history = alignment_history
 
         # persisted embeddings
@@ -235,9 +234,6 @@ class EmbeddingPolicy(Policy):
 
     def is_using_attention(self):
         return self.attn_after_rnn or self.attn_before_rnn
-
-    def num_attentions(self):
-        return int(self.attn_after_rnn) + int(self.attn_before_rnn)
 
     def _load_visual_params(self, config):
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
@@ -554,19 +550,20 @@ class EmbeddingPolicy(Policy):
     def _alignments_history_from(self, final_state):
         """Extract alignments history form final rnn cell state"""
 
+        if not self.is_using_attention():
+            return None
+
+        alignments_from_state = final_state.alignment_history
+        if not isinstance(alignments_from_state, tuple):
+            alignments_from_state = [alignments_from_state]
+
         alignment_history = []
+        for alignments in alignments_from_state:
+            # reshape to (batch, time, memory_time)
+            alignment_history.append(
+                    tf.transpose(alignments.stack(), [1, 0, 2]))
 
-        if self.is_using_attention():
-            alignment_history_from_state = final_state.alignment_history
-            if self.num_attentions() == 1:
-                alignment_history_from_state = [alignment_history_from_state]
-
-            for alignments in alignment_history_from_state:
-                # reshape to (batch, time, memory_time)
-                alignments = tf.transpose(alignments.stack(), [1, 0, 2])
-                alignment_history.append(alignments)
-
-        return alignment_history
+        return tf.concat(alignment_history, -1)
 
     def _sim_rnn_from(self, cell_output):
         """Save intermediate tensors for debug purposes"""
@@ -707,66 +704,6 @@ class EmbeddingPolicy(Policy):
                 tf.losses.get_regularization_loss())
         return loss
 
-    # training helpers
-    def _linearly_increasing_batch_size(self, ep):
-        if not isinstance(self.batch_size, list):
-            return int(self.batch_size)
-
-        if self.epochs > 1:
-            return int(self.batch_size[0] +
-                       ep * (self.batch_size[1] - self.batch_size[0]) /
-                       (self.epochs - 1))
-        else:
-            return int(self.batch_size[0])
-
-    def _create_batch_b(self, batch_pos_b, intent_ids):
-        """Create batch of actions, where the first is correct action
-            and the rest are wrong actions sampled randomly"""
-
-        batch_pos_b = batch_pos_b[:, :, np.newaxis, :]
-
-        # sample negatives
-        batch_neg_b = np.zeros((batch_pos_b.shape[0],
-                                batch_pos_b.shape[1],
-                                self.num_neg,
-                                batch_pos_b.shape[-1]),
-                               dtype=int)
-        for b in range(batch_pos_b.shape[0]):
-            for h in range(batch_pos_b.shape[1]):
-                # create negative indexes out of possible ones
-                # except for correct index of b
-                negative_indexes = [
-                        i for i in range(self.encoded_all_actions.shape[0])
-                        if i != intent_ids[b, h]
-                ]
-
-                negs = np.random.choice(negative_indexes, size=self.num_neg)
-
-                batch_neg_b[b, h] = self.encoded_all_actions[negs]
-
-        return np.concatenate([batch_pos_b, batch_neg_b], -2)
-
-    # noinspection PyPep8Naming
-    def _scale_loss_by_count_actions(self, X, slots,
-                                     previous_actions, actions_for_Y):
-        """Count number of repeated actions and
-            output inverse proportionality"""
-        if self.scale_loss_by_action_counts:
-            full_X = np.concatenate([X, slots, previous_actions,
-                                     actions_for_Y[:, :, np.newaxis]], -1)
-            full_X = full_X.reshape((-1, full_X.shape[-1]))
-
-            _, i, c = np.unique(full_X, return_inverse=True,
-                                return_counts=True, axis=0)
-
-            counts = c[i].reshape((X.shape[0], X.shape[1]))
-
-            # do not include [-1 -1 ... -1 0] in averaging
-            # and smooth it by taking sqrt
-            return np.maximum(np.sqrt(np.mean(c[1:]) / counts), 1)
-        else:
-            return [[None]]
-
     # training methods
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
@@ -856,11 +793,10 @@ class EmbeddingPolicy(Policy):
                     shape=(1, session_data.Y.shape[-1]),
                     name='y_for_action_listen'
             )
-
             self._is_training = tf.placeholder_with_default(False, shape=())
 
-            self._loss_scales = tf.placeholder(tf.float32,
-                                               (None, dialogue_len))
+            self._loss_scales = tf.placeholder(dtype=tf.float32,
+                                               shape=(None, dialogue_len))
 
             self.user_embed = self._create_tf_user_embed(self.a_in)
             self.bot_embed = self._create_tf_bot_embed(self.b_in)
@@ -899,6 +835,66 @@ class EmbeddingPolicy(Policy):
 
             self._train_tf(session_data, loss, mask)
 
+    # training helpers
+    def _linearly_increasing_batch_size(self, ep):
+        if not isinstance(self.batch_size, list):
+            return int(self.batch_size)
+
+        if self.epochs > 1:
+            return int(self.batch_size[0] +
+                       ep * (self.batch_size[1] - self.batch_size[0]) /
+                       (self.epochs - 1))
+        else:
+            return int(self.batch_size[0])
+
+    def _create_batch_b(self, batch_pos_b, intent_ids):
+        """Create batch of actions, where the first is correct action
+            and the rest are wrong actions sampled randomly"""
+
+        batch_pos_b = batch_pos_b[:, :, np.newaxis, :]
+
+        # sample negatives
+        batch_neg_b = np.zeros((batch_pos_b.shape[0],
+                                batch_pos_b.shape[1],
+                                self.num_neg,
+                                batch_pos_b.shape[-1]),
+                               dtype=int)
+        for b in range(batch_pos_b.shape[0]):
+            for h in range(batch_pos_b.shape[1]):
+                # create negative indexes out of possible ones
+                # except for correct index of b
+                negative_indexes = [
+                        i for i in range(self.encoded_all_actions.shape[0])
+                        if i != intent_ids[b, h]
+                ]
+
+                negs = np.random.choice(negative_indexes, size=self.num_neg)
+
+                batch_neg_b[b, h] = self.encoded_all_actions[negs]
+
+        return np.concatenate([batch_pos_b, batch_neg_b], -2)
+
+    # noinspection PyPep8Naming
+    def _scale_loss_by_count_actions(self, X, slots,
+                                     previous_actions, actions_for_Y):
+        """Count number of repeated actions and
+            output inverse proportionality"""
+        if self.scale_loss_by_action_counts:
+            full_X = np.concatenate([X, slots, previous_actions,
+                                     actions_for_Y[:, :, np.newaxis]], -1)
+            full_X = full_X.reshape((-1, full_X.shape[-1]))
+
+            _, i, c = np.unique(full_X, return_inverse=True,
+                                return_counts=True, axis=0)
+
+            counts = c[i].reshape((X.shape[0], X.shape[1]))
+
+            # do not include [-1 -1 ... -1 0] in averaging
+            # and smooth it by taking sqrt
+            return np.maximum(np.sqrt(np.mean(c[1:]) / counts), 1)
+        else:
+            return [[None]]
+
     def _train_tf(self, session_data, loss, mask):
         """Train tf graph"""
 
@@ -916,8 +912,7 @@ class EmbeddingPolicy(Policy):
             batch_size = self._linearly_increasing_batch_size(ep)
             batches_per_epoch = (
                     session_data.X.shape[0] // batch_size +
-                    int(session_data.X.shape[0] % batch_size > 0)
-            )
+                    int(session_data.X.shape[0] % batch_size > 0))
 
             ep_loss = 0
             for i in range(batches_per_epoch):
@@ -1116,7 +1111,8 @@ class EmbeddingPolicy(Policy):
         """Persists the policy to a storage."""
 
         if self.session is None:
-            warnings.warn("Persist called without a trained model present. "
+            warnings.warn("Method `persist(...)` was called "
+                          "without a trained model present. "
                           "Nothing to persist then!")
             return
 
@@ -1146,9 +1142,9 @@ class EmbeddingPolicy(Policy):
 
             self._persist_tensor('similarity_op', self.sim_op)
 
-            for i, alignments in enumerate(self.alignment_history):
-                self._persist_tensor('alignment_history_{}'.format(i),
-                                     alignments)
+            if self.alignment_history is not None:
+                self._persist_tensor('alignment_history',
+                                     self.alignment_history)
 
             self._persist_tensor('user_embed', self.user_embed)
             self._persist_tensor('bot_embed', self.bot_embed)
@@ -1166,10 +1162,6 @@ class EmbeddingPolicy(Policy):
                 path,
                 file_name + ".encoded_all_actions.pkl"), 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
-        with io.open(os.path.join(
-                path,
-                file_name + ".num_attentions.pkl"), 'wb') as f:
-            pickle.dump(self.num_attentions(), f)
 
     @classmethod
     def load(cls, path):
@@ -1208,20 +1200,9 @@ class EmbeddingPolicy(Policy):
 
             sim_op = tf.get_collection('similarity_op')[0]
 
-            # attention probability distribution is
-            # a list of tensors for each attention type
-            # of length num_attentions
-            with io.open(os.path.join(
-                    path,
-                    file_name + ".num_attentions.pkl"), 'rb') as f:
-                num_attentions = pickle.load(f)
-
-            alignment_history = []
-            for i in range(num_attentions):
-                alignment_history.extend(
-                        tf.get_collection('alignment_history_{}'
-                                          ''.format(i))
-                )
+            alignment_history = tf.get_collection('alignment_history')
+            alignment_history = (alignment_history[0]
+                                 if alignment_history else None)
 
             user_embed = tf.get_collection('user_embed')[0]
             bot_embed = tf.get_collection('bot_embed')[0]
@@ -1238,7 +1219,7 @@ class EmbeddingPolicy(Policy):
         with io.open(encoded_actions_file, 'rb') as f:
             encoded_all_actions = pickle.load(f)
 
-        return cls(featurizer,
+        return cls(featurizer=featurizer,
                    encoded_all_actions=encoded_all_actions,
                    session=sess,
                    graph=graph,
