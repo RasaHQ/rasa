@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import argparse
 import logging
 import requests
+from tempfile import NamedTemporaryFile
 
 from builtins import str
 
@@ -93,7 +94,7 @@ def create_argument_parser():
     parser.add_argument(
             '--url',
             default=None,
-            help="If supplied, downloads serialised trackers from a URL and trains them")
+            help="If supplied, downloads a story file from a URL and trains on it")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -120,13 +121,13 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "augmentation_factor",
                                                  "remove_duplicates",
                                                  "debug_plots"})
-    training_data = agent.load_data(stories_file, **data_load_args)
 
     if url is not None:
-        tracker_store = TrackerStore(TemplateDomain(domain_file))
-        serialised_tracs = requests.get(url).json()
-        url_trackers = [tracker_store.deserialise_tracker(42, trac) for trac in serialised_tracs]
-        training_data.append(url_trackers)
+        data_store = NamedTemporaryFile()
+        stories_file = data_store.name
+        data_store.write(requests.get(url).content)
+
+    training_data = agent.load_data(stories_file, **data_load_args)
 
     if use_online_learning:
         if nlu_model_path:
