@@ -21,6 +21,20 @@ Removed
 Fixed
 -------
 
+[0.10.3] - 2018-08-03
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- updated to Rasa NLU 0.13
+- improved documentation quickstart
+
+Fixed
+-----
+- server request argument handling on python 3
+- creation of training data story graph - removes more nodes and speeds up
+  the training
+
 [0.10.2] - 2018-07-24
 ^^^^^^^^^^^^^^^^^^^^^
 
