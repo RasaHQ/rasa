@@ -155,7 +155,8 @@ def drop_intents_below_freq(td, cutoff=5):
                      for ex in td.intent_examples
                      if td.examples_per_intent[ex.get("intent")] >= cutoff]
 
-    return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
+    return TrainingData(keep_examples, td.entity_synonyms,
+                        td.regex_features, td.entity_phrases)
 
 
 def evaluate_intents(targets, predictions):  # pragma: no cover
@@ -537,10 +538,12 @@ def generate_folds(n, td):
         test = [x[i] for i in test_index]
         yield (TrainingData(training_examples=train,
                             entity_synonyms=td.entity_synonyms,
-                            regex_features=td.regex_features),
+                            regex_features=td.regex_features,
+                            entity_phrases=td.entity_phrases),
                TrainingData(training_examples=test,
                             entity_synonyms=td.entity_synonyms,
-                            regex_features=td.regex_features))
+                            regex_features=td.regex_features,
+                            entity_phrases=td.entity_phrases))
 
 
 def combine_intent_result(results, interpreter, data):
