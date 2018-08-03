@@ -155,7 +155,7 @@ Run this command to start your server:
 .. runnable::
    :description: nlu-start-server
 
-   !python -m rasa_nlu.server --path projects
+   !python -m rasa_nlu.server --path models
 
 
 By default, the server will look for all projects folders under the ``path``
