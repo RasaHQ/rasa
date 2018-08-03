@@ -10,7 +10,7 @@ numpy==1.14.0
 pandoc==1.0.0b2
 redis==2.10.5
 six==1.11.0
-tensorflow==1.4.1
+tensorflow==1.5.1
 typing==3.6.2
 networkx==1.11
 fbmessenger==5.0.0
