@@ -498,6 +498,10 @@ class EmbeddingPolicy(Policy):
                 ignore_mask = ignore_mask_listen
                 attn_shift_range = self.attn_shift_range
 
+            index_of_attn_to_copy = -1
+        else:
+            index_of_attn_to_copy = None
+
         num_utter_units = self.num_mem_units(emb_utter)
 
         def cell_input_fn(inputs, attention):
@@ -531,13 +535,14 @@ class EmbeddingPolicy(Policy):
             return inputs, prev_out_for_attn
 
         attn_cell = TimeAttentionWrapper(
-                cell, attn_mech,
+                cell=cell,
+                attention_mechanism=attn_mech,
                 dialogue_len=self._dialogue_len,
                 attn_shift_range=attn_shift_range,
                 sparse_attention=self.sparse_attention,
                 cell_input_fn=cell_input_fn,
                 attn_input_fn=attn_input_fn,
-                copy_attn_to_out=self.attn_after_rnn,
+                index_of_attn_to_copy=index_of_attn_to_copy,
                 similarity_fn=lambda emb_1, emb_2: (
                     self._tf_sim(emb_1, emb_2, None)),
                 ignore_mask=ignore_mask,
@@ -569,7 +574,7 @@ class EmbeddingPolicy(Policy):
         """Save intermediate tensors for debug purposes"""
 
         if self.is_using_attention():
-            self.no_skip_gate = cell_output[:, :, -6:]
+            self.no_skip_gate = cell_output[:, :, -5:]
             sim_attn = cell_output[:, :, -2]
             sim_state = cell_output[:, :, -1]
             return [sim_attn, sim_state]
@@ -581,6 +586,9 @@ class EmbeddingPolicy(Policy):
         """Save intermediate tensors for debug purposes"""
 
         if self.attn_after_rnn:
+            # embedding layer is inside rnn cell
+            emb_dial = cell_output[:, :, :self.embed_dim]
+
             self.rnn_embed = cell_output[
                              :,
                              :,
@@ -588,18 +596,14 @@ class EmbeddingPolicy(Policy):
             self.attn_embed = cell_output[
                               :,
                               :,
-                              (self.embed_dim + self.embed_dim):-6]
-            # embedding layer is inside rnn cell
-            emb_dial = cell_output[:, :, :self.embed_dim]
+                              (self.embed_dim + self.embed_dim):-5]
         else:
-            self.attn_embed = cell_output[
-                              :,
-                              :,
-                              (self.rnn_size + self.rnn_size):-6]
             # add embedding layer to rnn cell output
             emb_dial = self._create_embed(cell_output[:, :, :self.rnn_size],
                                           name='out')
             self.rnn_embed = emb_dial
+
+            self.attn_embed = cell_output[:, :, self.rnn_size:]
 
         return emb_dial
 
@@ -1462,7 +1466,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  alignment_history=False,
                  attn_input_fn=None,
                  cell_input_fn=None,
-                 copy_attn_to_out=False,
+                 index_of_attn_to_copy=None,
                  similarity_fn=None,
                  ignore_mask=None,
                  emb_for_action_listen=None,
@@ -1503,15 +1507,14 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         else:
             self._ignore_mask = ignore_mask
 
-        self._copy_attn_to_out = copy_attn_to_out
+        self._index_of_attn_to_copy = index_of_attn_to_copy
 
     @property
     def output_size(self):
         if self._output_attention:
             return (self._attention_layer_size
                     + 2 * self._cell.output_size
-                    + 2
-                    + 4)
+                    + 5)
         else:
             return self._cell.output_size
 
@@ -1526,8 +1529,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # use AttentionWrapperState from superclass
         state_size = super(TimeAttentionWrapper, self).state_size
 
-        all_hidden_cell_states = \
-            self._cell.state_size if self._copy_attn_to_out else None
+        all_hidden_cell_states = (self._cell.state_size
+                                  if self._index_of_attn_to_copy is not None
+                                  else None)
 
         return TimeAttentionWrapperState(
                 cell_state=state_size.cell_state,
@@ -1548,7 +1552,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         with tf.name_scope(type(self).__name__ + "ZeroState",
                            values=[batch_size]):
-            if self._copy_attn_to_out:
+            if self._index_of_attn_to_copy is not None:
                 if isinstance(self._cell.state_size,
                               tf.contrib.rnn.LSTMStateTuple):
                     all_hidden_cell_states = tf.contrib.rnn.LSTMStateTuple(
@@ -1581,6 +1585,25 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                     all_hidden_cell_states=all_hidden_cell_states
             )
 
+    def _get_memory_probs(self, all_alignments, time):
+        # get memory_probs from all_alignments
+        memory_probs = tf.stop_gradient(all_alignments[
+                self._index_of_attn_to_copy][:, :time])
+        # set memory_probs for action_listens to zeros in history
+        memory_probs = tf.where(
+                self._ignore_mask[self._index_of_attn_to_copy][:, :time],
+                tf.zeros_like(memory_probs),
+                memory_probs
+        )
+        # binarize memory_probs
+        memory_probs_max = tf.reduce_max(memory_probs, axis=1, keepdims=True)
+        memory_probs_max = tf.where(memory_probs_max > 0.1,
+                                    memory_probs_max, -memory_probs_max)
+
+        return tf.where(tf.equal(memory_probs, memory_probs_max),
+                        tf.ones_like(memory_probs),
+                        tf.zeros_like(memory_probs))
+
     @staticmethod
     def _apply_alignments_to_history(alignments, history_states, state):
         """Helper method to apply attention probabilities to  rnn history"""
@@ -1601,6 +1624,39 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # we then squeeze out the singleton dim.
 
         return tf.squeeze(tf.matmul(expanded_alignments, history_states), [1])
+
+    def _prev_emb_action(self, state, alignments, time):
+        """Helper method to get previous embedding vector from history"""
+
+        # get all previous embedding vectors
+        # from appropriate attention mechanism limited by current time
+        prev_emb_acts = tf.stop_gradient(self._attention_mechanisms[
+                self._index_of_attn_to_copy].values[:, :time, :])
+
+        # multiply by alignments to get one vector from one time step
+        return self._apply_alignments_to_history(alignments,
+                                                 prev_emb_acts,
+                                                 state)
+
+    def _mask_memory_probs(self, memory_probs, cell_output_with_attn, time):
+        # check that we do not pay attention to `action_listen`
+        bin_sim_listen, _ = self._sim_fn(cell_output_with_attn,
+                                         self._emb_for_action_listen)
+        memory_probs *= 1 - bin_sim_listen
+
+        c_g = 1 - tf.reduce_sum(memory_probs, 1, keepdims=True)
+        history_alignments = tf.concat([memory_probs, c_g], 1)
+
+        # get previous embedding vector from history
+        prev_emb_act = self._prev_emb_action(cell_output_with_attn,
+                                             history_alignments,
+                                             time)
+
+        # check that similarity between current embedding is close to
+        # the one in the history to which we pay attention to
+        bin_sim, _ = self._sim_fn(cell_output_with_attn, prev_emb_act)
+        # recalculate probs
+        return memory_probs * bin_sim
 
     def _new_next_cell_state(self, prev_all_hidden_cell_states,
                              state, alignments, time):
@@ -1721,62 +1777,45 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         cell_inputs = self._cell_input_fn(inputs, all_attentions[0])
 
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
-        h_old = cell_output
 
         prev_all_hidden_cell_states = state.all_hidden_cell_states
 
-        if self._copy_attn_to_out:
+        if self._index_of_attn_to_copy is not None:
             # get relevant previous bot actions from history
-            # self._attn_to_copy_fn(attention)
-            attn_emb_prev_act = all_attentions[-1]
+            attn_emb_prev_act = all_attentions[self._index_of_attn_to_copy]
             # copy them to current output
-            cell_output += attn_emb_prev_act
+            cell_output_with_attn = cell_output + attn_emb_prev_act
 
-            # c_probs = tf.round(all_alignments[-1][:, :state.time])
-
-            c_probs = tf.stop_gradient(all_alignments[-1][:, :state.time])
-            # set probs for action_listens to zeros in history
-            c_probs = tf.where(self._ignore_mask[-1][:, :state.time],
-                               tf.zeros_like(c_probs), c_probs)
-
-            # binarize c_probs
-            c_probs_max = tf.reduce_max(c_probs, axis=1, keepdims=True)
-            c_probs_max = tf.where(c_probs_max > 0.1,
-                                   c_probs_max, -c_probs_max)
-
-            c_probs = tf.where(tf.equal(c_probs, c_probs_max),
-                               tf.ones_like(c_probs),
-                               tf.zeros_like(c_probs))
+            memory_probs = self._get_memory_probs(all_alignments, state.time)
 
             # check that we do not pay attention to `action_listen`
-            bin_sim_listen, _ = self._sim_fn(cell_output,
+            bin_sim_listen, _ = self._sim_fn(cell_output_with_attn,
                                              self._emb_for_action_listen)
-            c_probs *= 1 - bin_sim_listen
+            memory_probs *= 1 - bin_sim_listen
 
-            c_g = 1 - tf.reduce_sum(c_probs, 1, keepdims=True)
-            history_alignments = tf.concat([c_probs, c_g], 1)
+            c_g = 1 - tf.reduce_sum(memory_probs, 1, keepdims=True)
+            history_alignments = tf.concat([memory_probs, c_g], 1)
 
-            prev_emb_acts = tf.stop_gradient(
-                    self._attention_mechanisms[-1].values[:, :state.time, :]
-            )
-            prev_emb_act = self._apply_alignments_to_history(
-                    history_alignments, prev_emb_acts, cell_output)
+            # get previous embedding vector from history
+            prev_emb_act = self._prev_emb_action(cell_output_with_attn,
+                                                 history_alignments,
+                                                 state.time)
 
             # check that similarity between current embedding is close to
             # the one in the history to which we pay attention to
-            bin_sim, _ = self._sim_fn(cell_output, prev_emb_act)
+            bin_sim, _ = self._sim_fn(cell_output_with_attn, prev_emb_act)
             # recalculate probs
-            c_probs *= bin_sim
+            memory_probs *= bin_sim
 
-            c_g = 1 - tf.reduce_sum(c_probs, 1, keepdims=True)
-            history_alignments = tf.concat([c_probs, c_g], 1)
+            c_g = 1 - tf.reduce_sum(memory_probs, 1, keepdims=True)
+            history_alignments = tf.concat([memory_probs, c_g], 1)
 
             # create addiditional similarities to maximize
             _, sim_attn = self._sim_fn(attn_emb_prev_act,
                                        tf.stop_gradient(prev_emb_act))
             sim_attn = tf.where(c_g < 0.5, sim_attn, tf.ones_like(sim_attn))
 
-            _, sim_state = self._sim_fn(h_old +
+            _, sim_state = self._sim_fn(cell_output +
                                         tf.stop_gradient(attn_emb_prev_act),
                                         tf.stop_gradient(prev_emb_act))
             sim_state = tf.where(c_g < 0.5, sim_state, tf.ones_like(sim_state))
@@ -1785,7 +1824,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 next_cell_state_h = self._new_next_cell_state(
                         prev_all_hidden_cell_states.h,
-                        cell_output,
+                        cell_output_with_attn,
                         history_alignments,
                         state.time
                 )
@@ -1795,7 +1834,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                         history_alignments,
                         state.time
                 )
-
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
                         next_cell_state_c, next_cell_state_h)
 
@@ -1803,27 +1841,35 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                         prev_all_hidden_cell_states.c.write(
                                 state.time + 1, next_cell_state.c),
                         prev_all_hidden_cell_states.h.write(
-                                state.time + 1, next_cell_state.h),
+                                state.time + 1, next_cell_state.h)
                 )
             else:
                 next_cell_state = self._new_next_cell_state(
                         prev_all_hidden_cell_states,
                         history_alignments,
-                        cell_output,
+                        cell_output_with_attn,
                         state.time
                 )
                 all_hidden_cell_states = prev_all_hidden_cell_states.write(
                         state.time + 1, next_cell_state)
-        else:
-            c_g = tf.ones_like(prev_out_for_attn[:, :1])
-            c_probs_max = tf.zeros_like(prev_out_for_attn[:, :1])
-            bin_sim_listen = tf.zeros_like(prev_out_for_attn[:, :1])
-            bin_sim = tf.zeros_like(prev_out_for_attn[:, :1])
-            sim_attn = tf.ones_like(prev_out_for_attn[:, :1])
-            sim_state = tf.ones_like(prev_out_for_attn[:, :1])
 
+            if self._output_attention:
+                # concatenate cell outputs, attention and no_skip_gate
+                output = tf.concat([cell_output_with_attn, cell_output,
+                                    attention, c_g,
+                                    bin_sim_listen, bin_sim,
+                                    sim_attn, sim_state], 1)
+            else:
+                output = cell_output_with_attn
+
+        else:
             # do not waste resources on storing history
             all_hidden_cell_states = None
+
+            if self._output_attention:
+                output = tf.concat([cell_output, attention], 1)
+            else:
+                output = cell_output
 
         next_state = TimeAttentionWrapperState(
                 time=state.time + 1,
@@ -1834,14 +1880,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 alignment_history=self._item_or_tuple(maybe_all_histories),
                 all_hidden_cell_states=all_hidden_cell_states
         )
-
-        if self._output_attention:
-            # concatenate cell outputs, attention and no_skip_gate
-            return tf.concat([cell_output, h_old, attention,
-                              c_g, c_probs_max, bin_sim_listen,
-                              bin_sim, sim_attn, sim_state], 1), next_state
-        else:
-            return cell_output, next_state
+        return output, next_state
 
 
 class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
