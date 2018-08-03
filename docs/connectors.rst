@@ -1,23 +1,28 @@
 .. _connectors:
 
-Connecting to messaging & voice platforms
-=========================================
+Chat & Voice platforms
+======================
 
 Here's how to connect your conversational AI to the outside world.
 
-Input channels are defined in the ``rasa_core.channels`` module.
-Currently, there is an implementation for the command line as well as
-connection to facebook, slack, telegram, mattermost and twilio.
+.. contents::
 
-You need an external webhook to use any of these channels.  If you're testing the connection locally, you can set up a temporary webhook using ngrok_
+Input channels are defined in the ``rasa_core.channels`` module.
+Currently, there is code for connecting to
+facebook, slack, telegram, mattermost and twilio. If the connection
+you want is missing, this is a great place to start contributing!
+
+If you're testing on your local machine (e.g. not a server), you 
+will need to use ngrok_. This gives your machine a domain name
+and so that facebook, slack, etc. know where to send messages.
 
 .. _facebook_connector:
 
 Facebook Messenger Setup
 ------------------------
 
-Using run script
-^^^^^^^^^^^^^^^^
+Using the run script
+^^^^^^^^^^^^^^^^^^^^
 If you want to connect to facebook using the run script, e.g. using
 
 .. code-block:: bash
@@ -28,7 +33,6 @@ If you want to connect to facebook using the run script, e.g. using
 you need to supply a ``fb_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/fb_credentials.yml
-   :linenos:
 
 
 Directly using python
@@ -42,7 +46,6 @@ Code to create a Messenger-compatible webserver looks like this:
 
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.facebook import FacebookInput
@@ -94,7 +97,6 @@ If you want to connect to the slack input channel using the run script, e.g. usi
 you need to supply a ``slack_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/slack_credentials.yml
-   :linenos:
 
 
 Directly using python
@@ -108,7 +110,6 @@ Code to create a Messenger-compatible webserver looks like this:
 
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.slack import SlackInput
@@ -165,7 +166,6 @@ If you want to connect to the mattermost input channel using the run script, e.g
 you need to supply a ``mattermost_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/mattermost_credentials.yml
-  :linenos:
 
 
 Directly using python
@@ -179,7 +179,6 @@ Code to create a Mattermost-compatible webserver looks like this:
 
 
 .. code-block:: python
-   :linenos:
 
    from rasa_core.channels import HttpInputChannel
    from rasa_core.channels.slack import MattermostInput
@@ -235,7 +234,6 @@ If you want to connect to telegram using the run script, e.g. using
 you need to supply a ``telegram_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/telegram_credentials.yml
-    :linenos:
 
 
 Directly using python
@@ -248,7 +246,6 @@ from your webserver creation logic.
 Code to create a Messenger-compatible webserver looks like this:
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.telegram import TelegramInput
@@ -300,7 +297,6 @@ If you want to connect to the twilio input channel using the run script, e.g. us
 you need to supply a ``twilio_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/twilio_credentials.yml
-    :linenos:
 
 
 Directly using python
@@ -313,7 +309,6 @@ from your webserver creation logic.
 Code to create a Twilio-compatible webserver looks like this:
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.twilio import TwilioInput
@@ -348,7 +343,8 @@ listen for messages on ``/app/webhook``.
 .. _ngrok:
 
 Using Ngrok For Local Testing
-=========================================
+-----------------------------
+
 You can use https://ngrok.com/ to create a local webhook from your machine that is Publicly available on the internet so you can use it with applications like Slack, Facebook, etc.
 
 The command to run a ngrok instance for port 5002 for example would be:
@@ -360,3 +356,35 @@ The command to run a ngrok instance for port 5002 for example would be:
 **Ngrok is only needed if you don't have a public IP and are testing locally**
 
 This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  This basically takes the code running on your local machine and punches it through the internet at the ngrok address supplied.
+
+
+Custom Channels
+---------------
+
+You can also implement your own, custom channel. 
+You can use the ``rasa_core.channels.custom.CustomInput`` class as a template.
+The most important methods to define are ``CustomInput.receive`` and ``CustomOutput.send_text_message``.
+These specify how Rasa Core will read incoming messages form the requests sent by your app, and the format
+to use when sending messages back to the user. 
+
+To use a custom channel, modify they ``rasa_core.run`` script, either adding your channel to the 
+``_create_external_channel`` function or directly overriding the ``input_channel`` variable defined in the 
+``main`` function.
+
+To define a custom channel, you need to define a HTTP endpoint that will receive messages. 
+
+.. literalinclude:: ../rasa_core/channels/custom.py 
+   :pyobject: CustomInput
+
+To send a message, you would run a command like:
+
+.. code-block:: bash
+
+    curl -XPOST http://localhost:5000/webhook \
+      -d '{"sender": "user1", "message": "hello"}' \
+      -H "Content-type: application/json"
+
+To get responses, you also need an output channel which implements sending messages back to the user.
+
+.. literalinclude:: ../rasa_core/channels/custom.py 
+   :pyobject: CustomOutput

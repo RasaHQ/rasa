@@ -3,16 +3,20 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
 import logging
 from collections import namedtuple
 
+import typing
 from typing import Text, List, Dict, Any
 
 from rasa_core.channels import OutputChannel
-from rasa_core.domain import Domain
+from rasa_core.nlg import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
+
+
+if typing.TYPE_CHECKING:
+    from rasa_core.trackers import DialogueStateTracker
 
 
 class Element(dict):
@@ -26,6 +30,7 @@ class Element(dict):
 
         super(Element, self).__init__(*args, **kwargs)
 
+
 # Makes a named tuple with entries text and data
 BotMessage = namedtuple("BotMessage", "text data")
 
@@ -37,12 +42,12 @@ class Button(dict):
 class Dispatcher(object):
     """Send messages back to user"""
 
-    def __init__(self, sender_id, output_channel, domain):
-        # type: (Text, OutputChannel, Domain) -> None
+    def __init__(self, sender_id, output_channel, nlg):
+        # type: (Text, OutputChannel, NaturalLanguageGenerator) -> None
 
         self.sender_id = sender_id
         self.output_channel = output_channel
-        self.domain = domain
+        self.nlg = nlg
         self.send_messages = []
         self.latest_bot_messages = []
 
@@ -111,65 +116,64 @@ class Dispatcher(object):
         # Sends the bot message to the output channel
         self.output_channel.send_image_url(self.sender_id, attachment)
 
-    def utter_button_template(self, template, buttons,
-                              filled_slots=None,
-                              **kwargs):
+    def utter_button_template(self,
+                              template,  # type: Text
+                              buttons,  # type: List[Dict[Text, Any]]
+                              tracker,  # type: DialogueStateTracker
+                              silent_fail=False,  # type: bool
+                              **kwargs  # type: **Any
+                              ):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message template with buttons to the output channel."""
 
-        t = self.retrieve_template(template, filled_slots, **kwargs)
-        if "buttons" not in t:
-            t["buttons"] = buttons
+        message = self._generate_response(template,
+                                          tracker,
+                                          silent_fail,
+                                          **kwargs)
+        if not message:
+            return
+
+        if "buttons" not in message:
+            message["buttons"] = buttons
         else:
-            t["buttons"].extend(buttons)
-        self.utter_response(t)
-
-    def utter_template(self, template, filled_slots=None, **kwargs):
-        # type: (Text, **Any) -> None
-        """"Send a message to the client based on a template."""
-
-        message = self.retrieve_template(template, filled_slots, **kwargs)
+            message["buttons"].extend(buttons)
         self.utter_response(message)
 
-    @staticmethod
-    def _template_variables(filled_slots, kwargs):
-        # type: (**Any) -> List
-        """Fill in slots in the template variables."""
-        if filled_slots is None:
-            filled_slots = {}
-        # Copying the filled slots in the template variables.
-        template_vars = filled_slots.copy()
-        template_vars.update(kwargs.items())
-        return template_vars
+    def utter_template(self,
+                       template,  # type: Text
+                       tracker,  # type: DialogueStateTracker
+                       silent_fail=False,  # type: bool
+                       **kwargs  # type: ** Any
+                       ):
+        # type: (...) -> None
+        """"Send a message to the client based on a template."""
 
-    def _fill_template_text(self, template, filled_slots=None, **kwargs):
-        # type: (Text, **Any) -> Dict[Text, Any]
-        """"Combine slot values and key word arguments to fill templates."""
-        # Getting the slot values in the template variables
-        template_vars = self._template_variables(filled_slots, kwargs)
-        # Filling the template variables in the template
-        if template_vars:
-            try:
-                template["text"] = template["text"].format(**template_vars)
-            except KeyError as e:
-                logger.exception(
-                        "Failed to fill utterance template '{}'. "
-                        "Tried to replace '{}' but could not find "
-                        "a value for it. There is no slot with this "
-                        "name nor did you pass the value explicitly "
-                        "when calling the template. Return template "
-                        "without filling the template. "
-                        "".format(template, e.args[0]))
-        return template
+        message = self._generate_response(template,
+                                          tracker,
+                                          silent_fail,
+                                          **kwargs)
 
-    def retrieve_template(self, template_name, filled_slots=None, **kwargs):
-        # type: (Text, **Any) -> Dict[Text, Any]
-        """Retrieve a named template from the domain."""
-        # Fetching a random template for the passed template name
-        r = copy.deepcopy(self.domain.random_template_for(template_name))
-        # Filling the slots in the template and returning the template
-        if r is not None:
-            return self._fill_template_text(r, filled_slots, **kwargs)
-        else:
-            return {"text": "Undefined utter template <{}>."
-                            "".format(template_name)}
+        if not message:
+            return
+
+        self.utter_response(message)
+
+    def _generate_response(
+            self,
+            template,  # type: Text
+            tracker,  # type: DialogueStateTracker
+            silent_fail=False,  # type: bool
+            **kwargs  # type: ** Any
+    ):
+        # type: (...) -> Dict[Text, Any]
+        """"Generate a response."""
+
+        message = self.nlg.generate(template, tracker,
+                                    self.output_channel.name(),
+                                    **kwargs)
+
+        if message is None and not silent_fail:
+            raise ValueError("Couldn't create message for template '{}'."
+                             "".format(template))
+
+        return message

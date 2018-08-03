@@ -4,21 +4,83 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[Unreleased 0.10.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 0.11.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
 
 Added
 -----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-------
+
+[0.10.3] - 2018-08-03
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- updated to Rasa NLU 0.13
+- improved documentation quickstart
+
+Fixed
+-----
+- server request argument handling on python 3
+- creation of training data story graph - removes more nodes and speeds up
+  the training
+
+[0.10.2] - 2018-07-24
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- new ``RasaChatInput`` channel
+- option to ignore entities for certain intents
+
+Fixed
+-----
+- loading of NLU model
+
+[0.10.1] - 2018-07-18
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+
+- documentation changes
+
+[0.10.0] - 2018-07-17
+^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This is a major new release with backward incompatible changes. Old trained
+    models can not be read with the new version - you need to retrain your model.
+    View the :ref:`migration` for details.
+
+Added
+-----
+- allow bot responses to be managed externally (instead of putting them into
+  the ``domain.yml``)
 - options to prevent slack from making re-deliver message upon meeting failure condition.
   the default is to ignore ``http_timeout``.
+- added ability to create domain from yaml string and export a domain to a yaml string
+- added server endpoint to fetch domain as json or yaml
+- new default action ActionDefaultFallback
 
 Changed
 -------
 - changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
 - moved AugmentedMemoizationPolicy to memoization.py
 - wrapped initialization of BackgroundScheduler in try/except to allow running on jupyterhub / binderhub/ colaboratory
+- fixed order of events logged on a tracker: action executed is now always
+  logged before bot utterances that action created
 
 Removed
 -------

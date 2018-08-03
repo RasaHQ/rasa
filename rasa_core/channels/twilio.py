@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 class TwilioOutput(Client, OutputChannel):
     """Output channel for Twilio"""
 
+    @classmethod
+    def name(cls):
+        return "twilio"
+
     def __init__(self, account_sid, auth_token, twilio_number):
         super(TwilioOutput, self).__init__(account_sid, auth_token)
         self.twilio_number = twilio_number
@@ -52,6 +56,10 @@ class TwilioOutput(Client, OutputChannel):
 
 class TwilioInput(HttpInputComponent):
     """Twilio input channel"""
+
+    @classmethod
+    def name(cls):
+        return "twilio"
 
     def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):
         self.account_sid = account_sid

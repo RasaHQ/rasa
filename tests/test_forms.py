@@ -16,6 +16,7 @@ from rasa_core.actions.forms import (
     FreeTextFormField
 )
 from rasa_core.domain import TemplateDomain
+from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
@@ -102,10 +103,11 @@ class ActionSearchQuery(FormAction):
 
 def test_restaurant_form():
     domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-restaurant"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance
@@ -138,10 +140,11 @@ def test_restaurant_form():
 
 def test_restaurant_form_unhappy_1():
     domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-restaurant"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance
@@ -170,10 +173,11 @@ def test_restaurant_form_unhappy_1():
 
 def test_restaurant_form_unhappy_2():
     domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-restaurant"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance
@@ -218,10 +222,11 @@ def test_restaurant_form_unhappy_2():
 
 def test_restaurant_form_skipahead():
     domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-restaurant"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance
@@ -242,10 +247,11 @@ def test_restaurant_form_skipahead():
 
 def test_people_form():
     domain = TemplateDomain.load("data/test_domains/people_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-people"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance
@@ -273,10 +279,11 @@ def test_people_form():
 
 def test_travel_form():
     domain = TemplateDomain.load("data/test_domains/travel_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-travel"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance
@@ -306,10 +313,11 @@ def test_travel_form():
 
 def test_query_form_set_username_directly():
     domain = TemplateDomain.load("data/test_domains/query_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-form"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # pre-fill username slot
@@ -329,10 +337,11 @@ def test_query_form_set_username_directly():
 
 def test_query_form_set_username_in_form():
     domain = TemplateDomain.load("data/test_domains/query_form.yml")
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     tracker_store = InMemoryTrackerStore(domain)
     out = CollectingOutputChannel()
     sender_id = "test-form"
-    dispatcher = Dispatcher(sender_id, out, domain)
+    dispatcher = Dispatcher(sender_id, out, nlg)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance

@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 class SlackBot(SlackClient, OutputChannel):
     """A Slack communication channel"""
 
+    @classmethod
+    def name(cls):
+        return "slack"
+
     def __init__(self, token, slack_channel=None):
         # type: (Text, Optional[Text]) -> None
 
@@ -67,6 +71,10 @@ class SlackBot(SlackClient, OutputChannel):
 
 class SlackInput(HttpInputComponent):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
+
+    @classmethod
+    def name(cls):
+        return "slack"
 
     def __init__(self, slack_token, slack_channel=None,
                  errors_ignore_retry=None):

@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 class TelegramOutput(Bot, OutputChannel):
     """Output channel for Telegram"""
 
+    @classmethod
+    def name(cls):
+        return "telegram"
+
     def __init__(self, access_token):
         super(TelegramOutput, self).__init__(access_token)
 
@@ -71,6 +75,10 @@ class TelegramOutput(Bot, OutputChannel):
 
 class TelegramInput(HttpInputComponent):
     """Telegram input channel"""
+
+    @classmethod
+    def name(cls):
+        return "telegram"
 
     def __init__(self, access_token, verify, webhook_url, debug_mode=True):
         self.access_token = access_token
