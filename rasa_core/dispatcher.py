@@ -103,15 +103,6 @@ class Dispatcher(object):
         self.latest_bot_messages.append(bot_message)
         self.output_channel.send_image_url(self.sender_id, attachment)
 
-    def utter_image(self, image_attachment):
-        # type: (Text) -> None
-        """Send a message to the client with image attachment."""
-
-        bot_message = BotMessage(text=None,
-                                 data={"attachment": image_attachment})
-        self.latest_bot_messages.append(bot_message)
-        self.output_channel.send_image_url(self.sender_id, image_attachment)
-
     def utter_button_template(self, template, buttons,
                               filled_slots=None,
                               **kwargs):
