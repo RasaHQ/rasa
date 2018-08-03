@@ -62,7 +62,7 @@ class Dispatcher(object):
 
         # if there is an image we handle it separately as an attachment
         if message.get("image"):
-            self.utter_image(message.get("image"))
+            self.utter_attachment(message.get("image"))
 
     def utter_message(self, text):
         # type: (Text) -> None

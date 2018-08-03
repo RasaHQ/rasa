@@ -69,7 +69,8 @@ class OutputChannel(object):
         # type: (Text, Text) -> None
         """Sends an attachment. Default will just post as a string."""
 
-        self.send_text_message(recipient_id, "Attachment: {}".format(attachment))
+        self.send_text_message(recipient_id,
+                               "Attachment: {}".format(attachment))
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
         # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
