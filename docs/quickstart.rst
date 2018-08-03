@@ -6,12 +6,12 @@ Quickstart
 
 .. note::
 
-    This tutorial will show you the different parts needed to build a bot. 
+    This tutorial will show you the different parts needed to build a bot.
     You can run the code directly in the documentation, without installing anything!
-    If you would like to run this locally, go to the :ref:`installation` first. 
+    If you would like to run this locally, go to the :ref:`installation` first.
 
 
-In this tutorial you will create your first Rasa Core bot. You can run all of the 
+In this tutorial you will create your first Rasa Core bot. You can run all of the
 code snippets in here directly, or you can install Rasa Core and run the examples on your
 own machine.
 
@@ -20,7 +20,7 @@ Goal
 ^^^^
 
 
-Our bot will ask us you're doing, and send a picture to try and cheer you up if you are sad.
+The bot will ask you how you're doing, and send a picture to try and cheer you up if you are sad.
 
 
 .. image:: _static/images/mood_bot.png
@@ -29,7 +29,7 @@ Our bot will ask us you're doing, and send a picture to try and cheer you up if 
 1. Write Stories
 ^^^^^^^^^^^^^^^^
 
-A good place to start is by writing a few stories. 
+A good place to start is by writing a few stories.
 Rasa Core works by learning from example conversations, and we'll
 write the first few examples ourselves to kick things off.
 
@@ -44,13 +44,13 @@ says hello back. This is how it looks as a story:
 
 
 A story starts with ``##`` followed by a name (the name is optional).
-lines that start with ``*`` are messages sent by the user. 
-Although you don't write the actual message, but rather 
-the intent (and the entities) that represent what the user `means`. 
-If you don't know about intents and entities, don't worry! 
-We will talk about them more later. 
-Lines that start with ``-`` are actions taken by your bot. 
-In this case all of our actions are just messages sent back to the user, 
+lines that start with ``*`` are messages sent by the user.
+Although you don't write the actual message, but rather
+the intent (and the entities) that represent what the user `means`.
+If you don't know about intents and entities, don't worry!
+We will talk about them more later.
+Lines that start with ``-`` are actions taken by your bot.
+In this case all of our actions are just messages sent back to the user,
 like ``utter_greet``, but in general an action can do anything,
 including calling an API and interacting with the outside world.
 
@@ -60,11 +60,11 @@ If you are running this in the docs, it may take a few seconds to start up.
 If you are running locally, copy the text between the triple quotes (``"""``)
 and save it in a file called ``stories.md``.
 
-.. runnable:: 
+.. runnable::
 
    stories_md = """
    ## happy path
-   * greet              
+   * greet
      - utter_greet
    * mood_great
      - utter_happy
@@ -102,7 +102,7 @@ The domain defines the universe your bot lives in.
 
 Here is an example domain for our bot which we'll write to a file called ``domain.yml``:
 
-.. runnable:: 
+.. runnable::
    domain_yml = """
    intents:
      - greet
@@ -137,7 +137,7 @@ Here is an example domain for our bot which we'll write to a file called ``domai
      - text: "Bye"
    """
    %store domain_yml > domain.yml
-    
+
 
 
 So what do the different parts mean?
@@ -157,9 +157,9 @@ So what do the different parts mean?
 
 
 **How does this fit together?**
-Rasa Core's job is to choose the right ``action`` to execute at each step of the 
+Rasa Core's job is to choose the right ``action`` to execute at each step of the
 conversation. Simple actions are just sending a message to a user. To do this,
-you need to provide a template with the same name in your domain file. 
+you need to provide a template with the same name in your domain file.
 See :ref:`customactions` for how to build more interesting actions.
 In our simple example we don't need ``slots`` and ``entities``,
 so these aren't in the example domain.
@@ -190,27 +190,25 @@ into ``models/dialogue``.
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Now we can use that trained dialogue model to run our bot.
-We haven't included an NLU model yet, though, so we have to send 
-structured data to our bot directly. 
+We haven't included an NLU model yet, though, so we have to send
+structured data to our bot directly.
 
 You can play around with the bot, directly sending in the intents in the domain.
-To do this, start your message with a ``/``. 
+To do this, start your message with a ``/``.
 Give it a try by sending the message ``/greet``.
 
-If you are running these commands locally, run: 
+If you are running these commands locally, run:
 
 .. code-block:: bash
 
-   python -m rasa_core.run -d models/dialogue 
+   python -m rasa_core.run -d models/dialogue
 
 If you are running the cells here in the docs, run this cell:
 
 .. runnable::
 
-   from rasa_core.agent import Agent
-   from rasa_core.channels.console import ConsoleInputChannel
-   agent = Agent.load('models/dialogue')
-   agent.handle_channel(ConsoleInputChannel())
+   from rasa_core.run import start_server
+   start_server('models/dialogue')
 
 
 5. Add NLU
@@ -286,7 +284,7 @@ Let's create some intent examples in a file called ``nlu.md``:
 Furthermore, we need a configuration file, ``nlu_config.yml``, for the
 NLU model:
 
-.. runnable:: 
+.. runnable::
    nlu_config = """
    language: en
    pipeline: tensorflow_embedding
@@ -318,10 +316,10 @@ since this is specified in the train command.
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Now that we've added an NLU model, you can talk to your bot using natural language,
-rather than typing in structured input. Let's start up your full bot, including 
-both Rasa Core and Rasa NLU models! 
+rather than typing in structured input. Let's start up your full bot, including
+both Rasa Core and Rasa NLU models!
 
-If you are running these commands locally, run: 
+If you are running these commands locally, run:
 
 .. code-block:: bash
 
@@ -331,14 +329,12 @@ If you are running the cells here in the docs, run this cell:
 
 .. runnable::
 
-   from rasa_core.agent import Agent
-   from rasa_core.channels.console import ConsoleInputChannel
-   agent = Agent.load('models/dialogue', interpreter='models/current/nlu')
-   agent.handle_channel(ConsoleInputChannel())
+   from rasa_core.server import start_server
+   start_server('models/dialogue', interpreter='models/current/nlu')
 
 Congratulations 🚀! You just built a bot from scratch,
-powered entirely by machine learning. 
-Why not play around with the code above? 
+powered entirely by machine learning.
+Why not play around with the code above?
 
 1. Teach your bot to understand you better. Add more NLU data, retrain the NLU model and restart your bot.
 2. Add some more stories to provide more examples of how your bot should behave. Then retrain the Rasa Core model to try it!
@@ -362,7 +358,7 @@ containing the information to connect to facebook. Let's put that
 into ``fb_credentials.yml``:
 
 .. literalinclude:: ../examples/moodbot/fb_credentials.yml
-   
+
 
 If you are new to Facebook Messenger bots, head over to
 :ref:`facebook_connector` for an explanation of the different values.
@@ -390,5 +386,3 @@ this:
          payload: "great"
        - title: "super sad"
          payload: "super sad"
-
-

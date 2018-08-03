@@ -88,9 +88,17 @@ Below is an excerpt of the stories.
 Interactive Learning
 ^^^^^^^^^^^^^^^^^^^^
 
-Run the script ``train_online.py``. This first creats a stateless policy by combining the stories
-we've provided into longer dialogues, and then trains the policy on that
-dataset.
+Run the following to start interactive learning:
+
+.. code-block:: bash
+
+   python -m rasa_core_sdk.endpoint --actions actions&
+   python train_online.py
+
+The first command starts the action server (see :ref:`customactions`).
+The second starts interactive learning. First it creates a stateless policy by
+combining the stories we've provided into longer dialogues, and then trains the
+policy on that dataset.
 
 It then runs the bot so that you can provide feedback to train it (this is
 where the learning *becomes interactive*):
@@ -237,4 +245,3 @@ able to train via the `Wizard of Oz <https://en.wikipedia
 bot to do a certain task, you can simply pretend to be a bot for a little
 while and at the end it will learn how to respond. This is a good way of
 learning how to make the conversation natural and flowing.
-

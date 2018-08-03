@@ -35,7 +35,7 @@ templates:
     - "Bye-bye"
   utter_default:
     - "default message"
-  utter_ack_dosearch: 
+  utter_ack_dosearch:
     - "ok let me see what I can find"
   utter_ack_findalternatives:
     - "ok let me see what else there is"
@@ -44,24 +44,24 @@ templates:
       buttons:
         - title: "thank you"
           payload: "thank you"
-  utter_ask_cuisine: 
+  utter_ask_cuisine:
     - "what kind of cuisine would you like?"
   utter_ask_howcanhelp:
     - "how can I help you?"
   utter_ask_location:
     - "where?"
-  utter_ask_moreupdates: 
+  utter_ask_moreupdates:
     - "if you'd like to modify anything else, please tell me what"
   utter_ask_numpeople:
     - "for how many people?"
-  utter_ask_price: 
+  utter_ask_price:
     - text: "in which price range?"
       buttons:
       - title: "cheap"
         payload: "cheap"
       - title: "expensive"
         payload: "expensive"
-  utter_on_it: 
+  utter_on_it:
     - "I'm on it"
 
 actions:
