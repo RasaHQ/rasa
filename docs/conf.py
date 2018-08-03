@@ -138,7 +138,7 @@ html_theme_options = {
     'github_repo': 'rasa_core',
     'fixed_sidebar': True,
     'product': "Core",
-    'base_url': 'https://rasa.com/docs/nlu/'
+    'base_url': 'https://rasa.com/docs/core/'
 }
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
