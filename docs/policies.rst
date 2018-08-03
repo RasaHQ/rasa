@@ -1,3 +1,5 @@
+:desc: Understanding Rasa Core Policies
+
 .. _policies:
 
 Training and Policies
