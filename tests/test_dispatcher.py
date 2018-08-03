@@ -16,6 +16,13 @@ def test_dispatcher_utter_attachment(default_dispatcher_collecting):
             'text': 'Image: http://my-attachment'} == collected
 
 
+def test_dispatcher_utter_image(default_dispatcher_collecting):
+    default_dispatcher_collecting.utter_image("http://my-attachment")
+    collected = default_dispatcher_collecting.output_channel.latest_output()
+    assert {'recipient_id': 'my-sender',
+            'text': 'Image: http://my-attachment'} == collected
+
+
 def test_dispatcher_utter_template(default_dispatcher_collecting):
     default_dispatcher_collecting.utter_template("utter_goodbye")
     collected = default_dispatcher_collecting.output_channel.latest_output()
