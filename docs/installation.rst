@@ -6,22 +6,23 @@ Installation
 Install Rasa Core to get started with the Rasa stack.
 
 .. note::
-    You can also get started without installing anything by using this `colab notebook <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
+    You can also get started without installing anything by going to the :ref:`quickstart`
+
 
 Install Rasa Core
 -----------------
 The recommended way to install Rasa Core is using pip:
 
-.. code-block:: bash
+.. copyable:: 
 
     pip install rasa_core
 
+
 If you alredy have `rasa_core` installed and want to update it run:
 
-.. code-block:: bash
+.. copyable:: 
 
     pip install -U rasa_core
-
 
 Unless you've already got numpy & scipy installed, we highly recommend 
 that you install and use `Anaconda <https://www.continuum.io\/downloads>`_.
@@ -54,10 +55,9 @@ We use Rasa NLU for intent classification & entity extraction. To get it, run
 
 .. code-block:: bash
 
-    pip install rasa_nlu
+    pip install rasa_nlu[tensorflow]
 
-
-Full instructions can be found `here <https://nlu.rasa.ai/installation.html>`_.
+Full instructions can be found `here <https://rasa.com/docs/nlu/installation/>`_.
 
 You can also use other NLU services like wit.ai, dialogflow, or LUIS. 
 In fact, you don't need to use NLU at all, if your messaging app uses buttons
@@ -66,5 +66,5 @@ rather than free text.
 Getting Started
 ---------------
 
-To see your newly installed Rasa Core in action, head over to the
-introductory tutorial :ref:`tutorial_basics`.
+To see your newly installed Rasa Core in action, head over to the 
+:ref:`quickstart`.

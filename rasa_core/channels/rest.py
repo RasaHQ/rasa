@@ -54,7 +54,7 @@ class HttpInputChannel(InputChannel):
                 app.register_blueprint(component.blueprint(on_message),
                                        url_prefix=self.url_prefix)
 
-        from gevent.wsgi import WSGIServer
+        from gevent.pywsgi import WSGIServer
         http_server = WSGIServer(('0.0.0.0', self.http_port), app)
         http_server.serve_forever()
 

@@ -17,9 +17,7 @@ from rasa_core.trackers import DialogueStateTracker
 
 def test_restart(default_dispatcher_cmd, default_domain):
     tracker = DialogueStateTracker("default",
-                                   default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+                                   default_domain.slots)
     events = ActionRestart().run(default_dispatcher_cmd, tracker,
                                  default_domain)
     assert events == [Restarted()]
@@ -30,10 +28,6 @@ def test_text_format():
            "Action('action_listen')"
     assert "{}".format(UtterAction("my_action_name")) == \
            "UtterAction('my_action_name')"
-
-
-def test_default_reset_topic():
-    assert not Action().resets_topic()
 
 
 def test_action_factories():
@@ -77,11 +71,12 @@ def test_domain_action_instantiation():
             ["my_module.ActionTest", "utter_test"],
             ["action_test", "utter_test"],
             ["utter_test"])
-    assert len(instantiated_actions) == 4
+    assert len(instantiated_actions) == 5
     assert instantiated_actions[0].name() == "action_listen"
     assert instantiated_actions[1].name() == "action_restart"
-    assert instantiated_actions[2].name() == "action_test"
-    assert instantiated_actions[3].name() == "utter_test"
+    assert instantiated_actions[2].name() == "action_default_fallback"
+    assert instantiated_actions[3].name() == "action_test"
+    assert instantiated_actions[4].name() == "utter_test"
 
 
 def test_local_action_factory_module_import_fails_on_invalid():

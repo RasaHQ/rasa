@@ -1,88 +1,104 @@
 
-The Rasa dialogue engine
-========================
+The Rasa Core dialogue engine
+=============================
 
 .. note::
    This is the documentation for version |release| of Rasa Core. Make sure you select
    the appropriate version of the documentation for your local installation!
 
 
-Welcome to the Rasa Documentation!
-----------------------------------
+.. chat-bubble::
+   :text: What am I looking at?
+   :sender: user
 
-*What am I looking at?*
 
-    Rasa is a framework for building conversational software:
-    Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a **bot**
-    in this documentation. You can
+.. chat-bubble::
+   :text: Rasa is a framework for building conversational software:
+      Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a <strong>bot</strong>
+      in this documentation. 
+   :sender: bot
 
-    - implement the actions your bot can take in python code (recommended),
-    - or use Rasa Core as a webservice (experimental, see :ref:`section_http`).
+.. chat-bubble::
+   :text: What's cool about it?
+   :sender: user
 
-    Go `here <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_ to try it out right away.
+.. chat-bubble::
+   :text: Rather than a bunch of <code>if/else</code> statements, the logic of your bot is
+      based on a probabilistic model trained on example conversations.
+   :sender: bot
 
-*What's cool about it?*
+.. chat-bubble::
+   :text: That sounds harder than writing a few <code>if</code> statements.
+   :sender: user
 
-    Rather than a bunch of ``if/else`` statements, the logic of your bot is
-    based on a probabilistic model trained on example conversations.
 
-*That sounds harder than writing a few if statements*
+.. chat-bubble::
+   :text: In the beginning of a project, it seems easier to just hard code some logic.
+      Rasa helps you when you want to go past that and create a bot that can handle more complexity.
+      This <a href="https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a" target="_blank">blog post </a> explains the philosophy behind Rasa Core.
+   :sender: bot
 
-    In the beginning of a project, it's indeed easier to just hard code some logic.
-    Rasa helps you when you want to go past that and create a bot that can handle more complexity.
 
-*Can I see it in action?*
+.. chat-bubble::
+   :text: Can I see it in action?
+   :sender: user
+    
+.. chat-bubble::
+   :text: We thought you'd never ask!
+      You can build a full example without installing anything, just go to the quickstart!
+   :sender: bot
 
-    We thought you'd never ask!
-    You can build a full example without installing anything on `colab <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
-    If you want to run stuff on your machine, follow the :ref:`installation`
-    and check out :ref:`tutorial_basics` afterwards!
+    
 
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Getting Started
 
-   motivation
-   no_python
+   quickstart
    installation
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials
 
-   tutorial_basics
-   tutorial_supervised
-   tutorial_interactive_learning
-   tutorial_remote
 
 .. toctree::
    :maxdepth: 1
-   :caption: Deep Dives
+   :hidden:
+   :caption: User Guide
+
+   architecture
+   connectors
+   customactions
+   slots
+   slotfilling
+   responses
+   interactive_learning
+   fallbacks
+   policies
+   debugging
+   evaluation
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Reference
 
    domains
    stories
-   patterns
-   plumbing
+   api/slots_api
+   server
    http
-   connectors
-   scheduling
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Python API
-
    api/agent
    api/events
    api/tracker
+   api/interpreter
+   api/policy
+   api/featurizer
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Developer Documentation
 
-   featurisation
-   interpreters
-   policies
-   state
    migrations
    changelog

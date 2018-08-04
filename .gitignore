@@ -1,6 +1,7 @@
 *#
 *.DS_Store
 *.egg
+*.eggs
 *.egg-info
 *.egg-info/
 *.iml
@@ -13,7 +14,9 @@
 *npy
 *pyc
 *~
+.env
 .cache/
+.pytest_cache/
 .coverage
 .idea/
 .vscode/
@@ -42,3 +45,5 @@ examples/moodbot/models
 examples/remotebot/models
 examples/restaurantbot/models
 examples/concertbot/models
+docs/key 
+docs/key.pub

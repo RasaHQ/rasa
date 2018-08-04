@@ -4,21 +4,22 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
+import io
 import logging
 import uuid
 from difflib import SequenceMatcher
 
-import matplotlib.pyplot as plt
+from builtins import str
 from tqdm import tqdm
 from typing import Text, List, Tuple
 
 import rasa_core
+from rasa_core import training
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core import training
-from rasa_core.training import TrainingsDataGenerator
+from rasa_core.training.generator import TrainingDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ def create_argument_parser():
     parser.add_argument(
             '-m', '--max_stories',
             type=int,
-            default=None,
+            default=100,
             help="maximum number of stories to test on")
     parser.add_argument(
             '-d', '--core',
@@ -52,7 +53,13 @@ def create_argument_parser():
             '-o', '--output',
             type=str,
             default="story_confmat.pdf",
-            help="output path for the created evaluation plot")
+            help="output path for the created evaluation plot. If set to None"
+                 "or an empty string, no plot will be generated.")
+    parser.add_argument(
+            '--failed',
+            type=str,
+            default="failed_stories.txt",
+            help="output path for the failed stories")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -95,7 +102,7 @@ def actions_since_last_utterance(tracker):
 
 
 def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
-                              max_stories=None, shuffle_stories=True):
+                              max_stories):
     """Test the stories from a file, running them through the stored model."""
 
     if nlu_model_path is not None:
@@ -109,22 +116,19 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
     preds = []
     actual = []
 
-    max_history = agent.policy_ensemble.policies[0].max_history
+    g = TrainingDataGenerator(story_graph, agent.domain,
+                              use_story_concatenation=False,
+                              tracker_limit=max_stories)
+    completed_trackers = g.generate()
 
-    g = TrainingsDataGenerator(story_graph, agent.domain,
-                               agent.featurizer,
-                               max_history=max_history,
-                               use_story_concatenation=False,
-                               tracker_limit=100)
-    data = g.generate()
+    failed_stories = []
 
-    completed_trackers = data.metadata["trackers"]
-    logger.info(
-            "Evaluating {} stories\nProgress:".format(len(completed_trackers)))
+    logger.info("Evaluating {} stories\nProgress:"
+                "".format(len(completed_trackers)))
 
     for tracker in tqdm(completed_trackers):
         sender_id = "default-" + uuid.uuid4().hex
-
+        story = {"predicted": [], "actual": []}
         events = list(tracker.events)
         actions_between_utterances = []
         last_prediction = []
@@ -132,9 +136,8 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
         for i, event in enumerate(events[1:]):
             if isinstance(event, UserUttered):
                 p, a = align_lists(last_prediction, actions_between_utterances)
-                preds.extend(p)
-                actual.extend(a)
-
+                story["predicted"].extend(p)
+                story["actual"].extend(a)
                 actions_between_utterances = []
                 agent.handle_message(event.text, sender_id=sender_id)
                 tracker = agent.tracker_store.retrieve(sender_id)
@@ -144,27 +147,67 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
                 actions_between_utterances.append(event.action_name)
 
         if last_prediction:
+
             preds.extend(last_prediction)
-            preds_padding = len(actions_between_utterances) - \
-                            len(last_prediction)
-            preds.extend(["None"] * preds_padding)
+            preds_padding = (len(actions_between_utterances) -
+                             len(last_prediction))
+
+            story["predicted"].extend(["None"] * preds_padding)
+            preds.extend(story["predicted"])
 
             actual.extend(actions_between_utterances)
-            actual_padding = len(last_prediction) - \
-                             len(actions_between_utterances)
-            actual.extend(["None"] * actual_padding)
+            actual_padding = (len(last_prediction) -
+                              len(actions_between_utterances))
 
-    return actual, preds
+            story["actual"].extend(["None"] * actual_padding)
+            actual.extend(story["actual"])
+
+        if story["predicted"] != story["actual"]:
+            failed_stories.append(story)
+
+    return actual, preds, failed_stories
 
 
-def run_story_evaluation(resource_name, policy_model_path, nlu_model_path,
-                         out_file, max_stories):
-    """Run the evaluation of the stories, plots the results."""
+def log_failed_stories(failed_stories, failed_output):
+    """Takes stories as a list of dicts"""
+
+    if not failed_output:
+        return
+
+    with io.open(failed_output, 'w') as f:
+        if len(failed_stories) == 0:
+            f.write("All stories passed")
+        else:
+            for i, story in enumerate(failed_stories):
+                f.write("\n## failed story {}\n".format(i))
+                for (p, a) in zip(story["predicted"], story["actual"]):
+                    if p == a:
+                        f.write("{:40}\n".format(a))
+                    else:
+                        f.write("{:40} predicted: {:40}\n".format(a, p))
+
+
+def run_story_evaluation(resource_name, policy_model_path,
+                         nlu_model_path=None,
+                         max_stories=None,
+                         out_file_stories=None,
+                         out_file_plot=None):
+    """Run the evaluation of the stories, optionally plots the results."""
+    test_y, preds, failed_stories = collect_story_predictions(resource_name,
+                                                              policy_model_path,
+                                                              nlu_model_path,
+                                                              max_stories)
+    if out_file_plot:
+        plot_story_evaluation(test_y, preds, out_file_plot)
+
+    log_failed_stories(failed_stories, out_file_stories)
+
+
+def plot_story_evaluation(test_y, preds, out_file):
+    """Plot the results. of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
-
-    test_y, preds = collect_story_predictions(resource_name, policy_model_path,
-                                              nlu_model_path, max_stories)
+    import matplotlib.pyplot as plt
 
     log_evaluation_table(test_y, preds)
     cnf_matrix = confusion_matrix(test_y, preds)
@@ -185,6 +228,7 @@ if __name__ == '__main__':
     run_story_evaluation(cmdline_args.stories,
                          cmdline_args.core,
                          cmdline_args.nlu,
-                         cmdline_args.output,
-                         cmdline_args.max_stories)
+                         cmdline_args.max_stories,
+                         cmdline_args.failed,
+                         cmdline_args.output)
     logger.info("Finished evaluation")

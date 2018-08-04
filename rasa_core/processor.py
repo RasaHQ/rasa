@@ -3,11 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import json
 import logging
+import time
 import warnings
 from types import LambdaType
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from pytz import UnknownTimeZoneError
 from typing import Optional, List, Dict, Any
 from typing import Text
 
@@ -24,14 +27,21 @@ from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
+from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 
-scheduler = BackgroundScheduler()
-scheduler.start()
 
 logger = logging.getLogger(__name__)
+
+try:
+    scheduler = BackgroundScheduler()
+    scheduler.start()
+except UnknownTimeZoneError:
+    logger.warn("apscheduler failed to start. "
+                "This is probably because your system timezone is not set"
+                "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
 
 
 class MessageProcessor(object):
@@ -40,11 +50,13 @@ class MessageProcessor(object):
                  policy_ensemble,  # type: PolicyEnsemble
                  domain,  # type: Domain
                  tracker_store,  # type: TrackerStore
+                 generator,  # type: NaturalLanguageGenerator
                  max_number_of_predictions=10,  # type: int
                  message_preprocessor=None,  # type: Optional[LambdaType]
                  on_circuit_break=None  # type: Optional[LambdaType]
                  ):
         self.interpreter = interpreter
+        self.nlg = generator
         self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
@@ -242,7 +254,7 @@ class MessageProcessor(object):
 
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
-                                self.domain)
+                                self.nlg)
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
@@ -270,8 +282,6 @@ class MessageProcessor(object):
             if self.on_circuit_break:
                 # call a registered callback
                 self.on_circuit_break(tracker, dispatcher)
-
-        logger.debug("Current topic: {}".format(tracker.topic.name))
 
     @staticmethod
     def should_predict_another_action(action_name, events):
@@ -306,8 +316,9 @@ class MessageProcessor(object):
                          "code.".format(action.name()), )
             logger.error(e, exc_info=True)
             events = []
-        self.log_bot_utterances_on_tracker(tracker, dispatcher)
+
         self._log_action_on_tracker(tracker, action.name(), events)
+        self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._schedule_reminders(events, dispatcher)
 
         return self.should_predict_another_action(action.name(), events)
@@ -326,14 +337,15 @@ class MessageProcessor(object):
                 if s and s.has_features():
                     logger.warn("Action '{0}' set a slot type '{1}' that "
                                 "it never set during the training. This "
-                                "can throw of the prediction. Make sure to"
+                                "can throw of the prediction. Make sure to "
                                 "include training examples in your stories "
-                                "for the different types of slots this"
+                                "for the different types of slots this "
                                 "action can return. Remember: you need to "
                                 "set the slots manually in the stories by "
-                                "adding '- slot{{\"{1}\": \"{2}\"}}' "
+                                "adding '- slot{{\"{1}\": {2}}}' "
                                 "after the action."
-                                "".format(action_name, e.key, e.value))
+                                "".format(action_name, e.key,
+                                          json.dumps(e.value)))
 
     @staticmethod
     def log_bot_utterances_on_tracker(tracker, dispatcher):
@@ -364,6 +376,11 @@ class MessageProcessor(object):
             tracker.update(ActionExecuted(action_name))
 
         for e in events:
+            # this makes sure the events are ordered by timestamp -
+            # since the event objects are created somewhere else,
+            # the timestamp would indicate a time before the time
+            # of the action executed
+            e.timestamp = time.time()
             tracker.update(e)
 
     def _get_tracker(self, sender_id):

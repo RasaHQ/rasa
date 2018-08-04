@@ -119,7 +119,9 @@ find in ``nlu_model_config.yml``:
 .. literalinclude:: ../examples/restaurantbot/nlu_model_config.yml
    :linenos:
 
-And training data ``franken_data.json`` (see `<https://nlu.rasa.ai/dataformat.html>`_ for details).
+And training data ``franken_data.json`` (see
+`NLU Dataformat <https://nlu.rasa.com/dataformat.html>`_ for details
+about the training data format).
 
 We can train the NLU model using
 

@@ -9,6 +9,14 @@
         "name": "inform_addresschange",
         "confidence": 1.0
       },
+      "parse_data": {
+        "intent": {
+          "name": "inform_addresschange",
+          "confidence": 1.0
+        },
+        "text": "/greet",
+        "entities": []
+      },
       "text": "/inform_addresschange"
     },
     {
@@ -27,6 +35,14 @@
       "intent": {
         "name": "deny",
         "confidence": 1.0
+      },
+      "parse_data": {
+        "intent": {
+          "name": "deny",
+          "confidence": 1.0
+        },
+        "text": "/deny",
+        "entities": []
       },
       "text": "/deny"
     },

@@ -49,14 +49,9 @@ def first_key(d, default_key):
 
 # noinspection PyProtectedMember
 class Event(object):
-    """An event is one of the following:
-    - something the user has said to the bot (starts a new turn)
-    - the topic has been set
-    - the bot has taken an action
-
-    Events are logged by the Tracker's update method.
-    This updates the list of turns so that the current state
-    can be recovered by consuming the list of turns."""
+    """Events describe everything that occurs in 
+    a conversation and tell the :class:`DialogueStateTracker`
+    how to update its state."""
 
     type_name = "event"
 
@@ -277,6 +272,7 @@ class BotUttered(Event):
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
 
+# TODO: DEPRECATED - remove in version 0.10.0
 # noinspection PyProtectedMember
 class TopicSet(Event):
     """The topic of conversation has changed.
@@ -327,7 +323,7 @@ class TopicSet(Event):
             raise ValueError("Failed to parse set topic event. {}".format(e))
 
     def apply_to(self, tracker):
-        tracker._topic_stack.push(self.topic)
+        pass
 
 
 # noinspection PyProtectedMember
@@ -362,10 +358,12 @@ class SlotSet(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        slot_key = first_key(parameters, default_key="name")
+        slots = []
+        for slot_key, slot_val in parameters.items():
+            slots.append(SlotSet(slot_key, slot_val))
 
-        if slot_key:
-            return SlotSet(slot_key, parameters[slot_key])
+        if slots:
+            return slots
         else:
             return None
 
@@ -418,10 +416,11 @@ class Restarted(Event):
 
 # noinspection PyProtectedMember
 class UserUtteranceReverted(Event):
-    """Bot undoes its last action.
-
-    Shouldn't be used during actual user interactions, mostly for train.
-    As a side effect the ``Tracker``'s last turn is removed."""
+    """Bot reverts everything until before the most recent user message. 
+    
+    The bot will revert all events after the latest `UserUttered`, this 
+    also means that the last event on the tracker is usually `action_listen` 
+    and the bot is waiting for a new user message."""
 
     type_name = "rewind"
 
@@ -547,8 +546,11 @@ class ReminderScheduled(Event):
 class ActionReverted(Event):
     """Bot undoes its last action.
 
-    Shouldn't be used during actual user interactions, mostly for train.
-    As a side effect the ``Tracker``'s last turn is removed."""
+    The bot everts everything until before the most recent action.
+    This includes the action itself, as well as any events that 
+    action created, like set slot events - the bot will now 
+    predict a new action using the state before the most recent 
+    action."""
 
     type_name = "undo"
 
@@ -578,7 +580,7 @@ class StoryExported(Event):
     type_name = "export"
 
     def __init__(self, path=None, timestamp=None):
-        self.path = path if path else "stories.md"
+        self.path = path
         super(StoryExported, self).__init__(timestamp)
 
     def __hash__(self):
@@ -595,8 +597,8 @@ class StoryExported(Event):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-
-        tracker.export_stories_to_file(self.path)
+        if self.path:
+            tracker.export_stories_to_file(self.path)
 
 
 # noinspection PyProtectedMember
@@ -692,3 +694,61 @@ class ActionExecuted(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_action_name = self.action_name
+
+
+class AgentUttered(Event):
+    """The agent has said something to the user.
+
+    This class is not used in the story training as it is contained in the
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+
+    type_name = "agent"
+
+    def __init__(self, text=None, data=None, timestamp=None):
+        self.text = text
+        self.data = data
+        super(AgentUttered, self).__init__(timestamp)
+
+    def __hash__(self):
+        return hash((self.text, jsonpickle.encode(self.data)))
+
+    def __eq__(self, other):
+        if not isinstance(other, AgentUttered):
+            return False
+        else:
+            return (self.text, jsonpickle.encode(self.data)) == \
+                   (other.text, jsonpickle.encode(other.data))
+
+    def __str__(self):
+        return "AgentUttered(text: {}, data: {})".format(
+                self.text, json.dumps(self.data, indent=2))
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+
+        pass
+
+    def as_story_string(self):
+        return None
+
+    def as_dict(self):
+        d = super(AgentUttered, self).as_dict()
+        d.update({
+            "text": self.text,
+            "data": self.data,
+        })
+        return d
+
+    @staticmethod
+    def empty():
+        return AgentUttered()
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        try:
+            return AgentUttered(parameters.get("text"),
+                                parameters.get("data"),
+                                parameters.get("timestamp"))
+        except KeyError as e:
+            raise ValueError("Failed to parse agent uttered event. "
+                             "{}".format(e))

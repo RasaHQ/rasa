@@ -35,6 +35,11 @@ class InputChannel(object):
 
     Collects messages from some source and puts them into the message queue."""
 
+    @classmethod
+    def name(cls):
+        """Every input channel needs a name to identify it."""
+        return cls.__name__
+
     def start_async_listening(self, message_queue):
         # type: (Dequeue) -> None
         """Start to push the incoming messages from channel into the queue."""
@@ -51,6 +56,11 @@ class OutputChannel(object):
 
     Provides sane implementation of the send methods
     for text only output channels."""
+
+    @classmethod
+    def name(cls):
+        """Every output channel needs a name to identify it."""
+        return cls.__name__
 
     def send_text_message(self, recipient_id, message):
         # type: (Text, Text) -> None

@@ -19,12 +19,12 @@ def run_concertbot_online(input_channel, interpreter,
                           domain_file="concert_domain.yml",
                           training_data_file='data/stories.md'):
     agent = Agent(domain_file,
-                  policies=[MemoizationPolicy(), KerasPolicy()],
+                  policies=[MemoizationPolicy(max_history=2), KerasPolicy()],
                   interpreter=interpreter)
 
-    agent.train_online(training_data_file,
+    training_data = agent.load_data(training_data_file)
+    agent.train_online(training_data,
                        input_channel=input_channel,
-                       max_history=2,
                        batch_size=50,
                        epochs=200,
                        max_training_samples=300)

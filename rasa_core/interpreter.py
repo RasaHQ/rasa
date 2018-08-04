@@ -12,6 +12,9 @@ import requests
 from builtins import str
 from typing import Text, List, Dict, Any
 
+from rasa_core import constants
+from rasa_core.utils import EndpointConfig
+
 logger = logging.getLogger(__name__)
 
 INTENT_MESSAGE_PREFIX = "/"
@@ -78,29 +81,45 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             return []
 
     @staticmethod
+    def _parse_confidence(confidence_str):
+        # type: (Text) -> float
+        if confidence_str is None:
+            return 1.0
+
+        try:
+            return float(confidence_str.strip()[1:])
+        except Exception as e:
+            logger.warning("Invalid to parse confidence value in line "
+                           "'{}'. Make sure the intent confidence is an "
+                           "@ followed by a decimal number. "
+                           "Error: {}".format(confidence_str, e))
+            return 0.0
+
+    @staticmethod
     def extract_intent_and_entities(user_input):
         # type: (Text) -> object
         """Parse the user input using regexes to extract intent & entities."""
 
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
         # the regex matches "slot{"a": 1}"
-        m = re.search('^['+prefixes+']?([^{]+)([{].+)?', user_input)
+        m = re.search('^['+prefixes+']?([^{@]+)(@[0-9\.]+)?([{].+)?', user_input)
         if m is not None:
             event_name = m.group(1).strip()
-            entities = RegexInterpreter._parse_parameters(m.group(2),
-                                                          m.start(2),
-                                                          m.end(2),
+            confidence = RegexInterpreter._parse_confidence(m.group(2))
+            entities = RegexInterpreter._parse_parameters(m.group(3),
+                                                          m.start(3),
+                                                          m.end(3),
                                                           user_input)
 
-            return event_name, entities
+            return event_name, confidence, entities
         else:
             logger.warning("Failed to parse intent end entities from "
                            "'{}'. ".format(user_input))
-            return None, []
+            return None, 0.0, []
 
     @staticmethod
     def deprecated_extraction(user_input):
-        """DEPRECATED parse of user intput message."""
+        """DEPRECATED parse of user input message."""
 
         value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
@@ -123,7 +142,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                             "value": match.group(2)}
                         entities.append(entity)
 
-            return intent, entities
+            return intent, 1.0, entities
         else:
             return None, []
 
@@ -142,29 +161,34 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         """Parse a text message."""
 
         if self.is_using_deprecated_format(text):
-            intent, entities = self.deprecated_extraction(text)
+            intent, confidence, entities = self.deprecated_extraction(text)
         else:
-            intent, entities = self.extract_intent_and_entities(text)
+            intent, confidence, entities = self.extract_intent_and_entities(text)
         return {
             'text': text,
             'intent': {
                 'name': intent,
-                'confidence': 1.0,
+                'confidence': confidence,
             },
             'intent_ranking': [{
                 'name': intent,
-                'confidence': 1.0,
+                'confidence': confidence,
             }],
             'entities': entities,
         }
 
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
-    def __init__(self, model_name, token, server, project_name='default'):
+    def __init__(self, model_name=None, endpoint=None, project_name='default'):
+        # type: (Text, EndpointConfig, Text) -> None
+
         self.model_name = model_name
-        self.token = token
-        self.server = server
         self.project_name = project_name
+
+        if endpoint:
+            self.endpoint = endpoint
+        else:
+            self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
     def parse(self, text):
         """Parse a text message.
@@ -182,19 +206,19 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
 
         Return `None` on failure."""
 
-        if not self.server:
+        if not self.endpoint:
             logger.error(
                     "Failed to parse text '{}' using rasa NLU over http. "
                     "No rasa NLU server specified!".format(text))
             return None
 
         params = {
-            "token": self.token,
+            "token": self.endpoint.token,
             "model": self.model_name,
             "project": self.project_name,
             "q": text
         }
-        url = "{}/parse".format(self.server)
+        url = "{}/parse".format(self.endpoint.url)
         try:
             result = requests.get(url, params=params)
             if result.status_code == 200:

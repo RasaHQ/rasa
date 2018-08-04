@@ -81,9 +81,9 @@ NLU model:
    :linenos:
 
 We can now train a NLU model using our examples (make sure to
-`install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
+`install Rasa NLU <http://nlu.rasa.com/installation.html#setting-up-rasa-nlu>`_
 first as well as
-`spaCy <http://nlu.rasa.ai/installation.html#best-for-most-spacy-sklearn>`_).
+`spaCy <http://nlu.rasa.com/installation.html#best-for-most-spacy-sklearn>`_).
 
 Let's run
 
@@ -98,7 +98,7 @@ created containing the NLU model.
 .. note::
 
    To gather more insights about the above configuration and Rasa NLU features
-   head over to the `Rasa NLU documentation <https://nlu.rasa.ai>`_.
+   head over to the `Rasa NLU documentation <https://nlu.rasa.com>`_.
 
 3. Define stories
 ^^^^^^^^^^^^^^^^^

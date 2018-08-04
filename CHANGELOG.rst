@@ -4,10 +4,147 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[Unreleased 0.9.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 0.11.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+Added
+-----
+- intent confidence support in RegexInterpreter
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-------
+
+[0.10.3] - 2018-08-03
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- updated to Rasa NLU 0.13
+- improved documentation quickstart
+
+Fixed
+-----
+- server request argument handling on python 3
+- creation of training data story graph - removes more nodes and speeds up
+  the training
+
+[0.10.2] - 2018-07-24
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- new ``RasaChatInput`` channel
+- option to ignore entities for certain intents
+
+Fixed
+-----
+- loading of NLU model
+
+[0.10.1] - 2018-07-18
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+
+- documentation changes
+
+[0.10.0] - 2018-07-17
+^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This is a major new release with backward incompatible changes. Old trained
+    models can not be read with the new version - you need to retrain your model.
+    View the :ref:`migration` for details.
+
+Added
+-----
+- allow bot responses to be managed externally (instead of putting them into
+  the ``domain.yml``)
+- options to prevent slack from making re-deliver message upon meeting failure condition.
+  the default is to ignore ``http_timeout``.
+- added ability to create domain from yaml string and export a domain to a yaml string
+- added server endpoint to fetch domain as json or yaml
+- new default action ActionDefaultFallback
+
+Changed
+-------
+- changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
+- moved AugmentedMemoizationPolicy to memoization.py
+- wrapped initialization of BackgroundScheduler in try/except to allow running on jupyterhub / binderhub/ colaboratory
+- fixed order of events logged on a tracker: action executed is now always
+  logged before bot utterances that action created
+
+Removed
+-------
+- removed support for topics
+
+[0.9.6] - 2018-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed fallback policy data generation
+
+[0.9.5] - 2018-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- handling of max history configuration in policies
+- fixed instantiation issues of fallback policy
+
+[0.9.4] - 2018-06-07
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed evaluation script
+- fixed story file loading (previously some story files with checkpoints could
+  create wrong training data)
+- improved speed of data loading
+
+[0.9.3] - 2018-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- added token auth to all endpoints of the core server
+
+
+[0.9.2] - 2018-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fix handling of max_history parameter in AugmentedMemoizationPolicy
+
+[0.9.1] - 2018-05-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- persistence of training data collected during online learning if default
+  file path is used
+- the ``agent()`` method used in some ``rasa_core.server`` endpoints is
+  re-run at every new call of the ``ensure_loaded_agent`` decorator
+- fixed OR usage of intents
+
+[0.9.0] - 2018-05-24
+^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This is a major new release with backward incompatible changes. Old trained
+    models can not be read with the new version - you need to retrain your model.
 
 Added
 -----
@@ -20,18 +157,51 @@ Added
 - added a Twilio channel that allows Rasa Core to communicate via SMS
 - ``FallbackPolicy`` for executing a default message if NLU or core model confidence is low.
 - ``FormAction`` class to make it easier to collect multiple pieces of information with fewer stories.
+- Dockerfile for ``rasa_core.server`` with a dialogue and Rasa NLU model
 
 Changed
 -------
+- moved server from klein to flask
 - updated dependency fbmessenger from 4.3.1 to 5.0.0
 - updated Rasa NLU to 0.12.x
-
-Removed
--------
+- updated all the dependencies to the latest versions
 
 Fixed
 -----
+- List slot is now populated with a list
 - Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
+- properly log to a file when using the ``run`` script
+- documentation fix on stories
+
+
+[0.8.6] - 2018-04-18
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin rasa nlu version to 0.11.4 (0.12.x only works with master)
+
+[0.8.5] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- updated google analytics docs survey code
+
+
+[0.8.4] - 2018-03-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin ``pykwalify<=1.6.0`` as update to ``1.6.1`` breaks compatibility
+
+[0.8.3] - 2018-02-28
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin ``fbmessenger`` version to avoid major update
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
@@ -214,7 +384,7 @@ Changed
 - renamed ``rasa_dm.util`` to ``rasa_dm.utils``
 - renamed the whole package to ``rasa_core`` (so ``rasa_dm`` is gone!)
 - renamed ``Reminder`` attribute ``id`` to ``name``
-- a lot of documentation improvements. docs are now at https://core.rasa.ai
+- a lot of documentation improvements. docs are now at https://core.rasa.com
 - use hashing when writing memorized turns into persistence - requires retraining of all models that are trained with a version prior to this
 - changed ``agent.handle_message(...)`` interface for easier usage
 

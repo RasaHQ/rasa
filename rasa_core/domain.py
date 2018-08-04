@@ -12,7 +12,6 @@ import os
 
 import numpy as np
 import pkg_resources
-from builtins import str
 from pykwalify.errors import SchemaError
 from six import string_types
 from six import with_metaclass
@@ -23,19 +22,18 @@ from typing import Text
 
 from rasa_core import utils
 from rasa_core.actions import Action
-from rasa_core.actions.action import ActionListen, ActionRestart
+from rasa_core.actions.action import (ActionListen, ActionRestart,
+                                      ActionDefaultFallback)
 from rasa_core.actions.factories import (
     action_factory_by_name,
     ensure_action_name_uniqueness)
-from rasa_core.conversation import DefaultTopic
-from rasa_core.conversation import Topic
-from rasa_core.events import ActionExecuted
-from rasa_core.featurizers import Featurizer
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core.utils import read_yaml_file
+from rasa_core.utils import read_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
+
+PREV_PREFIX = 'prev_'
 
 
 def check_domain_sanity(domain):
@@ -87,14 +85,13 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
-    and entities it can recognise, and the topics it knows about."""
+    and entities it can recognise"""
 
-    DEFAULT_ACTIONS = [ActionListen(), ActionRestart()]
+    DEFAULT_ACTIONS = [ActionListen(), ActionRestart(),
+                       ActionDefaultFallback()]
 
-    def __init__(self, topics=None, store_entities_as_slots=True,
+    def __init__(self, store_entities_as_slots=True,
                  restart_intent="restart"):
-        self.default_topic = DefaultTopic
-        self.topics = topics if topics is not None else []
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
@@ -119,10 +116,10 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         return {a.name(): (i, a) for i, a in enumerate(self.actions)}
 
     @utils.lazyproperty
-    def num_features(self):
-        """Number of used input features for the action prediction."""
+    def num_states(self):
+        """Number of used input states for the action prediction."""
 
-        return len(self.input_features)
+        return len(self.input_states)
 
     def action_for_name(self, action_name):
         # type: (Text) -> Optional[Action]
@@ -161,45 +158,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
                 "as that name is not a registered action for this domain. "
                 "Available actions are: \n{}".format(action_name, actions))
 
-    @staticmethod
-    def _is_predictable_event(event):
-        return isinstance(event, ActionExecuted) and not event.unpredictable
-
-    def slice_feature_history(self,
-                              featurizer,
-                              tracker_history,
-                              slice_length):
-        # type: (Featurizer, List[Dict[Text, float]], int) -> np.ndarray
-        """Slices a featurization from the trackers history.
-
-        If the slice is at the array borders, padding will be added to ensure
-        he slice length."""
-
-        slice_end = len(tracker_history)
-        slice_start = max(0, slice_end - slice_length)
-        padding = [None] * max(0, slice_length - slice_end)
-        state_features = padding + tracker_history[slice_start:]
-        encoded_features = [featurizer.encode(f, self.input_feature_map)
-                            for f in state_features]
-        return np.vstack(encoded_features)
-
-    def features_for_tracker_history(self, tracker):
-        """Array of features for each state of the trackers history."""
-
-        return [self.get_active_features(tr) for tr in
-                tracker.generate_all_prior_states()]
-
-    def feature_vector_for_tracker(self, featurizer, tracker, max_history):
-        """Creates a 2D array of shape (max_history,num_features)
-
-        max_history specifies the number of previous steps to be included
-        in the input. Each row in the array corresponds to the binarised
-        features of each state. Result is padded with default values if
-        there are fewer than `max_history` states present."""
-
-        all_features = self.features_for_tracker_history(tracker)
-        return self.slice_feature_history(featurizer, all_features, max_history)
-
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
@@ -208,9 +166,9 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def slot_features(self):
+    def slot_states(self):
         # type: () -> List[Text]
-        """Returns all available slot feature strings."""
+        """Returns all available slot state strings."""
 
         return ["slot_{}_{}".format(s.name, i)
                 for s in self.slots
@@ -218,72 +176,101 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def prev_action_features(self):
+    def prev_action_states(self):
         # type: () -> List[Text]
-        """Returns all available previous action feature strings."""
+        """Returns all available previous action state strings."""
 
-        return ["prev_{0}".format(a.name())
+        return [PREV_PREFIX + a.name()
                 for a in self.actions]
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def intent_features(self):
+    def intent_states(self):
         # type: () -> List[Text]
-        """Returns all available previous action feature strings."""
+        """Returns all available previous action state strings."""
 
         return ["intent_{0}".format(i)
                 for i in self.intents]
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def entity_features(self):
+    def entity_states(self):
         # type: () -> List[Text]
-        """Returns all available previous action feature strings."""
+        """Returns all available previous action state strings."""
 
         return ["entity_{0}".format(e)
                 for e in self.entities]
 
-    def index_of_feature(self, feature_name):
+    def index_of_state(self, state_name):
         # type: (Text) -> Optional[int]
-        """Provides the index of a feature."""
+        """Provides the index of a state."""
 
-        return self.input_feature_map.get(feature_name)
+        return self.input_state_map.get(state_name)
 
     @utils.lazyproperty
-    def input_feature_map(self):
+    def input_state_map(self):
         # type: () -> Dict[Text, int]
-        """Provides a mapping from feature names to indices."""
-        return {f: i for i, f in enumerate(self.input_features)}
+        """Provides a mapping from state names to indices."""
+        return {f: i for i, f in enumerate(self.input_states)}
 
     @utils.lazyproperty
-    def input_features(self):
+    def input_states(self):
         # type: () -> List[Text]
-        """Returns all available features."""
+        """Returns all available states."""
 
         return \
-            self.intent_features + \
-            self.entity_features + \
-            self.slot_features + \
-            self.prev_action_features
+            self.intent_states + \
+            self.entity_states + \
+            self.slot_states + \
+            self.prev_action_states
 
-    def get_active_features(self, tracker):
+    def get_parsing_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
-        """Return a bag of active features from the tracker state"""
-        feature_dict = self.get_parsing_features(tracker)
-        feature_dict.update(self.get_prev_action_features(tracker))
-        return feature_dict
 
-    def get_prev_action_features(self, tracker):
+        state_dict = {}
+
+        # Set all found entities with the state value 1.0, unless they should
+        # be ignored for the current intent
+        for entity in tracker.latest_message.entities:
+            intent_name = tracker.latest_message.intent.get("name")
+            should_use_entity = self._intents[intent_name]['use_entities']
+            if should_use_entity:
+                key = "entity_{0}".format(entity["entity"])
+                state_dict[key] = 1.0
+
+        # Set all set slots with the featurization of the stored value
+        for key, slot in tracker.slots.items():
+            if slot is not None:
+                for i, slot_value in enumerate(slot.as_feature()):
+                    if slot_value != 0:
+                        slot_id = "slot_{}_{}".format(key, i)
+                        state_dict[slot_id] = slot_value
+
+        latest_msg = tracker.latest_message
+
+        if "intent_ranking" in latest_msg.parse_data:
+            for intent in latest_msg.parse_data["intent_ranking"]:
+                if intent.get("name"):
+                    intent_id = "intent_{}".format(intent["name"])
+                    state_dict[intent_id] = intent["confidence"]
+
+        elif latest_msg.intent.get("name"):
+            intent_id = "intent_{}".format(latest_msg.intent["name"])
+            state_dict[intent_id] = latest_msg.intent.get("confidence", 1.0)
+
+        return state_dict
+
+    def get_prev_action_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
-        """Turns the previous taken action into a feature name."""
+        """Turns the previous taken action into a state name."""
 
         latest_action = tracker.latest_action_name
         if latest_action:
-            prev_action_name = "prev_{}".format(latest_action)
-            if prev_action_name in self.input_feature_map:
-                return {prev_action_name: 1}
+            prev_action_name = PREV_PREFIX + latest_action
+            if prev_action_name in self.input_state_map:
+                return {prev_action_name: 1.0}
             else:
-                logger.warn(
+                logger.warning(
                         "Failed to use action '{}' in history. "
                         "Please make sure all actions are listed in the "
                         "domains action list. If you recently removed an "
@@ -294,44 +281,33 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         else:
             return {}
 
-    @staticmethod
-    def get_parsing_features(tracker):
+    def get_active_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
+        """Return a bag of active states from the tracker state"""
+        state_dict = self.get_parsing_states(tracker)
+        state_dict.update(self.get_prev_action_states(tracker))
+        return state_dict
 
-        feature_dict = {}
-
-        # Set all found entities with the feature value 1.0
-        for entity in tracker.latest_message.entities:
-            key = "entity_{0}".format(entity["entity"])
-            feature_dict[key] = 1.
-
-        # Set all set slots with the featurization of the stored value
-        for key, slot in tracker.slots.items():
-            if slot is not None:
-                for i, slot_value in enumerate(slot.as_feature()):
-                    slot_id = "slot_{}_{}".format(key, i)
-                    feature_dict[slot_id] = slot_value
-
-        latest_msg = tracker.latest_message
-
-        if "intent_ranking" in latest_msg.parse_data:
-            for intent in latest_msg.parse_data["intent_ranking"]:
-                if intent.get("name"):
-                    intent_id = "intent_{}".format(intent["name"])
-                    feature_dict[intent_id] = intent["confidence"]
-
-        elif latest_msg.intent.get("name"):
-            intent_id = "intent_{}".format(latest_msg.intent["name"])
-            feature_dict[intent_id] = latest_msg.intent.get("confidence", 1.0)
-
-        return feature_dict
+    def states_for_tracker_history(self, tracker):
+        # type: (DialogueStateTracker) -> List[Dict[Text, float]]
+        """Array of states for each state of the trackers history."""
+        return [self.get_active_states(tr) for tr in
+                tracker.generate_all_prior_trackers()]
 
     def slots_for_entities(self, entities):
         if self.store_entities_as_slots:
-            return [SlotSet(entity['entity'], entity['value'])
-                    for entity in entities
-                    for s in self.slots
-                    if entity['entity'] == s.name]
+            slot_events = []
+            for s in self.slots:
+                matching_entities = [e['value']
+                                     for e in entities
+                                     if e['entity'] == s.name]
+                if matching_entities:
+                    if s.type_name == 'list':
+                        slot_events.append(SlotSet(s.name, matching_entities))
+                    else:
+                        slot_events.append(SlotSet(s.name,
+                                                   matching_entities[-1]))
+            return slot_events
         else:
             return []
 
@@ -343,13 +319,14 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         raise NotImplementedError
 
     def persist_specification(self, model_path):
-        # type: (Text, List[Text]) -> None
+        # type: (Text) -> None
         """Persists the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, 'domain.json')
         utils.create_dir_for_file(domain_spec_path)
+
         metadata = {
-            "features": self.input_features
+            "states": self.input_states
         }
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
@@ -371,22 +348,21 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         to the current domain are different."""
 
         loaded_domain_spec = self.load_specification(path)
-        features = loaded_domain_spec["features"]
-        if features != self.input_features:
-            missing = ",".join(set(features) - set(self.input_features))
-            additional = ",".join(set(self.input_features) - set(features))
+        states = loaded_domain_spec["states"]
+        if states != self.input_states:
+            missing = ",".join(set(states) - set(self.input_states))
+            additional = ",".join(set(self.input_states) - set(states))
             raise Exception(
                     "Domain specification has changed. "
                     "You MUST retrain the policy. " +
                     "Detected mismatch in domain specification. " +
-                    "The following features have been \n"
+                    "The following states have been \n"
                     "\t - removed: {} \n"
                     "\t - added:   {} ".format(missing, additional))
         else:
             return True
 
     # Abstract Methods : These have to be implemented in any domain subclass
-
     @abc.abstractproperty
     def slots(self):
         # type: () -> List[Slot]
@@ -419,47 +395,48 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
 
 class TemplateDomain(Domain):
+
     @classmethod
     def load(cls, filename, action_factory=None):
         if not os.path.isfile(filename):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(filename)))
+        return cls.load_from_yaml(read_file(filename), action_factory=action_factory)
 
-        cls.validate_domain_yaml(filename)
-        data = read_yaml_file(filename)
+    @classmethod
+    def load_from_yaml(cls, yaml, action_factory=None):
+        cls.validate_domain_yaml(yaml)
+        data = read_yaml_string(yaml)
         utter_templates = cls.collect_templates(data.get("templates", {}))
         if not action_factory:
             action_factory = data.get("action_factory", None)
-        topics = [Topic(name) for name in data.get("topics", [])]
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        return TemplateDomain(
-                data.get("intents", []),
-                data.get("entities", []),
-                slots,
-                utter_templates,
-                data.get("actions", []),
-                data.get("action_names", []),
-                action_factory,
-                topics,
-                **additional_arguments
+        intents = cls.collect_intents(data.get("intents", {}))
+        return cls(
+            intents,
+            data.get("entities", []),
+            slots,
+            utter_templates,
+            data.get("actions", []),
+            data.get("action_names", []),
+            action_factory,
+            **additional_arguments
         )
 
     @classmethod
-    def validate_domain_yaml(cls, filename):
+    def validate_domain_yaml(cls, yaml):
         """Validate domain yaml."""
         from pykwalify.core import Core
-        import ruamel
-        import warnings
-        warnings.simplefilter('ignore', ruamel.yaml.error.UnsafeLoaderWarning)
 
         log = logging.getLogger('pykwalify')
         log.setLevel(logging.WARN)
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        c = Core(source_file=filename,
+        source_data = utils.read_yaml_string(yaml)
+        c = Core(source_data=source_data,
                  schema_files=[schema_file])
         try:
             c.validate(raise_exception=True)
@@ -468,12 +445,12 @@ class TemplateDomain(Domain):
                              "Make sure the file is correct, to do so"
                              "take a look at the errors logged during "
                              "validation previous to this exception. "
-                             "".format(os.path.abspath(filename)))
+                             "".format(os.path.abspath(input)))
 
     @staticmethod
     def collect_slots(slot_dict):
         # it is super important to sort the slots here!!!
-        # otherwise feature ordering is not consistent
+        # otherwise state ordering is not consistent
         slots = []
         for slot_name in sorted(slot_dict):
             slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
@@ -482,6 +459,16 @@ class TemplateDomain(Domain):
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
+
+    @staticmethod
+    def collect_intents(intent_list):
+        intents = {}
+        for intent in intent_list:
+            if isinstance(intent, dict):
+                intents.update(intent)
+            else:
+                intents.update({intent: {'use_entities': True}})
+        return intents
 
     @staticmethod
     def collect_templates(yml_templates):
@@ -506,7 +493,7 @@ class TemplateDomain(Domain):
         return templates
 
     def __init__(self, intents, entities, slots, templates, action_classes,
-                 action_names, action_factory, topics, **kwargs):
+                 action_names, action_factory, **kwargs):
         self._intents = intents
         self._entities = entities
         self._slots = slots
@@ -516,7 +503,7 @@ class TemplateDomain(Domain):
         self._factory_name = action_factory
         self._actions = self.instantiate_actions(
                 action_factory, action_classes, action_names, templates)
-        super(TemplateDomain, self).__init__(topics, **kwargs)
+        super(TemplateDomain, self).__init__(**kwargs)
 
     @staticmethod
     def instantiate_actions(factory_name, action_classes, action_names,
@@ -530,30 +517,29 @@ class TemplateDomain(Domain):
     def _slot_definitions(self):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
-    def persist(self, filename):
-        import yaml
-
+    def as_dict(self):
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
-        topic_names = [t.name for t in self.topics]
         action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
-
         domain_data = {
             "config": additional_config,
-            "intents": self.intents,
+            "intents": [{k: v} for k, v in self._intents.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
-            "topics": topic_names,
             "actions": self._action_classes,  # class names of the actions
             "action_names": action_names,  # names in stories
             "action_factory": self._factory_name
         }
+        return domain_data
 
-        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-            yaml.safe_dump(domain_data, yaml_file,
-                           default_flow_style=False,
-                           allow_unicode=True)
+    def persist(self, filename):
+        domain_data = self.as_dict()
+        utils.dump_obj_as_yaml_to_file(filename, domain_data)
+
+    def as_yaml(self):
+        domain_data = self.as_dict()
+        return utils.dump_obj_as_yaml_to_string(domain_data)
 
     @utils.lazyproperty
     def templates(self):
@@ -565,7 +551,7 @@ class TemplateDomain(Domain):
 
     @utils.lazyproperty
     def intents(self):
-        return self._intents
+        return sorted(self._intents.keys())
 
     @utils.lazyproperty
     def entities(self):

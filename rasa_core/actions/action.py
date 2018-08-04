@@ -20,15 +20,11 @@ ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
 
+ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
+
 
 class Action(object):
     """Next action to be taken in response to a dialogue state."""
-
-    def resets_topic(self):
-        # type: () -> bool
-        """Indicator if this action resets the topic when run."""
-
-        return False
 
     def name(self):
         # type: () -> Text
@@ -38,13 +34,20 @@ class Action(object):
 
     def run(self, dispatcher, tracker, domain):
         # type: (Dispatcher, DialogueStateTracker, Domain) -> List[Event]
-        """Execute the side effects of this action.
+        """
+        Execute the side effects of this action.
 
-        Return a list of events (i.e. instructions to update tracker state)
+        Args:
+            tracker (DialogueStateTracker): the state tracker for the current user.
+                You can access slot values using ``tracker.get_slot(slot_name)``
+                and the most recent user message is ``tracker.latest_message.text``.
+            dispatcher (Dispatcher): the dispatcher which is used to send messages back
+                to the user. Use ``dipatcher.utter_message()`` or any other :class:`Dispatcher` method.
+            domain (Domain): the bot's domain
 
-        :param tracker: user state tracker
-        :param dispatcher: communication channel
-        :param domain: bots custom domain
+        Returns:
+            List: A list of :class:`Event` instances
+
         """
 
         raise NotImplementedError
@@ -66,7 +69,7 @@ class UtterAction(Action):
         """Simple run implementation uttering a (hopefully defined) template."""
 
         dispatcher.utter_template(self.name(),
-                                  filled_slots=tracker.current_slot_values())
+                                  tracker)
         return []
 
     def name(self):
@@ -100,7 +103,23 @@ class ActionRestart(Action):
     def run(self, dispatcher, tracker, domain):
         from rasa_core.events import Restarted
 
-        # only utter the template if it is available
-        if domain.random_template_for("utter_restart") is not None:
-            dispatcher.utter_template("utter_restart")
+        dispatcher.utter_template("utter_restart", tracker,
+                                  silent_fail=True)
         return [Restarted()]
+
+
+class ActionDefaultFallback(Action):
+    """Executes the fallback action and goes back to the previous state
+    of the dialogue"""
+
+    def name(self):
+        return ACTION_DEFAULT_FALLBACK_NAME
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import UserUtteranceReverted
+
+        if domain.random_template_for("utter_default") is not None:
+            dispatcher.utter_template("utter_default", tracker,
+                                      silent_fail=True)
+
+        return [UserUtteranceReverted()]

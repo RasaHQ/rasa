@@ -4,12 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from datetime import datetime
-from copy import deepcopy
+import copy
 
 import pytest
 
 from rasa_core.events import (
-    Event, UserUttered, TopicSet, SlotSet, Restarted,
+    Event, UserUttered, SlotSet, Restarted,
     ActionExecuted, AllSlotsReset,
     ReminderScheduled, ConversationResumed, ConversationPaused,
     StoryExported, ActionReverted, BotUttered)
@@ -18,9 +18,6 @@ from rasa_core.events import (
 @pytest.mark.parametrize("one_event,another_event", [
     (UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
      UserUttered("/goodbye", {"name": "goodbye", "confidence": 1.0}, [])),
-
-    (TopicSet("my_topic"),
-     TopicSet("my_other_topic")),
 
     (SlotSet("my_slot", "value"),
      SlotSet("my__other_slot", "value")),
@@ -56,13 +53,13 @@ def test_event_has_proper_implementation(one_event, another_event):
     # equals tests
     assert one_event != another_event, \
         "Same events with different values need to be different"
-    assert one_event == deepcopy(one_event), \
+    assert one_event == copy.deepcopy(one_event), \
         "Event copies need to be the same"
     assert one_event != 42, \
         "Events aren't equal to 42!"
 
     # hash test
-    assert hash(one_event) == hash(deepcopy(one_event)), \
+    assert hash(one_event) == hash(copy.deepcopy(one_event)), \
         "Same events should have the same hash"
     assert hash(one_event) != hash(another_event), \
         "Different events should have different hashes"
@@ -74,8 +71,6 @@ def test_event_has_proper_implementation(one_event, another_event):
 
 @pytest.mark.parametrize("one_event", [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
-
-    TopicSet("my_topic"),
 
     SlotSet("name", "rasa"),
 
@@ -97,7 +92,7 @@ def test_event_has_proper_implementation(one_event, another_event):
 
     ReminderScheduled("my_action", datetime.now())
 ])
-def test_dict_serialisation(one_event, default_domain):
+def test_dict_serialisation(one_event):
     evt_dict = one_event.as_dict()
     recovered_event = Event.from_parameters(evt_dict)
     assert hash(one_event) == hash(recovered_event)

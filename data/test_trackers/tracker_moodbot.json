@@ -3,13 +3,13 @@
     "entities": [],
     "intent": {
       "confidence": 0.60,
-      "name": "default"
+      "name": "mood_great"
     },
-    "text": "I am very good",
+    "text": "/mood_great",
     "intent_ranking": [
       {
         "confidence": 0.60,
-        "name": "default"
+        "name": "mood_great"
       },
       {
         "confidence": 0.20,
@@ -39,7 +39,7 @@
           "confidence": 0.54,
           "name": "greet"
         },
-        "text": "hello",
+        "text": "/greet",
         "intent_ranking": [
           {
             "confidence": 0.54,
@@ -56,7 +56,7 @@
         ]
       },
       "event": "user",
-      "text": "hello"
+      "text": "/greet"
     },
     {
       "timestamp": 1517821726.200373,
@@ -74,13 +74,13 @@
         "entities": [],
         "intent": {
           "confidence": 0.60,
-          "name": "default"
+          "name": "mood_great"
         },
-        "text": "I am very good",
+        "text": "/mood_great",
         "intent_ranking": [
           {
             "confidence": 0.60,
-            "name": "default"
+            "name": "mood_great"
           },
           {
             "confidence": 0.20,
@@ -93,12 +93,12 @@
         ]
       },
       "event": "user",
-      "text": "I am very good"
+      "text": "/mood_great"
     },
     {
       "timestamp": 1517821726.209908,
       "event": "action",
-      "name": "utter_default"
+      "name": "utter_happy"
     },
     {
       "timestamp": 1517821726.211042,

@@ -1,130 +1,148 @@
-.. _custom_policies:
+:desc: Understanding Rasa Core Policies
 
-Custom Policies
-===============
+.. _policies:
 
-
-The ``Policy`` is the core of your bot, and it really just has one important method:
-
-.. doctest::
-
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
-
-        return []
+Training and Policies
+=====================
 
 
-This uses the current state of the conversation (provided by the tracker) to choose the next action to take.
-The domain is there if you need it, but only some policy types make use of it. The returned array contains
-the probabilities for each action to be executed next. The action that is most likely will be executed.
+Training
+--------
+
+Rasa Core works by creating training data from your stories and 
+training a model on that data. 
+
+You can run training from the command line like in the :ref:`quickstart`:
 
 
-Let's look at a simple example for a custom policy:
+.. code-block:: bash
 
-.. doctest::
+   python -m rasa_core.train -d domain.yml -s data/stories.md -o models/current/dialogue --epochs 200
 
-  from rasa_core.policies import Policy
-  from rasa_core.actions.action import ACTION_LISTEN_NAME
-  from rasa_core import utils
-  import numpy as np
+Or by creating an agent and running the train method yourself:
 
-  class SimplePolicy(Policy):
-      def predict_action_probabilities(self, tracker, domain):
-          responses = {"greet": 3}
+.. testcode::
 
-          if tracker.latest_action_name == ACTION_LISTEN_NAME:
-              key = tracker.latest_message.intent["name"]
-              action = responses[key] if key in responses else 2
-              return utils.one_hot(action, domain.num_actions)
-          else:
-              return np.zeros(domain.num_actions)
+   from rasa_core.agent import Agent
+
+   agent = Agent()
+   data = agent.load_data("stories.md")
+   agent.train(data)
 
 
-**How does this work?**
-When the controller processes a message from a user, it will keep asking for the next most likely action using ``predict_action_probabilities``.
-The bot then executes that action, until it receives an ``ActionListen`` instruction.
-This breaks the loop and makes the bot await further instructions. 
 
-In pseudocode, what the ``SimplePolicy`` above does is:
+Data Augmentation
+^^^^^^^^^^^^^^^^^
+
+By default, Rasa Core will create longer stories by randomly glueing together 
+the ones in your stories file. This is because if you have stories like:
+
+.. code-block:: md
+   
+    # thanks
+    * thankyou
+       - utter_youarewelcome
+
+    # bye
+    * goodbye
+       - utter_goodbye
+
+
+You actually want to teach your policy to **ignore** the dialogue history
+when it isn't relevant and just respond with the same action no matter what happened
+before. 
+
+You can alter this behaviour with the ``--augmentation`` flag. ``--augmentation 0`` 
+disables this behavior. 
+
+In python, you can pass the ``augmentation_factor`` argument to the ``Agent.load_data`` method.
+
+Max History
+^^^^^^^^^^^
+
+One important hyperparameter for Rasa Core policies is the ``max_history``.
+This controls how much dialogue history the model looks at to decide which action
+to take next. 
+
+You can set the ``max_history`` using the training script's ``--history`` flag or 
+by passing it to your policy's :class:`Featurizer`.
+
+.. note:: 
+
+    Only the ``MaxHistoryTrackerFeaturizer`` uses a max history, whereas the 
+    ``FullDialogueTrackerFeaturizer`` always looks at the full conversation history.
+
+As an example, let's say you have an ``out_of_scope`` intent which describes off-topic
+user messages. If your bot sees this intent multiple times in a row, you might want to 
+tell the user what you `can` help them with. So your story might look like this:
 
 .. code-block:: md
 
-    -> a new message has come in
+   * out_of_scope
+      - utter_default
+   * out_of_scope
+      - utter_default
+   * out_of_scope
+      - utter_help_message
 
-    if we were previously listening:
-        return a canned response
-    else:
-        we must have just said something, so let's Listen again
+For Rasa Core to learn this pattern, the ``max_history`` has to be `at least` ``3``. 
+
+If you increase your ``max_history``, your model will become bigger and training will take longer.
+If you have some information that should affect the dialogue very far into the future,
+you should store it as a slot. Slot information is always available for every featurizer.
 
 
-Note that the policy itself is stateless, and all the state is carried by the ``tracker`` object.
+
+Training Script Options
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. program-output:: python -m rasa_core.train -h
 
 
-Creating Policies from Stories
-------------------------------
 
-Writing rules like in the SimplePolicy above is not a great way to build a bot, it gets messy fast & is hard to debug.
-If you've found Rasa Core, it's likely you've already tried this approach and were looking for something better.
-A good next step is to use our story framework to build a policy by giving it some example conversations.
-We won't use machine learning yet, we will just create a policy which memorises these stories. 
+Policies
+--------
 
-We can use the ``MemoizationPolicy`` and the ``PolicyTrainer`` classes to do this.
+The :class:`rasa_core.policies.Policy` class decides which action to take
+at every step in the conversation. 
 
-Here is the ``PolicyTrainer`` class:
+There are different policies to choose from, and you can include multiple policies
+in a single :class:`Agent`. At every turn, the policy which predicts the 
+next action with the highest confidence will be used. 
+You can pass a list of policies when you create an agent:
 
-.. literalinclude:: ../rasa_core/policies/trainer.py
-   :pyobject: PolicyTrainer
+.. code-block:: python
 
-What the ``train()`` method does is the following:
+   from rasa_core.policies.memoization import MemoizationPolicy
+   from rasa_core.policies.keras_policy import KerasPolicy
+   from rasa_core.agent import Agent
 
-1. reads the stories from a file
-2. creates all possible dialogues from these stories
-3. creates the following variables:
-
-   a. ``y`` - a 1D array representing all of the actions taken in the dialogues
-   b. ``X`` - a 2D array where each row represents the state of the tracker when an action was taken
-
-4. calls the policy's ``train()`` method to create a policy from these ``X, y``
-   state-action pairs (don't mind the ``ensemble`` it is just a collection of
-   policies - e.g. you can combine multiple policies and train them all at
-   once using the ensemble)
+   agent = Agent("domain.yml",
+                  policies=[MemoizationPolicy(), KerasPolicy()])
 
 
 .. note::
 
-    In fact, the rows in ``X`` describe the state of the tracker when the previous ``max_history`` actions were taken. See :ref:`featurization` for more details.
+    By default, Rasa Core uses the :class:`KerasPolicy` in combination with 
+    the :class:`MemoizationPolicy`. 
 
-For the ``MemoizationPolicy``, the ``train()`` method just memorises the actions taken in the story,
-so that when your bot encounters an identical situation it will make the decision you intended. 
+Memoization Policy
+^^^^^^^^^^^^^^^^^^
+
+The :class:`MemoizationPolicy` just memorizes the conversations in your training data.
+It predicts the next action with confidence ``1.0`` if this exact conversation exists in the
+training data, otherwise it predicts ``None`` with confidence ``0.0``.
 
 
-Generalising to new Dialogues
------------------------------
+Keras Policy
+^^^^^^^^^^^^
 
-The stories data format gives you a compact way to describe a large number of possible dialogues without much effort. 
-But humans are infinitely creative, and you could never hope to describe *every* possible dialogue programatically.
-Even if you could, it probably wouldn't fit in memory :)
+The ``KerasPolicy`` uses a neural network implemented in `Keras <http://keras.io>`_ to
+select the next action.
+The default architecture is based on an LSTM, but you can override the 
+``KerasPolicy.model_architecture`` method to implement your own architecture. 
 
-So how do we create a policy which behaves well even in scenarios you haven't thought of?
-We will try to achieve this generalisation by creating a policy based on Machine Learning. 
-
-You can use whichever machine learning library you like to train your policy.
-One implementation that ships with Rasa is the ``KerasPolicy``,
-which uses Keras as a machine learning library to train your dialogue model.
-These base classes have already implemented the logic of persisting and reloading models.
-
-By default, each of these trains a linear model to fit the ``X, y`` data.
-
-The model is defined here: 
 
 .. literalinclude:: ../rasa_core/policies/keras_policy.py
    :pyobject: KerasPolicy.model_architecture
 
-
-and the training is run here:
-
-.. literalinclude:: ../rasa_core/policies/keras_policy.py
-   :pyobject: KerasPolicy.train
-
-
-You can implement the model of your choice by overriding these methods.

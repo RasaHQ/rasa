@@ -3,126 +3,122 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
+import json
 import pytest
 
+from rasa_core import training
 from rasa_core.domain import TemplateDomain
-from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.training import extract_training_data
+from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.utils import read_file
 from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def test_create_train_data_no_history(default_domain):
-    featurizer = BinaryFeaturizer()
-    training_data = extract_training_data(
+    featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
+    training_trackers = training.load_data(
             DEFAULT_STORIES_FILE,
             default_domain,
-            featurizer,
-            augmentation_factor=0,
-            max_history=1
+            augmentation_factor=0
     )
-    assert training_data.X.shape == (11, 1, 10)
-    decoded = [featurizer.decode(training_data.X[i, :, :],
-                                 default_domain.input_features)
-               for i in range(0, 11)]
-    assert decoded == [
-        [None],
-        [[('intent_goodbye', 1), ('prev_utter_goodbye', 1)]],
-        [[('intent_goodbye', 1), ('prev_action_listen', 1)]],
-        [[('intent_default', 1), ('prev_utter_default', 1)]],
-        [[('intent_default', 1), ('prev_action_listen', 1)]],
-        [[('intent_default', 1), ('slot_name_0', 1),
-          ('prev_utter_default', 1)]],
-        [[('intent_default', 1), ('slot_name_0', 1),
-          ('prev_action_listen', 1)]],
-        [[('intent_greet', 1), ('prev_utter_greet', 1)]],
-        [[('intent_greet', 1), ('prev_action_listen', 1)]],
-        [[('intent_greet', 1), ('entity_name', 1), ('slot_name_0', 1),
-          ('prev_utter_greet', 1)]],
-        [[('intent_greet', 1), ('entity_name', 1), ('slot_name_0', 1),
-          ('prev_action_listen', 1)]]]
+    assert len(training_trackers) == 3
+    (decoded, _) = featurizer.training_states_and_actions(
+            training_trackers, default_domain)
+
+    # decoded needs to be sorted
+    hashed = []
+    for states in decoded:
+        hashed.append(json.dumps(states, sort_keys=True))
+    hashed = sorted(hashed, reverse=True)
+
+    assert hashed == [
+        '[{}]',
+        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
+        '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_default": 1.0, "prev_utter_default": 1.0}]',
+        '[{"intent_default": 1.0, "prev_utter_default": 1.0, '
+        '"slot_name_0": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1.0, '
+        '"slot_name_0": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]'
+    ]
 
 
 def test_create_train_data_with_history(default_domain):
-    featurizer = BinaryFeaturizer()
-    training_data = extract_training_data(
-            DEFAULT_STORIES_FILE,
-            default_domain,
-            featurizer,
-            augmentation_factor=0,
-            max_history=4
+    featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
+    training_trackers = training.load_data(
+        DEFAULT_STORIES_FILE,
+        default_domain,
+        augmentation_factor=0
     )
-    assert training_data.X.shape == (11, 4, 10)
-    decoded = [featurizer.decode(training_data.X[i, :, :],
-                                 default_domain.input_features)
-               for i in range(0, 11)]
-    assert decoded == [
-        [
-            None,
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'prev_action_listen', 1)]],
-        [
-            None,
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)]],
-        [
-            [(u'intent_default', 1), (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'prev_utter_default', 1)],
-            [(u'intent_goodbye', 1), (u'prev_action_listen', 1)],
-            [(u'intent_goodbye', 1), (u'prev_utter_goodbye', 1)]],
-        [
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'prev_utter_default', 1)],
-            [(u'intent_goodbye', 1), (u'prev_action_listen', 1)]],
-        [
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'prev_utter_default', 1)]],
-        [
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'slot_name_0', 1),
-             (u'prev_utter_default', 1)]],
-        [
-            None,
-            None,
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)]],
-        [
-            None,
-            None,
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_utter_greet', 1)]],
-        [
-            None, None, None, None],
-        [
-            None, None, None,
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)]],
-        [
-            None, None, None,
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)]]]
+    assert len(training_trackers) == 3
+    (decoded, _) = featurizer.training_states_and_actions(
+        training_trackers, default_domain)
+
+    # decoded needs to be sorted
+    hashed = []
+    for states in decoded:
+        hashed.append(json.dumps(states, sort_keys=True))
+    hashed = sorted(hashed)
+
+    assert hashed == [
+        '[null, null, null, {}]',
+        '[null, null, {}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
+        '[null, null, {}, '
+        '{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
+        '[null, {}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
+        '[null, {}, '
+        '{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
+        '{"intent_default": 1.0, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
+        '{"intent_default": 1.0, '
+        '"prev_utter_default": 1.0, "slot_name_0": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
+        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
+        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
+        '[{}, {"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
+        '{"intent_default": 1.0, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
+        '[{}, {"intent_greet": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1.0}]'
+    ]
 
 
 def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = TemplateDomain.load(domain_file)
-    assert len(domain.intents) == 3
-    assert len(domain.actions) == 5
+    assert len(domain.intents) == 10
+    assert len(domain.actions) == 6
 
 
 def test_utter_templates():
@@ -138,8 +134,8 @@ def test_utter_templates():
 
 def test_restaurant_domain_is_valid():
     # should raise no exception
-    TemplateDomain.validate_domain_yaml(
-            'examples/restaurantbot/restaurant_domain.yml')
+    TemplateDomain.validate_domain_yaml(read_file(
+            'examples/restaurantbot/restaurant_domain.yml'))
 
 
 def test_custom_slot_type(tmpdir):
@@ -162,12 +158,33 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
         slots:
             custom:
              type: tests.conftest.Unknown
-        
+
         templates:
             utter_greet:
              - hey there!
-        
+
         actions:
             - utter_greet""")
     with pytest.raises(ValueError):
         TemplateDomain.load(domain_path)
+
+
+def test_domain_to_yaml():
+    test_yaml = """action_factory: null
+action_names:
+- utter_greet
+actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+intents: []
+slots: {}
+templates:
+  utter_greet:
+  - text: hey there!"""
+    domain = TemplateDomain.load_from_yaml(test_yaml)
+    # python 3 and 2 are different here, python 3 will have a leading set 
+    # of --- at the begining of the yml
+    assert domain.as_yaml().strip().endswith(test_yaml.strip())
+    domain = TemplateDomain.load_from_yaml(domain.as_yaml())

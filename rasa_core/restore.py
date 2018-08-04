@@ -6,12 +6,13 @@ from __future__ import unicode_literals
 import argparse
 import json
 import logging
+import warnings
 
 from builtins import str
-from typing import Text, Optional, List
+from typing import Text, Optional, List, Tuple
 
 from rasa_core import utils, evaluate
-from rasa_core.actions.action import ActionListen
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.console import ConsoleInputChannel, ConsoleOutputChannel
@@ -52,12 +53,12 @@ def _check_prediction_aligns_with_story(last_prediction,
 
     p, a = evaluate.align_lists(last_prediction, actions_between_utterances)
     if p != a:
-        logger.warn("Model predicted different actions than the "
-                    "model used to create the story! Expected: "
-                    "{} but got {}.".format(p, a))
+        warnings.warn("Model predicted different actions than the "
+                      "model used to create the story! Expected: "
+                      "{} but got {}.".format(p, a))
 
 
-def _replay_events(tracker, agent):
+def replay_events(tracker, agent):
     # type: (DialogueStateTracker, Agent) -> None
     """Take a tracker and replay the logged user utterances against an agent.
 
@@ -70,7 +71,7 @@ def _replay_events(tracker, agent):
     that got replayed."""
 
     actions_between_utterances = []
-    last_prediction = [ActionListen().name()]
+    last_prediction = [ACTION_LISTEN_NAME]
 
     for i, event in enumerate(tracker.events_after_latest_restart()):
         if isinstance(event, UserUttered):
@@ -91,7 +92,7 @@ def _replay_events(tracker, agent):
                                         actions_between_utterances)
 
 
-def _load_tracker_from_json(tracker_dump, agent):
+def load_tracker_from_json(tracker_dump, domain):
     # type: (Text, Agent) -> DialogueStateTracker
     """Read the json dump from the file and instantiate a tracker it."""
 
@@ -99,28 +100,29 @@ def _load_tracker_from_json(tracker_dump, agent):
     sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
     return DialogueStateTracker.from_dict(sender_id,
                                           tracker_json.get("events", []),
-                                          agent.domain)
+                                          domain)
 
 
-def main(model_directory, nlu_model=None, tracker_dump=None):
-    # type: (Text, Optional[Text], Optional[Text]) -> Agent
-    """Run the agent."""
+def recreate_agent(model_directory,  # type: Text
+                   nlu_model=None,  # type: Optional[Text]
+                   tracker_dump=None,  # type: Optional[Text]
+                   endpoints=None
+                   ):
+    # type: (...) -> Tuple[Agent, DialogueStateTracker]
+    """Recreate an agent instance."""
 
-    logger.info("Rasa process starting")
-    agent = Agent.load(model_directory, nlu_model)
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
 
-    logger.info("Finished loading agent. Loading stories now.")
+    logger.debug("Loading Rasa Core Agent")
+    agent = Agent.load(model_directory, nlu_model,
+                       generator=nlg_endpoint)
 
-    tracker = _load_tracker_from_json(tracker_dump, agent)
-    _replay_events(tracker, agent)
+    logger.debug("Finished loading agent. Loading stories now.")
 
-    print(utils.wrap_with_color(
-            "You can now continue the dialogue. "
-            "Use '/stop' to exit the conversation.",
-            utils.bcolors.OKGREEN + utils.bcolors.UNDERLINE))
-    agent.handle_channel(ConsoleInputChannel(tracker.sender_id))
+    tracker = load_tracker_from_json(tracker_dump, agent.domain)
+    replay_events(tracker, agent)
 
-    return agent
+    return agent, tracker
 
 
 if __name__ == '__main__':
@@ -130,6 +132,13 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
-    main(cmdline_args.core,
-         cmdline_args.nlu,
-         cmdline_args.tracker_dump)
+    agent, tracker = recreate_agent(cmdline_args.core,
+                                    cmdline_args.nlu,
+                                    cmdline_args.tracker_dump)
+
+    print(utils.wrap_with_color(
+            "You can now continue the dialogue. "
+            "Use '/stop' to exit the conversation.",
+            utils.bcolors.OKGREEN + utils.bcolors.UNDERLINE))
+
+    agent.handle_channel(ConsoleInputChannel(tracker.sender_id))

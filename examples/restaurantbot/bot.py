@@ -13,6 +13,9 @@ from rasa_core.actions import Action
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.events import SlotSet
+from rasa_core.featurizers import (
+    MaxHistoryTrackerFeaturizer,
+    BinarySingleStateFeaturizer)
 from rasa_core.interpreter import RasaNLUInterpreter
 from rasa_core.policies.memoization import MemoizationPolicy
 
@@ -52,11 +55,12 @@ def train_dialogue(domain_file="restaurant_domain.yml",
                    model_path="models/dialogue",
                    training_data_file="data/babi_stories.md"):
     agent = Agent(domain_file,
-                  policies=[MemoizationPolicy(), RestaurantPolicy()])
+                  policies=[MemoizationPolicy(max_history=3),
+                            RestaurantPolicy()])
 
+    training_data = agent.load_data(training_data_file)
     agent.train(
-            training_data_file,
-            max_history=3,
+            training_data,
             epochs=400,
             batch_size=100,
             validation_split=0.2
@@ -108,7 +112,3 @@ if __name__ == '__main__':
         train_dialogue()
     elif task == "run":
         run()
-    else:
-        warnings.warn("Need to pass either 'train-nlu', 'train-dialogue' or "
-                      "'run' to use the script.")
-        exit(1)

@@ -4,18 +4,40 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import inspect
+import io
 import json
 import logging
-import os, io
-from collections import deque
+import os
+import requests
+
+from requests.auth import HTTPBasicAuth
+
+import rasa_core
+import sys
 from hashlib import sha1
 from random import Random
+from threading import Thread
 
 import six
-import yaml
 from builtins import input, range, str
 from numpy import all, array
-from typing import Text, Any, List, Optional
+from typing import Text, Any, List, Optional, Tuple, Dict, Set
+
+if six.PY2:
+    from StringIO import StringIO
+else:
+    from io import StringIO
+
+logger = logging.getLogger(__name__)
+
+
+def configure_file_logging(loglevel, logfile):
+    if logfile:
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(loglevel)
+        logging.getLogger('').addHandler(fh)
+    logging.captureWarnings(True)
 
 
 def add_logging_option_arguments(parser):
@@ -63,14 +85,6 @@ def module_path_from_instance(inst):
     return inst.__module__ + "." + inst.__class__.__name__
 
 
-def all_subclasses(cls):
-    # type: (Any) -> List[Any]
-    """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [g for s in cls.__subclasses__()
-                                   for g in all_subclasses(s)]
-
-
 def dump_obj_as_json_to_file(filename, obj):
     # type: (Text, Any) -> None
     """Dump an object as a json string to a file."""
@@ -87,7 +101,7 @@ def dump_obj_as_str_to_file(filename, text):
 
 
 def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
-    # type: (List[Any], int, Optional[bool], Optional[Random]) -> List[Any]
+    # type: (List[Any], int, bool, Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -158,11 +172,11 @@ def str_range_list(start, end):
 
 def generate_id(prefix="", max_chars=None):
     import uuid
-    r = "{}{}".format(prefix, uuid.uuid4().hex)
+    gid = uuid.uuid4().hex
     if max_chars:
-        return r[:max_chars]
-    else:
-        return r
+        gid = gid[:max_chars]
+
+    return "{}{}".format(prefix, gid)
 
 
 def configure_colored_logging(loglevel):
@@ -216,55 +230,6 @@ def print_color(text, color):
     print(wrap_with_color(text, color))
 
 
-class TopicStack(object):
-    def __init__(self, topics, iterable, default):
-        self.topics = topics
-        self.iterable = iterable
-        self.topic_names = [t.name for t in topics]
-        self.default = default
-        self.dq = deque(iterable, len(topics))
-
-    @property
-    def top(self):
-        if len(self.dq) < 1:
-            return self.default
-        return self.dq[-1]
-
-    def __iter__(self):
-        return self.dq.__iter__()
-
-    def next(self):
-        return self.dq.next()
-
-    def __len__(self):
-        return len(self.dq)
-
-    def push(self, x):
-        from rasa_core.conversation import Topic
-
-        if isinstance(x, six.string_types):
-            if x not in self.topic_names:
-                raise ValueError(
-                        "Unknown topic name: '{}', known topics in this domain "
-                        "are: {}".format(x, self.topic_names))
-            else:
-                x = self.topics[self.topic_names.index(x)]
-
-        elif not isinstance(x, Topic) or x not in self.topics:
-            raise ValueError(
-                    "Instance of type '{}' can not be used on the topic stack, "
-                    "not a valid topic!".format(type(x).__name__))
-
-        while self.dq.count(x) > 0:
-            self.dq.remove(x)
-        self.dq.append(x)
-
-    def pop(self):
-        if len(self.dq) < 1:
-            return None
-        return self.dq.pop()
-
-
 class HashableNDArray(object):
     """Hashable wrapper for ndarray objects.
 
@@ -313,20 +278,83 @@ class HashableNDArray(object):
 
 def fix_yaml_loader():
     """Ensure that any string read by yaml is represented as unicode."""
-    from yaml import Loader, SafeLoader
+    import yaml
+    import re
 
     def construct_yaml_str(self, node):
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
 
-    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    # this will allow the reader to process emojis under py2
+    # need to differentiate between narrow build (e.g. osx, windows) and
+    # linux build. in the narrow build, emojis are 2 char strings using a
+    # surrogate
+    if sys.maxunicode == 0xffff:
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\ude00-\ude50]')
+    else:
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\U00010000-\U0010FFFF]')
+
+    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str',
+                                construct_yaml_str)
+    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
+                                    construct_yaml_str)
 
 
 def read_yaml_file(filename):
-    fix_yaml_loader()
-    return yaml.load(read_file(filename, "utf-8"))
+    """Read contents of `filename` interpreting them as yaml."""
+    return read_yaml_string(read_file(filename))
+
+
+def read_yaml_string(string):
+    if six.PY2:
+        import yaml
+
+        fix_yaml_loader()
+        return yaml.load(string)
+    else:
+        import ruamel.yaml
+
+        yaml_parser = ruamel.yaml.YAML(typ="safe")
+        yaml_parser.version = "1.1"
+        yaml_parser.unicode_supplementary = True
+
+        return yaml_parser.load(string)
+
+
+def _dump_yaml(obj, output):
+    if six.PY2:
+        import yaml
+
+        yaml.safe_dump(obj, output,
+                       default_flow_style=False,
+                       allow_unicode=True)
+    else:
+        import ruamel.yaml
+
+        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+        yaml_writer.unicode_supplementary = True
+        yaml_writer.default_flow_style = False
+        yaml_writer.version = "1.1"
+
+        yaml_writer.dump(obj, output)
+
+
+def dump_obj_as_yaml_to_file(filename, obj):
+    """Writes data (python dict) to the filename in yaml repr."""
+    with io.open(filename, 'w', encoding="utf-8") as output:
+        _dump_yaml(obj, output)
+
+
+def dump_obj_as_yaml_to_string(obj):
+    """Writes data (python dict) to a yaml string."""
+    str_io = StringIO()
+    _dump_yaml(obj, str_io)
+    return str_io.getvalue()
 
 
 def read_file(filename, encoding="utf-8"):
@@ -340,6 +368,18 @@ def is_training_data_empty(X):
     return X.shape[0] == 0
 
 
+def zip_folder(folder):
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)
+
+
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
@@ -347,8 +387,186 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
 
     if len(s) > char_limit:
         if append_ellipsis:
-            return s[:char_limit-3] + "..."
+            return s[:char_limit - 3] + "..."
         else:
             return s[:char_limit]
     else:
         return s
+
+
+def wait_for_threads(threads):
+    # type: (List[Thread]) -> None
+    """Block until all child threads have been terminated."""
+
+    while len(threads) > 0:
+        try:
+            # Join all threads using a timeout so it doesn't block
+            # Filter out threads which have been joined or are None
+            [t.join(1000) for t in threads]
+            threads = [t for t in threads if t.isAlive()]
+        except KeyboardInterrupt:
+            logger.info("Ctrl-c received! Sending kill to threads...")
+            # It would be better at this point to properly shutdown every
+            # thread (e.g. by setting a flag on it) Unfortunately, there
+            # are IO operations that are blocking without a timeout
+            # (e.g. sys.read) so threads that are waiting for one of
+            # these calls can't check the set flag. Hence, we go the easy
+            # route for now
+            sys.exit(0)
+    logger.info("Finished waiting for input threads to terminate. "
+                "Stopping to serve forever.")
+
+
+def extract_args(kwargs,  # type: Dict[Text, Any]
+                 keys_to_extract  # type: Set[Text]
+                 ):
+    # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+    """Go through the kwargs and filter out the specified keys.
+
+    Return both, the filtered kwargs as well as the remaining kwargs."""
+
+    remaining = {}
+    extracted = {}
+    for k, v in kwargs.items():
+        if k in keys_to_extract:
+            extracted[k] = v
+        else:
+            remaining[k] = v
+
+    return extracted, remaining
+
+
+def arguments_of(func):
+    """Return the parameters of the function `func` as a list of their names."""
+
+    try:
+        # python 3.x is used
+        return inspect.signature(func).parameters.keys()
+    except AttributeError:
+        # python 2.x is used
+        return inspect.getargspec(func).args
+
+
+def concat_url(base, subpath):
+    # type: (Text, Optional[Text]) -> Text
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
+    if subpath:
+        url = base
+        if not base.endswith("/"):
+            url += "/"
+        if subpath.startswith("/"):
+            subpath = subpath[1:]
+        return url + subpath
+    else:
+        return base
+
+
+def all_subclasses(cls):
+    # type: (Any) -> List[Any]
+    """Returns all known (imported) subclasses of a class."""
+
+    return cls.__subclasses__() + [g for s in cls.__subclasses__()
+                                   for g in all_subclasses(s)]
+
+
+def read_endpoint_config(filename, endpoint_type):
+    # type: (Text, Text) -> Optional[rasa_core.utils.EndpointConfig]
+    """Read an endpoint configuration file from disk and extract one config. """
+
+    if not filename:
+        return None
+
+    content = read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
+
+
+class EndpointConfig(object):
+    """Configuration for an external HTTP endpoint."""
+
+    def __init__(self, url, params=None, headers=None, basic_auth=None,
+                 token=None, token_name="token"):
+        self.url = url
+        self.params = params if params else {}
+        self.headers = headers if headers else {}
+        self.basic_auth = basic_auth
+        self.token = token
+        self.token_name = token_name
+
+    def request(self,
+                method="post",  # type: Text
+                subpath=None,  # type: Optional[Text]
+                content_type="application/json",  # type: Text
+                **kwargs  # type: Dict[Text, Any]
+                ):
+        """Send a HTTP request to the endpoint.
+
+        All additional arguments will get passed through
+        to `requests.request`."""
+
+        # create the appropriate headers
+        headers = self.headers.copy()
+        if content_type:
+            headers["Content-Type"] = content_type
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
+
+        # create authentication parameters
+        if self.basic_auth:
+            auth = HTTPBasicAuth(self.basic_auth["username"],
+                                 self.basic_auth["password"])
+        else:
+            auth = None
+
+        url = concat_url(self.url, subpath)
+
+        # construct GET parameters
+        params = self.params.copy()
+
+        # set the authentication token if present
+        if self.token:
+            params[self.token_name] = self.token
+
+        if "params" in kwargs:
+            params.update(kwargs["params"])
+            del kwargs["params"]
+
+        return requests.request(method,
+                                url,
+                                headers=headers,
+                                params=params,
+                                auth=auth,
+                                **kwargs)
+
+    @classmethod
+    def from_dict(cls, data):
+        return EndpointConfig(
+                data.get("url"),
+                data.get("params"),
+                data.get("headers"),
+                data.get("basic_auth"),
+                data.get("token"),
+                data.get("token_name"))
+
+    def __eq__(self, other):
+        if isinstance(self, type(other)):
+            return (other.url == self.url and
+                    other.params == self.params and
+                    other.headers == self.headers and
+                    other.basic_auth == self.basic_auth and
+                    other.token == self.token and
+                    other.token_name == self.token_name)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

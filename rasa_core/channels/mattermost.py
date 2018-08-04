@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 class MattermostBot(MattermostAPI, OutputChannel):
     """A Mattermost communication channel"""
 
+    @classmethod
+    def name(cls):
+        return "mattermost"
+
     def __init__(self, url, team, user, pw, bot_channel):
         self.url = url
         self.team = team
@@ -34,6 +38,10 @@ class MattermostBot(MattermostAPI, OutputChannel):
 
 class MattermostInput(HttpInputComponent):
     """Mattermost input channel implemenation. Based on the HTTPInputChannel."""
+
+    @classmethod
+    def name(cls):
+        return "mattermost"
 
     def __init__(self, url, team, user, pw):
         # type: (Text, Text) -> None
