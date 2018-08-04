@@ -110,7 +110,7 @@ def _create_agent(
 def create_app(model_directory=None,  # type: Optional[Text]
                interpreter=None,  # type: Union[Text, NLI, None]
                input_channels=None,  # type: Optional[List[InputChannel]]
-               cors_origins=None,  # type: Optional[List[Text]]
+               cors_origins=None,  # type: Optional[Union[Text, List[Text]]]
                auth_token=None,  # type: Optional[Text]
                tracker_store=None,  # type: Optional[TrackerStore]
                endpoints=None
