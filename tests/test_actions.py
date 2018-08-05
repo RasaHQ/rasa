@@ -3,15 +3,20 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import json
+
 import pytest
+from builtins import str
+from httpretty import httpretty
 
 from rasa_core.actions import action
 from rasa_core.actions.action import (
     ActionRestart, UtterAction,
     ActionListen, RemoteAction)
 from rasa_core.domain import TemplateDomain
-from rasa_core.events import Restarted
+from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import EndpointConfig
 
 
 def test_restart(default_dispatcher_collecting, default_domain):
@@ -63,3 +68,174 @@ def test_action_factory_fails_on_duplicated_builtin_actions():
                "utter_test"]
     with pytest.raises(ValueError):
         TemplateDomain.instantiate_actions(actions, None)
+
+
+def test_remote_action_runs(default_dispatcher_collecting, default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    remote_action = action.RemoteAction("my_action",
+                                        endpoint)
+
+    httpretty.register_uri(
+            httpretty.POST,
+            'https://abc.defg/webhooks/actions',
+            body='{"events": [], "responses": []}')
+
+    httpretty.enable()
+    remote_action.run(default_dispatcher_collecting,
+                      tracker,
+                      default_domain)
+    httpretty.disable()
+
+    assert (httpretty.latest_requests[-1].path ==
+            "/webhooks/actions")
+
+    b = httpretty.latest_requests[-1].body.decode("utf-8")
+
+    assert json.loads(b) == {
+        'domain': default_domain.as_dict(),
+        'next_action': 'my_action',
+        'sender_id': 'default',
+        'tracker': {
+            'latest_message': {
+                'entities': [],
+                'intent': {},
+                'text': None
+            },
+            'sender_id': 'default',
+            'paused': False,
+            'latest_event_time': None,
+            'slots': {'name': None},
+            'events': []
+        }
+    }
+
+
+def test_remote_action_logs_events(default_dispatcher_collecting,
+                                   default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    remote_action = action.RemoteAction("my_action",
+                                        endpoint)
+
+    response = {
+        "events": [
+            {"event": "slot", "value": "rasa", "name": "name"}],
+        "responses": [{"text": "test text",
+                       "buttons": [{"title": "cheap", "payload": "cheap"}]},
+                      {"template": "utter_greet"}]}
+
+    httpretty.register_uri(
+            httpretty.POST,
+            'https://abc.defg/webhooks/actions',
+            body=json.dumps(response))
+
+    httpretty.enable()
+    events = remote_action.run(default_dispatcher_collecting,
+                               tracker,
+                               default_domain)
+    httpretty.disable()
+
+    assert (httpretty.latest_requests[-1].path ==
+            "/webhooks/actions")
+
+    b = httpretty.latest_requests[-1].body.decode("utf-8")
+
+    assert json.loads(b) == {
+        'domain': default_domain.as_dict(),
+        'next_action': 'my_action',
+        'sender_id': 'default',
+        'tracker': {
+            'latest_message': {
+                'entities': [],
+                'intent': {},
+                'text': None
+            },
+            'sender_id': 'default',
+            'paused': False,
+            'latest_event_time': None,
+            'slots': {'name': None},
+            'events': []
+        }
+    }
+
+    assert events == [SlotSet("name", "rasa")]
+
+    channel = default_dispatcher_collecting.output_channel
+    assert channel.messages == [
+        {"text": "test text", "recipient_id": "my-sender",
+         'data': [{"title": "cheap", "payload": "cheap"}]},
+        {"text": "hey there None!", "recipient_id": "my-sender"}]
+
+
+def test_remote_action_wo_endpoint(default_dispatcher_collecting,
+                                   default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    remote_action = action.RemoteAction("my_action", None)
+
+    with pytest.raises(Exception) as execinfo:
+        remote_action.run(default_dispatcher_collecting,
+                          tracker,
+                          default_domain)
+    assert "you didn't configure an endpoint" in str(execinfo.value)
+
+
+def test_remote_action_endpoint_not_running(default_dispatcher_collecting,
+                                            default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    with pytest.raises(Exception) as execinfo:
+        remote_action.run(default_dispatcher_collecting,
+                          tracker,
+                          default_domain)
+    assert "Failed to execute custom action." in str(execinfo.value)
+
+
+def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
+                                             default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    httpretty.register_uri(
+            httpretty.POST,
+            'https://abc.defg/webhooks/actions',
+            status=500,
+            body='')
+
+    httpretty.enable()
+    with pytest.raises(Exception) as execinfo:
+        remote_action.run(default_dispatcher_collecting,
+                          tracker,
+                          default_domain)
+    httpretty.disable()
+    assert "Failed to execute custom action." in str(execinfo.value)
+
+
+def test_default_action(default_dispatcher_collecting,
+                        default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    fallback_action = action.ActionDefaultFallback()
+
+    events = fallback_action.run(default_dispatcher_collecting,
+                          tracker,
+                          default_domain)
+
+    channel = default_dispatcher_collecting.output_channel
+    assert channel.messages == [
+        {u'text': u'default message', u'recipient_id': u'my-sender'}]
+    assert events == [UserUtteranceReverted()]

@@ -27,7 +27,7 @@ def deserialise_events(serialized_events):
     """Convert a list of dictionaries to a list of corresponding events.
 
     Example format:
-        [{"event": "set_slot", "value": 5, "name": "my_slot"}]
+        [{"event": "slot", "value": 5, "name": "my_slot"}]
     """
 
     return [Event.from_parameters(e)

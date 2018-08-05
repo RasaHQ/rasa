@@ -169,8 +169,8 @@ def create_dir_for_file(file_path):
 def one_hot(hot_idx, length, dtype=None):
     import numpy
     if hot_idx >= length:
-        raise Exception("Can't create one hot. Index '{}' is out "
-                        "of range (length '{}')".format(hot_idx, length))
+        raise ValueError("Can't create one hot. Index '{}' is out "
+                         "of range (length '{}')".format(hot_idx, length))
     r = numpy.zeros(length, dtype)
     r[hot_idx] = 1
     return r
@@ -373,11 +373,6 @@ def read_file(filename, encoding="utf-8"):
         return f.read()
 
 
-def is_training_data_empty(X):
-    """Check if the training matrix does contain training samples."""
-    return X.shape[0] == 0
-
-
 def list_routes(app):
     """List all available routes of a flask web server."""
     from six.moves.urllib.parse import unquote
@@ -395,11 +390,13 @@ def list_routes(app):
 
             url = url_for(rule.endpoint, **options)
             line = unquote(
-                "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
+                    "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
             output[url] = line
 
         url_table = "\n".join(output[url] for url in sorted(output))
         logger.debug("Available web server routes: \n{}".format(url_table))
+
+    return output
 
 
 def zip_folder(folder):
