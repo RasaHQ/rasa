@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from httpretty import httpretty
 
@@ -104,7 +106,7 @@ def test_endpoint_config():
 
     r = httpretty.latest_requests[-1]
 
-    assert r.body == '{"c": "d"}'
+    assert json.loads(r.body) == {"c": "d"}
     assert r.headers.get("X-Powered-By") == "Rasa"
     assert r.headers.get("Authorization") == "Basic dXNlcjpwYXNz"
     assert r.querystring.get("A") == ["B"]
