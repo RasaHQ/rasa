@@ -232,8 +232,8 @@ def test_default_action(default_dispatcher_collecting,
     fallback_action = action.ActionDefaultFallback()
 
     events = fallback_action.run(default_dispatcher_collecting,
-                          tracker,
-                          default_domain)
+                                 tracker,
+                                 default_domain)
 
     channel = default_dispatcher_collecting.output_channel
     assert channel.messages == [
