@@ -14,6 +14,7 @@ Added
 - script parameter ``--quiet`` to set the log level to ``WARNING``
 - information about the python version a model has been trained with to the
   model metadata
+- intent confidence support in RegexInterpreter
 
 Changed
 -------
