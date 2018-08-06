@@ -1,5 +1,5 @@
 # Rasa NLU
-[![Join the forum at https://forum.rasa.com](https://img.shields.io/badge/forum-join%20chat-green.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the forum at https://forum.rasa.com](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
 [![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
