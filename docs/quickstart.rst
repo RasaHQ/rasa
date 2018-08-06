@@ -61,6 +61,7 @@ If you are running locally, copy the text between the triple quotes (``"""``)
 and save it in a file called ``stories.md``.
 
 .. runnable:: 
+   :description: core-write-stories
 
    stories_md = """
    ## happy path
@@ -103,6 +104,8 @@ The domain defines the universe your bot lives in.
 Here is an example domain for our bot which we'll write to a file called ``domain.yml``:
 
 .. runnable:: 
+   :description: core-write-domain
+
    domain_yml = """
    intents:
      - greet
@@ -181,6 +184,7 @@ leave out the ``!`` at the start. This will train the dialogue model and store i
 into ``models/dialogue``.
 
 .. runnable::
+   :description: core-train-core
 
    !python -m rasa_core.train -d domain.yml -s stories.md -o models/dialogue
 
@@ -205,12 +209,36 @@ If you are running these commands locally, run:
 
 If you are running the cells here in the docs, run this cell:
 
-.. runnable::
 
+.. runnable::
+   :description: core-chat-without-nlu
+
+   import IPython
+   from IPython.display import clear_output
    from rasa_core.agent import Agent
-   from rasa_core.channels.console import ConsoleInputChannel
+   import time
+
+   messages = ["Hi! you can chat in this window. Type 'stop' to end the conversation."]
    agent = Agent.load('models/dialogue')
-   agent.handle_channel(ConsoleInputChannel())
+
+   def chatlogs_html(messages):
+       messages_html = "".join(["&lt;p&gt;{}&lt;/p&gt;".format(m) for m in messages])
+       chatbot_html = """&lt;div class="chat-window" {}&lt;/div&gt;""".format(messages_html)
+       return chatbot_html
+
+
+   while True:
+       clear_output()
+       display(IPython.display.HTML(chatlogs_html(messages)))
+       time.sleep(0.3)
+       a = input()
+       messages.append(a)
+       if a == 'stop':
+           break
+       responses = agent.handle_message(a)
+       for r in responses:
+           messages.append(r.get("text"))
+
 
 
 5. Add NLU
@@ -228,6 +256,7 @@ In this tutorial we are going to use Markdown Format for NLU training data.
 Let's create some intent examples in a file called ``nlu.md``:
 
 .. runnable::
+   :description: core-write-nlu-data
 
    nlu_md = """
    ## intent:greet
@@ -287,6 +316,8 @@ Furthermore, we need a configuration file, ``nlu_config.yml``, for the
 NLU model:
 
 .. runnable:: 
+   :description: core-write-nlu-config
+
    nlu_config = """
    language: en
    pipeline: tensorflow_embedding
@@ -301,6 +332,7 @@ first).
 Let's run
 
 .. runnable::
+   :description: core-train-nlu
 
    !python -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
 
@@ -330,6 +362,7 @@ If you are running these commands locally, run:
 If you are running the cells here in the docs, run this cell:
 
 .. runnable::
+   :description: core-chat-with-nlu
 
    from rasa_core.agent import Agent
    from rasa_core.channels.console import ConsoleInputChannel

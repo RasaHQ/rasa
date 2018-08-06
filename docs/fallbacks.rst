@@ -1,3 +1,5 @@
+:desc: Fallback and Default Actions in Rasa Core
+
 .. _fallbacks:
 
 Fallback Actions

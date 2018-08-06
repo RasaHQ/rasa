@@ -1,3 +1,5 @@
+:desc: Interactive Learning with Rasa Core
+
 .. _interactive_learning:
 
 Interactive Learning
