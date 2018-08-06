@@ -22,7 +22,7 @@ ruamel.yaml==0.15.37
 flask==1.0.2
 flask_cors==3.0.4
 scikit-learn==0.19.1
-rasa_nlu~=0.12.0
+rasa_nlu~=0.13.0
 slackclient==1.2.1
 python-telegram-bot==10.1.0
 twilio==6.14.0
