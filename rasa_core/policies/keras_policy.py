@@ -159,7 +159,7 @@ class KerasPolicy(Policy):
 
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
-        import numpy as np
+        """Continues training an already trained policy."""
 
         # takes the new example labelled and learns it
         # via taking `epochs` samples of n_batch-1 parts of the training data,
@@ -170,17 +170,10 @@ class KerasPolicy(Policy):
         batch_size = kwargs.get('batch_size', 5)
         epochs = kwargs.get('epochs', 50)
 
-        num_samples = batch_size - 1
-        num_prev_examples = len(training_trackers) - 1
         for _ in range(epochs):
-            sampled_idx = np.random.choice(range(num_prev_examples),
-                                           replace=False,
-                                           size=min(num_samples,
-                                                    num_prev_examples))
-            trackers = [training_trackers[i]
-                        for i in sampled_idx] + training_trackers[-1:]
-            training_data = self.featurize_for_training(trackers,
-                                                        domain)
+            training_data = self._training_data_for_continue_training(
+                    batch_size, training_trackers, domain)
+
             # fit to one extra example using updated trackers
             self.model.fit(training_data.X, training_data.y,
                            epochs=self.current_epoch + 1,
