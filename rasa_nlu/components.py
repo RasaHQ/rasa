@@ -191,15 +191,6 @@ class Component(object):
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
-    def __getstate__(self):
-        d = self.__dict__.copy()
-        # these properties should not be pickled
-        if "partial_processing_context" in d:
-            del d["partial_processing_context"]
-        if "partial_processing_pipeline" in d:
-            del d["partial_processing_pipeline"]
-        return d
-
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
@@ -306,9 +297,17 @@ class Component(object):
         Otherwise, an instantiation of the
         component will be reused for all models where the
         metadata creates the same key."""
-        from rasa_nlu.model import Metadata
 
         return None
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        # these properties should not be pickled
+        if "partial_processing_context" in d:
+            del d["partial_processing_context"]
+        if "partial_processing_pipeline" in d:
+            del d["partial_processing_pipeline"]
+        return d
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
