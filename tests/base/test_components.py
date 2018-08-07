@@ -7,7 +7,9 @@ import pytest
 
 from rasa_nlu import registry
 from rasa_nlu.components import find_unavailable_packages
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
+from tests import utilities
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -76,3 +78,17 @@ def test_builder_load_unknown(component_builder):
         component_builder.load_component("my_made_up_componment", "",
                                          Metadata({}, None))
     assert "Unknown component name" in str(excinfo.value)
+
+
+def test_example_component(component_builder, tmpdir_factory):
+    conf = RasaNLUModelConfig({"pipeline": [
+        {"name": "tests.example_component.MyComponent"}]})
+
+    interpreter = utilities.interpreter_for(
+            component_builder,
+            data="./data/examples/rasa/demo-rasa.json",
+            path=tmpdir_factory.mktemp("projects").strpath,
+            config=conf)
+
+    r = interpreter.parse("test")
+    assert r is not None
