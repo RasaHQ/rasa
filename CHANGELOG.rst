@@ -18,6 +18,13 @@ Changed
 Removed
 -------
 
+[0.13.1] - 2018-08-07
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- documentation example for creating a custom component
+
 Fixed
 -----
 - correctly pass reference time in miliseconds to duckling_http
