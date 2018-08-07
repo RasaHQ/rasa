@@ -201,7 +201,8 @@ def drop_intents_below_freq(td, cutoff=5):
 def save_nlu_errors(errors, filename):
     """Write out nlu classification errors to a file."""
 
-    utils.write_to_file(filename, json.dumps(errors, indent=4))
+    utils.write_to_file(filename,
+                        json.dumps(errors, indent=4, ensure_ascii=False))
     logger.info("Model prediction errors saved to {}.".format(filename))
 
 
