@@ -603,7 +603,7 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model_path,
-                   errors_filename=None,
+                   errors_filename='errors.json',
                    confmat_filename=None,
                    intent_hist_filename=None,
                    component_builder=None):  # pragma: no cover
