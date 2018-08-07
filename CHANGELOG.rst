@@ -20,6 +20,7 @@ Removed
 
 Fixed
 -----
+- correctly pass reference time in miliseconds to duckling_http
 
 [0.13.0] - 2018-08-02
 ^^^^^^^^^^^^^^^^^^^^^
