@@ -116,13 +116,14 @@ class DucklingHTTPExtractor(EntityExtractor):
     def _reference_time_from_message(message):
         if message.time is not None:
             try:
-                return int(message.time)
+                return int(message.time)*1000
             except ValueError as e:
                 logging.warning("Could not parse timestamp {}. Instead "
                                 "current UTC time will be passed to "
                                 "duckling. Error: {}".format(message.time, e))
-        # fallbacks to current time
-        return int(time.time())
+        # fallbacks to current time, multiplied by 1000 because duckling
+        # requires the reftime in miliseconds
+        return int(time.time())*1000
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
