@@ -28,6 +28,7 @@ MAX_VISUAL_HISTORY = 3
 
 DEFAULT_FILE_EXPORT_PATH = "stories.md"
 
+
 def _request_intent_from_user(tracker_dump, intents):
     # take in some argument and ask which intent it should have been
     # save the intent to a json like file
@@ -41,14 +42,11 @@ def _request_intent_from_user(tracker_dump, intents):
     print("What intent is this?\t")
     for idx, intent in enumerate(intents):
         print('\t{}\t{}'.format(idx, intent))
+
     out = int(utils.request_input(
             utils.str_range_list(0, len(intents))))
-    json_example = {
-        'text': latest_message.get("text"),
-        'intent': intents[out]
-    }
-    intent_name = intents[out]
-    return {'name': intent_name, 'confidence': 1.0}
+
+    return {'name': intents[out], 'confidence': 1.0}
 
 
 def _print_history(tracker_dump):
