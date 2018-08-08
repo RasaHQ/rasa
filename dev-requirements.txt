@@ -19,5 +19,5 @@ sphinx-autobuild==0.7.1
 sphinxcontrib-versioning==2.2.1
 sphinxcontrib-httpdomain==1.6.1
 sphinxcontrib-programoutput==0.11
-https://storage.googleapis.com/docs-theme/rasabaster-0.7.10.tar.gz
+https://storage.googleapis.com/docs-theme/rasabaster-0.7.12.tar.gz
 pygments==2.2.0

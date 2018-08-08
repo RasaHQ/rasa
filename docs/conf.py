@@ -40,7 +40,8 @@ extensions = [
     'rasabaster.button',
     'rasabaster.card',
     'rasabaster.chatbubble',
-    'rasabaster.runnable'
+    'rasabaster.runnable',
+    'rasabaster.copyable'
 #    'numpydoc',
 ]
 
@@ -136,14 +137,15 @@ html_theme_options = {
     'github_user': 'RasaHQ',
     'github_repo': 'rasa_core',
     'fixed_sidebar': True,
-    'product': "Core"
+    'product': "Core",
+    'base_url': 'https://rasa.com/docs/core/'
 }
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-#html_title = u'rasa v0.1'
+html_title = u''
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None

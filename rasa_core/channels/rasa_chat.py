@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 class RasaChatInput(HttpInputComponent):
     """Chat input channel for Rasa Platform"""
 
-    def __init__(self, host):
+    def __init__(self, host, admin_token=None):
         self.host = host
+        self.admin_token = admin_token
 
     def _check_token(self, token):
         url = "{}/users/me".format(self.host)
@@ -52,18 +53,24 @@ class RasaChatInput(HttpInputComponent):
         rasa_chat = Blueprint('rasa_chat', __name__)
         CORS(rasa_chat)
 
-        @rasa_chat.route("/", methods=['GET'])
+        @rasa_chat.route("/", methods=['GET', 'HEAD'])
         def health():
             return jsonify({"status": "ok"})
 
-        @rasa_chat.route("/send", methods=['GET', 'POST'])
+        @rasa_chat.route("/send", methods=['GET', 'POST', 'HEAD'])
         @cross_origin()
         def receive():
-            user = self.fetch_user(request)
-            msg = request.json["message"]
-            on_new_message(UserMessage(msg, CollectingOutputChannel(),
-                                       sender_id=user["username"]))
+            if (self.admin_token and
+                    request.args.get("token") == self.admin_token):
+                user_name = request.json["user"]
+            else:
+                user_name = self.fetch_user(request)["username"]
 
-            return jsonify({"status": "ok"})
+            msg = request.json["message"]
+            out = CollectingOutputChannel()
+            on_new_message(UserMessage(msg, out,
+                                       sender_id=user_name))
+
+            return jsonify(out.messages)
 
         return rasa_chat

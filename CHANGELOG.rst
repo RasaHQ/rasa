@@ -11,6 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- more emoji support for PY2
+- intent confidence support in RegexInterpreter
 
 Changed
 -------
@@ -20,6 +22,28 @@ Removed
 
 Fixed
 -------
+
+[0.10.4] - 2018-08-08
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- more emoji support for PY2
+- intent confidence support in RegexInterpreter
+
+[0.10.3] - 2018-08-03
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- updated to Rasa NLU 0.13
+- improved documentation quickstart
+
+Fixed
+-----
+- server request argument handling on python 3
+- creation of training data story graph - removes more nodes and speeds up
+  the training
 
 [0.10.2] - 2018-07-24
 ^^^^^^^^^^^^^^^^^^^^^

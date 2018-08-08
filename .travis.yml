@@ -32,7 +32,7 @@ jobs:
     - pip install sphinx==1.7.5 sphinx-autobuild==0.6.0 sphinxcontrib-httpdomain==1.5.0  sphinxcontrib-programoutput==0.11 
       nbsphinx==0.3.2 sphinxcontrib-websupport==1.1.0
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
-    - pip install https://storage.googleapis.com/docs-theme/rasabaster-0.7.10.tar.gz
+    - pip install --no-cache-dir https://storage.googleapis.com/docs-theme/rasabaster-0.7.12.tar.gz
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     - pip install -e .
     - pip list

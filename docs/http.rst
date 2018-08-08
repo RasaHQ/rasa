@@ -1,3 +1,5 @@
+:desc: The Rasa Core REST API
+
 .. _section_http:
 
 HTTP API

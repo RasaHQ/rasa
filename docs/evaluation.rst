@@ -1,3 +1,5 @@
+:desc: How to evaluate a Rasa Core model
+
 .. _evaluation:
 
 Evaluating and Testing
