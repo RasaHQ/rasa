@@ -292,13 +292,13 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy = self.create_policy(featurizer=featurizer, shuffle=False)
         # does not raise
         policy.train(trackers, domain=default_domain)
-#
-#
-# class TestEmbeddingPolicy(PolicyTestCollection):
-#
-#     @pytest.fixture(scope="module")
-#     def create_policy(self, featurizer):
-#         # use standard featurizer from EmbeddingPolicy,
-#         # since it is using FullDialogueTrackerFeaturizer
-#         p = EmbeddingPolicy()
-#         return p
+
+
+class TestEmbeddingPolicy(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        # use standard featurizer from EmbeddingPolicy,
+        # since it is using FullDialogueTrackerFeaturizer
+        p = EmbeddingPolicy()
+        return p
