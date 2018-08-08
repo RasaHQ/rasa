@@ -23,6 +23,14 @@ Removed
 Fixed
 -------
 
+[0.10.4] - 2018-08-08
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- more emoji support for PY2
+- intent confidence support in RegexInterpreter
+
 [0.10.3] - 2018-08-03
 ^^^^^^^^^^^^^^^^^^^^^
 
