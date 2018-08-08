@@ -42,7 +42,7 @@ Hence, the solution is to add more training samples. As this is only a warning, 
 
 I have an issue, can you help me?
 ---------------------------------
-We'd love to help you. If you are unsure if your issue is related to your setup, you should state your problem in the `gitter chat <https://gitter.im/RasaHQ/rasa_nlu>`_.
+We'd love to help you. If you are unsure if your issue is related to your setup, you should state your problem in the `Rasa Community Forum <https://forum.rasa.com>`_.
 If you found an issue with the framework, please file a report on `github issues <https://github.com/RasaHQ/rasa_nlu/issues>`_
 including all the information needed to reproduce the problem.
 
