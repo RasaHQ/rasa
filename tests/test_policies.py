@@ -19,6 +19,7 @@ from rasa_core.policies.memoization import \
     MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
+from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.featurizers import (
@@ -291,3 +292,13 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy = self.create_policy(featurizer=featurizer, shuffle=False)
         # does not raise
         policy.train(trackers, domain=default_domain)
+
+
+class TestEmbeddingPolicy(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        # use standard featurizer from EmbeddingPolicy,
+        # since it is using FullDialogueTrackerFeaturizer
+        p = EmbeddingPolicy()
+        return p
