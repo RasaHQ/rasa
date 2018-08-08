@@ -35,7 +35,6 @@ class KerasPolicy(Policy):
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
                  model=None,  # type: Optional[keras.models.Sequential]
-                 graph=None,  # type: Optional[keras.backend.tf.Graph]
                  current_epoch=0  # type: int
                  ):
         # type: (...) -> None
@@ -44,11 +43,6 @@ class KerasPolicy(Policy):
 
         self.rnn_size = self.defaults['rnn_size']
 
-        if KerasPolicy.is_using_tensorflow() and not graph:
-            from keras.backend import tf
-            self.graph = tf.get_default_graph()
-        else:
-            self.graph = graph
         self.model = model
         self.current_epoch = current_epoch
 
@@ -169,7 +163,6 @@ class KerasPolicy(Policy):
 
         batch_size = kwargs.get('batch_size', 5)
         epochs = kwargs.get('epochs', 50)
-
         for _ in range(epochs):
             training_data = self._training_data_for_continue_training(
                     batch_size, training_trackers, domain)
@@ -187,11 +180,7 @@ class KerasPolicy(Policy):
 
         X = self.featurizer.create_X([tracker], domain)
 
-        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
-            with self.graph.as_default():
-                y_pred = self.model.predict(X, batch_size=1)
-        else:
-            y_pred = self.model.predict(X, batch_size=1)
+        y_pred = self.model.predict(X, batch_size=1)
 
         if len(y_pred.shape) == 2:
             return y_pred[-1].tolist()
@@ -246,6 +235,11 @@ class KerasPolicy(Policy):
         return model
 
     @classmethod
+    def _load_model(cls, path, meta):
+        model_arch = cls._load_model_arch(path, meta)
+        return cls._load_weights_for_model(path, model_arch, meta)
+
+    @classmethod
     def load(cls, path):
         # type: (Text) -> KerasPolicy
         if os.path.exists(path):
@@ -254,13 +248,12 @@ class KerasPolicy(Policy):
             if os.path.isfile(meta_path):
                 with io.open(meta_path) as f:
                     meta = json.loads(f.read())
-                model_arch = cls._load_model_arch(path, meta)
-                return cls(
-                        featurizer=featurizer,
-                        model=cls._load_weights_for_model(path,
-                                                          model_arch,
-                                                          meta),
-                        current_epoch=meta["epochs"])
+
+                model = cls._load_model(path, meta)
+
+                return cls(featurizer=featurizer,
+                           model=model,
+                           current_epoch=meta["epochs"])
             else:
                 return cls(featurizer=featurizer)
         else:

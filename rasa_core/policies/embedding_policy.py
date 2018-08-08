@@ -1137,26 +1137,26 @@ class EmbeddingPolicy(Policy):
                     session_data.previous_actions,
                     session_data.actions_for_Y
             )
-
-            # fit to one extra example using updated trackers
-            self.session.run(
-                    self._train_op,
-                    feed_dict={
-                        self.a_in: session_data.X,
-                        self.b_in: b,
-                        self.c_in: session_data.slots,
-                        self.b_prev_in: session_data.previous_actions,
-                        self._dialogue_len: session_data.X.shape[1],
-                        self._x_for_no_intent_in:
-                            session_data.x_for_no_intent,
-                        self._y_for_no_action_in:
-                            session_data.y_for_no_action,
-                        self._y_for_action_listen_in:
-                            session_data.y_for_action_listen,
-                        self._is_training: True,
-                        self._loss_scales: batch_loss_scales
-                    }
-            )
+            with self.graph.as_default():
+                # fit to one extra example using updated trackers
+                self.session.run(
+                        self._train_op,
+                        feed_dict={
+                            self.a_in: session_data.X,
+                            self.b_in: b,
+                            self.c_in: session_data.slots,
+                            self.b_prev_in: session_data.previous_actions,
+                            self._dialogue_len: session_data.X.shape[1],
+                            self._x_for_no_intent_in:
+                                session_data.x_for_no_intent,
+                            self._y_for_no_action_in:
+                                session_data.y_for_no_action,
+                            self._y_for_action_listen_in:
+                                session_data.y_for_action_listen,
+                            self._is_training: True,
+                            self._loss_scales: batch_loss_scales
+                        }
+                )
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -1178,22 +1178,24 @@ class EmbeddingPolicy(Policy):
         all_Y_d_x = np.stack([session_data.all_Y_d
                               for _ in range(session_data.X.shape[0])])
 
-        _sim = self.session.run(
-                self.sim_op,
-                feed_dict={
-                    self.a_in: session_data.X,
-                    self.b_in: all_Y_d_x,
-                    self.c_in: session_data.slots,
-                    self.b_prev_in: session_data.previous_actions,
-                    self._dialogue_len: session_data.X.shape[1],
-                    self._x_for_no_intent_in:
-                        session_data.x_for_no_intent,
-                    self._y_for_no_action_in:
-                        session_data.y_for_no_action,
-                    self._y_for_action_listen_in:
-                        session_data.y_for_action_listen
-                }
-        )
+        with self.graph.as_default():
+            _sim = self.session.run(
+                    self.sim_op,
+                    feed_dict={
+                        self.a_in: session_data.X,
+                        self.b_in: all_Y_d_x,
+                        self.c_in: session_data.slots,
+                        self.b_prev_in: session_data.previous_actions,
+                        self._dialogue_len: session_data.X.shape[1],
+                        self._x_for_no_intent_in:
+                            session_data.x_for_no_intent,
+                        self._y_for_no_action_in:
+                            session_data.y_for_no_action,
+                        self._y_for_action_listen_in:
+                            session_data.y_for_action_listen
+                    }
+            )
+
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':
             # clip negative values to zero
