@@ -1137,6 +1137,7 @@ class EmbeddingPolicy(Policy):
                     session_data.previous_actions,
                     session_data.actions_for_Y
             )
+
             with self.graph.as_default():
                 # fit to one extra example using updated trackers
                 self.session.run(
