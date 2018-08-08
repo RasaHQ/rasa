@@ -35,6 +35,7 @@ class KerasPolicy(Policy):
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
                  model=None,  # type: Optional[keras.models.Sequential]
+                 graph=None,  # type: Optional[keras.backend.tf.Graph]
                  current_epoch=0  # type: int
                  ):
         # type: (...) -> None
@@ -43,6 +44,11 @@ class KerasPolicy(Policy):
 
         self.rnn_size = self.defaults['rnn_size']
 
+        if KerasPolicy.is_using_tensorflow() and not graph:
+            from keras.backend import tf
+            self.graph = tf.Graph()
+        else:
+            self.graph = graph
         self.model = model
         self.current_epoch = current_epoch
 
@@ -134,22 +140,39 @@ class KerasPolicy(Policy):
                                                     **kwargs)
 
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
+        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
+            with self.graph.as_default():
+                if self.model is None:
+                    self.model = self.model_architecture(shuffled_X.shape[1:],
+                                                         shuffled_y.shape[1:])
 
-        if self.model is None:
-            self.model = self.model_architecture(shuffled_X.shape[1:],
-                                                 shuffled_y.shape[1:])
+                validation_split = kwargs.get("validation_split", 0.0)
+                logger.info("Fitting model with {} total samples and a validation "
+                            "split of {}".format(training_data.num_examples(),
+                                                 validation_split))
+                # filter out kwargs that cannot be passed to fit
+                params = self._get_valid_params(self.model.fit, **kwargs)
 
-        validation_split = kwargs.get("validation_split", 0.0)
-        logger.info("Fitting model with {} total samples and a validation "
-                    "split of {}".format(training_data.num_examples(),
-                                         validation_split))
-        # filter out kwargs that cannot be passed to fit
-        params = self._get_valid_params(self.model.fit, **kwargs)
+                self.model.fit(shuffled_X, shuffled_y, **params)
+                # the default parameter for epochs in keras fit is 1
+                self.current_epoch = kwargs.get("epochs", 1)
+                logger.info("Done fitting keras policy model")
+        else:
+            if self.model is None:
+                self.model = self.model_architecture(shuffled_X.shape[1:],
+                                                     shuffled_y.shape[1:])
 
-        self.model.fit(shuffled_X, shuffled_y, **params)
-        # the default parameter for epochs in keras fit is 1
-        self.current_epoch = kwargs.get("epochs", 1)
-        logger.info("Done fitting keras policy model")
+            validation_split = kwargs.get("validation_split", 0.0)
+            logger.info("Fitting model with {} total samples and a validation "
+                        "split of {}".format(training_data.num_examples(),
+                                             validation_split))
+            # filter out kwargs that cannot be passed to fit
+            params = self._get_valid_params(self.model.fit, **kwargs)
+
+            self.model.fit(shuffled_X, shuffled_y, **params)
+            # the default parameter for epochs in keras fit is 1
+            self.current_epoch = kwargs.get("epochs", 1)
+            logger.info("Done fitting keras policy model")
 
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
@@ -168,11 +191,20 @@ class KerasPolicy(Policy):
                     batch_size, training_trackers, domain)
 
             # fit to one extra example using updated trackers
-            self.model.fit(training_data.X, training_data.y,
-                           epochs=self.current_epoch + 1,
-                           batch_size=len(training_data.y),
-                           verbose=0,
-                           initial_epoch=self.current_epoch)
+            if KerasPolicy.is_using_tensorflow() and self.graph is not None:
+                with self.graph.as_default():
+                    self.model.fit(training_data.X, training_data.y,
+                                   epochs=self.current_epoch + 1,
+                                   batch_size=len(training_data.y),
+                                   verbose=0,
+                                   initial_epoch=self.current_epoch)
+            else:
+                self.model.fit(training_data.X, training_data.y,
+                               epochs=self.current_epoch + 1,
+                               batch_size=len(training_data.y),
+                               verbose=0,
+                               initial_epoch=self.current_epoch)
+
             self.current_epoch += 1
 
     def predict_action_probabilities(self, tracker, domain):
@@ -180,7 +212,11 @@ class KerasPolicy(Policy):
 
         X = self.featurizer.create_X([tracker], domain)
 
-        y_pred = self.model.predict(X, batch_size=1)
+        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
+            with self.graph.as_default():
+                y_pred = self.model.predict(X, batch_size=1)
+        else:
+            y_pred = self.model.predict(X, batch_size=1)
 
         if len(y_pred.shape) == 2:
             return y_pred[-1].tolist()
@@ -210,6 +246,7 @@ class KerasPolicy(Policy):
             utils.dump_obj_as_str_to_file(arch_file, self.model.to_json())
 
             self._persist_configuration(config_file)
+
             self.model.save_weights(weights_file, overwrite=True)
         else:
             warnings.warn("Persist called without a trained model present. "
@@ -249,10 +286,18 @@ class KerasPolicy(Policy):
                 with io.open(meta_path) as f:
                     meta = json.loads(f.read())
 
-                model = cls._load_model(path, meta)
+                if KerasPolicy.is_using_tensorflow():
+                    from keras.backend import tf
+                    graph = tf.Graph()
+                    with graph.as_default():
+                        model = cls._load_model(path, meta)
+                else:
+                    graph = None
+                    model = cls._load_model(path, meta)
 
                 return cls(featurizer=featurizer,
                            model=model,
+                           graph=graph,
                            current_epoch=meta["epochs"])
             else:
                 return cls(featurizer=featurizer)
