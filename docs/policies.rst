@@ -159,19 +159,19 @@ Embedding policy
 ----------------
 
 This policy has predefined architecture, which comprises the following steps:
-    - apply dense layers to create embeddings for user intents and entities and system actions including previous actions and slots;
-    - use the embeddings of previous user inputs as user memory;
-    - use embeddings of previous system actions as system memory;
-    - concatenate user, previous system action and slots embeddings for current time into an input vector to rnn;
+    - apply dense layers to create embeddings for user intents, entities and system actions including previous actions and slots;
+    - use the embeddings of previous user inputs as a user memory and embeddings of previous system actions as a system memory;
+    - concatenate user input, previous system action and slots embeddings for current time into an input vector to rnn;
     - using user and previous system action embeddings from the input vector calculate attention probabilities over the user and system memories
-      (for system memory `NTM mechanism <https://arxiv.org/abs/1410.5401>`_ with attention by location is used);
-    - feed the sum of the user embedding and user attention vector and the embeddings of the slots as an input to an LSTM cell;
+      (for system memory, this policy uses `NTM mechanism <https://arxiv.org/abs/1410.5401>`_ with attention by location);
+    - sum the user embedding and user attention vector and feed it and the embeddings of the slots as an input to an LSTM cell;
     - apply a dense layer to the output of the LSTM to get a raw recurrent embedding of a dialogue;
-    - sum this raw recurrent embedding of a dialogue with system attention vector, enabling a copy mechanism of previous actions,
-      to create dialogue level embedding;
-    - weight previous lstm states with system attention probabilities to get previous action the policy is likely payed attention to;
-    - if the similarity of this action and dialogue embedding is high overwrite current lstm state with the one from the time when this action happened;
-    - for each LSTM time step, calculate the similarity between this dialogue embedding and embedded system actions.
+    - sum this raw recurrent embedding of a dialogue with system attention vector to create dialogue level embedding,
+      this step allows the algorithm to repeat previous system action by copying its embedding vector directly to the current time output;
+    - weight previous LSTM states with system attention probabilities to get the previous action embedding, the policy is likely payed attention to;
+    - if the similarity between this action embedding and current time dialogue embedding is high,
+      overwrite current LSTM state with the one from the time when this action happened;
+    - for each LSTM time step, calculate the similarity between the dialogue embedding and embedded system actions.
       This step is based on the starspace idea from: `<https://arxiv.org/abs/1709.03856>`_.
 
 It is recommended to use ``LabelTokenizerSingleStateFeaturizer`` (see :ref:`featurization` for details).
@@ -192,8 +192,8 @@ It is recommended to use ``LabelTokenizerSingleStateFeaturizer`` (see :ref:`feat
     The main feature of this policy is **attention** mechanism over previous user input and system actions.
     **Attention is turned off by default**, in order to turn it on, configure the following parameters:
         - ``attn_before_rnn`` if ``true`` the algorithm will use attention mechanism over previous user input, default ``false``;
-        - ``attn_after_rnn`` if ``true`` the algorithm will use attention mechanism over previous system action
-          enabling an ability for the policy to return to previously executed action in terms of its hidden state, default ``false``;
+        - ``attn_after_rnn`` if ``true`` the algorithm will use attention mechanism over previous system actions
+          and will be able to copy previously executed action together with LSTM's hidden state from its history, default ``false``;
         - ``sparse_attention`` if ``true`` ``sparsemax`` will be used instead of ``softmax`` for attention probabilities, default ``false``;
         - ``attn_shift_range`` the range of allowed location-based attention shifts for system memory, see `<https://arxiv.org/abs/1410.5401>`_ for details;
 
