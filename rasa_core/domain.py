@@ -233,7 +233,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # be ignored for the current intent
         for entity in tracker.latest_message.entities:
             intent_name = tracker.latest_message.intent.get("name")
-            should_use_entity = self._intents[intent_name]['use_entities']
+            intent_config = self.intent_config(intent_name)
+            should_use_entity = intent_config.get('use_entities', True)
             if should_use_entity:
                 key = "entity_{0}".format(entity["entity"])
                 state_dict[key] = 1.0
@@ -380,6 +381,11 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # type: () -> List[Text]
         raise NotImplementedError(
                 "domain must provide a list of intents")
+
+    def intent_config(self, intent_name):
+        # type: (Text) -> Dict[Text, Any]
+        """Return the configuration for an intent."""
+        return {}
 
     @abc.abstractproperty
     def actions(self):
@@ -552,6 +558,11 @@ class TemplateDomain(Domain):
     @utils.lazyproperty
     def intents(self):
         return sorted(self._intents.keys())
+
+    def intent_config(self, intent_name):
+        # type: (Text) -> Dict[Text, Any]
+        """Return the configuration for an intent."""
+        return self._intents.get(intent_name, {})
 
     @utils.lazyproperty
     def entities(self):

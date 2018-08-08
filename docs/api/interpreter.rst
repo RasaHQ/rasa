@@ -71,3 +71,16 @@ the same type you can use
     /add_to_shopping_list{"item": ["milk", "salt"]}
 
 Which corresponds to a message ``"I want to add milk and salt to my list"``.
+
+If you want to specify the intent confidence you can use
+
+.. code-block:: bash
+
+    /deny@0.825
+
+Which feeds the intent ``greet`` with confidence ``0.825``.  Combining confidence
+and entities
+
+.. code-block:: bash
+
+    /add_to_shopping_list@0.825{"item": ["milk", "salt"]}
