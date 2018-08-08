@@ -62,6 +62,8 @@ class EmbeddingPolicy(Policy):
         "hidden_layers_sizes_b": [],
         # number of units in rnn cell
         "rnn_size": 64,
+
+        # training parameters
         # flag if to turn on layer normalization for lstm cell
         "layer_norm": True,
         # initial and final batch sizes - batch size will be
@@ -105,10 +107,10 @@ class EmbeddingPolicy(Policy):
         # attention parameters
         # flag to use attention over user input
         # as an input to rnn
-        "attn_before_rnn": True,
+        "attn_before_rnn": False,
         # flag to use attention over prev bot actions
         # and copy it to output bypassing rnn
-        "attn_after_rnn": True,
+        "attn_after_rnn": False,
 
         # flag to use `sparsemax` instead of `softmax` for attention
         "sparse_attention": False,  # flag to use sparsemax for probs

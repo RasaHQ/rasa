@@ -158,42 +158,52 @@ Embedding policy
 
 This policy has predefined architecture, which comprises the following steps:
     - apply dense layers to create embeddings for user intents and entities and system actions including previous actions and slots;
-    - concatenate the embeddings of previous user inputs and embeddings of previous system actions to create a memory;
-    - concatenate user embeddings and slots into an attention wrapper input vector;
-    - using the input vector and the previous LSTM output calculate attention probabilities over the memory
-      using `NTM mechanism <https://arxiv.org/abs/1410.5401>`_;
-    - feed the attention vectors and the embeddings of the slots as an input to an LSTM cell;
-    - apply a dense layer to the output of the LSTM to get a recurrent embedding of a dialogue;
+    - use the embeddings of previous user inputs as user memory;
+    - use embeddings of previous system actions as system memory;
+    - concatenate user, previous system action and slots embeddings for current time into an input vector to rnn;
+    - using user and previous system action embeddings from the input vector calculate attention probabilities over the user and system memories
+      (for system memory `NTM mechanism <https://arxiv.org/abs/1410.5401>`_ with attention by location is used);
+    - feed the sum of the user embedding and user attention vector and the embeddings of the slots as an input to an LSTM cell;
+    - apply a dense layer to the output of the LSTM to get a raw recurrent embedding of a dialogue;
+    - sum this raw recurrent embedding of a dialogue with system attention vector, enabling a copy mechanism of previous actions,
+      to create dialogue level embedding;
+    - weight previous lstm states with system attention probabilities to get previous action the policy is likely payed attention to;
+    - if the similarity of this action and dialogue embedding is high overwrite current lstm state with the one from the time when this action happened
     - for each LSTM time step, calculate the similarity between this dialogue embedding and embedded system actions.
       This step is based on the starspace idea from: `<https://arxiv.org/abs/1709.03856>`_.
 
 It is recommended to use ``LabelTokenizerSingleStateFeaturizer`` (see :ref:`featurization` for details).
-.. note::
-    This policy only works with ``FullDialogueTrackerFeaturizer``.
+
+.. note:: This policy only works with ``FullDialogueTrackerFeaturizer``.
 
 **Configuration**:
 
     Configuration parameters can be passed to ``agent.train(...)`` method.
-    .. note:: Pass appropriate ``epochs`` number to ``agent.train(...)`` method,
-              otherwise the policy will be trained only for ``1`` epoch. Since this is embedding based policy,
-              it requires large number of epochs, which depends on complexity of the training data and whether
-              attention was turned on or not.
+
+    .. note::
+
+        Pass appropriate ``epochs`` number to ``agent.train(...)`` method,
+        otherwise the policy will be trained only for ``1`` epoch. Since this is embedding based policy,
+        it requires large number of epochs, which depends on complexity of the training data and whether
+        attention was turned on or not.
 
     The main feature of this policy is **attention** mechanism over previous user input and system actions.
     **Attention is turned off by default**, in order to turn it on, configure the following parameters:
-        - ``use_attention`` if ``true`` the algorithm will use attention mechanism, default ``false``;
+        - ``attn_before_rnn`` if ``true`` the algorithm will use attention mechanism over previous user input, default ``false``;
+        - ``attn_after_rnn`` if ``true`` the algorithm will use attention mechanism over previous system action
+          enabling an ability for the policy to return to previously executed action in terms of its hidden state, default ``false``;
         - ``sparse_attention`` if ``true`` ``sparsemax`` will be used instead of ``softmax`` for attention probabilities, default ``false``;
-        - ``attn_shift_range`` the range of allowed location-based attention shifts, see `<https://arxiv.org/abs/1410.5401>`_ for details;
-        - ``skip_cells`` if ``true`` the algorithm will add sigmoid gate to skip rnn time step for LSTM's hidden memory state.
+        - ``attn_shift_range`` the range of allowed location-based attention shifts for system memory, see `<https://arxiv.org/abs/1410.5401>`_ for details;
 
     .. note:: Attention requires larger values of ``epochs`` and takes longer to train. But it can learn more complicated and nonlinear behaviour.
 
     The algorithm also has hyperparameters to control:
         - neural network's architecture:
-            - ``num_hidden_layers_a`` and ``hidden_layer_size_a`` set the number of hidden layers and their sizes before embedding layer for user inputs;
-            - ``num_hidden_layers_b`` and ``hidden_layer_size_b`` set the number of hidden layers and their sizes before embedding layer for system actions;
-            - ``rnn_size`` set the number of units in the LSTM cell;
+            - ``hidden_layers_sizes_a`` sets a list of hidden layers sizes before embedding layer for user inputs, the number of hidden layers is equal to the length of the list;
+            - ``hidden_layers_sizes_b`` sets a list of hidden layers sizes before embedding layer for system actions, the number of hidden layers is equal to the length of the list;
+            - ``rnn_size`` sets the number of units in the LSTM cell;
         - training:
+            - ``layer_norm`` if ``true`` layer normalization for lstm cell is turned on,  default ``true``;
             - ``batch_size`` sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you'll need;
             - ``epochs`` sets the number of times the algorithm will see training data, where ``one epoch`` = one forward pass and one backward pass of all the training examples;
         - embedding:
@@ -209,50 +219,28 @@ It is recommended to use ``LabelTokenizerSingleStateFeaturizer`` (see :ref:`feat
             - ``droprate_a`` sets the dropout rate between hidden layers before embedding layer for user inputs;
             - ``droprate_b`` sets the dropout rate between hidden layers before embedding layer for system actions;
             - ``droprate_rnn`` sets the recurrent dropout rate on the LSTM hidden state `<https://arxiv.org/abs/1603.05118>`_;
-            - ``droprate_out`` sets the dropout rate on the output of the LSTM before embedding layer for the current time step of the dialogue;
+        - train accuracy calculation:
+            - ``evaluate_every_num_epochs`` sets how often to calculate train accuracy, small values may hurt performance;
+            - ``evaluate_on_num_examples`` how many examples to use for calculation of train accuracy, large values may hurt performance.
 
     .. note:: Droprate should be between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units
 
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
-    .. note:: There is an option to use linearly increasing batch size. The idea comes from `<https://arxiv.org/abs/1711.00489>`_.
-              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [8, 32]`` (default behaviour).
-              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 8``.
+    .. note::
 
-    you can pass these parameters to `agent.train(...)` method:
+        There is an option to use linearly increasing batch size. The idea comes from `<https://arxiv.org/abs/1711.00489>`_.
+        In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [8, 32]`` (default behaviour).
+        If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 8``.
 
-    .. code-block:: yaml
-          # nn architecture
-          "num_hidden_layers_a": 0
-          "hidden_layer_size_a": []
-          "num_hidden_layers_b": 0
-          "hidden_layer_size_b": []
-          "rnn_size": 64
-          "batch_size": [8, 32]
-          "epochs": 1
-          # embedding parameters
-          "embed_dim": 20
-          "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
-          "mu_neg": -0.2  # should be -1.0 < ... < 1.0 for 'cosine'
-          "similarity_type": "cosine"  # string 'cosine' or 'inner'
-          "num_neg": 20
-          "use_max_sim_neg": true  # flag which loss function to use
-          # regularization
-          "C2": 0.001
-          "C_emb": 0.8
-          "droprate_a": 0.0
-          "droprate_b": 0.0
-          "droprate_rnn": 0.1
-          "droprate_out": 0.1
-          # attention parameters
-          "use_attention": false  # flag to use attention
-          "sparse_attention": false  # flag to use sparsemax for probs
-          "attn_shift_range": 5  # if None, mean dialogue length / 2
-          "skip_cells": false  # flag to add gate to skip rnn time step
-          # visualization of accuracy
-          "calc_acc_ones_in_epochs": 50,  # small values affect performance
-          "calc_acc_on_num_examples": 100  # large values affect performance
+    These parameters can be passed to ``Agent.train(...)`` method.
+    The default values are defined in ``EmbeddingPolicy.defaults``:
 
-    .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
-              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
-              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+   .. literalinclude:: ../rasa_core/policies/embedding_policy.py
+      :pyobject: EmbeddingPolicy.defaults
+
+   .. note::
+
+          Parameter ``mu_neg`` is set to a negative value to mimic the original
+          starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
+          See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
