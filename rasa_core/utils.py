@@ -293,7 +293,7 @@ def fix_yaml_loader():
     if sys.maxunicode == 0xffff:
         yaml.reader.Reader.NON_PRINTABLE = re.compile(
                 '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
-                '\ude00-\ude50-\udc4d\ud83c\udf89\ude80\udc4c\ud83e\uddde'
+                '\ude00-\ude50\udc4d\ud83c\udf89\ude80\udc4c\ud83e\uddde'
                 '\udd74\udcde\uddd1\udd16]')
     else:
         yaml.reader.Reader.NON_PRINTABLE = re.compile(
