@@ -173,7 +173,7 @@ def remove_empty_intent_examples(intent_results):
         # substitute None values with empty string
         # to enable sklearn evaluation
         if r.prediction is None:
-            r.prediction = ""
+            r = r._replace(prediction="")
 
         if r.target != "" and r.target is not None:
             filtered.append(r)
