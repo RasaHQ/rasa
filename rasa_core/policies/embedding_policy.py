@@ -1661,30 +1661,26 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         with tf.name_scope(type(self).__name__ + "ZeroState",
                            values=[batch_size]):
-            if self._index_of_attn_to_copy is not None:
-                # store all cell states into a tensor array to allow
-                # copy mechanism to go back in time
-                if isinstance(self._cell.state_size,
-                              tf.contrib.rnn.LSTMStateTuple):
-                    all_hidden_cell_states = tf.contrib.rnn.LSTMStateTuple(
-                            tf.TensorArray(dtype, size=self._dialogue_len + 1,
-                                           dynamic_size=False,
-                                           clear_after_read=False
-                                           ).write(0, zero_state.cell_state.c),
-                            tf.TensorArray(dtype, size=self._dialogue_len + 1,
-                                           dynamic_size=False,
-                                           clear_after_read=False
-                                           ).write(0, zero_state.cell_state.h)
-                    )
-                else:
-                    all_hidden_cell_states = tf.TensorArray(
-                            dtype, size=0,
-                            dynamic_size=False,
-                            clear_after_read=False
-                    ).write(0, zero_state.cell_state)
+            # store all cell states into a tensor array to allow
+            # copy mechanism to go back in time
+            if isinstance(self._cell.state_size,
+                          tf.contrib.rnn.LSTMStateTuple):
+                all_hidden_cell_states = tf.contrib.rnn.LSTMStateTuple(
+                        tf.TensorArray(dtype, size=self._dialogue_len + 1,
+                                       dynamic_size=False,
+                                       clear_after_read=False
+                                       ).write(0, zero_state.cell_state.c),
+                        tf.TensorArray(dtype, size=self._dialogue_len + 1,
+                                       dynamic_size=False,
+                                       clear_after_read=False
+                                       ).write(0, zero_state.cell_state.h)
+                )
             else:
-                # do not waste resources on storing history
-                all_hidden_cell_states = None
+                all_hidden_cell_states = tf.TensorArray(
+                        dtype, size=0,
+                        dynamic_size=False,
+                        clear_after_read=False
+                ).write(0, zero_state.cell_state)
 
             return TimeAttentionWrapperState(
                     cell_state=zero_state.cell_state,
@@ -1999,7 +1995,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         else:
             # do not waste resources on storing history
-            all_hidden_cell_states = None
+            all_hidden_cell_states = prev_all_hidden_cell_states
 
             if self._output_attention:
                 output = tf.concat([cell_output, attention], 1)
