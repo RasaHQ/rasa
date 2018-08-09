@@ -21,6 +21,8 @@ class SpacyTokenizer(Tokenizer, Component):
 
     provides = ["tokens"]
 
+    requires = ["spacy_doc"]
+
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 

@@ -1,5 +1,7 @@
 -r requirements_full.txt
 
+-r requirements_docs.txt
+
 # test
 python-coveralls==2.9.1
 pytest-pep8==1.0.6
@@ -13,11 +15,3 @@ mock==2.0.0
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
-
-# docs
-sphinx==1.5.2
-sphinx-autobuild==0.7.1
-sphinxcontrib-versioning==2.2.1
-sphinxcontrib-programoutput==0.11
-nbsphinx==0.2.18
--e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme

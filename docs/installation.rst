@@ -1,21 +1,29 @@
+:desc: Installing Rasa NLU on Mac, Windows, and Linux
+:meta_image: https://i.imgur.com/nGF1K8f.jpg
+
 .. _section_backends:
 
 Installation
 ============
 
-Rasa NLU itself doesn't have any external requirements,
-but to do something useful with it you need to
-install & configure a backend. Which backend you want to use is up to you.
+
+Prerequisites
+~~~~~~~~~~~~~
+For windows
+-----------
+Make sure the Microsoft VC++ Compiler is installed, so python can compile any dependencies. You can get the compiler from: 
+https://visualstudio.microsoft.com/visual-cpp-build-tools/
+Download the installer and select VC++ Build tools in the list. 
 
 Setting up Rasa NLU
 ~~~~~~~~~~~~~~~~~~~
 The recommended way to install Rasa NLU is using pip:
 
-.. code-block:: bash
+.. copyable::
 
     pip install rasa_nlu
 
-If you want to use the bleeding edge version use github + setup.py:
+If you want to use the bleeding edge version you can get it from github:
 
 .. code-block:: bash
 
@@ -24,14 +32,10 @@ If you want to use the bleeding edge version use github + setup.py:
     pip install -r requirements.txt
     pip install -e .
 
-Rasa NLU allows you to use components to process your messages.
-E.g. there is a component for intent classification and
-there are several different components for entity recognition.
-The different components have their own requirements. To get
-you started quickly, this installation guide only installs
-the basic requirements, you may need to install other
-dependencies if you want to use certain components. When running
-Rasa NLU it will check if all required dependencies are
+Rasa NLU has different components for recognizing intents and entities, 
+most of these will have some additional dependencies.
+
+When you train your model, Rasa NLU will check if all required dependencies are
 installed and tell you if any are missing.
 
 .. note::
@@ -46,19 +50,20 @@ installed and tell you if any are missing.
 
     to install everything.
 
-Setting up a backend
-~~~~~~~~~~~~~~~~~~~~
-Most of the processing pipeline you can use with rasa NLU
-either require spaCy, sklearn or MITIE to be installed.
 
-Best for most: spaCy + sklearn
-------------------------------
+Installing Pipeline Dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rasa NLU can run with a choice of backends, but for most users
-a combination of spaCy and scikit-learn is the best option.
+Section :ref:`section_pipeline` will help you choose which pipeline you want to use. 
 
-Installing spacy just requires (for more information
-visit the `spacy docu <https://spacy.io/usage/models>`_):
+Great for getting started: spaCy + sklearn
+------------------------------------------
+
+
+The ``spacy_sklearn`` pipeline combines a few different libraries and is a popular option.
+
+You can install it with this command (for more information
+visit the `spacy docs <https://spacy.io/usage/models>`_):
 
 .. code-block:: bash
 
@@ -72,19 +77,24 @@ for the english language. We recommend using at least the
 default small ``en_core_web_sm`` model. Small models require less 
 memory to run, but will somewhat reduce intent classification performance.
 
-.. note::
 
-    Using spaCy as the backend for Rasa NLU is the **preferred option**.
-    For most domains the performance is better or equally
-    good as results achieved with MITIE. Additionally,
-    it is easier to setup and faster to train.
-    MITIE support has been deprecated as of version 0.12.
 
-First Alternative: MITIE
+First Alternative: Tensorflow
+-----------------------------
+
+To use the ``tensorflow_embedding`` pipeline you will need to install tensorflow as well as the scikit-learn and sklearn-crfsuite libraries. To do this, run the following command:
+
+.. code-block:: bash
+
+    pip install rasa_nlu[tensorflow]
+
+
+Second Alternative: MITIE
 -------------------------
 
-The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend is all-inclusive,
-in the sense that it provides both the NLP and the ML parts.
+The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend performs well for small datasets, but training can take very long if you have more than a couple of hundred examples. We may deprecate the MITIE backend in the future. 
+
+First, run
 
 .. code-block:: bash
 
@@ -113,7 +123,7 @@ The complete pipeline for mitie can be found here
 
 Another Alternative: sklearn + MITIE
 ------------------------------------
-There is a third backend that combines the advantages of the two previous ones:
+There is another backend that combines the advantages of the two previous ones:
 
 1. the fast and good intent classification from sklearn and
 2. the good entitiy recognition and feature vector creation from MITIE

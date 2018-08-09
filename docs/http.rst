@@ -1,57 +1,16 @@
+:desc: The Rasa NLU REST API
 .. _section_http:
 
-Using Rasa NLU as a HTTP server
-===============================
+HTTP API
+========
 
-.. note::
-
-    Before you can use the server, you should train a model!
-    See :ref:`training_your_model`
-
-The HTTP api exists to make it easy for non-python projects to use Rasa NLU,
-and to make it trivial for projects currently using wit/LUIS/Dialogflow
-to try it out.
-
-Running the server
-------------------
-You can run a simple http server that handles requests using your projects with :
-
-.. code-block:: bash
-
-    $ python -m rasa_nlu.server --path projects
-
-The server will look for existing projects under the folder defined by
-the ``path`` parameter. By default a project will load the latest
-trained model.
-
-
-Emulation
----------
-Rasa NLU can 'emulate' any of these three services by making the ``/parse``
-endpoint compatible with your existing code. To activate this, either add
-``'emulate' : 'luis'`` to your config file or run the server with ``-e luis``.
-For example, if you would normally send your text to be parsed to LUIS,
-you would make a ``GET`` request to
-
-``https://api.projectoxford.ai/luis/v2.0/apps/<app-id>?q=hello%20there``
-
-in luis emulation mode you can call Rasa by just sending this request to
-
-``http://localhost:5000/parse?q=hello%20there``
-
-any extra query params are ignored by rasa, so you can safely send them along. 
-
-To use the emulation, pass the emulation mode to the server script:
-
-.. code-block:: bash
-
-    $ python -m rasa_nlu.server --path projects --emulate wit
+.. contents::
 
 Endpoints
 ---------
 
-``POST /parse`` (no emulation)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``POST /parse``
+^^^^^^^^^^^^^^^
 
 You must POST data in this format ``'{"q":"<your text to parse>"}'``,
 you can do this with
@@ -180,13 +139,14 @@ also returns a list of available projects the server can use to fulfill ``/parse
 ``GET /version``
 ^^^^^^^^^^^^^^^^
 
-This will return the current version of the Rasa NLU instance.
+This will return the current version of the Rasa NLU instance, as well as the minimum model version required for laoding models.
 
 .. code-block:: bash
 
     $ curl localhost:5000/version | python -mjson.tool
     {
-      "version" : "0.8.2"
+      "version" : "0.13.0",
+      "minimum_compatible_version": "0.13.0"
     }
 
     
@@ -215,80 +175,3 @@ This will unload a model from the server memory
 
     $ curl -X DELETE localhost:5000/models -d '{"project": "my_restaurant_search_bot", "model": <model_XXXXXX>}'
 
-.. _section_auth:
-
-Authorization
--------------
-To protect your server, you can specify a token in your Rasa NLU configuration, e.g. by adding ``"token" : "12345"`` to your config file, or by setting the ``RASA_TOKEN`` environment variable.
-If set, this token must be passed as a query parameter in all requests, e.g. :
-
-.. code-block:: bash
-
-    $ curl localhost:5000/status?token=12345
-
-On default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your Rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
-
-
-.. _section_http_config:
-
-Serving Multiple Apps
----------------------
-
-Depending on your choice of backend, Rasa NLU can use quite a lot of memory.
-So if you are serving multiple models in production, you want to serve these
-from the same process & avoid duplicating the memory load.
-
-.. note::
-
-    Although this saves the backend from loading the same backend twice, it still needs to load one set of
-    word vectors (which make up most of the memory consumption) per language and backend.
-
-As stated previously, Rasa NLU naturally handles serving multiple apps : by default the server will load all projects found
-under the ``path`` directory defined in the configuration. The file structure under ``path directory`` is as follows :
-
-.. code-block:: text
-
-    - <path>
-     - <project_A>
-      - <model_XXXXXX>
-      - <model_XXXXXX>
-       ...
-     - <project_B>
-      - <model_XXXXXX>
-       ...
-      ...
-
-So you can specify which one to use in your ``/parse`` requests:
-
-.. code-block:: console
-
-    $ curl 'localhost:5000/parse?q=hello&project=my_restaurant_search_bot'
-
-or
-
-.. code-block:: console
-
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot"}'
-
-You can also specify the model you want to use for a given project, the default used being the latest trained :
-
-.. code-block:: console
-
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot", "model":<model_XXXXXX>}'
-
-If no project is to be found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.
-
-.. _server_parameters:
-
-Server Parameters
------------------
-
-There are a number of parameters you can pass when running the server.
-
-.. code-block:: console
-
-    $ python -m rasa_nlu.server
-
-Here is a quick overview:
-
-.. program-output:: python -m rasa_nlu.server --help

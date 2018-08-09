@@ -9,7 +9,7 @@ jsonschema==2.6.0
 matplotlib==2.1.0
 requests==2.18.4
 tqdm==4.19.5
-numpy==1.14.0
+numpy==1.14.4
 simplejson==3.13.2
 cloudpickle==0.5.2
 msgpack-python==0.5.4

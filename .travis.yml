@@ -12,7 +12,7 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global: BOTO_CONFIG=/dev/null
-install:
+install: 
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r alt_requirements/requirements_dev.txt
   - pip install -e .
@@ -27,7 +27,7 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script:
+script: 
   - py.test --pep8 -m pep8
   - py.test tests/base --cov rasa_nlu -v --cov-append
   - py.test tests/training --cov rasa_nlu -v --cov-append
@@ -36,11 +36,12 @@ after_success:
 jobs:
   include:
   - stage: docs
-    if: fork = false  # forked repository will skip building docss
+    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1 sphinxcontrib-programoutput==0.11 nbsphinx==0.2.18
-    - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+    - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
+    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
     - pip install -e .
+    - pip list
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
     - openssl aes-256-cbc
@@ -53,8 +54,9 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs docs .
+    - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: deploy
+    python: 3.6
     install: skip
     script: skip
     deploy:
@@ -66,4 +68,4 @@ jobs:
         branch: master
         tags: true
       password:
-        secure: K3JhIpxBBfu8SC8voAsIvgU9pdND9PayQi8Ep4Whg+RPKgnLWMzbFe2FfSTyxuEIkJGx4S6h0qORGz4ro6b/tCy72ruEYxLrx3vt8uNtWdYXSRnW+Knqk4QKn2q+WehmfSxhkvu2PQ3LACGWN13Nnc4OdlY9u843d0dSjD9INlAs/+m6X3Me0zdACmwd0V0l4U2hNMjJyvOPznrQj4HrMIGWfuags4NLySVkpnYMMzz5lnamUZKUUfyChAKTUPXuoO8s9U0Zxj2duOy+2yu9hcJwomFwBLiWR6nKZmEtzYrfgHFDkRtNyuJtmQn3pR4BzbMV5L6Td7DAey3fRYss8JxVZ+3mwjsRzbbMDRpqqI8b7L0KBFnWfS5qOecB6T9hT2SVQuGHqj4Y/CAHqzscBhiOlhKev65JXIc1JIJACKWaHVYASKeU24zprlcalkRsqXmUv/rvSgP1UQSEsE726hxr0gs/gyJVRSmg7dxm/BrFTVa4Pucpy0QW3ABfc7miaz9LuNzsY+7OBxmsOhPDZpQVez9TNr4agdh6enRTK2cg0zDqjSfzjXBPwXRlcsR67u1JZPqjN0cpT44xKUvuwzDFgcZjK74tDx9A7cV6yS325cKIz8KQ08saBIyrbDtbv/i9ry1Dvkxj+k3t+i7kyuzjzMdhj2yDF9WTAGTdOhY=
+        secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="

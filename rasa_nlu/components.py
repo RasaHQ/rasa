@@ -130,25 +130,25 @@ class Component(object):
 
     Components are collected sequentially in a pipeline. Each component
     is called one after another. This holds for
-     initialization, training, persisting and loading the components.
-     If a component comes first in a pipeline, its
-     methods will be called first.
+    initialization, training, persisting and loading the components.
+    If a component comes first in a pipeline, its
+    methods will be called first.
 
-    E.g. to process an incoming message, the `process` method of
+    E.g. to process an incoming message, the ``process`` method of
     each component will be called. During the processing
-     (as well as the training, persisting and initialization)
-     components can pass information to other components.
-     The information is passed to other components by providing
-     attributes to the so called pipeline context. The
-     pipeline context contains all the information of the previous
-     components a component can use to do its own
-     processing. For example, a featurizer component can provide
-     features that are used by another component down
-     the pipeline to do intent classification."""
+    (as well as the training, persisting and initialization)
+    components can pass information to other components.
+    The information is passed to other components by providing
+    attributes to the so called pipeline context. The
+    pipeline context contains all the information of the previous
+    components a component can use to do its own
+    processing. For example, a featurizer component can provide
+    features that are used by another component down
+    the pipeline to do intent classification."""
 
     # Name of the component to be used when integrating it in a
-    # pipeline. E.g. `[ComponentA, ComponentB]`
-    # will be a proper pipeline definition where `ComponentA`
+    # pipeline. E.g. ``[ComponentA, ComponentB]``
+    # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
     name = ""
 
@@ -191,20 +191,11 @@ class Component(object):
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
-    def __getstate__(self):
-        d = self.__dict__.copy()
-        # these properties should not be pickled
-        if "partial_processing_context" in d:
-            del d["partial_processing_context"]
-        if "partial_processing_pipeline" in d:
-            del d["partial_processing_pipeline"]
-        return d
-
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
         """Specify which python packages need to be installed to use this
-        component, e.g. `["spacy"]`.
+        component, e.g. ``["spacy"]``.
 
         This list of requirements allows us to fail early during training
         if a required package is not installed."""
@@ -220,11 +211,12 @@ class Component(object):
         # type: (...) -> Component
         """Load this component from file.
 
-        After a component got trained, it will be persisted by
+        After a component has been trained, it will be persisted by
         calling `persist`. When the pipeline gets loaded again,
         this component needs to be able to restore itself.
         Components can rely on any context attributes that are
-        created by `pipeline_init` calls to components previous
+        created by :meth:`components.Component.pipeline_init`
+        calls to components previous
         to this one."""
         if cached_component:
             return cached_component
@@ -269,8 +261,10 @@ class Component(object):
         This is the components chance to train itself provided
         with the training data. The component can rely on
         any context attribute to be present, that gets created
-        by a call to `pipeline_init` of ANY component and
-        on any context attributes created by a call to `train`
+        by a call to :meth:`components.Component.pipeline_init`
+        of ANY component and
+        on any context attributes created by a call to
+        :meth:`components.Component.train`
         of components previous to this one."""
         pass
 
@@ -281,8 +275,10 @@ class Component(object):
         This is the components chance to process an incoming
         message. The component can rely on
         any context attribute to be present, that gets created
-        by a call to `pipeline_init` of ANY component and
-        on any context attributes created by a call to `process`
+        by a call to :meth:`components.Component.pipeline_init`
+        of ANY component and
+        on any context attributes created by a call to
+        :meth:`components.Component.process`
         of components previous to this one."""
         pass
 
@@ -301,9 +297,17 @@ class Component(object):
         Otherwise, an instantiation of the
         component will be reused for all models where the
         metadata creates the same key."""
-        from rasa_nlu.model import Metadata
 
         return None
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        # these properties should not be pickled
+        if "partial_processing_context" in d:
+            del d["partial_processing_context"]
+        if "partial_processing_pipeline" in d:
+            del d["partial_processing_pipeline"]
+        return d
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -392,8 +396,18 @@ class ComponentBuilder(object):
                        model_metadata,
                        **context):
         # type: (Text, Text, Metadata, **Any) -> Component
-        """Tries to retrieve a component from the cache, calls
-        `load` to create a new component."""
+        """Tries to retrieve a component from the cache, else calls
+        ``load`` to create a new component.
+
+        Args:
+            component_name (str): the name of the component to load
+            model_dir (str): the directory to read the model from
+            model_metadata (Metadata): the model's
+            :class:`rasa_nlu.models.Metadata`
+
+        Returns:
+            Component: the loaded component.
+        """
         from rasa_nlu import registry
         from rasa_nlu.model import Metadata
 

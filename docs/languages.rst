@@ -1,18 +1,21 @@
+:desc: Langauges Supported by Rasa NLU
 .. _section_languages:
 
 Language Support
 ================
 
-Rasa NLU supports a number of different languages. Exactly which ones depends on 
-the backend you are using, and the features you require.
+Rasa NLU can be used to understand any language, but some backends are 
+restricted to specific languages.
 
-Firstly, the ``tensorflow_embedding`` pipeline in principle supports any language,
-but only performs intent classification.
-In addition, with the spaCy backend you can now load fastText vectors, which are available 
+The ``tensorflow_embedding`` pipeline can be used for any language, because
+it trains custom word embeddings for your domain.
+
+Pre-trained Word Vectors
+------------------------
+
+With the spaCy backend you can now load fastText vectors, which are available 
 for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md>`_.
 
-For both intent and entity recognition, the following languages and backend combinations
-are tested and available:
 
 =============  ==============================
 backend        supported languages

@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
 import itertools
 import logging
 import shutil
@@ -10,6 +11,7 @@ from collections import defaultdict
 from collections import namedtuple
 
 import numpy as np
+import json
 
 from rasa_nlu import training_data, utils, config
 from rasa_nlu.config import RasaNLUModelConfig
@@ -29,6 +31,12 @@ entity_processors = {"ner_synonyms"}
 
 CVEvaluationResult = namedtuple('Results', 'train test')
 
+IntentEvaluationResult = namedtuple('IntentEvaluationResult',
+                                    'target '
+                                    'prediction '
+                                    'message '
+                                    'confidence')
+
 
 def create_argument_parser():
     import argparse
@@ -36,19 +44,16 @@ def create_argument_parser():
             description='evaluate a Rasa NLU pipeline with cross '
                         'validation or on external data')
 
-    parser.add_argument('-d', '--data',
-                        required=True,
+    parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
 
-    parser.add_argument('--mode',
-                        default="evaluation",
+    parser.add_argument('--mode', default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-
                         help="model configurion file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
@@ -56,6 +61,15 @@ def create_argument_parser():
 
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
+
+    parser.add_argument('--errors', required=False, default="errors.json",
+                        help="output path for the json with wrong predictions")
+
+    parser.add_argument('--histogram', required=False, default="hist.png",
+                        help="output path for the confidence histogram")
+
+    parser.add_argument('--confmat', required=False, default="confmat.png",
+                        help="output path for the confusion matrix plot")
 
     utils.add_logging_option_arguments(parser, default=logging.INFO)
 
@@ -66,7 +80,8 @@ def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=None,
-                          zmin=1):  # pragma: no cover
+                          zmin=1,
+                          out=None):  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
 
     Normalization can be applied by setting `normalize=True`."""
@@ -100,9 +115,34 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
+    # save confusion matrix to file before showing it
+    if out:
+        fig = plt.gcf()
+        fig.set_size_inches(20, 20)
+        fig.savefig(out, bbox_inches='tight')
+
+
+def plot_histogram(hist_data,
+                   out=None):  # pragma: no cover
+    """Plot a histogram of the confidence distribution of the predictions.
+
+    Saves the plot to a file."""
+    import matplotlib.pyplot as plt
+
+    plt.xlim([0, 1])
+    plt.hist(hist_data, bins=[0.05 * i for i in range(1, 21)])
+    plt.title('Intent Prediction Confidence Distribution')
+    plt.xlabel('Confidence')
+    plt.ylabel('Number of Samples')
+
+    if out:
+        fig = plt.gcf()
+        fig.set_size_inches(10, 10)
+        fig.savefig(out, bbox_inches='tight')
+
 
 def log_evaluation_table(targets, predictions):  # pragma: no cover
-    """Logs the sklearn evaluation metrics"""
+    """Log the sklearn evaluation metrics."""
     report, precision, f1, accuracy = get_evaluation_metrics(targets,
                                                              predictions)
 
@@ -113,10 +153,7 @@ def log_evaluation_table(targets, predictions):  # pragma: no cover
 
 
 def get_evaluation_metrics(targets, predictions):  # pragma: no cover
-    """Computes the f1, precision and accuracy sklearn evaluation metrics
-
-    and fetches a summary report.
-    """
+    """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
     report = metrics.classification_report(targets, predictions)
@@ -128,26 +165,24 @@ def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     return report, precision, f1, accuracy
 
 
-def remove_empty_intent_examples(targets, predictions):
-    """Removes those examples without intent."""
+def remove_empty_intent_examples(intent_results):
+    """Remove those examples without an intent."""
 
-    targets = np.array(targets)
-    mask = (targets != "") & (targets != None)  # noqa
-    targets = targets[mask]
-    predictions = np.array(predictions)[mask]
+    filtered = []
+    for r in intent_results:
+        # substitute None values with empty string
+        # to enable sklearn evaluation
+        if r.prediction is None:
+            r.prediction = ""
 
-    # substitute None values with empty string
-    # to enable sklearn evaluation
-    predictions[predictions == None] = ""  # noqa
+        if r.target != "" and r.target is not None:
+            filtered.append(r)
 
-    return targets, predictions
+    return filtered
 
 
 def clean_intent_labels(labels):
-    """Gets rid of `None` intents, since sklearn metrics does not support it
-
-    anymore.
-    """
+    """Get rid of `None` intents. sklearn metrics do not support them."""
     return [l if l is not None else "" for l in labels]
 
 
@@ -163,9 +198,55 @@ def drop_intents_below_freq(td, cutoff=5):
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def evaluate_intents(targets, predictions):  # pragma: no cover
-    """Creates a confusion matrix and summary statistics for intent predictions.
+def save_nlu_errors(errors, filename):
+    """Write out nlu classification errors to a file."""
 
+    utils.write_to_file(filename,
+                        json.dumps(errors, indent=4, ensure_ascii=False))
+    logger.info("Model prediction errors saved to {}.".format(filename))
+
+
+def collect_nlu_errors(intent_results):  # pragma: no cover
+    """Log messages which result in wrong predictions and save them to file"""
+
+    # it could be interesting to include entity-errors later
+    # therefore we start with a "intent_errors" key
+    intent_errors = [{"text": r.message,
+                      "intent": r.target,
+                      "intent_prediction": {
+                          "name": r.prediction,
+                          "confidence": r.confidence
+                      }}
+                     for r in intent_results if r.target != r.prediction]
+
+    if intent_errors:
+        logger.info("There were some nlu intent classification errors. "
+                    "Use `--verbose` to show them in the log.")
+        logger.debug("\n\nThese intent examples could not be classified "
+                     "correctly \n{}".format(intent_errors))
+
+        return {'intent_errors': intent_errors}
+    else:
+        logger.info("No prediction errors were found. You are AWESOME!")
+        return None
+
+
+def plot_intent_confidences(intent_results, intent_hist_filename):
+    import matplotlib.pyplot as plt
+    # create histogram of confidence distribution, save to file and display
+    plt.gcf().clear()
+    hist = [r.confidence for r in intent_results if r.target == r.prediction]
+    plot_histogram(hist, intent_hist_filename)
+
+
+def evaluate_intents(intent_results,
+                     errors_filename,
+                     confmat_filename,
+                     intent_hist_filename,
+                     ):  # pragma: no cover
+    """Creates a confusion matrix and summary statistics for intent predictions.
+    Log samples which could not be classified correctly and save them to file.
+    Creates a confidence histogram which is saved to file.
     Only considers those examples with a set intent.
     Others are filtered out."""
     from sklearn.metrics import confusion_matrix
@@ -173,18 +254,30 @@ def evaluate_intents(targets, predictions):  # pragma: no cover
     import matplotlib.pyplot as plt
 
     # remove empty intent targets
-    num_examples = len(targets)
-    targets, predictions = remove_empty_intent_examples(targets, predictions)
+    num_examples = len(intent_results)
+    intent_results = remove_empty_intent_examples(intent_results)
+
     logger.info("Intent Evaluation: Only considering those "
                 "{} examples that have a defined intent out "
-                "of {} examples".format(targets.size, num_examples))
+                "of {} examples".format(len(intent_results), num_examples))
+    targets, predictions = _targets_predictions_from(intent_results)
     log_evaluation_table(targets, predictions)
+
+    # log and save misclassified samples to file for debugging
+    errors = collect_nlu_errors(intent_results)
+
+    if errors:
+        save_nlu_errors(errors, errors_filename)
 
     cnf_matrix = confusion_matrix(targets, predictions)
     labels = unique_labels(targets, predictions)
-    plot_confusion_matrix(cnf_matrix,
-                          classes=labels,
-                          title='Intent Confusion matrix')
+    plot_confusion_matrix(cnf_matrix, classes=labels,
+                          title='Intent Confusion matrix',
+                          out=confmat_filename)
+    plt.show()
+
+    plot_intent_confidences(intent_results,
+                            intent_hist_filename)
 
     plt.show()
 
@@ -380,20 +473,12 @@ def align_all_entity_predictions(targets, predictions, tokens, extractors):
 
 def get_intent_targets(test_data):  # pragma: no cover
     """Extracts intent targets from the test data."""
-
-    intent_targets = [e.get("intent", "")
-                      for e in test_data.training_examples]
-
-    return intent_targets
+    return [e.get("intent", "") for e in test_data.training_examples]
 
 
 def get_entity_targets(test_data):
     """Extracts entity targets from the test data."""
-
-    entity_targets = [e.get("entities", [])
-                      for e in test_data.training_examples]
-
-    return entity_targets
+    return [e.get("entities", []) for e in test_data.training_examples]
 
 
 def extract_intent(result):  # pragma: no cover
@@ -406,13 +491,30 @@ def extract_entities(result):  # pragma: no cover
     return result.get('entities', [])
 
 
-def get_intent_predictions(interpreter, test_data):  # pragma: no cover
-    """Runs the model for the test set and extracts intent predictions"""
-    intent_predictions = []
-    for e in test_data.training_examples:
+def extract_message(result):  # pragma: no cover
+    """Extracts the original message from a parsing result."""
+    return result.get('text', {})
+
+
+def extract_confidence(result):  # pragma: no cover
+    """Extracts the confidence from a parsing result."""
+    return result.get('intent', {}).get('confidence')
+
+
+def get_intent_predictions(targets, interpreter, test_data):  # pragma: no cover
+    """Runs the model for the test set and extracts intent predictions.
+        Returns intent predictions, the original messages
+        and the confidences of the predictions"""
+    intent_results = []
+    for e, target in zip(test_data.training_examples, targets):
         res = interpreter.parse(e.text, only_output_properties=False)
-        intent_predictions.append(extract_intent(res))
-    return intent_predictions
+        intent_results.append(IntentEvaluationResult(
+                target,
+                extract_intent(res),
+                extract_message(res),
+                extract_confidence(res)))
+
+    return intent_results
 
 
 def get_entity_predictions(interpreter, test_data):  # pragma: no cover
@@ -501,6 +603,9 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model_path,
+                   errors_filename='errors.json',
+                   confmat_filename=None,
+                   intent_hist_filename=None,
                    component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
 
@@ -517,9 +622,12 @@ def run_evaluation(data_path, model_path,
 
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
-        intent_predictions = get_intent_predictions(interpreter, test_data)
+        intent_results = get_intent_predictions(
+                intent_targets, interpreter, test_data)
         logger.info("Intent evaluation results:")
-        evaluate_intents(intent_targets, intent_predictions)
+
+        evaluate_intents(intent_results, errors_filename, confmat_filename,
+                         intent_hist_filename)
 
     if extractors:
         entity_targets = get_entity_targets(test_data)
@@ -606,6 +714,10 @@ def run_cv_evaluation(data, n_folds, nlu_config):
                                dict(entity_test_results)))
 
 
+def _targets_predictions_from(intent_results):
+    return zip(*[(r.target, r.prediction) for r in intent_results])
+
+
 def compute_intent_metrics(interpreter, corpus):
     """Computes intent evaluation metrics for a given corpus and
     returns the results
@@ -613,13 +725,12 @@ def compute_intent_metrics(interpreter, corpus):
     if not is_intent_classifier_present(interpreter):
         return {}
     intent_targets = get_intent_targets(corpus)
-    intent_predictions = get_intent_predictions(interpreter, corpus)
-    intent_targets, intent_predictions = remove_empty_intent_examples(
-            intent_targets, intent_predictions)
+    intent_results = get_intent_predictions(intent_targets, interpreter, corpus)
+    intent_results = remove_empty_intent_examples(intent_results)
 
     # compute fold metrics
-    _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
-                                                        intent_predictions)
+    targets, predictions = _targets_predictions_from(intent_results)
+    _, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)
 
     return {"Accuracy": [accuracy], "F1-score": [f1], "Precision": [precision]}
 
@@ -681,14 +792,13 @@ def return_entity_results(results, dataset_name):
                     test/train
     """
     for extractor, result in results.items():
-            logger.info("Entity extractor: {}".format(extractor))
-            return_results(result, dataset_name)
+        logger.info("Entity extractor: {}".format(extractor))
+        return_results(result, dataset_name)
 
 
 def main():
     parser = create_argument_parser()
     cmdline_args = parser.parse_args()
-
     utils.configure_colored_logging(cmdline_args.loglevel)
 
     if cmdline_args.mode == "crossvalidation":
@@ -720,7 +830,11 @@ def main():
             return_entity_results(entity_results.test, "test")
 
     elif cmdline_args.mode == "evaluation":
-        run_evaluation(cmdline_args.data, cmdline_args.model)
+        run_evaluation(cmdline_args.data,
+                       cmdline_args.model,
+                       cmdline_args.errors,
+                       cmdline_args.confmat,
+                       cmdline_args.histogram)
 
     logger.info("Finished evaluation")
 

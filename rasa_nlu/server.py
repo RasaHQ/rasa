@@ -18,10 +18,11 @@ from rasa_nlu import utils, config
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
-    AlreadyTrainingError)
+    MaxTrainingError)
 from rasa_nlu.train import TrainingException
 from rasa_nlu.utils import json_to_string
 from rasa_nlu.version import __version__
+from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +42,11 @@ def create_argument_parser():
                         nargs='+',
                         default=[],
                         help='Preload models into memory before starting the '
-                             'server. \nIf given `all` as input all the models'
-                             ' will be loaded.\nElse you can specify a list of'
-                             ' specific project names.\n Eg: python -m rasa_'
-                             'nlu.server -p project1 project2 --path projects')
+                             'server. \nIf given `all` as input all the models '
+                             'will be loaded.\nElse you can specify a list of '
+                             'specific project names.\nEg: python -m '
+                             'rasa_nlu.server --pre_load project1 --path projects '
+                             '-c config.yaml')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
                              "provide this token as a query parameter")
@@ -162,11 +164,6 @@ def dump_to_data_file(data):
     return utils.create_temporary_file(data_string, "_training_data")
 
 
-def is_yaml_request(request):
-    return "yml" in next(
-            iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
-
-
 class RasaNLU(object):
     """Class representing Rasa NLU http server"""
 
@@ -255,7 +252,10 @@ class RasaNLU(object):
         """Returns the Rasa server's version"""
 
         request.setHeader('Content-Type', 'application/json')
-        return json_to_string({'version': __version__})
+        return json_to_string(
+            {'version': __version__,
+             'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
+        )
 
     @app.route("/config", methods=['GET', 'OPTIONS'])
     @requires_auth
@@ -277,29 +277,71 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(self.data_router.get_status())
 
+    def extract_json(self, content):
+        # test if json has config structure
+        json_config = simplejson.loads(content).get("data")
+
+        # if it does then this results in correct format.
+        if json_config:
+
+            model_config = simplejson.loads(content)
+            data = json_config
+
+        # otherwise use defaults.
+        else:
+
+            model_config = self.default_model_config
+            data = content
+
+        return model_config, data
+
+    def extract_data_and_config(self, request):
+
+        request_content = request.content.read().decode('utf-8', 'strict')
+        content_type = self.get_request_content_type(request)
+
+        if 'yml' in content_type:
+            # assumes the user submitted a model configuration with a data
+            # parameter attached to it
+
+            model_config = utils.read_yaml(request_content)
+            data = model_config.get("data")
+
+        elif 'json' in content_type:
+
+            model_config, data = self.extract_json(request_content)
+
+        else:
+
+            raise Exception("Content-Type must be 'application/x-yml' "
+                            "or 'application/json'")
+
+        return model_config, data
+
+    def get_request_content_type(self, request):
+        content_type = request.requestHeaders.getRawHeaders("Content-Type", [])
+
+        if len(content_type) is not 1:
+            raise Exception("The request must have exactly one content type")
+        else:
+            return content_type[0]
+
     @app.route("/train", methods=['POST', 'OPTIONS'])
     @requires_auth
     @check_cors
     @inlineCallbacks
     def train(self, request):
+
         # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
         # if set will not generate a model name but use the passed one
         model_name = parameter_or_default(request, "model", default=None)
 
-        request_content = request.content.read().decode('utf-8', 'strict')
-
-        if is_yaml_request(request):
-            # assumes the user submitted a model configuration with a data
-            # parameter attached to it
-            model_config = utils.read_yaml(request_content)
-            data = model_config.get("data")
-        else:
-            # assumes the caller just provided training data without config
-            # this will use the default model config the server
-            # was started with
-            model_config = self.default_model_config
-            data = request_content
+        try:
+            model_config, data = self.extract_data_and_config(request)
+        except Exception as e:
+            request.setResponseCode(400)
+            returnValue(json_to_string({"error": "{}".format(e)}))
 
         data_file = dump_to_data_file(data)
 
@@ -314,7 +356,7 @@ class RasaNLU(object):
 
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
-        except AlreadyTrainingError as e:
+        except MaxTrainingError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
         except InvalidProjectError as e:

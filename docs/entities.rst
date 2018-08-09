@@ -1,46 +1,33 @@
+:desc: Entity Extraction with Rasa NLU
 .. _section_entities:
 
 Entity Extraction
 =================
-There are a number of different entity extraction components,
-which can seem intimidating for new users.
-Here we'll go through a few use cases and make recommendations of what to use. 
-
-================    ==========  ========================    ===================================
-Component           Requires    Model           	          notes
-================    ==========  ========================    ===================================
-``ner_mitie``       MITIE       structured SVM              good for training custom entities
-``ner_crf``         crfsuite    conditional random field    good for training custom entities
-``ner_spacy``       spaCy       averaged perceptron         provides pre-trained entities
-``ner_duckling``    duckling    context-free grammar        provides pre-trained entities
-================    ==========  ========================    ===================================
-
-The exact required packages can be found in ``dev-requirements.txt``
-and they should also be shown when they are missing
-and a component is used that requires them.
-
-To improve entity extraction, you can use regex features if
-your entities have a distinctive format (e.g. zipcodes).
-More information can be found in the :ref:`section_dataformat`.
-
-.. note::
-    To use these components, you will probably want to define a
-    custom pipeline, see :ref:`section_pipeline`.
-    You can add multiple ner components to your pipeline; the
-    results from each will be combined in the final output.
-
-Use Cases
----------
-
-Here we'll outline some common use cases for entity extraction,
-and make recommendations on which components to use.
 
 
-Places, Dates, People, Organisations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=======================  ================  ========================    ===================================
+Component                Requires          Model           	           notes
+=======================  ================  ========================    ===================================
+``ner_crf``              sklearn-crfsuite  conditional random field    good for training custom entities
+``ner_spacy``            spaCy             averaged perceptron         provides pre-trained entities
+``ner_duckling_http``    running duckling  context-free grammar        provides pre-trained entities
+``ner_mitie``            MITIE             structured SVM              good for training custom entities
+=======================  ================  ========================    ===================================
 
-spaCy has excellent pre-trained named-entity recognisers in a
-number of models. You can test them out in this
+
+Custom Entities
+^^^^^^^^^^^^^^^
+
+Almost every chatbot and voice app will have some custom entities.
+In a restaurant bot, ``chinese`` is a cuisine, but in a language-learning app it would mean something very different. 
+The ``ner_crf`` component can learn custom entities in any language. 
+
+
+Extracting Places, Dates, People, Organisations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+spaCy has excellent pre-trained named-entity recognisers for a few different langauges.
+You can test them out in this
 `awesome interactive demo <https://demos.explosion.ai/displacy-ent/>`_.
 We don't recommend that you try to train your own NER using spaCy,
 unless you have a lot of data and know what you are doing.
@@ -49,24 +36,38 @@ Note that some spaCy models are highly case-sensitive.
 Dates, Amounts of Money, Durations, Distances, Ordinals
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The `duckling <https://duckling.wit.ai/>`_ package does a great job
+The `duckling <https://duckling.wit.ai/>`_ library does a great job
 of turning expressions like "next Thursday at 8pm" into actual datetime
-objects that you can use. It can also handle durations like "two hours",
-amounts of money, distances, etc. Fortunately, there is also a
-`python wrapper <https://github.com/FraBle/python-duckling>`_ for
-duckling! You can use this component by installing the duckling
-package from PyPI and adding ``ner_duckling`` to your pipeline.
+objects that you can use, e.g. 
+
+.. code-block:: python
+
+   "next Thursday at 8pm"
+   => {"value":"2018-05-31T20:00:00.000+01:00"}
 
 
-Custom, Domain-specific entities
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The list of supported langauges is `here <https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
+Duckling can also handle durations like "two hours", 
+amounts of money, distances, and ordinals. 
+Fortunately, there is a duckling docker container ready to use,
+that you just need to spin up and connect to Rasa NLU.
+(see :ref:`ner_duckling_http`)
 
-In the introductory tutorial we build a restaurant bot, and create
-custom entities for location and cuisine.
-The best components for training these domain-specific entity
-recognisers are the ``ner_mitie`` and ``ner_crf`` components.
-It is recommended that you experiment with both of these to see
-what works best for your data set.
+
+Regular Expressions (regex)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can use regular expressions to help the CRF model learn to recognize entities.
+In the :ref:`section_dataformat` you can provide a list of regular expressions, each of which provides
+the ``ner_crf`` with an extra binary feature, which says if the regex was found (1) or not (0). 
+
+For example, the names of German streets often end in ``strasse``. By adding this as a regex,
+we are telling the model to pay attention to words ending this way, and will quickly learn to
+associate that with a location entity. 
+
+If you just want to match regular expressions exactly, you can do this in your code,
+as a postprocessing step after receiving the response form Rasa NLU.
+
 
 Returned Entities Object
 ------------------------
@@ -96,6 +97,33 @@ exactly. Instead it will return the trained synonym.
         }
       ]
     }
+
+
+Some extractors, like ``duckling``, may include additional information. For example:
+
+.. code-block:: json
+
+   {  
+     "additional_info":{  
+       "grain":"day",
+       "type":"value",
+       "value":"2018-06-21T00:00:00.000-07:00",
+       "values":[  
+         {  
+           "grain":"day",
+           "type":"value",
+           "value":"2018-06-21T00:00:00.000-07:00"
+         }
+       ]
+     },
+     "confidence":1.0,
+     "end":5,
+     "entity":"time",
+     "extractor":"ner_duckling_http",
+     "start":0,
+     "text":"today",
+     "value":"2018-06-21T00:00:00.000-07:00"
+   }
 
 .. note::
 

@@ -70,7 +70,8 @@ def load_data_from_url(url, language='en'):
     try:
         response = requests.get(url)
         response.raise_for_status()
-        temp_data_file = utils.create_temporary_file(response.content)
+        temp_data_file = utils.create_temporary_file(response.content,
+                                                     mode="w+b")
         return _load(temp_data_file, language)
     except Exception as e:
         logger.warning("Could not retrieve training data "

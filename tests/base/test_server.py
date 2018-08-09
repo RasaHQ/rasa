@@ -57,6 +57,8 @@ def test_status(app):
     response = yield app.get("http://dummy-uri/status")
     rjs = yield response.json()
     assert response.code == 200 and "available_projects" in rjs
+    assert "current_training_processes" in rjs
+    assert "max_training_processes" in rjs
     assert "default" in rjs["available_projects"]
 
 
@@ -70,7 +72,8 @@ def test_config(app):
 def test_version(app):
     response = yield app.get("http://dummy-uri/version")
     rjs = yield response.json()
-    assert response.code == 200 and "version" in rjs
+    assert response.code == 200
+    assert set(rjs.keys()) == {"version", "minimum_compatible_version"}
 
 
 @pytest.mark.parametrize("response_test", [
@@ -183,6 +186,15 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
+
+    response = app.post(train_u,
+                        headers={b"Content-Type": b"application/json"},
+                        data=json.dumps(model_config))
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    assert response.code == 200, "Training should end successfully"
+
     response = yield app.get(query)
     assert response.code == 200, "Project should now exist after it got trained"
 

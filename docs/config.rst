@@ -1,76 +1,137 @@
+:desc: Customizing Your Rasa NLU Configuration
 .. _section_configuration:
 
-Configuration
-=============
+Server Configuration
+====================
 
-You can provide options to Rasa NLU through:
 
-- a yaml-formatted config file
-- environment variables
-- command line arguments
+.. note::
 
-Environment variables override options in your config file, 
-and command line args will override any options specified elsewhere.
-Environment variables are capitalised and prefixed with ``RASA_``, 
-so the option ``pipeline`` is specified with the ``RASA_PIPELINE`` env var.
+    Before you can use the server, you should train a model!
+    See :ref:`training_your_model`
 
-Default
--------
-Here is an example model configuration:
 
-.. literalinclude:: ../sample_configs/config_crf.yml
-    :language: yaml
+.. note::
 
-As you can see, there are a couple of top-level configuration keys, like
-``language`` and ``pipeline`` - but most of the configuration is component
-specific.
+    In older versions of Rasa NLU, the server and models were configured with a single file.
+    Now, the server only takes command line arguments (see :ref:`server_parameters`).
+    The configuration file only refers to the model that you want to train,
+    i.e. the pipeline and components. 
 
-Explanations for the configuration keys of the different components are part
-of the :ref:`section_pipeline`.
 
-Options
--------
-A short explanation and examples for each configuration value.
+Running the server
+------------------
 
-pipeline
-~~~~~~~~
+You can run a simple http server that handles requests using your projects with :
 
-:Type: ``str`` or ``[dict]``
-:Examples:
-    using a pipeline template (predefined set of components with default
-    parameters):
+.. code-block:: bash
 
-    .. code-block:: yaml
+    $ python -m rasa_nlu.server --path projects
 
-        pipeline: "spacy_sklearn"
+The server will look for existing projects under the folder defined by
+the ``path`` parameter. By default a project will load the latest
+trained model.
 
-    or alternatively specifying the components and paremters:
+.. _section_http_config:
 
-    .. code-block:: yaml
+Serving Multiple Apps
+---------------------
 
-        pipeline:
-        - name: "nlp_spacy"
-          model: "en"               # parameter of the spacy component
-        - name: "ner_synonyms"
+Depending on your choice of backend, Rasa NLU can use quite a lot of memory.
+So if you are serving multiple models in production, you want to serve these
+from the same process & avoid duplicating the memory load.
 
-:Description:
-    The pipeline used for training. Can either be a template
-    (passing a string) or a list of components (array) and there
-    configuration values. For all available templates,
-    see :ref:`section_pipeline`. The component specific parameters
-    are listed there as well.
+.. note::
 
-language
-~~~~~~~~
+    Although this saves the backend from loading the same set of word vectors twice,
+    if you have projects in multiple languages your memory usage will still be high.
 
-:Type: ``str``
-:Examples:
 
-    .. code-block:: yaml
+As stated previously, Rasa NLU naturally handles serving multiple apps.
+By default the server will load all projects found
+under the ``path`` directory passed at run time. 
 
-        language: "en"
+Rasa NLU naturally handles serving multiple apps, by default the server will load all projects found
+under the directory specified with ``--path`` option. unless you have provide ``--pre_load`` option 
+to load a specific project. 
 
-:Description:
-    Language the model is trained in. Underlying word vectors
-    will be loaded by using this language. There is more info
-    about available languages in :ref:`section_languages`.
+.. code-block:: console
+
+    $ # This will load all projects under projects/ directory
+    $ python -m rasa_nlu.server -c config.yaml --path projects/ 
+
+.. code-block:: console
+
+    $ # This will load only hotels project under projects/ directory
+    $ python -m rasa_nlu.server -c config.yaml --pre_load hotels --path projects/ 
+
+
+The file structure under ``path directory`` is as follows:
+
+.. code-block:: text
+
+    - <path>
+     - <project_A>
+      - <model_XXXXXX>
+      - <model_XXXXXX>
+       ...
+     - <project_B>
+      - <model_XXXXXX>
+       ...
+      ...
+
+You can specify which project to use in your ``/parse`` requests:
+
+.. code-block:: console
+
+    $ curl 'localhost:5000/parse?q=hello&project=my_restaurant_search_bot'
+
+or
+
+.. code-block:: console
+
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot"}'
+
+You can also specify the model you want to use for a given project, the default used being the latest trained:
+
+.. code-block:: console
+
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot", "model":<model_XXXXXX>}'
+
+If no project is found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.
+
+.. _server_parameters:
+
+Server Parameters
+-----------------
+
+There are a number of parameters you can pass when running the server.
+
+.. code-block:: console
+
+    $ python -m rasa_nlu.server
+
+Here is a quick overview:
+
+.. program-output:: python -m rasa_nlu.server --help
+
+
+.. _section_auth:
+
+Authentication
+--------------
+To protect your server, you can specify a token in your Rasa NLU configuration,
+by passing the ``--token`` argument when starting the server,
+or by setting the ``RASA_TOKEN`` environment variable.
+If set, this token must be passed as a query parameter in all requests, e.g. :
+
+.. code-block:: bash
+
+    $ curl localhost:5000/status?token=12345
+
+CORS
+----
+
+By default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your Rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
+
+

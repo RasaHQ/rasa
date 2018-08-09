@@ -52,7 +52,7 @@ def test_model_not_compatible(metadata):
 
 
 @pytest.mark.parametrize("metadata",
-                         [{"rasa_nlu_version": "0.13.0a1"},
+                         [{"rasa_nlu_version": "0.13.0a2"},
                           {"rasa_nlu_version": "0.13.0"}])
 def test_model_is_compatible(metadata):
     # should not raise an exception
