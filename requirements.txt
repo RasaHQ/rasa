@@ -10,7 +10,7 @@ ruamel.yaml==0.15.37
 requests==2.18.4
 graphviz==0.8.3
 keras==2.1.6
-tensorflow==1.9.0
+tensorflow==1.10.0
 h5py==2.7.1
 apscheduler==3.5.1
 tqdm==4.23.3
