@@ -222,9 +222,7 @@ class EmbeddingPolicy(Policy):
         logger.info(len(tf.get_default_graph().get_operations()))
         logger.info(tf.get_default_session())
         logger.info(self.graph)
-        logger.info(len(self.graph.get_operations()))
         logger.info(self.session)
-        logger.info(self.session.graph)
         logger.info('---------------')
 
     # init helpers
@@ -829,9 +827,7 @@ class EmbeddingPolicy(Policy):
         logger.info(len(tf.get_default_graph().get_operations()))
         logger.info(tf.get_default_session())
         logger.info(self.graph)
-        logger.info(len(self.graph.get_operations()))
         logger.info(self.session)
-        logger.info(self.session.graph)
         logger.info('---------------')
 
         if kwargs:
