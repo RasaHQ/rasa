@@ -217,6 +217,16 @@ class EmbeddingPolicy(Policy):
         self._is_training = None
         self._loss_scales = None
 
+        logger.info('---------------')
+        logger.info(tf.get_default_graph())
+        logger.info(len(tf.get_default_graph().get_operations()))
+        logger.info(tf.get_default_session())
+        logger.info(self.graph)
+        logger.info(len(self.graph.get_operations()))
+        logger.info(self.session)
+        logger.info(self.session.graph)
+        logger.info('---------------')
+
     # init helpers
     def _load_nn_architecture_params(self, config):
 
@@ -813,7 +823,16 @@ class EmbeddingPolicy(Policy):
         """Trains the policy on given training trackers."""
 
         logger.debug('Started training embedding policy.')
-        tf.reset_default_graph()
+
+        logger.info('---------------')
+        logger.info(tf.get_default_graph())
+        logger.info(len(tf.get_default_graph().get_operations()))
+        logger.info(tf.get_default_session())
+        logger.info(self.graph)
+        logger.info(len(self.graph.get_operations()))
+        logger.info(self.session)
+        logger.info(self.session.graph)
+        logger.info('---------------')
 
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
@@ -942,6 +961,16 @@ class EmbeddingPolicy(Policy):
             self.session = tf.Session()
 
             self._train_tf(session_data, loss, mask)
+
+        logger.info('---------------')
+        logger.info(tf.get_default_graph())
+        logger.info(len(tf.get_default_graph().get_operations()))
+        logger.info(tf.get_default_session())
+        logger.info(self.graph)
+        logger.info(len(self.graph.get_operations()))
+        logger.info(self.session)
+        logger.info(self.session.graph)
+        logger.info('---------------')
 
     # training helpers
     def _linearly_increasing_batch_size(self, epoch):
@@ -1138,26 +1167,25 @@ class EmbeddingPolicy(Policy):
                     session_data.actions_for_Y
             )
 
-            with self.graph.as_default():
-                # fit to one extra example using updated trackers
-                self.session.run(
-                        self._train_op,
-                        feed_dict={
-                            self.a_in: session_data.X,
-                            self.b_in: b,
-                            self.c_in: session_data.slots,
-                            self.b_prev_in: session_data.previous_actions,
-                            self._dialogue_len: session_data.X.shape[1],
-                            self._x_for_no_intent_in:
-                                session_data.x_for_no_intent,
-                            self._y_for_no_action_in:
-                                session_data.y_for_no_action,
-                            self._y_for_action_listen_in:
-                                session_data.y_for_action_listen,
-                            self._is_training: True,
-                            self._loss_scales: batch_loss_scales
-                        }
-                )
+            # fit to one extra example using updated trackers
+            self.session.run(
+                    self._train_op,
+                    feed_dict={
+                        self.a_in: session_data.X,
+                        self.b_in: b,
+                        self.c_in: session_data.slots,
+                        self.b_prev_in: session_data.previous_actions,
+                        self._dialogue_len: session_data.X.shape[1],
+                        self._x_for_no_intent_in:
+                            session_data.x_for_no_intent,
+                        self._y_for_no_action_in:
+                            session_data.y_for_no_action,
+                        self._y_for_action_listen_in:
+                            session_data.y_for_action_listen,
+                        self._is_training: True,
+                        self._loss_scales: batch_loss_scales
+                    }
+            )
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -1165,6 +1193,16 @@ class EmbeddingPolicy(Policy):
             after seeing the tracker.
 
             Returns the list of probabilities for the next actions"""
+
+        logger.info('---------------')
+        logger.info(tf.get_default_graph())
+        logger.info(len(tf.get_default_graph().get_operations()))
+        logger.info(tf.get_default_session())
+        logger.info(self.graph)
+        logger.info(len(self.graph.get_operations()))
+        logger.info(self.session)
+        logger.info(self.session.graph)
+        logger.info('---------------')
 
         if self.session is None:
             logger.error("There is no trained tf.session: "
@@ -1179,23 +1217,22 @@ class EmbeddingPolicy(Policy):
         all_Y_d_x = np.stack([session_data.all_Y_d
                               for _ in range(session_data.X.shape[0])])
 
-        with self.graph.as_default():
-            _sim = self.session.run(
-                    self.sim_op,
-                    feed_dict={
-                        self.a_in: session_data.X,
-                        self.b_in: all_Y_d_x,
-                        self.c_in: session_data.slots,
-                        self.b_prev_in: session_data.previous_actions,
-                        self._dialogue_len: session_data.X.shape[1],
-                        self._x_for_no_intent_in:
-                            session_data.x_for_no_intent,
-                        self._y_for_no_action_in:
-                            session_data.y_for_no_action,
-                        self._y_for_action_listen_in:
-                            session_data.y_for_action_listen
-                    }
-            )
+        _sim = self.session.run(
+                self.sim_op,
+                feed_dict={
+                    self.a_in: session_data.X,
+                    self.b_in: all_Y_d_x,
+                    self.c_in: session_data.slots,
+                    self.b_prev_in: session_data.previous_actions,
+                    self._dialogue_len: session_data.X.shape[1],
+                    self._x_for_no_intent_in:
+                        session_data.x_for_no_intent,
+                    self._y_for_no_action_in:
+                        session_data.y_for_no_action,
+                    self._y_for_action_listen_in:
+                        session_data.y_for_action_listen
+                }
+        )
 
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':

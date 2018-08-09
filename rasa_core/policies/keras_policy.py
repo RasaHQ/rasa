@@ -46,6 +46,14 @@ class KerasPolicy(Policy):
         self.model = model
         self.current_epoch = current_epoch
 
+        import tensorflow.keras.backend as K
+        logger.info('---------------')
+        logger.info(K.get_session())
+        logger.info(K.get_session().graph)
+        logger.info(len(K.get_session().graph.get_operations()))
+        logger.info('---------------')
+
+
     @property
     def max_len(self):
         if self.model:
@@ -119,6 +127,13 @@ class KerasPolicy(Policy):
               ):
         # type: (...) -> Dict[Text: Any]
 
+        import tensorflow.keras.backend as K
+        logger.info('---------------')
+        logger.info(K.get_session())
+        logger.info(K.get_session().graph)
+        logger.info(len(K.get_session().graph.get_operations()))
+        logger.info('---------------')
+
         if kwargs.get('rnn_size') is not None:
             logger.debug("Parameter `rnn_size` is updated with {}"
                          "".format(kwargs.get('rnn_size')))
@@ -145,6 +160,13 @@ class KerasPolicy(Policy):
         # the default parameter for epochs in keras fit is 1
         self.current_epoch = kwargs.get("epochs", 1)
         logger.info("Done fitting keras policy model")
+
+        import tensorflow.keras.backend as K
+        logger.info('---------------')
+        logger.info(K.get_session())
+        logger.info(K.get_session().graph)
+        logger.info(len(K.get_session().graph.get_operations()))
+        logger.info('---------------')
 
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
@@ -173,6 +195,12 @@ class KerasPolicy(Policy):
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
+        import tensorflow.keras.backend as K
+        logger.info('---------------')
+        logger.info(K.get_session())
+        logger.info(K.get_session().graph)
+        logger.info(len(K.get_session().graph.get_operations()))
+        logger.info('---------------')
 
         X = self.featurizer.create_X([tracker], domain)
 
