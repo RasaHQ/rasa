@@ -129,19 +129,12 @@ class EmbeddingPolicy(Policy):
         return FullDialogueTrackerFeaturizer(
                 LabelTokenizerSingleStateFeaturizer())
 
-    @staticmethod
-    def _check_tensorflow():
-        if tf is None:
-            raise ImportError("Failed to import `tensorflow`. "
-                              "Please install `tensorflow`. "
-                              "For example with `pip install tensorflow`.")
-
     def __init__(
             self,
             featurizer=None,  # type: Optional[FullDialogueTrackerFeaturizer]
             encoded_all_actions=None,  # type: Optional[np.ndarray]
-            session=None,  # type: Optional[tf.Session]
             graph=None,  # type: Optional[tf.Graph]
+            session=None,  # type: Optional[tf.Session]
             intent_placeholder=None,  # type: Optional[tf.Tensor]
             action_placeholder=None,  # type: Optional[tf.Tensor]
             slots_placeholder=None,  # type: Optional[tf.Tensor]
@@ -186,8 +179,8 @@ class EmbeddingPolicy(Policy):
         self.encoded_all_actions = encoded_all_actions
 
         # tf related instances
-        self.session = session
         self.graph = graph
+        self.session = session
         self.a_in = intent_placeholder
         self.b_in = action_placeholder
         self.c_in = slots_placeholder
@@ -216,14 +209,6 @@ class EmbeddingPolicy(Policy):
         self._train_op = None
         self._is_training = None
         self._loss_scales = None
-
-        logger.info('---------------')
-        logger.info(tf.get_default_graph())
-        logger.info(len(tf.get_default_graph().get_operations()))
-        logger.info(tf.get_default_session())
-        logger.info(self.graph)
-        logger.info(self.session)
-        logger.info('---------------')
 
     # init helpers
     def _load_nn_architecture_params(self, config):
@@ -822,14 +807,6 @@ class EmbeddingPolicy(Policy):
 
         logger.debug('Started training embedding policy.')
 
-        logger.info('---------------')
-        logger.info(tf.get_default_graph())
-        logger.info(len(tf.get_default_graph().get_operations()))
-        logger.info(tf.get_default_session())
-        logger.info(self.graph)
-        logger.info(self.session)
-        logger.info('---------------')
-
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
             self._load_params(**kwargs)
@@ -957,16 +934,6 @@ class EmbeddingPolicy(Policy):
             self.session = tf.Session()
 
             self._train_tf(session_data, loss, mask)
-
-        logger.info('---------------')
-        logger.info(tf.get_default_graph())
-        logger.info(len(tf.get_default_graph().get_operations()))
-        logger.info(tf.get_default_session())
-        logger.info(self.graph)
-        logger.info(len(self.graph.get_operations()))
-        logger.info(self.session)
-        logger.info(self.session.graph)
-        logger.info('---------------')
 
     # training helpers
     def _linearly_increasing_batch_size(self, epoch):
@@ -1190,16 +1157,6 @@ class EmbeddingPolicy(Policy):
 
             Returns the list of probabilities for the next actions"""
 
-        logger.info('---------------')
-        logger.info(tf.get_default_graph())
-        logger.info(len(tf.get_default_graph().get_operations()))
-        logger.info(tf.get_default_session())
-        logger.info(self.graph)
-        logger.info(len(self.graph.get_operations()))
-        logger.info(self.session)
-        logger.info(self.session.graph)
-        logger.info('---------------')
-
         if self.session is None:
             logger.error("There is no trained tf.session: "
                          "component is either not trained or "
@@ -1363,8 +1320,8 @@ class EmbeddingPolicy(Policy):
 
         return cls(featurizer=featurizer,
                    encoded_all_actions=encoded_all_actions,
-                   session=sess,
                    graph=graph,
+                   session=sess,
                    intent_placeholder=a_in,
                    action_placeholder=b_in,
                    slots_placeholder=c_in,

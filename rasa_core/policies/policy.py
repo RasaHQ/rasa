@@ -21,6 +21,11 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.training.data import DialogueTrainingData
 
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +40,13 @@ class Policy(object):
     def _create_featurizer(cls, featurizer=None):
         return copy.deepcopy(featurizer) \
                if featurizer else cls._standard_featurizer()
+
+    @staticmethod
+    def _check_tensorflow():
+        if tf is None:
+            raise ImportError("Failed to import `tensorflow`. "
+                              "Please install `tensorflow`. "
+                              "For example with `pip install tensorflow`.")
 
     def __init__(self, featurizer=None):
         # type: (Optional[TrackerFeaturizer]) -> None
