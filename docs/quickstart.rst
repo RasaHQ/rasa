@@ -135,6 +135,8 @@ There are two ways you can use your model, directly from python, or by starting 
 
 To use your new model in python, create an ``Interpreter`` object and pass a message to its ``parse()`` method.
 
+**This will not work if you haven't run the cells above!**
+
 .. runnable::
     :description: nlu-parse-nlu-python
 
