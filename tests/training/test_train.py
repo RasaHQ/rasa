@@ -55,6 +55,8 @@ def pipelines_for_tests():
                                "ner_mitie",
                                "intent_classifier_sklearn",
                                )),
+            ("fr", as_pipeline("tokenizer_whitespace",
+                               )),
             ]
 
 
