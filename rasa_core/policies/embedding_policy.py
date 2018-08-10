@@ -1638,9 +1638,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # use AttentionWrapperState from superclass
         state_size = super(TimeAttentionWrapper, self).state_size
 
-        all_hidden_cell_states = (self._cell.state_size
-                                  if self._index_of_attn_to_copy is not None
-                                  else None)
+        all_hidden_cell_states = self._cell.state_size
 
         return TimeAttentionWrapperState(
                 cell_state=state_size.cell_state,
