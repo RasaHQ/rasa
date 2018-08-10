@@ -36,6 +36,15 @@ class WhitespaceTokenizer(Tokenizer, Component):
         # because we do not want to replace 10.000 with 10 000
         words = re.sub(r'[.,!?]+(\s|$)', ' ', text).split()
 
+        if lang == 'fr':
+            words = re.compile(r"""(?xumsi)
+                                   (?:[lcdjmnts]|qu)['’]
+                                   | http:[^\s]+\.\w{2,3}
+                                   | \d+[.,]\d+
+                                   | [.-]+
+                                   | \w+
+                                   | [^\w\s]""").findall(text)
+
         running_offset = 0
         tokens = []
         for word in words:
