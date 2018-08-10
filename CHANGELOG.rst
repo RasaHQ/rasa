@@ -18,6 +18,11 @@ Changed
 Removed
 -------
 
+Fixed
+-----
+- pipelines containing the ``EmbeddingIntentClassifier`` are not trained in a
+separate thread, as this may lead to freezing during training
+
 [0.13.1] - 2018-08-07
 ^^^^^^^^^^^^^^^^^^^^^
 
