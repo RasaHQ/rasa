@@ -10,12 +10,19 @@ import mock
 def test_whitespace():
     from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     tk = WhitespaceTokenizer()
+    lang = {"language": "fr"}
 
     assert [t.text for t in tk.tokenize("Forecast for lunch")] == \
            ['Forecast', 'for', 'lunch']
 
     assert [t.offset for t in tk.tokenize("Forecast for lunch")] == \
            [0, 9, 13]
+
+    assert [t.text for t in tk.tokenize("La marche de l'ouest", **lang)] == \
+           ['La', 'marche', 'de', "l'", 'ouest']
+
+    assert [t.offset for t in tk.tokenize("La marche de l'ouest", **lang)] == \
+           [0, 3, 10, 13, 15]
 
     # we ignore .,!?
     assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == \

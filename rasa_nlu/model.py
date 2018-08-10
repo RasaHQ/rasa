@@ -171,10 +171,10 @@ class Trainer(object):
     def train(self, data, **kwargs):
         # type: (TrainingData) -> Interpreter
         """Trains the underlying pipeline using the provided training data."""
-
         self.training_data = data
 
         context = kwargs  # type: Dict[Text, Any]
+        context['language'] = self.config.get('language')
 
         for component in self.pipeline:
             updates = component.provide_context()
