@@ -327,7 +327,7 @@ class DataRouter(object):
             return model_dir
 
         def training_errback(failure):
-            logger.warn(failure)
+            logger.warning(failure)
             target_project = self.project_store.get(
                     failure.value.failed_target_project)
             self._current_training_processes -= 1
@@ -347,6 +347,9 @@ class DataRouter(object):
         # cause training to freeze
         if self._tf_in_pipeline(train_config):
             try:
+                logger.warning("Training a pipeline with a tensorflow "
+                               "component. This blocks the server during "
+                               "training.")
                 model_path = do_train_in_worker(
                     train_config,
                     data_file,
@@ -358,25 +361,25 @@ class DataRouter(object):
                 self.project_store[project].update(model_dir)
                 return model_dir
             except TrainingException as e:
-                logger.warn(e)
+                logger.warning(e)
                 target_project = self.project_store.get(
                     e.failed_target_project)
                 if target_project:
                     target_project.status = 0
                 raise e
+        else:
+            result = self.pool.submit(do_train_in_worker,
+                                      train_config,
+                                      data_file,
+                                      path=self.project_dir,
+                                      project=project,
+                                      fixed_model_name=model_name,
+                                      storage=self.remote_storage)
+            result = deferred_from_future(result)
+            result.addCallback(training_callback)
+            result.addErrback(training_errback)
 
-        result = self.pool.submit(do_train_in_worker,
-                                  train_config,
-                                  data_file,
-                                  path=self.project_dir,
-                                  project=project,
-                                  fixed_model_name=model_name,
-                                  storage=self.remote_storage)
-        result = deferred_from_future(result)
-        result.addCallback(training_callback)
-        result.addErrback(training_errback)
-
-        return result
+            return result
 
     def evaluate(self, data, project=None, model=None):
         # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]
