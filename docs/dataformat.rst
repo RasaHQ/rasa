@@ -76,6 +76,8 @@ and after training a model. Luckily, there's a
 for creating training data in rasa's format.
 - created by `@azazdeaz <https://github.com/azazdeaz>`_ -
 and it's also extremely helpful for inspecting and modifying existing data.
+`Rasa Platform <https://rasa.com/products/rasa-platform>`_ (Rasa's commercial product) also has 
+a full-featured UI for annotating data.
 
 
 For the demo data the output should look like this:
