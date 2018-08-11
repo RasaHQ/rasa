@@ -5,21 +5,27 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
-import os
+from collections import namedtuple
 from threading import Thread
 
 from builtins import str
 from gevent.pywsgi import WSGIServer
 
-from rasa_core import constants
+import rasa_core
+from rasa_core import constants, agent
 from rasa_core import utils, server
+from rasa_core.agent import Agent
 from rasa_core.channels import console
 from rasa_core.interpreter import (
-    NaturalLanguageInterpreter,
-    RasaNLUHttpInterpreter)
+    NaturalLanguageInterpreter)
 from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
+
+AvailableEndpoints = namedtuple('AvailableEndpoints', 'nlg '
+                                                      'nlu '
+                                                      'action '
+                                                      'model')
 
 
 def create_argument_parser():
@@ -71,9 +77,28 @@ def create_argument_parser():
             choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
                      "twilio"],
             help="service to connect to")
+    parser.add_argument(
+            '--enable_api',
+            default=False,
+            action="store_true",
+            type=bool,
+            help="Start the web server api in addition to the input channel")
 
     utils.add_logging_option_arguments(parser)
     return parser
+
+
+def read_endpoints(endpoint_file):
+    nlg = utils.read_endpoint_config(endpoint_file,
+                                     endpoint_type="nlg")
+    nlu = utils.read_endpoint_config(endpoint_file,
+                                     endpoint_type="nlu")
+    action = utils.read_endpoint_config(endpoint_file,
+                                        endpoint_type="action_endpoint")
+    model = utils.read_endpoint_config(endpoint_file,
+                                       endpoint_type="models")
+
+    return AvailableEndpoints(nlg, nlu, action, model)
 
 
 def _raise_missing_credentials_exception(channel):
@@ -176,59 +201,22 @@ def start_cmdline_io(server_url, on_finish, **kwargs):
     p.start()
 
 
-def interpreter_from_args(
-        nlu_model,  # type: Union[Text, NaturalLanguageInterpreter, None]
-        nlu_endpoint  # type: Optional[EndpointConfig]
-):
-    # type: (...) -> Optional[NaturalLanguageInterpreter]
-    """Create an interpreter from the commandline arguments.
-
-    Depending on which values are passed for model and endpoint, this
-    will create the corresponding interpreter (either loading the model
-    locally or setting up an endpoint based interpreter)."""
-
-    if isinstance(nlu_model, NaturalLanguageInterpreter):
-        return nlu_model
-
-    if nlu_model:
-        name_parts = os.path.split(nlu_model)
-    else:
-        name_parts = []
-
-    if len(name_parts) == 1:
-        if nlu_endpoint:
-            # using the default project name
-            return RasaNLUHttpInterpreter(name_parts[0],
-                                          nlu_endpoint)
-        else:
-            return NaturalLanguageInterpreter.create(nlu_model)
-    elif len(name_parts) == 2:
-        if nlu_endpoint:
-            return RasaNLUHttpInterpreter(name_parts[1],
-                                          nlu_endpoint,
-                                          name_parts[0])
-        else:
-            return NaturalLanguageInterpreter.create(nlu_model)
-    else:
-        if nlu_endpoint:
-            raise Exception("You have configured an endpoint to use for "
-                            "the NLU model. To use it, you need to "
-                            "specify the model to use with "
-                            "`--nlu project/model`.")
-        else:
-            return NaturalLanguageInterpreter.create(nlu_model)
-
-
-def start_server(model_directory, nlu, input_channels,
-                 cors, auth_token, endpoints, port):
+def start_server(input_channels,
+                 cors,
+                 auth_token,
+                 port,
+                 agent):
     """Run the agent."""
 
-    app = server.create_app(model_directory,
-                            nlu,
-                            input_channels,
-                            cors,
-                            auth_token=auth_token,
-                            endpoints=endpoints)
+    app = server.create_app(agent,
+                            cors_origins=cors,
+                            auth_token=auth_token)
+
+    if input_channels:
+        rasa_core.channels.channel.register(input_channels,
+                                            app,
+                                            app.handle_message,
+                                            route="/webhooks/")
 
     if logger.isEnabledFor(logging.DEBUG):
         utils.list_routes(app)
@@ -240,23 +228,20 @@ def start_server(model_directory, nlu, input_channels,
     return http_server
 
 
-def serve_application(model_directory,
-                      nlu_model=None,
+def serve_application(agent,
                       channel=None,
                       port=constants.DEFAULT_SERVER_PORT,
                       credentials_file=None,
                       cors=None,
-                      endpoints=None,
                       auth_token=None
                       ):
-
     if channel:
         input_channels = [create_http_input_channel(channel, credentials_file)]
     else:
         input_channels = []
 
-    http_server = start_server(model_directory, nlu_model, input_channels,
-                               cors, auth_token, endpoints, port)
+    http_server = start_server(input_channels, cors, auth_token,
+                               port, agent)
 
     if channel == "cmdline":
         start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop)
@@ -265,6 +250,26 @@ def serve_application(model_directory,
         http_server.serve_forever()
     except Exception as exc:
         logger.exception(exc)
+
+
+def load_agent(core_model, interpreter, endpoints,
+               tracker_store=None,
+               wait_time_between_pulls=10):
+    if endpoints.model:
+        return agent.load_from_server(
+                interpreter=interpreter,
+                generator=endpoints.nlg,
+                action_endpoint=endpoints.action,
+                model_server=endpoints.model,
+                tracker_store=tracker_store,
+                wait_time_between_pulls=wait_time_between_pulls
+        )
+    else:
+        return Agent.load(core_model,
+                          interpreter=interpreter,
+                          generator=endpoints.nlg,
+                          tracker_store=tracker_store,
+                          action_endpoint=endpoints.action)
 
 
 if __name__ == '__main__':
@@ -281,11 +286,16 @@ if __name__ == '__main__':
 
     logger.info("Rasa process starting")
 
-    serve_application(cmdline_args.core,
-                      cmdline_args.nlu,
+    endpoints = read_endpoints(cmdline_args.endpoints)
+    interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                    endpoints.nlu)
+    loaded_agent = load_agent(cmdline_args.core,
+                              interpreter=interpreter,
+                              endpoints=endpoints)
+
+    serve_application(loaded_agent,
                       cmdline_args.connector,
                       cmdline_args.port,
                       cmdline_args.credentials,
                       cmdline_args.cors,
-                      cmdline_args.endpoints,
                       cmdline_args.auth_token)

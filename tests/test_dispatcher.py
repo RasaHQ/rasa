@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.trackers import DialogueStateTracker
 
@@ -65,7 +65,7 @@ def test_dispatcher_utter_buttons(default_dispatcher_collecting):
 
 def test_dispatcher_utter_buttons_from_domain_templ(default_tracker):
     domain_file = "examples/moodbot/domain.yml"
-    domain = TemplateDomain.load(domain_file)
+    domain = Domain.load(domain_file)
     bot = CollectingOutputChannel()
     nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     dispatcher = Dispatcher("my-sender", bot, nlg)

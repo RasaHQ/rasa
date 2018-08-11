@@ -6,11 +6,11 @@ from __future__ import unicode_literals
 import json
 from multiprocessing import Queue
 from threading import Thread
-from time import sleep
+
+from flask import Blueprint, jsonify, request, Flask, Response
+from typing import Text, List, Dict, Any, Optional, Callable, Iterable
 
 from rasa_core import utils
-from typing import Text, List, Dict, Any, Optional, Callable, Iterable
-from flask import Blueprint, jsonify, request, Flask, Response
 
 try:
     from urlparse import urljoin
@@ -29,7 +29,7 @@ class UserMessage(object):
                  text,  # type: Optional[Text]
                  output_channel=None,  # type: Optional[OutputChannel]
                  sender_id=None,  # type: Text
-                 parse_data=None   # type: Dict[Text, Any]
+                 parse_data=None  # type: Dict[Text, Any]
                  ):
         # type: (...) -> None
 
@@ -48,9 +48,12 @@ class UserMessage(object):
         self.parse_data = parse_data
 
 
-# TODO: TB - ensure backward compatibility with old webhooks
-def register_blueprints(input_channels, app, on_new_message, route):
-    # type: (List[InputChannel], Flask, Callable[[UserMessage], None]) -> None
+def register(input_channels,  # type: List[InputChannel]
+             app,  # type: Flask
+             on_new_message,  # type: Callable[[UserMessage], None]
+             route  # type: Text
+             ):
+    # type: (...) -> None
 
     for channel in input_channels:
         p = urljoin(route, channel.url_prefix())

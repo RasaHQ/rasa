@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import abc
 import collections
 import io
 import json
@@ -14,18 +13,16 @@ import numpy as np
 import pkg_resources
 from pykwalify.errors import SchemaError
 from six import string_types
-from six import with_metaclass
-from typing import Dict, Tuple, Any
+from typing import Dict, Any
 from typing import List
 from typing import Optional
 from typing import Text
 
 from rasa_core import utils
 from rasa_core.actions import Action, action
-from rasa_core.actions.action import ActionListen, ActionRestart, ActionDefaultFallback
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core.utils import read_file, read_yaml_string
+from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -61,10 +58,10 @@ def check_domain_sanity(domain):
                         "the domain: {1}".format(name, ", ".join(d)))
         return msg
 
-    duplicate_actions = get_duplicates([a for a in domain.actions])
-    duplicate_intents = get_duplicates([i for i in domain.intents])
+    duplicate_actions = get_duplicates(domain.action_names[:])
+    duplicate_intents = get_duplicates(domain.intents[:])
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
-    duplicate_entities = get_duplicates([e for e in domain.entities])
+    duplicate_entities = get_duplicates(domain.entities[:])
 
     if duplicate_actions or \
             duplicate_intents or \
@@ -74,42 +71,139 @@ def check_domain_sanity(domain):
             (duplicate_actions, "actions"),
             (duplicate_intents, "intents"),
             (duplicate_slots, "slots"),
-            (duplicate_entities, "entitites")]))
+            (duplicate_entities, "entities")]))
 
 
-class Domain(with_metaclass(abc.ABCMeta, object)):
+class Domain(object):
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
     and entities it can recognise"""
 
-    DEFAULT_ACTIONS = [ActionListen(), ActionRestart(),
-                       ActionDefaultFallback()]
+    @classmethod
+    def load(cls, filename):
+        if not os.path.isfile(filename):
+            raise Exception(
+                    "Failed to load domain specification from '{}'. "
+                    "File not found!".format(os.path.abspath(filename)))
+        return cls.from_yaml(read_file(filename))
 
-    def __init__(self, store_entities_as_slots=True,
-                 restart_intent="restart"):
+    @classmethod
+    def from_yaml(cls, yaml):
+        cls.validate_domain_yaml(yaml)
+        data = read_yaml_string(yaml)
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_dict(cls, data):
+        utter_templates = cls.collect_templates(data.get("templates", {}))
+        slots = cls.collect_slots(data.get("slots", {}))
+        additional_arguments = data.get("config", {})
+        intent_properties = cls.collect_intent_properties(data.get("intents",
+                                                                   {}))
+        return cls(
+                intent_properties,
+                data.get("entities", []),
+                slots,
+                utter_templates,
+                data.get("actions", []),
+                **additional_arguments
+        )
+
+    @classmethod
+    def validate_domain_yaml(cls, yaml):
+        """Validate domain yaml."""
+        from pykwalify.core import Core
+
+        log = logging.getLogger('pykwalify')
+        log.setLevel(logging.WARN)
+
+        schema_file = pkg_resources.resource_filename(__name__,
+                                                      "schemas/domain.yml")
+        source_data = utils.read_yaml_string(yaml)
+        c = Core(source_data=source_data,
+                 schema_files=[schema_file])
+        try:
+            c.validate(raise_exception=True)
+        except SchemaError:
+            raise ValueError("Failed to validate your domain yaml. "
+                             "Make sure the file is correct, to do so"
+                             "take a look at the errors logged during "
+                             "validation previous to this exception. ")
+
+    @staticmethod
+    def collect_slots(slot_dict):
+        # it is super important to sort the slots here!!!
+        # otherwise state ordering is not consistent
+        slots = []
+        for slot_name in sorted(slot_dict):
+            slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
+            if "type" in slot_dict[slot_name]:
+                del slot_dict[slot_name]["type"]
+            slot = slot_class(slot_name, **slot_dict[slot_name])
+            slots.append(slot)
+        return slots
+
+    @staticmethod
+    def collect_intent_properties(intent_list):
+        intent_properties = {}
+        for intent in intent_list:
+            if isinstance(intent, dict):
+                intent_properties.update(intent)
+            else:
+                intent_properties.update({intent: {'use_entities': True}})
+        return intent_properties
+
+    @staticmethod
+    def collect_templates(yml_templates):
+        # type: (Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
+        """Go through the templates and make sure they are all in dict format"""
+
+        templates = {}
+        for template_key, template_variations in yml_templates.items():
+            validated_variations = []
+            for t in template_variations:
+                # templates can either directly be strings or a dict with
+                # options we will always create a dict out of them
+                if isinstance(t, string_types):
+                    validated_variations.append({"text": t})
+                elif "text" not in t:
+                    raise Exception("Utter template '{}' needs to contain"
+                                    "'- text: ' attribute to be a proper"
+                                    "template".format(template_key))
+                else:
+                    validated_variations.append(t)
+            templates[template_key] = validated_variations
+        return templates
+
+    def __init__(self,
+                 intent_properties,  # type: Dict[Text, Any]
+                 entities,  # type: List[Text]
+                 slots,  # type: List[Slot]
+                 templates,  # type: Dict[Text, Any]
+                 action_names,  # type: List[Text]
+                 store_entities_as_slots=True,  # type: bool
+                 restart_intent="restart"  # type: Text
+                 ):
+        # type: (...) -> None
+
+        self.intent_properties = intent_properties
+        self.entities = entities
+        self.slots = slots
+        self.templates = templates
+        self.action_names = action.default_action_names() + action_names
+
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
+
+        action.ensure_action_name_uniqueness(self.action_names)
 
     @utils.lazyproperty
     def num_actions(self):
         """Returns the number of available actions."""
 
         # noinspection PyTypeChecker
-        return len(self.actions)
-
-    @utils.lazyproperty
-    def action_names(self):
-        # type: () -> List[Text]
-        """Returns the name of available actions."""
-
-        return [a.name() for a in self.actions]
-
-    @utils.lazyproperty
-    def action_map(self):
-        # type: () -> Dict[Text, Tuple[int, Action]]
-        """Provides a mapping from action names to indices and actions."""
-        return {a.name(): (i, a) for i, a in enumerate(self.actions)}
+        return len(self.action_names)
 
     @utils.lazyproperty
     def num_states(self):
@@ -117,42 +211,47 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         return len(self.input_states)
 
-    def action_for_name(self, action_name):
-        # type: (Text) -> Optional[Action]
+    def action_for_name(self, action_name, action_endpoint):
+        # type: (Text, Optional[EndpointConfig]) -> Optional[Action]
         """Looks up which action corresponds to this action name."""
 
-        if action_name in self.action_map:
-            return self.action_map.get(action_name)[1]
-        else:
+        if action_name not in self.action_names:
             self._raise_action_not_found_exception(action_name)
 
-    def action_for_index(self, index):
+        return action.action_from_name(action_name, action_endpoint)
+
+    def action_for_index(self, index, action_endpoint):
+        # type: (int, Optional[EndpointConfig]) -> Optional[Action]
         """Integer index corresponding to an actions index in the action list.
 
         This method resolves the index to the actions name."""
 
-        if len(self.actions) <= index or index < 0:
+        if self.num_actions <= index or index < 0:
             raise Exception(
                     "Can not access action at index {}. "
-                    "Domain has {} actions.".format(index, len(self.actions)))
-        return self.actions[index]
+                    "Domain has {} actions.".format(index, self.num_actions))
+        return self.action_for_name(self.action_names[index], action_endpoint)
+
+    def actions(self, action_endpoint):
+        return [self.action_for_name(name, action_endpoint)
+                for name in self.action_names]
 
     def index_for_action(self, action_name):
         # type: (Text) -> Optional[int]
         """Looks up which action index corresponds to this action name"""
 
-        if action_name in self.action_map:
-            return self.action_map.get(action_name)[0]
-        else:
+        try:
+            return self.action_names.index(action_name)
+        except ValueError:
             self._raise_action_not_found_exception(action_name)
 
     def _raise_action_not_found_exception(self, action_name):
-        actions = "\n".join(["\t - {}".format(a)
-                             for a in sorted(self.action_map)])
+        action_names = "\n".join(["\t - {}".format(a)
+                                  for a in self.action_names])
         raise Exception(
                 "Can not access action '{}', "
                 "as that name is not a registered action for this domain. "
-                "Available actions are: \n{}".format(action_name, actions))
+                "Available actions are: \n{}".format(action_name, action_names))
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
@@ -176,8 +275,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # type: () -> List[Text]
         """Returns all available previous action state strings."""
 
-        return [PREV_PREFIX + a.name()
-                for a in self.actions]
+        return [PREV_PREFIX + a for a in self.action_names]
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
@@ -229,8 +327,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # be ignored for the current intent
         for entity in tracker.latest_message.entities:
             intent_name = tracker.latest_message.intent.get("name")
-            should_use_entity = self._intents[intent_name]['use_entities']
-            if should_use_entity:
+            if self.intent_properties[intent_name]['use_entities']:
                 key = "entity_{0}".format(entity["entity"])
                 state_dict[key] = 1.0
 
@@ -307,13 +404,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         else:
             return []
 
-    def persist(self, filename):
-        raise NotImplementedError
-
-    @classmethod
-    def load(cls, filename):
-        raise NotImplementedError
-
     def persist_specification(self, model_path):
         # type: (Text) -> None
         """Persists the domain specification to storage."""
@@ -358,167 +448,17 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         else:
             return True
 
-    # Abstract Methods : These have to be implemented in any domain subclass
-    @abc.abstractproperty
-    def slots(self):
-        # type: () -> List[Slot]
-        """Domain subclass must provide a list of slots"""
-        pass
-
-    @abc.abstractproperty
-    def entities(self):
-        # type: () -> List[Text]
-        raise NotImplementedError(
-                "domain must provide a list of entities")
-
-    @abc.abstractproperty
-    def intents(self):
-        # type: () -> List[Text]
-        raise NotImplementedError(
-                "domain must provide a list of intents")
-
-    @abc.abstractproperty
-    def actions(self):
-        # type: () -> List[Action]
-        raise NotImplementedError(
-                "domain must provide a list of possible actions")
-
-    @abc.abstractproperty
-    def templates(self):
-        # type: () -> List[Dict[Text, Any]]
-        raise NotImplementedError(
-                "domain must provide a dictionary of response templates")
-
-
-class TemplateDomain(Domain):
-
-    @classmethod
-    def load(cls, filename, action_endpoint=None):
-        if not os.path.isfile(filename):
-            raise Exception(
-                    "Failed to load domain specification from '{}'. "
-                    "File not found!".format(os.path.abspath(filename)))
-        return cls.from_yaml(read_file(filename), action_endpoint)
-
-    @classmethod
-    def from_yaml(cls, yaml, action_endpoint=None):
-        cls.validate_domain_yaml(yaml)
-        data = read_yaml_string(yaml)
-        return cls.from_dict(data, action_endpoint)
-
-    @classmethod
-    def from_dict(cls, data, action_endpoint=None):
-        utter_templates = cls.collect_templates(data.get("templates", {}))
-        slots = cls.collect_slots(data.get("slots", {}))
-        additional_arguments = data.get("config", {})
-        intents = cls.collect_intents(data.get("intents", {}))
-        return cls(
-            intents,
-            data.get("entities", []),
-            slots,
-            utter_templates,
-            data.get("actions", []),
-            action_endpoint,
-            **additional_arguments
-        )
-
-    @classmethod
-    def validate_domain_yaml(cls, yaml):
-        """Validate domain yaml."""
-        from pykwalify.core import Core
-
-        log = logging.getLogger('pykwalify')
-        log.setLevel(logging.WARN)
-
-        schema_file = pkg_resources.resource_filename(__name__,
-                                                      "schemas/domain.yml")
-        source_data = utils.read_yaml_string(yaml)
-        c = Core(source_data=source_data,
-                 schema_files=[schema_file])
-        try:
-            c.validate(raise_exception=True)
-        except SchemaError:
-            raise ValueError("Failed to validate your domain yaml. "
-                             "Make sure the file is correct, to do so"
-                             "take a look at the errors logged during "
-                             "validation previous to this exception. ")
-
-    @staticmethod
-    def collect_slots(slot_dict):
-        # it is super important to sort the slots here!!!
-        # otherwise state ordering is not consistent
-        slots = []
-        for slot_name in sorted(slot_dict):
-            slot_class = Slot.resolve_by_type(slot_dict[slot_name].get("type"))
-            if "type" in slot_dict[slot_name]:
-                del slot_dict[slot_name]["type"]
-            slot = slot_class(slot_name, **slot_dict[slot_name])
-            slots.append(slot)
-        return slots
-
-    @staticmethod
-    def collect_intents(intent_list):
-        intents = {}
-        for intent in intent_list:
-            if isinstance(intent, dict):
-                intents.update(intent)
-            else:
-                intents.update({intent: {'use_entities': True}})
-        return intents
-
-    @staticmethod
-    def collect_templates(yml_templates):
-        # type: (Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
-        """Go through the templates and make sure they are all in dict format"""
-
-        templates = {}
-        for template_key, template_variations in yml_templates.items():
-            validated_variations = []
-            for t in template_variations:
-                # templates can either directly be strings or a dict with
-                # options we will always create a dict out of them
-                if isinstance(t, string_types):
-                    validated_variations.append({"text": t})
-                elif "text" not in t:
-                    raise Exception("Utter template '{}' needs to contain"
-                                    "'- text: ' attribute to be a proper"
-                                    "template".format(template_key))
-                else:
-                    validated_variations.append(t)
-            templates[template_key] = validated_variations
-        return templates
-
-    def __init__(self, intents, entities, slots, templates,
-                 action_names, action_endpoint, **kwargs):
-        self._intents = intents
-        self._entities = entities
-        self._slots = slots
-        self._templates = templates
-        self._action_names = action_names
-        self._actions = self.instantiate_actions(action_names,
-                                                 action_endpoint)
-        super(TemplateDomain, self).__init__(**kwargs)
-
-    @staticmethod
-    def instantiate_actions(action_names,
-                            action_endpoint):
-        custom_actions = action.actions_from_names(action_names,
-                                                   action_endpoint)
-        actions = Domain.DEFAULT_ACTIONS[:] + custom_actions
-        action.ensure_action_name_uniqueness(actions)
-        return actions
-
     def _slot_definitions(self):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self):
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
-        action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
+        action_names = self.action_names[action.num_default_actions():]
 
         return {
             "config": additional_config,
-            "intents": [{k: v} for k, v in self._intents.items()],
+            "intents": [{k: v} for k, v in self.intent_properties.items()],
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
@@ -534,21 +474,9 @@ class TemplateDomain(Domain):
         return utils.dump_obj_as_yaml_to_string(domain_data)
 
     @utils.lazyproperty
-    def templates(self):
-        return self._templates
-
-    @utils.lazyproperty
-    def slots(self):
-        return self._slots
-
-    @utils.lazyproperty
     def intents(self):
-        return sorted(self._intents.keys())
+        return sorted(self.intent_properties.keys())
 
-    @utils.lazyproperty
-    def entities(self):
-        return self._entities
 
-    @utils.lazyproperty
-    def actions(self):
-        return self._actions
+class TemplateDomain(Domain):
+    pass

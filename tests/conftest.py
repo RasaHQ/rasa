@@ -13,9 +13,9 @@ from pytest_localserver.http import WSGIServer
 
 from rasa_core import train, server
 from rasa_core.agent import Agent
-from rasa_core.channels import CollectingOutputChannel, RestInput
+from rasa_core.channels import CollectingOutputChannel, RestInput, channel
 from rasa_core.dispatcher import Dispatcher
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
@@ -47,7 +47,7 @@ class CustomSlot(Slot):
 
 @pytest.fixture(scope="session")
 def default_domain():
-    return TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+    return Domain.load(DEFAULT_DOMAIN_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -136,9 +136,15 @@ def core_server(tmpdir_factory):
     agent.train(training_data)
     agent.persist(model_path)
 
-    return server.create_app(model_path,
-                             interpreter=RegexInterpreter(),
-                             input_channels=[RestInput()])
+    loaded_agent = Agent.load(model_path,
+                              interpreter=RegexInterpreter())
+
+    app = server.create_app(loaded_agent)
+    channel.register([RestInput()],
+                     app,
+                     agent.handle_message,
+                                "/webhooks/")
+    return app
 
 
 @pytest.fixture

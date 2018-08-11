@@ -45,14 +45,9 @@ def test_on_hot_out_of_range():
         utils.one_hot(4, 3)
 
 
-def test_list_routes():
+def test_list_routes(default_agent):
     from rasa_core import server
-    app = server.create_app(None,
-                            None,
-                            None,
-                            None,
-                            auth_token=None,
-                            endpoints=None)
+    app = server.create_app(default_agent, auth_token=None)
 
     routes = utils.list_routes(app)
     assert len(routes) > 0

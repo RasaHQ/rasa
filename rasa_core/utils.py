@@ -25,7 +25,7 @@ from threading import Thread
 import six
 from builtins import input, range, str
 from numpy import all, array
-from typing import Text, Any, List, Optional, Tuple, Dict, Set
+from typing import Text, Any, List, Optional, Tuple, Dict, Set, TypeVar, Generic
 
 if six.PY2:
     from StringIO import StringIO

@@ -12,7 +12,7 @@ import sys
 import jsonpickle
 import six
 
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH
 
@@ -23,7 +23,7 @@ def tracker_from_dialogue_file(filename, domain=None):
     if domain is not None:
         domain = domain
     else:
-        domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        domain = Domain.load(DEFAULT_DOMAIN_PATH)
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
     return tracker

@@ -32,7 +32,7 @@ from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
-
+from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ class MessageProcessor(object):
                  domain,  # type: Domain
                  tracker_store,  # type: TrackerStore
                  generator,  # type: NaturalLanguageGenerator
+                 action_endpoint=None,  # type: Optional[EndpointConfig]
                  max_number_of_predictions=10,  # type: int
                  message_preprocessor=None,  # type: Optional[LambdaType]
                  on_circuit_break=None  # type: Optional[LambdaType]
@@ -64,6 +65,7 @@ class MessageProcessor(object):
         self.max_number_of_predictions = max_number_of_predictions
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
+        self.action_endpoint = action_endpoint
 
     def handle_message(self, message):
         # type: (UserMessage) -> Optional[List[Text]]
@@ -89,8 +91,8 @@ class MessageProcessor(object):
         probabilities = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
-        scores = [{"action": a.name(), "score": p}
-                  for p, a in zip(probabilities, self.domain.actions)]
+        scores = [{"action": a, "score": p}
+                  for a, p in zip(self.domain.action_names, probabilities)]
         return {"scores": scores,
                 "tracker": tracker.current_state(should_include_events=True)}
 
@@ -109,23 +111,32 @@ class MessageProcessor(object):
         return tracker
 
     def execute_action(self, sender_id, action_name, dispatcher):
-        # type: (Text, Text, Dispatcher) -> Optional[List[Text]]
+        # type: (Text, Text, Dispatcher) -> DialogueStateTracker
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(sender_id)
-        action = self.domain.action_for_name(action_name)
+        action = self._get_action(action_name)
         self._run_action(action, tracker, dispatcher)
 
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
         return tracker
 
-    def _log_slots(self, tracker):
-        # Log currently set slots
-        slot_values = "\n".join(["\t{}: {}".format(s.name, s.value)
-                                 for s in tracker.slots.values()])
-        logger.debug("Current slot values: \n{}".format(slot_values))
+    def predict_next_action(self, tracker):
+        # type: (DialogueStateTracker) -> Action
+        """Predicts the next action the bot should take after seeing x.
+
+        This should be overwritten by more advanced policies to use
+        ML to predict the action. Returns the index of the next action."""
+
+        probabilities = self._get_next_action_probabilities(tracker)
+
+        max_index = int(np.argmax(probabilities))
+        action = self.domain.action_for_index(max_index, self.action_endpoint)
+        logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
+                action.name(), probabilities[max_index]))
+        return action
 
     def handle_reminder(self, reminder_event, dispatcher):
         # type: (ReminderScheduled, Dispatcher) -> None
@@ -155,7 +166,7 @@ class MessageProcessor(object):
             # necessary for proper featurization, otherwise the previous
             # unrelated message would influence featurization
             tracker.update(UserUttered.empty())
-            action = self.domain.action_for_name(reminder_event.action_name)
+            action = self._get_action(reminder_event.action_name)
             should_continue = self._run_action(action, tracker, dispatcher)
             if should_continue:
                 user_msg = UserMessage(None,
@@ -164,6 +175,15 @@ class MessageProcessor(object):
                 self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
+
+    def _log_slots(self, tracker):
+        # Log currently set slots
+        slot_values = "\n".join(["\t{}: {}".format(s.name, s.value)
+                                 for s in tracker.slots.values()])
+        logger.debug("Current slot values: \n{}".format(slot_values))
+
+    def _get_action(self, action_name):
+        return self.domain.action_for_name(action_name, self.action_endpoint)
 
     def _parse_message(self, message):
         # for testing - you can short-cut the NLU part with a message
@@ -354,21 +374,6 @@ class MessageProcessor(object):
 
     def _save_tracker(self, tracker):
         self.tracker_store.save(tracker)
-
-    def predict_next_action(self, tracker):
-        # type: (DialogueStateTracker) -> Action
-        """Predicts the next action the bot should take after seeing x.
-
-        This should be overwritten by more advanced policies to use
-        ML to predict the action. Returns the index of the next action."""
-
-        probabilities = self._get_next_action_probabilities(tracker)
-
-        max_index = int(np.argmax(probabilities))
-        action = self.domain.action_for_index(max_index)
-        logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
-                action.name(), probabilities[max_index]))
-        return action
 
     def _prob_array_for_action(self, action):
         # type: (Action) -> Optional[List[float]]

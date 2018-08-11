@@ -26,30 +26,48 @@ ACTION_RESTART_NAME = "action_restart"
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
 
-def ensure_action_name_uniqueness(actions):
-    actual_action_names = set()  # used to collect unique action names
-    for a in actions:
-        if a.name() in actual_action_names:
+def default_actions():
+    return [ActionListen(), ActionRestart(), ActionDefaultFallback()]
+
+
+def default_action_names():
+    return [a.name() for a in default_actions()]
+
+
+def num_default_actions():
+    return len(default_actions())
+
+
+def ensure_action_name_uniqueness(action_names):
+    unique_action_names = set()  # used to collect unique action names
+    for a in action_names:
+        if a in unique_action_names:
             raise ValueError(
                     "Action names are not unique! Found two actions with name"
-                    " '{}'. Either rename or remove one of them."
-                    "".format(a.name()))
+                    " '{}'. Either rename or remove one of them.".format(a))
         else:
-            actual_action_names.add(a.name())
+            unique_action_names.add(a)
+
+
+def action_from_name(name, action_endpoint):
+    # type: (Text, Optional[EndpointConfig]) -> Action
+    """Return an action instance for the name."""
+
+    defaults = {a.name(): a for a in default_actions()}
+
+    if name in defaults:
+        return defaults.get(name)
+    elif name.startswith("utter_"):
+        return UtterAction(name)
+    else:
+        return RemoteAction(name, action_endpoint)
 
 
 def actions_from_names(action_names, action_endpoint):
     # type: (List[Text], Optional[EndpointConfig]) -> List[Action]
     """Converts the names of actions into class instances."""
 
-    actions = []
-    for name in action_names:
-        if name.startswith("utter_"):
-            actions.append(UtterAction(name))
-        else:
-            actions.append(RemoteAction(name, action_endpoint))
-
-    return actions
+    return [action_from_name(name, action_endpoint) for name in action_names]
 
 
 class Action(object):

@@ -6,21 +6,21 @@ from __future__ import unicode_literals
 import logging
 import os
 import shutil
+import tempfile
+import time
 import zipfile
 from threading import Thread
 
 import six
-import time
 import typing
 from requests.exceptions import ConnectionError, InvalidURL
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 from rasa_core import training
+from rasa_core.channels import UserMessage, OutputChannel
 from rasa_core.dispatcher import Dispatcher
-from rasa_core.utils import EndpointConfig
-from rasa_core.channels import UserMessage, InputChannel, OutputChannel
-from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
+from rasa_core.domain import Domain, check_domain_sanity
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies import Policy
@@ -35,13 +35,123 @@ from rasa_nlu.utils import is_url
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
     from rasa_core.nlg import NaturalLanguageGenerator as NLG
 
 if six.PY2:
     from StringIO import StringIO as IOReader
 else:
     from io import BytesIO as IOReader
+
+
+def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
+                     generator=None,  # type: Union[EndpointConfig, NLG]
+                     tracker_store=None,  # type: Optional[TrackerStore]
+                     action_endpoint=None,  # type: Optional[EndpointConfig]
+                     model_server=None,  # type: Optional[EndpointConfig]
+                     wait_time_between_pulls=None,  # type: Optional[int]
+                     ):
+    # type: (...) -> Agent
+    """Load a persisted model from a server."""
+
+    agent = Agent(interpreter=interpreter,
+                  generator=generator,
+                  tracker_store=tracker_store,
+                  action_endpoint=action_endpoint)
+
+    try:
+        _update_model_from_server(model_server, agent)
+    except ConnectionError as e:
+        logger.exception("Could not retrieve model from server "
+                         "Running without a model. Server "
+                         "URL: `{}`\n".format(e))
+
+    if wait_time_between_pulls:
+        # continuously pull the model every `wait_time_between_pulls` seconds
+        start_model_pulling_in_worker(model_server,
+                                      wait_time_between_pulls,
+                                      agent)
+    return agent
+
+
+def _init_model_from_server(model_server):
+    # type: (EndpointConfig) -> Optional[(Domain, PolicyEnsemble, Text)]
+    """Initialise a Rasa Core model from a URL."""
+
+    if not is_url(model_server.url):
+        raise InvalidURL(model_server.url)
+
+    model_directory = tempfile.mkdtemp()
+
+    fingerprint = _pull_model_and_fingerprint(model_server,
+                                              model_directory,
+                                              fingerprint=None)
+
+    return fingerprint, model_directory
+
+
+def _update_model_from_server(
+        model_server,  # type: EndpointConfig
+        agent,  # type: Agent
+):
+    # type: (...) -> None
+    """Load a zipped Rasa Core model from a URL and update the passed agent."""
+
+    if not is_url(model_server.url):
+        raise InvalidURL(model_server.url)
+
+    model_directory = tempfile.mkdtemp()
+
+    new_model_fingerprint = _pull_model_and_fingerprint(
+            model_server, model_directory, agent.fingerprint)
+    if new_model_fingerprint:
+        domain_path = os.path.join(os.path.abspath(model_directory),
+                                   "domain.yml")
+        domain = Domain.load(domain_path)
+        policy_ensemble = PolicyEnsemble.load(model_directory)
+        agent.update_model(domain, policy_ensemble, new_model_fingerprint)
+    else:
+        logger.debug("No new model found at "
+                     "URL {}".format(model_server))
+
+
+def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
+    # type: (EndpointConfig, Text, Optional[Text]) -> Optional[Text]
+    """Queries the model server and returns the value of the response's
+
+    <ETag> header which contains the model hash."""
+    header = {"If-None-Match": fingerprint}
+    response = model_server.request(method="GET", headers=header)
+    response.raise_for_status()
+
+    if response.status_code == 204:
+        logger.debug("Model server returned 204 status code, indicating "
+                     "that no new model is available. "
+                     "Current fingerprint: {}".format(fingerprint))
+        return response.headers.get("ETag")
+
+    zip_ref = zipfile.ZipFile(IOReader(response.content))
+    zip_ref.extractall(model_directory)
+    logger.debug("Unzipped model to {}"
+                 "".format(os.path.abspath(model_directory)))
+
+    # get the new fingerprint
+    return response.headers.get("ETag")
+
+
+def _run_model_pulling_worker(model_server, wait_time_between_pulls, agent):
+    # type: (EndpointConfig, int, Agent) -> None
+    while True:
+        _update_model_from_server(model_server, agent)
+        time.sleep(wait_time_between_pulls)
+
+
+def start_model_pulling_in_worker(model_server, wait_time_between_pulls, agent):
+    # type: (EndpointConfig, int, Agent) -> None
+
+    worker = Thread(target=_run_model_pulling_worker,
+                    args=(model_server, wait_time_between_pulls, agent))
+    worker.setDaemon(True)
+    worker.start()
 
 
 class Agent(object):
@@ -53,47 +163,55 @@ class Agent(object):
 
     def __init__(
             self,
-            domain,  # type: Union[Text, Domain]
+            domain=None,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
-            interpreter=None,  # type: Union[NLI, Text, None]
-            model_server=None,  # type: Optional[EndpointConfig]
-            path=None,  # type: Optional[Text]
-            action_factory=None,  # type: Optional[Text]
-            model_hash=None,  # type: Optional[Text]
+            interpreter=None,  # type: NaturalLanguageInterpreter
             generator=None,  # type: Union[EndpointConfig, NLG]
             tracker_store=None,  # type: Optional[TrackerStore]
             action_endpoint=None,  # type: Optional[EndpointConfig]
+            fingerprint=None  # type: Optional[Text]
     ):
         # Initializing variables with the passed parameters.
-        self.domain = self._create_domain(domain, action_endpoint)
+        self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
-        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+
+        if not isinstance(interpreter, NaturalLanguageInterpreter):
+            logger.warning(
+                    "Passing a value for interpreter to an agent "
+                    "where the value is not an interpreter "
+                    "is deprecated. Construct the interpreter, before"
+                    "passing it to the agent, e.g. "
+                    "`interpreter = NaturalLanguageInterpreter.create(nlu)`.")
+            interpreter = NaturalLanguageInterpreter.create(interpreter, None)
+
+        self.interpreter = interpreter
+
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(
-            tracker_store, self.domain)
-        self.path = path
-        self.model_hash = model_hash
-        self.model_server = model_server
-        self.action_factory = action_factory
-        if model_server is not None:
-            if path is None:
-                raise ValueError("No path specified for saving core models.")
-            self.start_model_pulling_in_worker(wait=10)
+                tracker_store, self.domain)
+        self.action_endpoint = action_endpoint
+        self.fingerprint = fingerprint
+
+    def update_model(
+            self,
+            domain,  # type: Union[Text, Domain]
+            policies,  # type: Union[PolicyEnsemble, List[Policy], None]
+            fingerprint  # type: Text
+    ):
+        self.domain = domain
+        self.policy_ensemble = self._create_ensemble(policies)
+        self.fingerprint = fingerprint
 
     @classmethod
     def load(cls,
-             path,  # type: Text
-             interpreter=None,  # type: Union[NLI, Text, None]
+             path=None,  # type: Text
+             interpreter=None,  # type: NaturalLanguageInterpreter
              generator=None,  # type: Union[EndpointConfig, NLG]
              tracker_store=None,  # type: Optional[TrackerStore]
              action_endpoint=None,  # type: Optional[EndpointConfig]
-             model_server=None  # type: Optional[EndpointConfig]
              ):
         # type: (...) -> Agent
         """Load a persisted model from the passed path."""
-
-        if path is None:
-            raise ValueError("No domain path specified.")
 
         if os.path.isfile(path):
             raise ValueError("You are trying to load a MODEL from a file "
@@ -104,26 +222,8 @@ class Agent(object):
                              "a model, use `agent.load_data(...)` "
                              "instead.".format(path))
 
-        if model_server:
-            try:
-                domain, ensemble, _hash = cls.init_model_from_server(
-                    model_server=model_server,
-                    action_endpoint=action_endpoint,
-                    model_directory=path
-                )
-            except ConnectionError as e:
-                logger.exception("Could not retrieve model from server "
-                                 "URL: `{}`\nTrying to load from "
-                                 "path `{}` instead.".format(e, path))
-                domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
-                                             action_endpoint)
-                ensemble = PolicyEnsemble.load(path)
-                _hash = None
-        else:
-            domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
-                                         action_endpoint)
-            ensemble = PolicyEnsemble.load(path)
-            _hash = None
+        domain = Domain.load(os.path.join(path, "domain.yml"))
+        ensemble = PolicyEnsemble.load(path) if path else None
 
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
@@ -131,12 +231,12 @@ class Agent(object):
         return cls(domain=domain,
                    policies=ensemble,
                    interpreter=interpreter,
-                   model_server=model_server,
-                   path=path,
-                   action_endpoint=action_endpoint,
-                   model_hash=_hash,
                    generator=generator,
-                   tracker_store=tracker_store)
+                   tracker_store=tracker_store,
+                   action_endpoint=action_endpoint)
+
+    def is_ready(self):
+        return self.policy_ensemble is not None
 
     def handle_message(
             self,
@@ -154,6 +254,11 @@ class Agent(object):
                                     message_preprocessor=message_preprocessor,
                                     **kwargs)
 
+        def noop(_):
+            logger.info("Ignoring message as there is no agent to handle it.")
+
+        if not self.policy_ensemble:
+            return noop(message)
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(message)
 
@@ -172,7 +277,7 @@ class Agent(object):
             self,
             message,  # type: UserMessage
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
-            **kwargs
+            **kwargs  # type: Any
     ):
         # type: (...) -> Dict[Text, Any]
         """Append a message to a dialogue - does not predict actions."""
@@ -183,9 +288,9 @@ class Agent(object):
 
     def execute_action(
             self,
-            sender_id,
+            sender_id,  # type: Text
             action,  # type: Text
-            output_channel
+            output_channel  # type: OutputChannel
     ):
         # type: (...) -> DialogueStateTracker
         """Handle a single message."""
@@ -245,7 +350,8 @@ class Agent(object):
         the prediction of that policy. When set to ``False`` the Memoization
         policies present in the policy ensemble will not make any predictions.
         Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. ``KerasPolicy``). Useful to test prediction
+        from a different policy (e.g. ``KerasPolicy``). Useful to test
+        prediction
         capabilities of an ensemble when ignoring memorized turns from the
         training data."""
 
@@ -312,7 +418,7 @@ class Agent(object):
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
-              **kwargs  # type: **Any
+              **kwargs  # type: Any
               ):
         # type: (...) -> None
         """Train the policies / policy ensemble using dialogue data from file.
@@ -369,7 +475,7 @@ class Agent(object):
                          "overwritten.".format(model_path))
 
     def persist(self, model_path, dump_flattened_stories=False):
-        # type: (Text) -> None
+        # type: (Text, bool) -> None
         """Persists this agent into a directory for later loading and usage."""
 
         self._clear_model_directory(model_path)
@@ -419,22 +525,24 @@ class Agent(object):
         # creates a processor
         self._ensure_agent_is_prepared()
         return MessageProcessor(
-            self.interpreter, self.policy_ensemble, self.domain,
-            self.tracker_store, self.nlg, message_preprocessor=preprocessor)
+                self.interpreter, self.policy_ensemble, self.domain,
+                self.tracker_store, self.nlg,
+                action_endpoint=self.action_endpoint,
+                message_preprocessor=preprocessor)
 
     @staticmethod
-    def _create_domain(domain, action_endpoint=None):
-        # type: (Union[Domain, Text]) -> Domain
+    def _create_domain(domain):
+        # type: (Union[None, Domain, Text]) -> Domain
 
         if isinstance(domain, string_types):
-            return TemplateDomain.load(domain, action_endpoint)
+            return Domain.load(domain)
         elif isinstance(domain, Domain):
             return domain
-        else:
+        elif domain is not None:
             raise ValueError(
-                "Invalid param `domain`. Expected a path to a domain "
-                "specification or a domain instance. But got "
-                "type '{}' with value '{}'".format(type(domain), domain))
+                    "Invalid param `domain`. Expected a path to a domain "
+                    "specification or a domain instance. But got "
+                    "type '{}' with value '{}'".format(type(domain), domain))
 
     @staticmethod
     def create_tracker_store(store, domain):
@@ -444,13 +552,6 @@ class Agent(object):
             return store
         else:
             return InMemoryTrackerStore(domain)
-
-    @staticmethod
-    def _create_interpreter(
-            interp  # type: Union[Text, NLI, None]
-    ):
-        # type: (...) -> NLI
-        return NaturalLanguageInterpreter.create(interp)
 
     @staticmethod
     def _create_ensemble(policies):
@@ -464,87 +565,6 @@ class Agent(object):
         else:
             passed_type = type(policies).__name__
             raise ValueError(
-                "Invalid param `policies`. Passed object is "
-                "of type '{}', but should be policy, an array of "
-                "policies, or a policy ensemble".format(passed_type))
-
-    @staticmethod
-    def init_model_from_server(model_server,  # type: EndpointConfig
-                               action_endpoint,  # type: Text
-                               model_directory  # type: Text
-                               ):
-        # type: (...) -> Optional[(Domain, PolicyEnsemble, Text)]
-        """Initialises a Rasa Core model from a URL."""
-
-        if not is_url(model_server.url):
-            raise InvalidURL(model_server.url)
-
-        new_hash = Agent._pull_model_and_return_hash(
-            model_server, model_directory, None)
-        domain_path = os.path.join(os.path.abspath(model_directory),
-                                   "domain.yml")
-        domain = TemplateDomain.load(domain_path, action_endpoint)
-        policy_ensemble = PolicyEnsemble.load(model_directory)
-
-        return domain, policy_ensemble, new_hash
-
-    def _update_model_from_server(self,
-                                  model_server,  # type: EndpointConfig
-                                  action_factory,  # type: Text
-                                  model_directory  # type: Text
-                                  ):
-        # type: (...) -> Optional[(Domain, PolicyEnsemble, Text)]
-        """Loads a zipped Rasa Core model from a URL."""
-
-        if not is_url(model_server.url):
-            raise InvalidURL(model_server.url)
-
-        new_model_dir = self._pull_model_and_return_hash(
-            model_server, model_directory, self.model_hash)
-        if new_model_dir:
-            domain_path = os.path.join(os.path.abspath(model_directory),
-                                       "domain.yml")
-            self.domain = TemplateDomain.load(domain_path, action_factory)
-            self.policy_ensemble = PolicyEnsemble.load(model_directory)
-        else:
-            logger.debug("No new model found at "
-                         "URL {}".format(model_server))
-
-    @staticmethod
-    def _pull_model_and_return_hash(model_server, model_directory, model_hash):
-        # type: (EndpointConfig, Text, Text) -> None
-        """Queries the model server and returns the value of the response's
-
-        <ETag> header which contains the model hash."""
-        header = {"If-None-Match": model_hash}
-        response = model_server.request(method="GET", headers=header)
-        response.raise_for_status()
-
-        if response.status_code == 204:
-            logger.debug("Model server returned 204 status code, indicating "
-                         "that no new model is available for hash {}"
-                         "".format(model_hash))
-            return response.headers.get("ETag")
-
-        zip_ref = zipfile.ZipFile(IOReader(response.content))
-        zip_ref.extractall(model_directory)
-        logger.debug("Unzipped model to {}"
-                     "".format(os.path.abspath(model_directory)))
-
-        return response.headers.get("ETag")
-
-    def _run_model_pulling_worker(self, wait):
-        while True:
-            self._update_model_from_server(
-                model_server=self.model_server,
-                action_factory=self.action_factory,
-                model_directory=self.path
-            )
-            time.sleep(wait)
-
-    def start_model_pulling_in_worker(self, wait):
-        # type: (int) -> None
-        worker = Thread(target=self._run_model_pulling_worker,
-                        args=(wait,))
-        worker.setDaemon(True)
-        worker.start()
+                    "Invalid param `policies`. Passed object is "
+                    "of type '{}', but should be policy, an array of "
+                    "policies, or a policy ensemble".format(passed_type))

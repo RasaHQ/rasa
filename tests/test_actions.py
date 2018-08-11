@@ -13,7 +13,7 @@ from rasa_core.actions import action
 from rasa_core.actions.action import (
     ActionRestart, UtterAction,
     ActionListen, RemoteAction)
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import EndpointConfig
@@ -46,8 +46,15 @@ def test_action_factory_module_import():
 
 
 def test_domain_action_instantiation():
-    instantiated_actions = TemplateDomain.instantiate_actions(
-            ["my_module.ActionTest", "utter_test"], None)
+    domain = Domain(
+            intent_properties={},
+            entities=[],
+            slots=[],
+            templates={},
+            action_names=["my_module.ActionTest", "utter_test"])
+
+    instantiated_actions = domain.actions(None)
+
     assert len(instantiated_actions) == 5
     assert instantiated_actions[0].name() == "action_listen"
     assert instantiated_actions[1].name() == "action_restart"
@@ -58,16 +65,20 @@ def test_domain_action_instantiation():
 
 def test_action_factory_fails_on_duplicated_actions():
     with pytest.raises(ValueError):
-        TemplateDomain.instantiate_actions(
-                ["action_listen", "random_name", "random_name"], None)
+        Domain(intent_properties={},
+               entities=[],
+               slots=[],
+               templates={},
+               action_names=["random_name", "random_name"])
 
 
 def test_action_factory_fails_on_duplicated_builtin_actions():
-    actions = ["action_listen",
-               "action_listen",
-               "utter_test"]
     with pytest.raises(ValueError):
-        TemplateDomain.instantiate_actions(actions, None)
+        Domain(intent_properties={},
+               entities=[],
+               slots=[],
+               templates={},
+               action_names=["action_listen", "random_name"])
 
 
 def test_remote_action_runs(default_dispatcher_collecting, default_domain):

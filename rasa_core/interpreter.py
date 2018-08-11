@@ -27,11 +27,35 @@ class NaturalLanguageInterpreter(object):
                 "messages into structured output.")
 
     @staticmethod
-    def create(obj):
+    def create(obj, endpoint=None):
         if isinstance(obj, NaturalLanguageInterpreter):
             return obj
         if isinstance(obj, str):
-            return RasaNLUInterpreter(model_directory=obj)
+            name_parts = os.path.split(obj)
+
+            if len(name_parts) == 1:
+                if endpoint:
+                    # using the default project name
+                    return RasaNLUHttpInterpreter(name_parts[0],
+                                                  endpoint)
+                else:
+                    return RasaNLUInterpreter(model_directory=obj)
+            elif len(name_parts) == 2:
+                if endpoint:
+                    return RasaNLUHttpInterpreter(name_parts[1],
+                                                  endpoint,
+                                                  name_parts[0])
+                else:
+                    return RasaNLUInterpreter(model_directory=obj)
+            else:
+                if endpoint:
+                    raise Exception(
+                        "You have configured an endpoint to use for "
+                        "the NLU model. To use it, you need to "
+                        "specify the model to use with "
+                        "`--nlu project/model`.")
+                else:
+                    return RasaNLUInterpreter(model_directory=obj)
         else:
             return RegexInterpreter()  # default interpreter
 

@@ -381,8 +381,7 @@ def start_online_learning_io(endpoint, on_finish, get_next_message=None):
 
 
 def serve_agent(agent, serve_forever=True, get_next_message=None):
-    app = server.create_app()
-    app.set_agent(agent)
+    app = server.create_app(agent)
 
     return serve_application(app, serve_forever, get_next_message)
 

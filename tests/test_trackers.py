@@ -13,7 +13,7 @@ from rasa_core import training, restore
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.events import (
     UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
@@ -24,7 +24,7 @@ from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
-domain = TemplateDomain.load("data/test_domains/default.yml")
+domain = Domain.load("data/test_domains/default.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):

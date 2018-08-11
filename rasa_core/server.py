@@ -9,7 +9,6 @@ import tempfile
 import zipfile
 from functools import wraps
 
-import typing
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
 from typing import List
@@ -17,19 +16,12 @@ from typing import Text, Optional
 from typing import Union
 
 from rasa_core import utils, constants
-from rasa_core.agent import Agent
 from rasa_core.channels import (
-    CollectingOutputChannel, InputChannel,
-    UserMessage)
-from rasa_core.channels import channel
+    CollectingOutputChannel, UserMessage)
 from rasa_core.events import Event
-from rasa_core.tracker_store import TrackerStore
+from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.utils import EndpointConfig
 from rasa_core.version import __version__
-
-if typing.TYPE_CHECKING:
-    from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +32,7 @@ def ensure_loaded_agent(agent):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            __agent = agent()
-            if not __agent:
+            if not agent.is_ready():
                 return Response(
                         "No agent loaded. To continue processing, a model "
                         "of a trained agent needs to be loaded.",
@@ -58,7 +49,6 @@ def request_parameters():
     if request.method == 'GET':
         return request.args.to_dict()
     else:
-
         try:
             return request.get_json(force=True)
         except ValueError as e:
@@ -84,80 +74,22 @@ def requires_auth(token=None):
     return decorator
 
 
-def _create_agent(
-        model_directory,  # type: Text
-        interpreter,  # type: Union[Text, NLI, None]
-        action_endpoint=None,  # type: Optional[EndpointConfig]
-        tracker_store=None,  # type: Optional[TrackerStore]
-        generator=None,  # type: Optional[EndpointConfig]
-        model_server=None,  # type: Optional[EndpointConfig]
-):
-    # type: (...) -> Optional[Agent]
-    try:
-
-        return Agent.load(model_directory, interpreter,
-                          tracker_store=tracker_store,
-                          action_endpoint=action_endpoint,
-                          model_server=model_server,
-                          generator=generator)
-    except Exception as e:
-        logger.error("Failed to load any agent model. Running "
-                     "Rasa Core server with out loaded model now. {}"
-                     "".format(e))
-        return None
-
-
-def create_app(model_directory=None,  # type: Optional[Text]
-               interpreter=None,  # type: Union[Text, NLI, None]
-               input_channels=None,  # type: Optional[List[InputChannel]]
+def create_app(agent,
                cors_origins=None,  # type: Optional[Union[Text, List[Text]]]
                auth_token=None,  # type: Optional[Text]
-               tracker_store=None,  # type: Optional[TrackerStore]
-               endpoints=None
                ):
     """Class representing a Rasa Core HTTP server."""
-    from rasa_core import run
 
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
+    cors_origins = cors_origins or []
 
-    if not cors_origins:
-        cors_origins = []
-
-    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
-
-    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
-
-    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
-
-    model_endpoint = utils.read_endpoint_config(endpoints, "models")
-
-    interpreter = run.interpreter_from_args(interpreter, nlu_endpoint)
-
-    # this needs to be an array, so we can modify it in the nested functions...
-    _agent = [_create_agent(model_directory, interpreter, action_endpoint,
-                            tracker_store, nlg_endpoint, model_endpoint)]
-
-    def agent():
-        if _agent and _agent[0]:
-            return _agent[0]
-        else:
-            return None
-
-    def set_agent(a):
-        _agent[0] = a
-
-    app.set_agent = set_agent
-
-    def handle_message(text_mesage):
-        def noop(text_message):
-            logger.info("Ignoring message as there is no agent to handle it.")
-
-        a = agent()
-        if a:
-            return a.handle_message(text_mesage)
-        else:
-            return noop(text_mesage)
+    if not agent.is_ready():
+        logger.info("The loaded agent is not ready to be used yet "
+                    "(e.g. only the NLU interpreter is configured, "
+                    "but no Core model is loaded). This is NOT AN ISSUE "
+                    "some endpoints are not available until the agent "
+                    "is ready though.")
 
     @app.route("/",
                methods=['GET', 'OPTIONS'])
@@ -189,12 +121,12 @@ def create_app(model_directory=None,  # type: Optional[Text]
 
         try:
             out = CollectingOutputChannel()
-            agent().execute_action(sender_id,
-                                   action_to_execute,
-                                   out)
+            agent.execute_action(sender_id,
+                                 action_to_execute,
+                                 out)
 
             # retrieve tracker and set to requested state
-            tracker = agent().tracker_store.get_or_create_tracker(sender_id)
+            tracker = agent.tracker_store.get_or_create_tracker(sender_id)
             state = tracker.current_state(should_include_events=True)
             return jsonify({"tracker": state,
                             "messages": out.messages})
@@ -220,9 +152,9 @@ def create_app(model_directory=None,  # type: Optional[Text]
 
         request_params = request.get_json(force=True)
         evt = Event.from_parameters(request_params)
-        tracker = agent().tracker_store.get_or_create_tracker(sender_id)
+        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
         tracker.update(evt)
-        agent().tracker_store.save(tracker)
+        agent.tracker_store.save(tracker)
         return jsonify(tracker.current_state(should_include_events=True))
 
     @app.route("/conversations/<sender_id>/tracker/events",
@@ -236,9 +168,9 @@ def create_app(model_directory=None,  # type: Optional[Text]
         request_params = request.get_json(force=True)
         tracker = DialogueStateTracker.from_dict(sender_id,
                                                  request_params,
-                                                 agent().domain.slots)
+                                                 agent.domain.slots)
         # will override an existing tracker with the same id!
-        agent().tracker_store.save(tracker)
+        agent.tracker_store.save(tracker)
         return jsonify(tracker.current_state(should_include_events=True))
 
     @app.route("/conversations",
@@ -247,7 +179,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
     @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def list_trackers():
-        return jsonify(list(agent().tracker_store.keys()))
+        return jsonify(list(agent.tracker_store.keys()))
 
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
@@ -265,7 +197,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
         until_time = request.args.get('until', None)
 
         # retrieve tracker and set to requested state
-        tracker = agent().tracker_store.get_or_create_tracker(sender_id)
+        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
         if until_time is not None:
             tracker = tracker.travel_back_in_time(float(until_time))
 
@@ -297,9 +229,9 @@ def create_app(model_directory=None,  # type: Optional[Text]
             # Set the output channel
             out = CollectingOutputChannel()
             # Fetches the appropriate bot response in a json format
-            responses = agent().handle_message(message,
-                                               output_channel=out,
-                                               sender_id=sender_id)
+            responses = agent.handle_text(message,
+                                          output_channel=out,
+                                          sender_id=sender_id)
             return jsonify(responses)
 
         except Exception as e:
@@ -317,7 +249,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
     def predict(sender_id):
         try:
             # Fetches the appropriate bot response in a json format
-            responses = agent().predict_next(sender_id)
+            responses = agent.predict_next(sender_id)
             return jsonify(responses)
 
         except Exception as e:
@@ -348,7 +280,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
 
         try:
             usermsg = UserMessage(message, None, sender_id, parse_data)
-            responses = agent().log_message(usermsg)
+            responses = agent.log_message(usermsg)
             return jsonify(responses)
 
         except Exception as e:
@@ -373,6 +305,7 @@ def create_app(model_directory=None,  # type: Optional[Text]
         logger.info("Received new model through REST interface.")
         zipped_path = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
         zipped_path.close()
+        model_directory = tempfile.mkdtemp()
 
         model_file.save(zipped_path.name)
 
@@ -384,8 +317,8 @@ def create_app(model_directory=None,  # type: Optional[Text]
         logger.debug("Unzipped model to {}".format(
                 os.path.abspath(model_directory)))
 
-        _agent[0] = _create_agent(model_directory, interpreter, tracker_store,
-                                  action_endpoint, nlg_endpoint)
+        ensemble = PolicyEnsemble.load(model_directory)
+        agent.policy_ensemble = ensemble
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 
@@ -396,12 +329,13 @@ def create_app(model_directory=None,  # type: Optional[Text]
     @ensure_loaded_agent(agent)
     def get_domain():
         """Get current domain in yaml or json format."""
+
         accepts = request.headers.get("Accept", default="application/json")
         if accepts.endswith("json"):
-            domain = agent().domain.as_dict()
+            domain = agent.domain.as_dict()
             return jsonify(domain)
         elif accepts.endswith("yml"):
-            domain_yaml = agent().domain.as_yaml()
+            domain_yaml = agent.domain.as_yaml()
             return Response(domain_yaml,
                             status=200,
                             content_type="application/x-yml")
@@ -425,13 +359,13 @@ def create_app(model_directory=None,  # type: Optional[Text]
         request_params = request.get_json(force=True)
         tracker = DialogueStateTracker.from_dict(UserMessage.DEFAULT_SENDER_ID,
                                                  request_params,
-                                                 agent().domain.slots)
+                                                 agent.domain.slots)
 
         try:
             # Fetches the appropriate bot response in a json format
-            responses = agent().continue_training([tracker],
-                                                  epochs=epochs,
-                                                  batch_size=batch_size)
+            responses = agent.continue_training([tracker],
+                                                epochs=epochs,
+                                                batch_size=batch_size)
             return jsonify(responses)
 
         except Exception as e:
@@ -441,7 +375,4 @@ def create_app(model_directory=None,  # type: Optional[Text]
                             status=500,
                             content_type="application/json")
 
-    if input_channels:
-        channel.register_blueprints(input_channels, app, handle_message,
-                                    route="/webhooks/")
     return app
