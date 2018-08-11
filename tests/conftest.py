@@ -20,7 +20,8 @@ from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
 from rasa_core.policies.memoization import \
-    MemoizationPolicy, AugmentedMemoizationPolicy
+    (
+    MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
@@ -93,12 +94,12 @@ def default_processor(default_domain, default_nlg):
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
     train.train_dialogue_model(
-        domain_file="examples/moodbot/domain.yml",
-        stories_file="examples/moodbot/data/stories.md",
-        output_path=MOODBOT_MODEL_PATH,
-        nlu_model_path=None,
-        max_history=None,
-        kwargs=None
+            domain_file="examples/moodbot/domain.yml",
+            stories_file="examples/moodbot/data/stories.md",
+            output_path=MOODBOT_MODEL_PATH,
+            nlu_model_path=None,
+            max_history=None,
+            kwargs=None
     )
 
     return MOODBOT_MODEL_PATH
@@ -143,7 +144,7 @@ def core_server(tmpdir_factory):
     channel.register([RestInput()],
                      app,
                      agent.handle_message,
-                                "/webhooks/")
+                     "/webhooks/")
     return app
 
 
