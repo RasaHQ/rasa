@@ -209,6 +209,7 @@ If you are running these commands locally, run:
 
 If you are running the cells here in the docs, run this cell:
 
+**This will not work if you haven't run the cells above!**
 
 .. runnable::
    :description: core-chat-without-nlu
@@ -360,6 +361,9 @@ If you are running these commands locally, run:
    python -m rasa_core.run -d models/dialogue -u models/current/nlu
 
 If you are running the cells here in the docs, run this cell:
+
+
+**This will not work if you haven't run the cells above!**
 
 .. runnable::
    :description: core-chat-with-nlu
