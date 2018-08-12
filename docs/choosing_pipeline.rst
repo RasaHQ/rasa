@@ -51,6 +51,12 @@ You can read more about this topic `here <https://medium.com/rasa-blog/supervise
 There are also the ``mitie`` and ``mitie_sklearn`` pipelines, which use MITIE as a source of word vectors. 
 We do not recommend that you use these; they are likely to be deprecated in a future release.
 
+.. note::
+
+    Intent classification is independent of entity extraction. So sometimes
+    NLU will get the intent right but entities wrong, or the other way around. 
+    You need to provide enough data for both intents and entities. 
+
 
 Multiple Intents
 ~~~~~~~~~~~~~~~~
