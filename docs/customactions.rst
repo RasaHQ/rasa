@@ -3,23 +3,37 @@
 Custom Actions
 ==============
 
+
 There are two kinds of actions in Rasa Core.
 The simplest is an ``UtterAction``, which just sends a message to the user
 (see :ref:`responses`).
 To define an ``UtterAction``, add the name of the action to your domain file,
-and make sure there is a template defined with the same name as the action.
+and make sure there is a template defined with the same name as the action:
 
+.. code-block:: markdown
 
-**What about more complicated actions?**
+    templates:
+      my_custom_utter_action:
+        - "this is what I want my action to say!"
+
+    actions:
+        - my_custom_utter_action
+
+It is conventional (but not required!) to start the name of an ``UtterAction`` with ``utter_``.
+
+Actions Which Execute Code
+--------------------------
+
 An action can run any code you want. 
 Custom actions can turn on the lights,
 add an event to a calendar, check a user's bank balance, or anything else you can imagine.
 
-To tell Rasa Core what happened when an action was executed, it can return a list of ``events``.
-There is an example of a ``SlotSet`` event :ref:`custom_action_example`, and a full list of possible
+Rasa Core will tell your server which action to execute. 
+To tell Rasa Core what happened when an action was executed, an action can return a list of ``events``.
+There is an example of a ``SlotSet`` event :ref:`below <custom_action_example>` , and a full list of possible
 events in :ref:`events`.
 
-Rasa Core will tell your server which action to execute. 
+
 For actions written in python, we have a convenient SDK which starts this action server for you.
 If your actions are defined in a file called ``actions.py``, run this command:
 
@@ -37,6 +51,8 @@ Whichever option you go for, you will then need to add an entry into your
    action_endpoint:
      url: http://localhost:5055/webhook
 
+.. _custom_action_example:
+
 Custom Actions Written in Python
 --------------------------------
 
@@ -44,7 +60,7 @@ In a restaurant bot, if the user says "show me a Mexican restaurant",
 your bot could execute the action ``ActionCheckRestaurants``,
 which might look like this:
 
-.. _custom_action_example
+
 
 .. testcode::
 
