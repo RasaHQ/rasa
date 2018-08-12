@@ -24,11 +24,11 @@ The Rasa Core dialogue engine
 
 .. chat-bubble::
    :text: Rather than a bunch of <code>if/else</code> statements, the logic of your bot is
-      based on a probabilistic model trained on example conversations.
+      based on a machine learning model trained on example conversations.
    :sender: bot
 
 .. chat-bubble::
-   :text: That sounds harder than writing a few <code>if</code> statements.
+   :text: That sounds harder than writing a few if statements.
    :sender: user
 
 
