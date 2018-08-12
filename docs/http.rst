@@ -30,7 +30,7 @@ works if all of your actions are simple utterances (messages sent to the user).
 It can make use of custom actions, but then these *have* to be implemented in 
 python and executed on the machine that runs the server. 
 
-To activate the remote mode, include
+To activate the remote mode, include:
 
 .. code-block:: yaml
 
@@ -51,7 +51,7 @@ within your ``domain.yml`` (you can find an example in
 Running the server
 ------------------
 You can run a simple http server that handles requests using your
-models with
+models with:
 
 .. code-block:: bash
 
@@ -73,7 +73,7 @@ You can also configure the http server to fetch models from another URL:
 
 The model server is specified in an ``EndpointConfig`` file (``my_endpoints
 .yaml``), where you specify the server URL Rasa Core regularly queries for
-zipped Rasa Core models
+zipped Rasa Core models:
 
 .. code-block:: yaml
 
@@ -91,7 +91,7 @@ provide a model with a different hash from the one you sent, it should send it
 in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
 Core expects an empty response with a ``204`` status code.
 
-An example request Rasa Core might make to your model server looks like this
+An example request Rasa Core might make to your model server looks like this:
 
 .. code-block:: bash
 
@@ -103,7 +103,7 @@ Starting a conversation
 -----------------------
 You need to do a ``POST`` to the ``/conversation/<sender_id>/parse`` endpoint.
 ``<sender_id>`` is the conversation id (e.g. ``default`` if you just have one
-user, or the facebook user id or any other identifier).
+user, or the facebook user id or any other identifier):
 
 .. code-block:: bash
 

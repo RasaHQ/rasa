@@ -15,7 +15,7 @@ Don't worry! Rasa has you covered.
 
 To schedule an action for later execution, there is a special event called ``ReminderScheduled``. 
 Let's make our example a bit more specific: 
-We want a confirmation to book a restaurant table - without it the reservation won't be made.
+We want a confirmation to book a restaurant table - without it the reservation won't be made:
 
 .. code-block:: md
     :linenos:

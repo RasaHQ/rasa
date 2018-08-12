@@ -85,7 +85,7 @@ to use an ``OR`` statement. For example if you ask the user to confirm something
 and we want to treat the ``affirm`` and ``thankyou`` intents in the same way.
 The story below will be converted into two stories at training time. 
 Just like checkpoints, ``OR`` statements can be useful, but if you are using 
-a lot of them, it is probably better to restructure your domain and/or intents.
+a lot of them, it is probably better to restructure your domain and/or intents:
 
 .. code-block:: md
 

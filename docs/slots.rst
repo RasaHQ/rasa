@@ -97,7 +97,7 @@ In this case, your stories need to include the slots.
 For example, you have a custom action to fetch a user's profile, and 
 you have a ``categorical`` slot called ``account_type``. 
 When the ``fetch_profile`` action is run, it returns a :class:`rasa_core.events.SlotSet`
-event. 
+event:
 
 .. code-block:: yaml
 
@@ -190,7 +190,7 @@ Our slot has three possible "values", which we can represent with a vector of le
        return r
 
 Now we also need some training stories, so that Rasa Core
-can learn from these how to handle the different situations.
+can learn from these how to handle the different situations:
 
 
 .. code-block:: md

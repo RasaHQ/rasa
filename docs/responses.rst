@@ -6,7 +6,7 @@ Bot Responses
 If you want your bot to respond to user messages, you need to manage
 the bots responses. In the training data for your bot,
 :ref:`your stories<stories>`, you specify the actions your bot
-executes when he encounters the dialogue example. These actions
+should execute. These actions
 can use utterances to send messages back to the user.
 
 There are two ways to manage these utterances:

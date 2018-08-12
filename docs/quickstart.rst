@@ -402,7 +402,7 @@ into ``fb_credentials.yml``:
 If you are new to Facebook Messenger bots, head over to
 :ref:`facebook_connector` for an explanation of the different values.
 
-After setting that up, we can now run the bot using
+After setting that up, we can now run the bot using:
 
 .. code-block:: bash
 

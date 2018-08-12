@@ -64,7 +64,7 @@ incoming message like a normal message with the intent ``greet`` and the entity
 ``name`` with value ``Rasa``.
 
 If you want to specify an input string, that contains multiple entity values of
-the same type you can use
+the same type, you can use:
 
 .. code-block:: bash
 
@@ -72,14 +72,14 @@ the same type you can use
 
 Which corresponds to a message ``"I want to add milk and salt to my list"``.
 
-If you want to specify the intent confidence you can use
+If you want to specify the intent confidence, you can use:
 
 .. code-block:: bash
 
     /deny@0.825
 
 Which feeds the intent ``greet`` with confidence ``0.825``.  Combining confidence
-and entities
+and entities:
 
 .. code-block:: bash
 

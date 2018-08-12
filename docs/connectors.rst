@@ -4,6 +4,7 @@ Chat & Voice platforms
 ======================
 
 Here's how to connect your conversational AI to the outside world.
+
 See :ref:`here <custom_channels>` for details on how to build a custom input channel.
 
 .. contents::
@@ -24,7 +25,7 @@ Facebook Messenger Setup
 
 Using the run script
 ^^^^^^^^^^^^^^^^^^^^
-If you want to connect to facebook using the run script, e.g. using
+If you want to connect to facebook using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -88,7 +89,7 @@ Slack Setup
 
 Using run script
 ^^^^^^^^^^^^^^^^
-If you want to connect to the slack input channel using the run script, e.g. using
+If you want to connect to the slack input channel using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -157,7 +158,7 @@ Mattermost Setup
 
 Using run script
 ^^^^^^^^^^^^^^^^
-If you want to connect to the mattermost input channel using the run script, e.g. using
+If you want to connect to the mattermost input channel using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -225,7 +226,7 @@ Telegram Setup
 Using run script
 ^^^^^^^^^^^^^^^^
 
-If you want to connect to telegram using the run script, e.g. using
+If you want to connect to telegram using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -288,7 +289,7 @@ Twilio Setup
 Using run script
 ^^^^^^^^^^^^^^^^
 
-If you want to connect to the twilio input channel using the run script, e.g. using
+If you want to connect to the twilio input channel using the run script, e.g. using:
 
 .. code-block:: bash
 

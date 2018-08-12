@@ -21,7 +21,7 @@ The full run command looks like this:
       --mount type=bind,source=<PATH_TO_NLU_MODEL_DIR>,target=/app/nlu \
       rasa_core
 
-You also have the option to use the container to train a model with
+You also have the option to use the container to train a model with:
 
 .. code-block:: bash
 

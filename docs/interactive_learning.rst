@@ -28,7 +28,7 @@ Run the following to start interactive learning:
 The first command starts the action server (see :ref:`customactions`).
 
 The second command starts the bot in interactive mode.
-In interactive mode, the bot will ask you to confirm it has chosen the right action before proceeding.
+In interactive mode, the bot will ask you to confirm it has chosen the right action before proceeding:
 
 
 .. code-block:: text
@@ -89,7 +89,7 @@ possibilities we wrote in the stories:
 
 Now we type ``2``, because it chose the wrong action, and we get a new
 prompt asking for the correct one. This also shows the probabilities the
-model has assigned to each of the actions.
+model has assigned to each of the actions:
 
 .. code-block:: text
 

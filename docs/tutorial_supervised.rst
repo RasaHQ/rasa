@@ -123,7 +123,7 @@ And training data ``franken_data.json`` (see
 `NLU Dataformat <https://nlu.rasa.com/dataformat.html>`_ for details
 about the training data format).
 
-We can train the NLU model using
+We can train the NLU model using:
 
 .. code-block:: bash
 
@@ -136,7 +136,7 @@ or using python code
    :linenos:
    :pyobject: train_nlu
 
-and calling
+and calling:
 
 .. code-block:: bash
 
@@ -189,7 +189,7 @@ This code creates the policies to be trained and uses the story training
 data to train and persist (store) a model. The goal of the trained policy
 is to predict the next action, given the current state of the bot.
 
-To train the dialogue policy from the command line, run
+To train the dialogue policy from the command line, run:
 
 .. code-block:: bash
 
@@ -245,7 +245,7 @@ the ``ConsoleInputChannel``. Responses are printed to the command line as well.
 
 You can find a complete example of how to load an agent and chat with it on the
 command line in the restaurant bot's ``bot.py`` ``run`` method.
-To run the bot from the command line, call
+To run the bot from the command line, call:
 
 .. code-block:: bash
 

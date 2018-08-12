@@ -71,7 +71,7 @@ There have been some API changes to classes and methods:
   well as the configuration and metadata). Please make sure to retrain
   a model before trying to use it with this improved version.
 
-- loading data should be done either using
+- loading data should be done either using:
 
   .. code-block:: python
 
@@ -123,7 +123,7 @@ There have been some API changes to classes and methods:
 0.7.x to 0.8.0
 --------------
 
-- Credentials for the facebook connector changed. Instead of providing
+- Credentials for the facebook connector changed. Instead of providing:
 
   .. code-block:: yaml
 
@@ -157,7 +157,7 @@ There have been some API changes to classes and methods:
 
 - Story file format changed from ``* _intent_greet[name=Rasa]``
   to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
-  deprecated). Instead of writing
+  deprecated). Instead of writing:
 
   .. code-block:: md
 

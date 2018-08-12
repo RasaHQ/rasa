@@ -20,6 +20,7 @@ and make sure there is a template defined with the same name as the action:
         - my_custom_utter_action
 
 It is conventional (but not required!) to start the name of an ``UtterAction`` with ``utter_``.
+See :ref:`responses` for more details.
 
 Actions Which Execute Code
 --------------------------
