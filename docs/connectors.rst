@@ -4,6 +4,7 @@ Chat & Voice platforms
 ======================
 
 Here's how to connect your conversational AI to the outside world.
+See :ref:`here <custom_channels>` for details on how to build a custom input channel.
 
 .. contents::
 
@@ -357,11 +358,19 @@ The command to run a ngrok instance for port 5002 for example would be:
 
 This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  This basically takes the code running on your local machine and punches it through the internet at the ngrok address supplied.
 
+.. _custom_channels:
 
 Custom Channels
 ---------------
 
-You can also implement your own, custom channel. 
+If you want to put a widget on your website so that people can talk to your bot, check out these
+two projects:
+
+- `Rasa Webchat <https://github.com/mrbot-ai/rasa-webchat>`_ uses sockets.
+- `Chatroom <https://github.com/scalableminds/chatroom>`_ uses regular HTTP requests.
+
+You can also implement your own, fully custom channel.
+
 You can use the ``rasa_core.channels.custom.CustomInput`` class as a template.
 The most important methods to define are ``CustomInput.receive`` and ``CustomOutput.send_text_message``.
 These specify how Rasa Core will read incoming messages form the requests sent by your app, and the format
