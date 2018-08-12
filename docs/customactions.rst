@@ -4,24 +4,31 @@ Custom Actions
 ==============
 
 There are two kinds of actions in Rasa Core.
-The simplest are ``UtterActions``, which just send a message to the user
-(see :ref:`responses`). You define them by adding an entry to the action list in
-your :class:`rasa_core.domain.Domain`. There also needs to be a matching
-utterance. For example, if there's an action ``utter_greet`` then there
-should also be an utterance template called ``utter_greet`` in your domain.
+The simplest is an ``UtterAction``, which just sends a message to the user
+(see :ref:`responses`).
+To define an ``UtterAction``, add the name of the action to your domain file,
+and make sure there is a template defined with the same name as the action.
 
 
 **What about more complicated actions?**
-In general, an action can run any code you like. Custom actions can turn on the lights,
+An action can run any code you want. 
+Custom actions can turn on the lights,
 add an event to a calendar, check a user's bank balance, or anything else you can imagine.
-To execute these more complex actions, you need to run a separate server alongside the core server.
-If these are stored in a file called ``actions.py``, you can do this with our SDK as follows:
+
+To tell Rasa Core what happened when an action was executed, it can return a list of ``events``.
+There is an example of a ``SlotSet`` event :ref:`custom_action_example`, and a full list of possible
+events in :ref:`events`.
+
+Rasa Core will tell your server which action to execute. 
+For actions written in python, we have a convenient SDK which starts this action server for you.
+If your actions are defined in a file called ``actions.py``, run this command:
 
 .. code-block:: bash
 
     python -m rasa_core_sdk.endpoint --actions actions
 
-You can also choose to start the server with actions in a different language.
+However, you can also create a server in node.js, .NET, java, or any other language and define your acitons there.
+
 Whichever option you go for, you will then need to add an entry into your
 ``endpoints.yml`` as follows:
 
@@ -37,6 +44,7 @@ In a restaurant bot, if the user says "show me a Mexican restaurant",
 your bot could execute the action ``ActionCheckRestaurants``,
 which might look like this:
 
+.. _custom_action_example
 
 .. testcode::
 
