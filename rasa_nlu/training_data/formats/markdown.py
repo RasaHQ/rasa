@@ -7,7 +7,7 @@ import re
 import logging
 
 from rasa_nlu.training_data import Message, TrainingData
-from rasa_nlu.training_data.util import check_duplicate_synonym
+from rasa_nlu.training_data.util import check_duplicate_synonym, generate_lookup_regex
 from rasa_nlu.utils import build_entity
 
 from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader, TrainingDataWriter
@@ -15,7 +15,8 @@ from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader, Trai
 INTENT = "intent"
 SYNONYM = "synonym"
 REGEX = "regex"
-available_sections = [INTENT, SYNONYM, REGEX]
+LOOKUP = 'lookup'
+available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 ent_regex = re.compile(r'\[(?P<entity_text>[^\]]+)'
                        r'\]\((?P<entity>\w*?)'
                        r'(?:\:(?P<value>[^)]+))?\)')  # [entity_text](entity_type(:entity_synonym)?)
@@ -48,7 +49,7 @@ class MarkdownReader(TrainingDataReader):
                 self._set_current_section(header[0], header[1])
             else:
                 self._parse_item(line)
-
+        print(self.regex_features)
         return TrainingData(self.training_examples, self.entity_synonyms, self.regex_features)
 
     @staticmethod
@@ -81,8 +82,11 @@ class MarkdownReader(TrainingDataReader):
                 self.training_examples.append(parsed)
             elif self.current_section == SYNONYM:
                 self._add_synonym(item, self.current_title)
-            else:
+            elif self.current_section == REGEX:
                 self.regex_features.append({"name": self.current_title, "pattern": item})
+            elif self.current_section == LOOKUP:
+                lookup_regex = generate_lookup_regex(item)
+                self.regex_features.append({"name": self.current_title, "pattern": lookup_regex})
 
     def _find_entities_in_training_example(self, example):
         """Extracts entities from a markdown intent example."""

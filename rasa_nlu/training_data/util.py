@@ -24,3 +24,14 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
     if text in entity_synonyms and entity_synonyms[text] != syn:
         logger.warning("Found inconsistent entity synonyms while {0}, overwriting {1}->{2}"
                        "with {1}->{2} during merge".format(context_str, text, entity_synonyms[text], syn))
+
+
+def generate_lookup_regex(fname):
+    # takes a lookup filename of a comma-separated list and creates a giant regex out of the contents.
+    lookup_elements = []
+    with open(fname, 'r') as f:
+        for l in f.readlines():
+            new_elemnts = [e.strip() for e in l.split(',')]
+            lookup_elements += new_elemnts
+    regex_string = '(?i)(' + '|'.join(lookup_elements) + ')'
+    return regex_string
