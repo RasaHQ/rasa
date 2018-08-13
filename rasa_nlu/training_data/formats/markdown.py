@@ -49,7 +49,6 @@ class MarkdownReader(TrainingDataReader):
                 self._set_current_section(header[0], header[1])
             else:
                 self._parse_item(line)
-        print(self.regex_features)
         return TrainingData(self.training_examples, self.entity_synonyms, self.regex_features)
 
     @staticmethod
