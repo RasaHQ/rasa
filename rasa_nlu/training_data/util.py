@@ -27,7 +27,7 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
                        "with {1}->{2} during merge".format(context_str, text, entity_synonyms[text], syn))
 
 
-def generate_lookup_regex(file_path, print_data_size=False):
+def generate_lookup_regex(file_path, print_data_size=True):
     # takes a lookup filename of a comma-separated list and creates a giant regex out of the contents.
     lookup_elements = []
     with open(file_path, 'r') as f:
@@ -38,5 +38,5 @@ def generate_lookup_regex(file_path, print_data_size=False):
     if print_data_size:
         num_words = len(lookup_elements)
         regex_size = sys.getsizeof(regex_string)
-        print("found {} words in lookup table '{}' with a size of {:.2e} bytes".format(num_words,file_path,regex_size))
+        logger.info("found {} words in lookup table '{}' with a size of {:.2e} bytes".format(num_words,file_path,regex_size))
     return regex_string
