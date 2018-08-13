@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 
+- ability to specify lookup tables in training data
 Changed
 -------
 

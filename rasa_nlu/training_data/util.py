@@ -6,6 +6,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +27,16 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
                        "with {1}->{2} during merge".format(context_str, text, entity_synonyms[text], syn))
 
 
-def generate_lookup_regex(fname):
+def generate_lookup_regex(file_path, print_data_size=False):
     # takes a lookup filename of a comma-separated list and creates a giant regex out of the contents.
     lookup_elements = []
-    with open(fname, 'r') as f:
+    with open(file_path, 'r') as f:
         for l in f.readlines():
             new_elemnts = [e.strip() for e in l.split(',')]
             lookup_elements += new_elemnts
     regex_string = '(?i)(' + '|'.join(lookup_elements) + ')'
+    if print_data_size:
+        num_words = len(lookup_elements)
+        regex_size = sys.getsizeof(regex_string)
+        print("found {} words in lookup table '{}' with a size of {:.2e} bytes".format(num_words,file_path,regex_size))
     return regex_string
