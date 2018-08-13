@@ -5,6 +5,10 @@ from __future__ import unicode_literals
 
 import logging
 import os
+
+from gevent.pywsgi import WSGIServer
+
+import rasa_core
 import shutil
 import tempfile
 import time
@@ -17,8 +21,8 @@ from requests.exceptions import ConnectionError, InvalidURL
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
-from rasa_core import training
-from rasa_core.channels import UserMessage, OutputChannel
+from rasa_core import training, constants
+from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain, check_domain_sanity
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -449,6 +453,30 @@ class Agent(object):
 
         self.policy_ensemble.train(training_trackers, self.domain,
                                    **kwargs)
+
+    def handle_channels(self, channels,
+                        http_port=constants.DEFAULT_SERVER_PORT,
+                        serve_forever=True):
+        # type: (List[InputChannel], int, bool) -> WSGIServer
+        """Start a webserver attaching the input channels and handling msgs.
+
+        If ``serve_forever`` is set to ``True``, this call will be blocking.
+        Otherwise the webserver will be started, and the method will
+        return afterwards."""
+        from flask import Flask
+
+        app = Flask(__name__)
+        rasa_core.channels.channel.register(channels,
+                                            app,
+                                            self.handle_message,
+                                            route="/webhooks/")
+
+        http_server = WSGIServer(('0.0.0.0', http_port), app)
+        http_server.start()
+
+        if serve_forever:
+            http_server.serve_forever()
+        return http_server
 
     @staticmethod
     def _clear_model_directory(model_path):
