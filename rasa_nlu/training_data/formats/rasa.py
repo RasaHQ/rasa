@@ -10,7 +10,7 @@ from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter)
-from rasa_nlu.training_data.util import transform_entity_synonyms
+from rasa_nlu.training_data.util import transform_entity_synonyms, generate_lookup_regex
 from rasa_nlu.utils import json_to_string
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,13 @@ class RasaReader(JsonTrainingDataReader):
         entity_examples = data.get("entity_examples", [])
         entity_synonyms = data.get("entity_synonyms", [])
         regex_features = data.get("regex_features", [])
+        lookup_tables = data.get("lookup_tables", [])
+
+        # generates regexes from lookup tables and adds to regex features
+        lookup_regexes = [{'name': t['name'],
+                           'pattern': str(generate_lookup_regex(t['fname']))}
+                            for t in lookup_tables]
+        regex_features += lookup_regexes
 
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
