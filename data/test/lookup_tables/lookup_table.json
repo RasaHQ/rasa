@@ -1,0 +1,21 @@
+{
+  "rasa_nlu_data": {
+    "lookup_tables": [
+      {
+        "name": "plates",
+        "file_path": "data/test/lookup_tables/plates.txt"
+      },
+      {
+        "name": "drinks",
+        "file_path": "data/test/lookup_tables/drinks.txt"
+      }      
+    ],    
+    "common_examples": [
+      {
+        "text": "hey", 
+        "intent": "greet", 
+        "entities": []
+      }
+    ]
+  }
+}

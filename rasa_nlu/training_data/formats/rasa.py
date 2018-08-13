@@ -31,7 +31,7 @@ class RasaReader(JsonTrainingDataReader):
 
         # generates regexes from lookup tables and adds to regex features
         lookup_regexes = [{'name': t['name'],
-                           'pattern': str(generate_lookup_regex(t['fname']))}
+                           'pattern': str(generate_lookup_regex(t['file_path']))}
                             for t in lookup_tables]
         regex_features += lookup_regexes
 
@@ -126,6 +126,14 @@ def _rasa_nlu_data_schema():
         }
     }
 
+    lookup_table_schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "file_path": {"type": "string"},
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
@@ -147,6 +155,10 @@ def _rasa_nlu_data_schema():
                     "entity_examples": {
                         "type": "array",
                         "items": training_example_schema
+                    },
+                    "lookup_tables": {
+                        "type": "array",
+                        "items": lookup_table_schema
                     }
                 }
             }

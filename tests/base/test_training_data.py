@@ -116,6 +116,22 @@ def test_markdown_single_sections():
                                            'Chinese': 'chinese'}
 
 
+def test_lookup_table_json():
+    td_lookup = training_data.load_data('data/test/lookup_tables/lookup_table.json')
+    assert td_lookup.regex_features[0]['name'] == 'drinks'
+    assert td_lookup.regex_features[0]['pattern'] == '(?i)(mojito|lemonade|sweet berry wine|tea|club mate)'    
+    assert td_lookup.regex_features[1]['name'] == 'plates'
+    assert td_lookup.regex_features[1]['pattern'] == '(?i)(tacos|beef|mapo tofu|burrito|lettuce wrap)'
+
+
+def test_lookup_table_md():
+    td_lookup = training_data.load_data('data/test/lookup_tables/lookup_table.md')
+    assert td_lookup.regex_features[0]['name'] == 'drinks'
+    assert td_lookup.regex_features[0]['pattern'] == '(?i)(mojito|lemonade|sweet berry wine|tea|club mate)'    
+    assert td_lookup.regex_features[1]['name'] == 'plates'
+    assert td_lookup.regex_features[1]['pattern'] == '(?i)(tacos|beef|mapo tofu|burrito|lettuce wrap)'
+
+
 def test_repeated_entities():
     data = """
 {
