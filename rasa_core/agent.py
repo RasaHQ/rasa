@@ -114,7 +114,7 @@ def _update_model_from_server(
         agent.update_model(domain, policy_ensemble, new_model_fingerprint)
     else:
         logger.debug("No new model found at "
-                     "URL {}".format(model_server))
+                     "URL {}".format(model_server.url))
 
 
 def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
