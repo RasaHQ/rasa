@@ -82,9 +82,7 @@ def create_argument_parser():
             help="service to connect to")
     parser.add_argument(
             '--enable_api',
-            default=False,
             action="store_true",
-            type=bool,
             help="Start the web server api in addition to the input channel")
 
     utils.add_logging_option_arguments(parser)
