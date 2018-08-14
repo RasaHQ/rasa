@@ -192,7 +192,7 @@ def _create_single_channel(channel, credentials):
         from rasa_core.channels.rasa_chat import RasaChatInput
 
         return RasaChatInput(
-                credentials.get("host"),
+                credentials.get("url"),
                 credentials.get("admin_token"))
     else:
         raise Exception("This script currently only supports the "

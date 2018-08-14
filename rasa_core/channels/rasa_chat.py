@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 class RasaChatInput(RestInput):
     """Chat input channel for Rasa Platform"""
 
-    def __init__(self, host, admin_token=None):
-        self.host = host
+    def __init__(self, url, admin_token=None):
+        self.base_url = url
         self.admin_token = admin_token
 
     @classmethod
@@ -25,7 +25,7 @@ class RasaChatInput(RestInput):
         return "rasa"
 
     def _check_token(self, token):
-        url = "{}/users/me".format(self.host)
+        url = "{}/users/me".format(self.base_url)
         headers = {"Authorization": token}
         result = requests.get(url, headers=headers)
 
