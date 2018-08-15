@@ -29,7 +29,7 @@ works if all of your actions are simple utterances (messages sent to the user).
 It can make use of custom actions, but then these *have* to be implemented in 
 python and executed on the machine that runs the server. 
 
-To activate the remote mode, include
+To activate the remote mode, include:
 
 .. code-block:: yaml
 
@@ -50,7 +50,7 @@ within your ``domain.yml`` (you can find an example in
 Running the server
 ------------------
 You can run a simple http server that handles requests using your
-models with
+models with:
 
 .. code-block:: bash
 
@@ -68,7 +68,7 @@ Starting a conversation
 -----------------------
 To start a conversation, send a ``POST`` request to the ``/conversation/<sender_id>/parse`` endpoint.
 ``<sender_id>`` is the conversation id (e.g. ``default`` if you just have one
-user, or the facebook user id or any other identifier).
+user, or the facebook user id or any other identifier):
 
 .. code-block:: bash
 

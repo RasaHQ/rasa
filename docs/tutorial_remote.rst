@@ -85,7 +85,7 @@ We can now train a NLU model using our examples (make sure to
 first as well as
 `spaCy <http://nlu.rasa.com/installation.html#best-for-most-spacy-sklearn>`_).
 
-Let's run
+Let's run:
 
 .. code-block:: bash
 

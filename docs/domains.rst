@@ -21,6 +21,22 @@ Your NLU model will define the ``intents`` and ``entities`` that you need to inc
 in the domain.
 
 ``slots`` are the things you want to keep track of during a conversation, see :ref:`slots` .
+A categorical slot called ``risk_level`` would be defined like this:
+
+.. code-block:: yaml
+
+         slots:
+            risk_level:
+               type: categorical
+               values:
+               - low
+               - medium
+               - high
+   
+
+:ref:`Here <slot_types>` is the full list of slot types defined by Rasa Core, along with syntax
+for including them in your domain file.
+
 
 ``actions`` are the things your bot can actually do.
 For example, an ``action`` can:
