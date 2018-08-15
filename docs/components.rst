@@ -1,176 +1,13 @@
 :desc: Understanding a Rasa NLU Pipeline
 .. _section_pipeline:
 
-Pipeline and Component Configuration
-====================================
+Component Configuration
+=======================
+
+This is a reference of the configuration options for every built-in component in 
+Rasa NLU. If you want to build a custom component, check out :ref:`section_customcomponents`.
 
 .. contents::
-
-
-Incoming messages are processed by a sequence of components. These components are executed one after another
-in a so called processing pipeline. There are components for entity extraction, for intent classification,
-pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out :ref:`section_customcomponents`. 
-
-Each component processes the input and creates an output. The ouput can be used by any component that comes after
-this component in the pipeline. There are components which only produce information that is used by other components
-in the pipeline and there are other components that produce ``Output`` attributes which will be returned after
-the processing has finished. For example, for the sentence ``"I am looking for Chinese food"`` the output
-
-.. code-block:: json
-
-    {
-        "text": "I am looking for Chinese food",
-        "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf", "confidence": 0.864}
-        ],
-        "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-        "intent_ranking": [
-            {"confidence": 0.6485910906220309, "name": "restaurant_search"},
-            {"confidence": 0.1416153159565678, "name": "affirm"}
-        ]
-    }
-
-is created as a combination of the results of the different components in the pre-configured pipeline ``spacy_sklearn``.
-For example, the ``entities`` attribute is created by the ``ner_crf`` component.
-
-Pre-configured Pipelines
-------------------------
-To ease the burden of coming up with your own processing pipelines, we provide a couple of ready to use templates
-which can be used by setting the ``pipeline`` configuration value to the name of the template you want to use.
-Here is a list of the **existing templates**:
-
-spacy_sklearn
-~~~~~~~~~~~~~
-
-To use spacy as a template:
-
-.. literalinclude:: ../sample_configs/config_spacy.yml
-    :language: yaml
-
-See :ref:`section_languages` for possible values for ``language``. To use
-the components and configure them separately:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "nlp_spacy"
-    - name: "tokenizer_spacy"
-    - name: "intent_entity_featurizer_regex"
-    - name: "intent_featurizer_spacy"
-    - name: "ner_crf"
-    - name: "ner_synonyms"
-    - name: "intent_classifier_sklearn"
-
-tensorflow_embedding
-~~~~~~~~~~~~~~~~~~~~
-
-to use it as a template:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "tensorflow_embedding"
-
-The tensorflow pipeline supports any language that can be tokenized. The
-current tokenizer implementation relies on words being separated by spaces,
-so any languages that adheres to that can be trained with this pipeline.
-
-
-
-mitie
-~~~~~
-
-There is no pipeline template, as you need to configure the location
-of mities featurizer. To use the components and configure them separately:
-
-.. literalinclude:: ../sample_configs/config_mitie.yml
-    :language: yaml
-
-mitie_sklearn
-~~~~~~~~~~~~~
-
-There is no pipeline template, as you need to configure the location
-of mities featurizer. To use the components and configure them separately:
-
-.. literalinclude:: ../sample_configs/config_mitie_sklearn.yml
-    :language: yaml
-
-keyword
-~~~~~~~
-
-to use it as a template:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "keyword"
-
-to use the components and configure them separately:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "intent_classifier_keyword"
-
-
-.. _section_multiple_intents:
-
-Multiple Intents
-~~~~~~~~~~~~~~~~
-
-If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical intent structure, use these flags:
-
-    - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
-    - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
-
-
-Here's an example configuration:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "tokenizer_whitespace"
-    - name: "ner_crf"
-    - name: "intent_featurizer_count_vectors"
-    - name: "intent_classifier_tensorflow_embedding"
-      intent_tokenization_flag: true
-      intent_split_symbol: "_"
-
-
-
-Custom pipelines
-~~~~~~~~~~~~~~~~
-
-Creating your own pipelines is possible by directly passing the names of the ~
-components to Rasa NLU in the ``pipeline`` configuration variable, e.g.
-
-.. code-block:: yaml
-
-    pipeline:
-    - name: "nlp_spacy"
-    - name: "ner_crf"
-    - name: "ner_synonyms"
-
-This creates a pipeline that only does entity recognition, but no
-intent classification. Hence, the output will not contain any
-useful intents.
-
-Built-in Components
--------------------
-
-Short explanation of every components and it's attributes. If you are looking for more details, you should have
-a look at the corresponding source code for the component. ``Output`` describes, what each component adds to the final
-output result of processing a message. If no output is present, the component is most likely a preprocessor for another
-component.
 
 .. _nlp_mitie:
 
@@ -588,7 +425,9 @@ tokenizer_jieba
 
         pipeline:
         - name: "tokenizer_jieba"
-          dictionary_path: "path/to/custom/dictionary/dir"  # or None (which is default value) means don't use custom dictionaries
+          dictionary_path: "path/to/custom/dictionary/dir"
+
+If the ``dictionary_path`` is ``None`` (the default), then no custom dictionary will be used.
 
 tokenizer_mitie
 ~~~~~~~~~~~~~~~
@@ -819,62 +658,3 @@ ner_duckling_http
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
-
-
-.. _section_component_lifecycle:
-
-Component Lifecycle
--------------------
-Every component can implement several methods from the :class:`Component` base class; in a pipeline these different methods
-will be called in a specific order. Lets assume, we added the following pipeline to our config:
-``"pipeline": ["Component A", "Component B", "Last Component"]``.
-The image shows the call order during the training of this pipeline :
-
-.. image:: _static/images/component_lifecycle.png
-
-Before the first component is created using the ``create`` function, a so called ``context`` is created (which is
-nothing more than a python dict). This context is used to pass information between the components. For example,
-one component can calculate feature vectors for the training data, store that within the context and another
-component can retrieve these feature vectors from the context and do intent classification.
-
-Initially the context is filled with all configuration values, the arrows in the image show the call order
-and visualize the path of the passed context. After all components are trained and persisted, the
-final context dictionary is used to persist the model's metadata.
-
-
-
-Returned Entities Object
-------------------------
-In the object returned after parsing there are two fields that show information
-about how the pipeline impacted the entities returned. The ``extractor`` field
-of an entity tells you which entity extractor found this particular entity.
-The ``processors`` field contains the name of components that altered this
-specific entity.
-
-The use of synonyms can also cause the ``value`` field not match the ``text``
-exactly. Instead it will return the trained synonym.
-
-.. code-block:: json
-
-    {
-      "text": "show me chinese restaurants",
-      "intent": "restaurant_search",
-      "entities": [
-        {
-          "start": 8,
-          "end": 15,
-          "value": "chinese",
-          "entity": "cuisine",
-          "extractor": "ner_crf",
-          "confidence": 0.854,
-          "processors": []
-        }
-      ]
-    }
-
-.. note::
-
-    The `confidence` will be set by the CRF entity extractor
-    (`ner_crf` component). The duckling entity extractor will always return
-    `1`. The `ner_spacy` extractor does not provide this information and
-    returns `null`.
