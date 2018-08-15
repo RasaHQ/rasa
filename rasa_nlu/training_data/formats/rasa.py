@@ -10,8 +10,7 @@ from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter)
-from rasa_nlu.training_data.util import (transform_entity_synonyms,
-    generate_lookup_regex)
+from rasa_nlu.training_data.util import transform_entity_synonyms, generate_lookup_regex
 from rasa_nlu.utils import json_to_string
 
 logger = logging.getLogger(__name__)
