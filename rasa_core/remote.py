@@ -81,7 +81,7 @@ class RasaCoreClient(object):
         return result.json()
 
     def append_event_to_tracker(self, sender_id, event):
-        # type: (Text, List[Event]) -> None
+        # type: (Text, Event) -> None
         """Add some more events to the tracker of a conversation."""
 
         url = "/conversations/{}/tracker/events".format(sender_id)

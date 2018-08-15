@@ -19,8 +19,7 @@ from rasa_core.domain import Domain
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
-from rasa_core.policies.memoization import \
-    (
+from rasa_core.policies.memoization import (
     MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot

@@ -5,6 +5,10 @@ from __future__ import unicode_literals
 
 import logging
 import os
+
+from gevent.pywsgi import WSGIServer
+
+import rasa_core
 import shutil
 import tempfile
 import time
@@ -17,8 +21,8 @@ from requests.exceptions import ConnectionError, InvalidURL
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
-from rasa_core import training
-from rasa_core.channels import UserMessage, OutputChannel
+from rasa_core import training, constants
+from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain, check_domain_sanity
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -61,9 +65,8 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
     try:
         _update_model_from_server(model_server, agent)
     except ConnectionError as e:
-        logger.exception("Could not retrieve model from server "
-                         "Running without a model. Server "
-                         "URL: `{}`\n".format(e))
+        logger.warn("Could not retrieve model from server. Connection Error.  "
+                    "Running without a model. Server URL: `{}`\n".format(e))
 
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
@@ -111,7 +114,7 @@ def _update_model_from_server(
         agent.update_model(domain, policy_ensemble, new_model_fingerprint)
     else:
         logger.debug("No new model found at "
-                     "URL {}".format(model_server))
+                     "URL {}".format(model_server.url))
 
 
 def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
@@ -121,13 +124,22 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
     <ETag> header which contains the model hash."""
     header = {"If-None-Match": fingerprint}
     response = model_server.request(method="GET", headers=header)
-    response.raise_for_status()
 
     if response.status_code == 204:
         logger.debug("Model server returned 204 status code, indicating "
                      "that no new model is available. "
                      "Current fingerprint: {}".format(fingerprint))
         return response.headers.get("ETag")
+    elif response.status_code == 404:
+        logger.debug("Model server didn't find a model for our request. "
+                     "Probably no one did train a model for the project "
+                     "and tag combination yet.")
+        return None
+    elif response.status_code != 200:
+        logger.warn("Tried to fetch model from server, but server response "
+                    "status code is {}. We'll retry later..."
+                    "".format(response.status_code))
+        return None
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
     zip_ref.extractall(model_directory)
@@ -449,6 +461,30 @@ class Agent(object):
 
         self.policy_ensemble.train(training_trackers, self.domain,
                                    **kwargs)
+
+    def handle_channels(self, channels,
+                        http_port=constants.DEFAULT_SERVER_PORT,
+                        serve_forever=True):
+        # type: (List[InputChannel], int, bool) -> WSGIServer
+        """Start a webserver attaching the input channels and handling msgs.
+
+        If ``serve_forever`` is set to ``True``, this call will be blocking.
+        Otherwise the webserver will be started, and the method will
+        return afterwards."""
+        from flask import Flask
+
+        app = Flask(__name__)
+        rasa_core.channels.channel.register(channels,
+                                            app,
+                                            self.handle_message,
+                                            route="/webhooks/")
+
+        http_server = WSGIServer(('0.0.0.0', http_port), app)
+        http_server.start()
+
+        if serve_forever:
+            http_server.serve_forever()
+        return http_server
 
     @staticmethod
     def _clear_model_directory(model_path):

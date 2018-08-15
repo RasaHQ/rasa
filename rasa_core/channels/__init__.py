@@ -8,3 +8,14 @@ from rasa_core.channels.channel import (
     UserMessage,
     CollectingOutputChannel,
     RestInput)
+
+
+BUILTIN_CHANNELS = {
+    'facebook',
+    'slack',
+    'telegram',
+    'mattermost',
+    'twilio',
+    'cmdline',
+    'rasa',
+}

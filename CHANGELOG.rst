@@ -21,6 +21,10 @@ Changed
 -------
 - default log level for all scripts has been changed from ``WARNING`` to
   ``INFO``.
+- format of the credentials file to allow specifying the credentials for
+  multiple channels
+- webhook URLs for the input channels have changed and need to be reset
+
 
 Removed
 -------
