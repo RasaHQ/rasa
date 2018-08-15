@@ -59,7 +59,6 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    evaluation
    fallback
    faq
-   support
 
 .. toctree::
    :maxdepth: 1
@@ -83,3 +82,4 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    migrations
    license
    changelog
+   support
