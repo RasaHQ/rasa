@@ -50,8 +50,7 @@ If you want to use the bleeding edge version of Rasa use github + setup.py:
 Add Natural Language Understanding
 ----------------------------------
 
-We use Rasa NLU for intent classification & entity extraction. To get it, run
-
+We use Rasa NLU for intent classification & entity extraction. To get it, run:
 
 .. code-block:: bash
 

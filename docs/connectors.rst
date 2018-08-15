@@ -5,6 +5,8 @@ Chat & Voice platforms
 
 Here's how to connect your conversational AI to the outside world.
 
+See :ref:`here <custom_channels>` for details on how to build a custom input channel.
+
 .. contents::
 
 Input channels are defined in the ``rasa_core.channels`` module.
@@ -60,7 +62,7 @@ For more detailed steps, visit the
 
 Using the run script
 ^^^^^^^^^^^^^^^^^^^^
-If you want to connect to facebook using the run script, e.g. using
+If you want to connect to facebook using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -125,7 +127,7 @@ For more detailed steps, visit the
 
 Using run script
 ^^^^^^^^^^^^^^^^
-If you want to connect to the slack input channel using the run script, e.g. using
+If you want to connect to the slack input channel using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -193,7 +195,7 @@ For more detailed steps, visit the
 
 Using run script
 ^^^^^^^^^^^^^^^^
-If you want to connect to the mattermost input channel using the run script, e.g. using
+If you want to connect to the mattermost input channel using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -253,7 +255,7 @@ For more information on the Telegram HTTP API, go to https://core.telegram.org/b
 Using run script
 ^^^^^^^^^^^^^^^^
 
-If you want to connect to telegram using the run script, e.g. using
+If you want to connect to telegram using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -313,7 +315,7 @@ For more information on the Twilio REST API, go to https://www.twilio.com/docs/i
 Using run script
 ^^^^^^^^^^^^^^^^
 
-If you want to connect to the twilio input channel using the run script, e.g. using
+If you want to connect to the twilio input channel using the run script, e.g. using:
 
 .. code-block:: bash
 
@@ -364,9 +366,19 @@ The command to run a ngrok instance for port 5002 for example would be:
 
 This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  This basically takes the code running on your local machine and punches it through the internet at the ngrok address supplied.
 
+.. _custom_channels:
 
 Custom Channels
 ---------------
+
+If you want to put a widget on your website so that people can talk to your bot, check out these
+two projects:
+
+- `Rasa Webchat <https://github.com/mrbot-ai/rasa-webchat>`_ uses sockets.
+- `Chatroom <https://github.com/scalableminds/chatroom>`_ uses regular HTTP requests.
+
+You can also implement your own, fully custom channel.
+
 
 You can also implement your own, custom channel. You can
 use the ``rasa_core.channels.channel.RestInput`` class as a template.
