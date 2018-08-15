@@ -214,6 +214,11 @@ class Agent(object):
         self.policy_ensemble = self._create_ensemble(policies)
         self.fingerprint = fingerprint
 
+        # update domain on all instances
+        self.tracker_store.domain = domain
+        if hasattr(self.nlg, "templates"):
+            self.nlg.templates = domain.templates or []
+
     @classmethod
     def load(cls,
              path=None,  # type: Text
