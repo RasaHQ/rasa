@@ -377,7 +377,7 @@ def create_app(agent,
 
     @app.route("/status", methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth
+    @requires_auth(auth_token)
     def status():
         return jsonify({
             "model_fingerprint": agent.fingerprint,

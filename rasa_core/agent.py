@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import uuid
 
 from gevent.pywsgi import WSGIServer
 
@@ -202,17 +203,19 @@ class Agent(object):
         self.tracker_store = self.create_tracker_store(
                 tracker_store, self.domain)
         self.action_endpoint = action_endpoint
-        self.fingerprint = fingerprint
+
+        self._set_fingerprint(fingerprint)
 
     def update_model(
             self,
             domain,  # type: Union[Text, Domain]
             policies,  # type: Union[PolicyEnsemble, List[Policy], None]
-            fingerprint  # type: Text
+            fingerprint  # type: Optional[Text]
     ):
         self.domain = domain
         self.policy_ensemble = self._create_ensemble(policies)
-        self.fingerprint = fingerprint
+
+        self._set_fingerprint(fingerprint)
 
         # update domain on all instances
         self.tracker_store.domain = domain
@@ -385,6 +388,7 @@ class Agent(object):
         self.policy_ensemble.continue_training(trackers,
                                                self.domain,
                                                **kwargs)
+        self._set_fingerprint()
 
     def load_data(self,
                   resource_name,  # type: Text
@@ -466,6 +470,7 @@ class Agent(object):
 
         self.policy_ensemble.train(training_trackers, self.domain,
                                    **kwargs)
+        self._set_fingerprint()
 
     def handle_channels(self, channels,
                         http_port=constants.DEFAULT_SERVER_PORT,
@@ -490,6 +495,14 @@ class Agent(object):
         if serve_forever:
             http_server.serve_forever()
         return http_server
+
+    def _set_fingerprint(self, fingerprint=None):
+        # type: (Optional[Text]) -> None
+
+        if fingerprint:
+            self.fingerprint = fingerprint
+        else:
+            self.fingerprint = uuid.uuid4().hex
 
     @staticmethod
     def _clear_model_directory(model_path):
