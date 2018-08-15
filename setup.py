@@ -50,9 +50,9 @@ extras_requires = {
               "spacy>2.0",
               ],
     'tensorflow': ["scikit-learn",
-                   "tensorflow",
                    "sklearn-crfsuite",
-                   "scipy"
+                   "scipy",
+                   "tensorflow"
                    ],
     'mitie': ["mitie"],
 }
