@@ -58,7 +58,7 @@ Where the ``--data`` argument points to your test data, and ``--model`` points t
 
 If you don't have a separate test set, you can 
 still estimate how well your model generalises using cross-validation. 
-To do this, run the evaluation script with the ``--mode crossvalidation`` flag. 
+To do this, run the evaluation script with the ``--mode crossvalidation`` flag:
 
 
 .. code-block:: bash
@@ -73,10 +73,6 @@ You cannot specify a model in this mode because
 a new model will be trained on part of the data
 for every cross-validation fold.
 
-Example Output
-^^^^^^^^^^^^^^
-
-
 
 
 Intent Classification
@@ -90,39 +86,39 @@ called ``errors.json`` for easier debugging.
 Finally, the evaluation script creates a histogram of the confidence distribution for all predictions. 
 Improving the quality of your training data will move the histogram bars to the right.
 
+.. note::
+    A confusion matrix will **only** be created if you are evaluating a model on a test set.
+    In cross-validation mode, the confusion matrix will not be generated.
+
+.. warning::
+    If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
+    is that an entity cannot stop or start inside a token. 
+    For example, if you have an example for a ``name`` entity
+    like ``[Brian](name)'s house``, this is only valid if your tokenizer splits ``Brian's`` into
+    multiple tokens. A whitespace tokenizer would not work in this case.
 
 Entity Extraction
 -----------------
-For each entity extractor, the evaluation script
-logs its performance per entity type in your training data.
-So if you use ``ner_crf`` and ``ner_duckling_http``
-in your pipeline, it will log two evaluation tables
-containing recall, precision, and f1 measure for each entity type.
 
-In the case ``ner_duckling_http`` we actually run the evaluation for
-each defined duckling dimension. If you use the ``time`` and ``ordinal``
-dimensions, you would get two evaluation tables: one for
-``ner_duckling_http (Time)`` and one for ``ner_duckling_http (Ordinal)``.
+The ``ner_crf`` is the only entity extractor which you train using your own data,
+and so is the only one which will be evaluated. If you use the spaCy or duckling
+pre-trained entity extractors, Rasa NLU will not include these in the evaluation. 
 
-``ner_synonyms`` does not create an evaluation table, because it only changes the value of the found
-entities and does not find entity boundaries itself.
-
-Finally, keep in mind that entity types in your testing data have to match the output
-of the extraction components. This is particularly important for
-``ner_duckling_http``, because it is not fit to your training data.
+Rasa NLU will report recall, precision, and f1 measure for each entity type that
+``ner_crf`` is trained to recognize.
 
 
 Entity Scoring
 ^^^^^^^^^^^^^^
 To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like "near Alexanderplatz" we
-expect the labels "LOC" "LOC" instead of the BILOU-based "B-LOC" "L-LOC". Our approach is more lenient
+expect the labels ``LOC LOC`` instead of the BILOU-based ``B-LOC L-LOC``. Our approach is more lenient
 when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
 For example, the given the aforementioned entity "near Alexanderplatz" and a system that extracts
 "Alexanderplatz", this reward the extraction of "Alexanderplatz" and punish the missed out word "near".
 The BILOU-based approach, however, would label this as a complete failure since it expects Alexanderplatz
-to be labeled as a last token in an entity (L-LOC) instead of a single token entity (U-LOC). Also note,
-a splitted extraction of "near" and "Alexanderplatz" would get full scores on our approach and zero on the
+to be labeled as a last token in an entity (``L-LOC``) instead of a single token entity (``U-LOC``). Also note,
+a split extraction of "near" and "Alexanderplatz" would get full scores on our approach and zero on the
 BILOU-based one.
 
 Here's a comparison between the two scoring mechanisms for the phrase "near Alexanderplatz tonight":
@@ -141,13 +137,14 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 Evaluation Parameters
 ---------------------
 
-There are a number of parameters you can pass to the evaluation script
+There are a number of parameters you can pass to the evaluation script. To see all options,
+run:
 
 .. code-block:: bash
 
     $ python -m rasa_nlu.evaluate --help
 
-Here is a quick overview:
+Which will produce the following output:
 
 .. program-output:: python -m rasa_nlu.evaluate --help
 
