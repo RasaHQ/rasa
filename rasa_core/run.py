@@ -257,10 +257,7 @@ def serve_application(initial_agent,
                       cors=None,
                       auth_token=None
                       ):
-    if channel:
-        input_channels = create_http_input_channels(channel, credentials_file)
-    else:
-        input_channels = []
+    input_channels = create_http_input_channels(channel, credentials_file)
 
     http_server = start_server(input_channels, cors, auth_token,
                                port, initial_agent)
