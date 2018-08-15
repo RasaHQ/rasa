@@ -5,23 +5,21 @@ from __future__ import unicode_literals
 
 import logging
 import os
-import uuid
-
-from gevent.pywsgi import WSGIServer
-
-import rasa_core
 import shutil
 import tempfile
 import time
+import uuid
 import zipfile
 from threading import Thread
 
 import six
 import typing
-from requests.exceptions import ConnectionError, InvalidURL
+from gevent.pywsgi import WSGIServer
+from requests.exceptions import InvalidURL, RequestException
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
+import rasa_core
 from rasa_core import training, constants
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.dispatcher import Dispatcher
@@ -65,7 +63,7 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
 
     try:
         _update_model_from_server(model_server, agent)
-    except ConnectionError as e:
+    except RequestException as e:
         logger.warn("Could not retrieve model from server. Connection Error.  "
                     "Running without a model. Server URL: `{}`\n".format(e))
 
@@ -124,7 +122,13 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
 
     <ETag> header which contains the model hash."""
     header = {"If-None-Match": fingerprint}
-    response = model_server.request(method="GET", headers=header)
+    try:
+        response = model_server.request(method="GET", headers=header)
+    except RequestException as e:
+        logger.warn("Tried to fetch model from server, but couldn't reach "
+                    "server. We'll retry later... Error: {}."
+                    "".format(e))
+        return None
 
     if response.status_code == 204:
         logger.debug("Model server returned 204 status code, indicating "
