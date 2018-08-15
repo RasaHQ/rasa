@@ -43,7 +43,8 @@ if you don't have very much training data.
 The advantage of the ``tensorflow_embedding`` pipeline is that your word vectors will be customised 
 for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
 but very different to the word "cash". In a banking domain, "balance" and "cash" are closely related
-and you'd like your model to capture that.
+and you'd like your model to capture that. This pipeline doesn't use a language-specific model,
+so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
 
 You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ . 
 
@@ -69,6 +70,7 @@ To do this, use these flags:
     - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use a bag-of-words representations for them;
     - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
 
+`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`_ is a tutorial on how to use multiple intents in Rasa Core and NLU. 
 
 Here's an example configuration:
 
