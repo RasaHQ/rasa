@@ -173,10 +173,12 @@ class CountVectorsFeaturizer(Featurizer):
         else:
             return message.text
 
+    # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
         if self.OOV_token and not self.OOV_words:
             for t in examples:
-                if self.OOV_token in t:
+                if self.OOV_token in t or (
+                        self.lowercase and self.OOV_token in t.lower()):
                     return
             logger.warning("OOV_token='{}' was given, but it is not present "
                            "in the training data. All unseen words "
