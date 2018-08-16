@@ -51,7 +51,7 @@ templates:
   utter_ask_location:
     - "where?"
   utter_ask_moreupdates: 
-    - "Price ranga={price} Cuisine={cuisine} Location={location} Count={people}. Would you'd like to modify anything else, please tell me what?"
+	- "OK making a reservation for a restaurant in {location} (price: {price}, cuisine: {cuisine}) for {people} people."
   utter_ask_numpeople:
     - "for how many people?"
   utter_ask_price: 
