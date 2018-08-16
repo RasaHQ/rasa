@@ -82,3 +82,4 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    migrations
    license
    changelog
+   support
