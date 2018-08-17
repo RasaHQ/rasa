@@ -48,6 +48,30 @@ def test_dispatcher_template_invalid_vars():
             "a template referencing an invalid {variable}.")
 
 
+def test_dispatcher_utter_response(default_dispatcher_collecting):
+    text_only_message = {"text": "hey"}
+    image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
+    text_and_image_message = {
+        "text": "look at this",
+        "image": "https://i.imgur.com/T5xVo.jpg"
+    }
+
+    default_dispatcher_collecting.utter_response(text_only_message)
+    default_dispatcher_collecting.utter_response(image_only_message)
+    default_dispatcher_collecting.utter_response(text_and_image_message)
+    collected = default_dispatcher_collecting.output_channel.messages
+
+    assert len(collected) == 4
+    assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
+    assert collected[1] == {
+        "recipient_id": "my-sender",
+        "text": "Image: https://i.imgur.com/nGF1K8f.jpg"}
+    assert collected[2] == {"recipient_id": "my-sender", "text": "look at this"}
+    assert collected[3] == {
+        "recipient_id": "my-sender",
+        "text": "Image: https://i.imgur.com/T5xVo.jpg"}
+
+
 def test_dispatcher_utter_buttons(default_dispatcher_collecting):
     buttons = [
         Button(title="Btn1", payload="/btn1"),
