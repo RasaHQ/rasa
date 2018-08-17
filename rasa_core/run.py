@@ -296,8 +296,8 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    _log = logging.getLogger('werkzeug')
-    _log.setLevel(logging.WARN)
+    logging.getLogger('werkzeug').setLevel(logging.WARN)
+    logging.getLogger('matplotlib').setLevel(logging.WARN)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
