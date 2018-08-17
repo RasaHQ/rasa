@@ -36,8 +36,8 @@ def test_dispatcher_handle_unknown_template(default_dispatcher_collecting,
 
 def test_dispatcher_template_invalid_vars():
     templates = {
-                "my_made_up_template": [{
-                    "text": "a template referencing an invalid {variable}."}]}
+        "my_made_up_template": [{
+            "text": "a template referencing an invalid {variable}."}]}
     bot = CollectingOutputChannel()
     nlg = TemplatedNaturalLanguageGenerator(templates)
     dispatcher = Dispatcher("my-sender", bot, nlg)
@@ -62,20 +62,20 @@ def test_dispatcher_utter_response(default_dispatcher_collecting):
     collected = default_dispatcher_collecting.output_channel.messages
 
     assert len(collected) == 4
-    
+
     # text only message
     assert collected[0] == {
-        "recipient_id": "my-sender", 
+        "recipient_id": "my-sender",
         "text": "hey"}
-    
+
     # image only message
     assert collected[1] == {
         "recipient_id": "my-sender",
         "text": "Image: https://i.imgur.com/nGF1K8f.jpg"}
-    
+
     # text & image combined - will result in two messages
     assert collected[2] == {
-        "recipient_id": "my-sender", 
+        "recipient_id": "my-sender",
         "text": "look at this"}
     assert collected[3] == {
         "recipient_id": "my-sender",
