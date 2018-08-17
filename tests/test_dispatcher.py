@@ -62,11 +62,21 @@ def test_dispatcher_utter_response(default_dispatcher_collecting):
     collected = default_dispatcher_collecting.output_channel.messages
 
     assert len(collected) == 4
-    assert collected[0] == {"recipient_id": "my-sender", "text": "hey"}
+    
+    # text only message
+    assert collected[0] == {
+        "recipient_id": "my-sender", 
+        "text": "hey"}
+    
+    # image only message
     assert collected[1] == {
         "recipient_id": "my-sender",
         "text": "Image: https://i.imgur.com/nGF1K8f.jpg"}
-    assert collected[2] == {"recipient_id": "my-sender", "text": "look at this"}
+    
+    # text & image combined - will result in two messages
+    assert collected[2] == {
+        "recipient_id": "my-sender", 
+        "text": "look at this"}
     assert collected[3] == {
         "recipient_id": "my-sender",
         "text": "Image: https://i.imgur.com/T5xVo.jpg"}
