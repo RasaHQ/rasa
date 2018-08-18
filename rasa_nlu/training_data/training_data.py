@@ -200,16 +200,18 @@ class TrainingData(object):
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]
             random.shuffle(ex)
-            n_train = int(count*train_frac)
+            n_train = int(count * train_frac)
             train.extend(ex[:n_train])
             test.extend(ex[n_train:])
 
-        data_train = TrainingData(train,
-                                  entity_synonyms=self.entity_synonyms,
-                                  regex_features=self.regex_features)
-        data_test = TrainingData(test,
-                                  entity_synonyms=self.entity_synonyms,
-                                  regex_features=self.regex_features)
+        data_train = TrainingData(
+            train,
+            entity_synonyms=self.entity_synonyms,
+            regex_features=self.regex_features)
+        data_test = TrainingData(
+            test,
+            entity_synonyms=self.entity_synonyms,
+            regex_features=self.regex_features)
         return data_train, data_test
 
     def print_stats(self):
