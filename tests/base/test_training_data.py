@@ -101,10 +101,10 @@ def test_train_test_split(filename):
     assert len(td.training_examples) == 42
     assert len(td.intent_examples) == 42
 
-    td_train, td_test = tf.train_test_split(train_frac=0.8)
+    td_train, td_test = td.train_test_split(train_frac=0.8)
 
-    assert len(td_train.training_examples) == 33
-    assert len(td_test.training_examples) == 9
+    assert len(td_train.training_examples) == 32
+    assert len(td_test.training_examples) == 10
 
 
 @pytest.mark.parametrize("files", [('data/examples/rasa/demo-rasa.json', 'data/test/multiple_files_json'),
