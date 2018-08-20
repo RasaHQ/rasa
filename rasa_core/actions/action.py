@@ -206,10 +206,13 @@ class RemoteAction(Action):
     def _handle_responses(self, responses, dispatcher, tracker):
         for response in responses:
             if "template" in response:
+                kwargs = response.copy()
+                del kwargs["template"]
                 draft = dispatcher.nlg.generate(
                         response["template"],
                         tracker,
-                        dispatcher.output_channel.name())
+                        dispatcher.output_channel.name(),
+                        **kwargs)
                 del response["template"]
             else:
                 draft = {}
