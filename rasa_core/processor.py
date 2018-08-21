@@ -147,9 +147,8 @@ class MessageProcessor(object):
             it might be better to cancel it."""
 
             for e in reversed(tracker.events):
-                if isinstance(e,
-                              ReminderScheduled) and e.name == \
-                        reminder_event.name:
+                if (isinstance(e, ReminderScheduled) and
+                        e.name == reminder_event.name):
                     return False
                 elif isinstance(e, UserUttered):
                     return True
