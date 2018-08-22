@@ -14,6 +14,8 @@ General
 ~~~~~~~
 - domain actions list now needs to always contain the actions names instead of
   the classpath
+- utter templates that should be used as actions, now need to start with
+  ``utter_``, otherwise the bot won't be able to find the action
 
 Changes to Input and Output Channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

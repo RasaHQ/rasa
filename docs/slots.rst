@@ -40,7 +40,7 @@ How Slots Get Set
 
 You can provide an initial value for a slot in your domain file:
 
-.. code-block:: md
+.. code-block:: yaml
 
     slots:
       name:
@@ -56,7 +56,7 @@ Slots Set from NLU
 If your NLU model picks up an entity, and your domain contains a slot with the same name, 
 the slot will be set automatically. For example:
        
-.. code-block:: md
+.. code-block:: story
 
    # story_01
    * greet{"name": "Ali"}
@@ -123,7 +123,7 @@ event:
            return [SlotSet("account_type", data["account_type"])]
 
 
-.. code-block:: md
+.. code-block:: story
 
    # story_01
    * greet
@@ -193,7 +193,7 @@ Now we also need some training stories, so that Rasa Core
 can learn from these how to handle the different situations:
 
 
-.. code-block:: md
+.. code-block:: story
 
    # story1
    ...

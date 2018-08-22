@@ -44,7 +44,7 @@ action below:
 If you have a specific intent that will trigger this, let's say it's called ``out_of_scope``, then you
 should add this as a story:
 
-.. code-block:: md
+.. code-block:: story
 
     ## fallback story
     * out_of_scope

@@ -7,19 +7,18 @@ Custom Actions
 There are two kinds of actions in Rasa Core.
 The simplest is an ``UtterAction``, which just sends a message to the user
 (see :ref:`responses`).
-To define an ``UtterAction``, add the name of the action to your domain file,
-and make sure there is a template defined with the same name as the action:
+To define an ``UtterAction``, add an utterance template to the domain file,
+that starts with ``utter_``:
 
-.. code-block:: markdown
+.. code-block:: yaml
 
     templates:
-      my_custom_utter_action:
+      utter_my_message:
         - "this is what I want my action to say!"
 
-    actions:
-        - my_custom_utter_action
-
-It is conventional (but not required!) to start the name of an ``UtterAction`` with ``utter_``.
+It is conventional to start the name of an ``UtterAction`` with ``utter_``.
+If this prefix is missing, you can still use the template in your custom
+actions, but the template can not be directly predicted as its own action.
 See :ref:`responses` for more details.
 
 Actions Which Execute Code
@@ -50,7 +49,7 @@ Whichever option you go for, you will then need to add an entry into your
 .. code-block:: yaml
 
    action_endpoint:
-     url: http://localhost:5055/webhook
+     url: "http://localhost:5055/webhook"
 
 .. _custom_action_example:
 

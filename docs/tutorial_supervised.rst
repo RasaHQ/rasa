@@ -81,7 +81,7 @@ We need some conversation training data - the *stories*!
 Take a look at ``data/babi_stories.md``, where the training conversations
 for the restaurant bot are defined. One example story looks as follows:
 
-.. code-block:: md
+.. code-block:: story
     :linenos:
 
     ## story_00914561

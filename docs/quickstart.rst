@@ -36,7 +36,7 @@ write the first few examples ourselves to kick things off.
 In this very simple conversation, the user says hello to our bot, and the bot
 says hello back. This is how it looks as a story:
 
-.. code-block:: md
+.. code-block:: story
 
    ## story1
    * greet

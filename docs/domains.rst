@@ -78,10 +78,47 @@ The ``name`` function of ``MyAwesomeAction`` needs to return
 Utterance templates
 ^^^^^^^^^^^^^^^^^^^
 
-Utterance templates are messages the bot will send back to the user. Either
-automatically by an action with the same name as the utterance (e.g. in the
-above example the ``utter_default`` template and action) or by an action with
-custom code.
+Utterance templates are messages the bot will send back to the user. There are
+two ways to use these templates:
+
+1. if the name of the template starts with ``utter_``, the utterance can
+   directly be used like an action. You would add the utterance template
+   to the domain
+
+   .. code-block:: yaml
+
+      templates:
+        utter_greet:
+        - text: "Hey! How are you?"
+
+   Afterwards, you can use the template as if it were an action in the
+   stories:
+
+   .. code-block:: story
+
+      ## greet the user
+      * intent_greet
+        - utter_greet
+
+   When ``utter_greet`` is run as an action, it will send the message from
+   the template back to the user.
+
+2. You can use the templates to generate response messages from your
+   custom actions using the dispatcher:
+   ``dispatcher.utter_template("utter_greet")``.
+   This allows you to separate the logic of generating
+   the messages from the actual copy. In you custom action code, you can
+   send a message based on the template like this:
+
+   .. code-block:: python
+
+      class ActionGreet(Action):
+        def name(self):
+            return 'action_greet'
+
+        def run(self, dispatcher, tracker, domain):
+            dispatcher.utter_template("utter_greet")
+            return []
 
 Images and Buttons
 ------------------

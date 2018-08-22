@@ -127,6 +127,7 @@ The endpoint then needs to respond with the generated response:
   {
       "text": "hey there",
       "buttons": [],
+      "image": null,
       "elements": [],
       "attachments": []
   }
