@@ -60,7 +60,7 @@ def load_data(
 
 
 def persist_data(trackers, path):
-    # type: (List[DialogueStateTracker]) -> None
+    # type: (List[DialogueStateTracker], Text) -> None
     """Dump a list of dialogue trackers in the story format to disk."""
 
     for t in trackers:

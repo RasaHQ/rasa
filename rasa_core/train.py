@@ -181,14 +181,14 @@ if __name__ == '__main__':
         "debug_plots": cmdline_args.debug_plots
     }
 
-    agent = train_dialogue_model(cmdline_args.domain,
-                                 cmdline_args.stories,
-                                 cmdline_args.out,
-                                 cmdline_args.nlu,
-                                 cmdline_args.endpoints,
-                                 cmdline_args.history,
-                                 cmdline_args.dump_stories,
-                                 additional_arguments)
+    a = train_dialogue_model(cmdline_args.domain,
+                             cmdline_args.stories,
+                             cmdline_args.out,
+                             cmdline_args.nlu,
+                             cmdline_args.endpoints,
+                             cmdline_args.history,
+                             cmdline_args.dump_stories,
+                             additional_arguments)
 
     if cmdline_args.online:
-        online.serve_agent(agent)
+        online.serve_agent(a)

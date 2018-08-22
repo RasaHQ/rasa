@@ -82,7 +82,7 @@ class Dispatcher(object):
         self.output_channel.send_custom_message(self.sender_id, elements)
 
     def utter_button_message(self, text, buttons, **kwargs):
-        # type: (Text, List[Dict[Text, Any]], **Any) -> None
+        # type: (Text, List[Dict[Text, Any]], Any) -> None
         """Sends a message with buttons to the output channel."""
         # Adding the text and data (buttons) to the latest bot messages
         bot_message = BotMessage(text=text,

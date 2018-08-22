@@ -131,7 +131,7 @@ class OutputChannel(object):
                                "Attachment: {}".format(attachment))
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
+        # type: (Text, Text, List[Dict[Text, Any]], Any) -> None
         """Sends buttons to the output.
 
         Default implementation will just post the buttons as a string."""
@@ -231,6 +231,7 @@ class RestInput(InputChannel):
     def _extract_sender(self, req):
         return req.json.get("sender", None)
 
+    # noinspection PyMethodMayBeStatic
     def _extract_message(self, req):
         return req.json.get("message", None)
 

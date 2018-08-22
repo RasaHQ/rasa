@@ -3,31 +3,27 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
 import errno
+import sys
+from builtins import input, range, str
+
 import inspect
 import io
 import json
 import logging
 import os
 import re
-
 import requests
-
-from requests.auth import HTTPBasicAuth
-
-import rasa_core
-import sys
-from hashlib import sha1
-from random import Random
-from threading import Thread
-
 import six
-from builtins import input, range, str
+from hashlib import sha1
 from numpy import all, array
-from typing import Text, Any, List, Optional, Tuple, Dict, Set, TypeVar, Generic
+from random import Random
+from requests.auth import HTTPBasicAuth
+from threading import Thread
+from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 if six.PY2:
+    # noinspection PyUnresolvedReferences
     from StringIO import StringIO
 else:
     from io import StringIO
@@ -107,6 +103,7 @@ def dump_obj_as_str_to_file(filename, text):
     """Dump a text to a file."""
 
     with io.open(filename, 'w') as f:
+        # noinspection PyTypeChecker
         f.write(str(text))
 
 
@@ -130,6 +127,7 @@ def is_int(value):
 
     The type of the value is not important, it might be an int or a float."""
 
+    # noinspection PyBroadException
     try:
         return value == int(value)
     except Exception:
@@ -221,7 +219,8 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
         return input_value
 
 
-class bcolors:
+# noinspection PyPep8Naming
+class bcolors(object):
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -301,11 +300,13 @@ def fix_yaml_loader():
     # linux build. in the narrow build, emojis are 2 char strings using a
     # surrogate
     if sys.maxunicode == 0xffff:
+        # noinspection PyUnresolvedReferences
         yaml.reader.Reader.NON_PRINTABLE = re.compile(
                 '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
                 '\ude00-\ude50\udc4d\ud83c\udf89\ude80\udc4c\ud83e\uddde'
                 '\udd74\udcde\uddd1\udd16]')
     else:
+        # noinspection PyUnresolvedReferences
         yaml.reader.Reader.NON_PRINTABLE = re.compile(
                 '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
                 '\U00010000-\U0010FFFF]')
@@ -487,6 +488,7 @@ def arguments_of(func):
         return inspect.signature(func).parameters.keys()
     except AttributeError:
         # python 2.x is used
+        # noinspection PyDeprecation
         return inspect.getargspec(func).args
 
 
@@ -519,7 +521,7 @@ def all_subclasses(cls):
 
 
 def read_endpoint_config(filename, endpoint_type):
-    # type: (Text, Text) -> Optional[rasa_core.utils.EndpointConfig]
+    # type: (Text, Text) -> Optional[EndpointConfig]
     """Read an endpoint configuration file from disk and extract one config. """
 
     if not filename:
@@ -568,8 +570,8 @@ class EndpointConfig(object):
     def request(self,
                 method="post",  # type: Text
                 subpath=None,  # type: Optional[Text]
-                content_type="application/json",  # type: Text
-                **kwargs  # type: Dict[Text, Any]
+                content_type="application/json",  # type: Optional[Text]
+                **kwargs  # type: Any
                 ):
         """Send a HTTP request to the endpoint.
 

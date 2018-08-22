@@ -59,6 +59,9 @@ install_requires = [
     "colorhash~=1.0",
     "jsonschema~=2.6",
     "packaging~=17.0",
+    "gevent~=1.2",
+    "pyyaml~=3.12",
+    "pytz",
 ]
 
 extras_requires = {

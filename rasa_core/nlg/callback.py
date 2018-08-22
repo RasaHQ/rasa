@@ -4,15 +4,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-
-import requests
-from rasa_core import utils
-
-from rasa_core.utils import EndpointConfig
-from rasa_core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict
 
 from rasa_core.nlg.generator import NaturalLanguageGenerator
+from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +64,7 @@ def nlg_request_format_spec():
 
 
 def nlg_request_format(template_name, tracker, output_channel, **kwargs):
-    # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
+    # type: (Text, DialogueStateTracker, Text, Any) -> Dict[Text, Any]
     """Create the json body for the NLG json body for the request."""
 
     tracker_state = tracker.current_state(should_include_events=True,
@@ -98,7 +94,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         self.nlg_endpoint = endpoint_config
 
     def generate(self, template_name, tracker, output_channel, **kwargs):
-        # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
+        # type: (Text, DialogueStateTracker, Text, Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain using an endpoint."""
 
         body = nlg_request_format(template_name,
@@ -117,7 +113,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     @staticmethod
     def validate_response(content):
-        # type: (content) -> bool
+        # type: (Dict[Text, Any]) -> bool
         """Validate the NLG response. Raises exception on failure."""
 
         from jsonschema import validate

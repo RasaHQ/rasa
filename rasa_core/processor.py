@@ -3,24 +3,24 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import time
+
 import json
 import logging
-import time
-import warnings
-from types import LambdaType
-
 import numpy as np
+import warnings
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import UnknownTimeZoneError
+from types import LambdaType
 from typing import Optional, List, Dict, Any
 from typing import Text
 
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
-    ActionRestart, ACTION_LISTEN_NAME,
+    ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME)
-from rasa_core.channels import UserMessage, InputChannel, channel
 from rasa_core.channels import CollectingOutputChannel
+from rasa_core.channels import UserMessage
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import ReminderScheduled, Event
@@ -43,8 +43,8 @@ try:
     scheduler.start()
 except UnknownTimeZoneError:
     logger.warning("apscheduler failed to start. "
-                "This is probably because your system timezone is not set"
-                "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
+                   "This is probably because your system timezone is not set"
+                   "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
 
 
 class MessageProcessor(object):
@@ -144,11 +144,11 @@ class MessageProcessor(object):
         # type: (ReminderScheduled, Dispatcher) -> None
         """Handle a reminder that is triggered asynchronously."""
 
-        def has_message_after_reminder(tracker):
+        def has_message_after_reminder(evts):
             """If the user sent a message after the reminder got scheduled -
             it might be better to cancel it."""
 
-            for e in reversed(tracker.events):
+            for e in reversed(evts):
                 if (isinstance(e, ReminderScheduled) and
                         e.name == reminder_event.name):
                     return False
@@ -159,7 +159,7 @@ class MessageProcessor(object):
         tracker = self._get_tracker(dispatcher.sender_id)
 
         if (reminder_event.kill_on_user_message and
-                has_message_after_reminder(tracker)):
+                has_message_after_reminder(tracker.events)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -177,7 +177,8 @@ class MessageProcessor(object):
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
 
-    def _log_slots(self, tracker):
+    @staticmethod
+    def _log_slots(tracker):
         # Log currently set slots
         slot_values = "\n".join(["\t{}: {}".format(s.name, s.value)
                                  for s in tracker.slots.values()])
@@ -266,6 +267,7 @@ class MessageProcessor(object):
                 # call a registered callback
                 self.on_circuit_break(tracker, dispatcher)
 
+    # noinspection PyUnusedLocal
     @staticmethod
     def should_predict_another_action(action_name, events):
         is_listen_action = action_name == ACTION_LISTEN_NAME
@@ -318,17 +320,17 @@ class MessageProcessor(object):
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
                 if s and s.has_features():
-                    logger.warning("Action '{0}' set a slot type '{1}' that "
-                                "it never set during the training. This "
-                                "can throw of the prediction. Make sure to "
-                                "include training examples in your stories "
-                                "for the different types of slots this "
-                                "action can return. Remember: you need to "
-                                "set the slots manually in the stories by "
-                                "adding '- slot{{\"{1}\": {2}}}' "
-                                "after the action."
-                                "".format(action_name, e.key,
-                                          json.dumps(e.value)))
+                    logger.warning(
+                            "Action '{0}' set a slot type '{1}' that "
+                            "it never set during the training. This "
+                            "can throw of the prediction. Make sure to "
+                            "include training examples in your stories "
+                            "for the different types of slots this "
+                            "action can return. Remember: you need to "
+                            "set the slots manually in the stories by "
+                            "adding '- slot{{\"{1}\": {2}}}' "
+                            "after the action."
+                            "".format(action_name, e.key, json.dumps(e.value)))
 
     @staticmethod
     def log_bot_utterances_on_tracker(tracker, dispatcher):

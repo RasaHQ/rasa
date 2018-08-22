@@ -8,7 +8,7 @@ import logging
 
 from flask import Blueprint, request, jsonify, make_response, Response
 from slackclient import SlackClient
-from typing import Text, Optional
+from typing import Text, Optional, List
 
 from rasa_core.channels.channel import UserMessage, OutputChannel
 from rasa_core.channels import InputChannel
@@ -53,7 +53,8 @@ class SlackBot(SlackClient, OutputChannel):
                                               text=message,
                                               attachments=attachment)
 
-    def _convert_to_slack_buttons(self, buttons):
+    @staticmethod
+    def _convert_to_slack_buttons(buttons):
         return [{"text": b['title'],
                  "name": b['payload'],
                  "type": "button"} for b in buttons]

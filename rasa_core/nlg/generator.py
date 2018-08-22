@@ -28,7 +28,7 @@ class NaturalLanguageGenerator(object):
             obj,  # type: Union[NaturalLanguageGenerator, EndpointConfig, None]
             domain  # type: Optional[Domain]
     ):
-        # type: (...) -> object
+        # type: (...) -> NaturalLanguageGenerator
         """Factory to create a generator."""
 
         if isinstance(obj, NaturalLanguageGenerator):

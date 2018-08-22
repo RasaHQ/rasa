@@ -23,6 +23,7 @@ def get_cmd_input():
     text = input().strip()
     if six.PY2:
         # in python 2 input doesn't return unicode values
+        # noinspection PyUnresolvedReferences
         return text.decode("utf-8")
     else:
         return text

@@ -38,9 +38,11 @@ from rasa_nlu.utils import is_url
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
+    # noinspection PyPep8Naming
     from rasa_core.nlg import NaturalLanguageGenerator as NLG
 
 if six.PY2:
+    # noinspection PyUnresolvedReferences
     from StringIO import StringIO as IOReader
 else:
     from io import BytesIO as IOReader
@@ -184,7 +186,7 @@ class Agent(object):
             domain=None,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
-            generator=None,  # type: Union[EndpointConfig, NLG]
+            generator=None,  # type: Union[EndpointConfig, NLG, None]
             tracker_store=None,  # type: Optional[TrackerStore]
             action_endpoint=None,  # type: Optional[EndpointConfig]
             fingerprint=None  # type: Optional[Text]
@@ -294,17 +296,19 @@ class Agent(object):
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(message)
 
+    # noinspection PyUnusedLocal
     def predict_next(
             self,
             sender_id,
             **kwargs
     ):
-        # type: (Text, **Any) -> Dict[Text, Any]
+        # type: (Text, Any) -> Dict[Text, Any]
         """Handle a single message."""
 
         processor = self._create_processor()
         return processor.predict_next(sender_id)
 
+    # noinspection PyUnusedLocal
     def log_message(
             self,
             message,  # type: UserMessage
@@ -355,8 +359,11 @@ class Agent(object):
         :Example:
 
             >>> from rasa_core.agent import Agent
+            >>> from rasa_core.interpreter import RasaNLUInterpreter
+            >>> interpreter = RasaNLUInterpreter(
+            ... "examples/restaurantbot/models/nlu/current")
             >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
-            ... interpreter="examples/restaurantbot/models/nlu/current")
+            ... interpreter=interpreter)
             >>> agent.handle_text("hello")
             [u'how can I help you?']
 
@@ -396,7 +403,7 @@ class Agent(object):
                           trackers,
                           **kwargs
                           ):
-        # type: (List[DialogueStateTracker], **Any) -> None
+        # type: (List[DialogueStateTracker], Any) -> None
         self.policy_ensemble.continue_training(trackers,
                                                self.domain,
                                                **kwargs)
@@ -590,8 +597,11 @@ class Agent(object):
         # creates a processor
         self._ensure_agent_is_prepared()
         return MessageProcessor(
-                self.interpreter, self.policy_ensemble, self.domain,
-                self.tracker_store, self.nlg,
+                self.interpreter,
+                self.policy_ensemble,
+                self.domain,
+                self.tracker_store,
+                self.nlg,
                 action_endpoint=self.action_endpoint,
                 message_preprocessor=preprocessor)
 

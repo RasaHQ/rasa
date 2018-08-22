@@ -50,10 +50,10 @@ class NaturalLanguageInterpreter(object):
             else:
                 if endpoint:
                     raise Exception(
-                        "You have configured an endpoint to use for "
-                        "the NLU model. To use it, you need to "
-                        "specify the model to use with "
-                        "`--nlu project/model`.")
+                            "You have configured an endpoint to use for "
+                            "the NLU model. To use it, you need to "
+                            "specify the model to use with "
+                            "`--nlu project/model`.")
                 else:
                     return RasaNLUInterpreter(model_directory=obj)
         else:
@@ -63,7 +63,7 @@ class NaturalLanguageInterpreter(object):
 class RegexInterpreter(NaturalLanguageInterpreter):
     @staticmethod
     def allowed_prefixes():
-        return INTENT_MESSAGE_PREFIX + "_"   # _ is deprecated but supported
+        return INTENT_MESSAGE_PREFIX + "_"  # _ is deprecated but supported
 
     @staticmethod
     def _create_entities(parsed_entities, sidx, eidx):
@@ -126,7 +126,8 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
         # the regex matches "slot{"a": 1}"
-        m = re.search('^['+prefixes+']?([^{@]+)(@[0-9\.]+)?([{].+)?', user_input)
+        m = re.search('^[' + prefixes + ']?([^{@]+)(@[0-9.]+)?([{].+)?',
+                      user_input)
         if m is not None:
             event_name = m.group(1).strip()
             confidence = RegexInterpreter._parse_confidence(m.group(2))
@@ -147,7 +148,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
         value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
-        structured_message_rx = '^['+prefixes+']?([^\[]+)(\[(.+)\])?'
+        structured_message_rx = '^[' + prefixes + ']?([^\[]+)(\[(.+)\])?'
         m = re.search(structured_message_rx, user_input)
         if m is not None:
             intent = m.group(1).lower()
@@ -185,9 +186,12 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         """Parse a text message."""
 
         if self.is_using_deprecated_format(text):
-            intent, confidence, entities = self.deprecated_extraction(text)
+            intent, confidence, entities = \
+                self.deprecated_extraction(text)
         else:
-            intent, confidence, entities = self.extract_intent_and_entities(text)
+            intent, confidence, entities = \
+                self.extract_intent_and_entities(text)
+
         return {
             'text': text,
             'intent': {

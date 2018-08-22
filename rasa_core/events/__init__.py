@@ -384,7 +384,7 @@ class Restarted(Event):
     def apply_to(self, tracker):
         from rasa_core.actions.action import ACTION_LISTEN_NAME
         tracker._reset()
-        tracker.follow_up_action = ACTION_LISTEN_NAME
+        tracker.trigger_follow_up_action(ACTION_LISTEN_NAME)
 
 
 # noinspection PyProtectedMember
@@ -500,7 +500,7 @@ class ReminderScheduled(Event):
         return d
 
     @classmethod
-    def _parse_trigger_time(self, date_time):
+    def _parse_trigger_time(cls, date_time):
         return datetime.datetime.strptime(date_time[:19], '%Y-%m-%dT%H:%M:%S')
 
     @classmethod
@@ -612,8 +612,7 @@ class FollowupAction(Event):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-
-        tracker.followup_action = self.action_name
+        tracker.trigger_follow_up_action(self.action_name)
 
 
 # noinspection PyProtectedMember

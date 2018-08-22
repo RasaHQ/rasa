@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 
+# noinspection PyPep8Naming
 class DialogueTrainingData(object):
     def __init__(self, X, y, true_length=None):
         self.X = X

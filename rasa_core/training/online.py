@@ -5,22 +5,19 @@ from __future__ import unicode_literals
 
 import io
 import logging
-from threading import Thread
-
 import numpy as np
 import requests
 from gevent.pywsgi import WSGIServer
+from threading import Thread
 from typing import Any, Text, Dict, List, Optional, Tuple
 
 from rasa_core import utils, server, events
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage, console
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
-from rasa_core.events import Event
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.training.structures import Story
 from rasa_core.utils import EndpointConfig
-
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +106,13 @@ def _request_action_from_user(predictions, tracker_dump):
     return out
 
 
-def send_message(endpoint, sender_id, message, parse_data=None):
-    # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
+def send_message(endpoint,  # type: EndpointConfig
+                 sender_id,  # type: Text
+                 message,  # type: Text
+                 parse_data=None  # type: Optional[Dict[Text, Any]]
+                 ):
+    # type: (...) -> Dict[Text, Any]
+
     payload = {
         "sender": "user",
         "text": message,
@@ -130,7 +132,7 @@ def send_message(endpoint, sender_id, message, parse_data=None):
 
 
 def request_prediction(endpoint, sender_id):
-    # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
+    # type: (EndpointConfig, Text) -> Dict[Text, Any]
 
     r = endpoint.request(method="post",
                          subpath="/conversations/{}/predict".format(sender_id))
@@ -173,11 +175,11 @@ def send_action(endpoint, sender_id, action_name):
     return r.json()
 
 
-def send_events(endpoint, sender_id, events):
+def send_events(endpoint, sender_id, evts):
     # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
-    r = endpoint.request(json=events,
+    r = endpoint.request(json=evts,
                          method="put",
                          subpath=subpath)
 
@@ -189,10 +191,10 @@ def send_events(endpoint, sender_id, events):
     return r.json()
 
 
-def send_finetune(endpoint, events):
+def send_finetune(endpoint, evts):
     # type: (EndpointConfig, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
-    r = endpoint.request(json=events,
+    r = endpoint.request(json=evts,
                          method="post",
                          subpath="/finetune")
 

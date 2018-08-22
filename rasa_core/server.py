@@ -132,7 +132,7 @@ def create_app(agent,
                             "messages": out.messages})
 
         except ValueError as e:
-            return Response(jsonify(error=e.message),
+            return Response(jsonify(error="".format(e)),
                             status=400,
                             content_type="application/json")
         except Exception as e:
@@ -157,8 +157,9 @@ def create_app(agent,
             tracker.update(evt)
             agent.tracker_store.save(tracker)
         else:
-            logger.warning("Append event called, but could not extract a "
-                        "valid event. Request JSON: {}".format(request_params))
+            logger.warning(
+                    "Append event called, but could not extract a "
+                    "valid event. Request JSON: {}".format(request_params))
         return jsonify(tracker.current_state(should_include_events=True))
 
     @app.route("/conversations/<sender_id>/tracker/events",
@@ -367,10 +368,10 @@ def create_app(agent,
 
         try:
             # Fetches the appropriate bot response in a json format
-            responses = agent.continue_training([tracker],
-                                                epochs=epochs,
-                                                batch_size=batch_size)
-            return jsonify(responses)
+            agent.continue_training([tracker],
+                                    epochs=epochs,
+                                    batch_size=batch_size)
+            return '', 204
 
         except Exception as e:
             logger.exception("Caught an exception during prediction.")

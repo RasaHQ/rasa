@@ -16,6 +16,7 @@ from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
+# noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
 
 from rasa_core.policies import Policy
@@ -62,13 +63,15 @@ class SklearnPolicy(Policy):
     def __init__(
         self,
         featurizer=None,  # type: Optional[MaxHistoryTrackerFeaturizer]
-        model=LogisticRegression(),  # type: sklearn.base.ClassifierMixin
+        model=LogisticRegression(),  # type: sklearn.base.BaseEstimator
         param_grid=None,  # type: Optional[Dict[Text, List] or List[Dict]]
         cv=None,  # type: Optional[int]
         scoring='accuracy',  # type: Optional[Text or List or Dict or Callable]
-        label_encoder=LabelEncoder(),  # type: sklearn.base.TransformerMixin
+        label_encoder=LabelEncoder(),  # type: LabelEncoder
         shuffle=True,  # type: bool
     ):
+        # type: (...) -> None
+
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
                 raise TypeError("Passed featurizer of type {}, should be "
@@ -76,11 +79,11 @@ class SklearnPolicy(Policy):
                                 "".format(type(featurizer).__name__))
         super(SklearnPolicy, self).__init__(featurizer)
 
-        self.model = model
+        self.model = model  # type: sklearn.base.BaseEstimator
         self.cv = cv
         self.param_grid = param_grid
         self.scoring = scoring
-        self.label_encoder = label_encoder
+        self.label_encoder = label_encoder  # type: LabelEncoder
         self.shuffle = shuffle
 
         # attributes that need to be restored after loading
@@ -126,7 +129,7 @@ class SklearnPolicy(Policy):
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
-              **kwargs  # type: **Any
+              **kwargs  # type: Any
               ):
         # type: (...) -> Dict[Text: Any]
 

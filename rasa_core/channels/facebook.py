@@ -6,10 +6,10 @@ from __future__ import unicode_literals
 import hashlib
 import hmac
 import logging
-
 import six
 from fbmessenger import (
-    BaseMessenger, elements, MessengerClient, attachments)
+    BaseMessenger, MessengerClient, attachments)
+from fbmessenger.elements import Text as FBText
 from flask import Blueprint, request, jsonify
 from typing import Text, List, Dict, Any, Callable
 
@@ -74,9 +74,10 @@ class Messenger(BaseMessenger):
         out_channel = MessengerBot(self.client)
         user_msg = UserMessage(text, out_channel, sender_id)
 
+        # noinspection PyBroadException
         try:
             self.on_new_message(user_msg)
-        except Exception as e:
+        except Exception:
             logger.exception("Exception when trying to handle webhook "
                              "for facebook message.")
             pass
@@ -133,7 +134,7 @@ class MessengerBot(OutputChannel):
         logger.info("Sending message: " + message)
 
         for message_part in message.split("\n\n"):
-            self.send(recipient_id, elements.Text(text=message_part))
+            self.send(recipient_id, FBText(text=message_part))
 
     def send_image_url(self, recipient_id, image_url):
         # type: (Text, Text) -> None
@@ -142,7 +143,7 @@ class MessengerBot(OutputChannel):
         self.send(recipient_id, attachments.Image(url=image_url))
 
     def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
+        # type: (Text, Text, List[Dict[Text, Any]], Any) -> None
         """Sends buttons to the output."""
 
         # buttons is a list of tuples: [(option_name,payload)]
@@ -274,6 +275,7 @@ class FacebookInput(InputChannel):
         :return: boolean indicated that hub signature is validated
         """
 
+        # noinspection PyBroadException
         try:
             hash_method, hub_signature = hub_signature_header.split('=')
         except Exception:
@@ -281,7 +283,7 @@ class FacebookInput(InputChannel):
         else:
             digest_module = getattr(hashlib, hash_method)
             if six.PY2:
-                # noinspection PyCompatibility
+                # noinspection PyCompatibility,PyUnresolvedReferences
                 hmac_object = hmac.new(
                         str(app_secret),
                         unicode(request_payload), digest_module)

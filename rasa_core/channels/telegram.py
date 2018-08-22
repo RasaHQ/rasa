@@ -4,14 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-
 from flask import Blueprint, request, jsonify
+from telegram import (
+    Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
+    KeyboardButton, ReplyKeyboardMarkup)
 
-from telegram import (Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
-                      KeyboardButton, ReplyKeyboardMarkup)
-
-from rasa_core.channels.channel import UserMessage, OutputChannel
 from rasa_core.channels import InputChannel
+from rasa_core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -129,19 +128,19 @@ class TelegramInput(InputChannel):
                 update = Update.de_json(request.get_json(force=True),
                                         out_channel)
                 if self._is_button(update):
-                    message = update.callback_query.message
+                    msg = update.callback_query.message
                     text = update.callback_query.data
                 else:
-                    message = update.message
-                    if self._is_user_message(message):
-                        text = message.text.replace('/bot', '')
-                    elif self._is_location(message):
+                    msg = update.message
+                    if self._is_user_message(msg):
+                        text = msg.text.replace('/bot', '')
+                    elif self._is_location(msg):
                         text = ('{{"lng":{0}, "lat":{1}}}'
-                                ''.format(message.location.longitude,
-                                          message.location.latitude))
+                                ''.format(msg.location.longitude,
+                                          msg.location.latitude))
                     else:
                         return "success"
-                sender_id = message.chat.id
+                sender_id = msg.chat.id
                 try:
                     if text == '_restart' or text == '/restart':
                         on_new_message(UserMessage(text, out_channel,

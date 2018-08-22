@@ -19,6 +19,7 @@ from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
     BotUttered)
+from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +32,13 @@ class DialogueStateTracker(object):
     """Maintains the state of a conversation."""
 
     @classmethod
-    def from_dict(cls, sender_id, dump_as_dict, slots,
-                  max_event_history=None):
-        # type: (Text, List[Dict[Text, Any]]) -> DialogueStateTracker
+    def from_dict(cls,
+                  sender_id,  # type: Text
+                  dump_as_dict,  # type: List[Dict[Text, Any]]
+                  slots,  # type: List[Slot]
+                  max_event_history=None  # type: Optional[int]
+                  ):
+        # type: (...) -> DialogueStateTracker
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
@@ -357,7 +362,7 @@ class DialogueStateTracker(object):
         # type: (Action) -> None
         """Triggers another action following the execution of the current."""
 
-        self.follow_up_action = action
+        self.followup_action = action
 
     def clear_followup_action(self):
         # type: () -> None
