@@ -29,18 +29,27 @@ ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
 
 def default_actions():
+    # type: () -> List[Action]
+    """List default actions."""
     return [ActionListen(), ActionRestart(), ActionDefaultFallback()]
 
 
 def default_action_names():
+    # type: () -> List[Text]
+    """List default action names."""
     return [a.name() for a in default_actions()]
 
 
 def num_default_actions():
+    # type: () -> int
+    """Number of default actions."""
     return len(default_actions())
 
 
 def ensure_action_name_uniqueness(action_names):
+    # type: (List[Text]) -> None
+    """Check and raise an exception if there are two actions with same name."""
+
     unique_action_names = set()  # used to collect unique action names
     for a in action_names:
         if a in unique_action_names:
@@ -185,6 +194,9 @@ class RemoteAction(Action):
         self.action_endpoint = action_endpoint
 
     def _action_call_format(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> Dict[Text, Any]
+        """Create the request json send to the action server."""
+
         tracker_state = tracker.current_state(
                 should_include_events=True,
                 should_ignore_restarts=True)

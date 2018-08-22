@@ -36,7 +36,6 @@ def load_data(
         remove_duplicates=True,  # type: bool
         unique_last_num_states=None,  # type: Optional[int]
         augmentation_factor=20,  # type: int
-        max_number_of_trackers=None,  # deprecated
         tracker_limit=None,  # type: Optional[int]
         use_story_concatenation=True,  # type: bool
         debug_plots=False  # type: bool
@@ -52,7 +51,6 @@ def load_data(
                                   remove_duplicates,
                                   unique_last_num_states,
                                   augmentation_factor,
-                                  max_number_of_trackers,
                                   tracker_limit,
                                   use_story_concatenation,
                                   debug_plots)

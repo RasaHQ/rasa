@@ -30,3 +30,4 @@ mattermostwrapper==2.1
 colorhash==1.0.2
 pika==0.11.2
 jsonschema==2.6.0
+packaging==17.1

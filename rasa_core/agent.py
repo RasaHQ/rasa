@@ -182,7 +182,7 @@ class Agent(object):
             self,
             domain=None,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
-            interpreter=None,  # type: NaturalLanguageInterpreter
+            interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
             generator=None,  # type: Union[EndpointConfig, NLG]
             tracker_store=None,  # type: Optional[TrackerStore]
             action_endpoint=None,  # type: Optional[EndpointConfig]
@@ -193,7 +193,8 @@ class Agent(object):
         self.policy_ensemble = self._create_ensemble(policies)
 
         if not isinstance(interpreter, NaturalLanguageInterpreter):
-            logger.warning(
+            if interpreter is not None:
+                logger.warning(
                     "Passing a value for interpreter to an agent "
                     "where the value is not an interpreter "
                     "is deprecated. Construct the interpreter, before"
@@ -228,14 +229,19 @@ class Agent(object):
 
     @classmethod
     def load(cls,
-             path=None,  # type: Text
-             interpreter=None,  # type: NaturalLanguageInterpreter
+             path,  # type: Text
+             interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
              generator=None,  # type: Union[EndpointConfig, NLG]
              tracker_store=None,  # type: Optional[TrackerStore]
              action_endpoint=None,  # type: Optional[EndpointConfig]
              ):
         # type: (...) -> Agent
         """Load a persisted model from the passed path."""
+
+        if not path:
+            raise ValueError("You need to provide a valid directory where "
+                             "to load the agent from when calling "
+                             "`Agent.load`.")
 
         if os.path.isfile(path):
             raise ValueError("You are trying to load a MODEL from a file "
@@ -399,7 +405,6 @@ class Agent(object):
                   remove_duplicates=True,  # type: bool
                   unique_last_num_states=None,  # type: Optional[int]
                   augmentation_factor=20,  # type: int
-                  max_number_of_trackers=None,  # deprecated
                   tracker_limit=None,  # type: Optional[int]
                   use_story_concatenation=True,  # type: bool
                   debug_plots=False  # type: bool
@@ -437,7 +442,7 @@ class Agent(object):
 
         return training.load_data(resource_name, self.domain,
                                   remove_duplicates, unique_last_num_states,
-                                  augmentation_factor, max_number_of_trackers,
+                                  augmentation_factor,
                                   tracker_limit, use_story_concatenation,
                                   debug_plots)
 

@@ -110,8 +110,8 @@ def load_tracker_from_json(tracker_dump, domain):
 def serve_application(model_directory,  # type: Text
                       nlu_model=None,  # type: Optional[Text]
                       tracker_dump=None,  # type: Optional[Text]
-                      port=constants.DEFAULT_SERVER_PORT,
-                      endpoints=None,
+                      port=constants.DEFAULT_SERVER_PORT,   # type: int
+                      endpoints=None,  # type: Optional[Text]
                       ):
     from rasa_core import run
 

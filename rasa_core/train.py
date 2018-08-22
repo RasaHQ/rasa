@@ -9,6 +9,10 @@ from builtins import str
 
 from rasa_core import utils
 from rasa_core.agent import Agent
+from rasa_core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
+from rasa_core.policies import FallbackPolicy
 from rasa_core.training import online
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
@@ -88,6 +92,25 @@ def create_argument_parser():
             '--endpoints',
             default=None,
             help="Configuration file for the connectors as a yml file")
+    parser.add_argument(
+            '--nlu_threshold',
+            type=int,
+            default=DEFAULT_NLU_FALLBACK_THRESHOLD,
+            help="If NLU prediction confidence is below threshold, fallback "
+                 "will get triggered.")
+    parser.add_argument(
+            '--core_threshold',
+            type=int,
+            default=DEFAULT_CORE_FALLBACK_THRESHOLD,
+            help="If Core action prediction confidence is below the threshold "
+                 "a fallback action will get triggered")
+    parser.add_argument(
+            '--fallback_action_name',
+            type=int,
+            default=DEFAULT_FALLBACK_ACTION,
+            help="When a fallback is triggered (e.g. because the ML prediction "
+                 "is of low confidence) this is the name of tje action that "
+                 "will get triggered instead.")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -104,14 +127,29 @@ def train_dialogue_model(domain_file, stories_file, output_path,
 
     action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
 
+    fallback_args, kwargs = utils.extract_args(kwargs,
+                                               {"nlu_threshold",
+                                                "core_threshold",
+                                                "fallback_action_name"})
+
+    policies = [
+        FallbackPolicy(
+                fallback_args.get("nlu_threshold",
+                                  DEFAULT_NLU_FALLBACK_THRESHOLD),
+                fallback_args.get("core_threshold",
+                                  DEFAULT_CORE_FALLBACK_THRESHOLD),
+                fallback_args.get("fallback_action_name",
+                                  DEFAULT_FALLBACK_ACTION)),
+        MemoizationPolicy(
+                max_history=max_history),
+        KerasPolicy(
+                MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                            max_history=max_history))]
+
     agent = Agent(domain_file,
                   action_endpoint=action_endpoint,
                   interpreter=nlu_model_path,
-                  policies=[
-                      MemoizationPolicy(max_history=max_history),
-                      KerasPolicy(MaxHistoryTrackerFeaturizer(
-                              BinarySingleStateFeaturizer(),
-                              max_history=max_history))])
+                  policies=policies)
 
     data_load_args, kwargs = utils.extract_args(kwargs,
                                                 {"use_story_concatenation",

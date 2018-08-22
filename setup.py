@@ -58,6 +58,7 @@ install_requires = [
     "mattermostwrapper~=2.0",
     "colorhash~=1.0",
     "jsonschema~=2.6",
+    "packaging~=17.0",
 ]
 
 extras_requires = {

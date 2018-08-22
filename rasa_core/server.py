@@ -273,7 +273,7 @@ def create_app(agent,
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
 
-        # TODO: TB - implement properly for agent / bot
+        # TODO: implement properly for agent / bot
         if sender != "user":
             return Response(jsonify(error="Currently, only user messages can "
                                           "be passed to this endpoint. "
