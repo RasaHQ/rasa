@@ -116,7 +116,6 @@ class TelegramInput(InputChannel):
             else:
                 logger.warning("Webhook Setup Failed")
                 return "Invalid webhook"
-        set_webhook()
         
         @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
         def message():
@@ -162,4 +161,5 @@ class TelegramInput(InputChannel):
 
                 return "success"
 
+        set_webhook()
         return telegram_webhook

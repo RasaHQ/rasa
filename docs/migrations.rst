@@ -8,17 +8,48 @@ This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
 0.10.x to 0.11.0
---------------
+----------------
+
+General
+~~~~~~~
+- domain actions list now needs to always contain the actions names instead of
+  the classpath
+
+Changes to Input and Output Channels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- webhook urls for all the channels changed. The URL's are now prefixed
+  with the channel name, e.g.
+  ``http://localhost:5005/webhooks/facebook/webhook``
 - ``rasa_core.channels.direct`` output channel package removed.
   ``CollectingOutputChannel`` moved to ``rasa_core.channels.channel``
 - ``HttpInputComponent`` renamed to ``InputChannel`` & moved to
   ``rasa_core.channels.channel.InputChannel``
 - removed package ``rasa_core.channels.rest``,
   please use ``rasa_core.channels.RestInput`` instead
-- domain actions list now needs to always contain the actions names instead of
-  the classpath
 - remove file input channel ``rasa_core.channels.file.FileInputChannel``
+- format of the ``credentials.yml`` used in the run / server scripts
+  has changed to allow for multiple channels in one file:
 
+  The new format now contains the channels name first, e.g. for facebook:
+
+  .. code-block:: yaml
+
+     facebook:
+       verify: "rasa-bot"
+       secret: "3e34709d01ea89032asdebfe5a74518"
+       page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+
+- signature of ``agent.handle_channel`` got renamed
+  and the signature changed. here is an up to date example:
+
+  .. code-block:: python
+
+     from rasa_core.channels.facebook import FacebookInput
+
+     input_channel = FacebookInput(fb_verify="VERIFY",
+                                   fb_secret="SECRET",
+                                   fb_access_token="ACCESS_TOKEN")
+     agent.handle_channels([input_channel], port=5005, serve_forever=True)
 
 0.9.x to 0.10.0
 ---------------

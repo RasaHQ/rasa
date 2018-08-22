@@ -10,12 +10,15 @@ from threading import Thread
 
 from builtins import str
 from gevent.pywsgi import WSGIServer
+from typing import Text, Optional, Union, List
 
 import rasa_core
 from rasa_core import constants, agent
 from rasa_core import utils, server
 from rasa_core.agent import Agent
-from rasa_core.channels import console
+from rasa_core.channels import (
+    console, RestInput, InputChannel,
+    BUILTIN_CHANNELS)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
 from rasa_core.utils import read_yaml_file
@@ -79,9 +82,7 @@ def create_argument_parser():
             help="service to connect to")
     parser.add_argument(
             '--enable_api',
-            default=False,
             action="store_true",
-            type=bool,
             help="Start the web server api in addition to the input channel")
 
     utils.add_logging_option_arguments(parser)
@@ -124,18 +125,32 @@ def _raise_missing_credentials_exception(channel):
                     format(channel, channel, channel_doc_link))
 
 
-def _create_external_channel(channel, credentials_file):
+def _create_external_channels(channel, credentials_file):
+    # type: (Optional[Text], Optional[Text]) -> List[InputChannel]
+
     # the commandline input channel is the only one that doesn't need any
     # credentials
     if channel == "cmdline":
         from rasa_core.channels import RestInput
-        return RestInput()
+        return [RestInput()]
 
-    if credentials_file is None:
+    if channel is None and credentials_file is None:
+        # if there is no configuration at all, we'll run without a channel
+        return []
+    elif credentials_file is None:
+        # if there is a channel, but no configuration, this can't be right
         _raise_missing_credentials_exception(channel)
 
-    credentials = read_yaml_file(credentials_file)
+    all_credentials = read_yaml_file(credentials_file)
 
+    if channel:
+        return [_create_single_channel(channel, all_credentials.get(channel))]
+    else:
+        return [_create_single_channel(c, k)
+                for c, k in all_credentials.items()]
+
+
+def _create_single_channel(channel, credentials):
     if channel == "facebook":
         from rasa_core.channels.facebook import FacebookInput
 
@@ -171,23 +186,30 @@ def _create_external_channel(channel, credentials_file):
                 credentials.get("account_sid"),
                 credentials.get("auth_token"),
                 credentials.get("twilio_number"))
+    elif channel == "rasa":
+        from rasa_core.channels.rasa_chat import RasaChatInput
+
+        return RasaChatInput(
+                credentials.get("url"),
+                credentials.get("admin_token"))
     else:
-        Exception("This script currently only supports the facebook,"
-                  " telegram, mattermost and slack connectors.")
+        raise Exception("This script currently only supports the "
+                        "{} connectors."
+                        "".format(", ".join(BUILTIN_CHANNELS)))
 
 
-def create_http_input_channel(channel, credentials_file):
+def create_http_input_channels(channel,  # type: Union[None, Text, RestInput]
+                               credentials_file  # type: Optional[Text]
+                               ):
+    # type: (...) -> List[InputChannel]
     """Instantiate the chosen input channel."""
 
-    if channel is None:
-        return None
-    elif channel in {'facebook', 'slack', 'telegram',
-                     'mattermost', 'twilio', 'cmdline'}:
-        return _create_external_channel(channel, credentials_file)
+    if channel is None or channel in rasa_core.channels.BUILTIN_CHANNELS:
+        return _create_external_channels(channel, credentials_file)
     else:
         try:
             c = utils.class_from_module_path(channel)
-            return c()
+            return [c()]
         except Exception:
             raise Exception("Unknown input channel for running main.")
 
@@ -205,17 +227,17 @@ def start_server(input_channels,
                  cors,
                  auth_token,
                  port,
-                 agent):
+                 initial_agent):
     """Run the agent."""
 
-    app = server.create_app(agent,
+    app = server.create_app(initial_agent,
                             cors_origins=cors,
                             auth_token=auth_token)
 
     if input_channels:
         rasa_core.channels.channel.register(input_channels,
                                             app,
-                                            app.handle_message,
+                                            initial_agent.handle_message,
                                             route="/webhooks/")
 
     if logger.isEnabledFor(logging.DEBUG):
@@ -228,20 +250,17 @@ def start_server(input_channels,
     return http_server
 
 
-def serve_application(agent,
+def serve_application(initial_agent,
                       channel=None,
                       port=constants.DEFAULT_SERVER_PORT,
                       credentials_file=None,
                       cors=None,
                       auth_token=None
                       ):
-    if channel:
-        input_channels = [create_http_input_channel(channel, credentials_file)]
-    else:
-        input_channels = []
+    input_channels = create_http_input_channels(channel, credentials_file)
 
     http_server = start_server(input_channels, cors, auth_token,
-                               port, agent)
+                               port, initial_agent)
 
     if channel == "cmdline":
         start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop)
@@ -277,8 +296,8 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.WARN)
+    logging.getLogger('werkzeug').setLevel(logging.WARN)
+    logging.getLogger('matplotlib').setLevel(logging.WARN)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
@@ -286,14 +305,14 @@ if __name__ == '__main__':
 
     logger.info("Rasa process starting")
 
-    endpoints = read_endpoints(cmdline_args.endpoints)
-    interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                    endpoints.nlu)
-    loaded_agent = load_agent(cmdline_args.core,
-                              interpreter=interpreter,
-                              endpoints=endpoints)
+    _endpoints = read_endpoints(cmdline_args.endpoints)
+    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                     _endpoints.nlu)
+    _agent = load_agent(cmdline_args.core,
+                        interpreter=_interpreter,
+                        endpoints=_endpoints)
 
-    serve_application(loaded_agent,
+    serve_application(_agent,
                       cmdline_args.connector,
                       cmdline_args.port,
                       cmdline_args.credentials,

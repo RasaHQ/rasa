@@ -66,6 +66,14 @@ def test_version(app):
         "minimum_compatible_version") == constants.MINIMUM_COMPATIBLE_VERSION)
 
 
+def test_status(app):
+    response = app.get("http://dummy/status")
+    content = response.get_json()
+    assert response.status_code == 200
+    assert content.get("is_ready")
+    assert content.get("model_fingerprint") is not None
+
+
 @freeze_time("2018-01-01")
 def test_requesting_non_existent_tracker(app):
     response = app.get("http://dummy/conversations/madeupid/tracker")

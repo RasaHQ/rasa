@@ -375,4 +375,13 @@ def create_app(agent,
                             status=500,
                             content_type="application/json")
 
+    @app.route("/status", methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    def status():
+        return jsonify({
+            "model_fingerprint": agent.fingerprint,
+            "is_ready": agent.is_ready()
+        })
+
     return app

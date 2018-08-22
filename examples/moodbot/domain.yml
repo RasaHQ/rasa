@@ -13,10 +13,6 @@ actions:
 - utter_happy
 - utter_goodbye
 
-slots:
-  test:
-    type: text
-
 templates:
   utter_greet:
   - text: "Hey! How are you?"
@@ -35,9 +31,6 @@ templates:
 
   utter_happy:
   - text: "Great carry on!"
-
-  utter_custom_template:
-  - text: "YES!"
 
   utter_goodbye:
   - text: "Bye"
