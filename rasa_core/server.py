@@ -22,6 +22,8 @@ from rasa_core.events import Event
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
+from rasa_core.channels import UserMessage
+
 
 logger = logging.getLogger(__name__)
 
@@ -383,5 +385,27 @@ def create_app(agent,
             "model_fingerprint": agent.fingerprint,
             "is_ready": agent.is_ready()
         })
+
+    @app.route("/predict", methods=['POST'])
+    @requires_auth(auth_token)
+    @cross_origin(origins=cors_origins)
+    @ensure_loaded_agent(agent)
+    def tracker_predict():
+        """ Given a list of events, predicts the next action"""
+        sender_id = UserMessage.DEFAULT_SENDER_ID
+        request_params = request.get_json(force=True)
+        for param in request_params:
+            if param.get('event', None) is None:
+                return Response(
+                    """Invalid list of events provided.""",
+                    status=400)
+        tracker = DialogueStateTracker.from_dict(sender_id,
+                                                 request_params,
+                                                 agent.domain.slots)
+        policy_ensemble = agent.policy_ensemble
+        probabilities = policy_ensemble.probabilities_using_best_policy(tracker, agent.domain)
+        probability_dict = {agent.domain.action_for_index(idx, agent.action_endpoint).name(): probability
+                            for idx, probability in enumerate(probabilities)}
+        return jsonify(probability_dict)
 
     return app
