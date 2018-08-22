@@ -92,7 +92,7 @@ def _print_history(tracker_dump):
 
 
 def _request_action_from_user(predictions, tracker_dump):
-    # given the intent and the text (NOT IMPLEMENTED)
+    # given the intent and the text
     # what is the correct action?
     _print_history(tracker_dump)
     print("what is the next action for the bot?\n")
