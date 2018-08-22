@@ -12,7 +12,7 @@ import requests
 from gevent.pywsgi import WSGIServer
 from typing import Any, Text, Dict, List, Optional, Tuple
 
-from rasa_core import utils, server
+from rasa_core import utils, server, events
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage, console
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
@@ -225,8 +225,7 @@ def _export_stories(tracker):
     if not export_file_path:
         export_file_path = DEFAULT_FILE_EXPORT_PATH
 
-    parsed_events = [Event.from_parameters(e)
-                     for e in tracker.get("events", [])]
+    parsed_events = events.deserialise_events(tracker.get("events", []))
 
     s = Story.from_events(parsed_events)
 

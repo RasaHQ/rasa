@@ -12,7 +12,7 @@ import uuid
 import jsonpickle
 import typing
 from builtins import str
-from typing import List, Dict, Text, Any
+from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa_core import utils
 
@@ -30,9 +30,18 @@ def deserialise_events(serialized_events):
         [{"event": "slot", "value": 5, "name": "my_slot"}]
     """
 
-    return [Event.from_parameters(e)
-            for e in serialized_events
-            if "event" in e]
+    deserialised = []
+
+    for e in serialized_events:
+        if "event" in e:
+            event = Event.from_parameters(e)
+            if event:
+                deserialised.append(event)
+            else:
+                logger.warn("Ignoring event ({}) while deserialising "
+                            "events. Couldn't parse it.")
+
+    return deserialised
 
 
 def first_key(d, default_key):
@@ -67,18 +76,32 @@ class Event(object):
         raise NotImplementedError
 
     @staticmethod
-    def from_story_string(event_name, parameters, default=None):
+    def from_story_string(event_name,  # type: Text
+                          parameters,  # type: Dict[Text, Any]
+                          default=None  # type: Optional[Type[Event]]
+                          ):
+        # type: (...) -> Optional[Event]
         event = Event.resolve_by_type(event_name, default)
-        return event._from_story_string(parameters)
+
+        if event:
+            return event._from_story_string(parameters)
+        else:
+            return None
 
     @staticmethod
     def from_parameters(parameters, default=None):
+        # type: (Dict[Text, Any], Optional[Type[Event]]) -> Optional[Event]
+
         event_name = parameters.get("event")
         if event_name is not None:
             copied = parameters.copy()
             del copied["event"]
+
             event = Event.resolve_by_type(event_name, default)
-            return event._from_parameters(parameters)
+            if event:
+                return event._from_parameters(parameters)
+            else:
+                return None
         else:
             return None
 
@@ -106,12 +129,15 @@ class Event(object):
 
     @staticmethod
     def resolve_by_type(type_name, default=None):
+        # type: (Text, Optional[Text]) -> Optional[Type[Event]]
         """Returns a slots class by its type name."""
 
         for cls in utils.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
-        if default is not None:
+        if type_name == "topic":
+            return None
+        elif default is not None:
             return default
         else:
             raise ValueError("Unknown event name '{}'.".format(type_name))
@@ -270,60 +296,6 @@ class BotUttered(Event):
                               parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
-
-
-# TODO: DEPRECATED - remove in version 0.10.0
-# noinspection PyProtectedMember
-class TopicSet(Event):
-    """The topic of conversation has changed.
-
-    As a side effect self.topic will be pushed on to ``Tracker.topic_stack``."""
-
-    type_name = "topic"
-
-    def __init__(self, topic, timestamp=None):
-        self.topic = topic
-        super(TopicSet, self).__init__(timestamp)
-
-    def __str__(self):
-        return "TopicSet(topic: {})".format(self.topic)
-
-    def __hash__(self):
-        return hash(self.topic)
-
-    def __eq__(self, other):
-        if not isinstance(other, TopicSet):
-            return False
-        else:
-            return self.topic == other.topic
-
-    def as_story_string(self):
-        return "{name}[{props}]".format(name=self.type_name, props=self.topic)
-
-    @classmethod
-    def _from_story_string(cls, parameters):
-        topic = first_key(parameters, default_key="name")
-
-        if topic is not None:
-            return TopicSet(topic)
-        else:
-            return None
-
-    def as_dict(self):
-        d = super(TopicSet, self).as_dict()
-        d.update({"topic": self.topic})
-        return d
-
-    @classmethod
-    def _from_parameters(cls, parameters):
-        try:
-            return TopicSet(parameters.get("topic"),
-                            parameters.get("timestamp"))
-        except KeyError as e:
-            raise ValueError("Failed to parse set topic event. {}".format(e))
-
-    def apply_to(self, tracker):
-        pass
 
 
 # noinspection PyProtectedMember

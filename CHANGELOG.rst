@@ -28,6 +28,7 @@ Changed
 
 Removed
 -------
+- removed the deprecated ``TopicSet`` event
 
 Fixed
 -------

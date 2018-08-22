@@ -153,8 +153,12 @@ def create_app(agent,
         request_params = request.get_json(force=True)
         evt = Event.from_parameters(request_params)
         tracker = agent.tracker_store.get_or_create_tracker(sender_id)
-        tracker.update(evt)
-        agent.tracker_store.save(tracker)
+        if evt:
+            tracker.update(evt)
+            agent.tracker_store.save(tracker)
+        else:
+            logger.warn("Append event called, but could not extract a "
+                        "valid event. Request JSON: {}".format(request_params))
         return jsonify(tracker.current_state(should_include_events=True))
 
     @app.route("/conversations/<sender_id>/tracker/events",

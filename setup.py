@@ -24,7 +24,7 @@ tests_requires = [
     "matplotlib~=2.0",
     "pygraphviz~=1.0",
     "responses~=0.9.0",
-    "httpretty~=0.9.0"
+    "httpretty~=0.9.0",
 ]
 
 install_requires = [
@@ -57,6 +57,7 @@ install_requires = [
     "twilio~=6.0",
     "mattermostwrapper~=2.0",
     "colorhash~=1.0",
+    "jsonschema~=2.6",
 ]
 
 extras_requires = {
