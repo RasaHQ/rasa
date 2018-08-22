@@ -368,8 +368,32 @@ If you are running the cells here in the docs, run this cell:
 .. runnable::
    :description: core-chat-with-nlu
 
-   from rasa_core.server import start_server
-   start_server('models/dialogue', interpreter='models/current/nlu')
+   import IPython
+   from IPython.display import clear_output
+   from rasa_core.agent import Agent
+   import time
+
+   messages = ["Hi! you can chat in this window. Type 'stop' to end the conversation."]
+   agent = Agent.load('models/dialogue', interpreter='models/current/nlu')
+
+   def chatlogs_html(messages):
+       messages_html = "".join(["&lt;p&gt;{}&lt;/p&gt;".format(m) for m in messages])
+       chatbot_html = """&lt;div class="chat-window" {}&lt;/div&gt;""".format(messages_html)
+       return chatbot_html
+
+
+   while True:
+       clear_output()
+       display(IPython.display.HTML(chatlogs_html(messages)))
+       time.sleep(0.3)
+       a = input()
+       messages.append(a)
+       if a == 'stop':
+           break
+       responses = agent.handle_message(a)
+       for r in responses:
+           messages.append(r.get("text"))
+
 
 Congratulations 🚀! You just built a bot from scratch,
 powered entirely by machine learning.
