@@ -21,7 +21,7 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
 from rasa_nlu.model import InvalidProjectError
 from rasa_nlu.project import Project
-from rasa_nlu.train import do_train_in_worker
+from rasa_nlu.train import do_train_in_worker, TrainingException
 from rasa_nlu.training_data.loading import load_data
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -211,6 +211,13 @@ class DataRouter(object):
         else:
             raise ValueError("unknown mode : {0}".format(mode))
 
+    @staticmethod
+    def _tf_in_pipeline(model_config):
+        # type: (RasaNLUModelConfig) -> bool
+        from rasa_nlu.classifiers.embedding_intent_classifier import \
+            EmbeddingIntentClassifier
+        return EmbeddingIntentClassifier.name in model_config.component_names
+
     def extract(self, data):
         return self.emulator.normalise_request_json(data)
 
@@ -320,7 +327,7 @@ class DataRouter(object):
             return model_dir
 
         def training_errback(failure):
-            logger.warn(failure)
+            logger.warning(failure)
             target_project = self.project_store.get(
                     failure.value.failed_target_project)
             self._current_training_processes -= 1
@@ -336,18 +343,43 @@ class DataRouter(object):
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
 
-        result = self.pool.submit(do_train_in_worker,
-                                  train_config,
-                                  data_file,
-                                  path=self.project_dir,
-                                  project=project,
-                                  fixed_model_name=model_name,
-                                  storage=self.remote_storage)
-        result = deferred_from_future(result)
-        result.addCallback(training_callback)
-        result.addErrback(training_errback)
+        # tensorflow training is not executed in a separate thread, as this may
+        # cause training to freeze
+        if self._tf_in_pipeline(train_config):
+            try:
+                logger.warning("Training a pipeline with a tensorflow "
+                               "component. This blocks the server during "
+                               "training.")
+                model_path = do_train_in_worker(
+                    train_config,
+                    data_file,
+                    path=self.project_dir,
+                    project=project,
+                    fixed_model_name=model_name,
+                    storage=self.remote_storage)
+                model_dir = os.path.basename(os.path.normpath(model_path))
+                self.project_store[project].update(model_dir)
+                return model_dir
+            except TrainingException as e:
+                logger.warning(e)
+                target_project = self.project_store.get(
+                    e.failed_target_project)
+                if target_project:
+                    target_project.status = 0
+                raise e
+        else:
+            result = self.pool.submit(do_train_in_worker,
+                                      train_config,
+                                      data_file,
+                                      path=self.project_dir,
+                                      project=project,
+                                      fixed_model_name=model_name,
+                                      storage=self.remote_storage)
+            result = deferred_from_future(result)
+            result.addCallback(training_callback)
+            result.addErrback(training_errback)
 
-        return result
+            return result
 
     def evaluate(self, data, project=None, model=None):
         # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]

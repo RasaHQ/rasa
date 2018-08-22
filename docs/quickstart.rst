@@ -38,7 +38,7 @@ The first job of Rasa NLU is to assign any given sentence to one of the **intent
 
 The second job is to label words like "chinese" and "North" as
 ``cuisine`` and ``location`` **entities**, respectively.
-In this tutorial we'll build a model which does exactly that.
+In this tutorial we'll build a model which does that.
 
 1. Prepare your NLU Training Data
 ---------------------------------
@@ -107,7 +107,7 @@ and save it in a file called ``nlu_config.yml``.
    %store nlu_config > nlu_config.yml
 
 
-Full details of the pipeline components are in :ref:`section_pipeline`
+To choose which pipeline is best for you read :ref:`choosing_pipeline`.
 
 
 3. Train your Machine Learning NLU model.
@@ -123,7 +123,7 @@ If you are running this in your computer, leave out the ``!`` at the start.
    !python -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
 
 
-We are also passing the ``--project current`` and ``--fixed_model_name nlu`` parameters, this means the model will be saved at ``.models/current/nlu`` relative to your working directory.
+We are also passing the ``--project current`` and ``--fixed_model_name nlu`` parameters, this means the model will be saved at ``./models/current/nlu`` relative to your working directory.
 
 
 .. _tutorial_using_your_model:
@@ -131,9 +131,12 @@ We are also passing the ``--project current`` and ``--fixed_model_name nlu`` par
 4. Try it out!
 --------------
 
-There are two ways you can use your model, directly from python, or by starting a http server. 
+There are two ways you can use your model, directly from python, or by starting a http server.
+Details of running the Rasa NLU HTTP server are in :ref:`config`.
 
-To use your new model in python, create an ``Interpreter`` object and pass a message to its ``parse()`` method.
+To use your new model in python, create an ``Interpreter`` object and pass a message to its ``parse()`` method:
+
+**This will not work if you haven't run the cells above!**
 
 .. runnable::
     :description: nlu-parse-nlu-python
@@ -145,32 +148,17 @@ To use your new model in python, create an ``Interpreter`` object and pass a mes
     result = interpreter.parse(message)
     print(json.dumps(result, indent=2))
 
+Spend some time playing around with this, for example try sending some different test messages to Rasa NLU.
+Also try adding some new words and phrases to your data at the top of the page, then re-train your model
+to teach Rasa NLU.
+Remember that this is just a toy example, with just a little bit of training data. 
+To build a really great NLU system you'll want to collect some real user messages!
 
-5. Start your Rasa NLU HTTP Server
-----------------------------------
-
-
-Run this command to start your server:
-
-.. runnable::
-   :description: nlu-start-server
-
-   !python -m rasa_nlu.server --path models
+.. raw:: html 
+   :file: poll.html
 
 
-By default, the server will look for all projects folders under the ``path``
-
-Let's try it out with a HTTP request:
-
-.. runnable::
-   :description: nlu-curl-server
-
-   !curl 'localhost:5000/parse?q=hello&project=current&model=nlu' | python -m json.tool
-
-
-More information about starting the server can be found in :ref:`section_configuration`.
-
-6. Start Building
+5. Start Building
 -----------------
 
 Clone the starter pack 
@@ -182,28 +170,6 @@ Clone the starter pack
 The starter pack gets you set up with the right file structure, sample configurations, plus
 links to more training data! 
 
-Bonus Material
---------------
-
-With very little data, Rasa NLU can in certain cases
-already generalise concepts, for example:
-
-.. runnable:: 
-    :description: nlu-parse-2
-
-    from rasa_nlu.model import Interpreter
-    import json
-
-    interpreter = Interpreter.load("./models/current/nlu")
-    message = "I want some italian food"
-    result = interpreter.parse(message)
-    print(json.dumps(message), indent=2)
-
-
-even though there's nothing quite like this sentence in
-the examples used to train the model. To build a more robust app
-you will obviously want to use a lot more training data, so go and collect it!
-
 
 .. note::
 
@@ -211,26 +177,4 @@ you will obviously want to use a lot more training data, so go and collect it!
     like single quotes. Use doublequotes and escape where necessary.
     ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool``
 
-Spend some time playing around with the commands above, sending some different test messages to Rasa NLU. 
-Remember that this is just a toy example, with just a little bit of training data. 
-To build a really great NLU system you'll want to collect a lot more real user messages.
 
-.. note::
-
-    Intent classification is independent of entity extraction. So sometimes
-    NLU will get the intent right but entities wrong, or the other way around. 
-    You need to provide enough data for both intents and entities. 
-
-Rasa NLU will also print a ``confidence`` value for the intent
-classification. Note that the ``spacy_sklearn`` backend tends to report very low confidence scores. 
-These are just a heuristic, not a true probability, and you shouldn't read too much into them. Read :ref:`section_fallback` for more details.
-
-
-.. note::
-    The output may contain additional information, depending on the
-    pipeline you are using. For example, not all pipelines include the
-    ``"intent_ranking"`` information
-
-
-.. raw:: html 
-   :file: poll.html

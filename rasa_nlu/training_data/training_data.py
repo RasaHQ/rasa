@@ -20,6 +20,7 @@ from typing import Optional
 from typing import Text
 
 from collections import Counter
+import random
 
 from rasa_nlu.utils import lazyproperty, write_to_file
 from rasa_nlu.utils import list_to_str
@@ -192,6 +193,26 @@ class TrainingData(object):
                               "minimum is {}, training may fail."
                               "".format(entity_type, count,
                                         self.MIN_EXAMPLES_PER_ENTITY))
+
+    def train_test_split(self, train_frac=0.8):
+        """Split into a training and test dataset, preserving the fraction of examples per intent."""
+        train, test = [], []
+        for intent, count in self.examples_per_intent.items():
+            ex = [e for e in self.intent_examples if e.data["intent"] == intent]
+            random.shuffle(ex)
+            n_train = int(count * train_frac)
+            train.extend(ex[:n_train])
+            test.extend(ex[n_train:])
+
+        data_train = TrainingData(
+            train,
+            entity_synonyms=self.entity_synonyms,
+            regex_features=self.regex_features)
+        data_test = TrainingData(
+            test,
+            entity_synonyms=self.entity_synonyms,
+            regex_features=self.regex_features)
+        return data_train, data_test
 
     def print_stats(self):
         logger.info("Training data stats: \n" +

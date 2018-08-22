@@ -4,11 +4,8 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import logging
-import typing
 import os
-import io
 import re
-from future.utils import PY3
 from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
@@ -20,9 +17,6 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    import sklearn
 
 
 class CountVectorsFeaturizer(Featurizer):
@@ -110,6 +104,7 @@ class CountVectorsFeaturizer(Featurizer):
         # if convert all characters to lowercase
         self.lowercase = self.component_config['lowercase']
 
+    # noinspection PyPep8Naming
     def _load_OOV_params(self):
         self.OOV_token = self.component_config['OOV_token']
 
@@ -173,10 +168,12 @@ class CountVectorsFeaturizer(Featurizer):
         else:
             return message.text
 
+    # noinspection PyPep8Naming
     def _check_OOV_present(self, examples):
         if self.OOV_token and not self.OOV_words:
             for t in examples:
-                if self.OOV_token in t:
+                if self.OOV_token in t or (
+                        self.lowercase and self.OOV_token in t.lower()):
                     return
             logger.warning("OOV_token='{}' was given, but it is not present "
                            "in the training data. All unseen words "
@@ -213,6 +210,7 @@ class CountVectorsFeaturizer(Featurizer):
         self._check_OOV_present(lem_exs)
 
         try:
+            # noinspection PyPep8Naming
             X = self.vect.fit_transform(lem_exs).toarray()
         except ValueError:
             self.vect = None
@@ -238,6 +236,15 @@ class CountVectorsFeaturizer(Featurizer):
                         self._combine_with_existing_text_features(message,
                                                                   bag))
 
+    def persist(self, model_dir):
+        # type: (Text) -> Dict[Text, Any]
+        """Persist this model into the passed directory.
+        Returns the metadata necessary to load the model again."""
+
+        featurizer_file = os.path.join(model_dir, self.name + ".pkl")
+        utils.pycloud_pickle(featurizer_file, self)
+        return {"featurizer_file": self.name + ".pkl"}
+
     @classmethod
     def load(cls,
              model_dir=None,  # type: Text
@@ -257,12 +264,3 @@ class CountVectorsFeaturizer(Featurizer):
             logger.warning("Failed to load featurizer. Maybe path {} "
                            "doesn't exist".format(os.path.abspath(model_dir)))
             return CountVectorsFeaturizer(meta)
-
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
-        """Persist this model into the passed directory.
-        Returns the metadata necessary to load the model again."""
-
-        featurizer_file = os.path.join(model_dir, self.name + ".pkl")
-        utils.pycloud_pickle(featurizer_file, self)
-        return {"featurizer_file": self.name + ".pkl"}
