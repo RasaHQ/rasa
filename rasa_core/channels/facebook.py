@@ -54,8 +54,8 @@ class Messenger(BaseMessenger):
             attachment = message['message']['attachments'][0]
             text = attachment['payload']['url']
         else:
-            logger.warn("Received a message from facebook that we can not "
-                        "handle. Message: {}".format(message))
+            logger.warning("Received a message from facebook that we can not "
+                           "handle. Message: {}".format(message))
             return
 
         self._handle_user_message(text, self.get_user_id())
@@ -147,8 +147,9 @@ class MessengerBot(OutputChannel):
 
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
-            logger.warn("Facebook API currently allows only up to 3 buttons. "
-                        "If you add more, all will be ignored.")
+            logger.warning(
+                    "Facebook API currently allows only up to 3 buttons. "
+                    "If you add more, all will be ignored.")
             self.send_text_message(recipient_id, text)
         else:
             self._add_postback_info(buttons)
@@ -241,8 +242,9 @@ class FacebookInput(InputChannel):
             if request.args.get("hub.verify_token") == self.fb_verify:
                 return request.args.get("hub.challenge")
             else:
-                logger.warn("Invalid fb verify token! Make sure this matches "
-                            "your webhook settings on the facebook app.")
+                logger.warning(
+                        "Invalid fb verify token! Make sure this matches "
+                        "your webhook settings on the facebook app.")
                 return "failure, invalid token"
 
         @fb_webhook.route("/webhook", methods=['POST'])
@@ -250,8 +252,8 @@ class FacebookInput(InputChannel):
             signature = request.headers.get("X-Hub-Signature") or ''
             if not self.validate_hub_signature(self.fb_secret, request.data,
                                                signature):
-                logger.warn("Wrong fb secret! Make sure this matches the "
-                            "secret in your facebook app settings")
+                logger.warning("Wrong fb secret! Make sure this matches the "
+                               "secret in your facebook app settings")
                 return "not validated"
 
             messenger = Messenger(self.fb_access_token, on_new_message)

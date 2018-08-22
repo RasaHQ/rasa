@@ -102,10 +102,10 @@ class FloatSlot(Slot):
 
         if (initial_value is not None and
                 not (min_value <= initial_value <= max_value)):
-            logger.warn("Float slot ('{}') created with an initial value {}"
-                        "outside of configured min ({}) and max ({}) values."
-                        "".format(self.name, self.value, self.min_value,
-                                  self.max_value))
+            logger.warning("Float slot ('{}') created with an initial value {}"
+                           "outside of configured min ({}) and max ({}) values."
+                           "".format(self.name, self.value, self.min_value,
+                                     self.max_value))
 
     def as_feature(self):
         try:
@@ -198,7 +198,7 @@ class CategoricalSlot(Slot):
                     break
             else:
                 if self.value is not None:
-                    logger.warn(
+                    logger.warning(
                             "Categorical slot '{}' is set to a value ('{}') "
                             "that is not specified in the domain. "
                             "Value will be ignored and the slot will "

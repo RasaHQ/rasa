@@ -64,8 +64,9 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
     try:
         _update_model_from_server(model_server, agent)
     except RequestException as e:
-        logger.warn("Could not retrieve model from server. Connection Error.  "
-                    "Running without a model. Server URL: `{}`\n".format(e))
+        logger.warning(
+                "Could not retrieve model from server. Connection Error.  "
+                "Running without a model. Server URL: `{}`\n".format(e))
 
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
@@ -125,9 +126,9 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
     try:
         response = model_server.request(method="GET", headers=header)
     except RequestException as e:
-        logger.warn("Tried to fetch model from server, but couldn't reach "
-                    "server. We'll retry later... Error: {}."
-                    "".format(e))
+        logger.warning("Tried to fetch model from server, but couldn't reach "
+                       "server. We'll retry later... Error: {}."
+                       "".format(e))
         return None
 
     if response.status_code == 204:
@@ -141,9 +142,9 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
                      "and tag combination yet.")
         return None
     elif response.status_code != 200:
-        logger.warn("Tried to fetch model from server, but server response "
-                    "status code is {}. We'll retry later..."
-                    "".format(response.status_code))
+        logger.warning("Tried to fetch model from server, but server response "
+                       "status code is {}. We'll retry later..."
+                       "".format(response.status_code))
         return None
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
@@ -195,11 +196,12 @@ class Agent(object):
         if not isinstance(interpreter, NaturalLanguageInterpreter):
             if interpreter is not None:
                 logger.warning(
-                    "Passing a value for interpreter to an agent "
-                    "where the value is not an interpreter "
-                    "is deprecated. Construct the interpreter, before"
-                    "passing it to the agent, e.g. "
-                    "`interpreter = NaturalLanguageInterpreter.create(nlu)`.")
+                        "Passing a value for interpreter to an agent "
+                        "where the value is not an interpreter "
+                        "is deprecated. Construct the interpreter, before"
+                        "passing it to the agent, e.g. "
+                        "`interpreter = NaturalLanguageInterpreter.create("
+                        "nlu)`.")
             interpreter = NaturalLanguageInterpreter.create(interpreter, None)
 
         self.interpreter = interpreter

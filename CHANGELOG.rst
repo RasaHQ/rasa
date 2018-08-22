@@ -29,6 +29,7 @@ Changed
 Removed
 -------
 - removed the deprecated ``TopicSet`` event
+- removed ``tracker.follow_up_action`` - use the ``FollowupAction`` event instead
 
 Fixed
 -------

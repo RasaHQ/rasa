@@ -157,7 +157,7 @@ def create_app(agent,
             tracker.update(evt)
             agent.tracker_store.save(tracker)
         else:
-            logger.warn("Append event called, but could not extract a "
+            logger.warning("Append event called, but could not extract a "
                         "valid event. Request JSON: {}".format(request_params))
         return jsonify(tracker.current_state(should_include_events=True))
 

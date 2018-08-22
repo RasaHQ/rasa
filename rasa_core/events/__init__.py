@@ -38,8 +38,8 @@ def deserialise_events(serialized_events):
             if event:
                 deserialised.append(event)
             else:
-                logger.warn("Ignoring event ({}) while deserialising "
-                            "events. Couldn't parse it.")
+                logger.warning("Ignoring event ({}) while deserialising "
+                               "events. Couldn't parse it.")
 
     return deserialised
 
@@ -237,6 +237,7 @@ class UserUttered(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_message = self
+        tracker.clear_followup_action()
 
 
 # noinspection PyProtectedMember
@@ -381,9 +382,9 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker):
-        from rasa_core.actions.action import ActionListen
+        from rasa_core.actions.action import ACTION_LISTEN_NAME
         tracker._reset()
-        tracker.follow_up_action = ActionListen()
+        tracker.follow_up_action = ACTION_LISTEN_NAME
 
 
 # noinspection PyProtectedMember
@@ -574,6 +575,48 @@ class StoryExported(Event):
 
 
 # noinspection PyProtectedMember
+class FollowupAction(Event):
+    """Enqueue a followup action."""
+
+    type_name = "followup"
+
+    def __init__(self, name, timestamp=None):
+        self.action_name = name
+        super(FollowupAction, self).__init__(timestamp)
+
+    def __hash__(self):
+        return hash(self.action_name)
+
+    def __eq__(self, other):
+        if not isinstance(other, FollowupAction):
+            return False
+        else:
+            return self.action_name == other.action_name
+
+    def __str__(self):
+        return "FollowupAction(action: {})".format(self.action_name)
+
+    def as_story_string(self):
+        props = json.dumps({"name": self.action_name})
+        return "{name}{props}".format(name=self.type_name, props=props)
+
+    @classmethod
+    def _from_story_string(cls, parameters):
+        return FollowupAction(parameters.get("name"),
+                              parameters.get("timestamp"))
+
+    def as_dict(self):
+        d = super(FollowupAction, self).as_dict()
+        d.update({"name": self.action_name})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+
+        tracker.followup_action = self.action_name
+
+
+# noinspection PyProtectedMember
 class ConversationPaused(Event):
     """Ignore messages from the user to let a human take over.
 
@@ -666,6 +709,7 @@ class ActionExecuted(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_action_name = self.action_name
+        tracker.clear_followup_action()
 
 
 class AgentUttered(Event):

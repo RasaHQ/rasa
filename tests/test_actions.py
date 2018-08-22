@@ -118,6 +118,7 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
             'sender_id': 'default',
             'paused': False,
             'latest_event_time': None,
+            'followup_action': 'action_listen',
             'slots': {'name': None},
             'events': []
         }
@@ -168,6 +169,7 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
             },
             'sender_id': 'default',
             'paused': False,
+            'followup_action': 'action_listen',
             'latest_event_time': None,
             'slots': {'name': None},
             'events': []

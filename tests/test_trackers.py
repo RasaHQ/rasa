@@ -194,7 +194,7 @@ def test_restart_event(default_domain):
 
     assert len(tracker.events) == 5
     assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
+    assert tracker.follow_up_action == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
     assert len(list(tracker.generate_all_prior_trackers())) == 1
 
@@ -205,8 +205,6 @@ def test_restart_event(default_domain):
 
     assert recovered.current_state() == tracker.current_state()
     assert len(recovered.events) == 5
-    assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert recovered.latest_message.text is None
     assert len(list(recovered.generate_all_prior_trackers())) == 1
 

@@ -62,14 +62,14 @@ class SlackBot(SlackClient, OutputChannel):
         recipient = self.slack_channel or recipient_id
 
         if len(buttons) > 5:
-            logger.warn("Slack API currently allows only up to 5 buttons. "
-                        "If you add more, all will be ignored.")
+            logger.warning("Slack API currently allows only up to 5 buttons. "
+                           "If you add more, all will be ignored.")
             return self.send_text_message(recipient, message)
 
         button_attachment = [{"fallback": message,
                               "callback_id": message.replace(' ', '_')[:20],
                               "actions": self._convert_to_slack_buttons(
-                                  buttons)}]
+                                      buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
@@ -168,17 +168,17 @@ class SlackInput(InputChannel):
                                          {"content_type": "application/json"})
                 elif self._is_user_message(output):
                     return self.process_message(
-                        on_new_message,
-                        text=output['event']['text'],
-                        sender_id=output.get('event').get('user'))
+                            on_new_message,
+                            text=output['event']['text'],
+                            sender_id=output.get('event').get('user'))
             elif request.form:
                 output = dict(request.form)
                 if self._is_button_reply(output):
                     return self.process_message(
-                        on_new_message,
-                        text=self._get_button_reply(output),
-                        sender_id=json.loads(
-                            output['payload'][0]).get('user').get('id'))
+                            on_new_message,
+                            text=self._get_button_reply(output),
+                            sender_id=json.loads(
+                                    output['payload'][0]).get('user').get('id'))
 
             return make_response()
 
