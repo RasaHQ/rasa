@@ -21,7 +21,7 @@ class EntityFilter(Component):
     are extracted and, possibly, after the synonym component)
 
     """
-    name = "bot.EntityFilter"
+    name = "entity_filter"
 
     provides = ["entities"]
 
