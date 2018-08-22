@@ -279,6 +279,74 @@ that URL, go to ``myurl.com/app/set_webhook`` first to set the webhook.
 
     For more information on the Telegram HTTP API, go to https://core.telegram.org/bots/api
 
+.. _rocketchat_connector:
+
+Rocket.Chat Setup
+--------------
+
+Using run script
+^^^^^^^^^^^^^^^^
+
+If you want to connect to RocketChat using the run script, e.g. using
+
+.. code-block:: bash
+
+  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+      --port 5002 -c rocketchat --credentials rocketchat_credentials.yml
+
+you need to supply a ``rocketchat_credentials.yml`` with the following content:
+
+.. literalinclude:: ../examples/moodbot/rocketchat_credentials.yml
+    :linenos:
+
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``RocketChatInput`` instance provides a flask blueprint for creating
+a webserver. This lets you seperate the exact endpoints and implementation
+from your webserver creation logic.
+
+Code to create a RocketChat-compatible webserver looks like this:
+
+.. code-block:: python
+    :linenos:
+
+    from rasa_core.channels import HttpInputChannel
+    from rasa_core.channels.rocketchat import RocketChatInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load("dialogue", interpreter=RegexInterpreter())
+
+    input_channel = RocketChatInput(
+      user="YOUR_BOT_USERNAME", # the username of your bot user that will post messages
+      password="YOUR_BOT_PASSWORD", # the password of your bot user that will post messages
+      server_url="YOUR_ROCKETCHAT_URL", # the url your bot should listen for messages
+      ssl="SSL_CONFIGURATION" # define if the connector must or not use ssl connection
+    )
+
+    agent.handle_channel(HttpInputChannel(5004, '', input_channel))
+
+The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
+The default endpoint for receiving messages is ``/webhook``, so the example above above would
+listen for messages on ``/webhook``. This is the url you should add in the
+RocketChat outgoing webhook.
+
+.. note::
+
+    **How to set up Rocket.Chat:** 
+
+     1. Create a user that will be used to post messages and set its credentials at credentials file.
+     2. Create a Rocket.Chat outgoing webhook by logging as admin to Rocket.Chat and going to **Administration > Integrations > New Integration**.
+     3. Select **Outgoing Webhook**.
+     4. Set **Event Trigger** section to value **Message Sent**.
+     5. Fill out the details including the channel you want the bot listen to. Optionally, it is possible to set the **Trigger Words** section with ``@yourbotname`` so that way it doesn't trigger on everything that is said.
+     6. Set your **URLs** section to the rasa url where you have your webhook running, in core or your public address with /webhook example: ``http://test.example.com/webhook``.
+
+    For more information on the Rocket.Chat Webhooks, go to https://rocket.chat/docs/administrator-guides/integrations/
+
 .. _twilio_connector:
 
 Twilio Setup

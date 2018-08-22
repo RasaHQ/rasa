@@ -19,6 +19,7 @@ from rasa_core.channels.rest import HttpInputChannel
 from rasa_core.channels.slack import SlackInput
 from rasa_core.channels.mattermost import MattermostInput
 from rasa_core.channels.twilio import TwilioInput
+from rasa_core.channels.rocketchat import RocketChatInput
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     RasaNLUHttpInterpreter)
@@ -64,7 +65,7 @@ def create_argument_parser():
             '-c', '--connector',
             default="cmdline",
             choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
-                     "twilio"],
+                     "twilio", "rocketchat"],
             help="service to connect to")
 
     utils.add_logging_option_arguments(parser)
@@ -82,6 +83,8 @@ def _raise_missing_credentials_exception(channel):
         channel_doc_link = "mattermost"
     elif channel == "twilio":
         channel_doc_link = "twilio"
+    elif channel == "rocketchat":
+        channel_doc_link = "rocketchat"
     else:
         channel_doc_link = ""
 
@@ -124,6 +127,12 @@ def _create_external_channel(channel, port, credentials_file):
                 credentials.get("account_sid"),
                 credentials.get("auth_token"),
                 credentials.get("twilio_number"))
+    elif channel == "rocketchat":
+        input_blueprint = RocketChatInput(
+                credentials.get("user"),
+                credentials.get("password"),
+                credentials.get("server_url"),
+                credentials.get("ssl"))
     else:
         Exception("This script currently only supports the facebook,"
                   " telegram, mattermost and slack connectors.")
@@ -134,7 +143,8 @@ def _create_external_channel(channel, port, credentials_file):
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
-    if channel in ['facebook', 'slack', 'telegram', 'mattermost', 'twilio']:
+    if channel in ['facebook', 'slack', 'telegram', 'mattermost',
+                   'twilio', 'rocketchat']:
         return _create_external_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()

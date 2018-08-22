@@ -22,6 +22,9 @@ run-slack:
 run-telegram:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c telegram --credentials telegram_credentials.yml
 
+run-rocketchat:
+	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c rocketchat --credentials rocketchat_credentials.yml
+
 run-cmdline:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current
 
