@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import json
+
 from rasa_core.channels.console import ConsoleInputChannel
 
 
@@ -20,6 +22,7 @@ def test_console_input():
 
     def on_message(message):
         recorded.append(message)
+
     channel = ConsoleInputChannel()
     channel._record_messages(on_message, max_message_limit=3)
     assert [r.text for r in recorded] == ["Test Input",
@@ -52,12 +55,11 @@ def test_is_slack_message_none():
 def test_is_slack_message_true():
     from rasa_core.channels.slack import SlackInput
     import json
-    event = {}
-    event['type'] = 'message'
-    event['channel'] = 'C2147483705'
-    event['user'] = 'U2147483697'
-    event['text'] = 'Hello world'
-    event['ts'] = '1355517523'
+    event = {'type': 'message',
+             'channel': 'C2147483705',
+             'user': 'U2147483697',
+             'text': 'Hello world',
+             'ts': '1355517523'}
     payload = json.dumps({'event': event})
     slack_message = json.loads(payload)
     assert SlackInput._is_user_message(slack_message) is True
@@ -66,13 +68,12 @@ def test_is_slack_message_true():
 def test_is_slack_message_false():
     from rasa_core.channels.slack import SlackInput
     import json
-    event = {}
-    event['type'] = 'message'
-    event['channel'] = 'C2147483705'
-    event['user'] = 'U2147483697'
-    event['text'] = 'Hello world'
-    event['ts'] = '1355517523'
-    event['bot_id'] = '1355517523'  # Results in message being false.
+    event = {'type': 'message',
+             'channel': 'C2147483705',
+             'user': 'U2147483697',
+             'text': 'Hello world',
+             'ts': '1355517523',
+             'bot_id': '1355517523'}
     payload = json.dumps({'event': event})
     slack_message = json.loads(payload)
     assert SlackInput._is_user_message(slack_message) is False
@@ -96,6 +97,7 @@ def test_slackbot_init_two_parameter():
 def test_slackbot_send_attachment_only(monkeypatch):
     def mockreturn(self, method, channel, text, as_user, attachments):
         return attachments
+
     import rasa_core.channels.slack
     import slackclient
     import json
@@ -126,7 +128,8 @@ def test_slackbot_send_attachment_only(monkeypatch):
 
 def test_slackbot_send_attachment_withtext(monkeypatch):
     def mockreturn(self, method, channel, text, as_user, attachments):
-        return attachments+text
+        return attachments + text
+
     import rasa_core.channels.slack
     import slackclient
     import json
@@ -153,28 +156,31 @@ def test_slackbot_send_attachment_withtext(monkeypatch):
                                            "style": "danger"}],
                               "footer": "Powered by 1010rocks",
                               "ts": 1531889719}])
-    assert bot.send_attachment("ID", attachment, text) == attachment+text
+    assert bot.send_attachment("ID", attachment, text) == attachment + text
 
 
 def test_slackbot_send_image_url(monkeypatch):
-    def mockreturn(self, method, channel, as_user, attachments):
-        return json.dumps(attachments)
     import rasa_core.channels.slack
     import slackclient
-    import json
+
+    def mockreturn(self, method, channel, as_user, attachments):
+        return json.dumps(attachments)
+
     monkeypatch.setattr(slackclient.SlackClient, 'api_call', mockreturn)
     bot = rasa_core.channels.slack.SlackBot("DummyToken", "General")
     url = json.dumps([{"URL": "http://www.rasa.net"}])
     assert bot.send_image_url("ID", url) == json.dumps(
-                       [{'image_url': '[{"URL": "http://www.rasa.net"}]',
-                         'text': ''}])
+            [{'image_url': '[{"URL": "http://www.rasa.net"}]',
+              'text': ''}])
 
 
 def test_slackbot_send_text(monkeypatch):
-    def mockreturn(self, method, channel, as_user, text):
-        return text
     import rasa_core.channels.slack
     import slackclient
+
+    def mockreturn(self, method, channel, as_user, text):
+        return text
+
     monkeypatch.setattr(slackclient.SlackClient, 'api_call', mockreturn)
     bot = rasa_core.channels.slack.SlackBot("DummyToken", "General")
     text = "Some text"  # This text is returned back by the mock.
