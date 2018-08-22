@@ -19,6 +19,7 @@ from rasa_core.agent import Agent
 from rasa_core.channels import (
     console, RestInput, InputChannel,
     BUILTIN_CHANNELS)
+from rasa_core.constants import DOCS_BASE_URL
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
 from rasa_core.utils import read_yaml_file
@@ -121,8 +122,8 @@ def _raise_missing_credentials_exception(channel):
                     "The argument should be a file path pointing to"
                     "a yml file containing the {} authentication"
                     "information. Details in the docs: "
-                    "https://core.rasa.com/connectors.html#{}-setup".
-                    format(channel, channel, channel_doc_link))
+                    "{}/connectors/#{}-setup".
+                    format(channel, channel, DOCS_BASE_URL, channel_doc_link))
 
 
 def _create_external_channels(channel, credentials_file):

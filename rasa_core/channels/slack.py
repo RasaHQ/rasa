@@ -40,10 +40,18 @@ class SlackBot(SlackClient, OutputChannel):
         image_attachment = [{"image_url": image_url,
                              "text": message}]
         recipient = self.slack_channel or recipient_id
-        super(SlackBot, self).api_call("chat.postMessage",
-                                       channel=recipient,
-                                       as_user=True,
-                                       attachments=image_attachment)
+        return super(SlackBot, self).api_call("chat.postMessage",
+                                              channel=recipient,
+                                              as_user=True,
+                                              attachments=image_attachment)
+
+    def send_attachment(self, recipient_id, attachment, message=""):
+        recipient = self.slack_channel or recipient_id
+        return super(SlackBot, self).api_call("chat.postMessage",
+                                              channel=recipient,
+                                              as_user=True,
+                                              text=message,
+                                              attachments=attachment)
 
     def _convert_to_slack_buttons(self, buttons):
         return [{"text": b['title'],

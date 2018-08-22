@@ -209,3 +209,201 @@ def test_twilio_channel():
     assert routes_list.get("/webhooks/twilio/webhook").startswith(
             'twilio_webhook.message')
     s.stop()
+
+
+def test_slack_init_one_parameter():
+    from rasa_core.channels.slack import SlackInput
+
+    ch = SlackInput("xoxb-test")
+    assert ch.slack_token == "xoxb-test"
+    assert ch.slack_channel is None
+
+
+def test_slack_init_two_parameters():
+    from rasa_core.channels.slack import SlackInput
+
+    ch = SlackInput("xoxb-test", "test")
+    assert ch.slack_token == "xoxb-test"
+    assert ch.slack_channel == "test"
+
+
+def test_is_slack_message_none():
+    from rasa_core.channels.slack import SlackInput
+
+    payload = {}
+    slack_message = json.loads(json.dumps(payload))
+    assert SlackInput._is_user_message(slack_message) is None
+
+
+def test_is_slack_message_true():
+    from rasa_core.channels.slack import SlackInput
+
+    event = {'type': 'message',
+             'channel': 'C2147483705',
+             'user': 'U2147483697',
+             'text': 'Hello world',
+             'ts': '1355517523'}
+    payload = json.dumps({'event': event})
+    slack_message = json.loads(payload)
+    assert SlackInput._is_user_message(slack_message) is True
+
+
+def test_is_slack_message_false():
+    from rasa_core.channels.slack import SlackInput
+
+    event = {'type': 'message',
+             'channel': 'C2147483705',
+             'user': 'U2147483697',
+             'text': 'Hello world',
+             'ts': '1355517523',
+             'bot_id': '1355517523'}
+    payload = json.dumps({'event': event})
+    slack_message = json.loads(payload)
+    assert SlackInput._is_user_message(slack_message) is False
+
+
+def test_slackbot_init_one_parameter():
+    from rasa_core.channels.slack import SlackBot
+
+    ch = SlackBot("DummyToken")
+    assert ch.token == "DummyToken"
+    assert ch.slack_channel is None
+
+
+def test_slackbot_init_two_parameter():
+    from rasa_core.channels.slack import SlackBot
+
+    bot = SlackBot("DummyToken", "General")
+    assert bot.token == "DummyToken"
+    assert bot.slack_channel == "General"
+
+
+# Use monkeypatch for sending attachments, images and plain text.
+def test_slackbot_send_attachment_only():
+    from rasa_core.channels.slack import SlackBot
+
+    httpretty.register_uri(httpretty.POST,
+                           'https://slack.com/api/chat.postMessage',
+                           body='{"ok":true,"purpose":"Testing bots"}')
+
+    httpretty.enable()
+
+    bot = SlackBot("DummyToken", "General")
+    attachment = json.dumps([{"fallback": "Financial Advisor Summary",
+                              "color": "#36a64f", "author_name": "ABE",
+                              "title": "Financial Advisor Summary",
+                              "title_link": "http://tenfactorialrocks.com",
+                              "image_url": "https://r.com/cancel/r12",
+                              "thumb_url": "https://r.com/cancel/r12",
+                              "actions": [{"type": "button",
+                                           "text": "\ud83d\udcc8 Dashboard",
+                                           "url": "https://r.com/cancel/r12",
+                                           "style": "primary"},
+                                          {"type": "button",
+                                           "text": "\ud83d\udccb Download XL",
+                                           "url": "https://r.com/cancel/r12",
+                                           "style": "danger"},
+                                          {"type": "button",
+                                           "text": "\ud83d\udce7 E-Mail",
+                                           "url": "https://r.com/cancel/r12",
+                                           "style": "danger"}],
+                              "footer": "Powered by 1010rocks",
+                              "ts": 1531889719}])
+    bot.send_attachment("ID", attachment)
+
+    httpretty.disable()
+
+    r = httpretty.latest_requests[-1]
+
+    assert r.parsed_body == {'channel': ['General'],
+                             'as_user': ['True'],
+                             'attachments': [attachment]}
+
+
+def test_slackbot_send_attachment_withtext():
+    from rasa_core.channels.slack import SlackBot
+
+    httpretty.register_uri(httpretty.POST,
+                           'https://slack.com/api/chat.postMessage',
+                           body='{"ok":true,"purpose":"Testing bots"}')
+
+    httpretty.enable()
+
+    bot = SlackBot("DummyToken", "General")
+    text = "Sample text"
+    attachment = json.dumps([{"fallback": "Financial Advisor Summary",
+                              "color": "#36a64f", "author_name": "ABE",
+                              "title": "Financial Advisor Summary",
+                              "title_link": "http://tenfactorialrocks.com",
+                              "image_url": "https://r.com/cancel/r12",
+                              "thumb_url": "https://r.com/cancel/r12",
+                              "actions": [{"type": "button",
+                                           "text": "\ud83d\udcc8 Dashboard",
+                                           "url": "https://r.com/cancel/r12",
+                                           "style": "primary"},
+                                          {"type": "button",
+                                           "text": "\ud83d\udccb XL",
+                                           "url": "https://r.com/cancel/r12",
+                                           "style": "danger"},
+                                          {"type": "button",
+                                           "text": "\ud83d\udce7 E-Mail",
+                                           "url": "https://r.com/cancel/r123",
+                                           "style": "danger"}],
+                              "footer": "Powered by 1010rocks",
+                              "ts": 1531889719}])
+
+    bot.send_attachment("ID", attachment, text)
+
+    httpretty.disable()
+
+    r = httpretty.latest_requests[-1]
+
+    assert r.parsed_body == {'channel': ['General'],
+                             'as_user': ['True'],
+                             'text': ['Sample text'],
+                             'attachments': [attachment]}
+
+
+def test_slackbot_send_image_url():
+    from rasa_core.channels.slack import SlackBot
+
+    httpretty.register_uri(httpretty.POST,
+                           'https://slack.com/api/chat.postMessage',
+                           body='{"ok":true,"purpose":"Testing bots"}')
+
+    httpretty.enable()
+
+    bot = SlackBot("DummyToken", "General")
+    url = json.dumps([{"URL": "http://www.rasa.net"}])
+    bot.send_image_url("ID", url)
+
+    httpretty.disable()
+
+    r = httpretty.latest_requests[-1]
+
+    assert r.parsed_body['as_user'] == ['True']
+    assert r.parsed_body['channel'] == ['General']
+    assert len(r.parsed_body['attachments']) == 1
+    assert '"text": ""' in r.parsed_body['attachments'][0]
+    assert '"image_url": "[{\\"URL\\": \\"http://www.rasa.net\\"}]"' \
+           in r.parsed_body['attachments'][0]
+
+
+def test_slackbot_send_text():
+    from rasa_core.channels.slack import SlackBot
+
+    httpretty.register_uri(httpretty.POST,
+                           'https://slack.com/api/chat.postMessage',
+                           body='{"ok":true,"purpose":"Testing bots"}')
+
+    httpretty.enable()
+
+    bot = SlackBot("DummyToken", "General")
+    bot.send_text_message("ID", "my message")
+    httpretty.disable()
+
+    r = httpretty.latest_requests[-1]
+
+    assert r.parsed_body == {'as_user': ['True'],
+                             'channel': ['General'],
+                             'text': ['my message']}

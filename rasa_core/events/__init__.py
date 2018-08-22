@@ -136,7 +136,7 @@ class Event(object):
             if cls.type_name == type_name:
                 return cls
         if type_name == "topic":
-            return None
+            return None  # backwards compatibility to support old TopicSet evts
         elif default is not None:
             return default
         else:
