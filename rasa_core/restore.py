@@ -17,6 +17,8 @@ from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage, CollectingOutputChannel, console
 from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
+from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.run import load_agent
 from rasa_core.trackers import DialogueStateTracker
 
 logger = logging.getLogger()  # get the root logger
@@ -110,24 +112,24 @@ def load_tracker_from_json(tracker_dump, domain):
 def serve_application(model_directory,  # type: Text
                       nlu_model=None,  # type: Optional[Text]
                       tracker_dump=None,  # type: Optional[Text]
-                      port=constants.DEFAULT_SERVER_PORT,   # type: int
+                      port=constants.DEFAULT_SERVER_PORT,  # type: int
                       endpoints=None,  # type: Optional[Text]
                       ):
     from rasa_core import run
 
-    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
-    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
-    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
+    _endpoints = run.read_endpoints(endpoints)
 
-    nlu = run.interpreter_from_args(nlu_model, nlu_endpoint)
+    nlu = NaturalLanguageInterpreter.create(nlu_model, _endpoints.nlu)
 
-    input_channels = [run.create_http_input_channel("cmdline", None)]
+    input_channels = run.create_http_input_channels("cmdline", None)
 
-    http_server = run.start_server(model_directory, nlu, input_channels,
-                                   None, None, action_endpoint, nlg_endpoint,
-                                   port)
+    agent = load_agent(model_directory, interpreter=nlu, endpoints=_endpoints)
 
-    agent = http_server.application.agent()
+    http_server = run.start_server(input_channels,
+                                   None,
+                                   None,
+                                   port=port,
+                                   initial_agent=agent)
 
     tracker = load_tracker_from_json(tracker_dump,
                                      agent.domain)
