@@ -190,6 +190,7 @@ def test_remote_append_events(http_app, event):
     expected = [ActionExecuted(ACTION_LISTEN_NAME), event]
     assert events.deserialise_events(evts) == expected
 
+
 def test_predict(http_app, app):
     client = RasaCoreClient(EndpointConfig(http_app))
     cid = str(uuid.uuid1())
