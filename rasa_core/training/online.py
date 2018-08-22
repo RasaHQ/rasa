@@ -192,7 +192,7 @@ def send_events(endpoint, sender_id, evts):
 
 
 def send_finetune(endpoint, evts):
-    # type: (EndpointConfig, List[Dict[Text, Any]]) -> Dict[Text, Any]
+    # type: (EndpointConfig, List[Dict[Text, Any]]) -> None
 
     r = endpoint.request(json=evts,
                          method="post",
@@ -202,8 +202,6 @@ def send_finetune(endpoint, evts):
 
     if r.encoding is None:
         r.encoding = 'utf-8'
-
-    return r.json()
 
 
 def revert_latest_message(
