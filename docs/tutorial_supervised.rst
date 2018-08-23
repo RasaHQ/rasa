@@ -15,9 +15,9 @@ Supervised Learning Tutorial
    This tutorial will cover how to use Rasa Core directly from python. We will
    dive a bit deeper into the different concepts and overall structure of the
    library. You should already be familiar with the terms domain, stories, and
-   have some knowledge of NLU (if not,
-   head :ref:`tutorial_basics` first).
-   Here, we'll be using the `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_.
+   have some knowledge of NLU (if not, head :ref:`tutorial_basics` first).
+   Here, we'll be using the
+   `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_.
 
 Goal
 ^^^^
@@ -46,7 +46,8 @@ project directory:
 Let's inspect the domain
 definition in ``restaurant_domain.yml``:
 
-In addition to the previous example, there are two sections: ``slots`` and ``entities``.
+In addition to the previous example, there are two sections: ``slots``
+and ``entities``.
 
 ``slots`` are used to store user preferences, like the cuisine and price range of a restaurant. 
 ``entities`` are closely related to slots. Slots are updated over time, and entities are the raw

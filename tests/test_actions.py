@@ -34,7 +34,7 @@ def test_text_format():
            "UtterAction('my_action_name')"
 
 
-def test_action_factory_module_import():
+def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
             ["random_name", "utter_test"], None, ["random_name", "utter_test"])
     assert len(instantiated_actions) == 2
@@ -63,7 +63,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[4].name() == "utter_test"
 
 
-def test_action_factory_fails_on_duplicated_actions():
+def test_domain_fails_on_duplicated_actions():
     with pytest.raises(ValueError):
         Domain(intent_properties={},
                entities=[],

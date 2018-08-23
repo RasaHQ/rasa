@@ -48,8 +48,6 @@ The Rasa Core dialogue engine
       You can build a full example without installing anything, just go to the quickstart!
    :sender: bot
 
-    
-
 
 .. toctree::
    :maxdepth: 1
@@ -58,8 +56,6 @@ The Rasa Core dialogue engine
 
    quickstart
    installation
-
-
 
 .. toctree::
    :maxdepth: 1
@@ -87,7 +83,6 @@ The Rasa Core dialogue engine
    stories
    api/slots_api
    server
-   http
    api/agent
    api/events
    api/tracker
