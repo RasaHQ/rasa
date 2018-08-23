@@ -27,7 +27,11 @@ class RasaChatInput(RestInput):
     def _check_token(self, token):
         url = "{}/users/me".format(self.base_url)
         headers = {"Authorization": token}
-        result = requests.get(url, headers=headers)
+        logger.debug("Requesting user information from auth server {}."
+                     "".format(url))
+        result = requests.get(url, 
+                              headers=headers,
+                              timeout=30)
 
         if result.status_code == 200:
             return result.json()

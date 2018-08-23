@@ -36,7 +36,7 @@ def test_text_format():
 
 def test_action_factory_module_import():
     instantiated_actions = action.actions_from_names(
-            ["random_name", "utter_test"], None)
+            ["random_name", "utter_test"], None, ["random_name", "utter_test"])
     assert len(instantiated_actions) == 2
     assert isinstance(instantiated_actions[0], RemoteAction)
     assert instantiated_actions[0].name() == "random_name"
@@ -70,15 +70,6 @@ def test_action_factory_fails_on_duplicated_actions():
                slots=[],
                templates={},
                action_names=["random_name", "random_name"])
-
-
-def test_action_factory_fails_on_duplicated_builtin_actions():
-    with pytest.raises(ValueError):
-        Domain(intent_properties={},
-               entities=[],
-               slots=[],
-               templates={},
-               action_names=["action_listen", "random_name"])
 
 
 def test_remote_action_runs(default_dispatcher_collecting, default_domain):

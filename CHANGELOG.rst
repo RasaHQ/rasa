@@ -9,6 +9,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the
+    :ref:`migration` guide before updating. You need to retrain your models.
+
+
 Added
 -----
 - script parameter ``--quiet`` to set the log level to ``WARNING``

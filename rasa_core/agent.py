@@ -126,7 +126,11 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
     <ETag> header which contains the model hash."""
     header = {"If-None-Match": fingerprint}
     try:
-        response = model_server.request(method="GET", headers=header)
+        logger.debug("Requesting model from server {}..."
+                     "".format(model_server.url))
+        response = model_server.request(method="GET",
+                                        headers=header,
+                                        timeout=30)
     except RequestException as e:
         logger.warning("Tried to fetch model from server, but couldn't reach "
                        "server. We'll retry later... Error: {}."

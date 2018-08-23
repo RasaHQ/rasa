@@ -10,6 +10,13 @@ how you can migrate from one version to another.
 0.10.x to 0.11.0
 ----------------
 
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the mentioned
+    before updating. Please make sure to
+    **retrain your models when switching to this version**.
+
 General
 ~~~~~~~
 - domain actions list now needs to always contain the actions names instead of

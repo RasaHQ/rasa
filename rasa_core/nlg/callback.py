@@ -102,7 +102,11 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                                   output_channel,
                                   **kwargs)
 
-        response = self.nlg_endpoint.request(method="post", json=body)
+        logger.debug("Requesting NLG for {} from {}."
+                     "".format(template_name, self.nlg_endpoint.url))
+        response = self.nlg_endpoint.request(method="post",
+                                             json=body,
+                                             timeout=30)
         response.raise_for_status()
 
         content = response.json()

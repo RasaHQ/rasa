@@ -40,10 +40,18 @@ def default_action_names():
     return [a.name() for a in default_actions()]
 
 
-def num_default_actions():
-    # type: () -> int
-    """Number of default actions."""
-    return len(default_actions())
+def combine_user_with_default_actions(user_actions):
+    # remove all user actions that overwrite default actions
+    # this logic is a bit reversed, you'd think that we should remove
+    # the action name from the default action names if the user overwrites
+    # the action, but there are some locations in the code where we
+    # implicitly assume that e.g. "action_listen" is always at location
+    # 0 in this array. to keep it that way, we remove the duplicate
+    # action names from the users list instead of the defaults
+    unique_user_actions = [a
+                           for a in user_actions
+                           if a not in default_action_names()]
+    return default_action_names() + unique_user_actions
 
 
 def ensure_action_name_uniqueness(action_names):
@@ -60,13 +68,13 @@ def ensure_action_name_uniqueness(action_names):
             unique_action_names.add(a)
 
 
-def action_from_name(name, action_endpoint):
-    # type: (Text, Optional[EndpointConfig]) -> Action
+def action_from_name(name, action_endpoint, user_actions):
+    # type: (Text, Optional[EndpointConfig], List[Text]) -> Action
     """Return an action instance for the name."""
 
     defaults = {a.name(): a for a in default_actions()}
 
-    if name in defaults:
+    if name in defaults and name not in user_actions:
         return defaults.get(name)
     elif name.startswith("utter_"):
         return UtterAction(name)
@@ -74,11 +82,12 @@ def action_from_name(name, action_endpoint):
         return RemoteAction(name, action_endpoint)
 
 
-def actions_from_names(action_names, action_endpoint):
-    # type: (List[Text], Optional[EndpointConfig]) -> List[Action]
+def actions_from_names(action_names, action_endpoint, user_actions):
+    # type: (List[Text], Optional[EndpointConfig], List[Text]) -> List[Action]
     """Converts the names of actions into class instances."""
 
-    return [action_from_name(name, action_endpoint) for name in action_names]
+    return [action_from_name(name, action_endpoint, user_actions)
+            for name in action_names]
 
 
 class Action(object):
