@@ -139,7 +139,7 @@ also returns a list of available projects the server can use to fulfill ``/parse
 ``GET /version``
 ^^^^^^^^^^^^^^^^
 
-This will return the current version of the Rasa NLU instance, as well as the minimum model version required for laoding models.
+This will return the current version of the Rasa NLU instance, as well as the minimum model version required for loading models.
 
 .. code-block:: bash
 
