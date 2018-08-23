@@ -33,6 +33,7 @@ def generate_lookup_regex(file_path, print_data_size=True):
     with open(file_path, 'r') as f:
         for l in f.readlines():
             new_elemnts = [e.strip() for e in l.split(',')]
+            new_elements.remove('')
             lookup_elements += new_elemnts
     regex_string = '(?i)(' + '|'.join(lookup_elements) + ')'
     if print_data_size:
