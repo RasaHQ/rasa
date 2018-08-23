@@ -15,7 +15,7 @@ from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader, Trai
 INTENT = "intent"
 SYNONYM = "synonym"
 REGEX = "regex"
-LOOKUP = 'lookup'
+LOOKUP = "lookup"
 available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
 ent_regex = re.compile(r'\[(?P<entity_text>[^\]]+)'
                        r'\]\((?P<entity>\w*?)'
