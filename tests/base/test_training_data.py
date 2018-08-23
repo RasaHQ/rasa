@@ -93,6 +93,20 @@ def test_demo_data(filename):
                                  {"name": "zipcode", "pattern": "[0-9]{5}"}]
 
 
+@pytest.mark.parametrize("filename", ['data/examples/rasa/demo-rasa.md'])
+def test_train_test_split(filename):
+    td = training_data.load_data(filename)
+    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
+    assert td.entities == {"location", "cuisine"}
+    assert len(td.training_examples) == 42
+    assert len(td.intent_examples) == 42
+
+    td_train, td_test = td.train_test_split(train_frac=0.8)
+
+    assert len(td_train.training_examples) == 32
+    assert len(td_test.training_examples) == 10
+
+
 @pytest.mark.parametrize("files", [('data/examples/rasa/demo-rasa.json', 'data/test/multiple_files_json'),
                                    ('data/examples/rasa/demo-rasa.md', 'data/test/multiple_files_markdown')])
 def test_data_merging(files):
