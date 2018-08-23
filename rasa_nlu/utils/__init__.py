@@ -347,3 +347,15 @@ def create_temporary_file(data, suffix="", mode="w+"):
 
     f.close()
     return f.name
+
+
+def zip_folder(folder):
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)
