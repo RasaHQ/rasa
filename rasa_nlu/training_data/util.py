@@ -37,10 +37,11 @@ def generate_lookup_regex(file_path, print_data_size=True):
                 new_elements.remove('')
             lookup_elements += new_elements
     regex_string = '(?i)(' + '|'.join(lookup_elements) + ')'
-    if print_data_size:
-        num_words = len(lookup_elements)
-        regex_size = sys.getsizeof(regex_string)
-        logger.info("found {} words in lookup table '{}'"
-                    " with a size of {:.2e} bytes".format(num_words, file_path, regex_size))
+
+    """log info about the lookup table"""
+    num_words = len(lookup_elements)
+    regex_size = sys.getsizeof(regex_string)
+    logger.info("found {} words in lookup table '{}'"
+                " with a size of {:.2e} bytes".format(num_words, file_path, regex_size))
 
     return regex_string

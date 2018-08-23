@@ -31,7 +31,8 @@ class RasaReader(JsonTrainingDataReader):
 
         # generates regexes from lookup tables and adds to regex features
         lookup_regexes = [{'name': t['name'],
-                           'pattern': str(generate_lookup_regex(t['file_path']))} for t in lookup_tables]
+                           'pattern': generate_lookup_regex(t['file_path'])} \
+                           for t in lookup_tables]
         regex_features += lookup_regexes
 
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
