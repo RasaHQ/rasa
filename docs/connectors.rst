@@ -395,12 +395,10 @@ The command to run a ngrok instance for port 5002 for example would be:
 
 **Ngrok is only needed if you don't have a public IP and are testing locally**
 
-This will then give a output showing a https address that you need to
-supply for the interactive components request URL and for the incoming
-webhook and the address should be whatever ngrok supplies you
-with ``/webhooks/CHANNEL/webhook`` added to the end.  This basically
-takes the code running on your local machine and punches it through
-the internet at the ngrok address supplied.
+ngrok will creat a https address for your computer, for example
+https://xxxxxx.ngrok.io . For a facebook bot, your webhook address
+would then be https://xxxxxx.ngrok.io/webhooks/facebook/webhook,
+for telegram https://xxxxxx.ngrok.io/webhooks/telegram/webhook, etc.
 
 .. _custom_channels:
 
