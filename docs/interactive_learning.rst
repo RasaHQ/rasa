@@ -6,29 +6,36 @@ Interactive Learning
 ====================
 
 
-Interactive learning means giving feedback to your bot while you talk to it. It is a powerful tool!
-Interactive learning is a powerful way to explore what your bot can do, and the easiest
-way to fix any mistakes it makes. One advantage of machine learning based dialogue is that
-when your bot doesn't know how to do something yet, you can just teach it! Some people
-are calling this `Software 2.0 <https://tesla.com>`_.
+Interactive learning means giving feedback to your bot while you talk
+to it. It is a powerful tool! Interactive learning is a powerful way
+to explore what your bot can do, and the easiest way to fix any mistakes
+it makes. One advantage of machine learning based dialogue is that when
+your bot doesn't know how to do something yet, you can just teach it!
+Some people are calling this `Software 2.0 <https://tesla.com>`_.
 
 
 1. Load up an existing bot
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We have a basic working bot, and want to teach it by providing feedback on mistakes it makes. 
+We have a basic working bot, and want to teach it by providing
+feedback on mistakes it makes.
 
 Run the following to start interactive learning:
 
 .. code-block:: bash
 
    python -m rasa_core_sdk.endpoint --actions actions&
-   python -m rasa_core.run --interactive -d models/dialogue --stories-out stories_interactive.md -u models/default/nlu
+
+   python -m rasa_core.run \
+     --interactive -d models/dialogue \
+     --stories-out stories_interactive.md \
+     -u models/default/nlu
 
 The first command starts the action server (see :ref:`customactions`).
 
 The second command starts the bot in interactive mode.
-In interactive mode, the bot will ask you to confirm it has chosen the right action before proceeding:
+In interactive mode, the bot will ask you to confirm it has chosen
+the right action before proceeding:
 
 
 .. code-block:: text
@@ -54,16 +61,18 @@ In interactive mode, the bot will ask you to confirm it has chosen the right act
 
 
 This gives you all the info you should hopefully need to decide
-what the bot *should* have done. In this case, the bot chose the right
-action ('utter_greet'), so we type ``1`` and hit enter.
-Then we type ``1`` again, because 'action_listen' is the correct action after greeting.
-We continue this loop until the bot chooses the wrong action.
+what the bot *should* have done. In this case, the bot chose the
+right action ('utter_greet'), so we type ``1`` and hit enter.
+Then we type ``1`` again, because 'action_listen' is the correct
+action after greeting. We continue this loop until the bot chooses
+the wrong action.
 
 **Providing feedback on errors**
 
-If you ask ``/search_concerts``, the bot should suggest ``action_search_concerts`` and then ``action_listen``.
-Now let's ask it to ``/compare_reviews``. The bot happens to choose the wrong one out of the two
-possibilities we wrote in the stories:
+If you ask ``/search_concerts``, the bot should suggest
+``action_search_concerts`` and then ``action_listen``.
+Now let's ask it to ``/compare_reviews``. The bot happens to choose
+the wrong one out of the two possibilities we wrote in the stories:
 
 .. code-block:: text
 
@@ -117,4 +126,3 @@ conversation. At any point you can type ``0`` and the bot will write the
 current conversation to a file and exit the conversation. Make sure to
 combine the dumped story with your original training data for the next
 training.
-

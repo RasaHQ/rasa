@@ -6,8 +6,8 @@ Domain Format
 
 The ``Domain`` defines the universe in which your bot operates.
 It specifies the ``intents``, ``entities``, ``slots``, and ``actions``
-your bot should know about.
-Optionally, it can also include ``templates`` for the things your bot can say.
+your bot should know about. Optionally, it can also include ``templates``
+for the things your bot can say.
 
 
 As an example, the ``DefaultDomain`` has the following yaml definition:
@@ -17,11 +17,12 @@ As an example, the ``DefaultDomain`` has the following yaml definition:
 
 **What does this mean?**
 
-Your NLU model will define the ``intents`` and ``entities`` that you need to include
-in the domain.
+Your NLU model will define the ``intents`` and ``entities`` that you
+need to include in the domain.
 
-``slots`` are the things you want to keep track of during a conversation, see :ref:`slots` .
-A categorical slot called ``risk_level`` would be defined like this:
+``slots`` are the things you want to keep track of during a conversation,
+see :ref:`slots` . A categorical slot called ``risk_level`` would be
+defined like this:
 
 .. code-block:: yaml
 
@@ -34,8 +35,8 @@ A categorical slot called ``risk_level`` would be defined like this:
                - high
    
 
-:ref:`Here <slot_types>` is the full list of slot types defined by Rasa Core, along with syntax
-for including them in your domain file.
+:ref:`Here <slot_types>` is the full list of slot types defined by
+Rasa Core, along with syntax for including them in your domain file.
 
 
 ``actions`` are the things your bot can actually do.
@@ -53,11 +54,11 @@ For a more complete example domain, check the :doc:`quickstart`.
 Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-To reference custom actions and slots in your domain,
-you need to reference them by their module path.
+To reference slots in your domain, you need to reference them by
+their **module path**. To reference custom actions, use their **name**.
 For example, if you have a module called ``my_actions`` containing
-a class ``MyAwesomeAction``, and module ``my_slots`` containing ``MyAwesomeSlot``,
-you would add these lines to the domain file:
+a class ``MyAwesomeAction``, and module ``my_slots`` containing
+``MyAwesomeSlot``, you would add these lines to the domain file:
 
 .. code-block:: yaml
 
@@ -70,8 +71,8 @@ you would add these lines to the domain file:
 
 
 The ``name`` function of ``MyAwesomeAction`` needs to return
-``my_custom_action`` in this example
-(for more details, see :ref:`customactions`).
+``my_custom_action`` in this example (for more details,
+see :ref:`customactions`).
 
 .. _utter_templates:
 
@@ -111,6 +112,7 @@ two ways to use these templates:
    send a message based on the template like this:
 
    .. code-block:: python
+      from rasa_core_sdk.actions import Action
 
       class ActionGreet(Action):
         def name(self):
@@ -123,7 +125,8 @@ two ways to use these templates:
 Images and Buttons
 ------------------
 
-Templates defined in a domains yaml file can contain images and buttons as well:
+Templates defined in a domains yaml file can contain images and
+buttons as well:
 
 .. code-block:: yaml
 
@@ -151,8 +154,8 @@ Variables
 
 You can also use **variables** in your templates to insert information
 collected during the dialogue. You can either do that in your custom python
-code or by using the automatic slot filling mechanism. E.g if you got a template
-like this:
+code or by using the automatic slot filling mechanism. E.g if you
+got a template like this:
 
 .. code-block:: yaml
 
@@ -181,8 +184,9 @@ In custom code, you can retrieve a template by using:
          # ... other code
          return []
 
-If the template contains variables denoted with ``{my_variable}`` you can supply
-values for the fields by passing them as key word arguments to ``utter_template``:
+If the template contains variables denoted with ``{my_variable}``
+you can supply values for the fields by passing them as key word
+arguments to ``utter_template``:
 
 .. code-block:: python
 
@@ -204,8 +208,9 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
 Ignoring entities for certain intents
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you want entities to be ignored for certain intents, you can add the ``use_entities: false``
-parameter to the intent in your domain file like this:
+If you want entities to be ignored for certain intents, you can
+add the ``use_entities: false`` parameter to the intent in your domain
+file like this:
 
 .. code-block:: yaml
 
@@ -215,7 +220,8 @@ parameter to the intent in your domain file like this:
 This means that entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up. If you list
-your intents as normal without this parameter, the entities will be featurized as normal.
+your intents as normal without this parameter, the entities will be
+featurized as normal.
 
 .. note::
 

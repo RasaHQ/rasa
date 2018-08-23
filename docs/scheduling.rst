@@ -43,8 +43,8 @@ Here is an example implementation for our ``action_confirm_booking``:
 
 .. doctest::
 
-    from rasa_core.actions import Action
-    from rasa_core.events import ReminderScheduled
+    from rasa_core_sdk.actions import Action
+    from rasa_core_sdk.events import ReminderScheduled
     import datetime
     from datetime import timedelta
 
@@ -53,8 +53,10 @@ Here is an example implementation for our ``action_confirm_booking``:
             return "action_confirm_booking"
 
         def run(self, dispatcher, tracker, domain):
-            dispatcher.utter_message("Do you want to confirm your booking at Papi's pizza?")
-            return [ReminderScheduled("action_booking_reminder", datetime.now() + timedelta(hours=5)]
+            dispatcher.utter_message("Do you want to confirm your "
+                                     "booking at Papi's pizza?")
+            return [ReminderScheduled("action_booking_reminder",
+                                      datetime.now() + timedelta(hours=5)]
 
 This action schedules a reminder in 5 hours. The reminder will trigger the action ``action_booking_reminder``.
 
@@ -65,8 +67,8 @@ example could look like this:
 
 .. doctest::
 
-    from rasa_core.actions import Action
-    from rasa_core.events import ReminderScheduled
+    from rasa_core_sdk.actions import Action
+    from rasa_core_sdk.events import ReminderScheduled
 
 
     class ActionBookingReminder(Action):
@@ -74,7 +76,8 @@ example could look like this:
             return "action_booking_reminder"
 
         def run(self, dispatcher, tracker, domain):
-            dispatcher.utter_message("You have an unconfirmed booking at Papi's pizza, would you like to confirm it?")
+            dispatcher.utter_message("You have an unconfirmed booking "
+                                     "at Papi's pizza, want to confirm it?")
             return []
 
 By default, reminders will be cancelled if the user sends *any* message to the bot before the scheduled reminder time. 

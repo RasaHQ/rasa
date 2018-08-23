@@ -57,7 +57,11 @@ and you can use this file like this:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server --endpoints endpoints.yml -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 -o out.log
+    $ python -m rasa_core.server \
+       -d examples/babi/models/policy/current \
+       -u examples/babi/models/nlu/current_py2 \
+       -o out.log \
+       --endpoints endpoints.yml
 
 The body of the ``POST`` request sent to the endpoint will look
 like this:

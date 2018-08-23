@@ -6,11 +6,17 @@ Installation
 Install Rasa Core to get started with the Rasa stack.
 
 .. note::
-    You can also get started without installing anything by going to the :ref:`quickstart`
+
+    You can also get started without installing anything by going
+    to the :ref:`quickstart`
 
 
 Install Rasa Core
 -----------------
+
+Stable (Most recent release)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The recommended way to install Rasa Core is using pip:
 
 .. copyable:: 
@@ -27,7 +33,15 @@ If you alredy have `rasa_core` installed and want to update it run:
 Unless you've already got numpy & scipy installed, we highly recommend 
 that you install and use `Anaconda <https://www.continuum.io\/downloads>`_.
 
+.. note::
 
+    If you want to run custom action code, please also take a look at
+    :ref:`customactions`. You'll need to install Rasa Core to train and
+    use the model and ``rasa_core_sdk`` to develop your custom action code.
+
+
+Latest (Most recent github)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you want to use the bleeding edge version of Rasa use github + setup.py:
 
 .. code-block:: bash
@@ -37,14 +51,16 @@ If you want to use the bleeding edge version of Rasa use github + setup.py:
     pip install -r requirements.txt
     pip install -e .
 
-.. note::
-    If you want to change the Rasa Core code and want to run the tests or
-    build the documentation, you need to install the development dependencies:
+Development (github & development dependencies)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    .. code-block:: bash
+If you want to change the Rasa Core code and want to run the tests or
+build the documentation, you need to install the development dependencies:
 
-        pip install -r dev-requirements.txt
-        pip install -e .
+.. code-block:: bash
+
+    pip install -r dev-requirements.txt
+    pip install -e .
 
 
 Add Natural Language Understanding
@@ -56,7 +72,8 @@ We use Rasa NLU for intent classification & entity extraction. To get it, run:
 
     pip install rasa_nlu[tensorflow]
 
-Full instructions can be found `here <https://rasa.com/docs/nlu/installation/>`_.
+Full instructions can be found
+`in the NLU documentation <https://rasa.com/docs/nlu/installation/>`_.
 
 You can also use other NLU services like wit.ai, dialogflow, or LUIS. 
 In fact, you don't need to use NLU at all, if your messaging app uses buttons

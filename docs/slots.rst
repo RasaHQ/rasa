@@ -13,11 +13,12 @@ database query).
 Most of the time, you want slots to influence how the dialogue progresses. 
 There are different slot types for different behaviors. 
 
-For example, if your user has provided their home city, you might have a ``text`` slot
-called ``home_city``. If the user asks for the weather, and you *don't* know their home 
-city, you will have to ask them for it. A ``text`` slot only tells Rasa Core whether
-the slot has a value. The specific value of a ``text`` slot
-(e.g. Bangalore or New York or Hong Kong) doesn't make any difference.
+For example, if your user has provided their home city, you might
+have a ``text`` slot called ``home_city``. If the user asks for the
+weather, and you *don't* know their home city, you will have to ask
+them for it. A ``text`` slot only tells Rasa Core whether the slot
+has a value. The specific value of a ``text`` slot (e.g. Bangalore
+or New York or Hong Kong) doesn't make any difference.
 
 If the value itself is important, use a ``categorical`` slot. There are
 also ``boolean``, ``float``, and ``list`` slots. 
@@ -28,8 +29,8 @@ of the conversation, use an ``unfeaturized`` slot.
 How Rasa Uses Slots
 -------------------
 
-The :class:`rasa_core.policies.Policy` doesn't have access to the value of your slots.
-It receives a ``featurized`` representation. 
+The :class:`rasa_core.policies.Policy` doesn't have access to the
+value of your slots. It receives a ``featurized`` representation.
 As mentioned above, for a ``text`` slot the value is irrelevant. 
 The policy just sees a ``1`` or ``0`` depending on whether it is set. 
 
@@ -53,8 +54,8 @@ There are multiple ways that slots are set during a conversation:
 Slots Set from NLU
 ~~~~~~~~~~~~~~~~~~
 
-If your NLU model picks up an entity, and your domain contains a slot with the same name, 
-the slot will be set automatically. For example:
+If your NLU model picks up an entity, and your domain contains a
+slot with the same name, the slot will be set automatically. For example:
        
 .. code-block:: story
 
@@ -63,20 +64,22 @@ the slot will be set automatically. For example:
      - slot{"name": "Ali"}
      - utter_greet
 
-In this case, you don't have to include the ``- slot{}`` part in the story, because 
-it is automatically picked up.
+In this case, you don't have to include the ``- slot{}`` part in the
+story, because it is automatically picked up.
 
 
 Slots Set By Clicking Buttons
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can use buttons as a shortcut.
-Rasa Core will send messages starting with a ``/`` to the :class:`RegexInterpreter`,
-which expects NLU input in the same format as in story files, e.g. ``/intent{entities}``.
-For example, if you let users choose a color by clicking a button, the button payloads
-might be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``
+Rasa Core will send messages starting with a ``/`` to the
+:class:`RegexInterpreter`, which expects NLU input in the same format
+as in story files, e.g. ``/intent{entities}``. For example, if you let
+users choose a color by clicking a button, the button payloads might
+be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``.
 
-You can specify this in your domain file like this: (see details in :ref:`domain`)
+You can specify this in your domain file like this:
+(see details in :ref:`domain`)
 
 .. code-block:: yaml
 
@@ -84,9 +87,9 @@ You can specify this in your domain file like this: (see details in :ref:`domain
   - text: "what color would you like?"
     buttons:
     - title: "blue"
-      payload: "/choose{"color": "blue"}"
+      payload: '/choose{"color": "blue"}'
     - title: "red"
-      payload: "/choose{"color": "red"}"
+      payload: '/choose{"color": "red"}'
 
 
 Slots Set by Actions
@@ -96,8 +99,8 @@ The second option is to set slots by returning events in :ref:`custom_actions`.
 In this case, your stories need to include the slots.
 For example, you have a custom action to fetch a user's profile, and 
 you have a ``categorical`` slot called ``account_type``. 
-When the ``fetch_profile`` action is run, it returns a :class:`rasa_core.events.SlotSet`
-event:
+When the ``fetch_profile`` action is run, it returns a
+:class:`rasa_core.events.SlotSet` event:
 
 .. code-block:: yaml
 
@@ -110,7 +113,8 @@ event:
 
 .. code-block:: python
 
-   from rasa_core.actions import Action
+   from rasa_core_sdk.actions import Action
+   from rasa_core_sdk.events import SlotSet
    import requests
 
    class FetchProfileAction(Action):
@@ -152,22 +156,23 @@ take (in this case, ``utter_welcome_premuim`` or ``utter_welcome_basic``).
 Custom Slot Types
 -----------------
 
-Maybe your restaurant booking system can only handle bookings for up to 6 people.
-In this case you want the *value* of the slot to influence the 
-next selected action (and not just whether it's been specified).
-You can do this by defining a custom slot class. 
+Maybe your restaurant booking system can only handle bookings
+for up to 6 people. In this case you want the *value* of the
+slot to influence the next selected action (and not just whether
+it's been specified). You can do this by defining a custom slot class.
 
 In the code below, we define a slot class called ``NumberOfPeopleSlot``.
 The featurization defines how the value of this slot gets converted to a vector
 to our machine learning model can deal with.
-Our slot has three possible "values", which we can represent with a vector of length ``2``.
+Our slot has three possible "values", which we can represent with
+a vector of length ``2``.
 
 +---------------+------------------------------------------+
-| ``(0,0)``   | not yet set                                |
+| ``(0,0)``     | not yet set                              |
 +---------------+------------------------------------------+
-| ``(1,0)``   | between 1 and 6                            |
+| ``(1,0)``     | between 1 and 6                          |
 +---------------+------------------------------------------+
-| ``(0,1)``   | more than 6                                |
+| ``(0,1)``     | more than 6                              |
 +---------------+------------------------------------------+
 
 
@@ -203,5 +208,3 @@ can learn from these how to handle the different situations:
    # story2
    * inform{"people": "9"}
    - action_explain_table_limit
-   
-

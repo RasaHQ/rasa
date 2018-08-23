@@ -3,9 +3,9 @@
 Tracking Conversation State
 ===========================
 
-The ``DialogueStateTracker`` is the stateful object which keeps track of a conversation. 
-The only way the tracker should ever be updated is by passing ``events`` to the ``update`` method.
-For example:
+The ``DialogueStateTracker`` is the stateful object which keeps track
+of a conversation. The only way the tracker should ever be updated is
+by passing ``events`` to the ``update`` method. For example:
 
 .. doctest::
 
@@ -21,7 +21,8 @@ For example:
     {u'cuisine': <TextSlot(cuisine: Mexican)>}
 
 
-The full set of events is documented in the :doc:`Events API documentation <api/events>`.
+The full set of events is documented in the
+:doc:`Events API documentation <api/events>`.
 
 
 .. _persisting_trackers:
@@ -50,7 +51,8 @@ To return to the current state of the conversation,
 we iterate over the turns and log the events in each.
 
 We use the ``jsonpickle`` library to serialise these Dialogues.
-Here's a simple example of a dialogue as it would be stored in the TrackerStore:
+Here's a simple example of a dialogue as it would be stored in
+the ``TrackerStore``:
 
 .. literalinclude:: ../data/test_dialogues/greet.json
     :language: json
