@@ -20,7 +20,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
 from rasa_nlu.model import InvalidProjectError
-from rasa_nlu.project import Project
+from rasa_nlu.project import Project, load_from_server
 from rasa_nlu.train import do_train_in_worker, TrainingException
 from rasa_nlu.training_data.loading import load_data
 from twisted.internet import reactor
@@ -92,13 +92,17 @@ class DataRouter(object):
                  response_log=None,
                  emulation_mode=None,
                  remote_storage=None,
-                 component_builder=None):
+                 component_builder=None,
+                 model_server=None,
+                 wait_time_between_pulls=None):
         self._training_processes = max(max_training_processes, 1)
         self._current_training_processes = 0
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
         self.emulator = self._create_emulator(emulation_mode)
         self.remote_storage = remote_storage
+        self.model_server = model_server
+        self.wait_time_between_pulls = wait_time_between_pulls
 
         if component_builder:
             self.component_builder = component_builder
@@ -130,8 +134,8 @@ class DataRouter(object):
             utils.create_dir_for_file(response_logfile)
             out_file = io.open(response_logfile, 'a', encoding='utf8')
             query_logger = Logger(
-                    observer=jsonFileLogObserver(out_file, recordSeparator=''),
-                    namespace='query-logger')
+                observer=jsonFileLogObserver(out_file, recordSeparator=''),
+                namespace='query-logger')
             # Prevents queries getting logged with parent logger
             # --> might log them to stdout
             logger.info("Logging requests to '{}'.".format(response_logfile))
@@ -151,23 +155,36 @@ class DataRouter(object):
         projects.extend(self._list_projects_in_cloud())
         return projects
 
-    def _create_project_store(self, project_dir):
+    def _create_project_store(self,
+                              project_dir):
         projects = self._collect_projects(project_dir)
 
         project_store = {}
 
         for project in projects:
-            project_store[project] = Project(self.component_builder,
-                                             project,
-                                             self.project_dir,
-                                             self.remote_storage)
+            if self.model_server is not None:
+                project_store[project] = load_from_server(
+                    self.component_builder,
+                    project,
+                    self.project_dir,
+                    self.remote_storage,
+                    self.model_server,
+                    self.wait_time_between_pulls
+                )
+            else:
+                project_store[project] = Project(
+                    self.component_builder,
+                    project,
+                    self.project_dir,
+                    self.remote_storage
+                )
 
         if not project_store:
             default_model = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
             project_store[default_model] = Project(
-                    project=RasaNLUModelConfig.DEFAULT_PROJECT_NAME,
-                    project_dir=self.project_dir,
-                    remote_storage=self.remote_storage)
+                project=RasaNLUModelConfig.DEFAULT_PROJECT_NAME,
+                project_dir=self.project_dir,
+                remote_storage=self.remote_storage)
         return project_store
 
     def _pre_load(self, projects):
@@ -233,16 +250,16 @@ class DataRouter(object):
 
             if project not in projects:
                 raise InvalidProjectError(
-                        "No project found with name '{}'.".format(project))
+                    "No project found with name '{}'.".format(project))
             else:
                 try:
                     self.project_store[project] = Project(
-                            self.component_builder, project,
-                            self.project_dir, self.remote_storage)
+                        self.component_builder, project,
+                        self.project_dir, self.remote_storage)
                 except Exception as e:
                     raise InvalidProjectError(
-                            "Unable to load project '{}'. "
-                            "Error: {}".format(project, e))
+                        "Unable to load project '{}'. "
+                        "Error: {}".format(project, e))
 
         time = data.get('time')
         response = self.project_store[project].parse(data['text'], time,
@@ -311,8 +328,8 @@ class DataRouter(object):
                 self.project_store[project].status = 1
         elif project not in self.project_store:
             self.project_store[project] = Project(
-                    self.component_builder, project,
-                    self.project_dir, self.remote_storage)
+                self.component_builder, project,
+                self.project_dir, self.remote_storage)
             self.project_store[project].status = 1
 
         def training_callback(model_path):
@@ -329,7 +346,7 @@ class DataRouter(object):
         def training_errback(failure):
             logger.warning(failure)
             target_project = self.project_store.get(
-                    failure.value.failed_target_project)
+                failure.value.failed_target_project)
             self._current_training_processes -= 1
             self.project_store[project].current_training_processes -= 1
             if (target_project and

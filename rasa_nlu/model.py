@@ -43,7 +43,7 @@ class InvalidProjectError(Exception):
 
 
 class UnsupportedModelError(Exception):
-    """Raised when a model is to old to be loaded.
+    """Raised when a model is too old to be loaded.
 
     Attributes:
         message -- explanation of why the model is invalid

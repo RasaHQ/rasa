@@ -76,6 +76,13 @@ def create_argument_parser():
                         default=1,
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
+    parser.add_argument('--model_server',
+                        help="Rasa NLU model server")
+    parser.add_argument('--wait_time_between_pulls',
+                        type=int,
+                        default=10,
+                        help='Wait time in seconds between NLU model server'
+                             'queries.')
     parser.add_argument('--response_log',
                         help='Directory where logs will be saved '
                              '(containing queries and responses).'
@@ -423,7 +430,9 @@ if __name__ == '__main__':
                         cmdline_args.max_training_processes,
                         cmdline_args.response_log,
                         cmdline_args.emulate,
-                        cmdline_args.storage)
+                        cmdline_args.storage,
+                        cmdline_args.model_server,
+                        cmdline_args.wait_time_between_pulls)
     if pre_load:
         logger.debug('Preloading....')
         if 'all' in pre_load:
