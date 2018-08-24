@@ -94,19 +94,19 @@ def create_argument_parser():
             help="Configuration file for the connectors as a yml file")
     parser.add_argument(
             '--nlu_threshold',
-            type=int,
+            type=float,
             default=DEFAULT_NLU_FALLBACK_THRESHOLD,
             help="If NLU prediction confidence is below threshold, fallback "
                  "will get triggered.")
     parser.add_argument(
             '--core_threshold',
-            type=int,
+            type=float,
             default=DEFAULT_CORE_FALLBACK_THRESHOLD,
             help="If Core action prediction confidence is below the threshold "
                  "a fallback action will get triggered")
     parser.add_argument(
             '--fallback_action_name',
-            type=int,
+            type=str,
             default=DEFAULT_FALLBACK_ACTION,
             help="When a fallback is triggered (e.g. because the ML prediction "
                  "is of low confidence) this is the name of tje action that "

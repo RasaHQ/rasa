@@ -21,13 +21,6 @@ templates:
       payload: "great"
     - title: "super sad"
       payload: "super sad"
-  utter_ask_color:
-  - text: "what color would you like?"
-    buttons:
-    - title: "blue"
-      payload: '/choose{"color": "blue"}'
-    - title: "red"
-      payload: '/choose{"color": "red"}'
 
   utter_cheer_up:
   - text: "Here is something to cheer you up:"

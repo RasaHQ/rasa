@@ -37,10 +37,18 @@ Changed
 Removed
 -------
 - removed the deprecated ``TopicSet`` event
-- removed ``tracker.follow_up_action`` - use the ``FollowupAction`` event instead
+- removed ``tracker.follow_up_action`` - use the ``FollowupAction``
+  event instead
+- removed ``action_factory: remote`` from domain file - the domain is
+  always run over http
+- removed ``OnlineLearningPolicy`` - use the ``training.online``
+  script instead
 
 Fixed
 -------
+- lots of type annotations
+- some invalid documentation references
+- changed all ``logger.warn`` to ``logger.warning``
 
 [0.10.4] - 2018-08-08
 ^^^^^^^^^^^^^^^^^^^^^

@@ -49,6 +49,8 @@ Changes to Input and Output Channels
   ``CollectingOutputChannel`` moved to ``rasa_core.channels.channel``
 - ``HttpInputComponent`` renamed to ``InputChannel`` & moved to
   ``rasa_core.channels.channel.InputChannel``
+- If you wrote your own custom input channel, make sure to inherit from
+  ``InputChannel`` instead of ``HttpInputComponent.
 - removed package ``rasa_core.channels.rest``,
   please use ``rasa_core.channels.RestInput`` instead
 - remove file input channel ``rasa_core.channels.file.FileInputChannel``
@@ -63,6 +65,20 @@ Changes to Input and Output Channels
                                    fb_secret="SECRET",
                                    fb_access_token="ACCESS_TOKEN")
      agent.handle_channels([input_channel], port=5005, serve_forever=True)
+- If you wrote your own custom output channel, make sure to split messages
+  on double new lines if you like (the ``InputChannel`` you inherit from
+  doesn't do this anymore), e.g.:
+
+  .. code-block:: python
+
+     def send_text_message(self, recipient_id, message):
+         # type: (Text, Text) -> None
+         """Send a message through this channel."""
+
+         for message_part in message.split("\n\n"):
+           # self.send would be the actual communication to e.g. facebook
+           self.send(recipient_id, message_part)
+
 
 0.9.x to 0.10.0
 ---------------

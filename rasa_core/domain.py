@@ -74,13 +74,6 @@ def check_domain_sanity(domain):
             (duplicate_entities, "entities")]))
 
 
-DEFAULT_ACTION_TYPE = "default"
-
-REMOTE_ACTION_TYPE = "remote"
-
-ActionConfig = collections.namedtuple("ActionConfig", "name action_type")
-
-
 class Domain(object):
     """The domain specifies the universe in which the bot's policy acts.
 
