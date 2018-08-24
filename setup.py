@@ -51,7 +51,6 @@ install_requires = [
     "flask~=1.0",
     "flask_cors~=3.0",
     "scikit-learn~=0.19.0",
-    "rasa_nlu~=0.13.0",
     "slackclient~=1.0",
     "python-telegram-bot~=10.0",
     "twilio~=6.0",
@@ -61,7 +60,9 @@ install_requires = [
     "packaging~=17.0",
     "gevent~=1.2",
     "pyyaml~=3.12",
-    "pytz",
+    "pytz~=2018.4",
+    "rasa_nlu~=0.13.0",
+    "rasa_core_sdk~=0.11.0",
 ]
 
 extras_requires = {
