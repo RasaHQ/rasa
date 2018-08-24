@@ -59,7 +59,22 @@ Custom Actions Written in Python
 --------------------------------
 
 For actions written in python, we have a convenient SDK which starts
-this action server for you. If your actions are defined in a file
+this action server for you.
+
+The only thing your action server needs to install is ``rasa_core_sdk``:
+
+.. code-block:: bash
+
+    pip install rasa_core_sdk
+
+.. note::
+
+    You do not need to install ``rasa_core`` for your action server.
+    E.g. it is recommended to run Rasa Core in a docker container and
+    create a separate container for your action server. In this
+    separate container, you only need to install ``rasa_core_sdk``.
+
+If your actions are defined in a file
 called ``actions.py``, run this command:
 
 .. code-block:: bash
