@@ -103,3 +103,4 @@ The Rasa Core dialogue engine
    migrations
    brokers
    changelog
+   support

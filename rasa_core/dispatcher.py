@@ -64,7 +64,7 @@ class Dispatcher(object):
             self.utter_button_message(message.get("text"),
                                       message.get("buttons"))
         # Sends a text message
-        else:
+        elif message.get("text"):
             self.utter_message(message.get("text"))
 
         # if there is an image we handle it separately as an attachment
