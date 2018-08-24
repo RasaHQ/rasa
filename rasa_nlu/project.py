@@ -20,7 +20,7 @@ from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.model import Metadata, Interpreter
 from rasa_nlu.utils import is_url
-from requests.exceptions import InvalidURL
+from requests.exceptions import InvalidURL, RequestException
 
 if six.PY2:
     from StringIO import StringIO as IOReader
@@ -49,12 +49,7 @@ def load_from_server(component_builder=None,  # type: Optional[Text]
                       project_dir=project_dir,
                       remote_storage=remote_storage)
 
-    try:
-        _update_model_from_server(model_server, project)
-    except ConnectionError as e:
-        logger.warning("Could not retrieve model from server. Connection "
-                       "Error. Running without a model. Server URL: "
-                       "`{}`\n".format(e))
+    _update_model_from_server(model_server, project)
 
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
@@ -97,29 +92,37 @@ def _get_remote_model_name(filename):
 
 
 def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
-    # type: (Text, Text, Optional[Text]) -> Optional[Text]
+    # type: (Text, Text, Optional[Text]) -> (Optional[Text], Optional[Text])
     """Queries the model server and returns a tuple of containing the
 
     response's <ETag> header which contains the model hash, and the
     <filename> header containing the model name."""
     header = {"If-None-Match": fingerprint}
-    response = requests.get(model_server, headers=header)
+    try:
+        logger.debug("Requesting model from server {}..."
+                     "".format(model_server))
+        response = requests.get(model_server, headers=header)
+    except RequestException as e:
+        logger.warning("Tried to fetch model from server, but couldn't reach "
+                       "server. We'll retry later... Error: {}."
+                       "".format(e))
+        return None, None
 
     if response.status_code == 204:
         logger.debug("Model server returned 204 status code, indicating "
                      "that no new model is available. "
                      "Current fingerprint: {}".format(fingerprint))
-        return response.headers.get("ETag")
+        return response.headers.get("ETag"), response.headers.get("filename")
     elif response.status_code == 404:
         logger.debug("Model server didn't find a model for our request. "
                      "Probably no one did train a model for the project "
                      "and tag combination yet.")
-        return None
+        return None, None
     elif response.status_code != 200:
         logger.warn("Tried to fetch model from server, but server response "
                     "status code is {}. We'll retry later..."
                     "".format(response.status_code))
-        return None
+        return None, None
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
     zip_ref.extractall(model_directory)
