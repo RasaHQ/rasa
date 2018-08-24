@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import os
 
 import pytest
 from rasa_nlu import data_router, config
@@ -57,11 +58,9 @@ def default_config():
 
 @pytest.fixture(scope="session")
 def zipped_nlu_model():
-    import os
-
     # directory of one trained NLU model
-    model_dir_iterator = os.scandir(TEST_MODEL_PATH)
-    model_dir = next(model_dir_iterator).name
+    model_dir_list = os.listdir(TEST_MODEL_PATH)
+    model_dir = model_dir_list[0]
 
     # path of that directory
     model_path = os.path.join(TEST_MODEL_PATH, model_dir)

@@ -104,7 +104,8 @@ def test_project_with_model_server(zipped_nlu_model):
     with io.open(zipped_nlu_model, 'rb') as f:
         responses.add(responses.GET,
                       model_server_url,
-                      headers={"ETag": fingerprint},
+                      headers={"ETag": fingerprint,
+                               "filename": "my_model_xyz.zip"},
                       body=f.read(),
                       content_type='application/zip',
                       stream=True)

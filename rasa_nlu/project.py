@@ -64,7 +64,7 @@ def load_from_server(component_builder=None,  # type: Optional[Text]
     return project
 
 
-def _update_model_from_server(model_server, project, ):
+def _update_model_from_server(model_server, project):
     # type: (Text, Project) -> None
     """Load a zipped Rasa NLU model from a URL and update the passed
 
@@ -78,6 +78,7 @@ def _update_model_from_server(model_server, project, ):
         model_server, model_directory, project.fingerprint)
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
+        project.fingerprint = new_model_fingerprint
         project.update_model_from_dir(model_directory, model_name)
     else:
         logger.debug("No new model found at URL {}".format(model_server))
@@ -347,7 +348,7 @@ class Project(object):
             return Metadata(data, model_name)
         else:
             if model_dir is not None:
-                path = os.path.join(model_dir, model_name)
+                path = model_dir
             elif not os.path.isabs(model_name) and self._path:
                 path = os.path.join(self._path, model_name)
             else:
