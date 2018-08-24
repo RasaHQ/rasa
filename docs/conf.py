@@ -360,6 +360,9 @@ scv_greatest_tag = True
 
 
 def setup(sphinx):
-	sys.path.insert(0, os.path.abspath('./util'))
-	from StoryLexer import StoryLexer
-	sphinx.add_lexer("story", StoryLexer())
+    try:
+        sys.path.insert(0, os.path.abspath('./util'))
+        from StoryLexer import StoryLexer
+        sphinx.add_lexer("story", StoryLexer())
+    except ImportError:
+        print("No Story Lexer :( Sad times!")
