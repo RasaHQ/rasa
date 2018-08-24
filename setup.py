@@ -56,6 +56,7 @@ install_requires = [
     "twilio~=6.0",
     "mattermostwrapper~=2.0",
     "colorhash~=1.0",
+    "pika~=0.11.2",
     "jsonschema~=2.6",
     "packaging~=17.0",
     "gevent~=1.2",
