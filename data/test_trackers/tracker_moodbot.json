@@ -24,6 +24,7 @@
   "sender_id": "mysender",
   "paused": false,
   "latest_event_time": 1517821726.211042,
+  "followup_action": "action_listen",
   "slots": {"name": null},
   "events": [
     {

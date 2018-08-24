@@ -12,7 +12,7 @@ import re
 import warnings
 
 from rasa_nlu import utils as nlu_utils
-from typing import Optional, List, Text, Any, Dict
+from typing import Optional, List, Text, Any, Dict, AnyStr
 
 from rasa_core import utils
 from rasa_core.events import (
@@ -40,6 +40,8 @@ class StoryStepBuilder(object):
         self.start_checkpoints = []
 
     def add_checkpoint(self, name, conditions):
+        # type: (Text, Optional[Dict[Text, Any]]) -> None
+
         # Depending on the state of the story part this
         # is either a start or an end check point
         if not self.current_steps:
@@ -208,7 +210,7 @@ class StoryFileReader(object):
             return "", {}
 
     def process_lines(self, lines):
-        # type: (List[Text]) -> List[StoryStep]
+        # type: (List[AnyStr]) -> List[StoryStep]
 
         for idx, line in enumerate(lines):
             line_num = idx + 1
@@ -237,7 +239,7 @@ class StoryFileReader(object):
                                    "Line Content: '{}'"
                                    "".format(line_num, line))
             except Exception as e:
-                msg = "Error in line {}: {}".format(line_num, e.message)
+                msg = "Error in line {}: {}".format(line_num, e)
                 logger.error(msg, exc_info=1)
                 raise ValueError(msg)
         self._add_current_stories_to_result()
@@ -273,7 +275,7 @@ class StoryFileReader(object):
         self.current_step_builder = StoryStepBuilder(name)
 
     def add_checkpoint(self, name, conditions):
-        # type: (Text) -> None
+        # type: (Text, Optional[Dict[Text, Any]]) -> None
 
         # Ensure story part already has a name
         if not self.current_step_builder:

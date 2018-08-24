@@ -357,3 +357,9 @@ scv_whitelist_tags = (re.compile(r'^[123456789]+\.[0-9]+\.\d+$'),
                       '0.6.9')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_greatest_tag = True
+
+
+def setup(sphinx):
+	sys.path.insert(0, os.path.abspath('./util'))
+	from StoryLexer import StoryLexer
+	sphinx.add_lexer("story", StoryLexer())

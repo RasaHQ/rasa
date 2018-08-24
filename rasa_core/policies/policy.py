@@ -3,17 +3,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from builtins import object
+
+import copy
 import logging
 import typing
+from typing import (
+    Any, List, Optional, Text, Dict, Callable)
 
-from builtins import object
-from typing import \
-    Any, List, Optional, Text, Dict, Callable
-
-import inspect
-import copy
-from rasa_core.featurizers import \
-    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
+from rasa_core import utils
+from rasa_core.featurizers import (
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -34,7 +34,7 @@ class Policy(object):
     @classmethod
     def _create_featurizer(cls, featurizer=None):
         return copy.deepcopy(featurizer) \
-               if featurizer else cls._standard_featurizer()
+            if featurizer else cls._standard_featurizer()
 
     def __init__(self, featurizer=None):
         # type: (Optional[TrackerFeaturizer]) -> None
@@ -46,14 +46,9 @@ class Policy(object):
 
     @staticmethod
     def _get_valid_params(func, **kwargs):
-        # type: (Callable, **Any) -> Dict
+        # type: (Callable, Any) -> Dict
         # filter out kwargs that cannot be passed to func
-        try:
-            # python 3.x is used
-            valid_keys = inspect.signature(func).parameters.keys()
-        except AttributeError:
-            # python 2.x is used
-            valid_keys = inspect.getargspec(func).args
+        valid_keys = utils.arguments_of(func)
 
         params = {key: kwargs.get(key)
                   for key in valid_keys if kwargs.get(key)}
@@ -68,7 +63,7 @@ class Policy(object):
             self,
             training_trackers,  # type: List[DialogueStateTracker]
             domain,  # type: Domain
-            **kwargs  # type: **Any
+            **kwargs  # type: Any
     ):
         # type: (...) -> DialogueTrainingData
         """Transform training trackers into a vector representation.
@@ -89,7 +84,7 @@ class Policy(object):
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
-              **kwargs  # type: **Any
+              **kwargs  # type: Any
               ):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
@@ -98,7 +93,7 @@ class Policy(object):
                                   "to train.")
 
     def continue_training(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+        # type: (List[DialogueStateTracker], Domain, Any) -> None
         """Continues training an already trained policy.
 
         This doesn't need to be supported by every policy. If it is supported,

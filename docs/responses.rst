@@ -6,7 +6,7 @@ Bot Responses
 If you want your bot to respond to user messages, you need to manage
 the bots responses. In the training data for your bot,
 :ref:`your stories<stories>`, you specify the actions your bot
-executes when he encounters the dialogue example. These actions
+should execute. These actions
 can use utterances to send messages back to the user.
 
 There are two ways to manage these utterances:
@@ -57,7 +57,12 @@ and you can use this file like this:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server --endpoints endpoints.yml -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 -o out.log
+    $ python -m rasa_core.run \
+       --enable_api \
+       -d examples/babi/models/policy/current \
+       -u examples/babi/models/nlu/current_py2 \
+       -o out.log \
+       --endpoints endpoints.yml
 
 The body of the ``POST`` request sent to the endpoint will look
 like this:
@@ -127,6 +132,7 @@ The endpoint then needs to respond with the generated response:
   {
       "text": "hey there",
       "buttons": [],
+      "image": null,
       "elements": [],
       "attachments": []
   }

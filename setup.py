@@ -24,6 +24,7 @@ tests_requires = [
     "matplotlib~=2.0",
     "pygraphviz~=1.0",
     "responses~=0.9.0",
+    "httpretty~=0.9.0",
 ]
 
 install_requires = [
@@ -50,12 +51,18 @@ install_requires = [
     "flask~=1.0",
     "flask_cors~=3.0",
     "scikit-learn~=0.19.0",
-    "rasa_nlu~=0.13.0",
     "slackclient~=1.0",
     "python-telegram-bot~=10.0",
     "twilio~=6.0",
     "mattermostwrapper~=2.0",
     "colorhash~=1.0",
+    "jsonschema~=2.6",
+    "packaging~=17.0",
+    "gevent~=1.2",
+    "pyyaml~=3.12",
+    "pytz~=2018.4",
+    "rasa_nlu~=0.13.0",
+    "rasa_core_sdk~=0.11.0",
 ]
 
 extras_requires = {
@@ -103,5 +110,5 @@ setup(
 )
 
 print("\nWelcome to Rasa Core!")
-print("If any questions please visit documentation page https://core.rasa.com")
+print("If any questions please visit documentation page https://rasa.com/docs/core")
 print("or join community chat on https://gitter.im/RasaHQ/rasa_core")

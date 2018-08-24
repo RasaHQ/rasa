@@ -9,16 +9,35 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the
+    :ref:`migration` guide before updating. You need to retrain your models.
+
+
 Added
 -----
+- script parameter ``--quiet`` to set the log level to ``WARNING``
+- information about the python version a model has been trained with to the
+  model metadata
 - more emoji support for PY2
 - intent confidence support in RegexInterpreter
 
 Changed
 -------
+- default log level for all scripts has been changed from ``WARNING`` to
+  ``INFO``.
+- format of the credentials file to allow specifying the credentials for
+  multiple channels
+- webhook URLs for the input channels have changed and need to be reset
+- deprecated using ``rasa_core.server`` as a script - use
+  ``rasa_core.run --enable_api`` instead
 
 Removed
 -------
+- removed the deprecated ``TopicSet`` event
+- removed ``tracker.follow_up_action`` - use the ``FollowupAction`` event instead
 
 Fixed
 -------
@@ -398,7 +417,7 @@ Changed
 - renamed ``rasa_dm.util`` to ``rasa_dm.utils``
 - renamed the whole package to ``rasa_core`` (so ``rasa_dm`` is gone!)
 - renamed ``Reminder`` attribute ``id`` to ``name``
-- a lot of documentation improvements. docs are now at https://core.rasa.com
+- a lot of documentation improvements. docs are now at https://rasa.com/docs/core
 - use hashing when writing memorized turns into persistence - requires retraining of all models that are trained with a version prior to this
 - changed ``agent.handle_message(...)`` interface for easier usage
 

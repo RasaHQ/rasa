@@ -4,17 +4,23 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import itertools
+import typing
+
 import json
 import logging
 
+# noinspection PyPep8Naming
 import six.moves.cPickle as pickler
-from typing import Text, Optional
+from typing import Text, Optional, List
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
 from rasa_core.trackers import DialogueStateTracker, ActionExecuted
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_core.domain import Domain
 
 
 class TrackerStore(object):
@@ -64,7 +70,7 @@ class TrackerStore(object):
             self.event_broker.publish(json.dumps(body))
 
     def keys(self):
-        # type: (Text) -> List[Text]
+        # type: () -> Optional[List[Text]]
         raise NotImplementedError()
 
     @staticmethod

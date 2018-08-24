@@ -1,74 +1,103 @@
-:desc: How to Customize Your Rasa Core Configuration
+:desc: The Rasa Core REST API
 
-.. _section_server:
+.. _section_http:
 
-Server Configuration
-====================
+HTTP API
+========
 
 .. note::
 
     Before you can use the server, you need to define a domain, create training
-    data, and train a model. You can then use the trained model for remote code
-    execution! See the :ref:`quickstart` for an introduction.
+    data, and train a model. You can then use the trained model!
+    See :ref:`quickstart` for an introduction.
 
 
-
-Overview
---------
-The general idea is to run the actions within your code (arbitrary language),
-instead of python. To do this, Rasa Core will start up a web server where you
-need to pass the user messages to. Rasa Core on the other side will tell you
-which actions you need to run. After running these actions, you need to notify
-the framework that you executed them and tell the model about any update of the
-internal dialogue state for that user. All of these interactions are done using
-a HTTP REST interface.
-
-You can also use a single, simpler endpoint called ``/respond``, which just returns
-all of the messages your bot should send back to the user. In general, this only
-works if all of your actions are simple utterances (messages sent to the user).
-It can make use of custom actions, but then these *have* to be implemented in 
-python and executed on the machine that runs the server. 
-
-To activate the remote mode, include
-
-.. code-block:: yaml
-
-    action_factory: remote
-
-within your ``domain.yml`` (you can find an example in
-``examples/remote/concert_domain_remote.yml``).
+The HTTP api exists to make it easy for python and non-python
+projects to interact with Rasa Core. The API allows you to modify
+the trackers (e.g. push or remote events).
 
 .. note::
 
-    If started as a HTTP server, Rasa Core will not handle output or input
-    channels for you. That means you need to retrieve messages from the input
-    channel (e.g. facebook messenger) and send messages to the user on your end.
+    If you are looking for documentation on how to run custom actions -
+    head over to :ref:`customactions`.
 
-    Hence, you also do not need to define any utterances in your domain yaml.
-    Just list all the actions you need.
+.. contents::
 
-Running the server
-------------------
+
+Running the HTTP server
+-----------------------
+
 You can run a simple http server that handles requests using your
-models with
+models with:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 -o out.log
+    $ python -m rasa_core.run \
+        --enable_api
+        -d models/dialogue \
+        -u models/nlu/current \
+        -o out.log
 
 The different parameters are:
 
-- ``-d``, path to the Rasa Core model.
-- ``-u``, path to the Rasa NLU model.
-- ``-o``, path to the log file.
+- ``--enable_api``, enables this additional API
+- ``-d``, which is the path to the Rasa Core model.
+- ``-u``, which is the path to the Rasa NLU model.
+- ``-o``, which is the path to the log file.
+
+.. note::
+
+  If you are using custom actions - make sure to pass in the endpoint
+  configuration for your action server as well using
+  ``--endpoints endpoints.yml``.
+
+Fetching models from a server
+-----------------------------
+You can also configure the http server to fetch models from another URL:
+
+.. code-block:: bash
+
+    $ python -m rasa_core.run \
+        --enable_api \
+        -d models/dialogue \
+        -u models/nlu/current \
+        --endpoints my_endpoints.yaml \
+        -o out.log
+
+The model server is specified in an ``EndpointConfig`` file
+(``my_endpoints.yaml``), where you specify the server URL Rasa Core
+regularly queries for zipped Rasa Core models:
+
+.. code-block:: yaml
+
+    model:
+      url: http://my-server.com/models/default_core@latest
+
+.. note::
+
+    Your model server must provide zipped Rasa Core models, and have
+    ``{"ETag": <model_hash_string>}`` as one of its headers. Core will
+    only download a new model if this model hash changed.
+
+Rasa Core sends requests to your model server with an ``If-None-Match``
+header that contains the current model hash. If your model server can
+provide a model with a different hash from the one you sent, it should send it
+in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
+Core expects an empty response with a ``204`` status code.
+
+An example request Rasa Core might make to your model server looks like this:
+
+.. code-block:: bash
+
+      $ curl --header "If-None-Match: d41d8cd98f00b204e9800998ecf8427e" http://my-server.com/models/default_core@latest
 
 .. _http_start_conversation:
 
 Starting a conversation
 -----------------------
-To start a conversation, send a ``POST`` request to the ``/conversation/<sender_id>/parse`` endpoint.
+You need to do a ``POST`` to the ``/conversation/<sender_id>/parse`` endpoint.
 ``<sender_id>`` is the conversation id (e.g. ``default`` if you just have one
-user, or the facebook user id or any other identifier).
+user, or the facebook user id or any other identifier):
 
 .. code-block:: bash
 
@@ -178,7 +207,6 @@ Reset Slots
     Resets all slots to their initial value.
 
 
-
 Security Considerations
 -----------------------
 
@@ -191,7 +219,12 @@ when starting the server, that token needs to be passed with every request:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server --auth_token thisismysecret -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 -o out.log
+    $ python -m rasa_core.run \
+        --enable_api \
+        --auth_token thisismysecret \
+        -d models/dialogue \
+        -u models/nlu/current \
+        -o out.log
 
 Your requests should pass the token, in our case ``thisismysecret``,
 as a parameter:
@@ -199,3 +232,353 @@ as a parameter:
 .. code-block:: bash
 
     $ curl -XPOST localhost:5005/conversations/default/parse?token=thisismysecret -d '{"query":"hello there"}'
+
+
+Endpoints
+---------
+
+.. http:post:: /conversations/(str:sender_id)/parse
+   :synopsis: Returns posts by the specified tag for the user
+
+   Notify the dialogue engine that the user posted a new message. You must
+   ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
+   you can do this with
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST localhost:5005/conversations/default/parse -d \
+        '{"query":"hello there"}' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "next_action": "utter_ask_howcanhelp",
+          "tracker": {
+              "latest_message": {
+                  ...
+              },
+              "sender_id": "default",
+              "slots": {
+                  "cuisine": null,
+                  "info": null,
+                  "location": null,
+                  "matches": null,
+                  "people": null,
+                  "price": null
+              }
+          }
+      }
+
+   :statuscode 200: no error
+
+
+.. http:post:: /conversations/(str:sender_id)/continue
+
+   Continue the prediction loop for the conversation with id `user_id`. Should
+   be called until the endpoint returns ``action_listen`` as the next action.
+   Between the calls to this endpoint, your code should execute the mentioned
+   next action. If you receive ``action_listen`` as the next action, you should
+   wait for the next user input.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST http://localhost:5005/conversations/default/continue -d \
+        '{"executed_action": "utter_ask_howcanhelp", "events": []}' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "next_action": "utter_ask_cuisine",
+          "tracker": {
+              "latest_message": {
+                  ...
+              },
+              "sender_id": "default",
+              "slots": {
+                  "cuisine": null,
+                  "info": null,
+                  "location": null,
+                  "matches": null,
+                  "people": null,
+                  "price": null
+              }
+          }
+      }
+
+   :statuscode 200: no error
+
+.. http:post:: /conversations/(str:sender_id)/respond
+
+   .. note::
+
+      This endpoint will be removed in the future. Rather consider using
+      the ``RestInput`` channel. When added to core, it will provide you
+      an endpoint at ``/webhooks/rest/webhook`` that returns the same
+      output as this endpoint.
+
+   Notify the dialogue engine that the user posted a new message, and get
+   a list of response messages the bot should send back.
+   You must ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
+   you can do this with
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST localhost:5005/conversations/default/respond -d \
+        '{"query":"hello there"}' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      [
+        {
+          "text": "Hi! welcome to the pizzabot",
+          "data": {"title": "order pizza", "payload": "/start_order"},
+        }
+      ]
+
+   :statuscode 200: no error
+
+
+.. http:get:: /conversations/(str:sender_id)/tracker
+
+   Retrieves the current tracker state for the conversation with ``sender_id``.
+   This includes the set slots as well as the latest message and all previous
+   events.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/conversations/default/tracker | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "events": [
+              {
+                  "event": "action",
+                  "name": "action_listen"
+              },
+              {
+                  "event": "user",
+                  "parse_data": {
+                      "entities": [],
+                      "intent": {
+                          "confidence": 0.7561643619088745,
+                          "name": "affirm"
+                      },
+                      "intent_ranking": [
+                          ...
+                      ],
+                      "text": "hello there"
+                  },
+                  "text": "hello there"
+              }
+          ],
+          "latest_message": {
+              "entities": [],
+              "intent": {
+                  "confidence": 0.7561643619088745,
+                  "name": "affirm"
+              },
+              "intent_ranking": [
+                  ...
+              ],
+              "text": "hello there"
+          },
+          "paused": false,
+          "sender_id": "default",
+          "slots": {
+              "cuisine": null,
+              "info": null,
+              "location": null,
+              "matches": null,
+              "people": null,
+              "price": null
+          }
+      }
+
+   :statuscode 200: no error
+
+.. http:put:: /conversations/(str:sender_id)/tracker
+
+   Replace the tracker state using events. Any existing tracker for
+   ``sender_id`` will be discarded. A new tracker will be created and the
+   passed events will be applied to create a new state.
+
+   The format of the passed events is the same as for the ``/continue``
+   endpoint.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPUT http://localhost:5005/conversations/default/tracker -d \
+        '[{"event": "slot", "name": "cuisine", "value": "mexican"},{"event": "action", "name": "action_listen"}]' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "events": [
+              {
+                  "event": "slot",
+                  "name": "cuisine",
+                  "value": "mexican"
+              },
+              {
+                  "event": "action",
+                  "name": "action_listen"
+              }
+          ],
+          "latest_message": {
+              "entities": [],
+              "intent": {},
+              "text": null
+          },
+          "paused": false,
+          "sender_id": "default",
+          "slots": {
+              "cuisine": "mexican",
+              "info": null,
+              "location": null,
+              "matches": null,
+              "people": null,
+              "price": null
+          }
+      }
+
+   :statuscode 200: no error
+
+.. http:post:: /conversations/(str:sender_id)/tracker/events
+
+   Append the tracker state of the conversation with events. Any existing
+   events will be kept and the new events will be appended, updating the
+   existing state.
+
+   The format of the passed events is the same as for the ``/continue``
+   endpoint.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST http://localhost:5005/conversations/default/tracker/events -d \
+        '[{"event": "slot", "name": "cuisine", "value": "mexican"},{"event": "action", "name": "action_listen"}]' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "events": null,
+          "latest_message": {
+              "entities": [],
+              "intent": {
+                  "confidence": 0.7561643619088745,
+                  "name": "affirm"
+              },
+              "intent_ranking": [
+                  ...
+              ],
+              "text": "hello there"
+          },
+          "paused": false,
+          "sender_id": "default",
+          "slots": {
+              "cuisine": "mexican",
+              "info": null,
+              "location": null,
+              "matches": null,
+              "people": null,
+              "price": null
+          }
+      }
+
+   :statuscode 200: no error
+
+
+.. http:get:: /conversations
+
+   List the sender ids of all the running conversations.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/conversations | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      ["default"]
+
+   :statuscode 200: no error
+
+.. http:get:: /version
+
+   Version of Rasa Core that is currently running.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/version | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "version" : "0.7.0"
+      }
+
+   :statuscode 200: no error
+

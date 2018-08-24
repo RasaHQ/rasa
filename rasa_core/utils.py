@@ -4,27 +4,26 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import sys
+from builtins import input, range, str
+
 import inspect
 import io
 import json
 import logging
 import os
+import re
 import requests
-
-from requests.auth import HTTPBasicAuth
-
-import rasa_core
-import sys
-from hashlib import sha1
-from random import Random
-from threading import Thread
-
 import six
-from builtins import input, range, str
+from hashlib import sha1
 from numpy import all, array
+from random import Random
+from requests.auth import HTTPBasicAuth
+from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 if six.PY2:
+    # noinspection PyUnresolvedReferences
     from StringIO import StringIO
 else:
     from io import StringIO
@@ -45,20 +44,27 @@ def add_logging_option_arguments(parser):
 
     # arguments for logging configuration
     parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.WARNING,
-    )
-    parser.add_argument(
             '-v', '--verbose',
             help="Be verbose. Sets logging level to INFO",
             action="store_const",
             dest="loglevel",
             const=logging.INFO,
+            default=logging.INFO,
+    )
+    parser.add_argument(
+            '-vv', '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+    )
+    parser.add_argument(
+            '--quiet',
+            help="Be quiet! Sets logging level to WARNING",
+            action="store_const",
+            dest="loglevel",
+            const=logging.WARNING,
     )
 
 
@@ -97,6 +103,7 @@ def dump_obj_as_str_to_file(filename, text):
     """Dump a text to a file."""
 
     with io.open(filename, 'w') as f:
+        # noinspection PyTypeChecker
         f.write(str(text))
 
 
@@ -120,6 +127,7 @@ def is_int(value):
 
     The type of the value is not important, it might be an int or a float."""
 
+    # noinspection PyBroadException
     try:
         return value == int(value)
     except Exception:
@@ -159,8 +167,8 @@ def create_dir_for_file(file_path):
 def one_hot(hot_idx, length, dtype=None):
     import numpy
     if hot_idx >= length:
-        raise Exception("Can't create one hot. Index '{}' is out "
-                        "of range (length '{}')".format(hot_idx, length))
+        raise ValueError("Can't create one hot. Index '{}' is out "
+                         "of range (length '{}')".format(hot_idx, length))
     r = numpy.zeros(length, dtype)
     r[hot_idx] = 1
     return r
@@ -211,7 +219,8 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
         return input_value
 
 
-class bcolors:
+# noinspection PyPep8Naming
+class bcolors(object):
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -291,11 +300,13 @@ def fix_yaml_loader():
     # linux build. in the narrow build, emojis are 2 char strings using a
     # surrogate
     if sys.maxunicode == 0xffff:
+        # noinspection PyUnresolvedReferences
         yaml.reader.Reader.NON_PRINTABLE = re.compile(
                 '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
                 '\ude00-\ude50\udc4d\ud83c\udf89\ude80\udc4c\ud83e\uddde'
                 '\udd74\udcde\uddd1\udd16]')
     else:
+        # noinspection PyUnresolvedReferences
         yaml.reader.Reader.NON_PRINTABLE = re.compile(
                 '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
                 '\U00010000-\U0010FFFF]')
@@ -364,9 +375,30 @@ def read_file(filename, encoding="utf-8"):
         return f.read()
 
 
-def is_training_data_empty(X):
-    """Check if the training matrix does contain training samples."""
-    return X.shape[0] == 0
+def list_routes(app):
+    """List all available routes of a flask web server."""
+    from six.moves.urllib.parse import unquote
+    from flask import url_for
+
+    output = {}
+    with app.test_request_context():
+        for rule in app.url_map.iter_rules():
+
+            options = {}
+            for arg in rule.arguments:
+                options[arg] = "[{0}]".format(arg)
+
+            methods = ', '.join(rule.methods)
+
+            url = url_for(rule.endpoint, **options)
+            line = unquote(
+                    "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
+            output[url] = line
+
+        url_table = "\n".join(output[url] for url in sorted(output))
+        logger.debug("Available web server routes: \n{}".format(url_table))
+
+    return output
 
 
 def zip_folder(folder):
@@ -418,6 +450,17 @@ def wait_for_threads(threads):
                 "Stopping to serve forever.")
 
 
+def bool_arg(name, default=True):
+    # type: ( Text, bool) -> bool
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a valid
+    boolean value. If not, `default` is returned."""
+    from flask import request
+
+    return request.args.get(name, str(default)).lower() == 'true'
+
+
 def extract_args(kwargs,  # type: Dict[Text, Any]
                  keys_to_extract  # type: Set[Text]
                  ):
@@ -445,6 +488,7 @@ def arguments_of(func):
         return inspect.signature(func).parameters.keys()
     except AttributeError:
         # python 2.x is used
+        # noinspection PyDeprecation
         return inspect.getargspec(func).args
 
 
@@ -477,7 +521,7 @@ def all_subclasses(cls):
 
 
 def read_endpoint_config(filename, endpoint_type):
-    # type: (Text, Text) -> Optional[rasa_core.utils.EndpointConfig]
+    # type: (Text, Text) -> Optional[EndpointConfig]
     """Read an endpoint configuration file from disk and extract one config. """
 
     if not filename:
@@ -488,6 +532,27 @@ def read_endpoint_config(filename, endpoint_type):
         return EndpointConfig.from_dict(content[endpoint_type])
     else:
         return None
+
+
+def is_limit_reached(num_messages, limit):
+    return limit is not None and num_messages >= limit
+
+
+def read_lines(filename, max_line_limit=None, line_pattern=".*"):
+    """Read messages from the command line and print bot responses."""
+
+    line_filter = re.compile(line_pattern)
+
+    with io.open(filename, 'r') as f:
+        num_messages = 0
+        for line in f:
+            m = line_filter.match(line)
+            if m is not None:
+                yield m.group(1 if m.lastindex else 0)
+                num_messages += 1
+
+            if is_limit_reached(num_messages, max_line_limit):
+                break
 
 
 class EndpointConfig(object):
@@ -505,8 +570,8 @@ class EndpointConfig(object):
     def request(self,
                 method="post",  # type: Text
                 subpath=None,  # type: Optional[Text]
-                content_type="application/json",  # type: Text
-                **kwargs  # type: Dict[Text, Any]
+                content_type="application/json",  # type: Optional[Text]
+                **kwargs  # type: Any
                 ):
         """Send a HTTP request to the endpoint.
 

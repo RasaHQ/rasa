@@ -4,8 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-
 import pika
+from typing import Text
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,10 @@ class EventChannel(object):
 
 
 class PikaProducer(EventChannel):
-    def __init__(self, host, username, password, queue='rasa_core_events'):
+    def __init__(self, host, username, password,
+                 queue='rasa_core_events',
+                 loglevel=logging.INFO):
+        logger.level = loglevel
         self.queue = queue
         self.host = host
         self.credentials = pika.PlainCredentials(username, password)

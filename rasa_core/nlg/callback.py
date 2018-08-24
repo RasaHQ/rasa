@@ -4,9 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-
 from typing import Text, Any, Dict
 
+from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.nlg.generator import NaturalLanguageGenerator
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import EndpointConfig
@@ -65,11 +65,11 @@ def nlg_request_format_spec():
 
 
 def nlg_request_format(template_name, tracker, output_channel, **kwargs):
-    # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
+    # type: (Text, DialogueStateTracker, Text, Any) -> Dict[Text, Any]
     """Create the json body for the NLG json body for the request."""
 
-    tracker_state = tracker.current_state(
-            should_include_events=True, only_events_after_latest_restart=True)
+    tracker_state = tracker.current_state(should_include_events=True,
+                                          should_ignore_restarts=True)
 
     return {
         "template": template_name,
@@ -95,7 +95,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         self.nlg_endpoint = endpoint_config
 
     def generate(self, template_name, tracker, output_channel, **kwargs):
-        # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
+        # type: (Text, DialogueStateTracker, Text, Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain using an endpoint."""
 
         body = nlg_request_format(template_name,
@@ -103,7 +103,11 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                                   output_channel,
                                   **kwargs)
 
-        response = self.nlg_endpoint.request(method="post", json=body)
+        logger.debug("Requesting NLG for {} from {}."
+                     "".format(template_name, self.nlg_endpoint.url))
+        response = self.nlg_endpoint.request(method="post",
+                                             json=body,
+                                             timeout=DEFAULT_REQUEST_TIMEOUT)
         response.raise_for_status()
 
         content = response.json()
@@ -114,8 +118,9 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     @staticmethod
     def validate_response(content):
-        # type: (content) -> bool
+        # type: (Dict[Text, Any]) -> bool
         """Validate the NLG response. Raises exception on failure."""
+
         from jsonschema import validate
         from jsonschema import ValidationError
 

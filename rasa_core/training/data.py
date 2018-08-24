@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 
+# noinspection PyPep8Naming
 class DialogueTrainingData(object):
     def __init__(self, X, y, true_length=None):
         self.X = X
@@ -33,15 +34,3 @@ class DialogueTrainingData(object):
         shuffled_X = self.X[idx]
         shuffled_y = self.y[idx]
         return shuffled_X, shuffled_y
-
-    def random_samples(self, num_samples):
-        padding_idx = np.random.choice(range(self.num_examples()),
-                                       replace=False,
-                                       size=min(num_samples,
-                                                self.num_examples()))
-
-        return self.X[padding_idx], self.y[padding_idx]
-
-    def append(self, X, y):
-        self.X = np.vstack((self.X, X))
-        self.y = np.vstack((self.y, y))

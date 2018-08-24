@@ -13,7 +13,7 @@ from rasa_core import training, restore
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.events import (
     UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
@@ -24,7 +24,7 @@ from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
-domain = TemplateDomain.load("data/test_domains/default.yml")
+domain = Domain.load("data/test_domains/default.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
@@ -194,7 +194,7 @@ def test_restart_event(default_domain):
 
     assert len(tracker.events) == 5
     assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
+    assert tracker.follow_up_action == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
     assert len(list(tracker.generate_all_prior_trackers())) == 1
 
@@ -205,8 +205,6 @@ def test_restart_event(default_domain):
 
     assert recovered.current_state() == tracker.current_state()
     assert len(recovered.events) == 5
-    assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert recovered.latest_message.text is None
     assert len(list(recovered.generate_all_prior_trackers())) == 1
 

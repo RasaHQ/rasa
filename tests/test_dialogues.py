@@ -10,7 +10,7 @@ import io
 import jsonpickle
 import pytest
 
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.tracker_store import InMemoryTrackerStore
 from tests.utilities import tracker_from_dialogue_file
 
@@ -28,7 +28,7 @@ def test_dialogue_serialisation(filename):
 
 @pytest.mark.parametrize("filename", glob.glob('data/test_dialogues/*json'))
 def test_inmemory_tracker_store(filename):
-    domain = TemplateDomain.load("data/test_domains/default.yml")
+    domain = Domain.load("data/test_domains/default.yml")
     tracker = tracker_from_dialogue_file(filename, domain)
     tracker_store = InMemoryTrackerStore(domain)
     tracker_store.save(tracker)
@@ -37,7 +37,7 @@ def test_inmemory_tracker_store(filename):
 
 
 def test_tracker_restaurant():
-    domain = TemplateDomain.load("data/test_domains/default_with_slots.yml")
+    domain = Domain.load("data/test_domains/default_with_slots.yml")
     filename = 'data/test_dialogues/enter_name.json'
     tracker = tracker_from_dialogue_file(filename, domain)
     assert tracker.get_slot("name") == "holger"

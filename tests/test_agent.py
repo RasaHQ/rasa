@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import rasa_core
 
 import pytest
 import responses
@@ -26,8 +27,7 @@ def test_agent_train(tmpdir, default_domain):
     loaded = Agent.load(tmpdir.strpath)
 
     # test domain
-    assert [a.name() for a in loaded.domain.actions] == \
-           [a.name() for a in agent.domain.actions]
+    assert loaded.domain.action_names == agent.domain.action_names
     assert loaded.domain.intents == agent.domain.intents
     assert loaded.domain.entities == agent.domain.entities
     assert loaded.domain.templates == agent.domain.templates
@@ -49,33 +49,6 @@ def test_agent_handle_message(default_agent):
                        'text': 'hey there Rasa!'}]
 
 
-# TODO: DEPRECATED - remove in version 0.10
-def test_deprecated_use_of_train(tmpdir, default_domain):
-    training_data_file = 'examples/moodbot/data/stories.md'
-    agent = Agent("examples/moodbot/domain.yml",
-                  policies=[AugmentedMemoizationPolicy()])
-
-    agent.train(training_data_file)
-    agent.persist(tmpdir.strpath)
-
-    loaded = Agent.load(tmpdir.strpath)
-
-    # test domain
-    assert [a.name() for a in loaded.domain.actions] == \
-           [a.name() for a in agent.domain.actions]
-    assert loaded.domain.intents == agent.domain.intents
-    assert loaded.domain.entities == agent.domain.entities
-    assert loaded.domain.templates == agent.domain.templates
-    assert [s.name for s in loaded.domain.slots] == \
-           [s.name for s in agent.domain.slots]
-
-    # test policies
-    assert type(loaded.policy_ensemble) is type(
-        agent.policy_ensemble)  # nopep8
-    assert [type(p) for p in loaded.policy_ensemble.policies] == \
-           [type(p) for p in agent.policy_ensemble.policies]
-
-
 def test_agent_wrong_use_of_load(tmpdir, default_domain):
     training_data_file = 'examples/moodbot/data/stories.md'
     agent = Agent("examples/moodbot/domain.yml",
@@ -89,7 +62,7 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
 
 @responses.activate
 def test_agent_with_model_server(tmpdir, zipped_moodbot_model):
-    model_hash = 'somehash'
+    fingerprint = 'somehash'
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": 'http://server.com/model/default_core@latest'}
     )
@@ -98,11 +71,9 @@ def test_agent_with_model_server(tmpdir, zipped_moodbot_model):
     with io.open(zipped_moodbot_model, 'rb') as f:
         responses.add(responses.GET,
                       model_endpoint_config.url,
-                      headers={"ETag": model_hash},
+                      headers={"ETag": fingerprint},
                       body=f.read(),
                       content_type='application/zip',
                       stream=True)
-    agent = Agent.load(path=tmpdir.strpath,
-                       model_server=model_endpoint_config)
-    assert agent.model_hash == model_hash
-    assert agent.model_server == model_endpoint_config
+    agent = rasa_core.agent.load_from_server(model_server=model_endpoint_config)
+    assert agent.fingerprint == fingerprint
