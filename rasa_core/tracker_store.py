@@ -36,8 +36,11 @@ class TrackerStore(object):
         return tracker
 
     def init_tracker(self, sender_id):
-        return DialogueStateTracker(sender_id,
-                                    self.domain.slots)
+        if self.domain:
+            return DialogueStateTracker(sender_id,
+                                        self.domain.slots)
+        else:
+            return None
 
     def create_tracker(self, sender_id, append_action_listen=True):
         """Creates a new tracker for the sender_id.
@@ -45,9 +48,10 @@ class TrackerStore(object):
         The tracker is initially listening."""
 
         tracker = self.init_tracker(sender_id)
-        if append_action_listen:
-            tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
-        self.save(tracker)
+        if tracker:
+            if append_action_listen:
+                tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+            self.save(tracker)
         return tracker
 
     def save(self, tracker):

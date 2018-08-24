@@ -75,6 +75,9 @@ class MessageProcessor(object):
 
         # preprocess message if necessary
         tracker = self.log_message(message)
+        if not tracker:
+            return None
+
         self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
@@ -85,21 +88,28 @@ class MessageProcessor(object):
             return None
 
     def predict_next(self, sender_id):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text) -> Optional[Dict[Text, Any]]
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(sender_id)
+        if not tracker:
+            logger.warning("Failed to retrieve or create tracker for sender "
+                           "'{}'.".format(sender_id))
+            return None
+
         probabilities = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
         scores = [{"action": a, "score": p}
                   for a, p in zip(self.domain.action_names, probabilities)]
-        return {"scores": scores,
-                "tracker": tracker.current_state(should_include_events=True)}
+        return {
+            "scores": scores,
+            "tracker": tracker.current_state(should_include_events=True)
+        }
 
     def log_message(self, message):
-        # type: (UserMessage) -> DialogueStateTracker
+        # type: (UserMessage) -> Optional[DialogueStateTracker]
 
         # preprocess message if necessary
         if self.message_preprocessor is not None:
@@ -107,22 +117,30 @@ class MessageProcessor(object):
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(message.sender_id)
-        self._handle_message_with_tracker(message, tracker)
-        # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+        if tracker:
+            self._handle_message_with_tracker(message, tracker)
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
+        else:
+            logger.warning("Failed to retrieve or create tracker for sender "
+                           "'{}'.".format(message.sender_id))
         return tracker
 
     def execute_action(self, sender_id, action_name, dispatcher):
-        # type: (Text, Text, Dispatcher) -> DialogueStateTracker
+        # type: (Text, Text, Dispatcher) -> Optional[DialogueStateTracker]
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(sender_id)
-        action = self._get_action(action_name)
-        self._run_action(action, tracker, dispatcher)
+        if tracker:
+            action = self._get_action(action_name)
+            self._run_action(action, tracker, dispatcher)
 
-        # save tracker state to continue conversation from this state
-        self._save_tracker(tracker)
+            # save tracker state to continue conversation from this state
+            self._save_tracker(tracker)
+        else:
+            logger.warning("Failed to retrieve or create tracker for sender "
+                           "'{}'.".format(sender_id))
         return tracker
 
     def predict_next_action(self, tracker):
@@ -157,6 +175,11 @@ class MessageProcessor(object):
             return True  # tracker has probably been restarted
 
         tracker = self._get_tracker(dispatcher.sender_id)
+
+        if not tracker:
+            logger.warning("Failed to retrieve or create tracker for sender "
+                           "'{}'.".format(dispatcher.sender_id))
+            return None
 
         if (reminder_event.kill_on_user_message and
                 has_message_after_reminder(tracker.events)):
@@ -369,7 +392,7 @@ class MessageProcessor(object):
             tracker.update(e)
 
     def _get_tracker(self, sender_id):
-        # type: (Text) -> DialogueStateTracker
+        # type: (Text) -> Optional[DialogueStateTracker]
 
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
