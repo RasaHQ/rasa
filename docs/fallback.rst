@@ -10,7 +10,7 @@ and the ``ner_crf`` component will do the same for the extracted entities.
 
 You can use the confidence score to choose when to ignore Rasa NLU's prediction and trigger
 fallback behaviour, for example asking the user to rephrase. If you are using Rasa Core,
-you can do this using a `Fallback Policy </core/fallbacks/>`_. 
+you can do this using a `Fallback Policy </docs/core/fallbacks/>`_.
 
 Choosing a Confidence Cutoff
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
