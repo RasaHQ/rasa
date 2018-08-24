@@ -1,4 +1,5 @@
 :desc: Understanding Rasa Core Domains
+
 .. _domain:
 
 Domain Format
@@ -112,6 +113,7 @@ two ways to use these templates:
    send a message based on the template like this:
 
    .. code-block:: python
+
       from rasa_core_sdk.actions import Action
 
       class ActionGreet(Action):

@@ -42,6 +42,10 @@ def create_argument_parser():
             'tracker_dump',
             type=str,
             help="file that contains a dumped tracker state in json format")
+    parser.add_argument(
+            '--enable_api',
+            action="store_true",
+            help="Start the web server api in addition to the input channel")
 
     utils.add_logging_option_arguments(parser)
 
@@ -114,6 +118,7 @@ def serve_application(model_directory,  # type: Text
                       tracker_dump=None,  # type: Optional[Text]
                       port=constants.DEFAULT_SERVER_PORT,  # type: int
                       endpoints=None,  # type: Optional[Text]
+                      enable_api=True  # type: bool
                       ):
     from rasa_core import run
 
@@ -129,7 +134,8 @@ def serve_application(model_directory,  # type: Text
                                    None,
                                    None,
                                    port=port,
-                                   initial_agent=agent)
+                                   initial_agent=agent,
+                                   enable_api=enable_api)
 
     tracker = load_tracker_from_json(tracker_dump,
                                      agent.domain)
@@ -160,4 +166,5 @@ if __name__ == '__main__':
     serve_application(cmdline_args.core,
                       cmdline_args.nlu,
                       cmdline_args.port,
-                      cmdline_args.endpoints)
+                      cmdline_args.endpoints,
+                      cmdline_args.enable_api)

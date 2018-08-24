@@ -176,8 +176,7 @@ of the conversation. Simple actions are just sending a message to a user.
 These simple actions are the ``actions`` in the domain, which start
 with ``utter_``. They will just respond with a message based on a template
 from the ``templates`` section. See :ref:`customactions` for how to build
-more interesting actions. We'll also add one custom action as a bonus at
-the end of this guide.
+more interesting actions.
 
 In our simple example we don't need ``slots`` and ``entities``,
 so these aren't in the example domain.

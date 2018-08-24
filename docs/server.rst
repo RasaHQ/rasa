@@ -32,13 +32,15 @@ models with:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server \
+    $ python -m rasa_core.run \
+        --enable_api
         -d models/dialogue \
         -u models/nlu/current \
         -o out.log
 
 The different parameters are:
 
+- ``--enable_api``, enables this additional API
 - ``-d``, which is the path to the Rasa Core model.
 - ``-u``, which is the path to the Rasa NLU model.
 - ``-o``, which is the path to the log file.
@@ -55,7 +57,8 @@ You can also configure the http server to fetch models from another URL:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server \
+    $ python -m rasa_core.run \
+        --enable_api \
         -d models/dialogue \
         -u models/nlu/current \
         --endpoints my_endpoints.yaml \
@@ -216,7 +219,8 @@ when starting the server, that token needs to be passed with every request:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.server \
+    $ python -m rasa_core.run \
+        --enable_api \
         --auth_token thisismysecret \
         -d models/dialogue \
         -u models/nlu/current \

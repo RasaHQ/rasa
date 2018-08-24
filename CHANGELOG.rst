@@ -31,7 +31,8 @@ Changed
 - format of the credentials file to allow specifying the credentials for
   multiple channels
 - webhook URLs for the input channels have changed and need to be reset
-
+- deprecated using ``rasa_core.server`` as a script - use
+  ``rasa_core.run --enable_api`` instead
 
 Removed
 -------

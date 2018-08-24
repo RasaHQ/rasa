@@ -95,7 +95,7 @@ You can specify this in your domain file like this:
 Slots Set by Actions
 ~~~~~~~~~~~~~~~~~~~~
 
-The second option is to set slots by returning events in :ref:`custom_actions`.
+The second option is to set slots by returning events in :ref:`customactions`.
 In this case, your stories need to include the slots.
 For example, you have a custom action to fetch a user's profile, and 
 you have a ``categorical`` slot called ``account_type``. 

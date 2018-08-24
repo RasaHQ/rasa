@@ -1,3 +1,5 @@
+.. _events:
+
 Events
 ======
 List of all the events the dialogue system is able to handle and supports.

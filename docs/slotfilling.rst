@@ -128,9 +128,29 @@ e.g. ``utter_ask_cuisine``, ``utter_ask_numpeople``, in a restaurant bot.
 
 A form action has a set of required fields, which you define for the class:
 
-.. literalinclude:: ../tests/test_forms.py
-   :pyobject: ActionSearchRestaurants
+.. code-block:: python
 
+    class ActionSearchRestaurants(FormAction):
+
+        RANDOMIZE = False
+
+        @staticmethod
+        def required_fields():
+            return [
+                EntityFormField("cuisine", "cuisine"),
+                EntityFormField("number", "people"),
+                BooleanFormField("vegetarian", "affirm", "deny")
+            ]
+
+        def name(self):
+            return 'action_search_restaurants'
+
+        def submit(self, dispatcher, tracker, domain):
+            results = RestaurantAPI().search(
+                tracker.get_slot("cuisine"),
+                tracker.get_slot("people"),
+                tracker.get_slot("vegetarian"))
+            return [SlotSet("search_results", results)]
 
 
 The way this works is that every time you call this action, it will pick one of the 

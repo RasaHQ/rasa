@@ -9,7 +9,7 @@ the Python client library for `RabbitMQ <https://www.rabbitmq.com>`_.
 
 The event broker emits events into the event queue. It becomes part of the
 ``TrackerStore`` which you use when starting an ``Agent`` or launch
-``rasa_core.server``. Here's how you add it:
+``rasa_core.run``. Here's how you add it:
 
 .. code-block:: python
 

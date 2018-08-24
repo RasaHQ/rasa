@@ -296,7 +296,7 @@ Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
 A ``TelegramInput`` instance provides a flask blueprint for creating
-a webserver. This lets you seperate the exact endpoints and implementation
+a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
 Code to create a Messenger-compatible webserver looks like this:
@@ -364,7 +364,7 @@ Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
 A ``TwilioInput`` instance provides a flask blueprint for creating
-a webserver. This lets you seperate the exact endpoints and implementation
+a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
 Code to create a Twilio-compatible webserver looks like this:
@@ -395,7 +395,7 @@ The command to run a ngrok instance for port 5002 for example would be:
 
 **Ngrok is only needed if you don't have a public IP and are testing locally**
 
-ngrok will creat a https address for your computer, for example
+ngrok will create a https address for your computer, for example
 https://xxxxxx.ngrok.io . For a facebook bot, your webhook address
 would then be https://xxxxxx.ngrok.io/webhooks/facebook/webhook,
 for telegram https://xxxxxx.ngrok.io/webhooks/telegram/webhook, etc.

@@ -97,5 +97,6 @@ The Rasa Core dialogue engine
 
    migrations
    brokers
+   docker
    changelog
    support

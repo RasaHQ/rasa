@@ -1,4 +1,5 @@
 :desc: A list of all Rasa Core slot types
+
 .. _slot_types:
 
 Slot Types

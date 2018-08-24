@@ -3,8 +3,6 @@
 Using Docker
 ============
 
-
-
 We provide a Dockerfile which allows you to build an image of Rasa Core
 with a simple command: ``docker build -t rasa_core .``
 
