@@ -477,7 +477,7 @@ class Agent(object):
                             "to `agent.train(...)` is not supported anymore. "
                             "Pass appropriate featurizer "
                             "directly to the policy instead. More info "
-                            "https://core.rasa.com/migrations.html#x-to-0-9-0")
+                            "https://rasa.com/docs/core/migrations.html#x-to-0-9-0")
 
         if isinstance(training_trackers, string_types):
             # the user most likely passed in a file name to load training
