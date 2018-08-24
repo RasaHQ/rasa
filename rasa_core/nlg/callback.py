@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import logging
 from typing import Text, Any, Dict
 
+from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.nlg.generator import NaturalLanguageGenerator
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import EndpointConfig
@@ -106,7 +107,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
                      "".format(template_name, self.nlg_endpoint.url))
         response = self.nlg_endpoint.request(method="post",
                                              json=body,
-                                             timeout=30)
+                                             timeout=DEFAULT_REQUEST_TIMEOUT)
         response.raise_for_status()
 
         content = response.json()

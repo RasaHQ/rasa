@@ -22,6 +22,7 @@ from typing import Text, List, Optional, Callable, Any, Dict, Union
 import rasa_core
 from rasa_core import training, constants
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
+from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain, check_domain_sanity
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -130,7 +131,7 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
                      "".format(model_server.url))
         response = model_server.request(method="GET",
                                         headers=header,
-                                        timeout=30)
+                                        timeout=DEFAULT_REQUEST_TIMEOUT)
     except RequestException as e:
         logger.warning("Tried to fetch model from server, but couldn't reach "
                        "server. We'll retry later... Error: {}."

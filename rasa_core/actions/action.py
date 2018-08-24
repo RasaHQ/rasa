@@ -10,7 +10,7 @@ import typing
 from typing import List, Text, Optional, Dict, Any
 
 from rasa_core import events
-from rasa_core.constants import DOCS_BASE_URL
+from rasa_core.constants import DOCS_BASE_URL, DEFAULT_REQUEST_TIMEOUT
 from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -303,7 +303,10 @@ class RemoteAction(Action):
                             "".format(self.name(), DOCS_BASE_URL))
 
         try:
-            response = self.action_endpoint.request(json=json, method="post")
+            logger.debug("Calling action endpoint to run action '{}'."
+                         "".format(self.name()))
+            response = self.action_endpoint.request(
+                    json=json, method="post", timeout=DEFAULT_REQUEST_TIMEOUT)
             response.raise_for_status()
             response_data = response.json()
 

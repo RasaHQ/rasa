@@ -9,6 +9,7 @@ import requests
 from flask import request, abort
 
 from rasa_core.channels.channel import RestInput
+from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class RasaChatInput(RestInput):
                      "".format(url))
         result = requests.get(url, 
                               headers=headers,
-                              timeout=30)
+                              timeout=DEFAULT_REQUEST_TIMEOUT)
 
         if result.status_code == 200:
             return result.json()
