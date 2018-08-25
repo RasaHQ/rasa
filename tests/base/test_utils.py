@@ -62,9 +62,9 @@ def test_ordered():
 
 
 @pytest.mark.parametrize(("model_dir", "expected"),
-                         [("test_models/test_model_mitie/model_20180825-104315", True),
-                          ("test_models/test_model_mitie_sklearn/model_20180825-104358", True),
-                          ("test_models/test_model_spacy_sklearn/model_20180825-103430", True),
+                         [("test_models/test_model_mitie/model_20170628-002704", True),
+                          ("test_models/test_model_mitie_sklearn/model_20170628-002712", True),
+                          ("test_models/test_model_spacy_sklearn/model_20170628-002705", True),
                           ("test_models/", False),
                           ("test_models/nonexistent_for_sure_123", False)])
 def test_is_model_dir(model_dir, expected):
