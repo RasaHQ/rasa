@@ -9,7 +9,9 @@ import os
 import pytest
 from rasa_nlu import data_router, config
 from rasa_nlu.components import ComponentBuilder
+from rasa_nlu.model import Trainer
 from rasa_nlu.utils import zip_folder
+from rasa_nlu import training_data
 
 logging.basicConfig(level="DEBUG")
 
@@ -58,9 +60,19 @@ def default_config():
 
 @pytest.fixture(scope="session")
 def zipped_nlu_model():
-    # directory of one trained NLU model
+    spacy_config_path = "sample_configs/config_spacy.yml"
+
+    cfg = config.load(spacy_config_path)
+    trainer = Trainer(cfg)
+    td = training_data.load_data(DEFAULT_DATA_PATH)
+
+    trainer.train(td)
+    trainer.persist("test_models", project_name="test_model_spacy_sklearn")
+
     model_dir_list = os.listdir(TEST_MODEL_PATH)
-    model_dir = model_dir_list[0]
+
+    # directory name of latest model
+    model_dir = sorted(model_dir_list)[-1]
 
     # path of that directory
     model_path = os.path.join(TEST_MODEL_PATH, model_dir)
