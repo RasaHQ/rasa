@@ -30,8 +30,12 @@ class UnsupportedDialogueModelError(RasaCoreException):
         return self.message
 
 
-class AgentNotLoaded(RasaCoreException):
-    """Raised if there is an error while parsing the story file."""
+class AgentNotReady(RasaCoreException):
+    """Raised if someone tries to use an agent that is not ready.
+
+    An agent might be created, e.g. without an interpreter attached. But
+    if someone tries to parse a message with that agent, this exception
+    will be thrown."""
 
     def __init__(self, message):
         self.message = message

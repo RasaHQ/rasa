@@ -25,7 +25,7 @@ from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain, check_domain_sanity
-from rasa_core.exceptions import AgentNotLoaded
+from rasa_core.exceptions import AgentNotReady
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies import Policy
@@ -302,7 +302,7 @@ class Agent(object):
             return None
 
         if not self.is_ready():
-            return noop(message)#
+            return noop(message)  #
 
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(message)
@@ -420,8 +420,8 @@ class Agent(object):
         # type: (List[DialogueStateTracker], Any) -> None
 
         if not self.is_ready():
-            raise AgentNotLoaded("Can't continue training without a policy "
-                                 "ensemble.")
+            raise AgentNotReady("Can't continue training without a policy "
+                                "ensemble.")
 
         self.policy_ensemble.continue_training(trackers,
                                                self.domain,
@@ -487,7 +487,7 @@ class Agent(object):
         """
 
         if not self.is_ready():
-            raise AgentNotLoaded("Can't train without a policy ensemble.")
+            raise AgentNotReady("Can't train without a policy ensemble.")
 
         # deprecation tests
         if kwargs.get('featurizer') or kwargs.get('max_history'):
@@ -574,7 +574,7 @@ class Agent(object):
         """Persists this agent into a directory for later loading and usage."""
 
         if not self.is_ready():
-            raise AgentNotLoaded("Can't persist without a policy ensemble.")
+            raise AgentNotReady("Can't persist without a policy ensemble.")
 
         self._clear_model_directory(model_path)
 
@@ -612,9 +612,9 @@ class Agent(object):
         Raises an exception if any argument is missing."""
 
         if not self.is_ready():
-            raise AgentNotLoaded("Agent needs to be prepared before usage. "
-                                 "You need to set an interpreter, a policy "
-                                 "ensemble as well as a tracker store.")
+            raise AgentNotReady("Agent needs to be prepared before usage. "
+                                "You need to set an interpreter, a policy "
+                                "ensemble as well as a tracker store.")
 
     def _create_processor(self, preprocessor=None):
         # type: (Optional[Callable[[Text], Text]]) -> MessageProcessor
