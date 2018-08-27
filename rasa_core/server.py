@@ -184,17 +184,22 @@ def create_app(agent,
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
-    @ensure_loaded_agent(agent)
     def list_trackers():
-        return jsonify(list(agent.tracker_store.keys()))
+        if agent.tracker_store:
+            return jsonify(list(agent.tracker_store.keys()))
+        else:
+            return jsonify([])
 
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
-    @ensure_loaded_agent(agent)
     def retrieve_tracker(sender_id):
         """Get a dump of a conversations tracker including its events."""
+
+        if not agent.tracker_store:
+            return Response("No tracker store available.",
+                            status=503)
 
         # parameters
         should_ignore_restarts = utils.bool_arg('ignore_restarts',
