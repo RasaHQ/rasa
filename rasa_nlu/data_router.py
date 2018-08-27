@@ -180,11 +180,22 @@ class DataRouter(object):
                 )
 
         if not project_store:
-            default_model = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-            project_store[default_model] = Project(
-                project=RasaNLUModelConfig.DEFAULT_PROJECT_NAME,
-                project_dir=self.project_dir,
-                remote_storage=self.remote_storage)
+            default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
+            if self.model_server is not None:
+                project_store[default_project] = load_from_server(
+                    self.component_builder,
+                    default_project,
+                    self.project_dir,
+                    self.remote_storage,
+                    self.model_server,
+                    self.wait_time_between_pulls
+                )
+            else:
+
+                project_store[default_project] = Project(
+                    project=default_project,
+                    project_dir=self.project_dir,
+                    remote_storage=self.remote_storage)
         return project_store
 
     def _pre_load(self, projects):
