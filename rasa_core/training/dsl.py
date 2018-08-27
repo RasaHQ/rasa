@@ -324,6 +324,11 @@ class StoryFileReader(object):
         if parsed is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "
                                   "nor an action).".format(event_name))
+        if self.current_step_builder is None:
+            raise StoryParseError("Failed to handle event '{}'. There is no "
+                                  "started story block available. "
+                                  "".format(event_name))
+
         if isinstance(parsed, list):
             for p in parsed:
                 self.current_step_builder.add_event(p)
