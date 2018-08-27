@@ -305,7 +305,7 @@ class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
     def trained_policy(self, featurizer):
-        default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
@@ -325,7 +325,7 @@ class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
     def trained_policy(self, featurizer):
-        default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
@@ -345,7 +345,7 @@ class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
     def trained_policy(self, featurizer):
-        default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
@@ -365,7 +365,7 @@ class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
     def trained_policy(self, featurizer):
-        default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
