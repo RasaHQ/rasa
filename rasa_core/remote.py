@@ -155,7 +155,7 @@ class RasaCoreClient(object):
             if max_retries > 0:
                 # some resting time before we try again - e.g. server
                 # might be unavailable / not started yet
-                time.sleep(2)
+                time.sleep(10)
 
         if response:
             logger.warn("Got a bad response from rasa core while uploading "
