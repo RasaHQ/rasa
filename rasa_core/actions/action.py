@@ -278,6 +278,9 @@ class RemoteAction(Action):
                         tracker,
                         dispatcher.output_channel.name(),
                         **kwargs)
+                if not draft:
+                    continue
+
                 del response["template"]
             else:
                 draft = {}
