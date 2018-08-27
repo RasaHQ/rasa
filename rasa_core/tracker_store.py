@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
 
 class TrackerStore(object):
     def __init__(self, domain, event_broker=None):
-        # type: (Domain, Optional[EventChannel]) -> None
+        # type: (Optional[Domain], Optional[EventChannel]) -> None
         self.domain = domain
         self.event_broker = event_broker
 
@@ -119,14 +119,17 @@ class RedisTrackerStore(TrackerStore):
         pass
 
     def __init__(self, domain, host='localhost',
-                 port=6379, db=0, password=None):
+                 port=6379, db=0, password=None, event_broker=None):
 
         import redis
         self.red = redis.StrictRedis(host=host, port=port, db=db,
                                      password=password)
-        super(RedisTrackerStore, self).__init__(domain)
+        super(RedisTrackerStore, self).__init__(domain, event_broker)
 
     def save(self, tracker, timeout=None):
+        if self.event_broker:
+            self.stream_events(tracker)
+
         serialised_tracker = self.serialise_tracker(tracker)
         self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
 
@@ -136,3 +139,58 @@ class RedisTrackerStore(TrackerStore):
             return self.deserialise_tracker(sender_id, stored)
         else:
             return None
+
+
+class MongoTrackerStore(TrackerStore):
+    def __init__(self,
+                 domain,
+                 host="mongodb://localhost:27017",
+                 db="rasa",
+                 username=None,
+                 password=None,
+                 collection="conversations",
+                 event_broker=None):
+        from pymongo.database import Database
+        from pymongo import MongoClient
+
+        self.client = MongoClient(host,
+                                  username=username,
+                                  password=password,
+                                  # delay connect until process forking is done
+                                  connect=False)
+
+        self.db = Database(self.client, db)
+        self.collection = collection
+        super(MongoTrackerStore, self).__init__(domain, event_broker)
+
+        self._ensure_indices()
+
+    def _conversations(self):
+        return self.db[self.collection]
+
+    def _ensure_indices(self):
+        self._conversations().create_index("sender_id")
+
+    def save(self, tracker, timeout=None):
+        if self.event_broker:
+            self.stream_events(tracker)
+
+        state = tracker.current_state(should_include_events=True,
+                                      should_ignore_restarts=True)
+
+        self._conversations().update_one(
+                {"sender_id": tracker.sender_id},
+                {"$set": state},
+                upsert=True)
+
+    def retrieve(self, sender_id):
+        stored = self._conversations().find_one({"sender_id": sender_id})
+        if stored is not None:
+            return DialogueStateTracker.from_dict(sender_id,
+                                                  stored.get("events"),
+                                                  self.domain.slots)
+        else:
+            return None
+
+    def keys(self):
+        return [c["sender_id"] for c in self._conversations().find()]

@@ -32,6 +32,7 @@ install_requires = [
     "six~=1.0",
     "redis~=2.0",
     "fakeredis~=0.10.0",
+    "pymongo~=3.5",
     "future~=0.16",
     "numpy~=1.13",
     "typing~=3.0",
