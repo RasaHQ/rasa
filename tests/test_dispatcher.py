@@ -30,9 +30,11 @@ def test_dispatcher_utter_template(default_dispatcher_collecting,
 
 def test_dispatcher_handle_unknown_template(default_dispatcher_collecting,
                                             default_tracker):
-    with pytest.raises(ValueError):
-        default_dispatcher_collecting.utter_template("my_made_up_template",
-                                                     default_tracker)
+    default_dispatcher_collecting.utter_template("my_made_up_template",
+                                                 default_tracker)
+
+    collected = default_dispatcher_collecting.output_channel.latest_output()
+    assert collected is None
 
 
 def test_dispatcher_template_invalid_vars():
