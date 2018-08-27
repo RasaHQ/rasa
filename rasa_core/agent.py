@@ -25,6 +25,7 @@ from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain, check_domain_sanity
+from rasa_core.exceptions import AgentNotLoaded
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies import Policy
@@ -275,7 +276,10 @@ class Agent(object):
                    action_endpoint=action_endpoint)
 
     def is_ready(self):
-        return self.policy_ensemble is not None
+        """Check if all necessary components are instantiated to use agent."""
+        return (self.interpreter is not None and
+                self.tracker_store is not None and
+                self.policy_ensemble is not None)
 
     def handle_message(
             self,
@@ -295,9 +299,11 @@ class Agent(object):
 
         def noop(_):
             logger.info("Ignoring message as there is no agent to handle it.")
+            return None
 
-        if not self.policy_ensemble:
-            return noop(message)
+        if not self.is_ready():
+            return noop(message)#
+
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(message)
 
@@ -399,6 +405,9 @@ class Agent(object):
         capabilities of an ensemble when ignoring memorized turns from the
         training data."""
 
+        if not self.policy_ensemble:
+            return
+
         for p in self.policy_ensemble.policies:
             # explicitly ignore inheritance (e.g. augmented memoization policy)
             if type(p) == MemoizationPolicy:
@@ -409,6 +418,11 @@ class Agent(object):
                           **kwargs
                           ):
         # type: (List[DialogueStateTracker], Any) -> None
+
+        if not self.is_ready():
+            raise AgentNotLoaded("Can't continue training without a policy "
+                                 "ensemble.")
+
         self.policy_ensemble.continue_training(trackers,
                                                self.domain,
                                                **kwargs)
@@ -472,13 +486,17 @@ class Agent(object):
                            trainer (e.g. keras parameters)
         """
 
+        if not self.is_ready():
+            raise AgentNotLoaded("Can't train without a policy ensemble.")
+
         # deprecation tests
         if kwargs.get('featurizer') or kwargs.get('max_history'):
             raise Exception("Passing `featurizer` and `max_history` "
                             "to `agent.train(...)` is not supported anymore. "
                             "Pass appropriate featurizer "
                             "directly to the policy instead. More info "
-                            "https://rasa.com/docs/core/migrations.html#x-to-0-9-0")
+                            "https://rasa.com/docs/core/migrations.html#x-to"
+                            "-0-9-0")
 
         if isinstance(training_trackers, string_types):
             # the user most likely passed in a file name to load training
@@ -555,6 +573,9 @@ class Agent(object):
         # type: (Text, bool) -> None
         """Persists this agent into a directory for later loading and usage."""
 
+        if not self.is_ready():
+            raise AgentNotLoaded("Can't persist without a policy ensemble.")
+
         self._clear_model_directory(model_path)
 
         self.policy_ensemble.persist(model_path, dump_flattened_stories)
@@ -583,24 +604,24 @@ class Agent(object):
                           self.interpreter, nlu_training_data,
                           should_merge_nodes, fontsize)
 
-    def _ensure_agent_is_prepared(self):
+    def _ensure_agent_is_ready(self):
         # type: () -> None
         """Checks that an interpreter and a tracker store are set.
 
         Necessary before a processor can be instantiated from this agent.
         Raises an exception if any argument is missing."""
 
-        if self.interpreter is None or self.tracker_store is None:
-            raise Exception("Agent needs to be prepared before usage. "
-                            "You need to set an interpreter as well "
-                            "as a tracker store.")
+        if not self.is_ready():
+            raise AgentNotLoaded("Agent needs to be prepared before usage. "
+                                 "You need to set an interpreter, a policy "
+                                 "ensemble as well as a tracker store.")
 
     def _create_processor(self, preprocessor=None):
         # type: (Optional[Callable[[Text], Text]]) -> MessageProcessor
         """Instantiates a processor based on the set state of the agent."""
         # Checks that the interpreter and tracker store are set and
         # creates a processor
-        self._ensure_agent_is_prepared()
+        self._ensure_agent_is_ready()
         return MessageProcessor(
                 self.interpreter,
                 self.policy_ensemble,
@@ -634,10 +655,12 @@ class Agent(object):
             return InMemoryTrackerStore(domain)
 
     @staticmethod
-    def _create_ensemble(policies):
-        # type: (Union[List[Policy], PolicyEnsemble, None]) -> PolicyEnsemble
+    def _create_ensemble(
+            policies  # type: Union[List[Policy], PolicyEnsemble, None]
+    ):
+        # type: (...) -> Optional[PolicyEnsemble]
         if policies is None:
-            return SimplePolicyEnsemble([])
+            return None
         if isinstance(policies, list):
             return SimplePolicyEnsemble(policies)
         elif isinstance(policies, PolicyEnsemble):

@@ -18,6 +18,7 @@ from typing import Text, Optional, Any, List, Dict
 import rasa_core
 from rasa_core import utils, training, constants
 from rasa_core.events import SlotSet, ActionExecuted
+from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
@@ -26,20 +27,6 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.policies.policy import Policy
     from rasa_core.trackers import DialogueStateTracker
-
-
-class UnsupportedDialogueModelError(Exception):
-    """Raised when a model is to old to be loaded.
-
-    Attributes:
-        message -- explanation of why the model is invalid
-    """
-
-    def __init__(self, message):
-        self.message = message
-
-    def __str__(self):
-        return self.message
 
 
 class PolicyEnsemble(object):
@@ -169,14 +156,15 @@ class PolicyEnsemble(object):
         model_version = metadata.get("rasa_core", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedDialogueModelError(
-                "The model version is to old to be "
-                "loaded by this Rasa Core instance. "
-                "Either retrain the model, or run with"
-                "an older version. "
-                "Model version: {} Instance version: {} "
-                "Minimal compatible version: {}"
-                "".format(model_version, rasa_core.__version__,
-                          version_to_check))
+                    "The model version is to old to be "
+                    "loaded by this Rasa Core instance. "
+                    "Either retrain the model, or run with"
+                    "an older version. "
+                    "Model version: {} Instance version: {} "
+                    "Minimal compatible version: {}"
+                    "".format(model_version, rasa_core.__version__,
+                              version_to_check),
+                    model_version)
 
     @classmethod
     def load(cls, path):
@@ -193,7 +181,7 @@ class PolicyEnsemble(object):
             policy = policy_cls.load(policy_path)
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(
-                                metadata["ensemble_name"])
+                metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble

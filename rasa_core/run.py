@@ -265,7 +265,7 @@ def serve_application(initial_agent,
                       credentials_file=None,
                       cors=None,
                       auth_token=None,
-                        enable_api=True
+                      enable_api=True
                       ):
     input_channels = create_http_input_channels(channel, credentials_file)
 
