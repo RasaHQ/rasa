@@ -66,7 +66,7 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    :caption: API Reference
 
    dataformat
-   pipeline
+   components
    config
    http
    python
@@ -82,3 +82,4 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    migrations
    license
    changelog
+   support
