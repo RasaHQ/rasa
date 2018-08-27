@@ -160,7 +160,7 @@ class Dispatcher(object):
                                     **kwargs)
 
         if message is None and not silent_fail:
-            raise ValueError("Couldn't create message for template '{}'."
-                             "".format(template))
+            logger.error("Couldn't create message for template '{}'."
+                         "".format(template))
 
         return message
