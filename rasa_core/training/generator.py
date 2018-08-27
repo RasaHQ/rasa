@@ -153,7 +153,6 @@ class TrainingDataGenerator(object):
             remove_duplicates=True,  # type: bool
             unique_last_num_states=None,  # type: Optional[int]
             augmentation_factor=20,  # type: int
-            max_number_of_trackers=None,  # deprecated
             tracker_limit=None,  # type: Optional[int]
             use_story_concatenation=True,  # type: bool
             debug_plots=False  # type: bool
@@ -164,14 +163,6 @@ class TrainingDataGenerator(object):
         and this generator will match start and end checkpoints to
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
-
-        # TODO: DEPRECATED - remove in version 0.10
-        if max_number_of_trackers is not None:
-            logger.warning("Passing a `max_number_of_trackers` to "
-                           "`TrainingDataGenerator` is deprecated. "
-                           "Use `unique_last_num_states` to limit "
-                           "number of generated trackers, "
-                           "if training time is too long.")
 
         self.story_graph = story_graph.with_cycles_removed()
         if debug_plots:

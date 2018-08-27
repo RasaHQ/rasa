@@ -349,11 +349,22 @@ scv_sort = ('semver',)
 scv_overflow = ("-A", "html_theme=rasabaster")
 scv_whitelist_branches = ('master', 'latest')
 #scv_whitelist_tags = ('None',)
-scv_whitelist_tags = (re.compile(r'^[123456789]+\.[0-9]+\.\d+$'),
-                      re.compile(r'^0\.10+\.\d+$'),
+scv_whitelist_tags = (re.compile(r'^[123456789]+\.\d+\.\d+$'),
+                      re.compile(r'^0\.[23456789]\d+\.\d+$'),
+                      re.compile(r'^0\.1[123456789]+\.\d+$'),
+                      '0.10.4',
                       '0.9.8',
                       '0.8.6',
                       '0.7.9',
                       '0.6.9')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_greatest_tag = True
+
+
+def setup(sphinx):
+    try:
+        sys.path.insert(0, os.path.abspath('./util'))
+        from StoryLexer import StoryLexer
+        sphinx.add_lexer("story", StoryLexer())
+    except ImportError:
+        print("No Story Lexer :( Sad times!")

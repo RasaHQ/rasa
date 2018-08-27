@@ -12,7 +12,7 @@ from rasa_core.events import (
     Event, UserUttered, SlotSet, Restarted,
     ActionExecuted, AllSlotsReset,
     ReminderScheduled, ConversationResumed, ConversationPaused,
-    StoryExported, ActionReverted, BotUttered)
+    StoryExported, ActionReverted, BotUttered, FollowupAction)
 
 
 @pytest.mark.parametrize("one_event,another_event", [
@@ -42,6 +42,9 @@ from rasa_core.events import (
 
     (ActionExecuted("my_action"),
      ActionExecuted("my_other_action")),
+
+    (FollowupAction("my_action"),
+     FollowupAction("my_other_action")),
 
     (BotUttered("my_text", "my_data"),
      BotUttered("my_other_test", "my_other_data")),
@@ -87,6 +90,8 @@ def test_event_has_proper_implementation(one_event, another_event):
     ActionReverted(),
 
     ActionExecuted("my_action"),
+
+    FollowupAction("my_action"),
 
     BotUttered("my_text", "my_data"),
 

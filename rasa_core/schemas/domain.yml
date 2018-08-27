@@ -9,8 +9,6 @@ mapping:
           type: !!python/str "bool"
       allowempty: True
     - type: !!python/str "str"
-  action_factory:
-    type: !!python/str "str"
   entities:
     type: !!python/str "seq"
     sequence:

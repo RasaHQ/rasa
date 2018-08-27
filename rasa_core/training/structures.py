@@ -3,15 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from collections import deque, defaultdict
+
 import io
 import json
 import logging
-import uuid
-from collections import deque, defaultdict
-
 import typing
-from typing import \
-    List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
+import uuid
+from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -151,11 +150,14 @@ class StoryStep(object):
         return events
 
     def __repr__(self):
-        return "StoryStep(block_name={!r}, start_checkpoints={!r}, end_checkpoints={!r}, events={!r})".format(
-                self.block_name,
-                self.start_checkpoints,
-                self.end_checkpoints,
-                self.events)
+        return ("StoryStep("
+                "block_name={!r}, "
+                "start_checkpoints={!r}, "
+                "end_checkpoints={!r}, "
+                "events={!r})".format(self.block_name,
+                                      self.start_checkpoints,
+                                      self.end_checkpoints,
+                                      self.events))
 
 
 class Story(object):
@@ -247,12 +249,15 @@ class StoryGraph(object):
 
         if self.cyclic_edge_ids:
             # we are going to do this in a recursive way. we are going to remove
-            # one cycle and then we are going to let the cycle detection run again
+            # one cycle and then we are going to let the cycle detection run
+            # again
             # this is not inherently necessary so if this becomes a performance
             # issue, we can change it. It is actually enough to run the cycle
             # detection only once and then remove one cycle after another, but
-            # since removing the cycle is done by adding / removing edges and nodes
-            # the logic is a lot easier if we only need to make sure the change is
+            # since removing the cycle is done by adding / removing edges and
+            #  nodes
+            # the logic is a lot easier if we only need to make sure the
+            # change is
             # consistent if we only change one compared to changing all of them.
 
             for s, e in cyclic_edge_ids:
@@ -450,7 +455,9 @@ class StoryGraph(object):
         (deque([u'e', u'f', u'a', u'c', u'd', u'b']), [])
         """
 
+        # noinspection PyPep8Naming
         GRAY, BLACK = 0, 1
+
         ordered = deque()
         unprocessed = set(graph)
         visited_nodes = {}
@@ -480,51 +487,56 @@ class StoryGraph(object):
         from rasa_core.training import visualization
         from colorhash import ColorHash
 
-        G = nx.MultiDiGraph()
+        graph = nx.MultiDiGraph()
         next_node_idx = [0]
         nodes = {"STORY_START": 0, "STORY_END": -1}
 
-        def ensure_checkpoint_is_drawn(c):
-            if c.name not in nodes:
+        def ensure_checkpoint_is_drawn(cp):
+            if cp.name not in nodes:
                 next_node_idx[0] += 1
-                nodes[c.name] = next_node_idx[0]
+                nodes[cp.name] = next_node_idx[0]
 
-                if c.name.startswith(GENERATED_CHECKPOINT_PREFIX):
+                if cp.name.startswith(GENERATED_CHECKPOINT_PREFIX):
                     # colors generated checkpoints based on their hash
-                    color = ColorHash(c.name[-GENERATED_HASH_LENGTH:]).hex
-                    G.add_node(next_node_idx[0],
-                               label=utils.cap_length(c.name),
-                               style="filled",
-                               fillcolor=color)
+                    color = ColorHash(cp.name[-GENERATED_HASH_LENGTH:]).hex
+                    graph.add_node(next_node_idx[0],
+                                   label=utils.cap_length(cp.name),
+                                   style="filled",
+                                   fillcolor=color)
                 else:
-                    G.add_node(next_node_idx[0], label=utils.cap_length(c.name))
+                    graph.add_node(next_node_idx[0],
+                                   label=utils.cap_length(cp.name))
 
-        G.add_node(nodes["STORY_START"],
-                   label="START", fillcolor="green", style="filled")
-        G.add_node(nodes["STORY_END"],
-                   label="END", fillcolor="red", style="filled")
+        graph.add_node(nodes["STORY_START"],
+                       label="START",
+                       fillcolor="green",
+                       style="filled")
+        graph.add_node(nodes["STORY_END"],
+                       label="END",
+                       fillcolor="red",
+                       style="filled")
 
         for step in self.story_steps:
             next_node_idx[0] += 1
             step_idx = next_node_idx[0]
 
-            G.add_node(next_node_idx[0],
-                       label=utils.cap_length(step.block_name),
-                       style="filled",
-                       fillcolor="lightblue",
-                       shape="box")
+            graph.add_node(next_node_idx[0],
+                           label=utils.cap_length(step.block_name),
+                           style="filled",
+                           fillcolor="lightblue",
+                           shape="box")
 
             for c in step.start_checkpoints:
                 ensure_checkpoint_is_drawn(c)
-                G.add_edge(nodes[c.name], step_idx)
+                graph.add_edge(nodes[c.name], step_idx)
             for c in step.end_checkpoints:
                 ensure_checkpoint_is_drawn(c)
-                G.add_edge(step_idx, nodes[c.name])
+                graph.add_edge(step_idx, nodes[c.name])
 
             if not step.end_checkpoints:
-                G.add_edge(step_idx, nodes["STORY_END"])
+                graph.add_edge(step_idx, nodes["STORY_END"])
 
         if output_file:
-            visualization.persist_graph(G, output_file)
+            visualization.persist_graph(graph, output_file)
 
-        return G
+        return graph

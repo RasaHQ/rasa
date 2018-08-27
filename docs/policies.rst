@@ -37,7 +37,7 @@ Data Augmentation
 By default, Rasa Core will create longer stories by randomly glueing together 
 the ones in your stories file. This is because if you have stories like:
 
-.. code-block:: md
+.. code-block:: story
    
     # thanks
     * thankyou
@@ -76,7 +76,7 @@ As an example, let's say you have an ``out_of_scope`` intent which describes off
 user messages. If your bot sees this intent multiple times in a row, you might want to 
 tell the user what you `can` help them with. So your story might look like this:
 
-.. code-block:: md
+.. code-block:: story
 
    * out_of_scope
       - utter_default

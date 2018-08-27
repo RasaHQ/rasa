@@ -19,7 +19,7 @@ need to know their location. Users might say that right away, e.g. `What's the w
 When they don't provide this information, you'll have to ask them for it. 
 We can provide two stories to Rasa Core, so that it can learn to handle both cases:
 
-.. code-block:: md
+.. code-block:: story
 
     # story1
     * ask_weather{"location": "Caracas"}
@@ -41,7 +41,7 @@ Costa Rica 🇨🇷  or California 🇺🇸
 Let's add a call to a location API to deal with this. 
 Start by defining a ``location_match`` slot:
 
-.. code-block:: md
+.. code-block:: yaml
     
     slots:
       location_match:
@@ -59,7 +59,7 @@ It can ``return [SlotSet("location_match", value)]``, where ``value`` is one of 
 We then define stories for each of these cases:
 
 
-.. code-block:: md
+.. code-block:: story
     :emphasize-lines: 12-13, 18-19, 24-25
 
     # story1
@@ -128,9 +128,29 @@ e.g. ``utter_ask_cuisine``, ``utter_ask_numpeople``, in a restaurant bot.
 
 A form action has a set of required fields, which you define for the class:
 
-.. literalinclude:: ../tests/test_forms.py
-   :pyobject: ActionSearchRestaurants
+.. code-block:: python
 
+    class ActionSearchRestaurants(FormAction):
+
+        RANDOMIZE = False
+
+        @staticmethod
+        def required_fields():
+            return [
+                EntityFormField("cuisine", "cuisine"),
+                EntityFormField("number", "people"),
+                BooleanFormField("vegetarian", "affirm", "deny")
+            ]
+
+        def name(self):
+            return 'action_search_restaurants'
+
+        def submit(self, dispatcher, tracker, domain):
+            results = RestaurantAPI().search(
+                tracker.get_slot("cuisine"),
+                tracker.get_slot("people"),
+                tracker.get_slot("vegetarian"))
+            return [SlotSet("search_results", results)]
 
 
 The way this works is that every time you call this action, it will pick one of the 
@@ -140,7 +160,7 @@ question with a ``BooleanFormField``.
 The form action will set a slot called ``requested_slot`` to keep track if what it has asked the user.
 So a story will look something like this:
 
-.. code-block:: md
+.. code-block:: story
 
    * request_restaurant
         - action_restaurant_form

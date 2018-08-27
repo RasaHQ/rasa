@@ -39,7 +39,14 @@ class Slot(object):
 
     def as_feature(self):
         raise NotImplementedError("Each slot type needs to specify how its "
-                                  "value can be converted to a feature.")
+                                  "value can be converted to a feature. Slot "
+                                  "'{}' is a generic slot that can not be used "
+                                  "for predictions. Make sure you add this "
+                                  "slot to your domain definition, specifying "
+                                  "the type of the slot. If you implemented "
+                                  "a custom slot type class, make sure to "
+                                  "implement `.as_feature()`."
+                                  "".format(self.name))
 
     def reset(self):
         self.value = self.initial_value
@@ -95,10 +102,10 @@ class FloatSlot(Slot):
 
         if (initial_value is not None and
                 not (min_value <= initial_value <= max_value)):
-            logger.warn("Float slot ('{}') created with an initial value {}"
-                        "outside of configured min ({}) and max ({}) values."
-                        "".format(self.name, self.value, self.min_value,
-                                  self.max_value))
+            logger.warning("Float slot ('{}') created with an initial value {}"
+                           "outside of configured min ({}) and max ({}) values."
+                           "".format(self.name, self.value, self.min_value,
+                                     self.max_value))
 
     def as_feature(self):
         try:
@@ -191,7 +198,7 @@ class CategoricalSlot(Slot):
                     break
             else:
                 if self.value is not None:
-                    logger.warn(
+                    logger.warning(
                             "Categorical slot '{}' is set to a value ('{}') "
                             "that is not specified in the domain. "
                             "Value will be ignored and the slot will "

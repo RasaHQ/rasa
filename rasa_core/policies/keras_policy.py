@@ -126,7 +126,7 @@ class KerasPolicy(Policy):
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
-              **kwargs  # type: **Any
+              **kwargs  # type: Any
               ):
         # type: (...) -> Dict[Text: Any]
 
@@ -139,6 +139,7 @@ class KerasPolicy(Policy):
                                                     domain,
                                                     **kwargs)
 
+        # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
         self.graph = tf.Graph()
@@ -162,7 +163,7 @@ class KerasPolicy(Policy):
                 logger.info("Done fitting keras policy model")
 
     def continue_training(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+        # type: (List[DialogueStateTracker], Domain, Any) -> None
         """Continues training an already trained policy."""
 
         # takes the new example labelled and learns it
@@ -191,6 +192,7 @@ class KerasPolicy(Policy):
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
 
+        # noinspection PyPep8Naming
         X = self.featurizer.create_X([tracker], domain)
 
         with self.graph.as_default(), self.session.as_default():

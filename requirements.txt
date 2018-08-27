@@ -28,3 +28,10 @@ python-telegram-bot==10.1.0
 twilio==6.14.0
 mattermostwrapper==2.1
 colorhash==1.0.2
+pika==0.11.2
+jsonschema==2.6.0
+packaging==17.1
+gevent==1.2.2
+pyyaml==3.12
+pytz==2018.4
+rasa_core_sdk~=0.11.0

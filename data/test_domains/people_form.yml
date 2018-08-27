@@ -1,6 +1,4 @@
 # all hashtags are comments :)
-action_factory: remote
-
 intents:
  - inform
  - enter_name

@@ -3,22 +3,22 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from builtins import str
+
 import argparse
 import io
 import logging
 import uuid
 from difflib import SequenceMatcher
-
-from builtins import str
 from tqdm import tqdm
 from typing import Text, List, Tuple
 
-import rasa_core
 from rasa_core import training
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
+from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
@@ -88,7 +88,7 @@ def align_lists(pred, actual):
 
 
 def actions_since_last_utterance(tracker):
-    # type: (rasa_core.trackers.DialogueStateTracker) -> List[Text]
+    # type: (DialogueStateTracker) -> List[Text]
     """Extract all events after the most recent utterance from the user."""
 
     actions = []

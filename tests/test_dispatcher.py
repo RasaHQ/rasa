@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.trackers import DialogueStateTracker
 
@@ -36,8 +36,8 @@ def test_dispatcher_handle_unknown_template(default_dispatcher_collecting,
 
 def test_dispatcher_template_invalid_vars():
     templates = {
-                "my_made_up_template": [{
-                    "text": "a template referencing an invalid {variable}."}]}
+        "my_made_up_template": [{
+            "text": "a template referencing an invalid {variable}."}]}
     bot = CollectingOutputChannel()
     nlg = TemplatedNaturalLanguageGenerator(templates)
     dispatcher = Dispatcher("my-sender", bot, nlg)
@@ -46,6 +46,40 @@ def test_dispatcher_template_invalid_vars():
     collected = dispatcher.output_channel.latest_output()
     assert collected['text'].startswith(
             "a template referencing an invalid {variable}.")
+
+
+def test_dispatcher_utter_response(default_dispatcher_collecting):
+    text_only_message = {"text": "hey"}
+    image_only_message = {"image": "https://i.imgur.com/nGF1K8f.jpg"}
+    text_and_image_message = {
+        "text": "look at this",
+        "image": "https://i.imgur.com/T5xVo.jpg"
+    }
+
+    default_dispatcher_collecting.utter_response(text_only_message)
+    default_dispatcher_collecting.utter_response(image_only_message)
+    default_dispatcher_collecting.utter_response(text_and_image_message)
+    collected = default_dispatcher_collecting.output_channel.messages
+
+    assert len(collected) == 4
+
+    # text only message
+    assert collected[0] == {
+        "recipient_id": "my-sender",
+        "text": "hey"}
+
+    # image only message
+    assert collected[1] == {
+        "recipient_id": "my-sender",
+        "text": "Image: https://i.imgur.com/nGF1K8f.jpg"}
+
+    # text & image combined - will result in two messages
+    assert collected[2] == {
+        "recipient_id": "my-sender",
+        "text": "look at this"}
+    assert collected[3] == {
+        "recipient_id": "my-sender",
+        "text": "Image: https://i.imgur.com/T5xVo.jpg"}
 
 
 def test_dispatcher_utter_buttons(default_dispatcher_collecting):
@@ -65,7 +99,7 @@ def test_dispatcher_utter_buttons(default_dispatcher_collecting):
 
 def test_dispatcher_utter_buttons_from_domain_templ(default_tracker):
     domain_file = "examples/moodbot/domain.yml"
-    domain = TemplateDomain.load(domain_file)
+    domain = Domain.load(domain_file)
     bot = CollectingOutputChannel()
     nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     dispatcher = Dispatcher("my-sender", bot, nlg)

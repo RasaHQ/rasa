@@ -6,27 +6,33 @@ from __future__ import unicode_literals
 import logging
 
 import requests
-from flask import Blueprint, request, jsonify, abort
-from flask_cors import CORS, cross_origin
+from flask import request, abort
 
-from rasa_core.channels import CollectingOutputChannel
-from rasa_core.channels.channel import UserMessage
-from rasa_core.channels.rest import HttpInputComponent
+from rasa_core.channels.channel import RestInput
+from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
 
-class RasaChatInput(HttpInputComponent):
+class RasaChatInput(RestInput):
     """Chat input channel for Rasa Platform"""
 
-    def __init__(self, host, admin_token=None):
-        self.host = host
+    def __init__(self, url, admin_token=None):
+        self.base_url = url
         self.admin_token = admin_token
 
+    @classmethod
+    def name(cls):
+        return "rasa"
+
     def _check_token(self, token):
-        url = "{}/users/me".format(self.host)
+        url = "{}/users/me".format(self.base_url)
         headers = {"Authorization": token}
-        result = requests.get(url, headers=headers)
+        logger.debug("Requesting user information from auth server {}."
+                     "".format(url))
+        result = requests.get(url, 
+                              headers=headers,
+                              timeout=DEFAULT_REQUEST_TIMEOUT)
 
         if result.status_code == 200:
             return result.json()
@@ -35,42 +41,16 @@ class RasaChatInput(HttpInputComponent):
                         "Content: {}".format(token, request.data))
             return None
 
-    def fetch_user(self, req):
+    def _extract_sender(self, req):
         """Fetch user from the Rasa Platform Admin API"""
 
         if req.headers.get("Authorization"):
             user = self._check_token(req.headers.get("Authorization"))
             if user:
-                return user
+                return user["username"]
 
         user = self._check_token(req.args.get('token', default=None))
         if user:
-            return user
+            return user["username"]
 
         abort(401)
-
-    def blueprint(self, on_new_message):
-        rasa_chat = Blueprint('rasa_chat', __name__)
-        CORS(rasa_chat)
-
-        @rasa_chat.route("/", methods=['GET', 'HEAD'])
-        def health():
-            return jsonify({"status": "ok"})
-
-        @rasa_chat.route("/send", methods=['GET', 'POST', 'HEAD'])
-        @cross_origin()
-        def receive():
-            if (self.admin_token and
-                    request.args.get("token") == self.admin_token):
-                user_name = request.json["user"]
-            else:
-                user_name = self.fetch_user(request)["username"]
-
-            msg = request.json["message"]
-            out = CollectingOutputChannel()
-            on_new_message(UserMessage(msg, out,
-                                       sender_id=user_name))
-
-            return jsonify(out.messages)
-
-        return rasa_chat

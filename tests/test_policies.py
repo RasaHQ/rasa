@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from rasa_core.channels import UserMessage
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import \
     MemoizationPolicy, AugmentedMemoizationPolicy
@@ -61,7 +61,7 @@ class PolicyTestCollection(object):
 
     @pytest.fixture(scope="module")
     def trained_policy(self, featurizer):
-        default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain)
@@ -197,7 +197,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope='module')
     def default_domain(self):
-        return TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        return Domain.load(DEFAULT_DOMAIN_PATH)
 
     @pytest.fixture
     def tracker(self, default_domain):
@@ -262,7 +262,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
-                        np.random.choice(classes)).name()
+                        np.random.choice(classes), action_endpoint=None).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
                     new_tracker.update(e)
