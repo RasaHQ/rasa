@@ -20,10 +20,10 @@ slots:
 
 templates:
   utter_greet:
-    - "hey there {name}!"    # variable will be filled by slot with the same name or by custom code
+    - "hey there {name}!"  # {name} will be filled by slot (same name) or by custom action code
   utter_goodbye:
     - "goodbye 😢"
-    - "bye bye 😢"              # multiple templates will allow the bot to randomly pick from them
+    - "bye bye 😢"   # multiple templates - bot will randomly pick one of them
   utter_default:
     - "default message"
 

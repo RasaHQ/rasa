@@ -25,6 +25,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # type: (Dict[Text, List[Dict[Text, Any]]]) -> None
         self.templates = templates
 
+    # noinspection PyUnusedLocal
     def _random_template_for(self, utter_action, output_channel):
         # type: (Text, Text) -> Optional[Dict[Text, Any]]
         """Select random template for the utter action from available ones."""
@@ -34,8 +35,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         else:
             return None
 
-    def generate(self, template_name, tracker, output_channel, **kwargs):
-        # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
+    def generate(self,
+                 template_name,  # type: Text
+                 tracker,  # type: DialogueStateTracker
+                 output_channel,  # type: Text
+                 **kwargs  # type: Any
+                 ):
+        # type: (...) -> Optional[Dict[Text, Any]]
         """Generate a response for the requested template."""
 
         filled_slots = tracker.current_slot_values()
@@ -44,9 +50,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
                                         output_channel,
                                         **kwargs)
 
-    def generate_from_slots(self, template_name, filled_slots, output_channel,
-                            **kwargs):
-        # type: (Text, Dict[Text, Any], Text, **Any) -> Dict[Text, Any]
+    def generate_from_slots(self,
+                            template_name,  # type: Text
+                            filled_slots,  # type: Dict[Text, Any]
+                            output_channel,  # type: Text
+                            **kwargs  # type: Any
+                            ):
+        # type: (...) -> Optional[Dict[Text, Any]]
         """Generate a response for the requested template."""
 
         # Fetching a random template for the passed template name
@@ -56,14 +66,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         if r is not None:
             return self._fill_template_text(r, filled_slots, **kwargs)
         else:
-            return {"text": "Undefined utter template <{}>."
-                            "".format(template_name)}
+            return None
 
     def _fill_template_text(
             self,
             template,  # type: Dict[Text, Any]
             filled_slots=None,  # type: Optional[Dict[Text, Any]]
-            **kwargs  # type: **Any
+            **kwargs  # type: Any
     ):
         # type: (...) -> Dict[Text, Any]
         """"Combine slot values and key word arguments to fill templates."""
@@ -96,5 +105,5 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         # Copying the filled slots in the template variables.
         template_vars = filled_slots.copy()
-        template_vars.update(kwargs.items())
+        template_vars.update(kwargs)
         return template_vars

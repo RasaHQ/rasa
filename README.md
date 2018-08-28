@@ -1,18 +1,18 @@
 # Rasa Core
-[![Join the chat on Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RasaHQ/rasa_core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
-[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://core.rasa.com/)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/core)
 
 
 - **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
 
-- **I'd like to read the detailed docs 🤓** [Read The Docs](https://core.rasa.com)
+- **I'd like to read the detailed docs 🤓** [Read The Docs](https://rasa.com/docs/core)
 
-- **I'm ready to install Rasa Core! 🚀** [Installation](https://core.rasa.com/installation.html)
+- **I'm ready to install Rasa Core! 🚀** [Installation](https://rasa.com/docs/core/installation.html)
 
-- **I have a question ❓** [Gitter channel](https://gitter.im/RasaHQ/rasa_core)
+- **I have a question ❓** [Rasa Community Forum](https://forum.rasa.com)
 
 - **I would like to contribute 🤗** [How to contribute](#how-to-contribute)
 
@@ -37,11 +37,11 @@ There's a lot more background information in this [blog post](https://medium.com
 
 There is extensive documentation:
 
-- [master](https://core.rasa.com/master/)&nbsp; (if you install from **github**) or 
-- [stable](https://core.rasa.com/)&nbsp;&nbsp; (if you install from **pypi**)
+- [master](https://rasa.com/docs/core/master/)&nbsp; (if you install from **github**) or 
+- [stable](https://rasa.com/docs/core)&nbsp;&nbsp; (if you install from **pypi**)
 
 
-Please use [gitter](https://gitter.im/RasaHQ/rasa_core) for quick answers to 
+Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to 
 questions.
 
 

@@ -3,16 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import datetime
-import json
-import logging
 import time
-import uuid
-
-import jsonpickle
-import typing
 from builtins import str
-from typing import List, Dict, Text, Any
+
+import json
+import jsonpickle
+import logging
+import typing
+import uuid
+from dateutil import parser
+from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa_core import utils
 
@@ -27,12 +27,21 @@ def deserialise_events(serialized_events):
     """Convert a list of dictionaries to a list of corresponding events.
 
     Example format:
-        [{"event": "set_slot", "value": 5, "name": "my_slot"}]
+        [{"event": "slot", "value": 5, "name": "my_slot"}]
     """
 
-    return [Event.from_parameters(e)
-            for e in serialized_events
-            if "event" in e]
+    deserialised = []
+
+    for e in serialized_events:
+        if "event" in e:
+            event = Event.from_parameters(e)
+            if event:
+                deserialised.append(event)
+            else:
+                logger.warning("Ignoring event ({}) while deserialising "
+                               "events. Couldn't parse it.")
+
+    return deserialised
 
 
 def first_key(d, default_key):
@@ -67,18 +76,32 @@ class Event(object):
         raise NotImplementedError
 
     @staticmethod
-    def from_story_string(event_name, parameters, default=None):
+    def from_story_string(event_name,  # type: Text
+                          parameters,  # type: Dict[Text, Any]
+                          default=None  # type: Optional[Type[Event]]
+                          ):
+        # type: (...) -> Optional[Event]
         event = Event.resolve_by_type(event_name, default)
-        return event._from_story_string(parameters)
+
+        if event:
+            return event._from_story_string(parameters)
+        else:
+            return None
 
     @staticmethod
     def from_parameters(parameters, default=None):
+        # type: (Dict[Text, Any], Optional[Type[Event]]) -> Optional[Event]
+
         event_name = parameters.get("event")
         if event_name is not None:
             copied = parameters.copy()
             del copied["event"]
+
             event = Event.resolve_by_type(event_name, default)
-            return event._from_parameters(parameters)
+            if event:
+                return event._from_parameters(parameters)
+            else:
+                return None
         else:
             return None
 
@@ -106,12 +129,15 @@ class Event(object):
 
     @staticmethod
     def resolve_by_type(type_name, default=None):
+        # type: (Text, Optional[Text]) -> Optional[Type[Event]]
         """Returns a slots class by its type name."""
 
         for cls in utils.all_subclasses(Event):
             if cls.type_name == type_name:
                 return cls
-        if default is not None:
+        if type_name == "topic":
+            return None  # backwards compatibility to support old TopicSet evts
+        elif default is not None:
             return default
         else:
             raise ValueError("Unknown event name '{}'.".format(type_name))
@@ -211,6 +237,7 @@ class UserUttered(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_message = self
+        tracker.clear_followup_action()
 
 
 # noinspection PyProtectedMember
@@ -270,60 +297,6 @@ class BotUttered(Event):
                               parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
-
-
-# TODO: DEPRECATED - remove in version 0.10.0
-# noinspection PyProtectedMember
-class TopicSet(Event):
-    """The topic of conversation has changed.
-
-    As a side effect self.topic will be pushed on to ``Tracker.topic_stack``."""
-
-    type_name = "topic"
-
-    def __init__(self, topic, timestamp=None):
-        self.topic = topic
-        super(TopicSet, self).__init__(timestamp)
-
-    def __str__(self):
-        return "TopicSet(topic: {})".format(self.topic)
-
-    def __hash__(self):
-        return hash(self.topic)
-
-    def __eq__(self, other):
-        if not isinstance(other, TopicSet):
-            return False
-        else:
-            return self.topic == other.topic
-
-    def as_story_string(self):
-        return "{name}[{props}]".format(name=self.type_name, props=self.topic)
-
-    @classmethod
-    def _from_story_string(cls, parameters):
-        topic = first_key(parameters, default_key="name")
-
-        if topic is not None:
-            return TopicSet(topic)
-        else:
-            return None
-
-    def as_dict(self):
-        d = super(TopicSet, self).as_dict()
-        d.update({"topic": self.topic})
-        return d
-
-    @classmethod
-    def _from_parameters(cls, parameters):
-        try:
-            return TopicSet(parameters.get("topic"),
-                            parameters.get("timestamp"))
-        except KeyError as e:
-            raise ValueError("Failed to parse set topic event. {}".format(e))
-
-    def apply_to(self, tracker):
-        pass
 
 
 # noinspection PyProtectedMember
@@ -409,9 +382,9 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker):
-        from rasa_core.actions.action import ActionListen
+        from rasa_core.actions.action import ACTION_LISTEN_NAME
         tracker._reset()
-        tracker.follow_up_action = ActionListen()
+        tracker.trigger_follow_up_action(ACTION_LISTEN_NAME)
 
 
 # noinspection PyProtectedMember
@@ -482,7 +455,7 @@ class ReminderScheduled(Event):
 
         :param action_name: name of the action to be scheduled
         :param trigger_date_time: date at which the execution of the action
-                                  should be triggered
+                                  should be triggered (either utc or with tz)
         :param name: id of the reminder. if there are multiple reminders with
                      the same id only the last will be run
         :param kill_on_user_message: ``True`` means a user message before the
@@ -496,7 +469,8 @@ class ReminderScheduled(Event):
         super(ReminderScheduled, self).__init__(timestamp)
 
     def __hash__(self):
-        return hash(self.name)
+        return hash((self.action_name, self.trigger_date_time.isoformat(),
+                     self.kill_on_user_message, self.name))
 
     def __eq__(self, other):
         if not isinstance(other, ReminderScheduled):
@@ -527,14 +501,8 @@ class ReminderScheduled(Event):
         return d
 
     @classmethod
-    def _parse_trigger_time(self, date_time):
-        return datetime.datetime.strptime(date_time[:19], '%Y-%m-%dT%H:%M:%S')
-
-    @classmethod
     def _from_story_string(cls, parameters):
-        logger.info("Reminders will be ignored during training, "
-                    "which should be ok.")
-        trigger_date_time = cls._parse_trigger_time(parameters.get("date_time"))
+        trigger_date_time = parser.parse(parameters.get("date_time"))
         return ReminderScheduled(parameters.get("action"),
                                  trigger_date_time,
                                  parameters.get("name", None),
@@ -599,6 +567,47 @@ class StoryExported(Event):
         # type: (DialogueStateTracker) -> None
         if self.path:
             tracker.export_stories_to_file(self.path)
+
+
+# noinspection PyProtectedMember
+class FollowupAction(Event):
+    """Enqueue a followup action."""
+
+    type_name = "followup"
+
+    def __init__(self, name, timestamp=None):
+        self.action_name = name
+        super(FollowupAction, self).__init__(timestamp)
+
+    def __hash__(self):
+        return hash(self.action_name)
+
+    def __eq__(self, other):
+        if not isinstance(other, FollowupAction):
+            return False
+        else:
+            return self.action_name == other.action_name
+
+    def __str__(self):
+        return "FollowupAction(action: {})".format(self.action_name)
+
+    def as_story_string(self):
+        props = json.dumps({"name": self.action_name})
+        return "{name}{props}".format(name=self.type_name, props=props)
+
+    @classmethod
+    def _from_story_string(cls, parameters):
+        return FollowupAction(parameters.get("name"),
+                              parameters.get("timestamp"))
+
+    def as_dict(self):
+        d = super(FollowupAction, self).as_dict()
+        d.update({"name": self.action_name})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.trigger_follow_up_action(self.action_name)
 
 
 # noinspection PyProtectedMember
@@ -694,6 +703,7 @@ class ActionExecuted(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_action_name = self.action_name
+        tracker.clear_followup_action()
 
 
 class AgentUttered(Event):

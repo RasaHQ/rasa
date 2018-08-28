@@ -3,23 +3,25 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import argparse
-import logging
-import requests
-from tempfile import NamedTemporaryFile
-
 from builtins import str
+
+import argparse
+import requests
+from requests.exceptions import InvalidURL
+from tempfile import NamedTemporaryFile
 
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.channels.console import ConsoleInputChannel
-from rasa_core.interpreter import RasaNLUInterpreter, RegexInterpreter
-from rasa_core.featurizers import \
-    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
+from rasa_core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
+from rasa_core.featurizers import (
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
+from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.tracker_store import TrackerStore
-from rasa_core.domain import TemplateDomain
+from rasa_core.training import online
+from rasa_nlu.utils import is_url
 
 
 def create_argument_parser():
@@ -27,11 +29,21 @@ def create_argument_parser():
 
     parser = argparse.ArgumentParser(
             description='trains a dialogue model')
-    parser.add_argument(
+
+    # either the user can pass in a story file, or the data will get
+    # downloaded from a url
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
             '-s', '--stories',
             type=str,
-            required=True,
             help="file or folder containing the training stories")
+    group.add_argument(
+            '--url',
+            type=str,
+            help="If supplied, downloads a story file from a URL and "
+                 "trains on it. Fetches the data by sending a GET request "
+                 "to the supplied URL.")
+
     parser.add_argument(
             '-o', '--out',
             type=str,
@@ -90,30 +102,86 @@ def create_argument_parser():
             default=False,
             action='store_true',
             help="If enabled, save flattened stories to a file")
-
     parser.add_argument(
-            '--url',
+            '--endpoints',
             default=None,
-            help="If supplied, downloads a story file from a URL and trains on it")
+            help="Configuration file for the connectors as a yml file")
+    parser.add_argument(
+            '--nlu_threshold',
+            type=float,
+            default=DEFAULT_NLU_FALLBACK_THRESHOLD,
+            help="If NLU prediction confidence is below threshold, fallback "
+                 "will get triggered.")
+    parser.add_argument(
+            '--core_threshold',
+            type=float,
+            default=DEFAULT_CORE_FALLBACK_THRESHOLD,
+            help="If Core action prediction confidence is below the threshold "
+                 "a fallback action will get triggered")
+    parser.add_argument(
+            '--fallback_action_name',
+            type=str,
+            default=DEFAULT_FALLBACK_ACTION,
+            help="When a fallback is triggered (e.g. because the ML prediction "
+                 "is of low confidence) this is the name of tje action that "
+                 "will get triggered instead.")
 
     utils.add_logging_option_arguments(parser)
     return parser
 
 
+def download_data_from_url(url):
+    if not is_url(url):
+        raise InvalidURL(url)
+
+    if url is not None:
+        data_store = NamedTemporaryFile()
+        stories_file = data_store.name
+
+        response = requests.get(url)
+        response.raise_for_status()
+
+        data_store.write(response.content)
+
+        return stories_file
+    else:
+        return None
+
+
 def train_dialogue_model(domain_file, stories_file, output_path,
-                         use_online_learning=False,
                          nlu_model_path=None,
+                         endpoints=None,
                          max_history=None,
                          dump_flattened_stories=False,
-                         url=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
 
-    agent = Agent(domain_file, policies=[
-        MemoizationPolicy(max_history=max_history),
-        KerasPolicy(MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                                max_history=max_history))])
+    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
+
+    fallback_args, kwargs = utils.extract_args(kwargs,
+                                               {"nlu_threshold",
+                                                "core_threshold",
+                                                "fallback_action_name"})
+
+    policies = [
+        FallbackPolicy(
+                fallback_args.get("nlu_threshold",
+                                  DEFAULT_NLU_FALLBACK_THRESHOLD),
+                fallback_args.get("core_threshold",
+                                  DEFAULT_CORE_FALLBACK_THRESHOLD),
+                fallback_args.get("fallback_action_name",
+                                  DEFAULT_FALLBACK_ACTION)),
+        MemoizationPolicy(
+                max_history=max_history),
+        KerasPolicy(
+                MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                            max_history=max_history))]
+
+    agent = Agent(domain_file,
+                  action_endpoint=action_endpoint,
+                  interpreter=nlu_model_path,
+                  policies=policies)
 
     data_load_args, kwargs = utils.extract_args(kwargs,
                                                 {"use_story_concatenation",
@@ -122,27 +190,11 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "remove_duplicates",
                                                  "debug_plots"})
 
-    if url is not None:
-        data_store = NamedTemporaryFile()
-        stories_file = data_store.name
-        data_store.write(requests.get(url).content)
-
     training_data = agent.load_data(stories_file, **data_load_args)
-
-    if use_online_learning:
-        if nlu_model_path:
-            agent.interpreter = RasaNLUInterpreter(nlu_model_path)
-        else:
-            agent.interpreter = RegexInterpreter()
-        agent.train_online(
-                training_data,
-                input_channel=ConsoleInputChannel(),
-                model_path=output_path,
-                **kwargs)
-    else:
-        agent.train(training_data, **kwargs)
-
+    agent.train(training_data, **kwargs)
     agent.persist(output_path, dump_flattened_stories)
+
+    return agent
 
 
 if __name__ == '__main__':
@@ -161,12 +213,19 @@ if __name__ == '__main__':
         "debug_plots": cmdline_args.debug_plots
     }
 
-    train_dialogue_model(cmdline_args.domain,
-                         cmdline_args.stories,
-                         cmdline_args.out,
-                         cmdline_args.online,
-                         cmdline_args.nlu,
-                         cmdline_args.history,
-                         cmdline_args.dump_stories,
-                         cmdline_args.url,
-                         additional_arguments)
+    if cmdline_args.url:
+        stories = download_data_from_url(cmdline_args.url)
+    else:
+        stories = cmdline_args.stories
+
+    a = train_dialogue_model(cmdline_args.domain,
+                             stories,
+                             cmdline_args.out,
+                             cmdline_args.nlu,
+                             cmdline_args.endpoints,
+                             cmdline_args.history,
+                             cmdline_args.dump_stories,
+                             additional_arguments)
+
+    if cmdline_args.online:
+        online.serve_agent(a)

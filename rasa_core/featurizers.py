@@ -246,9 +246,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                     used_features[offset + idx] += prob
 
             else:
-                logger.warning(
-                    "Feature '{}' could not be found in "
-                    "feature map.".format(state_name))
+                logger.warning("Feature '{}' could not be found in "
+                               "feature map.".format(state_name))
 
         if using_only_ints:
             # this is an optimization - saves us a bit of memory
@@ -271,6 +270,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
+
     def __init__(self, state_featurizer=None, use_intent_probabilities=False):
         # type: (Optional[SingleStateFeaturizer], bool) -> None
 
@@ -348,13 +348,14 @@ class TrackerFeaturizer(object):
             features.append(story_features)
             true_lengths.append(dialogue_len)
 
+        # noinspection PyPep8Naming
         X = np.array(features)
 
         return X, true_lengths
 
     def _featurize_labels(
             self,
-            trackers_as_actions,  # type: List[List[Text]
+            trackers_as_actions,  # type: List[List[Text]]
             domain  # type: Domain
     ):
         # type: (...) -> np.ndarray
@@ -399,6 +400,7 @@ class TrackerFeaturizer(object):
          trackers_as_actions) = self.training_states_and_actions(trackers,
                                                                  domain)
 
+        # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
         y = self._featurize_labels(trackers_as_actions, domain)
 
@@ -413,6 +415,7 @@ class TrackerFeaturizer(object):
         raise NotImplementedError("Featurizer must have the capacity to "
                                   "create feature vector")
 
+    # noinspection PyPep8Naming
     def create_X(self,
                  trackers,  # type: List[DialogueStateTracker]
                  domain  # type: Domain
@@ -428,6 +431,7 @@ class TrackerFeaturizer(object):
         featurizer_file = os.path.join(path, "featurizer.json")
         utils.create_dir_for_file(featurizer_file)
         with io.open(featurizer_file, 'w') as f:
+            # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
 
     @staticmethod
@@ -544,7 +548,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     def __init__(self, state_featurizer=None, max_history=None,
                  remove_duplicates=True, use_intent_probabilities=False):
-        # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
+        # type: (Optional[SingleStateFeaturizer], int, bool, bool) -> None
         super(MaxHistoryTrackerFeaturizer, self).__init__(
                 state_featurizer, use_intent_probabilities
         )
@@ -565,10 +569,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         slice_end = len(states)
         slice_start = max(0, slice_end - slice_length)
         padding = [None] * max(0, slice_length - slice_end)
+        # noinspection PyTypeChecker
         state_features = padding + states[slice_start:]
         return state_features
 
-    def _hash_example(self, states, action):
+    @staticmethod
+    def _hash_example(states, action):
         frozen_states = tuple((s if s is None
                                else frozenset(s.items())
                                for s in states))
@@ -603,7 +609,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         # only actions which can be
                         # predicted at a stories start
                         sliced_states = self.slice_state_history(
-                            states[:idx + 1], self.max_history)
+                                states[:idx + 1], self.max_history)
 
                         if self.remove_duplicates:
                             hashed = self._hash_example(sliced_states,
@@ -620,7 +626,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                             trackers_as_actions.append([event.action_name])
 
                         pbar.set_postfix({"# actions": "{:d}".format(
-                            len(trackers_as_actions))})
+                                len(trackers_as_actions))})
                     idx += 1
 
         logger.info("Created {} action examples."

@@ -7,6 +7,78 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.10.x to 0.11.0
+----------------
+
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the mentioned
+    before updating. Please make sure to
+    **retrain your models when switching to this version**.
+
+General
+~~~~~~~
+- domain actions list now needs to always contain the actions names instead of
+  the classpath
+- utter templates that should be used as actions, now need to start with
+  ``utter_``, otherwise the bot won't be able to find the action
+
+
+Webhooks
+~~~~~~~~
+- The endpoints for the webhooks changed. All webhooks are now at
+  ``/webhooks/CHANNEL_NAME/webhook``. For example, the webhook
+  to receive facebook messages on a local instance is now
+  ``http://localhost:5005/webhooks/facebook/webhook``.
+- format of the ``credentials.yml`` used in the ``run`` and ``server`` scripts
+  has changed to allow for multiple channels in one file:
+
+  The new format now contains the channels name first, e.g. for facebook:
+
+  .. code-block:: yaml
+
+     facebook:
+       verify: "rasa-bot"
+       secret: "3e34709d01ea89032asdebfe5a74518"
+       page-access-token: "EAAbHPa7H9rEBAAuFk4Q3gPKbDedQnx4djJJ1JmQ7CAqO4iJKrQcNT0wtD"
+
+Changes to Input and Output Channels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- ``rasa_core.channels.direct`` output channel package removed.
+  ``CollectingOutputChannel`` moved to ``rasa_core.channels.channel``
+- ``HttpInputComponent`` renamed to ``InputChannel`` & moved to
+  ``rasa_core.channels.channel.InputChannel``
+- If you wrote your own custom input channel, make sure to inherit from
+  ``InputChannel`` instead of ``HttpInputComponent.
+- removed package ``rasa_core.channels.rest``,
+  please use ``rasa_core.channels.RestInput`` instead
+- remove file input channel ``rasa_core.channels.file.FileInputChannel``
+- signature of ``agent.handle_channel`` got renamed
+  and the signature changed. here is an up to date example:
+
+  .. code-block:: python
+
+     from rasa_core.channels.facebook import FacebookInput
+
+     input_channel = FacebookInput(fb_verify="VERIFY",
+                                   fb_secret="SECRET",
+                                   fb_access_token="ACCESS_TOKEN")
+     agent.handle_channels([input_channel], port=5005, serve_forever=True)
+- If you wrote your own custom output channel, make sure to split messages
+  on double new lines if you like (the ``InputChannel`` you inherit from
+  doesn't do this anymore), e.g.:
+
+  .. code-block:: python
+
+     def send_text_message(self, recipient_id, message):
+         # type: (Text, Text) -> None
+         """Send a message through this channel."""
+
+         for message_part in message.split("\n\n"):
+           # self.send would be the actual communication to e.g. facebook
+           self.send(recipient_id, message_part)
+
 
 0.9.x to 0.10.0
 ---------------
@@ -59,7 +131,7 @@ There have been some API changes to classes and methods:
   well as the configuration and metadata). Please make sure to retrain
   a model before trying to use it with this improved version.
 
-- loading data should be done either using
+- loading data should be done either using:
 
   .. code-block:: python
 
@@ -111,7 +183,7 @@ There have been some API changes to classes and methods:
 0.7.x to 0.8.0
 --------------
 
-- Credentials for the facebook connector changed. Instead of providing
+- Credentials for the facebook connector changed. Instead of providing:
 
   .. code-block:: yaml
 
@@ -145,7 +217,7 @@ There have been some API changes to classes and methods:
 
 - Story file format changed from ``* _intent_greet[name=Rasa]``
   to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
-  deprecated). Instead of writing
+  deprecated). Instead of writing:
 
   .. code-block:: md
 

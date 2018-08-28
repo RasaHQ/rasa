@@ -3,9 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import random
 from collections import defaultdict, deque
 
+import random
 from typing import Any, Text, List, Dict, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -14,7 +14,7 @@ from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.training.structures import StoryGraph, StoryStep
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import TrainingData, Message
 
 EDGE_NONE_LABEL = "NONE"
 
@@ -26,7 +26,7 @@ class UserMessageGenerator(object):
 
     @staticmethod
     def _create_reverse_mapping(data):
-        # type: (TrainingData) -> Dict[Text, List[Dict[Text, Any]]]
+        # type: (TrainingData) -> Dict[Dict[Text, Any], List[Message]]
         """Create a mapping from intent to messages
 
         This allows a faster intent lookup."""
@@ -63,7 +63,7 @@ class UserMessageGenerator(object):
         return structured_info.get("text")
 
 
-def _fingerprint_node(G, node, max_history):
+def _fingerprint_node(graph, node, max_history):
     """Fingerprint a node in a graph.
 
     Can be used to identify nodes that are similar and can be merged within the
@@ -86,7 +86,7 @@ def _fingerprint_node(G, node, max_history):
         candidate = candidates.pop()
         last = candidate[-1]
         empty = True
-        for _, succ_node in G.out_edges(last):
+        for _, succ_node in graph.out_edges(last):
             next_candidate = candidate[:]
             next_candidate.append(succ_node)
             # if the path is already long enough, we add it to the results,
@@ -99,20 +99,22 @@ def _fingerprint_node(G, node, max_history):
             empty = False
         if empty:
             continuations.append(candidate)
-    return {" - ".join([G.node[node]["label"]
+    return {" - ".join([graph.node[node]["label"]
                         for node in continuation])
             for continuation in continuations}
 
 
-def _incoming_edges(G, node):
-    return {(prev_node, k) for prev_node, _, k in G.in_edges(node, keys=True)}
+def _incoming_edges(graph, node):
+    return {(prev_node, k)
+            for prev_node, _, k in graph.in_edges(node, keys=True)}
 
 
-def _outgoing_edges(G, node):
-    return {(succ_node, k) for _, succ_node, k in G.out_edges(node, keys=True)}
+def _outgoing_edges(graph, node):
+    return {(succ_node, k)
+            for _, succ_node, k in graph.out_edges(node, keys=True)}
 
 
-def _outgoing_edges_are_similar(G, node_a, node_b):
+def _outgoing_edges_are_similar(graph, node_a, node_b):
     """If the outgoing edges from the two nodes are similar enough,
     it doesn't matter if you are in a or b.
 
@@ -120,36 +122,35 @@ def _outgoing_edges_are_similar(G, node_a, node_b):
     the same nodes anyways."""
 
     ignored = {node_b, node_a}
-    a_edges = {(target, k) for target, k in _outgoing_edges(G, node_a) if
+    a_edges = {(target, k) for target, k in _outgoing_edges(graph, node_a) if
                target not in ignored}
-    b_edges = {(target, k) for target, k in _outgoing_edges(G, node_b) if
+    b_edges = {(target, k) for target, k in _outgoing_edges(graph, node_b) if
                target not in ignored}
     return a_edges == b_edges or not a_edges or not b_edges
 
 
-def _nodes_are_equivalent(G, node_a, node_b, max_history):
+def _nodes_are_equivalent(graph, node_a, node_b, max_history):
     """Decides if two nodes are equivalent based on their fingerprints."""
-    return (
-        G.node[node_a]["label"] == G.node[node_b]["label"] and (
-            _outgoing_edges_are_similar(G, node_a, node_b) or
-            _incoming_edges(G, node_a) == _incoming_edges(G, node_b) or
-            _fingerprint_node(G, node_a, max_history) ==
-            _fingerprint_node(G, node_b, max_history)))
+    return (graph.node[node_a]["label"] == graph.node[node_b]["label"] and
+            (_outgoing_edges_are_similar(graph, node_a, node_b) or
+             _incoming_edges(graph, node_a) == _incoming_edges(graph, node_b) or
+             _fingerprint_node(graph, node_a, max_history) ==
+             _fingerprint_node(graph, node_b, max_history)))
 
 
-def _add_edge(G, u, v, key, label=None):
+def _add_edge(graph, u, v, key, label=None):
     """Adds an edge to the graph if the edge is not already present. Uses the
     label as the key."""
 
     if key is None or key == EDGE_NONE_LABEL:
         # Can't use `None` as a label
-        if not G.has_edge(u, v, key=EDGE_NONE_LABEL):
-            G.add_edge(u, v, key=EDGE_NONE_LABEL, label="")
-    elif not G.has_edge(u, v, key):
-        G.add_edge(u, v, key=key, label=label)
+        if not graph.has_edge(u, v, key=EDGE_NONE_LABEL):
+            graph.add_edge(u, v, key=EDGE_NONE_LABEL, label="")
+    elif not graph.has_edge(u, v, key):
+        graph.add_edge(u, v, key=key, label=label)
 
 
-def _merge_equivalent_nodes(G, max_history):
+def _merge_equivalent_nodes(graph, max_history):
     """Searches for equivalent nodes in the graph and merges them."""
 
     changed = True
@@ -158,30 +159,33 @@ def _merge_equivalent_nodes(G, max_history):
     # the graph doesn't change anymore
     while changed:
         changed = False
-        remaining_node_ids = [n for n in G.nodes() if n > 0]
+        remaining_node_ids = [n for n in graph.nodes() if n > 0]
         for idx, i in enumerate(remaining_node_ids):
-            if G.has_node(i):
+            if graph.has_node(i):
                 for j in remaining_node_ids[
                          idx + 1:]:  # assumes node equivalence is cumulative
-                    if G.has_node(j) and \
-                            _nodes_are_equivalent(G, i, j, max_history):
+                    if graph.has_node(j) and \
+                            _nodes_are_equivalent(graph, i, j, max_history):
                         changed = True
                         # moves all outgoing edges to the other node
-                        j_outgoing_edges = list(G.out_edges(j, keys=True,
-                                                            data=True))
+                        j_outgoing_edges = list(graph.out_edges(j, keys=True,
+                                                                data=True))
                         for _, succ_node, k, d in j_outgoing_edges:
-                            _add_edge(G, i, succ_node, k, d.get("label"))
-                            G.remove_edge(j, succ_node)
+                            _add_edge(graph, i, succ_node, k, d.get("label"))
+                            graph.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
-                        j_incoming_edges = list(G.in_edges(j, keys=True,
-                                                           data=True))
+                        j_incoming_edges = list(graph.in_edges(j, keys=True,
+                                                               data=True))
                         for prev_node, _, k, d in j_incoming_edges:
-                            _add_edge(G, prev_node, i, k, d.get("label"))
-                            G.remove_edge(prev_node, j)
-                        G.remove_node(j)
+                            _add_edge(graph, prev_node, i, k, d.get("label"))
+                            graph.remove_edge(prev_node, j)
+                        graph.remove_node(j)
 
 
-def _replace_edge_labels_with_nodes(G, next_id, interpreter, nlu_training_data,
+def _replace_edge_labels_with_nodes(graph,
+                                    next_id,
+                                    interpreter,
+                                    nlu_training_data,
                                     fontsize):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
@@ -196,7 +200,7 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, nlu_training_data,
     else:
         message_generator = None
 
-    edges = list(G.edges(keys=True, data=True))
+    edges = list(graph.edges(keys=True, data=True))
     for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
@@ -205,22 +209,26 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, nlu_training_data,
             else:
                 label = d.get("label", k)
             next_id += 1
-            G.remove_edge(s, e, k)
-            G.add_node(next_id, label=label, style="filled",
-                       fillcolor="lightblue", shape="box", fontsize=fontsize)
-            G.add_edge(s, next_id)
-            G.add_edge(next_id, e)
+            graph.remove_edge(s, e, k)
+            graph.add_node(next_id,
+                           label=label,
+                           style="filled",
+                           fillcolor="lightblue",
+                           shape="box",
+                           fontsize=fontsize)
+            graph.add_edge(s, next_id)
+            graph.add_edge(next_id, e)
 
 
-def persist_graph(G, output_file):
+def persist_graph(graph, output_file):
     """Plots the graph and persists it into a file. Uses graphviz (needs to
     be installed!)."""
     import networkx as nx
 
-    A = nx.nx_agraph.to_agraph(G)  # convert to a graphviz graph
-    A.layout("dot", args="-Goverlap=false -Gsplines=true -Gconcentrate=true "
-                         "-Gfontname=typewriter")
-    A.draw(output_file)
+    expg = nx.nx_agraph.to_agraph(graph)  # convert to a graphviz graph
+    expg.layout("dot", args="-Goverlap=false -Gsplines=true "
+                            "-Gconcentrate=true -Gfontname=typewriter")
+    expg.draw(output_file)
 
 
 def visualize_stories(
@@ -263,12 +271,12 @@ def visualize_stories(
     import networkx as nx
 
     story_graph = StoryGraph(story_steps)
-    G = nx.MultiDiGraph()
+    graph = nx.MultiDiGraph()
     next_node_idx = 0
-    G.add_node(0, label="START", fillcolor="green", style="filled",
-               fontsize=fontsize)
-    G.add_node(-1, label="END", fillcolor="red", style="filled",
-               fontsize=fontsize)
+    graph.add_node(0, label="START", fillcolor="green", style="filled",
+                   fontsize=fontsize)
+    graph.add_node(-1, label="END", fillcolor="red", style="filled",
+                   fontsize=fontsize)
 
     g = TrainingDataGenerator(story_graph, domain,
                               use_story_concatenation=False,
@@ -283,10 +291,10 @@ def visualize_stories(
             if isinstance(el, UserUttered):
                 message = interpreter.parse(el.text)
             elif (isinstance(el, ActionExecuted) and
-                    el.action_name != ACTION_LISTEN_NAME):
+                  el.action_name != ACTION_LISTEN_NAME):
                 next_node_idx += 1
-                G.add_node(next_node_idx, label=el.action_name,
-                           fontsize=fontsize)
+                graph.add_node(next_node_idx, label=el.action_name,
+                               fontsize=fontsize)
 
                 if message:
                     message_key = message.get("intent", {}).get("name", None)
@@ -295,22 +303,22 @@ def visualize_stories(
                     message_key = None
                     message_label = None
 
-                _add_edge(G, current_node, next_node_idx, message_key,
+                _add_edge(graph, current_node, next_node_idx, message_key,
                           message_label)
                 current_node = next_node_idx
 
                 message = None
         if message:
-            G.add_edge(current_node, -1,
-                       key=EDGE_NONE_LABEL, label=message)
+            graph.add_edge(current_node, -1,
+                           key=EDGE_NONE_LABEL, label=message)
         else:
-            G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
+            graph.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
 
     if should_merge_nodes:
-        _merge_equivalent_nodes(G, max_history)
-    _replace_edge_labels_with_nodes(G, next_node_idx, interpreter,
+        _merge_equivalent_nodes(graph, max_history)
+    _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
                                     nlu_training_data, fontsize)
 
     if output_file:
-        persist_graph(G, output_file)
-    return G
+        persist_graph(graph, output_file)
+    return graph

@@ -1,3 +1,5 @@
+.. _events:
+
 Events
 ======
 List of all the events the dialogue system is able to handle and supports.
@@ -70,6 +72,14 @@ ConversationResumed
 .. literalinclude:: ../../rasa_core/events/__init__.py
    :pyobject: ConversationResumed.apply_to
 
+
+FollowupAction
+^^^^^^^^^^^^^^
+
+.. autoclass:: rasa_core.events.FollowupAction
+
+.. literalinclude:: ../../rasa_core/events/__init__.py
+   :pyobject: FollowupAction.apply_to
 
 
 Automatically tracked events

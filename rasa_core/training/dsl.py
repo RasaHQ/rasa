@@ -10,26 +10,19 @@ import logging
 import os
 import re
 import warnings
-
-from rasa_nlu import utils as nlu_utils
-from typing import Optional, List, Text, Any, Dict
+from typing import Optional, List, Text, Any, Dict, AnyStr
 
 from rasa_core import utils
 from rasa_core.events import (
     ActionExecuted, UserUttered, Event, SlotSet)
+from rasa_core.exceptions import StoryParseError
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
     Checkpoint, STORY_START, StoryStep,
     GENERATED_CHECKPOINT_PREFIX, GENERATED_HASH_LENGTH)
+from rasa_nlu import utils as nlu_utils
 
 logger = logging.getLogger(__name__)
-
-
-class StoryParseError(Exception):
-    """Raised if there is an error while parsing the story file."""
-
-    def __init__(self, message):
-        self.message = message
 
 
 class StoryStepBuilder(object):
@@ -40,6 +33,8 @@ class StoryStepBuilder(object):
         self.start_checkpoints = []
 
     def add_checkpoint(self, name, conditions):
+        # type: (Text, Optional[Dict[Text, Any]]) -> None
+
         # Depending on the state of the story part this
         # is either a start or an end check point
         if not self.current_steps:
@@ -208,7 +203,7 @@ class StoryFileReader(object):
             return "", {}
 
     def process_lines(self, lines):
-        # type: (List[Text]) -> List[StoryStep]
+        # type: (List[AnyStr]) -> List[StoryStep]
 
         for idx, line in enumerate(lines):
             line_num = idx + 1
@@ -237,7 +232,7 @@ class StoryFileReader(object):
                                    "Line Content: '{}'"
                                    "".format(line_num, line))
             except Exception as e:
-                msg = "Error in line {}: {}".format(line_num, e.message)
+                msg = "Error in line {}: {}".format(line_num, e)
                 logger.error(msg, exc_info=1)
                 raise ValueError(msg)
         self._add_current_stories_to_result()
@@ -273,7 +268,7 @@ class StoryFileReader(object):
         self.current_step_builder = StoryStepBuilder(name)
 
     def add_checkpoint(self, name, conditions):
-        # type: (Text) -> None
+        # type: (Text, Optional[Dict[Text, Any]]) -> None
 
         # Ensure story part already has a name
         if not self.current_step_builder:
@@ -322,6 +317,11 @@ class StoryFileReader(object):
         if parsed is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "
                                   "nor an action).".format(event_name))
+        if self.current_step_builder is None:
+            raise StoryParseError("Failed to handle event '{}'. There is no "
+                                  "started story block available. "
+                                  "".format(event_name))
+
         if isinstance(parsed, list):
             for p in parsed:
                 self.current_step_builder.add_event(p)

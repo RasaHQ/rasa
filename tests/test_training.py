@@ -48,7 +48,6 @@ def test_story_visualization_with_merging(default_domain):
 def test_training_script(tmpdir):
     train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
                          tmpdir.strpath,
-                         use_online_learning=False,
                          nlu_model_path=None,
                          kwargs={})
     assert True
@@ -57,7 +56,6 @@ def test_training_script(tmpdir):
 def test_training_script_without_max_history_set(tmpdir):
     train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
                          tmpdir.strpath,
-                         use_online_learning=False,
                          nlu_model_path=None,
                          max_history=None,
                          kwargs={})
@@ -72,7 +70,6 @@ def test_training_script_with_max_history_set(tmpdir):
     max_history = 3
     train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
                          tmpdir.strpath,
-                         use_online_learning=False,
                          nlu_model_path=None,
                          max_history=max_history,
                          kwargs={})
