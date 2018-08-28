@@ -3,15 +3,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import datetime
-import json
-import logging
 import time
-import uuid
-
-import jsonpickle
-import typing
 from builtins import str
+
+import json
+import jsonpickle
+import logging
+import typing
+import uuid
+from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa_core import utils
@@ -455,7 +455,7 @@ class ReminderScheduled(Event):
 
         :param action_name: name of the action to be scheduled
         :param trigger_date_time: date at which the execution of the action
-                                  should be triggered
+                                  should be triggered (either utc or with tz)
         :param name: id of the reminder. if there are multiple reminders with
                      the same id only the last will be run
         :param kill_on_user_message: ``True`` means a user message before the
@@ -469,7 +469,8 @@ class ReminderScheduled(Event):
         super(ReminderScheduled, self).__init__(timestamp)
 
     def __hash__(self):
-        return hash(self.name)
+        return hash((self.action_name, self.trigger_date_time.isoformat(),
+                     self.kill_on_user_message, self.name))
 
     def __eq__(self, other):
         if not isinstance(other, ReminderScheduled):
@@ -500,14 +501,8 @@ class ReminderScheduled(Event):
         return d
 
     @classmethod
-    def _parse_trigger_time(cls, date_time):
-        return datetime.datetime.strptime(date_time[:19], '%Y-%m-%dT%H:%M:%S')
-
-    @classmethod
     def _from_story_string(cls, parameters):
-        logger.info("Reminders will be ignored during training, "
-                    "which should be ok.")
-        trigger_date_time = cls._parse_trigger_time(parameters.get("date_time"))
+        trigger_date_time = parser.parse(parameters.get("date_time"))
         return ReminderScheduled(parameters.get("action"),
                                  trigger_date_time,
                                  parameters.get("name", None),

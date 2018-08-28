@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import pytz
 from datetime import datetime
 import copy
 
@@ -49,8 +50,8 @@ from rasa_core.events import (
     (BotUttered("my_text", "my_data"),
      BotUttered("my_other_test", "my_other_data")),
 
-    (ReminderScheduled("my_action", "now"),
-     ReminderScheduled("my_other_action", "now")),
+    (ReminderScheduled("my_action", datetime.now()),
+     ReminderScheduled("my_other_action", datetime.now())),
 ])
 def test_event_has_proper_implementation(one_event, another_event):
     # equals tests
@@ -95,7 +96,9 @@ def test_event_has_proper_implementation(one_event, another_event):
 
     BotUttered("my_text", "my_data"),
 
-    ReminderScheduled("my_action", datetime.now())
+    ReminderScheduled("my_action", datetime.now()),
+
+    ReminderScheduled("my_action", datetime.now(pytz.timezone('US/Central')))
 ])
 def test_dict_serialisation(one_event):
     evt_dict = one_event.as_dict()

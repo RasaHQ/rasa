@@ -32,6 +32,7 @@ install_requires = [
     "six~=1.0",
     "redis~=2.0",
     "fakeredis~=0.10.0",
+    "pymongo~=3.5",
     "future~=0.16",
     "numpy~=1.13",
     "typing~=3.0",
@@ -62,6 +63,7 @@ install_requires = [
     "gevent~=1.2",
     "pyyaml~=3.12",
     "pytz~=2018.4",
+    "python-dateutil~=2.7",
     "rasa_nlu~=0.13.0",
     "rasa_core_sdk~=0.11.0",
 ]

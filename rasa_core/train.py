@@ -3,21 +3,21 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import argparse
-
 from builtins import str
+
+import argparse
 
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
-from rasa_core.policies import FallbackPolicy
-from rasa_core.training import online
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
+from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.training import online
 
 
 def create_argument_parser():
@@ -25,11 +25,21 @@ def create_argument_parser():
 
     parser = argparse.ArgumentParser(
             description='trains a dialogue model')
-    parser.add_argument(
+
+    # either the user can pass in a story file, or the data will get
+    # downloaded from a url
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
             '-s', '--stories',
             type=str,
-            required=True,
             help="file or folder containing the training stories")
+    group.add_argument(
+            '--url',
+            type=str,
+            help="If supplied, downloads a story file from a URL and "
+                 "trains on it. Fetches the data by sending a GET request "
+                 "to the supplied URL.")
+
     parser.add_argument(
             '-o', '--out',
             type=str,
@@ -181,8 +191,13 @@ if __name__ == '__main__':
         "debug_plots": cmdline_args.debug_plots
     }
 
+    if cmdline_args.url:
+        stories = utils.download_file_from_url(cmdline_args.url)
+    else:
+        stories = cmdline_args.stories
+
     a = train_dialogue_model(cmdline_args.domain,
-                             cmdline_args.stories,
+                             stories,
                              cmdline_args.out,
                              cmdline_args.nlu,
                              cmdline_args.endpoints,

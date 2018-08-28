@@ -210,6 +210,11 @@ def create_app(agent,
 
         # retrieve tracker and set to requested state
         tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        if not tracker:
+            return Response("Could not retrieve tracker. Most likely "
+                            "because there is no domain set on the agent.",
+                            status=503)
+
         if until_time is not None:
             tracker = tracker.travel_back_in_time(float(until_time))
 
