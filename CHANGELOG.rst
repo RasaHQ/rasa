@@ -20,6 +20,16 @@ Removed
 
 Fixed
 -----
+
+[0.13.2] - 2018-08-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- added information about migrating the CRF component from 0.12 to 0.13
+
+Fixed
+-----
 - pipelines containing the ``EmbeddingIntentClassifier`` are not trained in a
 separate thread, as this may lead to freezing during training
 
