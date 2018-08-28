@@ -165,11 +165,12 @@ class MongoTrackerStore(TrackerStore):
 
         self._ensure_indices()
 
-    def _conversations(self):
+    @property
+    def conversations(self):
         return self.db[self.collection]
 
     def _ensure_indices(self):
-        self._conversations().create_index("sender_id")
+        self.conversations.create_index("sender_id")
 
     def save(self, tracker, timeout=None):
         if self.event_broker:
@@ -178,13 +179,13 @@ class MongoTrackerStore(TrackerStore):
         state = tracker.current_state(should_include_events=True,
                                       should_ignore_restarts=True)
 
-        self._conversations().update_one(
+        self.conversations.update_one(
                 {"sender_id": tracker.sender_id},
                 {"$set": state},
                 upsert=True)
 
     def retrieve(self, sender_id):
-        stored = self._conversations().find_one({"sender_id": sender_id})
+        stored = self.conversations.find_one({"sender_id": sender_id})
         if stored is not None:
             if self.domain:
                 return DialogueStateTracker.from_dict(sender_id,
@@ -199,4 +200,4 @@ class MongoTrackerStore(TrackerStore):
             return None
 
     def keys(self):
-        return [c["sender_id"] for c in self._conversations().find()]
+        return [c["sender_id"] for c in self.conversations.find()]
