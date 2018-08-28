@@ -165,7 +165,7 @@ class EmbeddingPolicy(Policy):
         # flag if to use the same embeddings for user and bot
         try:
             self.share_embedding = \
-                self.featurizer.state_featurizer.share_vocab
+                self.featurizer.state_featurizer.use_shared_vocab
         except AttributeError:
             self.share_embedding = False
 
@@ -482,7 +482,7 @@ class EmbeddingPolicy(Policy):
                 memory_sequence_length=real_length,
                 normalize=True,
                 probability_fn=tf.identity,
-                # we only attend to memory up to a current time
+                # we only attend to memory up to a current time step
                 # it does not affect alignments, but
                 # is important for interpolation gate
                 score_mask_value=0
@@ -512,7 +512,7 @@ class EmbeddingPolicy(Policy):
             attn_shift_range = None
 
         if self.attn_after_rnn:
-            # create attantion over previous bot actions
+            # create attention over previous bot actions
             attn_mech_after_rnn = self._create_attn_mech(emb_prev_act,
                                                          real_length)
 
@@ -641,12 +641,12 @@ class EmbeddingPolicy(Policy):
         else:
             return []
 
-    def _emb_dial_from(self, cell_output):
+    def _embed_dialogue_from(self, cell_output):
         """Extract or calculate dialogue level embedding from cell_output"""
 
         if self.attn_after_rnn:
             # embedding layer is inside rnn cell
-            emb_dial = cell_output[:, :, :self.embed_dim]
+            embed_dialogue = cell_output[:, :, :self.embed_dim]
 
             # extract additional debug tensors
             num_add = TimeAttentionWrapper.additional_output_size()
@@ -660,14 +660,14 @@ class EmbeddingPolicy(Policy):
                               (self.embed_dim + self.embed_dim):-num_add]
         else:
             # add embedding layer to rnn cell output
-            emb_dial = self._create_embed(cell_output[:, :, :self.rnn_size],
+            embed_dialogue = self._create_embed(cell_output[:, :, :self.rnn_size],
                                           name='out')
 
             if self.attn_before_rnn:
                 # extract additional debug tensors
                 self.attn_embed = cell_output[:, :, self.rnn_size:]
 
-        return emb_dial
+        return embed_dialogue
 
     def _create_tf_dial_embed(self, emb_utter, emb_slots, emb_prev_act, mask,
                               emb_for_no_intent, emb_for_no_action,
@@ -693,7 +693,7 @@ class EmbeddingPolicy(Policy):
                 scope='rnn_decoder'
         )
 
-    def _tf_sim(self, emb_dial, emb_act, mask):
+    def _tf_sim(self, embed_dialogue, emb_act, mask):
         """Define similarity
             this method has two roles:
             - calculate similarity between
@@ -709,15 +709,15 @@ class EmbeddingPolicy(Policy):
 
         if self.similarity_type == 'cosine':
             # normalize embedding vectors for cosine similarity
-            emb_dial = tf.nn.l2_normalize(emb_dial, -1)
+            embed_dialogue = tf.nn.l2_normalize(embed_dialogue, -1)
             emb_act = tf.nn.l2_normalize(emb_act, -1)
 
         if self.similarity_type in {'cosine', 'inner'}:
 
-            if len(emb_dial.shape) == len(emb_act.shape):
+            if len(embed_dialogue.shape) == len(emb_act.shape):
                 # calculate similarity between
                 # two embedding vectors of the same size
-                sim = tf.reduce_sum(emb_dial * emb_act, -1, keepdims=True)
+                sim = tf.reduce_sum(embed_dialogue * emb_act, -1, keepdims=True)
                 bin_sim = tf.where(sim > (self.mu_pos - self.mu_neg) / 2.0,
                                    tf.ones_like(sim),
                                    tf.zeros_like(sim))
@@ -728,7 +728,7 @@ class EmbeddingPolicy(Policy):
             else:
                 # calculate similarity with several
                 # embedded actions for the loss
-                sim = tf.reduce_sum(tf.expand_dims(emb_dial, -2) *
+                sim = tf.reduce_sum(tf.expand_dims(embed_dialogue, -2) *
                                     emb_act, -1)
                 sim *= tf.expand_dims(mask, 2)
 
@@ -919,7 +919,7 @@ class EmbeddingPolicy(Policy):
                 self._alignments_history_from(final_state)
 
             sim_rnn_to_max = self._sim_rnn_to_max_from(cell_output)
-            self.dial_embed = self._emb_dial_from(cell_output)
+            self.dial_embed = self._embed_dialogue_from(cell_output)
 
             # calculate similarities
             self.sim_op, sim_act = self._tf_sim(self.dial_embed,
@@ -1450,11 +1450,11 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     """Computes the attention and alignments limited by time
         for a given attention_mechanism.
 
-        Modified helper method form tensorflow."""
+        Modified helper method from tensorflow."""
 
     scores, _ = attention_mechanism(cell_output, state=attention_state)
 
-    # take only scores form current and past times
+    # take only scores from current and past times
     timed_scores = scores[:, :time + 1]
     timed_scores_state = attention_state[:, :time]
     if ignore_mask is not None:
@@ -1542,7 +1542,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 a function that picks which part of attention tensor
                 to use for copying to output, the default is `None`, which
                 turns off copying mechanism.
-                Copy inpired by: https://arxiv.org/pdf/1603.06393.pdf
+                Copy inspired by: https://arxiv.org/pdf/1603.06393.pdf
             output_attention: Python bool.  If `True`, the output at each
                 time step is the concatenated cell outputs, attention values
                 and ..., used in copy mechanism.
