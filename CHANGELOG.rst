@@ -23,6 +23,8 @@ Added
   model metadata
 - more emoji support for PY2
 - intent confidence support in RegexInterpreter
+- added paramter to train script to pull training data from an url instead
+  of a stories file
 
 Changed
 -------
