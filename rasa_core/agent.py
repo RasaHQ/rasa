@@ -65,18 +65,15 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
                   tracker_store=tracker_store,
                   action_endpoint=action_endpoint)
 
-    try:
-        _update_model_from_server(model_server, agent)
-    except RequestException as e:
-        logger.warning(
-                "Could not retrieve model from server. Connection Error.  "
-                "Running without a model. Server URL: `{}`\n".format(e))
-
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
         start_model_pulling_in_worker(model_server,
                                       wait_time_between_pulls,
                                       agent)
+    else:
+        # just pull the model once
+        _update_model_from_server(model_server, agent)
+
     return agent
 
 
