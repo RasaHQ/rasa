@@ -35,6 +35,8 @@ Changed
 - webhook URLs for the input channels have changed and need to be reset
 - deprecated using ``rasa_core.server`` as a script - use
   ``rasa_core.run --enable_api`` instead
+- collecting output channel will no properly collect events for images,
+  buttons, and attachments
 
 Removed
 -------
