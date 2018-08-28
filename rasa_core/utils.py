@@ -15,12 +15,16 @@ import os
 import re
 import requests
 import six
+import tempfile
 from hashlib import sha1
 from numpy import all, array
 from random import Random
 from requests.auth import HTTPBasicAuth
+from requests.exceptions import InvalidURL
 from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
+
+from rasa_nlu import utils as nlu_utils
 
 if six.PY2:
     # noinspection PyUnresolvedReferences
@@ -403,7 +407,6 @@ def list_routes(app):
 
 def zip_folder(folder):
     """Create an archive from a folder."""
-    import tempfile
     import shutil
 
     zipped_path = tempfile.NamedTemporaryFile(delete=False)
@@ -553,6 +556,24 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
             if is_limit_reached(num_messages, max_line_limit):
                 break
+
+
+def download_file_from_url(url):
+    # type: (Text) -> Text
+    """Download a story file from a url and persists it into a temp file.
+
+    Returns the file path of the temp file that contains the
+    downloaded content."""
+
+    if not nlu_utils.is_url(url):
+        raise InvalidURL(url)
+
+    response = requests.get(url)
+    response.raise_for_status()
+    filename = nlu_utils.create_temporary_file(response.content,
+                                               mode="w+b")
+
+    return filename
 
 
 class EndpointConfig(object):

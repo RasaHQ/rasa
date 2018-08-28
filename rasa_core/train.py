@@ -6,9 +6,6 @@ from __future__ import unicode_literals
 from builtins import str
 
 import argparse
-import requests
-from requests.exceptions import InvalidURL
-from tempfile import NamedTemporaryFile
 
 from rasa_core import utils
 from rasa_core.agent import Agent
@@ -21,7 +18,6 @@ from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.training import online
-from rasa_nlu.utils import is_url
 
 
 def create_argument_parser():
@@ -130,24 +126,6 @@ def create_argument_parser():
     return parser
 
 
-def download_data_from_url(url):
-    if not is_url(url):
-        raise InvalidURL(url)
-
-    if url is not None:
-        data_store = NamedTemporaryFile()
-        stories_file = data_store.name
-
-        response = requests.get(url)
-        response.raise_for_status()
-
-        data_store.write(response.content)
-
-        return stories_file
-    else:
-        return None
-
-
 def train_dialogue_model(domain_file, stories_file, output_path,
                          nlu_model_path=None,
                          endpoints=None,
@@ -214,7 +192,7 @@ if __name__ == '__main__':
     }
 
     if cmdline_args.url:
-        stories = download_data_from_url(cmdline_args.url)
+        stories = utils.download_file_from_url(cmdline_args.url)
     else:
         stories = cmdline_args.stories
 
