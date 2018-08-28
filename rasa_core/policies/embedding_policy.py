@@ -2077,7 +2077,7 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         Additional args:
             input_bias: float, The bias added to input gates.
             out_layer_size: (optional) integer, The number of units in
-                the additional output layer.
+                the optional additional output layer.
         """
         super(ChronoBiasLayerNormBasicLSTMCell, self).__init__(
                 num_units,
@@ -2134,9 +2134,8 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         if (not isinstance(self._keep_prob, float)) or self._keep_prob < 1:
             g = tf.nn.dropout(g, self._keep_prob, seed=self._seed)
 
-        new_c = (
-                c * tf.sigmoid(f + self._forget_bias) +
-                g * tf.sigmoid(i + self._input_bias))  # added input_bias
+        new_c = (c * tf.sigmoid(f + self._forget_bias) +
+                 g * tf.sigmoid(i + self._input_bias))  # added input_bias
 
         # do not do layer normalization on the new c,
         # because there are no trainable weights
