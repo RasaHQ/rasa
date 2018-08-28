@@ -186,9 +186,15 @@ class MongoTrackerStore(TrackerStore):
     def retrieve(self, sender_id):
         stored = self._conversations().find_one({"sender_id": sender_id})
         if stored is not None:
-            return DialogueStateTracker.from_dict(sender_id,
-                                                  stored.get("events"),
-                                                  self.domain.slots)
+            if self.domain:
+                return DialogueStateTracker.from_dict(sender_id,
+                                                      stored.get("events"),
+                                                      self.domain.slots)
+            else:
+                logger.warning("Can't recreate tracker from mongo storage "
+                               "because no domain is set. Returning `None` "
+                               "instead.")
+                return None
         else:
             return None
 
