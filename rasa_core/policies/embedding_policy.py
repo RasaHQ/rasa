@@ -359,7 +359,7 @@ class EmbeddingPolicy(Policy):
 
     # tf helpers:
     def _create_tf_nn(self, x_in, layer_sizes, droprate, layer_name_suffix):
-        """Create nn with hidden layers and name"""
+        """Create nn with hidden layers and name suffix"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         x = tf.nn.relu(x_in)
