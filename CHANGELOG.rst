@@ -71,6 +71,7 @@ Added
 
 Changed
 -------
+- renamed CRF features ``wordX`` to ``suffixX`` and ``preX`` to ``suffixX``
 - L1 and L2 regularisation defaults in ``ner_crf`` both set to 0.1
 - ``whitespace_tokenizer`` ignores punctuation ``.,!?`` before
   whitespace or end of string

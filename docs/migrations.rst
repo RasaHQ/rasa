@@ -13,6 +13,28 @@ how you can migrate from one version to another.
   Unfortunately, it is not possible to load previously trained models as
   the parameters for the tensorflow and CRF models changed.
 
+CRF model configuration
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The feature names for the features of the entity CRF have changed:
+
++------------------+------------------+
+| old feature name | new feature name |
++==================+==================+
+| pre2             | prefix2          |
++------------------+------------------+
+| pre5             | prefix5          |
++------------------+------------------+
+| word2            | suffix2          |
++------------------+------------------+
+| word3            | suffix3          |
++------------------+------------------+
+| word5            | suffix5          |
++------------------+------------------+
+
+Please change these keys in your pipeline configuration of the ``ner_crf``
+components ``features`` attribute if you use them.
+
 0.11.x to 0.12.0
 ----------------
 
