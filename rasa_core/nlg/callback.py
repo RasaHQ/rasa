@@ -30,7 +30,8 @@ def nlg_response_format_spec():
                 "type": "array",
                 "items": {"type": "object"}
             },
-            "attachment": {"type": "object"}
+            "attachment": {"type": "object"},
+            "image": {"type": "object"}
         },
     }
 
