@@ -4,6 +4,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import pytest
+
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
 from rasa_core.domain import Domain
@@ -30,8 +32,9 @@ def test_dispatcher_handle_unknown_template(default_dispatcher_collecting,
                                             default_tracker):
     default_dispatcher_collecting.utter_template("my_made_up_template",
                                                  default_tracker)
+
     collected = default_dispatcher_collecting.output_channel.latest_output()
-    assert collected['text'].startswith("Undefined utter template")
+    assert collected is None
 
 
 def test_dispatcher_template_invalid_vars():

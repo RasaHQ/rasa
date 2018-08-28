@@ -118,15 +118,19 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     @staticmethod
     def validate_response(content):
-        # type: (Dict[Text, Any]) -> bool
+        # type: (Optional[Dict[Text, Any]]) -> bool
         """Validate the NLG response. Raises exception on failure."""
 
         from jsonschema import validate
         from jsonschema import ValidationError
 
         try:
-            validate(content, nlg_response_format_spec())
-            return True
+            if content is None or content == "":
+                # means the endpoint did not want to respond with anything
+                return True
+            else:
+                validate(content, nlg_response_format_spec())
+                return True
         except ValidationError as e:
             e.message += (
                 ". Failed to validate NLG response from API, make sure your "
