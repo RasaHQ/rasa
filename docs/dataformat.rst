@@ -37,8 +37,8 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     ## regex:zipcode
     - [0-9]{5}
 
-    ## lookup:streets
-    - path/to/streets.txt
+    ## lookup:accounts
+    - path/to/accounts.txt
 
 The training data for Rasa NLU is structured into different parts:
 examples, synonyms, regex features, and lookup tables. 
