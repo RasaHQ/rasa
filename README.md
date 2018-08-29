@@ -22,14 +22,15 @@
 Rasa Core is a framework for building conversational software, which includes:
 - chatbots on Messenger
 - Slack bots
+- Microsoft Bot Framework
 - Alexa Skills
 - Google Home Actions
 
-etc. 
+etc.
 
 Rasa Core's primary purpose is to help you build contextual, layered conversations with lots of back-and-forth.
 To have a real conversation, you need to have some memory and build on things that were said earlier.
-Rasa Core lets you do that in a scalable way. 
+Rasa Core lets you do that in a scalable way.
 
 There's a lot more background information in this [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a)
 
@@ -71,13 +72,13 @@ brew install sphinx
 pip install -r dev-requirements.txt
 ```
 
-After the installation has finished, you can run and view the documentation 
+After the installation has finished, you can run and view the documentation
 locally using
 ```
 make livedocs
 ```
 
-Visit the local version of the docs at http://localhost:8000 in your browser. 
+Visit the local version of the docs at http://localhost:8000 in your browser.
 You can now change the docs locally and the web page will automatically reload
 and apply your changes.
 

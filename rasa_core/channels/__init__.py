@@ -18,4 +18,5 @@ BUILTIN_CHANNELS = {
     'twilio',
     'cmdline',
     'rasa',
+    'botframework',
 }

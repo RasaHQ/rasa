@@ -82,7 +82,7 @@ def create_argument_parser():
             '-c', '--connector',
             default="cmdline",
             choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
-                     "twilio"],
+                     "twilio", "botframework"],
             help="service to connect to")
     parser.add_argument(
             '--enable_api',
@@ -117,6 +117,8 @@ def _raise_missing_credentials_exception(channel):
         channel_doc_link = "mattermost"
     elif channel == "twilio":
         channel_doc_link = "twilio"
+    elif channel == "botframework":
+        channel_doc_link = "botframework"
     else:
         channel_doc_link = ""
 
@@ -190,6 +192,11 @@ def _create_single_channel(channel, credentials):
                 credentials.get("account_sid"),
                 credentials.get("auth_token"),
                 credentials.get("twilio_number"))
+    elif channel == "botframework":
+        from rasa_core.channels.botframework import BotFrameworkInput
+        return BotFrameworkInput(
+                credentials.get("bf_id"),
+                credentials.get("bf_secret"))
     elif channel == "rasa":
         from rasa_core.channels.rasa_chat import RasaChatInput
 
