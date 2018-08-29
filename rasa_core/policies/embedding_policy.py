@@ -441,7 +441,8 @@ class EmbeddingPolicy(Policy):
                 layer_name_suffix=layer_name_suffix
         )
         return tf.stop_gradient(
-                self._create_embed(y_for_no_action, layer_name_suffix=layer_name_suffix))
+                self._create_embed(y_for_no_action,
+                                   layer_name_suffix=layer_name_suffix))
 
     def _create_rnn_cell(self):
         """Create one rnn cell"""
