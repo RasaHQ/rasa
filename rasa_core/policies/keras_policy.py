@@ -8,8 +8,9 @@ import json
 import logging
 import os
 import warnings
-import typing
+import tensorflow as tf
 
+import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
@@ -19,11 +20,6 @@ from rasa_core.featurizers import TrackerFeaturizer
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
-
-try:
-    import tensorflow as tf
-except ImportError:
-    tf = None
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +40,6 @@ class KerasPolicy(Policy):
                  current_epoch=0  # type: int
                  ):
         # type: (...) -> None
-        self._check_tensorflow()
         super(KerasPolicy, self).__init__(featurizer)
 
         self.rnn_size = self.defaults['rnn_size']
