@@ -36,7 +36,7 @@ def generate_lookup_regex(file_path):
             if '' in new_elements:
                 new_elements.remove('')
             lookup_elements += new_elements
-    regex_string = '(?i)(' + '|'.join(lookup_elements) + ')'
+    regex_string = '(?i)(\\b' + '\\b|\\b'.join(lookup_elements) + '\\b)'
 
     """log info about the lookup table"""
     num_words = len(lookup_elements)
