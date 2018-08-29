@@ -24,13 +24,16 @@ General
   TL;DR these are the most important surface changes. But if you have
   a second please take a minute to read all of them.
 
+- If you have custom actions, you now need to run a separate server to execute
+  them. If your actions are written in python (in a file called actions.py) you
+  can do this by running ``python -m rasa_core_sdk.endpoint --actions actions``
+  and specifying the action endpoint in the ``endpoints.yml``
+  For more information please read :ref:`customactions`.
 - For your custom actions, the imports have changed from
   ``from rasa_core.actions import Action`` to ``from rasa_core_sdk import Action`` and
   from ``from rasa_core.events import *`` to ``from rasa_core_sdk.events import *``
-- If you do have custom actions, you need to run a separate server for your
-  actions: please read :ref:`customactions`.
-- domain actions list now needs to always contain the actions names instead of
-  the classpath
+- The actions list in the domain now needs to always contain the actions names
+  instead of the classpath (e.g. change ``actions.ActionExample`` to ``action_example``)
 - utter templates that should be used as actions, now need to start with
   ``utter_``, otherwise the bot won't be able to find the action
 
