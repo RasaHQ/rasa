@@ -1607,6 +1607,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             likelihood_fn: (optional) A `callable`.
                 A method to perform likelihood calculation to
                 filter time step in copy mechanism.
+                Returns a tuple of binary likelihood and likelihood
             tensor_not_to_copy: (optional) A Tensor.
                 A tensor, which shouldn't be copied from previous time steps
 
