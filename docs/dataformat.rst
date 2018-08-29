@@ -236,11 +236,11 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
-Lookup tables in the form of external files can also be specified in the training data.  The externally supplied lookup tables must be in a comma-separated format.  For example, ``data/lookup_tables/streets.txt`` may contain
+Lookup tables in the form of external files can also be specified in the training data.  The externally supplied lookup tables must be in a comma-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
 
-    main street, washington ave, elm street, ...
+    tacos, beef, mapo tofu, burrito, lettuce wrap, ...
 
-And can be loaded in along with ``data/lookup_tables/cities.txt`` as:
+And can be loaded as:
 
 .. code-block:: json
 
@@ -248,18 +248,14 @@ And can be loaded in along with ``data/lookup_tables/cities.txt`` as:
         "rasa_nlu_data": {
             "lookup_tables": [
                 {
-                    "name": "streets",
-                    "file_path": "data/lookup_tables/streets.txt"
-                },
-                {
-                    "name": "cities",
-                    "file_path": "data/lookup_tables/cities.txt"
+                    "name": "plates",
+                    "file_path": "data/test/lookup_tables/plates.txt"
                 }
             ]
         }
     }
 
-When lookup tables are supplied in training data, the contents are combined into a large, case-insensitive regex pattern that looks for exact matches in the training examples.  These regexes match over multiple tokens, so ``main street`` would match ``meet me at 1223 main street at 5 pm`` as ``[0 0 0 0 1 1 0 0 0]``.  These regexes are processed identically to the regular regex patterns directly specified in the training data.  A few lookup tables for common entities are specified in ``rasa_nlu/data/lookups/``
+When lookup tables are supplied in training data, the contents are combined into a large, case-insensitive regex pattern that looks for exact matches in the training examples.  These regexes match over multiple tokens, so ``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``.  These regexes are processed identically to the regular regex patterns directly specified in the training data.
 
 .. note::
     For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.
