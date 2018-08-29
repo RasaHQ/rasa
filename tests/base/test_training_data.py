@@ -139,6 +139,7 @@ def test_lookup_table_json():
     plate_str = '(?i)(\\btacos\\b|\\bbeef\\b|\\bmapo tofu\\b|\\bburrito\\b|\\blettuce wrap\\b)'
     assert td_lookup.regex_features[1]['pattern'] == plate_str
 
+
 def test_lookup_table_md():
     td_lookup = training_data.load_data('data/test/lookup_tables/lookup_table.md')
     assert td_lookup.regex_features[0]['name'] == 'drinks'
