@@ -64,7 +64,11 @@ class SklearnIntentClassifier(Component):
 
         # We try to find a good number of cross folds to use during
         # intent training, this specifies the max number of folds
-        "max_cross_validation_folds": 5
+        "max_cross_validation_folds": 5,
+
+        # Scoring function used for evaluating the hyper parameters
+        # This can be a name or a function (cfr GridSearchCV doc for more info)
+        "scoring_function": "f1_weighted"
     }
 
     def __init__(self,
@@ -154,7 +158,7 @@ class SklearnIntentClassifier(Component):
                             param_grid=tuned_parameters,
                             n_jobs=num_threads,
                             cv=cv_splits,
-                            scoring='f1_weighted',
+                            scoring=self.component_config['scoring_function'],
                             verbose=1)
 
     def process(self, message, **kwargs):

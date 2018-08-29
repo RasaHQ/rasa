@@ -358,7 +358,7 @@ class DataRouter(object):
                     fixed_model_name=model_name,
                     storage=self.remote_storage)
                 model_dir = os.path.basename(os.path.normpath(model_path))
-                self.project_store[project].update(model_dir)
+                training_callback(model_dir)
                 return model_dir
             except TrainingException as e:
                 logger.warning(e)
