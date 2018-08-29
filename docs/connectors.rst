@@ -378,6 +378,42 @@ The arguments for the ``handle_channels`` are the input channels and
 the port. The endpoint for receiving twilio channel messages
 is ``/webhooks/twilio/webhook``.
 
+.. _botframework_connector:
+
+Microsoft Bot Framework Setup
+--------------
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``BotFrameworkInput`` instance provides a flask blueprint for creating
+a webserver. This lets you seperate the exact endpoints and implementation
+from your webserver creation logic.
+
+Code to create a Microsoft Bot Framework-compatible webserver looks like this:
+
+.. code-block:: python
+    :linenos:
+
+    from rasa_core.channels import HttpInputChannel
+    from rasa_core.channels.botframework import BotFrameworkInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load("dialogue", interpreter=RegexInterpreter())
+
+    input_channel = BotFrameworkInput(
+      bf_id="YOUR_BOT_FRAMEWORK_ID", # you get this from your Bot Framework account
+      bf_secret="YOUR_BOT_FRAMEWORK_SECRET" # also from your Bot Framework account
+    )
+
+    agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
+
+The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
+The default endpoint for receiving messages is ``/api/messages``, so the example above above would
+listen for messages on ``/app/api/messages``.
+
 .. _ngrok:
 
 Using Ngrok For Local Testing
