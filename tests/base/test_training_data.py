@@ -133,17 +133,17 @@ def test_markdown_single_sections():
 def test_lookup_table_json():
     td_lookup = training_data.load_data('data/test/lookup_tables/lookup_table.json')
     assert td_lookup.regex_features[0]['name'] == 'drinks'
-    assert td_lookup.regex_features[0]['pattern'] == '(?i)(mojito|lemonade|sweet berry wine|tea|club mate)'
+    assert td_lookup.regex_features[0]['pattern'] == '(?i)(\\bmojito\\b|\\blemonade\\b|\\bsweet berry wine\\b|\\btea\\b|\\bclub mate\\b)'
     assert td_lookup.regex_features[1]['name'] == 'plates'
-    assert td_lookup.regex_features[1]['pattern'] == '(?i)(tacos|beef|mapo tofu|burrito|lettuce wrap)'
+    assert td_lookup.regex_features[1]['pattern'] == '(?i)(\\btacos\\b|\\bbeef\\b|\\bmapo tofu\\b|\\bburrito\\b|\\blettuce wrap\\b)'
 
 
 def test_lookup_table_md():
     td_lookup = training_data.load_data('data/test/lookup_tables/lookup_table.md')
     assert td_lookup.regex_features[0]['name'] == 'drinks'
-    assert td_lookup.regex_features[0]['pattern'] == '(?i)(mojito|lemonade|sweet berry wine|tea|club mate)'
+    assert td_lookup.regex_features[0]['pattern'] == '(?i)(\\bmojito\\b|\\blemonade\\b|\\bsweet berry wine\\b|\\btea\\b|\\bclub mate\\b)'
     assert td_lookup.regex_features[1]['name'] == 'plates'
-    assert td_lookup.regex_features[1]['pattern'] == '(?i)(tacos|beef|mapo tofu|burrito|lettuce wrap)'
+    assert td_lookup.regex_features[1]['pattern'] == '(?i)(\\btacos\\b|\\bbeef\\b|\\bmapo tofu\\b|\\bburrito\\b|\\blettuce wrap\\b)'
 
 
 def test_repeated_entities():
