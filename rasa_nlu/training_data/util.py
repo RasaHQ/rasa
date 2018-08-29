@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 
 import logging
 import sys
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,9 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
 def generate_lookup_regex(file_path):
     """creates a regex out of the contents of a lookup table file"""
     lookup_elements = []
-    with open(file_path, 'r') as f:
-        for l in f.readlines():
-            new_elements = [e.strip() for e in l.split(',')]
+    with io.open(file_path, 'r') as f:
+        for line in f:
+            new_elements = [e.strip() for e in line.split(',')]
             if '' in new_elements:
                 new_elements.remove('')
             lookup_elements += new_elements
