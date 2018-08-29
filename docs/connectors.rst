@@ -37,10 +37,11 @@ channels:
 
 .. _facebook_connector:
 
-Facebook Messenger Setup
-------------------------
+Facebook Setup
+--------------
 
-You first need to retrieve some credentials, once you have them you can
+You first need to retrieve some credentials to connect to the
+Facebook Messenger. Once you have them you can
 **either** attach the input channel running the provided ``rasa_core.run``
 script, or you can attach it in your own code.
 
@@ -377,6 +378,76 @@ Code to create a Twilio-compatible webserver looks like this:
 The arguments for the ``handle_channels`` are the input channels and
 the port. The endpoint for receiving twilio channel messages
 is ``/webhooks/twilio/webhook``.
+
+
+.. _rocketchat_connector:
+
+RocketChat Setup
+----------------
+
+Getting Credentials
+^^^^^^^^^^^^^^^^^^^
+
+**How to set up Rocket.Chat:**
+
+ 1. Create a user that will be used to post messages and set its
+    credentials at credentials file.
+ 2. Create a Rocket.Chat outgoing webhook by logging as admin to
+    Rocket.Chat and going to
+    **Administration > Integrations > New Integration**.
+ 3. Select **Outgoing Webhook**.
+ 4. Set **Event Trigger** section to value **Message Sent**.
+ 5. Fill out the details including the channel you want the bot
+    listen to. Optionally, it is possible to set the
+    **Trigger Words** section with ``@yourbotname`` so that way it
+    doesn't trigger on everything that is said.
+ 6. Set your **URLs** section to the Rasa URL where you have your
+    webhook running, in Core or your public address with
+    ``/webhooks/rocketchat/webhook``, e.g.:
+    ``http://test.example.com/webhooks/rocketchat/webhook``.
+
+For more information on the Rocket.Chat Webhooks, go to
+https://rocket.chat/docs/administrator-guides/integrations/
+
+
+Using run script
+^^^^^^^^^^^^^^^^
+
+If you want to connect to the rocketchat input channel using the run
+script, e.g. using:
+
+.. code-block:: bash
+
+  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+      --port 5002 --credentials credentials.yml
+
+you need to supply a ``credentials.yml`` with the following content:
+
+.. code-block:: yaml
+
+   rocketchat:
+     user: "yourbotname"
+     password: "YOUR_PASSWORD"
+     server_url: "https://demo.rocket.chat"
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``RocketChatInput`` instance provides a flask blueprint for creating
+a webserver. This lets you separate the exact endpoints and implementation
+from your webserver creation logic.
+
+Code to create a RocketChat-compatible webserver looks like this:
+
+.. literalinclude:: ../tests/test_channels.py
+   :pyobject: test_rocketchat_channel
+   :lines: 2-
+   :end-before: END DOC INCLUDE
+
+The arguments for the ``handle_channels`` are the input channels and
+the port. The endpoint for receiving mattermost channel messages
+is ``/webhooks/rocketchat/webhook``. This is the url you should add in the
+RocketChat outgoing webhook.
 
 .. _botframework_connector:
 

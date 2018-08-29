@@ -176,6 +176,40 @@ def test_botframework_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
+def test_rocketchat_channel():
+    from rasa_core.channels.rocketchat import RocketChatInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+    input_channel = RocketChatInput(
+            # your bots rocket chat user name
+            user="yourbotname",
+            # the password for your rocket chat bots account
+            password="YOUR_PASSWORD",
+            # url where your rocket chat instance is running
+            server_url="https://demo.rocket.chat"
+    )
+
+    # set serve_forever=False if you want to keep the server running
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+    # END DOC INCLUDE
+    # the above marker marks the end of the code snipped included
+    # in the docs
+    try:
+        assert s.started
+        routes_list = utils.list_routes(s.application)
+        assert routes_list.get("/webhooks/rocketchat/").startswith(
+                'rocketchat_webhook.health')
+        assert routes_list.get("/webhooks/rocketchat/webhook").startswith(
+                'rocketchat_webhook.webhook')
+    finally:
+        s.stop()
+
+
+# USED FOR DOCS - don't rename without changing in the docs
 def test_telegram_channel():
     # telegram channel will try to set a webhook, so we need to mock the api
 

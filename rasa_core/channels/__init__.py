@@ -19,4 +19,5 @@ BUILTIN_CHANNELS = {
     'cmdline',
     'rasa',
     'botframework',
+    'rocketchat',
 }
