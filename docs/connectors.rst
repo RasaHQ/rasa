@@ -383,6 +383,24 @@ is ``/webhooks/twilio/webhook``.
 Microsoft Bot Framework Setup
 --------------
 
+Using run script
+^^^^^^^^^^^^^^^^
+If you want to connect to the botframework input channel using the
+run script, e.g. using:
+
+.. code-block:: bash
+
+ python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+     --port 5002 --credentials credentials.yml
+
+you need to supply a ``credentials.yml`` with the following content:
+
+.. code-block:: yaml
+
+   botframework:
+     app_id: "MICROSOFT_APP_ID"
+     app_password: "MICROSOFT_APP_PASSWORD"
+
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -392,27 +410,15 @@ from your webserver creation logic.
 
 Code to create a Microsoft Bot Framework-compatible webserver looks like this:
 
-.. code-block:: python
-    :linenos:
+.. literalinclude:: ../tests/test_channels.py
+   :pyobject: test_botframework_channel
+   :lines: 2-
+   :end-before: END DOC INCLUDE
 
-    from rasa_core.channels import HttpInputChannel
-    from rasa_core.channels.botframework import BotFrameworkInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load("dialogue", interpreter=RegexInterpreter())
-
-    input_channel = BotFrameworkInput(
-      bf_id="YOUR_BOT_FRAMEWORK_ID", # you get this from your Bot Framework account
-      bf_secret="YOUR_BOT_FRAMEWORK_SECRET" # also from your Bot Framework account
-    )
-
-    agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
-
-The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
-The default endpoint for receiving messages is ``/api/messages``, so the example above above would
-listen for messages on ``/app/api/messages``.
+The arguments for the ``handle_channels`` are the input channels and
+the port. The endpoint for receiving botframework channel messages
+is ``/webhooks/botframework/webhook``. This is the url you should
+add in your microsoft bot service configuration.
 
 .. _ngrok:
 

@@ -32,11 +32,11 @@ class BotFramework(OutputChannel):
     def name(cls):
         return "botframework"
 
-    def __init__(self, bf_id, bf_secret, conversation, bot_id, service_url):
+    def __init__(self, app_id, app_password, conversation, bot_id, service_url):
         # type: (Text, Text, Dict[Text], Text, Text) -> None
 
-        self.bf_id = bf_id
-        self.bf_secret = bf_secret
+        self.app_id = app_id
+        self.app_password = app_password
         self.conversation = conversation
         self.global_uri = "{}v3/".format(service_url)
         self.bot_id = bot_id
@@ -46,8 +46,8 @@ class BotFramework(OutputChannel):
             uri = "{}/{}".format(MICROSOFT_OAUTH2_URL, MICROSOFT_OAUTH2_PATH)
             grant_type = 'client_credentials'
             scope = 'https://api.botframework.com/.default'
-            payload = {'client_id': self.bf_id,
-                       'client_secret': self.bf_secret,
+            payload = {'client_id': self.app_id,
+                       'client_secret': self.app_password,
                        'grant_type': grant_type,
                        'scope': scope}
 
@@ -138,32 +138,32 @@ class BotFrameworkInput(InputChannel):
     def name(cls):
         return "botframework"
 
-    def __init__(self, bf_id, bf_secret):
+    def __init__(self, app_id, app_password):
         # type: (Text, Text) -> None
         """Create a Bot Framework input channel.
 
-        :param bf_id: Bot Framework's API id
-        :param bf_secret: Bot Framework application secret
+        :param app_id: Bot Framework's API id
+        :param app_password: Bot Framework application secret
         """
 
-        self.bf_id = bf_id
-        self.bf_secret = bf_secret
+        self.app_id = app_id
+        self.app_password = app_password
 
     def blueprint(self, on_new_message):
 
-        bf_webhook = Blueprint('bf_webhook', __name__)
+        botframework_webhook = Blueprint('botframework_webhook', __name__)
 
-        @bf_webhook.route("/", methods=['GET'])
+        @botframework_webhook.route("/", methods=['GET'])
         def health():
             return jsonify({"status": "ok"})
 
-        @bf_webhook.route("/webhook", methods=['POST'])
+        @botframework_webhook.route("/webhook", methods=['POST'])
         def webhook():
             postdata = request.get_json(force=True)
 
             try:
                 if postdata["type"] == "message":
-                    out_channel = BotFramework(self.bf_id, self.bf_secret,
+                    out_channel = BotFramework(self.app_id, self.app_password,
                                                postdata["conversation"],
                                                postdata["recipient"],
                                                postdata["serviceUrl"])
@@ -181,4 +181,4 @@ class BotFrameworkInput(InputChannel):
 
             return "success"
 
-        return bf_webhook
+        return botframework_webhook

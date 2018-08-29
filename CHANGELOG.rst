@@ -18,6 +18,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- added microsoft botframework input and output channels
 - script parameter ``--quiet`` to set the log level to ``WARNING``
 - information about the python version a model has been trained with to the
   model metadata
