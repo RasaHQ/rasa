@@ -260,6 +260,10 @@ When lookup tables are supplied in training data, the contents are combined into
 .. note::
     For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.
 
+.. note::
+    One must be careful with what kind of data is present in the lookup table.  For example if some of the elements are matched with commonly occuring words that are not the entity you wish to extract, this will limit the effectiveness of this method.  Therefore, try to use lookup tables only when you have a list of unambiguous phrases or tokens that you wish to match and make sure you filter out potentially problematic elements.
+
+
 Organization
 ------------
 

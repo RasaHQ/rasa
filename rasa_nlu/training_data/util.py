@@ -27,7 +27,7 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
                        "with {1}->{2} during merge".format(context_str, text, entity_synonyms[text], syn))
 
 
-def generate_lookup_regex(file_path, print_data_size=True):
+def generate_lookup_regex(file_path):
     """creates a regex out of the contents of a lookup table file"""
     lookup_elements = []
     with open(file_path, 'r') as f:
