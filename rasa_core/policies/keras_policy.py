@@ -8,20 +8,20 @@ import json
 import logging
 import os
 import warnings
-import typing
+import tensorflow as tf
 
+import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
 from rasa_core.policies import Policy
 from rasa_core.featurizers import TrackerFeaturizer
 
-logger = logging.getLogger(__name__)
-
 if typing.TYPE_CHECKING:
-    import keras
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
+
+logger = logging.getLogger(__name__)
 
 
 class KerasPolicy(Policy):
@@ -34,22 +34,22 @@ class KerasPolicy(Policy):
 
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
-                 model=None,  # type: Optional[keras.models.Sequential]
-                 graph=None,  # type: Optional[keras.backend.tf.Graph]
+                 model=None,  # type: Optional[tf.keras.models.Sequential]
+                 graph=None,  # type: Optional[tf.Graph]
+                 session=None,  # type: Optional[tf.Session]
                  current_epoch=0  # type: int
                  ):
         # type: (...) -> None
-
         super(KerasPolicy, self).__init__(featurizer)
 
         self.rnn_size = self.defaults['rnn_size']
 
-        if KerasPolicy.is_using_tensorflow() and not graph:
-            from keras.backend import tf
-            self.graph = tf.get_default_graph()
-        else:
-            self.graph = graph
         self.model = model
+        # by default keras uses default tf graph and global tf session
+        # we are going to either load them or create them in train(...)
+        self.graph = graph
+        self.session = session
+
         self.current_epoch = current_epoch
 
     @property
@@ -59,22 +59,21 @@ class KerasPolicy(Policy):
         else:
             return None
 
-    @staticmethod
-    def is_using_tensorflow():
-        # noinspection PyProtectedMember
-        from keras.backend import _BACKEND
-        return _BACKEND == "tensorflow"
+    def _build_model(self, num_features, num_actions, max_history_len):
+        warnings.warn("Deprecated, use `model_architecture` instead.",
+                      DeprecationWarning, stacklevel=2)
+        return
 
     def model_architecture(
             self,
             input_shape,  # type: Tuple[int, int]
             output_shape  # type: Tuple[int, Optional[int]]
     ):
-        # type: (...) -> keras.models.Sequential
+        # type: (...) -> tf.keras.models.Sequential
         """Build a keras model and return a compiled model."""
 
-        from keras.models import Sequential
-        from keras.layers import \
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import \
             Masking, LSTM, Dense, TimeDistributed, Activation
 
         # Build Model
@@ -138,25 +137,29 @@ class KerasPolicy(Policy):
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
-        if self.model is None:
-            self.model = self.model_architecture(shuffled_X.shape[1:],
-                                                 shuffled_y.shape[1:])
+        self.graph = tf.Graph()
+        with self.graph.as_default():
+            self.session = tf.Session()
+            with self.session.as_default():
+                if self.model is None:
+                    self.model = self.model_architecture(shuffled_X.shape[1:],
+                                                         shuffled_y.shape[1:])
 
-        validation_split = kwargs.get("validation_split", 0.0)
-        logger.info("Fitting model with {} total samples and a validation "
-                    "split of {}".format(training_data.num_examples(),
-                                         validation_split))
-        # filter out kwargs that cannot be passed to fit
-        params = self._get_valid_params(self.model.fit, **kwargs)
+                validation_split = kwargs.get("validation_split", 0.0)
+                logger.info("Fitting model with {} total samples and a validation "
+                            "split of {}".format(training_data.num_examples(),
+                                                 validation_split))
+                # filter out kwargs that cannot be passed to fit
+                params = self._get_valid_params(self.model.fit, **kwargs)
 
-        self.model.fit(shuffled_X, shuffled_y, **params)
-        # the default parameter for epochs in keras fit is 1
-        self.current_epoch = kwargs.get("epochs", 1)
-        logger.info("Done fitting keras policy model")
+                self.model.fit(shuffled_X, shuffled_y, **params)
+                # the default parameter for epochs in keras fit is 1
+                self.current_epoch = kwargs.get("epochs", 1)
+                logger.info("Done fitting keras policy model")
 
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
-        import numpy as np
+        """Continues training an already trained policy."""
 
         # takes the new example labelled and learns it
         # via taking `epochs` samples of n_batch-1 parts of the training data,
@@ -167,24 +170,19 @@ class KerasPolicy(Policy):
         batch_size = kwargs.get('batch_size', 5)
         epochs = kwargs.get('epochs', 50)
 
-        num_samples = batch_size - 1
-        num_prev_examples = len(training_trackers) - 1
-        for _ in range(epochs):
-            sampled_idx = np.random.choice(range(num_prev_examples),
-                                           replace=False,
-                                           size=min(num_samples,
-                                                    num_prev_examples))
-            trackers = [training_trackers[i]
-                        for i in sampled_idx] + training_trackers[-1:]
-            training_data = self.featurize_for_training(trackers,
-                                                        domain)
-            # fit to one extra example using updated trackers
-            self.model.fit(training_data.X, training_data.y,
-                           epochs=self.current_epoch + 1,
-                           batch_size=len(training_data.y),
-                           verbose=0,
-                           initial_epoch=self.current_epoch)
-            self.current_epoch += 1
+        with self.graph.as_default(), self.session.as_default():
+            for _ in range(epochs):
+                training_data = self._training_data_for_continue_training(
+                        batch_size, training_trackers, domain)
+
+                # fit to one extra example using updated trackers
+                self.model.fit(training_data.X, training_data.y,
+                               epochs=self.current_epoch + 1,
+                               batch_size=len(training_data.y),
+                               verbose=0,
+                               initial_epoch=self.current_epoch)
+
+                self.current_epoch += 1
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -192,10 +190,7 @@ class KerasPolicy(Policy):
         # noinspection PyPep8Naming
         X = self.featurizer.create_X([tracker], domain)
 
-        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
-            with self.graph.as_default():
-                y_pred = self.model.predict(X, batch_size=1)
-        else:
+        with self.graph.as_default(), self.session.as_default():
             y_pred = self.model.predict(X, batch_size=1)
 
         if len(y_pred.shape) == 2:
@@ -203,69 +198,52 @@ class KerasPolicy(Policy):
         elif len(y_pred.shape) == 3:
             return y_pred[0, -1].tolist()
 
-    def _persist_configuration(self, config_file):
-        model_config = {
-            "arch": "keras_arch.json",
-            "weights": "keras_weights.h5",
-            "epochs": self.current_epoch}
-
-        utils.dump_obj_as_json_to_file(config_file, model_config)
-
     def persist(self, path):
         # type: (Text) -> None
 
         if self.model:
             self.featurizer.persist(path)
 
-            arch_file = os.path.join(path, 'keras_arch.json')
-            weights_file = os.path.join(path, 'keras_weights.h5')
+            meta = {"model": "keras_model.h5",
+                    "epochs": self.current_epoch}
+
             config_file = os.path.join(path, 'keras_policy.json')
+            utils.dump_obj_as_json_to_file(config_file, meta)
 
+            model_file = os.path.join(path, meta['model'])
             # makes sure the model directory exists
-            utils.create_dir_for_file(weights_file)
-            utils.dump_obj_as_str_to_file(arch_file, self.model.to_json())
-
-            self._persist_configuration(config_file)
-            self.model.save_weights(weights_file, overwrite=True)
+            utils.create_dir_for_file(model_file)
+            with self.graph.as_default(), self.session.as_default():
+                self.model.save(model_file, overwrite=True)
         else:
             warnings.warn("Persist called without a trained model present. "
                           "Nothing to persist then!")
 
     @classmethod
-    def _load_model_arch(cls, path, meta):
-        from keras.models import model_from_json
-
-        arch_file = os.path.join(path, meta["arch"])
-        if os.path.isfile(arch_file):
-            with io.open(arch_file) as f:
-                model = model_from_json(f.read())
-            return model
-        else:
-            return None
-
-    @classmethod
-    def _load_weights_for_model(cls, path, model, meta):
-        weights_file = os.path.join(path, meta["weights"])
-        if model is not None and os.path.exists(weights_file):
-            model.load_weights(weights_file)
-        return model
-
-    @classmethod
     def load(cls, path):
         # type: (Text) -> KerasPolicy
+        from tensorflow.keras.models import load_model
+
         if os.path.exists(path):
             featurizer = TrackerFeaturizer.load(path)
             meta_path = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_path):
                 with io.open(meta_path) as f:
                     meta = json.loads(f.read())
-                model_arch = cls._load_model_arch(path, meta)
-                return cls(
-                        featurizer=featurizer,
-                        model=cls._load_weights_for_model(path,
-                                                          model_arch,
-                                                          meta),
-                        current_epoch=meta["epochs"])
+
+                model_file = os.path.join(path, meta["model"])
+
+                graph = tf.Graph()
+                with graph.as_default():
+                    session = tf.Session()
+                    with session.as_default():
+                        model = load_model(model_file)
+
+                return cls(featurizer=featurizer,
+                           model=model,
+                           graph=graph,
+                           session=session,
+                           current_epoch=meta["epochs"])
             else:
                 return cls(featurizer=featurizer)
         else:

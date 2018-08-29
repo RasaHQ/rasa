@@ -92,6 +92,30 @@ class Policy(object):
         raise NotImplementedError("Policy must have the capacity "
                                   "to train.")
 
+    def _training_data_for_continue_training(
+            self,
+            batch_size,  # type: int
+            training_trackers,  # type: List[DialogueStateTracker]
+            domain  # type: Domain
+    ):
+        # type: (...) -> DialogueTrainingData
+        """Creates training_data for `continue_training` by
+            taking the new labelled example training_trackers[-1:]
+            and inserting it in batch_size-1 parts of the old training data,
+        """
+        import numpy as np
+
+        num_samples = batch_size - 1
+        num_prev_examples = len(training_trackers) - 1
+
+        sampled_idx = np.random.choice(range(num_prev_examples),
+                                       replace=False,
+                                       size=min(num_samples,
+                                                num_prev_examples))
+        trackers = [training_trackers[i]
+                    for i in sampled_idx] + training_trackers[-1:]
+        return self.featurize_for_training(trackers, domain)
+
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
         """Continues training an already trained policy.
