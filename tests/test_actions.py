@@ -172,7 +172,7 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
     channel = default_dispatcher_collecting.output_channel
     assert channel.messages == [
         {"text": "test text", "recipient_id": "my-sender",
-         'data': [{"title": "cheap", "payload": "cheap"}]},
+         "buttons": [{"title": "cheap", "payload": "cheap"}]},
         {"text": "hey there None!", "recipient_id": "my-sender"}]
 
 

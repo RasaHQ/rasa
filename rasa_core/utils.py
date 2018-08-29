@@ -577,6 +577,11 @@ def download_file_from_url(url):
     return filename
 
 
+def remove_none_values(obj):
+    """Remove all keys that store a `None` value."""
+    return {k: v for k, v in obj.items() if v is not None}
+
+
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 

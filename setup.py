@@ -56,6 +56,7 @@ install_requires = [
     "python-telegram-bot~=10.0",
     "twilio~=6.0",
     "mattermostwrapper~=2.0",
+    "rocketchat_API~=0.6.0",
     "colorhash~=1.0",
     "pika~=0.11.2",
     "jsonschema~=2.6",

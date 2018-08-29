@@ -18,6 +18,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- added microsoft botframework input and output channels
+- added rocket chat input and output channels
 - script parameter ``--quiet`` to set the log level to ``WARNING``
 - information about the python version a model has been trained with to the
   model metadata
@@ -35,6 +37,8 @@ Changed
 - webhook URLs for the input channels have changed and need to be reset
 - deprecated using ``rasa_core.server`` as a script - use
   ``rasa_core.run --enable_api`` instead
+- collecting output channel will no properly collect events for images,
+  buttons, and attachments
 
 Removed
 -------

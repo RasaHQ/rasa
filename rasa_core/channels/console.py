@@ -3,20 +3,33 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import json
+from builtins import input
 
+import json
 import requests
 import six
-from builtins import input
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
+from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
 
 def print_bot_output(message, color=utils.bcolors.OKBLUE):
-    utils.print_color(message.get("text"), color)
+    if "text" in message:
+        utils.print_color(message.get("text"), color)
+
+    if "image" in message:
+        utils.print_color("Image: " + message.get("image"), color)
+
+    if "attachment" in message:
+        utils.print_color("Attachment: " + message.get("attachment"), color)
+
+    if "buttons" in message:
+        for idx, button in enumerate(message.get("buttons")):
+            button_str = button_to_string(button, idx)
+            utils.print_color(button_str, color)
 
 
 def get_cmd_input():

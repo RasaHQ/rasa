@@ -17,7 +17,7 @@ def test_dispatcher_utter_attachment(default_dispatcher_collecting):
     default_dispatcher_collecting.utter_attachment("http://my-attachment")
     collected = default_dispatcher_collecting.output_channel.latest_output()
     assert {'recipient_id': 'my-sender',
-            'text': 'Image: http://my-attachment'} == collected
+            'image': 'http://my-attachment'} == collected
 
 
 def test_dispatcher_utter_template(default_dispatcher_collecting,
@@ -74,7 +74,7 @@ def test_dispatcher_utter_response(default_dispatcher_collecting):
     # image only message
     assert collected[1] == {
         "recipient_id": "my-sender",
-        "text": "Image: https://i.imgur.com/nGF1K8f.jpg"}
+        "image": "https://i.imgur.com/nGF1K8f.jpg"}
 
     # text & image combined - will result in two messages
     assert collected[2] == {
@@ -82,7 +82,7 @@ def test_dispatcher_utter_response(default_dispatcher_collecting):
         "text": "look at this"}
     assert collected[3] == {
         "recipient_id": "my-sender",
-        "text": "Image: https://i.imgur.com/T5xVo.jpg"}
+        "image": "https://i.imgur.com/T5xVo.jpg"}
 
 
 def test_dispatcher_utter_buttons(default_dispatcher_collecting):
@@ -94,7 +94,7 @@ def test_dispatcher_utter_buttons(default_dispatcher_collecting):
     collected = default_dispatcher_collecting.output_channel.messages
     assert len(collected) == 1
     assert collected[0]['text'] == "my message"
-    assert collected[0]['data'] == [
+    assert collected[0]['buttons'] == [
         {'payload': u'/btn1', 'title': u'Btn1'},
         {'payload': u'/btn2', 'title': u'Btn2'}
     ]
@@ -109,7 +109,7 @@ def test_dispatcher_utter_buttons_from_domain_templ(default_tracker):
     dispatcher.utter_template("utter_greet", default_tracker)
     assert len(bot.messages) == 1
     assert bot.messages[0]['text'] == "Hey! How are you?"
-    assert bot.messages[0]['data'] == [
+    assert bot.messages[0]['buttons'] == [
         {'payload': 'great', 'title': 'great'},
         {'payload': 'super sad', 'title': 'super sad'}
     ]
@@ -128,12 +128,12 @@ def test_dispatcher_utter_custom_message(default_dispatcher_collecting):
     collected = default_dispatcher_collecting.output_channel.messages
     assert len(collected) == 2
     assert collected[0]['text'] == "hey there : welcome"
-    assert collected[0]['data'] == [
+    assert collected[0]['buttons'] == [
         {'payload': u'/btn1', 'title': u'Btn1'},
         {'payload': u'/btn2', 'title': u'Btn2'}
     ]
     assert collected[1]['text'] == "another title : another subtitle"
-    assert collected[1]['data'] == [
+    assert collected[1]['buttons'] == [
         {'payload': u'/btn3', 'title': u'Btn3'},
         {'payload': u'/btn4', 'title': u'Btn4'}
     ]

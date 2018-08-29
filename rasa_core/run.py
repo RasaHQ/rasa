@@ -82,7 +82,7 @@ def create_argument_parser():
             '-c', '--connector',
             default="cmdline",
             choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
-                     "twilio"],
+                     "twilio", "botframework", "rocketchat"],
             help="service to connect to")
     parser.add_argument(
             '--enable_api',
@@ -107,26 +107,13 @@ def read_endpoints(endpoint_file):
 
 
 def _raise_missing_credentials_exception(channel):
-    if channel == "facebook":
-        channel_doc_link = "facebook-messenger"
-    elif channel == "slack":
-        channel_doc_link = "slack"
-    elif channel == "telegram":
-        channel_doc_link = "telegram"
-    elif channel == "mattermost":
-        channel_doc_link = "mattermost"
-    elif channel == "twilio":
-        channel_doc_link = "twilio"
-    else:
-        channel_doc_link = ""
-
     raise Exception("To use the {} input channel, you need to "
                     "pass a credentials file using '--credentials'. "
                     "The argument should be a file path pointing to"
                     "a yml file containing the {} authentication"
                     "information. Details in the docs: "
                     "{}/connectors/#{}-setup".
-                    format(channel, channel, DOCS_BASE_URL, channel_doc_link))
+                    format(channel, channel, DOCS_BASE_URL, channel))
 
 
 def _create_external_channels(channel, credentials_file):
@@ -190,6 +177,17 @@ def _create_single_channel(channel, credentials):
                 credentials.get("account_sid"),
                 credentials.get("auth_token"),
                 credentials.get("twilio_number"))
+    elif channel == "botframework":
+        from rasa_core.channels.botframework import BotFrameworkInput
+        return BotFrameworkInput(
+                credentials.get("app_id"),
+                credentials.get("app_password"))
+    elif channel == "rocketchat":
+        from rasa_core.channels.rocketchat import RocketChatInput
+        return RocketChatInput(
+                credentials.get("user"),
+                credentials.get("password"),
+                credentials.get("server_url"))
     elif channel == "rasa":
         from rasa_core.channels.rasa_chat import RasaChatInput
 
