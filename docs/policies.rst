@@ -152,17 +152,17 @@ and the training is run here:
    :pyobject: KerasPolicy.train
 
 You can implement the model of your choice by overriding these methods,
-or initialize ``KerasPolicy`` with already defined ``keras model``.
+or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
 
 Embedding policy
 ----------------
 
-This policy has predefined architecture, which comprises the following steps:
+This policy has a pre-defined architecture, which comprises the following steps:
     - apply dense layers to create embeddings for user intents, entities and system actions including previous actions and slots;
     - use the embeddings of previous user inputs as a user memory and embeddings of previous system actions as a system memory;
     - concatenate user input, previous system action and slots embeddings for current time into an input vector to rnn;
-    - using user and previous system action embeddings from the input vector calculate attention probabilities over the user and system memories
+    - using user and previous system action embeddings from the input vector, calculate attention probabilities over the user and system memories
       (for system memory, this policy uses `NTM mechanism <https://arxiv.org/abs/1410.5401>`_ with attention by location);
     - sum the user embedding and user attention vector and feed it and the embeddings of the slots as an input to an LSTM cell;
     - apply a dense layer to the output of the LSTM to get a raw recurrent embedding of a dialogue;
@@ -174,9 +174,9 @@ This policy has predefined architecture, which comprises the following steps:
     - for each LSTM time step, calculate the similarity between the dialogue embedding and embedded system actions.
       This step is based on the starspace idea from: `<https://arxiv.org/abs/1709.03856>`_.
 
-It is recommended to use ``LabelTokenizerSingleStateFeaturizer`` (see :ref:`featurization` for details).
+.. note:: This policy only works with ``FullDialogueTrackerFeaturizer(state_featurizer)``.
 
-.. note:: This policy only works with ``FullDialogueTrackerFeaturizer``.
+It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)`` (see :ref:`featurization` for details).
 
 **Configuration**:
 
@@ -184,18 +184,17 @@ It is recommended to use ``LabelTokenizerSingleStateFeaturizer`` (see :ref:`feat
 
     .. note::
 
-        Pass appropriate ``epochs`` number to ``agent.train(...)`` method,
+        Pass an appropriate ``epochs`` number to ``agent.train(...)`` method,
         otherwise the policy will be trained only for ``1`` epoch. Since this is embedding based policy,
-        it requires large number of epochs, which depends on complexity of the training data and whether
-        attention was turned on or not.
+        it requires a large number of epochs, which depends on the complexity of the training data and whether attention is used or not.
 
-    The main feature of this policy is **attention** mechanism over previous user input and system actions.
-    **Attention is turned off by default**, in order to turn it on, configure the following parameters:
-        - ``attn_before_rnn`` if ``true`` the algorithm will use attention mechanism over previous user input, default ``false``;
+    The main feature of this policy is an **attention** mechanism over previous user input and system actions.
+    **Attention is turned on by default**, in order to turn it off, configure the following parameters:
+        - ``attn_before_rnn`` if ``true`` the algorithm will use attention mechanism over previous user input, default ``true``;
         - ``attn_after_rnn`` if ``true`` the algorithm will use attention mechanism over previous system actions
-          and will be able to copy previously executed action together with LSTM's hidden state from its history, default ``false``;
+          and will be able to copy previously executed action together with LSTM's hidden state from its history, default ``true``;
         - ``sparse_attention`` if ``true`` ``sparsemax`` will be used instead of ``softmax`` for attention probabilities, default ``false``;
-        - ``attn_shift_range`` the range of allowed location-based attention shifts for system memory, see `<https://arxiv.org/abs/1410.5401>`_ for details;
+        - ``attn_shift_range`` the range of allowed location-based attention shifts for system memory (``attn_after_rnn``), see `<https://arxiv.org/abs/1410.5401>`_ for details;
 
     .. note:: Attention requires larger values of ``epochs`` and takes longer to train. But it can learn more complicated and nonlinear behaviour.
 
