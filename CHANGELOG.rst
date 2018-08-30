@@ -12,11 +12,11 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 
- - Added command line argument for evaluate script allowing to plot separately
-   confidence distributions for wrong and correct predictions in one same histogram.
-
 Changed
 -------
+
+- Changed evaluate behaviour to plot two histogram bars per bin.
+  Plotting confidence of right predictions in green and wrong in red.
 
 Removed
 -------

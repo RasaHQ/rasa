@@ -83,13 +83,12 @@ Furthermore, it creates a confusion matrix for you to see which
 intents are mistaken for which others.
 Samples which have not been predicted correctly are logged and saved to a file 
 called ``errors.json`` for easier debugging. 
-Finally, the evaluation script creates a histogram of the confidence distribution for all predictions. 
-Improving the quality of your training data will move the histogram bars to the right.
-By default the histogram will show the confidence distribution of all predictions regardless
-of the prediction being correct or wrong.
-If you want to visualize the confidence distributions for wrong predictions and
-correct predictions as separate bars of the histogram, you can do so by passing the following
-flag to the evaluation script: ``--dual_histogram``.
+Finally, the evaluation script creates a histogram of the confidence distribution for all predictions,
+separating the confidence of wrong and correct predictions in different bars of the histogram.
+Improving the quality of your training data will move the green histogram bars
+(confidence of the correct predictions) to the right and the red histogram bars
+(confidence of wrong predictions) to the left.
+
 
 .. note::
     A confusion matrix will **only** be created if you are evaluating a model on a test set.
