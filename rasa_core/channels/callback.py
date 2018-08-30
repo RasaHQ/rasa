@@ -24,10 +24,10 @@ class CallbackOutput(CollectingOutputChannel):
         # type: (EndpointConfig) -> None
 
         self.callback_endpoint = endpoint
-        super(CallbackOutput).__init__()
+        super(CallbackOutput, self).__init__()
 
     def _persist_message(self, message):
-        super(CallbackOutput)._persist_message(message)
+        super(CallbackOutput, self)._persist_message(message)
 
         r = self.callback_endpoint.request("post",
                                            content_type="application/json",
