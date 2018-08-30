@@ -170,7 +170,7 @@ class MessageProcessor(object):
                 if (isinstance(e, ReminderScheduled) and
                         e.name == reminder_event.name):
                     return False
-                elif isinstance(e, UserUttered):
+                elif isinstance(e, UserUttered) and e.text:
                     return True
             return True  # tracker has probably been restarted
 
