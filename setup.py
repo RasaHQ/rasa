@@ -20,7 +20,8 @@ tests_requires = [
     "pytest-cov",
     "pytest-twisted<1.6",
     "treq",
-    "responses~=0.9.0"
+    "responses~=0.9.0",
+    "httpretty~=0.9.0",
 ]
 
 install_requires = [
