@@ -10,6 +10,7 @@ from threading import Thread
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable
 
 from rasa_core import utils
+from rasa_core.constants import DOCS_BASE_URL
 
 try:
     from urlparse import urljoin
@@ -72,6 +73,10 @@ class InputChannel(object):
         """Every input channel needs a name to identify it."""
         return cls.__name__
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        return cls()
+
     def url_prefix(self):
         return self.name()
 
@@ -83,6 +88,17 @@ class InputChannel(object):
         incoming routes it registered for."""
         raise NotImplementedError(
                 "Component listener needs to provide blueprint.")
+
+    @classmethod
+    def raise_missing_credentials_exception(cls):
+        raise Exception("To use the {} input channel, you need to "
+                        "pass a credentials file using '--credentials'. "
+                        "The argument should be a file path pointing to"
+                        "a yml file containing the {} authentication"
+                        "information. Details in the docs: "
+                        "{}/connectors/#{}-setup".
+                        format(cls.name(), cls.name(),
+                               DOCS_BASE_URL, cls.name()))
 
 
 class OutputChannel(object):
@@ -239,6 +255,9 @@ class QueueOutputChannel(CollectingOutputChannel):
     def __init__(self, message_queue=None):
         # type: (Queue) -> None
         self.messages = Queue() if not message_queue else message_queue
+
+    def latest_output(self):
+        raise NotImplemented("A queue doesn't allow to peek at messages.")
 
     def _persist_message(self, message):
         self.messages.put(message)

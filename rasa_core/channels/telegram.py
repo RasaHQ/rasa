@@ -46,14 +46,16 @@ class TelegramOutput(Bot, OutputChannel):
         """
         if button_type == "inline":
             button_list = [[InlineKeyboardButton(s["title"],
-                            callback_data=s["payload"]) for s in buttons]]
+                                                 callback_data=s["payload"])
+                            for s in buttons]]
             reply_markup = InlineKeyboardMarkup(button_list)
-            
+
         elif button_type == "vertical":
             button_list = [[InlineKeyboardButton(s["title"],
-                            callback_data=s["payload"])] for s in buttons]
+                                                 callback_data=s["payload"])]
+                           for s in buttons]
             reply_markup = InlineKeyboardMarkup(button_list)
-            
+
         elif button_type == "custom":
             button_list = []
             for bttn in buttons:
@@ -79,6 +81,15 @@ class TelegramInput(InputChannel):
     @classmethod
     def name(cls):
         return "telegram"
+
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("access_token"),
+                   credentials.get("verify"),
+                   credentials.get("webhook_url"))
 
     def __init__(self, access_token, verify, webhook_url, debug_mode=True):
         self.access_token = access_token
@@ -115,7 +126,7 @@ class TelegramInput(InputChannel):
             else:
                 logger.warning("Webhook Setup Failed")
                 return "Invalid webhook"
-        
+
         @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
         def message():
             if request.method == 'POST':

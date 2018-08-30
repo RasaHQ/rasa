@@ -44,6 +44,16 @@ class MattermostInput(InputChannel):
     def name(cls):
         return "mattermost"
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("url"),
+                   credentials.get("team"),
+                   credentials.get("user"),
+                   credentials.get("pw"))
+
     def __init__(self, url, team, user, pw):
         # type: (Text, Text, Text, Text) -> None
         """Create a Mattermost input channel.
