@@ -452,7 +452,7 @@ RocketChat outgoing webhook.
 .. _botframework_connector:
 
 Microsoft Bot Framework Setup
---------------
+-----------------------------
 
 Using run script
 ^^^^^^^^^^^^^^^^

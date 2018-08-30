@@ -7,6 +7,8 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-0-11-0:
+
 0.10.x to 0.11.0
 ----------------
 
@@ -63,7 +65,7 @@ Changes to Input and Output Channels
 - ``HttpInputComponent`` renamed to ``InputChannel`` & moved to
   ``rasa_core.channels.channel.InputChannel``
 - If you wrote your own custom input channel, make sure to inherit from
-  ``InputChannel`` instead of ``HttpInputComponent.
+  ``InputChannel`` instead of ``HttpInputComponent``.
 - ``CollectingOutput`` channel will no properly collect events for images,
   buttons, and attachments. The content of the collected messages has changed,
   ``data`` is now called ``buttons``.
@@ -95,6 +97,8 @@ Changes to Input and Output Channels
            # self.send would be the actual communication to e.g. facebook
            self.send(recipient_id, message_part)
 
+
+.. _migration-to-0-10-0:
 
 0.9.x to 0.10.0
 ---------------
@@ -135,6 +139,7 @@ There have been some API changes to classes and methods:
       endpoint = EndpointConfig("http://localhost:500", token="mytoken")
       interpreter = RasaNLUHttpInterpreter("mymodelname", endpoint)
 
+.. _migration-to-0-9-0:
 
 0.8.x to 0.9.0
 --------------
@@ -195,6 +200,8 @@ There have been some API changes to classes and methods:
 - the ListSlot now stores a list of entities (with the same name)
   present in an utterance
 
+
+.. _migration-to-0-8-0:
 
 0.7.x to 0.8.0
 --------------

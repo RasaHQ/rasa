@@ -190,6 +190,7 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
     The main feature of this policy is an **attention** mechanism over previous user input and system actions.
     **Attention is turned on by default**, in order to turn it off, configure the following parameters:
+
         - ``attn_before_rnn`` if ``true`` the algorithm will use attention mechanism over previous user input, default ``true``;
         - ``attn_after_rnn`` if ``true`` the algorithm will use attention mechanism over previous system actions
           and will be able to copy previously executed action together with LSTM's hidden state from its history, default ``true``;
@@ -238,7 +239,8 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
    .. literalinclude:: ../rasa_core/policies/embedding_policy.py
-      :pyobject: EmbeddingPolicy.defaults
+      :start-after: # default properties (DOC MARKER - don't remove)
+      :end-before: # end default properties (DOC MARKER - don't remove)
 
    .. note::
 

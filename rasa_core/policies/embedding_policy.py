@@ -51,6 +51,7 @@ SessionData = namedtuple("SessionData", ("X", "Y", "slots",
 class EmbeddingPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
+    # default properties (DOC MARKER - don't remove)
     defaults = {
         # nn architecture
         # a list of hidden layers sizes before user embed layer
@@ -122,6 +123,7 @@ class EmbeddingPolicy(Policy):
         # how many examples to use for calculation of train accuracy
         "evaluate_on_num_examples": 100  # large values may hurt performance
     }
+    # end default properties (DOC MARKER - don't remove)
 
     @classmethod
     def _standard_featurizer(cls):
