@@ -37,7 +37,7 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     ## regex:zipcode
     - [0-9]{5}
 
-    ## lookup:accounts
+    ## lookup:accounts   <!-- lookup table of account names for improving entity extraction (savings, checking, ...) -->
     - path/to/accounts.txt
 
 The training data for Rasa NLU is structured into different parts:
