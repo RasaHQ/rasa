@@ -606,8 +606,21 @@ def run_evaluation(data_path, model_path,
                    errors_filename='errors.json',
                    confmat_filename=None,
                    intent_hist_filename=None,
-                   component_builder=None):  # pragma: no cover
-    """Evaluate intent classification and entity extraction."""
+                   component_builder=None):
+    """Wrapper for run_evaluation_cli().  May be called from the
+    python API and  will log results to the console"""
+    utils.configure_colored_logging(logging.INFO)
+    run_evaluation_cli(data_path, model_path, errors_filename, confmat_filename,
+                       intent_hist_filename, component_builder)
+
+
+def run_evaluation_cli(data_path, model_path,
+                       errors_filename='errors.json',
+                       confmat_filename=None,
+                       intent_hist_filename=None,
+                       component_builder=None):  # pragma: no cover
+    """Evaluate intent classification and entity extraction.
+    Is run when evaluate is called from command line"""
 
     # get the metadata config from the package data
     interpreter = Interpreter.load(model_path, component_builder)
@@ -830,11 +843,11 @@ def main():
             return_entity_results(entity_results.test, "test")
 
     elif cmdline_args.mode == "evaluation":
-        run_evaluation(cmdline_args.data,
-                       cmdline_args.model,
-                       cmdline_args.errors,
-                       cmdline_args.confmat,
-                       cmdline_args.histogram)
+        run_evaluation_cli(cmdline_args.data,
+                           cmdline_args.model,
+                           cmdline_args.errors,
+                           cmdline_args.confmat,
+                           cmdline_args.histogram)
 
     logger.info("Finished evaluation")
 
