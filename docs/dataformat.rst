@@ -26,6 +26,7 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     - what is my balance <!-- no entity -->
     - how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
     - how much do I have on my [savings account](source_account:savings) <!-- synonyms, method 1-->
+    - Could I pay in [yen](currency)?  <!-- entity matched by lookup table -->
 
     ## intent:greet
     - hey
@@ -37,8 +38,8 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     ## regex:zipcode
     - [0-9]{5}
 
-    ## lookup:accounts   <!-- lookup table of account names for improving entity extraction (savings, checking, ...) -->
-    - path/to/accounts.txt
+    ## lookup:currencies   <!-- lookup table of account names for improving entity extraction (USD, Yen, euro, etc.) -->
+    - path/to/currency.txt
 
 The training data for Rasa NLU is structured into different parts:
 examples, synonyms, regex features, and lookup tables. 
@@ -46,7 +47,7 @@ examples, synonyms, regex features, and lookup tables.
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up. 
 
-Lookup tables may be specified as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.
+Lookup tables may be specified as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.  For example, in this case a list of currency names is supplied so that it is easier to pick out this entity.
 
 JSON Format
 -----------
@@ -261,7 +262,7 @@ When lookup tables are supplied in training data, the contents are combined into
     For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.
 
 .. warning::
-    One must be careful with what kind of data is present in the lookup table.  For example if some of the elements are matched with commonly occuring words that are not the entity you wish to extract, this will limit the effectiveness of this method.  Therefore, try to use lookup tables only when you have a list of unambiguous phrases or tokens that you wish to match and make sure you filter out potentially problematic elements.
+    One must be careful with what kind of data is present in the lookup table.  For example if some of the elements are matched with commonly occuring words that are not the entity you wish to extract, this will limit the effectiveness of this method.  In fact, it might hurt the performance of entity recognition.  Therefore, try to use lookup tables only when you have a list of unambiguous phrases or tokens that you wish to match and make sure you filter out potentially problematic elements.
 
 
 Organization
