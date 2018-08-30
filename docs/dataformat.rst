@@ -46,7 +46,7 @@ examples, synonyms, regex features, and lookup tables.
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up. 
 
-Lookup tables may be specified as txt files containing comma-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.
+Lookup tables may be specified as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.
 
 JSON Format
 -----------
@@ -236,9 +236,14 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
-Lookup tables in the form of external files can also be specified in the training data.  The externally supplied lookup tables must be in a comma-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
+Lookup tables in the form of external files can also be specified in the training data.  The externally supplied lookup tables must be in a newline-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
 
-    tacos, beef, mapo tofu, burrito, lettuce wrap, ...
+    tacos
+    beef
+    mapo tofu
+    burrito
+    lettuce wrap
+    ...
 
 And can be loaded as:
 

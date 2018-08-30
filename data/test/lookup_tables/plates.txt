@@ -1,2 +1,5 @@
-tacos, beef, mapo tofu
-burrito, lettuce wrap
+tacos
+beef
+mapo tofu
+burrito
+lettuce wrap

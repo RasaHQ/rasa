@@ -1,2 +1,5 @@
-mojito, lemonade, sweet berry wine
-tea, club mate
+mojito
+lemonade
+sweet berry wine
+tea
+club mate

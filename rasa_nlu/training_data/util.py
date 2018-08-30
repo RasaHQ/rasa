@@ -33,10 +33,9 @@ def generate_lookup_regex(file_path):
     lookup_elements = []
     with io.open(file_path, 'r') as f:
         for line in f:
-            new_elements = [e.strip() for e in line.split(',')]
-            if '' in new_elements:
-                new_elements.remove('')
-            lookup_elements += new_elements
+            new_element = line.strip()
+            if new_element != '':
+                lookup_elements.append(new_element)
     regex_string = '(?i)(\\b' + '\\b|\\b'.join(lookup_elements) + '\\b)'
 
     """log info about the lookup table"""
