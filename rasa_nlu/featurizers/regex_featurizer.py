@@ -41,7 +41,7 @@ class RegexFeaturizer(Featurizer):
 
         super(RegexFeaturizer, self).__init__(component_config)
 
-        self.known_patterns = known_patterns if known_patterns else []        
+        self.known_patterns = known_patterns if known_patterns else []
         self._add_lookup_table_regexes(lookup_tables)
 
     def train(self, training_data, config, **kwargs):
