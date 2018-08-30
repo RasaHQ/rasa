@@ -29,11 +29,6 @@ class RasaReader(JsonTrainingDataReader):
         regex_features = data.get("regex_features", [])
         lookup_tables = data.get("lookup_tables", [])
 
-        # generates regexes from lookup tables and adds to regex features
-        lookup_regexes = [{'name': t['name'],
-                           'pattern': generate_lookup_regex(t['file_path'])} for t in lookup_tables]
-        regex_features += lookup_regexes
-
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
         if intent_examples or entity_examples:
@@ -51,7 +46,8 @@ class RasaReader(JsonTrainingDataReader):
                                 ex.get("entities"))
             training_examples.append(msg)
 
-        return TrainingData(training_examples, entity_synonyms, regex_features)
+        return TrainingData(training_examples, entity_synonyms,
+                            regex_features, lookup_tables)
 
 
 class RasaWriter(TrainingDataWriter):
@@ -72,6 +68,7 @@ class RasaWriter(TrainingDataWriter):
             "rasa_nlu_data": {
                 "common_examples": formatted_examples,
                 "regex_features": training_data.regex_features,
+                "lookup_tables": training_data.lookup_tables,
                 "entity_synonyms": formatted_synonyms
             }
         }, **kwargs)

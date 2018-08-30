@@ -104,6 +104,39 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
         assert(num_matches == labeled_tokens.count(i))
 
 
+@pytest.mark.parametrize("sentence, expected, labeled_tokens", [
+    ("lemonade and mapo tofu", [1, 1], [0., 2., 3.]),
+    ("a cup of tea", [1, 0], [3.]),
+    ("Is burrito my favorite food?", [0, 1], [1.]),
+    ("I want club mate", [1, 0], [2., 3.])
+])
+def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
+    from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
+
+    lookups = [
+        {"name": 'drinks', "file_path": "data/test/lookup_tables/drinks.txt"},
+        {"name": 'plates', "file_path": "data/test/lookup_tables/plates.txt"}
+    ]
+    ftr = RegexFeaturizer(lookup_tables=lookups)
+
+    # adds tokens to the message
+    tokenizer = SpacyTokenizer()
+    message = Message(sentence)
+    message.set("spacy_doc", spacy_nlp(sentence))
+    tokenizer.process(message)
+
+    result = ftr.features_for_patterns(message)
+    assert np.allclose(result, expected, atol=1e-10)
+
+    # the tokenizer should have added tokens
+    assert len(message.get("tokens", [])) > 0
+    # the number of regex matches on each token should match
+    for i, token in enumerate(message.get("tokens")):
+        token_matches = token.get("pattern").values()
+        num_matches = sum(token_matches)
+        assert(num_matches == labeled_tokens.count(i))
+
+
 def test_spacy_featurizer_casing(spacy_nlp):
     from rasa_nlu.featurizers import spacy_featurizer
 

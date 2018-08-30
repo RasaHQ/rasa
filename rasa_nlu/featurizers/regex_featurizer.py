@@ -16,6 +16,7 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data.util import generate_lookup_regex
 
 import numpy as np
 
@@ -35,16 +36,20 @@ class RegexFeaturizer(Featurizer):
 
     requires = ["tokens"]
 
-    def __init__(self, component_config=None, known_patterns=None):
+    def __init__(self, component_config=None,
+                 known_patterns=None, lookup_tables=[]):
+
         super(RegexFeaturizer, self).__init__(component_config)
 
-        self.known_patterns = known_patterns if known_patterns else []
+        self.known_patterns = known_patterns if known_patterns else []        
+        self._add_lookup_table_regexes(lookup_tables)
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
         self.known_patterns = training_data.regex_features
-
+        self._add_lookup_table_regexes(training_data.lookup_tables)
+        
         for example in training_data.training_examples:
             updated = self._text_features_with_regex(example)
             example.set("text_features", updated)
@@ -61,6 +66,14 @@ class RegexFeaturizer(Featurizer):
             return self._combine_with_existing_text_features(message, extras)
         else:
             return message.get("text_features")
+
+    def _add_lookup_table_regexes(self, lookup_tables):
+        # appends the regex features from the lookup tables to self.known_patterns
+        for table in lookup_tables:
+            regex_pattern = generate_lookup_regex(table['file_path'])
+            lookup_regex = {'name': table['name'],
+                           'pattern': regex_pattern}
+            self.known_patterns.append(lookup_regex)
 
     def features_for_patterns(self, message):
         """Checks which known patterns match the message.

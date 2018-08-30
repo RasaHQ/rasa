@@ -37,6 +37,7 @@ class MarkdownReader(TrainingDataReader):
         self.entity_synonyms = {}
         self.regex_features = []
         self.section_regexes = self._create_section_regexes(available_sections)
+        self.lookup_tables = []
 
     def reads(self, s, **kwargs):
         """Read markdown string and create TrainingData object"""
@@ -49,7 +50,8 @@ class MarkdownReader(TrainingDataReader):
                 self._set_current_section(header[0], header[1])
             else:
                 self._parse_item(line)
-        return TrainingData(self.training_examples, self.entity_synonyms, self.regex_features)
+        return TrainingData(self.training_examples, self.entity_synonyms,
+                            self.regex_features, self.lookup_tables)
 
     @staticmethod
     def _strip_comments(text):
@@ -84,8 +86,7 @@ class MarkdownReader(TrainingDataReader):
             elif self.current_section == REGEX:
                 self.regex_features.append({"name": self.current_title, "pattern": item})
             elif self.current_section == LOOKUP:
-                lookup_regex = generate_lookup_regex(item)
-                self.regex_features.append({"name": self.current_title, "pattern": lookup_regex})
+                self.lookup_tables.append({"name": self.current_title, "file_path": item})
 
     def _find_entities_in_training_example(self, example):
         """Extracts entities from a markdown intent example."""
@@ -144,6 +145,7 @@ class MarkdownWriter(TrainingDataWriter):
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)
         md += self._generate_regex_features_md(training_data)
+        md += self._generate_lookup_tables_md(training_data)
 
         return md
 
@@ -183,6 +185,17 @@ class MarkdownWriter(TrainingDataWriter):
                 md += self._generate_section_header_md(REGEX, regex_feature["name"])
 
             md += self._generate_item_md(regex_feature["pattern"])
+
+        return md
+
+    def _generate_lookup_tables_md(self, training_data):
+        """generates markdown for regex features."""
+        md = u''
+        # regex features are already sorted
+        lookup_tables = training_data.lookup_tables
+        for i, lookup_table in enumerate(lookup_tables):
+            md += self._generate_section_header_md(LOOKUP, lookup_table["name"])
+            md += self._generate_item_md(lookup_table["file_path"])
 
         return md
 
