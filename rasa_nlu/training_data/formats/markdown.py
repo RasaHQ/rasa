@@ -7,7 +7,7 @@ import re
 import logging
 
 from rasa_nlu.training_data import Message, TrainingData
-from rasa_nlu.training_data.util import check_duplicate_synonym, generate_lookup_regex
+from rasa_nlu.training_data.util import check_duplicate_synonym
 from rasa_nlu.utils import build_entity
 
 from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader, TrainingDataWriter
