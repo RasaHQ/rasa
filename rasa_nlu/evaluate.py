@@ -54,7 +54,7 @@ def create_argument_parser():
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-                        help="model configurion file (crossvalidation only)")
+                        help="model configuration file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
                         help="path to model (evaluation only)")
@@ -70,6 +70,10 @@ def create_argument_parser():
 
     parser.add_argument('--confmat', required=False, default="confmat.png",
                         help="output path for the confusion matrix plot")
+
+    parser.add_argument('--dual_histogram', action='store_true',
+                        help="Plot errors and correct predictions confidence "
+                             "as separate histogram bars")
 
     utils.add_logging_option_arguments(parser, default=logging.INFO)
 
@@ -122,18 +126,29 @@ def plot_confusion_matrix(cm, classes,
         fig.savefig(out, bbox_inches='tight')
 
 
-def plot_histogram(hist_data,
-                   out=None):  # pragma: no cover
-    """Plot a histogram of the confidence distribution of the predictions.
-
+def plot_histogram(hist_data, dual_hist, out=None):    # pragma: no cover
+    """Plot a histogram of the confidence distribution of the predictions in two columns.
+    Green for the confidences of hits, Red for the confidences of misses.
     Saves the plot to a file."""
     import matplotlib.pyplot as plt
 
+    colors = None
+    if dual_hist:
+        # Change colors to green and red for correct and wrong prediction confidences respectively
+        colors = ['#59c16a', '#f77f76']
+
+    bins = [0.05 * i for i in range(1, 21)]
+
     plt.xlim([0, 1])
-    plt.hist(hist_data, bins=[0.05 * i for i in range(1, 21)])
+    plt.hist(hist_data, bins=bins, color=colors)
+    plt.xticks(bins)
     plt.title('Intent Prediction Confidence Distribution')
     plt.xlabel('Confidence')
     plt.ylabel('Number of Samples')
+
+    if dual_hist:
+        # In the dual histogram case add legend to the plot
+        plt.legend(['hits', 'misses'])
 
     if out:
         fig = plt.gcf()
@@ -231,22 +246,38 @@ def collect_nlu_errors(intent_results):  # pragma: no cover
         return None
 
 
-def plot_intent_confidences(intent_results, intent_hist_filename):
+def plot_intent_confidences(intent_results, intent_hist_filename, dual_hist):
     import matplotlib.pyplot as plt
     # create histogram of confidence distribution, save to file and display
     plt.gcf().clear()
-    hist = [r.confidence for r in intent_results if r.target == r.prediction]
-    plot_histogram(hist, intent_hist_filename)
+    if dual_hist:
+        pos_hist = [
+            r.confidence
+            for r in intent_results
+            if r.target == r.prediction
+        ]
+        neg_hist = [
+            r.confidence
+            for r in intent_results
+            if r.target != r.prediction
+        ]
+        hist = [pos_hist, neg_hist]
+    else:
+        hist = [r.confidence for r in intent_results if r.target == r.prediction]
+
+    plot_histogram(hist, dual_hist, intent_hist_filename)
 
 
 def evaluate_intents(intent_results,
                      errors_filename,
                      confmat_filename,
                      intent_hist_filename,
-                     ):  # pragma: no cover
+                     dual_hist):  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
     Log samples which could not be classified correctly and save them to file.
     Creates a confidence histogram which is saved to file.
+    If dual_hist==True then wrong and correct prediction confidences will be
+    plotted in separate bars of the same histogram plot.
     Only considers those examples with a set intent.
     Others are filtered out."""
     from sklearn.metrics import confusion_matrix
@@ -277,7 +308,8 @@ def evaluate_intents(intent_results,
     plt.show()
 
     plot_intent_confidences(intent_results,
-                            intent_hist_filename)
+                            intent_hist_filename,
+                            dual_hist)
 
     plt.show()
 
@@ -606,6 +638,7 @@ def run_evaluation(data_path, model_path,
                    errors_filename='errors.json',
                    confmat_filename=None,
                    intent_hist_filename=None,
+                   dual_hist=False,
                    component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
 
@@ -627,7 +660,7 @@ def run_evaluation(data_path, model_path,
         logger.info("Intent evaluation results:")
 
         evaluate_intents(intent_results, errors_filename, confmat_filename,
-                         intent_hist_filename)
+                         intent_hist_filename, dual_hist)
 
     if extractors:
         entity_targets = get_entity_targets(test_data)
@@ -834,7 +867,8 @@ def main():
                        cmdline_args.model,
                        cmdline_args.errors,
                        cmdline_args.confmat,
-                       cmdline_args.histogram)
+                       cmdline_args.histogram,
+                       cmdline_args.dual_histogram)
 
     logger.info("Finished evaluation")
 
