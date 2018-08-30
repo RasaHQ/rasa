@@ -13,13 +13,12 @@ from builtins import object
 from threading import Lock, Thread
 from typing import Text, List
 
-import requests
 import six
 from rasa_nlu import utils
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.model import Metadata, Interpreter
-from rasa_nlu.utils import is_url
+from rasa_nlu.utils import is_url, EndpointConfig
 from requests.exceptions import InvalidURL, RequestException
 
 if six.PY2:
@@ -33,12 +32,14 @@ MODEL_NAME_PREFIX = "model_"
 
 FALLBACK_MODEL_NAME = "fallback"
 
+DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+
 
 def load_from_server(component_builder=None,  # type: Optional[Text]
                      project=None,  # type: Optional[Text]
                      project_dir=None,  # type: Optional[Text]
                      remote_storage=None,  # type: Optional[Text]
-                     model_server=None,  # type: Optional[Text]
+                     model_server=None,  # type: Optional[EndpointConfig]
                      wait_time_between_pulls=None,  # type: Optional[int]
                      ):
     # type: (...) -> Project
@@ -60,17 +61,17 @@ def load_from_server(component_builder=None,  # type: Optional[Text]
 
 
 def _update_model_from_server(model_server, project):
-    # type: (Text, Project) -> None
+    # type: (EndpointConfig, Project) -> None
     """Load a zipped Rasa NLU model from a URL and update the passed
 
     project."""
-    if not is_url(model_server):
+    if not is_url(model_server.url):
         raise InvalidURL(model_server)
 
     model_directory = tempfile.mkdtemp()
 
     new_model_fingerprint, filename = _pull_model_and_fingerprint(
-        model_server, model_directory, project.fingerprint)
+            model_server, model_directory, project.fingerprint)
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
         project.fingerprint = new_model_fingerprint
@@ -92,7 +93,7 @@ def _get_remote_model_name(filename):
 
 
 def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
-    # type: (Text, Text, Optional[Text]) -> (Optional[Text], Optional[Text])
+    # type: (EndpointConfig, Text, Optional[Text]) -> (Optional[Text], Optional[Text])
     """Queries the model server and returns a tuple of containing the
 
     response's <ETag> header which contains the model hash, and the
@@ -101,7 +102,9 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
     try:
         logger.debug("Requesting model from server {}..."
                      "".format(model_server))
-        response = requests.get(model_server, headers=header)
+        response = model_server.request(method="GET",
+                                        headers=header,
+                                        timeout=DEFAULT_REQUEST_TIMEOUT)
     except RequestException as e:
         logger.warning("Tried to fetch model from server, but couldn't reach "
                        "server. We'll retry later... Error: {}."
@@ -281,12 +284,12 @@ class Project(object):
         self._begin_read()
         status = False
         logger.debug('Loading model {} from directory {}'.format(
-            model_name, model_dir))
+                model_name, model_dir))
 
         self._loader_lock.acquire()
         try:
             interpreter = self._interpreter_for_model(
-                model_name, model_dir)
+                    model_name, model_dir)
             self._models[model_name] = interpreter
             status = True
         finally:

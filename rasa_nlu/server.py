@@ -5,26 +5,28 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+from builtins import str
+from collections import namedtuple
 from functools import wraps
 
 import simplejson
 import six
-from builtins import str
 from klein import Klein
-from twisted.internet import reactor, threads
-from twisted.internet.defer import inlineCallbacks, returnValue
-
 from rasa_nlu import utils, config
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
     MaxTrainingError)
+from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
 from rasa_nlu.train import TrainingException
 from rasa_nlu.utils import json_to_string
 from rasa_nlu.version import __version__
-from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
+from twisted.internet import reactor, threads
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 logger = logging.getLogger(__name__)
+
+AvailableEndpoints = namedtuple('AvailableEndpoints', 'model')
 
 
 def create_argument_parser():
@@ -76,8 +78,9 @@ def create_argument_parser():
                         default=1,
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
-    parser.add_argument('--model_server',
-                        help="Rasa NLU model server")
+    parser.add_argument('--endpoints',
+                        help='Configuration file for model server'
+                             'as a yaml file')
     parser.add_argument('--wait_time_between_pulls',
                         type=int,
                         default=10,
@@ -99,6 +102,13 @@ def create_argument_parser():
     utils.add_logging_option_arguments(parser)
 
     return parser
+
+
+def read_endpoints(endpoint_file):
+    model = utils.read_endpoint_config(endpoint_file,
+                                       endpoint_type="models")
+
+    return AvailableEndpoints(model)
 
 
 def check_cors(f):
@@ -242,7 +252,7 @@ class RasaNLU(object):
                 request.setResponseCode(200)
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(
-                                  self.data_router.parse, data))
+                        self.data_router.parse, data))
                 returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)
@@ -260,8 +270,8 @@ class RasaNLU(object):
 
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(
-            {'version': __version__,
-             'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
+                {'version': __version__,
+                 'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
         )
 
     @app.route("/config", methods=['GET', 'OPTIONS'])
@@ -409,8 +419,9 @@ class RasaNLU(object):
         try:
             request.setResponseCode(200)
             response = self.data_router.unload_model(
-                params.get('project', RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
-                params.get('model')
+                    params.get('project',
+                               RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
+                    params.get('model')
             )
             return simplejson.dumps(response)
         except Exception as e:
@@ -426,12 +437,14 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
     pre_load = cmdline_args.pre_load
 
+    _endpoints = read_endpoints(cmdline_args.endpoints)
+
     router = DataRouter(cmdline_args.path,
                         cmdline_args.max_training_processes,
                         cmdline_args.response_log,
                         cmdline_args.emulate,
                         cmdline_args.storage,
-                        cmdline_args.model_server,
+                        _endpoints.model,
                         cmdline_args.wait_time_between_pulls)
     if pre_load:
         logger.debug('Preloading....')
