@@ -21,17 +21,28 @@ def nlg_response_format_spec():
     return {
         "type": "object",
         "properties": {
-            "text": {"type": "string"},
+            "text": {
+                "type": "string",
+                "required": False
+            },
             "buttons": {
                 "type": "array",
-                "items": {"type": "object"}
+                "items": {"type": "object"},
+                "required": False
             },
             "elements": {
                 "type": "array",
-                "items": {"type": "object"}
+                "items": {"type": "object"},
+                "required": False
             },
-            "attachment": {"type": "object"},
-            "image": {"type": "object"}
+            "attachment": {
+                "type": "object",
+                "required": False
+            },
+            "image": {
+                "type": "string",
+                "required": False
+            }
         },
     }
 
