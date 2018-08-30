@@ -34,8 +34,9 @@ def generate_lookup_regex(file_path):
     with io.open(file_path, 'r') as f:
         for line in f:
             new_element = line.strip()
-            if new_element != '':
+            if new_element:
                 lookup_elements.append(new_element)
+    # regex matching for elements of lookup table with word boundaries on either side
     regex_string = '(?i)(\\b' + '\\b|\\b'.join(lookup_elements) + '\\b)'
 
     """log info about the lookup table"""
