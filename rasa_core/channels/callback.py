@@ -57,13 +57,13 @@ class CallbackInput(RestInput):
         self.callback_endpoint = endpoint
 
     def blueprint(self, on_new_message):
-        custom_webhook = Blueprint('custom_webhook', __name__)
+        callback_webhook = Blueprint('callback_webhook', __name__)
 
-        @custom_webhook.route("/", methods=['GET'])
+        @callback_webhook.route("/", methods=['GET'])
         def health():
             return jsonify({"status": "ok"})
 
-        @custom_webhook.route("/webhook", methods=['POST'])
+        @callback_webhook.route("/webhook", methods=['POST'])
         def receive():
             sender_id = self._extract_sender(request)
             text = self._extract_message(request)
@@ -72,4 +72,4 @@ class CallbackInput(RestInput):
             on_new_message(UserMessage(text, collector, sender_id))
             return "success"
 
-        return custom_webhook
+        return callback_webhook
