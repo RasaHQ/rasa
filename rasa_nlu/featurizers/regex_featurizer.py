@@ -49,7 +49,7 @@ class RegexFeaturizer(Featurizer):
 
         self.known_patterns = training_data.regex_features
         self._add_lookup_table_regexes(training_data.lookup_tables)
-        
+
         for example in training_data.training_examples:
             updated = self._text_features_with_regex(example)
             example.set("text_features", updated)
@@ -68,7 +68,8 @@ class RegexFeaturizer(Featurizer):
             return message.get("text_features")
 
     def _add_lookup_table_regexes(self, lookup_tables):
-        # appends the regex features from the lookup tables to self.known_patterns
+        # appends the regex features from the lookup tables to
+        # self.known_patterns
         for table in lookup_tables:
             regex_pattern = generate_lookup_regex(table['file_path'])
             lookup_regex = {'name': table['name'],
