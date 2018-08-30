@@ -42,7 +42,7 @@ def generate_lookup_regex(file_path):
     """log info about the lookup table"""
     num_words = len(lookup_elements)
     regex_size = sys.getsizeof(regex_string)
-    logger.info("found {} words in lookup table '{}'"
+    logger.debug("found {} words in lookup table '{}'"
                 " with a size of {:.2e} bytes".format(num_words, file_path, regex_size))
 
     return regex_string
