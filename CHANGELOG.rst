@@ -12,6 +12,9 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 
+ - New command line argument for ``evaluate.py`` script allowing to plot separately confidence
+distributions for wrong and correct predictions in one same histogram.
+
 Changed
 -------
 
