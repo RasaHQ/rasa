@@ -213,4 +213,4 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             result = result / np.linalg.norm(result)
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
-        return result
+        return result, best_policy_name

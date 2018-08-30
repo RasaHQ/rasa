@@ -98,7 +98,7 @@ class MessageProcessor(object):
                            "'{}'.".format(sender_id))
             return None
 
-        probabilities = self._get_next_action_probabilities(tracker)
+        probabilities, _ = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
         scores = [{"action": a, "score": p}
@@ -150,13 +150,13 @@ class MessageProcessor(object):
         This should be overwritten by more advanced policies to use
         ML to predict the action. Returns the index of the next action."""
 
-        probabilities = self._get_next_action_probabilities(tracker)
+        probabilities, policy = self._get_next_action_probabilities(tracker)
 
         max_index = int(np.argmax(probabilities))
         action = self.domain.action_for_index(max_index, self.action_endpoint)
         logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
                 action.name(), probabilities[max_index]))
-        return action
+        return action, policy, probabilities[max_index]
 
     def handle_reminder(self, reminder_event, dispatcher):
         # type: (ReminderScheduled, Dispatcher) -> None
@@ -273,11 +273,13 @@ class MessageProcessor(object):
                and self._should_handle_message(tracker)
                and num_predicted_actions < self.max_number_of_predictions):
             # this actually just calls the policy's method by the same name
-            action = self.predict_next_action(tracker)
+            action, policy, confidence = self.predict_next_action(tracker)
 
             should_predict_another_action = self._run_action(action,
                                                              tracker,
-                                                             dispatcher)
+                                                             dispatcher,
+                                                             policy
+                                                             confidence)
             num_predicted_actions += 1
 
         if (num_predicted_actions == self.max_number_of_predictions and
@@ -312,7 +314,7 @@ class MessageProcessor(object):
                                       id=e.name,
                                       replace_existing=True)
 
-    def _run_action(self, action, tracker, dispatcher):
+    def _run_action(self, action, tracker, dispatcher, policy, confidence):
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
@@ -325,7 +327,8 @@ class MessageProcessor(object):
             logger.error(e, exc_info=True)
             events = []
 
-        self._log_action_on_tracker(tracker, action.name(), events)
+        self._log_action_on_tracker(tracker, action.name(), events, policy,
+                                    confidence)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._schedule_reminders(events, dispatcher)
 
@@ -367,7 +370,8 @@ class MessageProcessor(object):
 
             dispatcher.latest_bot_messages = []
 
-    def _log_action_on_tracker(self, tracker, action_name, events):
+    def _log_action_on_tracker(self, tracker, action_name, events, policy,
+                               policy_confidence):
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
         # returns `None` for some other reason.
@@ -381,7 +385,8 @@ class MessageProcessor(object):
 
         if action_name is not None:
             # log the action and its produced events
-            tracker.update(ActionExecuted(action_name))
+            tracker.update(ActionExecuted(action_name, policy,
+                                          policy_confidence))
 
         for e in events:
             # this makes sure the events are ordered by timestamp -
