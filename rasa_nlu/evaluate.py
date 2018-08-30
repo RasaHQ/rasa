@@ -127,14 +127,14 @@ def plot_confusion_matrix(cm, classes,
 
 
 def plot_histogram(hist_data, dual_hist, out=None):    # pragma: no cover
-    """Plot a histogram of the confidence distribution of the predictions in two columns.
+    """Plot a histogram of the confidence distribution of the predictions in
+    two columns.
     Green for the confidences of hits, Red for the confidences of misses.
     Saves the plot to a file."""
     import matplotlib.pyplot as plt
 
     colors = None
     if dual_hist:
-        # Change colors to green and red for correct and wrong prediction confidences respectively
         colors = ['#59c16a', '#f77f76']
 
     bins = [0.05 * i for i in range(1, 21)]
@@ -263,7 +263,11 @@ def plot_intent_confidences(intent_results, intent_hist_filename, dual_hist):
         ]
         hist = [pos_hist, neg_hist]
     else:
-        hist = [r.confidence for r in intent_results if r.target == r.prediction]
+        hist = [
+            r.confidence
+            for r in intent_results
+            if r.target == r.prediction
+        ]
 
     plot_histogram(hist, dual_hist, intent_hist_filename)
 
@@ -808,7 +812,7 @@ def compute_entity_metrics(interpreter, corpus):
 def return_results(results, dataset_name):
     """Returns results of crossvalidation
     :param results: dictionary of results returned from cv
-    :param dataset: string of which dataset the results are from, e.g.
+    :param dataset_name: string of which dataset the results are from, e.g.
                     test/train
     """
 
@@ -821,7 +825,7 @@ def return_results(results, dataset_name):
 def return_entity_results(results, dataset_name):
     """Returns entity results of crossvalidation
     :param results: dictionary of dictionaries of results returned from cv
-    :param dataset: string of which dataset the results are from, e.g.
+    :param dataset_name: string of which dataset the results are from, e.g.
                     test/train
     """
     for extractor, result in results.items():
