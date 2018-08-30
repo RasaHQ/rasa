@@ -24,6 +24,13 @@ Fixed
 -------
 
 
+[0.11.1] - 2018-08-30
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- increased minimal compatible model version to 0.11.0
+
 .. _v0-11-0:
 
 [0.11.0] - 2018-08-30
