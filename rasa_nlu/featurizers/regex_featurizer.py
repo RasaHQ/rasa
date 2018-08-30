@@ -72,7 +72,7 @@ class RegexFeaturizer(Featurizer):
         for table in lookup_tables:
             regex_pattern = generate_lookup_regex(table['file_path'])
             lookup_regex = {'name': table['name'],
-                           'pattern': regex_pattern}
+                            'pattern': regex_pattern}
             self.known_patterns.append(lookup_regex)
 
     def features_for_patterns(self, message):
