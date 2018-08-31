@@ -188,7 +188,10 @@ if __name__ == '__main__':
         "batch_size": cmdline_args.batch_size,
         "validation_split": cmdline_args.validation_split,
         "augmentation_factor": cmdline_args.augmentation,
-        "debug_plots": cmdline_args.debug_plots
+        "debug_plots": cmdline_args.debug_plots,
+        "nlu_threshold": cmdline_args.nlu_threshold,
+        "core_threshold": cmdline_args.core_threshold,
+        "fallback_action_name": cmdline_args.fallback_action_name
     }
 
     if cmdline_args.url:
