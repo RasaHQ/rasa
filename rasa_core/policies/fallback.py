@@ -84,11 +84,6 @@ class FallbackPolicy(Policy):
         """Predicts a fallback action if NLU confidence is low
             or no other policy has a high-confidence prediction"""
 
-        # print(tracker.latest_message)
-        print(tracker.latest_action_name)
-        print(list(tracker.events))
-        print(tracker.events[-2].action_name)
-        print(tracker.events[-2].policy)
         result = [0.0] * domain.num_actions
         idx = domain.index_for_action(self.fallback_action_name)
         nlu_data = tracker.latest_message.parse_data
