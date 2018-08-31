@@ -25,18 +25,18 @@ def nlg_response_format_spec():
                 "type": "string"
             },
             "buttons": {
-                "type": "array",
+                "type": ["array", "null"],
                 "items": {"type": "object"}
             },
             "elements": {
-                "type": "array",
+                "type": ["array", "null"],
                 "items": {"type": "object"}
             },
             "attachment": {
-                "type": "object"
+                "type": ["object", "null"]
             },
             "image": {
-                "type": "string"
+                "type": ["string", "null"]
             }
         },
     }
