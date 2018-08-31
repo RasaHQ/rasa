@@ -11,7 +11,9 @@ from flask import Flask, request, jsonify
 from pytest_localserver.http import WSGIServer
 
 from rasa_core import utils
-from rasa_core.nlg.callback import nlg_request_format_spec
+from rasa_core.nlg.callback import (
+    nlg_request_format_spec,
+    CallbackNaturalLanguageGenerator)
 from rasa_core.utils import EndpointConfig
 from rasa_core.agent import Agent
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
@@ -67,3 +69,13 @@ def test_nlg_endpoint_config_loading():
     assert cfg == EndpointConfig.from_dict({
         "url": "http://localhost:5055/nlg"
     })
+
+
+def test_nlg_schema_validation():
+    content = {"text": "Hey there!"}
+    assert CallbackNaturalLanguageGenerator.validate_response(content)
+
+
+def test_nlg_schema_validation_empty_buttons():
+    content = {"text": "Hey there!", "buttons": []}
+    assert CallbackNaturalLanguageGenerator.validate_response(content)
