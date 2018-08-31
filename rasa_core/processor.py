@@ -153,7 +153,6 @@ class MessageProcessor(object):
         probabilities, policy = self._get_next_action_probabilities(tracker)
 
         max_index = int(np.argmax(probabilities))
-        print(self.domain.index_for_action('action_listen'))
         action = self.domain.action_for_index(max_index, self.action_endpoint)
         logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
                 action.name(), probabilities[max_index]))

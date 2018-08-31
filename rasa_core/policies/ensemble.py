@@ -20,7 +20,6 @@ from rasa_core import utils, training, constants
 from rasa_core.events import SlotSet, ActionExecuted, UserUttered
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa_core.policies.fallback import FallbackPolicy
 
 logger = logging.getLogger(__name__)
 
