@@ -17,9 +17,10 @@ from typing import Text, Optional, Any, List, Dict
 
 import rasa_core
 from rasa_core import utils, training, constants
-from rasa_core.events import SlotSet, ActionExecuted
+from rasa_core.events import SlotSet, ActionExecuted, UserUttered
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.policies.fallback import FallbackPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +209,14 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
+        print(str(type(FallbackPolicy())))
+        if type(FallbackPolicy()) in [type(p) for p in self.policies]:
+            # check predicted action is action_listen
+            if (result[max_confidence] == 0 and
+                not best_policy_name.endswith("MemoizationPolicy" and
+                isintance(tracker.events[-1], UserUttered)):
+                result = policies[]
+        # if not best_policy_name.endswith("MemoizationPolicy")
         # normalize probablilities
         if np.sum(result) != 0:
             result = result / np.linalg.norm(result)

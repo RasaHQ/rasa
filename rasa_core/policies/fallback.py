@@ -79,13 +79,16 @@ class FallbackPolicy(Policy):
         return (nlu_confidence < self.nlu_threshold and
                 last_action_name != self.fallback_action_name)
 
-    def predict_action_probabilities(self, tracker, domain):
+    def predict_action_probabilities(self, tracker, domain, force=False):
         # type: (DialogueStateTracker, Domain) -> List[float]
         """Predicts a fallback action if NLU confidence is low
             or no other policy has a high-confidence prediction"""
 
         # print(tracker.latest_message)
-        print(tracker.events[-1])
+        print(tracker.latest_action_name)
+        print(list(tracker.events))
+        print(tracker.events[-2].action_name)
+        print(tracker.events[-2].policy)
         result = [0.0] * domain.num_actions
         idx = domain.index_for_action(self.fallback_action_name)
         nlu_data = tracker.latest_message.parse_data
@@ -94,8 +97,12 @@ class FallbackPolicy(Policy):
         # it is set to 1.0 here in order
         # to not override standard behaviour
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
-
-        if tracker.latest_action_name == self.fallback_action_name:
+        if force:
+            logger.debug("Action listen was predicted after a user message. "
+                         "Predicting fallback action: {}"
+                         "".format(self.fallback_action_name))
+            score = 1.1
+        elif tracker.latest_action_name == self.fallback_action_name:
             idx = domain.index_for_action('action_listen')
             score = 1.1
         elif self.should_fallback(nlu_confidence, tracker.latest_action_name):
