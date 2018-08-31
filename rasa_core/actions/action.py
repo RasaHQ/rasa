@@ -255,7 +255,7 @@ class RemoteAction(Action):
                 ". Failed to validate Action server response from API, "
                 "make sure your response from the Action endpoint is valid. "
                 "For more information about the format visit "
-                "{}/customactions.html".format(DOCS_BASE_URL))
+                "{}/customactions/".format(DOCS_BASE_URL))
             raise e
 
     @staticmethod
@@ -301,8 +301,8 @@ class RemoteAction(Action):
             raise Exception("The model predicted the custom action '{}' "
                             "but you didn't configure an endpoint to "
                             "run this custom action. Please take a look at "
-                            "the docs and set an endpoint configuration."
-                            "{}/customactions.html"
+                            "the docs and set an endpoint configuration. "
+                            "{}/customactions/"
                             "".format(self.name(), DOCS_BASE_URL))
 
         try:
