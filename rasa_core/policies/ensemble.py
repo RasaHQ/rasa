@@ -209,14 +209,24 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
-        print(str(type(FallbackPolicy())))
-        if type(FallbackPolicy()) in [type(p) for p in self.policies]:
-            # check predicted action is action_listen
-            if (result[max_confidence] == 0 and
-                not best_policy_name.endswith("MemoizationPolicy" and
-                isintance(tracker.events[-1], UserUttered)):
-                result = policies[]
-        # if not best_policy_name.endswith("MemoizationPolicy")
+
+        policy_names = [type(p).__name__ for p in self.policies]
+
+        # Trigger the fallback policy when ActionListen is predicted after
+        # a user utterance. This is done on the condition that: a fallback
+        # policy is present, there was just a user message and the predicted
+        # action is action_listen by a policy other than the MemoizationPolicy
+
+        if "FallbackPolicy" in policy_names:
+            idx = policy_names.index("FallbackPolicy")
+            fallback_policy = self.policies[idx]
+            if (result.index(max_confidence) == 0 and
+                not best_policy_name.endswith("MemoizationPolicy") and
+                    isinstance(tracker.events[-1], UserUttered)):
+                result = fallback_policy.predict_action_probabilities(
+                                            tracker, domain, force=True)
+                best_policy_name = 'policy_{}_{}'.format(idx, "FallbackPolicy")
+
         # normalize probablilities
         if np.sum(result) != 0:
             result = result / np.linalg.norm(result)
