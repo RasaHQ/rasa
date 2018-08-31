@@ -22,6 +22,7 @@ Removed
 
 Fixed
 -------
+- read in fallback command line args
 
 
 [0.11.1] - 2018-08-30
