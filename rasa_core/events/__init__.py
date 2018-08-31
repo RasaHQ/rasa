@@ -669,7 +669,7 @@ class ActionExecuted(Event):
 
     type_name = "action"
 
-    def __init__(self, action_name, policy, policy_confidence, timestamp=None):
+    def __init__(self, action_name, policy=None, policy_confidence=None, timestamp=None):
         self.action_name = action_name
         self.policy = policy
         self.policy_confidence = policy_confidence
@@ -694,7 +694,10 @@ class ActionExecuted(Event):
     @classmethod
     def _from_story_string(cls, parameters):
         return ActionExecuted(parameters.get("name"),
-                              parameters.get("timestamp"))
+                              parameters.get("policy"),
+                              parameters.get("policy_confidence"),
+                              parameters.get("timestamp")
+                              )
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()

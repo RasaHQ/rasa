@@ -278,7 +278,7 @@ class MessageProcessor(object):
             should_predict_another_action = self._run_action(action,
                                                              tracker,
                                                              dispatcher,
-                                                             policy
+                                                             policy,
                                                              confidence)
             num_predicted_actions += 1
 
