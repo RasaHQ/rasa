@@ -412,9 +412,9 @@ class MessageProcessor(object):
         if idx is not None:
             result = [0.0] * self.domain.num_actions
             result[idx] = 1.0
-            return result
+            return result, None
         else:
-            return None
+            return None, None
 
     def _get_next_action_probabilities(self, tracker):
         # type: (DialogueStateTracker) -> List[float]
@@ -434,6 +434,5 @@ class MessageProcessor(object):
         if (tracker.latest_message.intent.get("name") ==
                 self.domain.restart_intent):
             return self._prob_array_for_action(ACTION_RESTART_NAME)
-
         return self.policy_ensemble.probabilities_using_best_policy(
                 tracker, self.domain)
