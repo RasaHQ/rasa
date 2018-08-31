@@ -119,16 +119,21 @@ class RedisTrackerStore(TrackerStore):
         pass
 
     def __init__(self, domain, host='localhost',
-                 port=6379, db=0, password=None, event_broker=None):
+                 port=6379, db=0, password=None, event_broker=None,
+                 record_exp=None):
 
         import redis
         self.red = redis.StrictRedis(host=host, port=port, db=db,
                                      password=password)
+        self.record_exp = record_exp
         super(RedisTrackerStore, self).__init__(domain, event_broker)
 
     def save(self, tracker, timeout=None):
         if self.event_broker:
             self.stream_events(tracker)
+
+        if not timeout and self.record_exp:
+            timeout = self.record_exp
 
         serialised_tracker = self.serialise_tracker(tracker)
         self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
