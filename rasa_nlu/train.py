@@ -5,8 +5,8 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
-
 import typing
+from collections import namedtuple
 from typing import Optional, Any
 from typing import Text
 from typing import Tuple
@@ -17,7 +17,8 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 from rasa_nlu.training_data import load_data
-from rasa_nlu.training_data.loading import load_data_from_url
+from rasa_nlu.training_data.loading import load_data_from_endpoint
+from rasa_nlu.utils import read_endpoints
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,9 @@ def create_argument_parser():
                             "or a directory containing multiple training "
                             "data files.")
 
-    group.add_argument('-u', '--url',
+    group.add_argument('-u', '--endpoints',
                        default=None,
-                       help="URL from which to retrieve training data.")
+                       help="EndpointConfig defining the server from which pull training data.")
 
     parser.add_argument('-c', '--config',
                         required=True,
@@ -131,7 +132,7 @@ def do_train(cfg,  # type: RasaNLUModelConfig
              fixed_model_name=None,  # type: Optional[Text]
              storage=None,  # type: Optional[Text]
              component_builder=None,  # type: Optional[ComponentBuilder]
-             url=None,  # type: Optional[Text]
+             data_endpoint=None,  # type: Optional[EndpointConfig]
              **kwargs  # type: Any
              ):
     # type: (...) -> Tuple[Trainer, Interpreter, Text]
@@ -142,8 +143,8 @@ def do_train(cfg,  # type: RasaNLUModelConfig
     # trained in another subprocess
     trainer = Trainer(cfg, component_builder)
     persistor = create_persistor(storage)
-    if url is not None:
-        training_data = load_data_from_url(url, cfg.language)
+    if data_endpoint is not None:
+        training_data = load_data_from_endpoint(data_endpoint, cfg.language)
     else:
         training_data = load_data(data, cfg.language)
     interpreter = trainer.train(training_data, **kwargs)
@@ -164,12 +165,14 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
+    _endpoints = read_endpoints(cmdline_args.endpoints)
+
     do_train(config.load(cmdline_args.config),
              cmdline_args.data,
              cmdline_args.path,
              cmdline_args.project,
              cmdline_args.fixed_model_name,
              cmdline_args.storage,
-             url=cmdline_args.url,
+             data_endpoint=_endpoints.data,
              num_threads=cmdline_args.num_threads)
     logger.info("Finished training")
