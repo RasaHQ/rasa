@@ -12,6 +12,8 @@ pytest==3.3.2
 treq==17.8.0
 moto==1.2.0
 mock==2.0.0
+responses==0.9.0
+httpretty==0.9.5
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
