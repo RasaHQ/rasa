@@ -18,6 +18,7 @@ Added
 
 Changed
 -------
+- loading training data from a URL requires an instance of ``EndpointConfig``
 
 Removed
 -------

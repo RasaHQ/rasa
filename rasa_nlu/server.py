@@ -6,12 +6,14 @@ from __future__ import unicode_literals
 import argparse
 import logging
 from builtins import str
-from collections import namedtuple
 from functools import wraps
 
 import simplejson
 import six
 from klein import Klein
+from twisted.internet import reactor, threads
+from twisted.internet.defer import inlineCallbacks, returnValue
+
 from rasa_nlu import utils, config
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
@@ -19,14 +21,10 @@ from rasa_nlu.data_router import (
     MaxTrainingError)
 from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
 from rasa_nlu.train import TrainingException
-from rasa_nlu.utils import json_to_string
+from rasa_nlu.utils import json_to_string, read_endpoints
 from rasa_nlu.version import __version__
-from twisted.internet import reactor, threads
-from twisted.internet.defer import inlineCallbacks, returnValue
 
 logger = logging.getLogger(__name__)
-
-AvailableEndpoints = namedtuple('AvailableEndpoints', 'model')
 
 
 def create_argument_parser():
@@ -79,8 +77,7 @@ def create_argument_parser():
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
     parser.add_argument('--endpoints',
-                        help='Configuration file for model server'
-                             'as a yaml file')
+                        help='Configuration file for the model server as a yaml file')
     parser.add_argument('--wait_time_between_pulls',
                         type=int,
                         default=10,
@@ -102,13 +99,6 @@ def create_argument_parser():
     utils.add_logging_option_arguments(parser)
 
     return parser
-
-
-def read_endpoints(endpoint_file):
-    model = utils.read_endpoint_config(endpoint_file,
-                                       endpoint_type="models")
-
-    return AvailableEndpoints(model)
 
 
 def check_cors(f):

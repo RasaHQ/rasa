@@ -14,6 +14,7 @@ from builtins import str
 from typing import List, Any
 from typing import Optional
 from typing import Text
+from collections import namedtuple
 
 import errno
 import requests
@@ -396,6 +397,18 @@ def read_endpoint_config(filename, endpoint_type):
         return EndpointConfig.from_dict(content[endpoint_type])
     else:
         return None
+
+
+def read_endpoints(endpoint_file):
+    model = read_endpoint_config(endpoint_file,
+                                 endpoint_type="model")
+    data = read_endpoint_config(endpoint_file,
+                                endpoint_type="data")
+
+    return AvailableEndpoints(model, data)
+
+
+AvailableEndpoints = namedtuple('AvailableEndpoints', 'model data')
 
 
 class EndpointConfig(object):
