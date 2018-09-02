@@ -11,16 +11,29 @@ how you can migrate from one version to another.
 	model endpoint to retrieve training data. The file location has to be passed
 	with the ``--endpoints`` argument, e.g.
 	``python rasa_nlu.server --path projects --endpoints endpoints.yml``
-	Here's an example for ``endpoints.yml``
+	``endpoints.yml`` needs to contain the ``model`` key
+	with a ``url`` and an optional ``token``. Here's an example:
 
 	.. code-block:: yaml
 
 			model:
-  			url: http://my_model_server.com/models/default/nlu/tags/latest
+				url: http://my_model_server.com/models/default/nlu/tags/latest
 				token: my_model_server_token
 
 - ``rasa_nlu.train`` also has to be run with the ``--endpoints`` argument
-	if you want to pull training data from a URL. This replaces
+	if you want to pull training data from a URL. This replaces the previous
+	``--url`` syntax.
+
+	.. code-block:: yaml
+
+			data:
+				url: http://my_data_server.com/projects/default/data
+				token: my_data_server_token
+
+	.. note::
+
+		Your endpoint file may contain entries for both ``model`` and ``data``.
+		``rasa_nlu.server`` and ``rasa_nlu.train`` will pick the relevant entry.
 
 0.12.x to 0.13.0
 ----------------
