@@ -35,6 +35,24 @@ how you can migrate from one version to another.
 		Your endpoint file may contain entries for both ``model`` and ``data``.
 		``rasa_nlu.server`` and ``rasa_nlu.train`` will pick the relevant entry.
 
+- If you directly access the ``DataRouter`` class or ``rasa_nlu.train``'s
+	``do_train()`` method, you can directly create instances of
+	``EndpointConfig`` without creating a ``yml`` file. Example:
+
+		.. code-block:: python
+
+			from rasa_nlu.utils import EndpointConfig
+			from rasa_nlu.data_router import DataRouter
+
+      model_endpoint = EndpointConfig(
+      				url="http://my_model_server.com/models/default/nlu/tags/latest",
+      				token="my_model_server_token"
+      )
+
+      interpreter = DataRouter("projects",
+      												 model_server=model_endpoint)
+
+
 0.12.x to 0.13.0
 ----------------
 
