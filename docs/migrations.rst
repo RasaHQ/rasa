@@ -4,6 +4,24 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.13.x to 0.13.3
+----------------
+
+- ``rasa_nlu.server`` needs to be supplied with an ``yml`` file defining the
+	model endpoint to retrieve training data. The file location has to be passed
+	with the ``--endpoints`` argument, e.g.
+	``python rasa_nlu.server --path projects --endpoints endpoints.yml``
+	Here's an example for ``endpoints.yml``
+
+	.. code-block:: yaml
+
+			model:
+  			url: http://my_model_server.com/models/default/nlu/tags/latest
+				token: my_model_server_token
+
+- ``rasa_nlu.train`` also has to be run with the ``--endpoints`` argument
+	if you want to pull training data from a URL. This replaces
+
 0.12.x to 0.13.0
 ----------------
 

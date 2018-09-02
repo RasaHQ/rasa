@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import errno
 import glob
 import io
 import json
@@ -10,17 +11,16 @@ import logging
 import os
 import re
 import tempfile
-from builtins import str
+from collections import namedtuple
 from typing import List, Any
 from typing import Optional
 from typing import Text
-from collections import namedtuple
 
-import errno
 import requests
 import simplejson
 import six
 import yaml
+from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
 
@@ -408,6 +408,8 @@ def read_endpoints(endpoint_file):
     return AvailableEndpoints(model, data)
 
 
+# The EndpointConfig class is currently used to define external endpoints
+# for pulling NLU models from a server and training data
 AvailableEndpoints = namedtuple('AvailableEndpoints', 'model data')
 
 

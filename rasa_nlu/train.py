@@ -43,7 +43,7 @@ def create_argument_parser():
                             "or a directory containing multiple training "
                             "data files.")
 
-    group.add_argument('-u', '--endpoints',
+    group.add_argument('--endpoints',
                        default=None,
                        help="EndpointConfig defining the server from which pull training data.")
 
