@@ -60,6 +60,11 @@ Webhooks
 
 Changes to Input and Output Channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- ``ConsoleOutputChannel`` and ``ConsoleInputChannel`` have been removed. Either
+  use the `run script <https://github.com/RasaHQ/rasa_core/blob/master/rasa_core/run.py>`_
+  to run your bot on the cmdline, or adapt the ``serve_application``
+  `function <https://github.com/RasaHQ/rasa_core/blob/master/rasa_core/run.py#L260>`_
+  to run from a python script.
 - ``rasa_core.channels.direct`` output channel package removed.
   ``CollectingOutputChannel`` moved to ``rasa_core.channels.channel``
 - ``HttpInputComponent`` renamed to ``InputChannel`` & moved to
