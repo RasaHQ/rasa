@@ -39,6 +39,16 @@ General
 - utter templates that should be used as actions, now need to start with
   ``utter_``, otherwise the bot won't be able to find the action
 
+HTTP Server endpoints
+~~~~~~~~~~~~~~~~~~~~~
+- We removed ``/parse`` and ``/continue`` endpoints used for running actions
+  remotely. This has been replaced by the action server that allows you
+  to run your action code in any language. There are no replacement endpoints
+  for these two, as the flow of information has been changed: Instead of you
+  calling Rasa Core to update the tracker and receive the next action to be
+  executed, Rasa Core will call your action server once it predicted an action.
+  More information can be found in the updated docs for :ref:`customactions`.
+
 
 Webhooks
 ~~~~~~~~
