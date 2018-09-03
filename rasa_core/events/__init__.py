@@ -303,6 +303,9 @@ class BotUttered(Event):
 class SlotSet(Event):
     """The user has specified their preference for the value of a ``slot``.
 
+    Every slot has a name and a value. This event can be used to set a
+    value for a slot on a conversation.
+
     As a side effect the ``Tracker``'s slots will be updated so
     that ``tracker.slots[key]=value``."""
 
@@ -365,7 +368,9 @@ class SlotSet(Event):
 class Restarted(Event):
     """Conversation should start over & history wiped.
 
-    As a side effect the ``Tracker`` will be reinitialised."""
+    Instead of deleting all events, this event can be used to reset the
+    trackers state (e.g. ignoring any past user messages & resetting all
+    the slots)."""
 
     type_name = "restart"
 
@@ -418,9 +423,11 @@ class UserUtteranceReverted(Event):
 
 # noinspection PyProtectedMember
 class AllSlotsReset(Event):
-    """Conversation should start over & history wiped.
+    """All Slots are reset to their initial values.
 
-    As a side effect the ``Tracker`` will be reinitialised."""
+    If you want to keep the dialogue history and only want to reset the
+    slots, you can use this event to set all the slots to their initial
+    values."""
 
     type_name = "reset_slots"
 
