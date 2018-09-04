@@ -54,7 +54,7 @@ def create_argument_parser():
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-                        help="model configurion file (crossvalidation only)")
+                        help="model configuration file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
                         help="path to model (evaluation only)")
@@ -122,18 +122,24 @@ def plot_confusion_matrix(cm, classes,
         fig.savefig(out, bbox_inches='tight')
 
 
-def plot_histogram(hist_data,
-                   out=None):  # pragma: no cover
-    """Plot a histogram of the confidence distribution of the predictions.
-
+def plot_histogram(hist_data, out=None):    # pragma: no cover
+    """Plot a histogram of the confidence distribution of the predictions in
+    two columns.
+    Wine-ish colour for the confidences of hits.
+    Blue-ish colour for the confidences of misses.
     Saves the plot to a file."""
     import matplotlib.pyplot as plt
 
+    colors = ['#009292', '#920000']     #
+    bins = [0.05 * i for i in range(1, 21)]
+
     plt.xlim([0, 1])
-    plt.hist(hist_data, bins=[0.05 * i for i in range(1, 21)])
+    plt.hist(hist_data, bins=bins, color=colors)
+    plt.xticks(bins)
     plt.title('Intent Prediction Confidence Distribution')
     plt.xlabel('Confidence')
     plt.ylabel('Number of Samples')
+    plt.legend(['hits', 'misses'])
 
     if out:
         fig = plt.gcf()
@@ -235,18 +241,26 @@ def plot_intent_confidences(intent_results, intent_hist_filename):
     import matplotlib.pyplot as plt
     # create histogram of confidence distribution, save to file and display
     plt.gcf().clear()
-    hist = [r.confidence for r in intent_results if r.target == r.prediction]
-    plot_histogram(hist, intent_hist_filename)
+    pos_hist = [
+        r.confidence
+        for r in intent_results if r.target == r.prediction]
+
+    neg_hist = [
+            r.confidence
+            for r in intent_results if r.target != r.prediction]
+
+    plot_histogram([pos_hist, neg_hist], intent_hist_filename)
 
 
 def evaluate_intents(intent_results,
                      errors_filename,
                      confmat_filename,
-                     intent_hist_filename,
-                     ):  # pragma: no cover
+                     intent_hist_filename):  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
     Log samples which could not be classified correctly and save them to file.
     Creates a confidence histogram which is saved to file.
+    Wrong and correct prediction confidences will be
+    plotted in separate bars of the same histogram plot.
     Only considers those examples with a set intent.
     Others are filtered out."""
     from sklearn.metrics import confusion_matrix
@@ -775,7 +789,7 @@ def compute_entity_metrics(interpreter, corpus):
 def return_results(results, dataset_name):
     """Returns results of crossvalidation
     :param results: dictionary of results returned from cv
-    :param dataset: string of which dataset the results are from, e.g.
+    :param dataset_name: string of which dataset the results are from, e.g.
                     test/train
     """
 
@@ -788,7 +802,7 @@ def return_results(results, dataset_name):
 def return_entity_results(results, dataset_name):
     """Returns entity results of crossvalidation
     :param results: dictionary of dictionaries of results returned from cv
-    :param dataset: string of which dataset the results are from, e.g.
+    :param dataset_name: string of which dataset the results are from, e.g.
                     test/train
     """
     for extractor, result in results.items():

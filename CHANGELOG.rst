@@ -15,6 +15,10 @@ Added
 Changed
 -------
 
+- Changed evaluate behaviour to plot two histogram bars per bin.
+  Plotting confidence of right predictions in a wine-ish colour
+  and wrong ones in a blue-ish colour.
+
 Removed
 -------
 
