@@ -13,9 +13,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- callback output channel, receives messages and uses a REST endpoint to
+  respond with messages
 
 Changed
 -------
+- channel input creation moved to the channel, every channel can now
+  customize how it gets created from the credentials file
 
 Removed
 -------
@@ -38,19 +42,6 @@ Removed
 Fixed
 -----
 - read in fallback command line args
-
-[0.11.2] - XXXXXX
-^^^^^^^^^^^^^^^^^
-
-Added
------
-- callback output channel, receives messages and uses a REST endpoint to
-  respond with messages
-
-Changed
--------
-- channel input creation moved to the channel, every channel can now
-  customize how it gets created from the credentials file
 
 [0.11.1] - 2018-08-30
 ^^^^^^^^^^^^^^^^^^^^^
