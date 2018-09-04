@@ -2,7 +2,8 @@ sphinx==1.7.5
 sphinx-autobuild==0.7.1
 sphinxcontrib-programoutput==0.11
 nbsphinx==0.3.2
-sphinxcontrib-httpdomain==1.5.0
+pygments==2.2.0
+sphinxcontrib-httpdomain==1.6.1
 sphinxcontrib-websupport==1.1.0
 https://storage.googleapis.com/docs-theme/rasabaster-0.7.13.tar.gz
 git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
