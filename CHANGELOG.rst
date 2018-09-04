@@ -55,7 +55,7 @@ Added
 - intent confidence support in RegexInterpreter
 - added paramter to train script to pull training data from an url instead
   of a stories file
-- added new policy: ``EmbeddingPolicy`` implemented in tensorflow
+- added new policy: :ref:`Embedding policy` implemented in tensorflow
 
 Changed
 -------
