@@ -86,6 +86,14 @@ class SlackInput(InputChannel):
     def name(cls):
         return "slack"
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("slack_token"),
+                   credentials.get("slack_channel"))
+
     def __init__(self, slack_token, slack_channel=None,
                  errors_ignore_retry=None):
         # type: (Text, Optional[Text], Optional[List[Text]]) -> None

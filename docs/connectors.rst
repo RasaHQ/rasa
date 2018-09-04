@@ -513,10 +513,10 @@ https://xxxxxx.ngrok.io . For a facebook bot, your webhook address
 would then be https://xxxxxx.ngrok.io/webhooks/facebook/webhook,
 for telegram https://xxxxxx.ngrok.io/webhooks/telegram/webhook, etc.
 
-.. _custom_channels:
+.. _rest_channels:
 
-Custom Channels
----------------
+REST Channels
+-------------
 
 If you want to put a widget on your website so that people can
 talk to your bot, check out these two projects:
@@ -526,8 +526,98 @@ talk to your bot, check out these two projects:
 - `Chatroom <https://github.com/scalableminds/chatroom>`_
   uses regular HTTP requests.
 
-You can also implement your own, fully custom channel.
+For these use cases it is easiest to use either the ``RestInput`` or the
+``CallbackInput`` channels. They will provide you with a URL to post the
+messages to.
 
+RestInput
+^^^^^^^^^
+
+The ``rest`` channel, will provide you with a REST endpoint to post messages
+to and in response to that request will send back the bots messages.
+Here is an example on how to connect the ``rest`` input channel
+using the run script:
+
+.. code-block:: bash
+
+ python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+     --port 5002 --credentials credentials.yml
+
+you need to supply a ``credentials.yml`` with the following content:
+
+.. code-block:: yaml
+
+   rest:
+     # you don't need to provide anything here - this channel doesn't
+     # require any credentials
+
+After connecting the ``rest`` input channel, you can post messages to
+``POST /webhooks/rest/webhook`` with the following format:
+
+.. code-block:: json
+
+   {
+     "sender": "Rasa",
+     "text": "Hi there!"
+   }
+
+The response to this request will include the bot responses, e.g.
+
+.. code-block:: json
+
+   [
+     {"text": "Hey Rasa!"}, {"image": "http://example.com/image.jpg"}
+   ]
+
+
+CallbackInput
+^^^^^^^^^^^^^
+
+The ``callback`` channel behaves very much like the ``rest`` input,
+but instead of directly returning the bot messages to the HTTP
+request that sends the message, it will call a URL you can specify
+to send bot messages.
+
+Here is an example on how to connect the
+``callback`` input channel using the run script:
+
+.. code-block:: bash
+
+ python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+     --port 5002 --credentials credentials.yml
+
+you need to supply a ``credentials.yml`` with the following content:
+
+.. code-block:: yaml
+
+   callback:
+     # URL to which Core will send the bot responses
+     url: "http://localhost:5034/bot"
+
+After connecting the ``callback`` input channel, you can post messages to
+``POST /webhooks/callback/webhook`` with the following format:
+
+.. code-block:: json
+
+   {
+     "sender": "Rasa",
+     "text": "Hi there!"
+   }
+
+The response will simply be ``success``. Once Core wants to send a
+message to the user, it will call the URL you specified with a ``POST``
+and the following ``JSON`` body:
+
+.. code-block:: json
+
+   [
+     {"text": "Hey Rasa!"}, {"image": "http://example.com/image.jpg"}
+   ]
+
+.. _custom_channels:
+
+Creating a new Channel
+----------------------
 
 You can also implement your own, custom channel. You can
 use the ``rasa_core.channels.channel.RestInput`` class as a template.

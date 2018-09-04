@@ -213,6 +213,15 @@ class FacebookInput(InputChannel):
     def name(cls):
         return "facebook"
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("verify"),
+                   credentials.get("secret"),
+                   credentials.get("page-access-token"))
+
     def __init__(self, fb_verify, fb_secret, fb_access_token):
         # type: (Text, Text, Text) -> None
         """Create a facebook input channel.
