@@ -112,7 +112,7 @@ def collect_story_predictions(resource_name, policy_model_path,
     else:
         interpreter = RegexInterpreter()
 
-    agent = Agent.load(policy_model_path, interpreter=interpreter, action_endpoint=EndpointConfig("http://localhost:5055/webhook"))
+    agent = Agent.load(policy_model_path, interpreter=interpreter)
     story_graph = training.extract_story_graph(resource_name, agent.domain,
                                                interpreter)
     preds = []
