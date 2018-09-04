@@ -21,7 +21,6 @@ from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
-from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
