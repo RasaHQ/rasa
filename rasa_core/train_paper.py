@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import argparse
 import logging
 import pickle
+import os
 
 from rasa_core.agent import Agent
 from rasa_core.featurizers import (LabelTokenizerSingleStateFeaturizer,
@@ -24,30 +25,37 @@ def create_argument_parser():
     """Create argument parser for the evaluate script."""
 
     parser = argparse.ArgumentParser(
-            description='evaluates a dialogue model')
+            description='Trains multiple Core models with the Embedding and '
+                        'Keras policies')
     parser.add_argument(
             '--exclude',
             type=str,
             required=True,
             help="file to exclude from training")
     parser.add_argument(
-            '--data',
+            '-s', '--stories',
             type=str,
             required=True,
-            help="Data to train on")
+            help="file or folder containing the training stories")
     parser.add_argument(
-            '--epochs',
+            '--epochs_embed',
             type=int,
             default=2000,
-            help="number of epochs")
+            help="number of epochs for the embedding policy")
     parser.add_argument(
-            '--path',
+            '--epochs_keras',
+            type=int,
+            default=400,
+            help="number of epochs for the keras policy")
+    parser.add_argument(
+            '-o', '--out',
             type=str,
             default='models/',
-            help="Path to store models in")
+            help="directory to persist the trained model in")
     parser.add_argument(
             '--percentages',
-            type=list,
+            nargs="*",
+            type=int,
             default=[0, 5, 25, 50, 70, 90, 95, 100],
             help="Range of exclusion percentages")
     parser.add_argument(
@@ -56,10 +64,10 @@ def create_argument_parser():
             default=3,
             help="Number of runs for experiments")
     parser.add_argument(
-            '--domain',
+            '-d', '--domain',
             type=str,
             required=True,
-            help="Path of domain file")
+            help="domain specification yaml file")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -67,30 +75,28 @@ def create_argument_parser():
 
 def train_domain_policy(story_filename,
                         domain,
+                        epochs,
                         output_path=None,
                         exclusion_file=None,
                         exclusion_percentage=None,
-                        starspace=True,
-                        epoch_no=2000):
+                        starspace=True):
 
-    """Trains multiple models based on a range of exclusion percentages"""
+    """Trains either a KerasPolicy model or an EmbeddingPolicy, excluding a
+    certain percentage of a story file"""
 
     if starspace:
         featurizer = FullDialogueTrackerFeaturizer(
                         LabelTokenizerSingleStateFeaturizer())
         policies = [EmbeddingPolicy(featurizer)]
-        epochs = epoch_no
-        batch_size = [8, 32]
     else:
         featurizer = MaxHistoryTrackerFeaturizer(
                         LabelTokenizerSingleStateFeaturizer(),
                         max_history=20)
         policies = [KerasPolicy(featurizer)]
-        epochs = 400
-        batch_size = 32
 
     agent = Agent(domain,
                   policies=policies)
+
     data = agent.load_data(story_filename,
                            remove_duplicates=True,
                            augmentation_factor=0,
@@ -101,19 +107,16 @@ def train_domain_policy(story_filename,
                 rnn_size=64,
                 epochs=epochs,
                 embed_dim=20,
-                use_attention=True,
-                skip_cells=True,
-                attn_shift_range=5,
-                batch_size=batch_size)
+                attn_shift_range=5)
 
     agent.persist(model_path=output_path)
 
 
-def get_no_of_stories(exclude, domain):
+def get_no_of_stories(file, domain):
 
-    "gets number of stories in a file"
+    """gets number of stories in a file"""
 
-    no_stories = len(StoryFileReader.read_from_file(exclude,
+    no_stories = len(StoryFileReader.read_from_file(file,
                                                     TemplateDomain.load(
                                                         domain)))
     return no_stories
@@ -124,24 +127,31 @@ if __name__ == '__main__':
     cmdline_args = arg_parser.parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
+
     for r in range(cmdline_args.runs):
+        logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
         for i in cmdline_args.percentages:
+
             current_round = cmdline_args.percentages.index(i) + 1
-            output_path_keras = (cmdline_args.path + 'run_' + str(r) + '/keras'
-                                 + str(current_round))
-            output_path_embed = (cmdline_args.path + 'run_' + str(r) + '/embed'
-                                 + str(current_round))
+
+            output_path_keras = (os.path.join(cmdline_args.out, 'run_' +
+                                 str(r + 1), 'keras' + str(current_round)))
+
+            output_path_embed = (os.path.join(cmdline_args.out, 'run_' +
+                                 str(r + 1), 'embed' + str(current_round)))
+
             logging.info("Starting to train embed round {}/{}".format(
                                                 current_round,
                                                 len(cmdline_args.percentages)))
 
-            train_domain_policy(story_filename=cmdline_args.data,
+            train_domain_policy(story_filename=cmdline_args.stories,
                                 domain=cmdline_args.domain,
+                                epochs=cmdline_args.epochs_embed,
                                 output_path=output_path_embed,
                                 exclusion_file=cmdline_args.exclude,
                                 exclusion_percentage=i,
-                                starspace=True,
-                                epoch_no=cmdline_args.epochs)
+                                starspace=True)
+
             logger.info("Finished training embed round {}/{}".format(
                                                 current_round,
                                                 len(cmdline_args.percentages)))
@@ -150,8 +160,9 @@ if __name__ == '__main__':
                                                 current_round,
                                                 len(cmdline_args.percentages)))
 
-            train_domain_policy(story_filename=cmdline_args.data,
+            train_domain_policy(story_filename=cmdline_args.stories,
                                 domain=cmdline_args.domain,
+                                epochs=cmdline_args.epochs_keras,
                                 output_path=output_path_keras,
                                 exclusion_file=cmdline_args.exclude,
                                 exclusion_percentage=i,
@@ -160,7 +171,13 @@ if __name__ == '__main__':
             logger.info("Finished training keras round {}/{}".format(
                                                 current_round,
                                                 len(cmdline_args.percentages)))
+
     no_stories = get_no_of_stories(cmdline_args.exclude, cmdline_args.domain)
+
+    # store the list of the number of stories excluded at each exclusion
+    # percentage
     story_range = [no_stories - round((x/100.0) * no_stories) for x in
                    cmdline_args.percentages]
-    pickle.dump(story_range, open(cmdline_args.path + 'num_stories.p', 'wb'))
+
+    pickle.dump(story_range,
+                open(os.path.join(cmdline_args.out, 'num_stories.p'), 'wb'))
