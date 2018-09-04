@@ -113,11 +113,11 @@ def train_domain_policy(story_filename,
     agent.persist(model_path=output_path)
 
 
-def get_no_of_stories(file, domain):
+def get_no_of_stories(file_name, domain):
 
     """gets number of stories in a file"""
 
-    no_stories = len(StoryFileReader.read_from_file(file,
+    no_stories = len(StoryFileReader.read_from_file(file_name,
                                                     TemplateDomain.load(
                                                         domain)))
     return no_stories

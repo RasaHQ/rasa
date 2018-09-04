@@ -25,7 +25,7 @@ def create_argument_parser():
     """Create argument parser for the evaluate script."""
 
     parser = argparse.ArgumentParser(
-            description='evaluates a dialogue model')
+            description='evaluates multiple dialogue models')
     parser.add_argument(
             '--models',
             type=str,
