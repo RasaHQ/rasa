@@ -29,7 +29,7 @@ from rasa_core.channels.twilio import TwilioInput
 input_channel_classes = [
     CmdlineInput, FacebookInput, SlackInput, TelegramInput, MattermostInput,
     TwilioInput, RasaChatInput, BotFrameworkInput, RocketChatInput,
-    CallbackInput
+    CallbackInput, RestInput
 ]  # type: List[InputChannel]
 
 # Mapping from a input channel name to its class to allow name based lookup.

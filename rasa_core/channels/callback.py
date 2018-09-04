@@ -64,7 +64,7 @@ class CallbackInput(RestInput):
             return jsonify({"status": "ok"})
 
         @callback_webhook.route("/webhook", methods=['POST'])
-        def receive():
+        def webhook():
             sender_id = self._extract_sender(request)
             text = self._extract_message(request)
 
