@@ -155,6 +155,8 @@ You can implement the model of your choice by overriding these methods,
 or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
 
+.. _embedding_policy:
+
 Embedding policy
 ----------------
 
