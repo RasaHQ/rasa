@@ -3,29 +3,28 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import contextlib
 import io
+import itertools
+import os
+import sys
 
 import jsonpickle
+import six
 
-from rasa_core.conversation import Topic
-from rasa_core.domain import TemplateDomain
-from rasa_core.trackers import DialogueStateTracker, TopicSet
+from rasa_core.domain import Domain
+from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH
 
 
 def tracker_from_dialogue_file(filename, domain=None):
     dialogue = read_dialogue_file(filename)
 
-    dialogue_topics = set([Topic(t.topic)
-                           for t in dialogue.events
-                           if isinstance(t, TopicSet)])
     if domain is not None:
         domain = domain
     else:
-        domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
-    domain.topics.extend(dialogue_topics)
-    tracker = DialogueStateTracker(dialogue.name, domain.slots,
-                                   domain.topics, domain.default_topic)
+        domain = Domain.load(DEFAULT_DOMAIN_PATH)
+    tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
     return tracker
 
@@ -41,3 +40,34 @@ def write_text_to_file(tmpdir, filename, text):
     with io.open(path, "w") as f:
         f.write(text)
     return path
+
+
+@contextlib.contextmanager
+def cwd(path):
+    CWD = os.getcwd()
+
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(CWD)
+
+
+@contextlib.contextmanager
+def mocked_cmd_input(package, text):
+    if isinstance(text, six.string_types):
+        text = [text]
+
+    text_generator = itertools.cycle(text)
+    i = package.input
+
+    def mocked_input(_=None):
+        value = next(text_generator)
+        print("wrote '{}' to input".format(value))
+        return value
+
+    package.input = mocked_input
+    try:
+        yield
+    finally:
+        package.input = i

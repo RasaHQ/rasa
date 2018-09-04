@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.channels import UserMessage
-from rasa_core.channels.direct import CollectingOutputChannel
+from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button
 
 
@@ -25,7 +25,7 @@ def test_logging_of_bot_utterances_on_tracker(default_processor,
         Button(title="Btn2", payload="_btn2")
     ]
 
-    default_dispatcher_collecting.utter_template("utter_goodbye")
+    default_dispatcher_collecting.utter_template("utter_goodbye", tracker)
     default_dispatcher_collecting.utter_attachment("http://my-attachment")
     default_dispatcher_collecting.utter_message("my test message")
     default_dispatcher_collecting.utter_button_message("my message", buttons)

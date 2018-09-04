@@ -11,13 +11,17 @@ from flask import Blueprint, request, jsonify
 from twilio.rest import Client
 
 from rasa_core.channels import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
+from rasa_core.channels import InputChannel
 
 logger = logging.getLogger(__name__)
 
 
 class TwilioOutput(Client, OutputChannel):
     """Output channel for Twilio"""
+
+    @classmethod
+    def name(cls):
+        return "twilio"
 
     def __init__(self, account_sid, auth_token, twilio_number):
         super(TwilioOutput, self).__init__(account_sid, auth_token)
@@ -27,7 +31,13 @@ class TwilioOutput(Client, OutputChannel):
 
     def send_text_message(self, recipient_number, text):
         """Sends text message"""
+
+        for message_part in text.split("\n\n"):
+            self._send_text(recipient_number, message_part)
+
+    def _send_text(self, recipient_number, text):
         from twilio.base.exceptions import TwilioRestException
+
         message = None
         try:
             while not message and self.send_retry < self.max_retry:
@@ -50,8 +60,12 @@ class TwilioOutput(Client, OutputChannel):
         pass
 
 
-class TwilioInput(HttpInputComponent):
+class TwilioInput(InputChannel):
     """Twilio input channel"""
+
+    @classmethod
+    def name(cls):
+        return "twilio"
 
     def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):
         self.account_sid = account_sid

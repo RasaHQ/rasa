@@ -6,15 +6,14 @@ from __future__ import unicode_literals
 import hashlib
 import hmac
 import logging
-
 import six
 from fbmessenger import (
-    BaseMessenger, elements, MessengerClient, attachments)
+    BaseMessenger, MessengerClient, attachments)
+from fbmessenger.elements import Text as FBText
 from flask import Blueprint, request, jsonify
 from typing import Text, List, Dict, Any, Callable
 
-from rasa_core.channels.channel import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
+from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +54,8 @@ class Messenger(BaseMessenger):
             attachment = message['message']['attachments'][0]
             text = attachment['payload']['url']
         else:
-            logger.warn("Received a message from facebook that we can not "
-                        "handle. Message: {}".format(message))
+            logger.warning("Received a message from facebook that we can not "
+                           "handle. Message: {}".format(message))
             return
 
         self._handle_user_message(text, self.get_user_id())
@@ -75,9 +74,10 @@ class Messenger(BaseMessenger):
         out_channel = MessengerBot(self.client)
         user_msg = UserMessage(text, out_channel, sender_id)
 
+        # noinspection PyBroadException
         try:
             self.on_new_message(user_msg)
-        except Exception as e:
+        except Exception:
             logger.exception("Exception when trying to handle webhook "
                              "for facebook message.")
             pass
@@ -106,6 +106,10 @@ class Messenger(BaseMessenger):
 class MessengerBot(OutputChannel):
     """A bot that uses fb-messenger to communicate."""
 
+    @classmethod
+    def name(cls):
+        return "facebook"
+
     def __init__(self, messenger_client):
         # type: (MessengerClient) -> None
 
@@ -129,7 +133,8 @@ class MessengerBot(OutputChannel):
 
         logger.info("Sending message: " + message)
 
-        self.send(recipient_id, elements.Text(text=message))
+        for message_part in message.split("\n\n"):
+            self.send(recipient_id, FBText(text=message_part))
 
     def send_image_url(self, recipient_id, image_url):
         # type: (Text, Text) -> None
@@ -138,13 +143,14 @@ class MessengerBot(OutputChannel):
         self.send(recipient_id, attachments.Image(url=image_url))
 
     def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
+        # type: (Text, Text, List[Dict[Text, Any]], Any) -> None
         """Sends buttons to the output."""
 
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
-            logger.warn("Facebook API currently allows only up to 3 buttons. "
-                        "If you add more, all will be ignored.")
+            logger.warning(
+                    "Facebook API currently allows only up to 3 buttons. "
+                    "If you add more, all will be ignored.")
             self.send_text_message(recipient_id, text)
         else:
             self._add_postback_info(buttons)
@@ -200,8 +206,12 @@ class MessengerBot(OutputChannel):
         return {"sender": {"id": recipient_id}}
 
 
-class FacebookInput(HttpInputComponent):
+class FacebookInput(InputChannel):
     """Facebook input channel implementation. Based on the HTTPInputChannel."""
+
+    @classmethod
+    def name(cls):
+        return "facebook"
 
     def __init__(self, fb_verify, fb_secret, fb_access_token):
         # type: (Text, Text, Text) -> None
@@ -233,8 +243,9 @@ class FacebookInput(HttpInputComponent):
             if request.args.get("hub.verify_token") == self.fb_verify:
                 return request.args.get("hub.challenge")
             else:
-                logger.warn("Invalid fb verify token! Make sure this matches "
-                            "your webhook settings on the facebook app.")
+                logger.warning(
+                        "Invalid fb verify token! Make sure this matches "
+                        "your webhook settings on the facebook app.")
                 return "failure, invalid token"
 
         @fb_webhook.route("/webhook", methods=['POST'])
@@ -242,8 +253,8 @@ class FacebookInput(HttpInputComponent):
             signature = request.headers.get("X-Hub-Signature") or ''
             if not self.validate_hub_signature(self.fb_secret, request.data,
                                                signature):
-                logger.warn("Wrong fb secret! Make sure this matches the "
-                            "secret in your facebook app settings")
+                logger.warning("Wrong fb secret! Make sure this matches the "
+                               "secret in your facebook app settings")
                 return "not validated"
 
             messenger = Messenger(self.fb_access_token, on_new_message)
@@ -264,6 +275,7 @@ class FacebookInput(HttpInputComponent):
         :return: boolean indicated that hub signature is validated
         """
 
+        # noinspection PyBroadException
         try:
             hash_method, hub_signature = hub_signature_header.split('=')
         except Exception:
@@ -271,7 +283,7 @@ class FacebookInput(HttpInputComponent):
         else:
             digest_module = getattr(hashlib, hash_method)
             if six.PY2:
-                # noinspection PyCompatibility
+                # noinspection PyCompatibility,PyUnresolvedReferences
                 hmac_object = hmac.new(
                         str(app_secret),
                         unicode(request_payload), digest_module)

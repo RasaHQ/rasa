@@ -13,13 +13,13 @@ import numpy as np
 import pytest
 
 from rasa_core.channels import UserMessage
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import \
+    MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
+from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.featurizers import (
@@ -61,7 +61,7 @@ class PolicyTestCollection(object):
 
     @pytest.fixture(scope="module")
     def trained_policy(self, featurizer):
-        default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain)
@@ -81,9 +81,7 @@ class PolicyTestCollection(object):
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
         tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                       default_domain.slots,
-                                       default_domain.topics,
-                                       default_domain.default_topic)
+                                       default_domain.slots)
         probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain)
         assert len(probabilities) == default_domain.num_actions
@@ -199,14 +197,12 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope='module')
     def default_domain(self):
-        return TemplateDomain.load(DEFAULT_DOMAIN_PATH)
+        return Domain.load(DEFAULT_DOMAIN_PATH)
 
     @pytest.fixture
     def tracker(self, default_domain):
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                    default_domain.slots,
-                                    default_domain.topics,
-                                    default_domain.default_topic)
+                                    default_domain.slots)
 
     @pytest.fixture(scope='module')
     def trackers(self, default_domain):
@@ -262,13 +258,11 @@ class TestSklearnPolicy(PolicyTestCollection):
         new_trackers = []
         for tr in trackers:
             new_tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                               default_domain.slots,
-                                               default_domain.topics,
-                                               default_domain.default_topic)
+                                               default_domain.slots)
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
-                        np.random.choice(classes)).name()
+                        np.random.choice(classes), action_endpoint=None).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
                     new_tracker.update(e)
@@ -298,3 +292,83 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy = self.create_policy(featurizer=featurizer, shuffle=False)
         # does not raise
         policy.train(trackers, domain=default_domain)
+
+
+class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        # use standard featurizer from EmbeddingPolicy,
+        # since it is using FullDialogueTrackerFeaturizer
+        p = EmbeddingPolicy()
+        return p
+
+    @pytest.fixture(scope="module")
+    def trained_policy(self, featurizer):
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
+        policy = self.create_policy(featurizer)
+        training_trackers = train_trackers(default_domain)
+        policy.train(training_trackers, default_domain,
+                     attn_before_rnn=False,
+                     attn_after_rnn=False)
+        return policy
+
+
+class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        # use standard featurizer from EmbeddingPolicy,
+        # since it is using FullDialogueTrackerFeaturizer
+        p = EmbeddingPolicy()
+        return p
+
+    @pytest.fixture(scope="module")
+    def trained_policy(self, featurizer):
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
+        policy = self.create_policy(featurizer)
+        training_trackers = train_trackers(default_domain)
+        policy.train(training_trackers, default_domain,
+                     attn_before_rnn=True,
+                     attn_after_rnn=False)
+        return policy
+
+
+class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        # use standard featurizer from EmbeddingPolicy,
+        # since it is using FullDialogueTrackerFeaturizer
+        p = EmbeddingPolicy()
+        return p
+
+    @pytest.fixture(scope="module")
+    def trained_policy(self, featurizer):
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
+        policy = self.create_policy(featurizer)
+        training_trackers = train_trackers(default_domain)
+        policy.train(training_trackers, default_domain,
+                     attn_before_rnn=False,
+                     attn_after_rnn=True)
+        return policy
+
+
+class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        # use standard featurizer from EmbeddingPolicy,
+        # since it is using FullDialogueTrackerFeaturizer
+        p = EmbeddingPolicy()
+        return p
+
+    @pytest.fixture(scope="module")
+    def trained_policy(self, featurizer):
+        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
+        policy = self.create_policy(featurizer)
+        training_trackers = train_trackers(default_domain)
+        policy.train(training_trackers, default_domain,
+                     attn_before_rnn=True,
+                     attn_after_rnn=True)
+        return policy

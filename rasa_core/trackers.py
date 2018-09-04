@@ -8,44 +8,49 @@ import io
 import logging
 from collections import deque
 
-import jsonpickle
 import typing
 from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
-from rasa_core import utils
 from rasa_core import events
-from rasa_core.conversation import Dialogue, Topic
-from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
-    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
+from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.conversation import Dialogue
+from rasa_core.events import (
+    UserUttered, ActionExecuted,
+    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
+    BotUttered)
+from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.actions import Action
+    from rasa_core.domain import Domain
 
 
 class DialogueStateTracker(object):
     """Maintains the state of a conversation."""
 
     @classmethod
-    def from_dict(cls, sender_id, dump_as_dict, domain):
-        # type: (Text, List[Dict[Text, Any]]) -> DialogueStateTracker
+    def from_dict(cls,
+                  sender_id,  # type: Text
+                  events_as_dict,  # type: List[Dict[Text, Any]]
+                  slots,  # type: List[Slot]
+                  max_event_history=None  # type: Optional[int]
+                  ):
+        # type: (...) -> DialogueStateTracker
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
         the tracker, these events will be replayed to recreate the state."""
 
-        evts = events.deserialise_events(dump_as_dict)
-        tracker = cls(sender_id, domain.slots, domain.topics,
-                      domain.default_topic)
+        evts = events.deserialise_events(events_as_dict)
+        tracker = cls(sender_id, slots, max_event_history)
         for e in evts:
             tracker.update(e)
         return tracker
 
     def __init__(self, sender_id, slots,
-                 topics=None,
-                 default_topic=None,
                  max_event_history=None):
         """Initialize the tracker.
 
@@ -59,10 +64,6 @@ class DialogueStateTracker(object):
         self.events = self._create_events([])
         # id of the source of the messages
         self.sender_id = sender_id
-        # available topics in the domain
-        self.topics = topics if topics is not None else []
-        # default topic of the domain
-        self.default_topic = default_topic
         # slots that can be filled in this domain
         self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
 
@@ -74,11 +75,10 @@ class DialogueStateTracker(object):
         # if tracker is paused, no actions should be taken
         self._paused = None
         # A deterministically scheduled action to be executed next
-        self.follow_up_action = None
-        # topic tracking
-        self._topic_stack = None
+        self.followup_action = ACTION_LISTEN_NAME
         self.latest_action_name = None
         self.latest_message = None
+        # Stores the most recent message sent by the user
         self.latest_bot_utterance = None
         self._reset()
 
@@ -87,12 +87,12 @@ class DialogueStateTracker(object):
     ###
     def current_state(self,
                       should_include_events=False,
-                      only_events_after_latest_restart=False):
+                      should_ignore_restarts=False):
         # type: (bool, bool) -> Dict[Text, Any]
         """Return the current tracker state as an object."""
 
         if should_include_events:
-            if only_events_after_latest_restart:
+            if should_ignore_restarts:
                 es = self.events
             else:
                 es = self.events_after_latest_restart()
@@ -109,9 +109,17 @@ class DialogueStateTracker(object):
             "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data,
             "latest_event_time": latest_event_time,
+            "followup_action": self.follow_up_action,
             "paused": self.is_paused(),
             "events": evts
         }
+
+    def past_states(self, domain):
+        # type: (Domain) -> deque
+        """Generate the past states of this tracker based on the history."""
+
+        generated_states = domain.states_for_tracker_history(self)
+        return deque((frozenset(s.items()) for s in generated_states))
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
@@ -162,23 +170,6 @@ class DialogueStateTracker(object):
         """Return a list of events after the most recent restart."""
         return list(self.events)[self.idx_after_latest_restart():]
 
-    @property
-    def previous_topic(self):
-        # type: () -> Optional[Text]
-        """Retrieves the topic that was set before the current one."""
-
-        for event in reversed(self.events_after_latest_restart()):
-            if isinstance(event, TopicSet):
-                return event.topic
-        return None
-
-    @property
-    def topic(self):
-        # type: () -> Topic
-        """Retrieves current topic, or default if no topic has been set yet."""
-
-        return self._topic_stack.top
-
     def init_copy(self):
         # type: () -> DialogueStateTracker
         """Creates a new state tracker with the same initial values."""
@@ -186,8 +177,7 @@ class DialogueStateTracker(object):
 
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                     self.slots.values(),
-                                    self.topics,
-                                    self.default_topic)
+                                    self._max_event_history)
 
     def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
@@ -208,6 +198,7 @@ class DialogueStateTracker(object):
     def applied_events(self):
         # type: () -> List[Event]
         """Returns all actions that should be applied - w/o reverted events."""
+
         def undo_till_previous(event_type, done_events):
             """Removes events from `done_events` until `event_type` is found."""
             # list gets modified - hence we need to copy events!
@@ -319,7 +310,7 @@ class DialogueStateTracker(object):
     ###
     # Internal methods for the modification of the trackers state. Should
     # only be called by events, not directly. Rather update the tracker
-    # with an event that in its ``apply_on`` method modifies the tracker.
+    # with an event that in its ``apply_to`` method modifies the tracker.
     ###
     def _reset(self):
         # type: () -> None
@@ -330,9 +321,7 @@ class DialogueStateTracker(object):
         self.latest_action_name = None
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
-        self.follow_up_action = None
-        self._topic_stack = utils.TopicStack(self.topics, [],
-                                             self.default_topic)
+        self.follow_up_action = ACTION_LISTEN_NAME
 
     def _reset_slots(self):
         # type: () -> None
@@ -360,7 +349,7 @@ class DialogueStateTracker(object):
         return deque(evts, self._max_event_history)
 
     def __eq__(self, other):
-        if isinstance(other, type(self)):
+        if isinstance(self, type(other)):
             return (other.events == self.events and
                     self.sender_id == other.sender_id)
         else:
@@ -373,13 +362,13 @@ class DialogueStateTracker(object):
         # type: (Action) -> None
         """Triggers another action following the execution of the current."""
 
-        self.follow_up_action = action
+        self.followup_action = action
 
-    def clear_follow_up_action(self):
+    def clear_followup_action(self):
         # type: () -> None
         """Clears follow up action when it was executed"""
 
-        self.follow_up_action = None
+        self.followup_action = None
 
     def _merge_slots(self, entities=None):
         # type: (Optional[List[Dict[Text, Any]]]) -> List[SlotSet]

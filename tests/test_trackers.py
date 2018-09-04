@@ -13,10 +13,9 @@ from rasa_core import training, restore
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
-from rasa_core.conversation import Topic
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.events import (
-    UserUttered, TopicSet, ActionExecuted, Restarted, ActionReverted,
+    UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.tracker_store import (
@@ -25,7 +24,7 @@ from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
-domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
+domain = Domain.load("data/test_domains/default.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
@@ -47,12 +46,7 @@ def stores_to_be_tested_ids():
 def test_tracker_duplicate():
     filename = "data/test_dialogues/inform_no_change.json"
     dialogue = read_dialogue_file(filename)
-    dialogue_topics = set([Topic(t.topic)
-                           for t in dialogue.events
-                           if isinstance(t, TopicSet)])
-    domain.topics.extend(dialogue_topics)
-    tracker = DialogueStateTracker(dialogue.name, domain.slots,
-                                   domain.topics, domain.default_topic)
+    tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
     num_actions = len([event
                        for event in dialogue.events
@@ -143,18 +137,28 @@ def test_tracker_state_regression_with_bot_utterance(default_agent):
         default_agent.handle_message("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
-    expected = ["action_listen", "greet", None, "utter_greet",
+    expected = ["action_listen", "greet", "utter_greet", None,
                 "action_listen", "greet", "action_listen"]
-    print([e.as_story_string() for e in tracker.events])
-    for e in tracker.events:
-        print(e)
+
     assert [e.as_story_string() for e in tracker.events] == expected
 
 
+def test_bot_utterance_comes_after_action_event(default_agent):
+    sender_id = "test_bot_utterance_comes_after_action_event"
+
+    default_agent.handle_message("/greet", sender_id=sender_id)
+
+    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+
+    # important is, that the 'bot' comes after the second 'action' and not
+    # before
+    expected = ['action', 'user', 'action', 'bot', 'action']
+
+    assert [e.type_name for e in tracker.events] == expected
+
+
 def test_tracker_entity_retrieval(default_domain):
-    tracker = DialogueStateTracker("default", default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+    tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
     assert list(tracker.get_latest_entity_values("entity_name")) == []
@@ -172,9 +176,7 @@ def test_tracker_entity_retrieval(default_domain):
 
 
 def test_restart_event(default_domain):
-    tracker = DialogueStateTracker("default", default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+    tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -192,29 +194,23 @@ def test_restart_event(default_domain):
 
     assert len(tracker.events) == 5
     assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
+    assert tracker.follow_up_action == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
     assert len(list(tracker.generate_all_prior_trackers())) == 1
 
     dialogue = tracker.as_dialogue()
 
-    recovered = DialogueStateTracker("default", default_domain.slots,
-                                     default_domain.topics,
-                                     default_domain.default_topic)
+    recovered = DialogueStateTracker("default", default_domain.slots)
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
     assert len(recovered.events) == 5
-    assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert recovered.latest_message.text is None
     assert len(list(recovered.generate_all_prior_trackers())) == 1
 
 
 def test_revert_action_event(default_domain):
-    tracker = DialogueStateTracker("default", default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+    tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -241,9 +237,7 @@ def test_revert_action_event(default_domain):
 
     dialogue = tracker.as_dialogue()
 
-    recovered = DialogueStateTracker("default", default_domain.slots,
-                                     default_domain.topics,
-                                     default_domain.default_topic)
+    recovered = DialogueStateTracker("default", default_domain.slots)
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
@@ -252,9 +246,7 @@ def test_revert_action_event(default_domain):
 
 
 def test_revert_user_utterance_event(default_domain):
-    tracker = DialogueStateTracker("default", default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+    tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 
@@ -287,9 +279,7 @@ def test_revert_user_utterance_event(default_domain):
 
     dialogue = tracker.as_dialogue()
 
-    recovered = DialogueStateTracker("default", default_domain.slots,
-                                     default_domain.topics,
-                                     default_domain.default_topic)
+    recovered = DialogueStateTracker("default", default_domain.slots)
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
@@ -298,9 +288,7 @@ def test_revert_user_utterance_event(default_domain):
 
 
 def test_traveling_back_in_time(default_domain):
-    tracker = DialogueStateTracker("default", default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+    tracker = DialogueStateTracker("default", default_domain.slots)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
 

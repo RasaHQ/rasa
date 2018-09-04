@@ -1,0 +1,3 @@
+-r ../requirements.txt
+
+sklearn-crfsuite==0.3.6

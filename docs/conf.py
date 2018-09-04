@@ -14,7 +14,7 @@
 import re
 import sys
 import os
-import sphinx_rtd_theme
+import rasabaster
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -32,10 +32,16 @@ import sphinx_rtd_theme
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
-    'nbsphinx',
     'sphinxcontrib.httpdomain',
+    'sphinxcontrib.programoutput',
+    'rasabaster.button',
+    'rasabaster.card',
+    'rasabaster.chatbubble',
+    'rasabaster.runnable',
+    'rasabaster.copyable'
 #    'numpydoc',
 ]
 
@@ -121,20 +127,25 @@ todo_include_todos = False
 # a list of builtin themes.
 
 
-html_theme = "sphinx_rtd_theme"
-html_theme_path = ["_themes", ]
+html_theme = "rasabaster"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
-
+html_theme_options = {
+    'description': "Rasa",
+    'github_user': 'RasaHQ',
+    'github_repo': 'rasa_core',
+    'fixed_sidebar': True,
+    'product': "Core",
+    'base_url': 'https://rasa.com/docs/core/'
+}
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
-#html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-#html_title = u'rasa v0.1'
+html_title = u''
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -169,6 +180,9 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
+html_sidebars = {
+   '**': ['rasaglobaltoc.html']
+}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
@@ -332,10 +346,25 @@ scv_priority = 'tags'
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ('semver',)
+scv_overflow = ("-A", "html_theme=rasabaster")
 scv_whitelist_branches = ('master', 'latest')
-scv_whitelist_tags = (re.compile(r'^[123456789]+\.[0-9]+\.\d+$'),
-                      re.compile(r'^0\.[89]+\.\d+$'),
+#scv_whitelist_tags = ('None',)
+scv_whitelist_tags = (re.compile(r'^[123456789]+\.\d+\.\d+$'),
+                      re.compile(r'^0\.[23456789]\d+\.\d+$'),
+                      re.compile(r'^0\.1[123456789]+\.\d+$'),
+                      '0.10.4',
+                      '0.9.8',
+                      '0.8.6',
                       '0.7.9',
                       '0.6.9')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_greatest_tag = True
+
+
+def setup(sphinx):
+    try:
+        sys.path.insert(0, os.path.abspath('./util'))
+        from StoryLexer import StoryLexer
+        sphinx.add_lexer("story", StoryLexer())
+    except ImportError:
+        print("No Story Lexer :( Sad times!")

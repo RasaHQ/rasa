@@ -1,23 +1,37 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import sys
+from builtins import input, range, str
+
+import inspect
+import io
 import json
 import logging
-import os, io
-import sys
-from collections import deque
-from hashlib import sha1
-from random import Random
-from threading import Thread
-
+import os
+import re
+import requests
 import six
-import yaml
-from builtins import input, range, str
+import tempfile
+from hashlib import sha1
 from numpy import all, array
-from typing import Text, Any, List, Optional
+from random import Random
+from requests.auth import HTTPBasicAuth
+from requests.exceptions import InvalidURL
+from threading import Thread
+from typing import Text, Any, List, Optional, Tuple, Dict, Set
+
+from rasa_nlu import utils as nlu_utils
+
+if six.PY2:
+    # noinspection PyUnresolvedReferences
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -35,20 +49,27 @@ def add_logging_option_arguments(parser):
 
     # arguments for logging configuration
     parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.WARNING,
-    )
-    parser.add_argument(
             '-v', '--verbose',
             help="Be verbose. Sets logging level to INFO",
             action="store_const",
             dest="loglevel",
             const=logging.INFO,
+            default=logging.INFO,
+    )
+    parser.add_argument(
+            '-vv', '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+    )
+    parser.add_argument(
+            '--quiet',
+            help="Be quiet! Sets logging level to WARNING",
+            action="store_const",
+            dest="loglevel",
+            const=logging.WARNING,
     )
 
 
@@ -75,14 +96,6 @@ def module_path_from_instance(inst):
     return inst.__module__ + "." + inst.__class__.__name__
 
 
-def all_subclasses(cls):
-    # type: (Any) -> List[Any]
-    """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [g for s in cls.__subclasses__()
-                                   for g in all_subclasses(s)]
-
-
 def dump_obj_as_json_to_file(filename, obj):
     # type: (Text, Any) -> None
     """Dump an object as a json string to a file."""
@@ -95,6 +108,7 @@ def dump_obj_as_str_to_file(filename, text):
     """Dump a text to a file."""
 
     with io.open(filename, 'w') as f:
+        # noinspection PyTypeChecker
         f.write(str(text))
 
 
@@ -118,6 +132,7 @@ def is_int(value):
 
     The type of the value is not important, it might be an int or a float."""
 
+    # noinspection PyBroadException
     try:
         return value == int(value)
     except Exception:
@@ -157,8 +172,8 @@ def create_dir_for_file(file_path):
 def one_hot(hot_idx, length, dtype=None):
     import numpy
     if hot_idx >= length:
-        raise Exception("Can't create one hot. Index '{}' is out "
-                        "of range (length '{}')".format(hot_idx, length))
+        raise ValueError("Can't create one hot. Index '{}' is out "
+                         "of range (length '{}')".format(hot_idx, length))
     r = numpy.zeros(length, dtype)
     r[hot_idx] = 1
     return r
@@ -209,7 +224,8 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
         return input_value
 
 
-class bcolors:
+# noinspection PyPep8Naming
+class bcolors(object):
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -226,55 +242,6 @@ def wrap_with_color(text, color):
 
 def print_color(text, color):
     print(wrap_with_color(text, color))
-
-
-class TopicStack(object):
-    def __init__(self, topics, iterable, default):
-        self.topics = topics
-        self.iterable = iterable
-        self.topic_names = [t.name for t in topics]
-        self.default = default
-        self.dq = deque(iterable, len(topics))
-
-    @property
-    def top(self):
-        if len(self.dq) < 1:
-            return self.default
-        return self.dq[-1]
-
-    def __iter__(self):
-        return self.dq.__iter__()
-
-    def next(self):
-        return self.dq.next()
-
-    def __len__(self):
-        return len(self.dq)
-
-    def push(self, x):
-        from rasa_core.conversation import Topic
-
-        if isinstance(x, six.string_types):
-            if x not in self.topic_names:
-                raise ValueError(
-                        "Unknown topic name: '{}', known topics in this domain "
-                        "are: {}".format(x, self.topic_names))
-            else:
-                x = self.topics[self.topic_names.index(x)]
-
-        elif not isinstance(x, Topic) or x not in self.topics:
-            raise ValueError(
-                    "Instance of type '{}' can not be used on the topic stack, "
-                    "not a valid topic!".format(type(x).__name__))
-
-        while self.dq.count(x) > 0:
-            self.dq.remove(x)
-        self.dq.append(x)
-
-    def pop(self):
-        if len(self.dq) < 1:
-            return None
-        return self.dq.pop()
 
 
 class HashableNDArray(object):
@@ -325,20 +292,86 @@ class HashableNDArray(object):
 
 def fix_yaml_loader():
     """Ensure that any string read by yaml is represented as unicode."""
-    from yaml import Loader, SafeLoader
+    import yaml
+    import re
 
     def construct_yaml_str(self, node):
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
 
-    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    # this will allow the reader to process emojis under py2
+    # need to differentiate between narrow build (e.g. osx, windows) and
+    # linux build. in the narrow build, emojis are 2 char strings using a
+    # surrogate
+    if sys.maxunicode == 0xffff:
+        # noinspection PyUnresolvedReferences
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\ude00-\ude50\udc4d\ud83c\udf89\ude80\udc4c\ud83e\uddde'
+                '\udd74\udcde\uddd1\udd16]')
+    else:
+        # noinspection PyUnresolvedReferences
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\U00010000-\U0010FFFF]')
+
+    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str',
+                                construct_yaml_str)
+    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
+                                    construct_yaml_str)
 
 
 def read_yaml_file(filename):
-    fix_yaml_loader()
-    return yaml.load(read_file(filename, "utf-8"))
+    """Read contents of `filename` interpreting them as yaml."""
+    return read_yaml_string(read_file(filename))
+
+
+def read_yaml_string(string):
+    if six.PY2:
+        import yaml
+
+        fix_yaml_loader()
+        return yaml.load(string)
+    else:
+        import ruamel.yaml
+
+        yaml_parser = ruamel.yaml.YAML(typ="safe")
+        yaml_parser.version = "1.1"
+        yaml_parser.unicode_supplementary = True
+
+        return yaml_parser.load(string)
+
+
+def _dump_yaml(obj, output):
+    if six.PY2:
+        import yaml
+
+        yaml.safe_dump(obj, output,
+                       default_flow_style=False,
+                       allow_unicode=True)
+    else:
+        import ruamel.yaml
+
+        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+        yaml_writer.unicode_supplementary = True
+        yaml_writer.default_flow_style = False
+        yaml_writer.version = "1.1"
+
+        yaml_writer.dump(obj, output)
+
+
+def dump_obj_as_yaml_to_file(filename, obj):
+    """Writes data (python dict) to the filename in yaml repr."""
+    with io.open(filename, 'w', encoding="utf-8") as output:
+        _dump_yaml(obj, output)
+
+
+def dump_obj_as_yaml_to_string(obj):
+    """Writes data (python dict) to a yaml string."""
+    str_io = StringIO()
+    _dump_yaml(obj, str_io)
+    return str_io.getvalue()
 
 
 def read_file(filename, encoding="utf-8"):
@@ -347,14 +380,34 @@ def read_file(filename, encoding="utf-8"):
         return f.read()
 
 
-def is_training_data_empty(X):
-    """Check if the training matrix does contain training samples."""
-    return X.shape[0] == 0
+def list_routes(app):
+    """List all available routes of a flask web server."""
+    from six.moves.urllib.parse import unquote
+    from flask import url_for
+
+    output = {}
+    with app.test_request_context():
+        for rule in app.url_map.iter_rules():
+
+            options = {}
+            for arg in rule.arguments:
+                options[arg] = "[{0}]".format(arg)
+
+            methods = ', '.join(rule.methods)
+
+            url = url_for(rule.endpoint, **options)
+            line = unquote(
+                    "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
+            output[url] = line
+
+        url_table = "\n".join(output[url] for url in sorted(output))
+        logger.debug("Available web server routes: \n{}".format(url_table))
+
+    return output
 
 
 def zip_folder(folder):
     """Create an archive from a folder."""
-    import tempfile
     import shutil
 
     zipped_path = tempfile.NamedTemporaryFile(delete=False)
@@ -399,3 +452,214 @@ def wait_for_threads(threads):
             sys.exit(0)
     logger.info("Finished waiting for input threads to terminate. "
                 "Stopping to serve forever.")
+
+
+def bool_arg(name, default=True):
+    # type: ( Text, bool) -> bool
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a valid
+    boolean value. If not, `default` is returned."""
+    from flask import request
+
+    return request.args.get(name, str(default)).lower() == 'true'
+
+
+def extract_args(kwargs,  # type: Dict[Text, Any]
+                 keys_to_extract  # type: Set[Text]
+                 ):
+    # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+    """Go through the kwargs and filter out the specified keys.
+
+    Return both, the filtered kwargs as well as the remaining kwargs."""
+
+    remaining = {}
+    extracted = {}
+    for k, v in kwargs.items():
+        if k in keys_to_extract:
+            extracted[k] = v
+        else:
+            remaining[k] = v
+
+    return extracted, remaining
+
+
+def arguments_of(func):
+    """Return the parameters of the function `func` as a list of their names."""
+
+    try:
+        # python 3.x is used
+        return inspect.signature(func).parameters.keys()
+    except AttributeError:
+        # python 2.x is used
+        # noinspection PyDeprecation
+        return inspect.getargspec(func).args
+
+
+def concat_url(base, subpath):
+    # type: (Text, Optional[Text]) -> Text
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
+    if subpath:
+        url = base
+        if not base.endswith("/"):
+            url += "/"
+        if subpath.startswith("/"):
+            subpath = subpath[1:]
+        return url + subpath
+    else:
+        return base
+
+
+def all_subclasses(cls):
+    # type: (Any) -> List[Any]
+    """Returns all known (imported) subclasses of a class."""
+
+    return cls.__subclasses__() + [g for s in cls.__subclasses__()
+                                   for g in all_subclasses(s)]
+
+
+def read_endpoint_config(filename, endpoint_type):
+    # type: (Text, Text) -> Optional[EndpointConfig]
+    """Read an endpoint configuration file from disk and extract one config. """
+
+    if not filename:
+        return None
+
+    content = read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
+
+
+def is_limit_reached(num_messages, limit):
+    return limit is not None and num_messages >= limit
+
+
+def read_lines(filename, max_line_limit=None, line_pattern=".*"):
+    """Read messages from the command line and print bot responses."""
+
+    line_filter = re.compile(line_pattern)
+
+    with io.open(filename, 'r') as f:
+        num_messages = 0
+        for line in f:
+            m = line_filter.match(line)
+            if m is not None:
+                yield m.group(1 if m.lastindex else 0)
+                num_messages += 1
+
+            if is_limit_reached(num_messages, max_line_limit):
+                break
+
+
+def download_file_from_url(url):
+    # type: (Text) -> Text
+    """Download a story file from a url and persists it into a temp file.
+
+    Returns the file path of the temp file that contains the
+    downloaded content."""
+
+    if not nlu_utils.is_url(url):
+        raise InvalidURL(url)
+
+    response = requests.get(url)
+    response.raise_for_status()
+    filename = nlu_utils.create_temporary_file(response.content,
+                                               mode="w+b")
+
+    return filename
+
+
+def remove_none_values(obj):
+    """Remove all keys that store a `None` value."""
+    return {k: v for k, v in obj.items() if v is not None}
+
+
+class EndpointConfig(object):
+    """Configuration for an external HTTP endpoint."""
+
+    def __init__(self, url, params=None, headers=None, basic_auth=None,
+                 token=None, token_name="token"):
+        self.url = url
+        self.params = params if params else {}
+        self.headers = headers if headers else {}
+        self.basic_auth = basic_auth
+        self.token = token
+        self.token_name = token_name
+
+    def request(self,
+                method="post",  # type: Text
+                subpath=None,  # type: Optional[Text]
+                content_type="application/json",  # type: Optional[Text]
+                **kwargs  # type: Any
+                ):
+        """Send a HTTP request to the endpoint.
+
+        All additional arguments will get passed through
+        to `requests.request`."""
+
+        # create the appropriate headers
+        headers = self.headers.copy()
+        if content_type:
+            headers["Content-Type"] = content_type
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
+
+        # create authentication parameters
+        if self.basic_auth:
+            auth = HTTPBasicAuth(self.basic_auth["username"],
+                                 self.basic_auth["password"])
+        else:
+            auth = None
+
+        url = concat_url(self.url, subpath)
+
+        # construct GET parameters
+        params = self.params.copy()
+
+        # set the authentication token if present
+        if self.token:
+            params[self.token_name] = self.token
+
+        if "params" in kwargs:
+            params.update(kwargs["params"])
+            del kwargs["params"]
+
+        return requests.request(method,
+                                url,
+                                headers=headers,
+                                params=params,
+                                auth=auth,
+                                **kwargs)
+
+    @classmethod
+    def from_dict(cls, data):
+        return EndpointConfig(
+                data.get("url"),
+                data.get("params"),
+                data.get("headers"),
+                data.get("basic_auth"),
+                data.get("token"),
+                data.get("token_name"))
+
+    def __eq__(self, other):
+        if isinstance(self, type(other)):
+            return (other.url == self.url and
+                    other.params == self.params and
+                    other.headers == self.headers and
+                    other.basic_auth == self.basic_auth and
+                    other.token == self.token and
+                    other.token_name == self.token_name)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

@@ -4,14 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-
 from flask import Blueprint, request, jsonify
+from telegram import (
+    Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
+    KeyboardButton, ReplyKeyboardMarkup)
 
-from telegram import (Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
-                      KeyboardButton, ReplyKeyboardMarkup)
-
+from rasa_core.channels import InputChannel
 from rasa_core.channels.channel import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +18,19 @@ logger = logging.getLogger(__name__)
 class TelegramOutput(Bot, OutputChannel):
     """Output channel for Telegram"""
 
+    @classmethod
+    def name(cls):
+        return "telegram"
+
     def __init__(self, access_token):
         super(TelegramOutput, self).__init__(access_token)
 
     def send_text_message(self, recipient_id, message):
-        return self.send_message(recipient_id, message)
+        for message_part in message.split("\n\n"):
+            self.send_message(recipient_id, message_part)
 
     def send_image_url(self, recipient_id, image_url):
-        return self.send_photo(recipient_id, image_url)
+        self.send_photo(recipient_id, image_url)
 
     def send_text_with_buttons(self, recipient_id, text,
                                buttons, button_type="inline", **kwargs):
@@ -66,11 +70,15 @@ class TelegramOutput(Bot, OutputChannel):
                          'button type {}'.format(button_type))
             return
 
-        return self.send_message(recipient_id, text, reply_markup=reply_markup)
+        self.send_message(recipient_id, text, reply_markup=reply_markup)
 
 
-class TelegramInput(HttpInputComponent):
+class TelegramInput(InputChannel):
     """Telegram input channel"""
+
+    @classmethod
+    def name(cls):
+        return "telegram"
 
     def __init__(self, access_token, verify, webhook_url, debug_mode=True):
         self.access_token = access_token
@@ -107,7 +115,6 @@ class TelegramInput(HttpInputComponent):
             else:
                 logger.warning("Webhook Setup Failed")
                 return "Invalid webhook"
-        set_webhook()
         
         @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
         def message():
@@ -121,19 +128,19 @@ class TelegramInput(HttpInputComponent):
                 update = Update.de_json(request.get_json(force=True),
                                         out_channel)
                 if self._is_button(update):
-                    message = update.callback_query.message
+                    msg = update.callback_query.message
                     text = update.callback_query.data
                 else:
-                    message = update.message
-                    if self._is_user_message(message):
-                        text = message.text.replace('/bot', '')
-                    elif self._is_location(message):
+                    msg = update.message
+                    if self._is_user_message(msg):
+                        text = msg.text.replace('/bot', '')
+                    elif self._is_location(msg):
                         text = ('{{"lng":{0}, "lat":{1}}}'
-                                ''.format(message.location.longitude,
-                                          message.location.latitude))
+                                ''.format(msg.location.longitude,
+                                          msg.location.latitude))
                     else:
                         return "success"
-                sender_id = message.chat.id
+                sender_id = msg.chat.id
                 try:
                     if text == '_restart' or text == '/restart':
                         on_new_message(UserMessage(text, out_channel,
@@ -153,4 +160,5 @@ class TelegramInput(HttpInputComponent):
 
                 return "success"
 
+        set_webhook()
         return telegram_webhook

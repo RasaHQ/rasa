@@ -4,11 +4,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.channels import UserMessage
-from rasa_core.domain import TemplateDomain
+from rasa_core.domain import Domain
 from rasa_core.events import SlotSet, ActionExecuted, Restarted
 from rasa_core.tracker_store import InMemoryTrackerStore
 
-domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
+domain = Domain.load("data/test_domains/default.yml")
 
 
 def test_get_or_create():

@@ -52,8 +52,9 @@ def create_argument_parser():
 
 
 if __name__ == '__main__':
-    parser = create_argument_parser()
-    args = parser.parse_args()
+    arg_parser = create_argument_parser()
+    args = arg_parser.parse_args()
+
     utils.configure_colored_logging(args.loglevel)
 
     agent = Agent(args.domain, policies=[MemoizationPolicy(), KerasPolicy()])

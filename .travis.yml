@@ -11,14 +11,13 @@ python:
 install:
 - sudo apt-get update
 - sudo apt-get install graphviz graphviz-dev
-- pip install --only-binary=numpy,scipy,scikit-learn numpy scipy scikit-learn
 - pip install -r dev-requirements.txt
 - pip install -e .
 - pip install coveralls==1.3.0
 - pip list
 script:
 - travis_wait py.test tests --cov rasa_core --pep8 -v
-# - cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
+ #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
 - openssl aes-256-cbc -K $encrypted_050c822e99ef_key -iv $encrypted_050c822e99ef_iv
   -in docs/key.enc -out docs/key -d
@@ -26,13 +25,12 @@ after_success:
 jobs:
   include:
   - stage: docs
-    if: fork = false
+    if: fork = false AND branch = "master"
     install:
     - sudo apt-get update
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1 sphinxcontrib-httpdomain==1.5.0
-      nbsphinx==0.2.13
-    - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+    - pip install -r docs-requirements.txt
     - pip install -e .
+    - pip list
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
     - openssl aes-256-cbc
@@ -45,8 +43,9 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs docs .
+    - sphinx-versioning push docs newdocs . -- -b dirhtml -A html_theme=rasabaster
   - stage: deploy
+    python: 3.6
     install: skip
     script: skip
     deploy:
