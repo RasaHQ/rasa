@@ -3,12 +3,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import requests
+
 import json
 
 from httpretty import httpretty
+from threading import Thread
 
 from rasa_core import utils
-from rasa_core.channels import console
+from rasa_core.utils import EndpointConfig
 from tests import utilities
 from tests.conftest import MOODBOT_MODEL_PATH
 
@@ -17,11 +20,11 @@ MODEL_PATH = MOODBOT_MODEL_PATH
 
 
 def test_console_input():
-    import rasa_core.channels.console
+    from rasa_core.channels import console
 
     # Overwrites the input() function and when someone else tries to read
     # something from the command line this function gets called.
-    with utilities.mocked_cmd_input(rasa_core.channels.console,
+    with utilities.mocked_cmd_input(console,
                                     text="Test Input"):
         httpretty.register_uri(httpretty.POST,
                                'https://abc.defg/webhooks/rest/webhook',
@@ -285,6 +288,61 @@ def test_twilio_channel():
                 'twilio_webhook.message')
     finally:
         s.stop()
+
+
+# USED FOR DOCS - don't rename without changing in the docs
+def test_callback_channel():
+    from rasa_core.channels.callback import CallbackInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+    input_channel = CallbackInput(
+            # URL Core will call to send the bot responses
+            endpoint=EndpointConfig("http://localhost:5004")
+    )
+
+    # set serve_forever=False if you want to keep the server running
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+    # END DOC INCLUDE
+    # the above marker marks the end of the code snipped included
+    # in the docs
+    try:
+        assert s.started
+        routes_list = utils.list_routes(s.application)
+        assert routes_list.get("/webhooks/callback/").startswith(
+                'callback_webhook.health')
+        assert routes_list.get("/webhooks/callback/webhook").startswith(
+                'callback_webhook.webhook')
+    finally:
+        s.stop()
+
+
+def test_callback_calls_endpoint():
+    from rasa_core.channels.callback import CallbackOutput
+
+    httpretty.register_uri(httpretty.POST,
+                           'https://mycallback.com/callback')
+
+    httpretty.enable()
+
+    output = CallbackOutput(EndpointConfig('https://mycallback.com/callback'))
+
+    output.send_response("test-id", {"text": "Hi there!",
+                                     "image": "https://myimage.com/image.jpg"})
+
+    httpretty.disable()
+
+    image = httpretty.latest_requests[-1]
+    text = httpretty.latest_requests[-2]
+
+    assert image.parsed_body['recipient_id'] == "test-id"
+    assert image.parsed_body['image'] == "https://myimage.com/image.jpg"
+
+    assert text.parsed_body['recipient_id'] == "test-id"
+    assert text.parsed_body['text'] == "Hi there!"
 
 
 def test_slack_init_one_parameter():
