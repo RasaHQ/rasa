@@ -85,8 +85,8 @@ Samples which have not been predicted correctly are logged and saved to a file
 called ``errors.json`` for easier debugging. 
 Finally, the evaluation script creates a histogram of the confidence distribution for all predictions,
 separating the confidence of wrong and correct predictions in different bars of the histogram.
-Improving the quality of your training data will move the green histogram bars
-(confidence of the correct predictions) to the right and the red histogram bars
+Improving the quality of your training data will move the blue-ish histogram bars
+(confidence of the correct predictions) to the right and the wine-ish histogram bars
 (confidence of wrong predictions) to the left.
 
 

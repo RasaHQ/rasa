@@ -125,11 +125,12 @@ def plot_confusion_matrix(cm, classes,
 def plot_histogram(hist_data, out=None):    # pragma: no cover
     """Plot a histogram of the confidence distribution of the predictions in
     two columns.
-    Green for the confidences of hits, Red for the confidences of misses.
+    Wine-ish colour for the confidences of hits.
+    Blue-ish colour for the confidences of misses.
     Saves the plot to a file."""
     import matplotlib.pyplot as plt
 
-    colors = ['#59c16a', '#f77f76']
+    colors = ['#009292', '#920000']     #
     bins = [0.05 * i for i in range(1, 21)]
 
     plt.xlim([0, 1])
