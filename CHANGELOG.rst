@@ -16,6 +16,18 @@ Added
 
 Changed
 -------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.11.2] - 2018-09-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
 - improved documentation for events (e.g. including json serialisation)
 
 Removed
@@ -24,7 +36,7 @@ Removed
   (``/parse`` & ``/continue``)
 
 Fixed
--------
+-----
 - read in fallback command line args
 
 
