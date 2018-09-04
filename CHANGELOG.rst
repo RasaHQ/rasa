@@ -21,7 +21,23 @@ Removed
 -------
 
 Fixed
+-----
+
+[0.11.2] - 2018-09-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
 -------
+- improved documentation for events (e.g. including json serialisation)
+
+Removed
+-------
+- outdated documentation for removed endpoints in the server
+  (``/parse`` & ``/continue``)
+
+Fixed
+-----
+- read in fallback command line args
 
 [0.11.2] - XXXXXX
 ^^^^^^^^^^^^^^^^^
