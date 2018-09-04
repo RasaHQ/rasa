@@ -7,7 +7,10 @@ import argparse
 import logging
 import json
 import pickle
+import os
+import io
 from collections import defaultdict
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -35,7 +38,7 @@ def create_argument_parser():
             required=True,
             help="file or folder containing stories to evaluate on")
     parser.add_argument(
-            '-o', '--output',
+            '-o', '--out',
             type=str,
             default="results/",
             help="output path for the results")
@@ -53,8 +56,10 @@ def run_comparison_evaluation(models, stories, output):
     for run in nlu_utils.list_subdirectories(models):
         correct_embed = []
         correct_keras = []
-        for model in nlu_utils.list_subdirectories(run):
+
+        for model in sorted(nlu_utils.list_subdirectories(run)):
             logger.info("Evaluating model {}".format(model))
+
             actual, preds, failed_stories, no_of_stories = \
                 collect_story_predictions(stories,
                                           model)
@@ -62,11 +67,13 @@ def run_comparison_evaluation(models, stories, output):
                 correct_keras.append(no_of_stories - len(failed_stories))
             elif 'embed' in model:
                 correct_embed.append(no_of_stories - len(failed_stories))
+
         num_correct['keras'].append(correct_keras)
         num_correct['embed'].append(correct_embed)
 
     utils.create_dir_for_file(output)
-    with open(output + 'results.json', 'wb') as f:
+
+    with io.open(os.path.join(output, 'results.json'), 'w') as f:
         json.dump(num_correct, f)
 
 
@@ -75,9 +82,13 @@ def plot_curve(output, no_stories, ax=None, **kwargs):
     """ plots the results from run_comparison_evaluation"""
 
     ax = ax or plt.gca()
-    with open(output + 'results.json') as f:
+
+    # load results from file
+    with io.open(os.path.join(output, 'results.json')) as f:
         data = json.load(f)
     x = no_stories
+
+    # compute mean of all the runs for keras/embed policies
     for label in ['keras', 'embed']:
         if len(data[label]) == 0:
             continue
@@ -92,7 +103,7 @@ def plot_curve(output, no_stories, ax=None, **kwargs):
     ax.legend(loc=4)
     ax.set_xlabel("Number of stories present during training")
     ax.set_ylabel("Number of correct test stories")
-    plt.savefig(output + 'graph.pdf', format='pdf')
+    plt.savefig(os.path.join(output, 'graph.pdf'), format='pdf')
     plt.show()
 
 
@@ -103,8 +114,9 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
 
     run_comparison_evaluation(cmdline_args.models, cmdline_args.stories,
-                              cmdline_args.output)
+                              cmdline_args.out)
 
-    no_stories = pickle.load(open(cmdline_args.models + 'num_stories.p', 'rb'))
+    no_stories = pickle.load(io.open(os.path.join(cmdline_args.models,
+                                                  'num_stories.p'), 'rb'))
 
-    plot_curve(cmdline_args.output, no_stories)
+    plot_curve(cmdline_args.out, no_stories)

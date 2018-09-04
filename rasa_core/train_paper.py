@@ -7,6 +7,7 @@ import argparse
 import logging
 import pickle
 import os
+import io
 
 from rasa_core.agent import Agent
 from rasa_core.featurizers import (LabelTokenizerSingleStateFeaturizer,
@@ -40,7 +41,7 @@ def create_argument_parser():
     parser.add_argument(
             '--epochs_embed',
             type=int,
-            default=2000,
+            default=1000,
             help="number of epochs for the embedding policy")
     parser.add_argument(
             '--epochs_keras',
@@ -174,10 +175,10 @@ if __name__ == '__main__':
 
     no_stories = get_no_of_stories(cmdline_args.exclude, cmdline_args.domain)
 
-    # store the list of the number of stories excluded at each exclusion
+    # store the list of the number of stories present at each exclusion
     # percentage
     story_range = [no_stories - round((x/100.0) * no_stories) for x in
                    cmdline_args.percentages]
 
     pickle.dump(story_range,
-                open(os.path.join(cmdline_args.out, 'num_stories.p'), 'wb'))
+                io.open(os.path.join(cmdline_args.out, 'num_stories.p'), 'wb'))

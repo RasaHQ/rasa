@@ -21,6 +21,7 @@ from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
+from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,7 @@ def collect_story_predictions(resource_name, policy_model_path,
     else:
         interpreter = RegexInterpreter()
 
-    agent = Agent.load(policy_model_path, interpreter=interpreter)
+    agent = Agent.load(policy_model_path, interpreter=interpreter, action_endpoint=EndpointConfig("http://localhost:5055/webhook"))
     story_graph = training.extract_story_graph(resource_name, agent.domain,
                                                interpreter)
     preds = []
@@ -142,7 +143,7 @@ def collect_story_predictions(resource_name, policy_model_path,
                 story["predicted"].extend(p)
                 story["actual"].extend(a)
                 actions_between_utterances = []
-                agent.handle_message(event.text, sender_id=sender_id)
+                agent.handle_text(event.text, sender_id=sender_id)
                 tracker = agent.tracker_store.retrieve(sender_id)
                 last_prediction = actions_since_last_utterance(tracker)
 
