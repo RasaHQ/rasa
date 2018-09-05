@@ -677,7 +677,9 @@ class ActionExecuted(Event):
         super(ActionExecuted, self).__init__(timestamp)
 
     def __str__(self):
-        return "ActionExecuted(action: {})".format(self.action_name)
+        return ("ActionExecuted(action: {}, policy: {}, policy_confidence: {})"
+                "".format(self.action_name, self.policy,
+                          self.policy_confidence))
 
     def __hash__(self):
         return hash(self.action_name)
