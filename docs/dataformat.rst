@@ -39,7 +39,9 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     - [0-9]{5}
 
     ## lookup:currencies   <!-- lookup table with (USD, Yen, euro, etc.) -->
-    - path/to/currency.txt
+    - Yen
+    - USD
+    - Euro
 
 The training data for Rasa NLU is structured into different parts:
 examples, synonyms, regex features, and lookup tables. 
@@ -47,7 +49,7 @@ examples, synonyms, regex features, and lookup tables.
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up. 
 
-Lookup tables may be specified as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.  For example, in this case a list of currency names is supplied so that it is easier to pick out this entity.
+Lookup tables may be specified either directly as lists or as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.  For example, in this case a list of currency names is supplied so that it is easier to pick out this entity.
 
 JSON Format
 -----------

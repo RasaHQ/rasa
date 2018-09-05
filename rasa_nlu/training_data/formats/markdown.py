@@ -49,9 +49,9 @@ class MarkdownReader(TrainingDataReader):
             header = self._find_section_header(line)
             if header:
                 self._set_current_section(header[0], header[1])
-            else:                
+            else:
                 self._parse_item(line)
-                self._load_files(line)                                
+                self._load_files(line)
         return TrainingData(self.training_examples, self.entity_synonyms,
                             self.regex_features, self.lookup_tables)
 
@@ -101,7 +101,7 @@ class MarkdownReader(TrainingDataReader):
                 self.regex_features.append(
                     {"name": self.current_title, "pattern": item})
             elif self.current_section == LOOKUP:
-                self._add_item_to_lookup(item)                
+                self._add_item_to_lookup(item)
 
     def _add_item_to_lookup(self, item):
         """Takes a list of lookup table dictionaries.  Finds the one associated
@@ -232,7 +232,7 @@ class MarkdownWriter(TrainingDataWriter):
             elements = lookup_table["elements"]
             if isinstance(elements, list):
                 for e in elements:
-                    md += self._generate_item_md(e)                    
+                    md += self._generate_item_md(e)
             else:
                 md += self._generate_fname_md(elements)
         return md
@@ -247,7 +247,7 @@ class MarkdownWriter(TrainingDataWriter):
         return "  {}\n".format(text)
 
     def _generate_item_md(self, text):
-        """generates markdown for a list item."""
+        """generates markdown for a lookup table file path."""
         return "- {}\n".format(text)
 
     def _generate_message_md(self, message):
