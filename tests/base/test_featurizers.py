@@ -105,17 +105,18 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 
 
 @pytest.mark.parametrize("sentence, expected, labeled_tokens", [
-    ("lemonade and mapo tofu", [1, 1], [0., 2., 3.]),
-    ("a cup of tea", [1, 0], [3.]),
-    ("Is burrito my favorite food?", [0, 1], [1.]),
-    ("I want club mate", [1, 0], [2., 3.])
+    ("lemonade and mapo tofu", [1, 1, 0], [0., 2., 3.]),
+    ("a cup of tea", [1, 0, 0], [3.]),
+    ("Is burrito my favorite food?", [0, 1, 1], [1., 2.]),
+    ("I want club mate", [1, 0, 1], [0., 2., 3.])
 ])
 def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 
     lookups = [
-        {"name": 'drinks', "file_path": "data/test/lookup_tables/drinks.txt"},
-        {"name": 'plates', "file_path": "data/test/lookup_tables/plates.txt"}
+        {"name": 'drinks', "elements": "data/test/lookup_tables/drinks.txt"},
+        {"name": 'plates', "elements": "data/test/lookup_tables/plates.txt"},
+        {"name": 'people', "elements": ['I','my']}
     ]
     ftr = RegexFeaturizer(lookup_tables=lookups)
 

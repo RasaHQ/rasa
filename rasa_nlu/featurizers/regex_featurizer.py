@@ -7,6 +7,8 @@ import logging
 import os
 import re
 import warnings
+import io
+import sys
 
 import typing
 from typing import Any, Dict, List, Optional, Text
@@ -16,7 +18,6 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.util import generate_lookup_regex
 
 import numpy as np
 
@@ -71,7 +72,7 @@ class RegexFeaturizer(Featurizer):
         # appends the regex features from the lookup tables to
         # self.known_patterns
         for table in lookup_tables:
-            regex_pattern = generate_lookup_regex(table['file_path'])
+            regex_pattern = self._generate_lookup_regex(table)
             lookup_regex = {'name': table['name'],
                             'pattern': regex_pattern}
             self.known_patterns.append(lookup_regex)
@@ -100,6 +101,27 @@ class RegexFeaturizer(Featurizer):
                 t.set("pattern", patterns)
         found = [1.0 if m is not None else 0.0 for m in matches]
         return np.array(found)
+
+    def _generate_lookup_regex(self, lookup_table):
+        """creates a regex out of the contents of a lookup table file"""
+        lookup_elements = lookup_table['elements']
+        elements_to_regex = []
+        # if it's a string, it should be a filepath
+        if isinstance(lookup_elements, str):
+            with io.open(lookup_elements, 'r') as f:
+                for line in f:
+                    new_element = line.strip()
+                    if new_element:
+                        elements_to_regex.append(new_element)
+        # otherwise, its a list of elements
+        elif isinstance(lookup_elements, list):
+            elements_to_regex = lookup_elements
+        else:
+            raise ValueError(
+                "lookup table elements must be a string for specifying filename or a list for specifying elements directly")
+        """regex matching elements with word boundaries on either side """
+        regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_to_regex) + '\\b)'
+        return regex_string
 
     @classmethod
     def load(cls,

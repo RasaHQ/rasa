@@ -126,7 +126,15 @@ def _rasa_nlu_data_schema():
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "file_path": {"type": "string"},
+            "elements": {
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": { "type": "string" }
+                    },
+                    {"type": "string"}
+                ]
+            }
         }
     }
 

@@ -38,7 +38,7 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     ## regex:zipcode
     - [0-9]{5}
 
-    ## lookup:currencies   <!-- lookup table of account names for improving entity extraction (USD, Yen, euro, etc.) -->
+    ## lookup:currencies   <!-- lookup table with (USD, Yen, euro, etc.) -->
     - path/to/currency.txt
 
 The training data for Rasa NLU is structured into different parts:
@@ -237,7 +237,7 @@ for these extractors. Currently, all intent classifiers make use of available re
 
 Lookup Tables
 -------------
-Lookup tables in the form of external files can also be specified in the training data.  The externally supplied lookup tables must be in a newline-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
+Lookup tables in the form of external files or lists of elements may also be specified in the training data.  The externally supplied lookup tables must be in a newline-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
 
 .. include:: ../data/test/lookup_tables/plates.txt
 
@@ -250,11 +250,37 @@ And can be loaded as:
             "lookup_tables": [
                 {
                     "name": "plates",
-                    "file_path": "data/test/lookup_tables/plates.txt"
+                    "elements": "data/test/lookup_tables/plates.txt"
                 }
             ]
         }
     }
+
+whereas lookup elements may be directly included as 
+
+    {
+        "rasa_nlu_data": {
+            "lookup_tables": [
+                {
+                    "name": "plates",
+                    "elements": ["beans", "rice", "tacos", "cheese"]
+                }
+            ]
+        }
+    }
+
+In markdown data format, lookup table filenames are indicated as a single `*` element
+
+    # lookup:plates
+    * data/test/lookup_tables/plates.txt
+
+whereas direct elements are inserted by `-` tokens
+
+  # lookup:plates
+  - beans
+  - rice
+  - tacos
+  - cheese
 
 When lookup tables are supplied in training data, the contents are combined into a large, case-insensitive regex pattern that looks for exact matches in the training examples.  These regexes match over multiple tokens, so ``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``.  These regexes are processed identically to the regular regex patterns directly specified in the training data.
 

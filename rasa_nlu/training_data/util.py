@@ -26,23 +26,3 @@ def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
     if text in entity_synonyms and entity_synonyms[text] != syn:
         logger.warning("Found inconsistent entity synonyms while {0}, overwriting {1}->{2}"
                        "with {1}->{2} during merge".format(context_str, text, entity_synonyms[text], syn))
-
-
-def generate_lookup_regex(file_path):
-    """creates a regex out of the contents of a lookup table file"""
-    lookup_elements = []
-    with io.open(file_path, 'r') as f:
-        for line in f:
-            new_element = line.strip()
-            if new_element:
-                lookup_elements.append(new_element)
-    # regex matching for elements of lookup table with word boundaries on either side
-    regex_string = '(?i)(\\b' + '\\b|\\b'.join(lookup_elements) + '\\b)'
-
-    """log info about the lookup table"""
-    num_words = len(lookup_elements)
-    regex_size = sys.getsizeof(regex_string)
-    logger.debug("found {} words in lookup table '{}' "
-                 "with a size of {:.2e} bytes".format(num_words, file_path, regex_size))
-
-    return regex_string
