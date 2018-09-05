@@ -229,14 +229,22 @@ class MarkdownWriter(TrainingDataWriter):
         for i, lookup_table in enumerate(lookup_tables):
             md += self._generate_section_header_md(
                 LOOKUP, lookup_table["name"])
-            md += self._generate_item_md(lookup_table["file_path"])
-
+            elements = lookup_table["elements"]
+            if isinstance(elements, list):
+                for e in elements:
+                    md += self._generate_item_md(e)                    
+            else:
+                md += self._generate_fname_md(elements)
         return md
 
     def _generate_section_header_md(self, section_type, title, prepend_newline=True):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
         return prefix + "## {}:{}\n".format(section_type, title)
+
+    def _generate_fname_md(self, text):
+        """generates markdown for a list item."""
+        return "  {}\n".format(text)
 
     def _generate_item_md(self, text):
         """generates markdown for a list item."""
