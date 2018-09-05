@@ -428,13 +428,15 @@ if __name__ == '__main__':
 
     _endpoints = read_endpoints(cmdline_args.endpoints)
 
-    router = DataRouter(cmdline_args.path,
-                        cmdline_args.max_training_processes,
-                        cmdline_args.response_log,
-                        cmdline_args.emulate,
-                        cmdline_args.storage,
-                        _endpoints.model,
-                        cmdline_args.wait_time_between_pulls)
+    router = DataRouter(
+            cmdline_args.path,
+            cmdline_args.max_training_processes,
+            cmdline_args.response_log,
+            cmdline_args.emulate,
+            cmdline_args.storage,
+            model_server=_endpoints.model,
+            wait_time_between_pulls=cmdline_args.wait_time_between_pulls
+    )
     if pre_load:
         logger.debug('Preloading....')
         if 'all' in pre_load:

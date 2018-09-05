@@ -284,8 +284,8 @@ class Project(object):
                                                 model_name  # type: Text
                                                 ):
         # unload all loaded models
-        for model_name in self._list_loaded_models():
-            self.unload(model_name)
+        for model in self._list_loaded_models():
+            self.unload(model)
 
         self._begin_read()
         status = False
