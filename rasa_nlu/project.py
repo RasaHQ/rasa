@@ -7,19 +7,20 @@ import datetime
 import logging
 import os
 import tempfile
-import time
 import zipfile
-from builtins import object
 from threading import Lock, Thread
 from typing import Text, List
 
 import six
+import time
+from builtins import object
+from requests.exceptions import InvalidURL, RequestException
+
 from rasa_nlu import utils
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.model import Metadata, Interpreter
 from rasa_nlu.utils import is_url, EndpointConfig
-from requests.exceptions import InvalidURL, RequestException
 
 if six.PY2:
     from StringIO import StringIO as IOReader
@@ -75,7 +76,8 @@ def _update_model_from_server(model_server, project):
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
         project.fingerprint = new_model_fingerprint
-        project.update_model_from_dir(model_directory, model_name)
+        project.update_model_from_dir_and_unload_others(model_directory,
+                                                        model_name)
     else:
         logger.debug("No new model found at URL {}".format(model_server))
 
@@ -277,12 +279,17 @@ class Project(object):
 
         return status
 
-    def update_model_from_dir(self,
-                              model_dir,  # type: Text
-                              model_name  # type: Text
-                              ):
+    def update_model_from_dir_and_unload_others(self,
+                                                model_dir,  # type: Text
+                                                model_name  # type: Text
+                                                ):
+        # unload all loaded models
+        for model_name in self._list_loaded_models():
+            self.unload(model_name)
+
         self._begin_read()
         status = False
+
         logger.debug('Loading model {} from directory {}'.format(
                 model_name, model_dir))
 
