@@ -83,8 +83,12 @@ Furthermore, it creates a confusion matrix for you to see which
 intents are mistaken for which others.
 Samples which have not been predicted correctly are logged and saved to a file 
 called ``errors.json`` for easier debugging. 
-Finally, the evaluation script creates a histogram of the confidence distribution for all predictions. 
-Improving the quality of your training data will move the histogram bars to the right.
+Finally, the evaluation script creates a histogram of the confidence distribution for all predictions,
+separating the confidence of wrong and correct predictions in different bars of the histogram.
+Improving the quality of your training data will move the blue-ish histogram bars
+(confidence of the correct predictions) to the right and the wine-ish histogram bars
+(confidence of wrong predictions) to the left.
+
 
 .. note::
     A confusion matrix will **only** be created if you are evaluating a model on a test set.
