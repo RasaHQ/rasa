@@ -118,7 +118,8 @@ class RegexFeaturizer(Featurizer):
             elements_to_regex = lookup_elements
         else:
             raise ValueError(
-                "lookup table elements must be a string for specifying filename or a list for specifying elements directly")
+                """lookup table elements must be a string for specifying
+                filename or a list for specifying elements directly""")
         """regex matching elements with word boundaries on either side """
         regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_to_regex) + '\\b)'
         return regex_string
