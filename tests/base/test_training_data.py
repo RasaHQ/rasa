@@ -68,10 +68,33 @@ def test_dialogflow_data():
     assert len(td.training_examples) == 24
     assert td.intents == {"affirm", "goodbye", "hi", "inform"}
     assert td.entities == {"cuisine", "location"}
-    non_trivial_synonyms = {k: v for k, v in td.entity_synonyms.items() if k != v}
+    non_trivial_synonyms = {k: v for k,
+                            v in td.entity_synonyms.items() if k != v}
     assert non_trivial_synonyms == {"mexico": "mexican",
                                     "china": "chinese",
                                     "india": "indian"}
+
+
+def test_lookup_table_json():
+    lookup_fname = 'data/test/lookup_tables/plates.txt'
+    td_lookup = training_data.load_data(
+        'data/test/lookup_tables/lookup_table.json')      
+    assert td_lookup.lookup_tables[0]['name'] == 'plates'
+    assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
+    assert td_lookup.lookup_tables[1]['name'] == 'drinks'
+    assert td_lookup.lookup_tables[1]['elements'] == [
+        'mojito', 'lemonade', 'sweet berry wine', 'tea', 'club mate']
+
+
+def test_lookup_table_md():
+    lookup_fname = 'data/test/lookup_tables/plates.txt'  
+    td_lookup = training_data.load_data(
+        'data/test/lookup_tables/lookup_table.md')
+    assert td_lookup.lookup_tables[0]['name'] == 'plates'
+    assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
+    assert td_lookup.lookup_tables[1]['name'] == 'drinks'
+    assert td_lookup.lookup_tables[1]['elements'] == [
+        'mojito', 'lemonade', 'sweet berry wine', 'tea', 'club mate']
 
 
 @pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json", 'data/examples/rasa/demo-rasa.md'])
@@ -122,10 +145,13 @@ def test_data_merging(files):
 
 
 def test_markdown_single_sections():
-    td_regex_only = training_data.load_data('data/test/markdown_single_sections/regex_only.md')
-    assert td_regex_only.regex_features == [{"name": "greet", "pattern": "hey[^\s]*"}]
+    td_regex_only = training_data.load_data(
+        'data/test/markdown_single_sections/regex_only.md')
+    assert td_regex_only.regex_features == [
+        {"name": "greet", "pattern": "hey[^\s]*"}]
 
-    td_syn_only = training_data.load_data('data/test/markdown_single_sections/synonyms_only.md')
+    td_syn_only = training_data.load_data(
+        'data/test/markdown_single_sections/synonyms_only.md')
     assert td_syn_only.entity_synonyms == {'Chines': 'chinese',
                                            'Chinese': 'chinese'}
 

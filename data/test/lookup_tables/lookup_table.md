@@ -5,7 +5,11 @@
 - I would like to drink [sweet berry wine](beverage) with my meal
 
 ## lookup:plates
-- data/test/lookup_tables/plates.txt
+data/test/lookup_tables/plates.txt
 
 ## lookup:drinks
-- data/test/lookup_tables/drinks.txt
+ - mojito
+ - lemonade
+ - sweet berry wine
+ - tea
+ - club mate

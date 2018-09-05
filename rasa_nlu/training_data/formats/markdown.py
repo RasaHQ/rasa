@@ -23,7 +23,7 @@ ent_regex = re.compile(r'\[(?P<entity_text>[^\]]+)'
 
 item_regex = re.compile(r'\s*[-\*+]\s*(.+)')
 comment_regex = re.compile(r'<!--[\s\S]*?--!*>', re.MULTILINE)
-fname_regex = re.compile(r'\s*(.+)')
+fname_regex = re.compile(r'\s*([^-\*+]+)')
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +49,9 @@ class MarkdownReader(TrainingDataReader):
             header = self._find_section_header(line)
             if header:
                 self._set_current_section(header[0], header[1])
-            else:
-                self._load_files(line)
+            else:                
                 self._parse_item(line)
+                self._load_files(line)                                
         return TrainingData(self.training_examples, self.entity_synonyms,
                             self.regex_features, self.lookup_tables)
 
@@ -80,7 +80,8 @@ class MarkdownReader(TrainingDataReader):
         filename into the lookup table slot for processing from the regex
         featurizer."""
         if self.current_section == LOOKUP:
-            match = re.match(item_regex, line)
+            # import pdb; pdb.set_trace()
+            match = re.match(fname_regex, line)
             if match:
                 fname = match.group(1)
                 self.lookup_tables.append(
@@ -100,7 +101,7 @@ class MarkdownReader(TrainingDataReader):
                 self.regex_features.append(
                     {"name": self.current_title, "pattern": item})
             elif self.current_section == LOOKUP:
-                self._add_item_to_lookup(item)
+                self._add_item_to_lookup(item)                
 
     def _add_item_to_lookup(self, item):
         """Takes a list of lookup table dictionaries.  Finds the one associated
@@ -108,11 +109,10 @@ class MarkdownReader(TrainingDataReader):
         matches = [l for l in self.lookup_tables
                    if l["name"] == self.current_title]
         if not matches:
-            return
-        elif len(matches > 1):
-            raise ValueError("more than one lookup table name supplied")
+            self.lookup_tables.append(
+                {"name": self.current_title, "elements": [item]})
         else:
-            elements = matches[0]
+            elements = matches[0]['elements']
             elements.append(item)
 
     def _find_entities_in_training_example(self, example):
