@@ -78,7 +78,7 @@ def test_dialogflow_data():
 def test_lookup_table_json():
     lookup_fname = 'data/test/lookup_tables/plates.txt'
     td_lookup = training_data.load_data(
-        'data/test/lookup_tables/lookup_table.json')      
+        'data/test/lookup_tables/lookup_table.json')
     assert td_lookup.lookup_tables[0]['name'] == 'plates'
     assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
     assert td_lookup.lookup_tables[1]['name'] == 'drinks'
@@ -87,7 +87,7 @@ def test_lookup_table_json():
 
 
 def test_lookup_table_md():
-    lookup_fname = 'data/test/lookup_tables/plates.txt'  
+    lookup_fname = 'data/test/lookup_tables/plates.txt'
     td_lookup = training_data.load_data(
         'data/test/lookup_tables/lookup_table.md')
     assert td_lookup.lookup_tables[0]['name'] == 'plates'
