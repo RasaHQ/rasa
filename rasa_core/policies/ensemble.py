@@ -219,6 +219,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         if "FallbackPolicy" in policy_names:
             idx = policy_names.index("FallbackPolicy")
             fallback_policy = self.policies[idx]
+
             if (result.index(max_confidence) == 0 and
                 not best_policy_name.endswith("MemoizationPolicy") and
                     isinstance(tracker.events[-1], UserUttered)):
@@ -228,7 +229,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
         # normalize probablilities
         if np.sum(result) != 0:
-            result = result / np.linalg.norm(result)
+            result = result / np.nansum(result)
+            print(result)
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
         return result, best_policy_name
