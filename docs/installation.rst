@@ -81,10 +81,10 @@ rather than free text.
 
 Build your first Rasa assistant!
 --------------------------------
-After you follow the quickstart and install the Rasa NLU, the next step is to 
+After following the quickstart and installing Rasa Core, the next step is to 
 build your first Rasa assistant yourself! To get you started, we have prepared a 
 Rasa Stack starter-pack which has all the files you need to build your first custom 
-chatbot. On top of that, the starter-pack includes a very cool training dataset ready 
+chatbot. On top of that, the starter-pack includes a training data set ready 
 for you to use.
 
 Click the linke below to get the Rasa Stack starter-pack:
