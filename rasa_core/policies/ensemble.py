@@ -20,6 +20,8 @@ from rasa_core import utils, training, constants
 from rasa_core.events import SlotSet, ActionExecuted, UserUttered
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.fallback import FallbackPolicy
+from rasa_core.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -196,8 +198,16 @@ class PolicyEnsemble(object):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
 
+    def is_wrong_actionlisten(self, tracker, result, best_policy_name,
+                              max_confidence):
+        return (result.index(max_confidence) == 0 and not
+                (best_policy_name.endswith("." + MemoizationPolicy.__name__) or
+                best_policy_name.endswith("." +
+                                          AugmentedMemoizationPolicy.__name__))
+                and isinstance(tracker.events[-1], UserUttered))
+
     def probabilities_using_best_policy(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
+        # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -216,21 +226,22 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         # policy is present, there was just a user message and the predicted
         # action is action_listen by a policy other than the MemoizationPolicy
 
-        if "FallbackPolicy" in policy_names:
+        if FallbackPolicy.__name__ in policy_names:
             idx = policy_names.index("FallbackPolicy")
             fallback_policy = self.policies[idx]
 
-            if (result.index(max_confidence) == 0 and
-                not best_policy_name.endswith("MemoizationPolicy") and
-                    isinstance(tracker.events[-1], UserUttered)):
+            if self.is_wrong_actionlisten(tracker, result, best_policy_name,
+                                          max_confidence):
                 result = fallback_policy.predict_action_probabilities(
                                             tracker, domain, force=True)
-                best_policy_name = 'policy_{}_{}'.format(idx, "FallbackPolicy")
+                best_policy_name = 'policy_{}_{}'.format(
+                                            idx,
+                                            type(fallback_policy).__name__)
 
         # normalize probablilities
         if np.sum(result) != 0:
             result = result / np.nansum(result)
-            print(result)
+
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
         return result, best_policy_name
