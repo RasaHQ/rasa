@@ -182,8 +182,7 @@ class MarkdownWriter(TrainingDataWriter):
         md = u''
         for i, example in enumerate(training_examples):
             if i == 0 or training_examples[i - 1]['intent'] != example['intent']:
-                md += self._generate_section_header_md(
-                    INTENT, example['intent'], i != 0)
+                md += self._generate_section_header_md(INTENT, example['intent'], i != 0)
 
             md += self._generate_item_md(self._generate_message_md(example))
 
@@ -236,11 +235,11 @@ class MarkdownWriter(TrainingDataWriter):
         return prefix + "## {}:{}\n".format(section_type, title)
 
     def _generate_item_md(self, text):
-        """generates markdown for a lookup table file path."""
+        """generates markdown for a list item."""
         return "- {}\n".format(text)
 
     def _generate_fname_md(self, text):
-        """generates markdown for a list item."""
+        """generates markdown for a lookup table file path."""
         return "  {}\n".format(text)
 
     def _generate_message_md(self, message):

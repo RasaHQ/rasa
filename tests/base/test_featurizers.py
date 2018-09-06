@@ -105,18 +105,17 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
 
 
 @pytest.mark.parametrize("sentence, expected, labeled_tokens", [
-    ("lemonade and mapo tofu", [1, 1, 0], [0., 2., 3.]),
-    ("a cup of tea", [1, 0, 0], [3.]),
-    ("Is burrito my favorite food?", [0, 1, 1], [1., 2.]),
-    ("I want club mate", [1, 0, 1], [0., 2., 3.])
+    ("lemonade and mapo tofu", [1, 1], [0., 2., 3.]),
+    ("a cup of tea", [1, 0], [3.]),
+    ("Is burrito my favorite food?", [0, 1], [1.]),
+    ("I want club mate", [1, 0], [2., 3.])
 ])
 def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 
     lookups = [
-        {"name": 'drinks', "elements": "data/test/lookup_tables/drinks.txt"},
-        {"name": 'plates', "elements": "data/test/lookup_tables/plates.txt"},
-        {"name": 'people', "elements": ['I', 'my']}
+        {"name": 'drinks', "elements": ["mojito", "lemonade", "sweet berry wine", "tea", "club mate"]},
+        {"name": 'plates', "elements": "data/test/lookup_tables/plates.txt"}
     ]
     ftr = RegexFeaturizer(lookup_tables=lookups)
 
@@ -156,7 +155,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
         assert np.allclose(vecs, vecs_capitalized, atol=1e-5), \
             "Vectors are unequal for texts '{}' and '{}'".format(
-                e.text, e.text.capitalize())
+                    e.text, e.text.capitalize())
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -251,8 +250,8 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     tokens_feature = [Token(i, 0) for i in tokens]
 
     train_message = Message("")
-    train_message.set("tokens", tokens_feature)  # this is needed for a valid training example
-    train_message.set("intent", "bla")
+    train_message.set("tokens", tokens_feature)
+    train_message.set("intent", "bla")  # this is needed for a valid training example
     data = TrainingData([train_message])
 
     ftr.train(data)
