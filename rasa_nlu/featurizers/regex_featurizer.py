@@ -106,8 +106,8 @@ class RegexFeaturizer(Featurizer):
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table['elements']
         elements_to_regex = []
-        # if it's a string, it should be a filepath
-        if isinstance(lookup_elements, str):
+        # if it's a string or unicode, it should be a filepath
+        if isinstance(lookup_elements, (str, unicode)):
             with io.open(lookup_elements, 'r') as f:
                 for line in f:
                     new_element = line.strip()
