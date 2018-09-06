@@ -98,13 +98,15 @@ class MessageProcessor(object):
                            "'{}'.".format(sender_id))
             return None
 
-        probabilities, _ = self._get_next_action_probabilities(tracker)
+        probabilities, policy = \
+            self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
         scores = [{"action": a, "score": p}
                   for a, p in zip(self.domain.action_names, probabilities)]
         return {
             "scores": scores,
+            "policy": policy,
             "tracker": tracker.current_state(should_include_events=True)
         }
 
@@ -144,7 +146,7 @@ class MessageProcessor(object):
         return tracker
 
     def predict_next_action(self, tracker):
-        # type: (DialogueStateTracker) -> Action
+        # type: (DialogueStateTracker) -> Tuple[Action, Text, float]
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use
