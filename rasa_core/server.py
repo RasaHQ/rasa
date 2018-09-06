@@ -420,11 +420,12 @@ def create_app(agent,
         policy_ensemble = agent.policy_ensemble
         probabilities, _ = policy_ensemble.probabilities_using_best_policy(
                                                 tracker, agent.domain)
-        probability_dict = {agent.domain.action_for_index(
-                                            idx,
-                                            agent.action_endpoint).name():
-                            probability for idx, probability in
-                            enumerate(probabilities)}
+        
+        probability_dict = {}
+        for idx, probability in enumerate(probabilities):
+            action_name = agent.domain.action_names[idx]
+            probability_dict[action_name] = probability
+
         return jsonify(probability_dict)
 
     return app
