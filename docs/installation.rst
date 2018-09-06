@@ -79,8 +79,17 @@ You can also use other NLU services like wit.ai, dialogflow, or LUIS.
 In fact, you don't need to use NLU at all, if your messaging app uses buttons
 rather than free text.
 
-Getting Started
----------------
+Build your first Rasa assistant!
+--------------------------------
+After you follow the quickstart and install the Rasa NLU, the next step is to 
+build your first Rasa assistant yourself! To get you started, we have prepared a 
+Rasa Stack starter-pack which has all the files you need to build your first custom 
+chatbot. On top of that, the starter-pack includes a very cool training dataset ready 
+for you to use.
 
-To see your newly installed Rasa Core in action, head over to the 
-:ref:`quickstart`.
+Click the linke below to get the Rasa Stack starter-pack:
+	
+`Rasa Stack starter-pack <https://github.com/RasaHQ/starter-pack-rasa-stack>`_
+	
+Let us know how you are getting on! If you have any questions about the starter-pack or 
+using Rasa Stack in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!
