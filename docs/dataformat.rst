@@ -258,7 +258,7 @@ And can be loaded as:
         }
     }
 
-whereas lookup elements may be directly included as 
+Alternatively, lookup elements may be directly included as a list
 
     {
         "rasa_nlu_data": {
@@ -271,12 +271,12 @@ whereas lookup elements may be directly included as
         }
     }
 
-In markdown data format, lookup table filenames are indicated as a single `*` element
+In markdown data format, lookup table filenames are indicated by specifying a single file path directly after the lookup header.
 
     # lookup:plates
-    * data/test/lookup_tables/plates.txt
+    data/test/lookup_tables/plates.txt
 
-whereas direct elements are inserted by `-` tokens
+whereas elements are inserted by `-`, `*`, or `+` tokens
 
   # lookup:plates
   - beans

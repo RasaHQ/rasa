@@ -7,12 +7,7 @@
       },
       {
         "name": "drinks",
-        "elements": ["mojito",
-          "lemonade",
-          "sweet berry wine",
-          "tea",
-          "club mate"
-        ]
+        "elements": ["mojito", "lemonade", "sweet berry wine", "tea", "club mate"]
       }
     ],    
     "common_examples": [

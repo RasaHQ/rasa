@@ -106,20 +106,19 @@ class RegexFeaturizer(Featurizer):
         """creates a regex out of the contents of a lookup table file"""
         lookup_elements = lookup_table['elements']
         elements_to_regex = []
-        # if it's a string or unicode, it should be a filepath
-        if isinstance(lookup_elements, (str, unicode)):
+
+        # if it's a list, it should be the elements directly
+        if isinstance(lookup_elements, list):
+            elements_to_regex = lookup_elements
+
+        # otherwise it's a file path.
+        else:
             with io.open(lookup_elements, 'r') as f:
                 for line in f:
                     new_element = line.strip()
                     if new_element:
                         elements_to_regex.append(new_element)
-        # otherwise, its a list of elements
-        elif isinstance(lookup_elements, list):
-            elements_to_regex = lookup_elements
-        else:
-            raise ValueError(
-                """lookup table elements must be a string for specifying
-                filename or a list for specifying elements directly""")
+
         """regex matching elements with word boundaries on either side """
         regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_to_regex) + '\\b)'
         return regex_string

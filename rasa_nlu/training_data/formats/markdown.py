@@ -109,8 +109,7 @@ class MarkdownReader(TrainingDataReader):
         matches = [l for l in self.lookup_tables
                    if l["name"] == self.current_title]
         if not matches:
-            self.lookup_tables.append(
-                {"name": self.current_title, "elements": [item]})
+            self.lookup_tables.append({"name": self.current_title, "elements": [item]})
         else:
             elements = matches[0]['elements']
             elements.append(item)
@@ -122,22 +121,19 @@ class MarkdownReader(TrainingDataReader):
         for match in re.finditer(ent_regex, example):
             entity_text = match.groupdict()['entity_text']
             entity_type = match.groupdict()['entity']
-            entity_value = match.groupdict()['value'] if match.groupdict()[
-                'value'] else entity_text
+            entity_value = match.groupdict()['value'] if match.groupdict()['value'] else entity_text
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_text)
             offset += len(match.group(0)) - len(entity_text)
 
-            entity = build_entity(start_index, end_index,
-                                  entity_value, entity_type)
+            entity = build_entity(start_index, end_index, entity_value, entity_type)
             entities.append(entity)
 
         return entities
 
     def _add_synonym(self, text, value):
-        check_duplicate_synonym(self.entity_synonyms,
-                                text, value, "reading markdown")
+        check_duplicate_synonym(self.entity_synonyms, text, value, "reading markdown")
         self.entity_synonyms[text] = value
 
     def _add_synonyms(self, plain_text, entities):
@@ -150,8 +146,7 @@ class MarkdownReader(TrainingDataReader):
     def _parse_training_example(self, example):
         """Extract entities and synonyms, and convert to plain text."""
         entities = self._find_entities_in_training_example(example)
-        plain_text = re.sub(ent_regex, lambda m: m.groupdict()[
-                            'entity_text'], example)
+        plain_text = re.sub(ent_regex, lambda m: m.groupdict()['entity_text'], example)
         self._add_synonyms(plain_text, entities)
         message = Message(plain_text, {'intent': self.current_title})
         if len(entities) > 0:
@@ -214,8 +209,7 @@ class MarkdownWriter(TrainingDataWriter):
         regex_features = training_data.regex_features
         for i, regex_feature in enumerate(regex_features):
             if i == 0 or regex_features[i - 1]["name"] != regex_feature["name"]:
-                md += self._generate_section_header_md(
-                    REGEX, regex_feature["name"])
+                md += self._generate_section_header_md(REGEX, regex_feature["name"])
 
             md += self._generate_item_md(regex_feature["pattern"])
 
@@ -227,8 +221,7 @@ class MarkdownWriter(TrainingDataWriter):
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
         for i, lookup_table in enumerate(lookup_tables):
-            md += self._generate_section_header_md(
-                LOOKUP, lookup_table["name"])
+            md += self._generate_section_header_md(LOOKUP, lookup_table["name"])
             elements = lookup_table["elements"]
             if isinstance(elements, list):
                 for e in elements:
@@ -242,13 +235,13 @@ class MarkdownWriter(TrainingDataWriter):
         prefix = "\n" if prepend_newline else ""
         return prefix + "## {}:{}\n".format(section_type, title)
 
-    def _generate_fname_md(self, text):
-        """generates markdown for a list item."""
-        return "  {}\n".format(text)
-
     def _generate_item_md(self, text):
         """generates markdown for a lookup table file path."""
         return "- {}\n".format(text)
+
+    def _generate_fname_md(self, text):
+        """generates markdown for a list item."""
+        return "  {}\n".format(text)
 
     def _generate_message_md(self, message):
         """generates markdown for a message object."""

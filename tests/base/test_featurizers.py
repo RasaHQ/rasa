@@ -34,8 +34,7 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
     from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 
-    ftr = MitieFeaturizer.create(
-        config.load("sample_configs/config_mitie.yml"))
+    ftr = MitieFeaturizer.create(config.load("sample_configs/config_mitie.yml"))
     sentence = "Hey how are you today"
     tokens = MitieTokenizer().tokenize(sentence)
     vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)
@@ -54,14 +53,14 @@ def test_ngram_featurizer(spacy_nlp):
     greet = {"intent": "greet", "text_features": [0.5]}
     goodbye = {"intent": "goodbye", "text_features": [0.5]}
     labeled_sentences = [
-        Message("heyheyheyhey", greet),
-        Message("howdyheyhowdy", greet),
-        Message("heyhey howdyheyhowdy", greet),
-        Message("howdyheyhowdy heyhey", greet),
-        Message("astalavistasista", goodbye),
-        Message("astalavistasista sistala", goodbye),
-        Message("sistala astalavistasista", goodbye),
-    ] * repetition_factor
+                            Message("heyheyheyhey", greet),
+                            Message("howdyheyhowdy", greet),
+                            Message("heyhey howdyheyhowdy", greet),
+                            Message("howdyheyhowdy heyhey", greet),
+                            Message("astalavistasista", goodbye),
+                            Message("astalavistasista sistala", goodbye),
+                            Message("sistala astalavistasista", goodbye),
+                        ] * repetition_factor
 
     for m in labeled_sentences:
         m.set("spacy_doc", spacy_nlp(m.text))
@@ -157,7 +156,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
         assert np.allclose(vecs, vecs_capitalized, atol=1e-5), \
             "Vectors are unequal for texts '{}' and '{}'".format(
-            e.text, e.text.capitalize())
+                e.text, e.text.capitalize())
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -252,8 +251,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     tokens_feature = [Token(i, 0) for i in tokens]
 
     train_message = Message("")
-    train_message.set("tokens", tokens_feature)
-    # this is needed for a valid training example
+    train_message.set("tokens", tokens_feature)  # this is needed for a valid training example
     train_message.set("intent", "bla")
     data = TrainingData([train_message])
 
