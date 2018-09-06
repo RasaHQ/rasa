@@ -1,6 +1,0 @@
-{
-  "tests/base/test_featurizers.py::test_lookup_tables[I want club mate-expected3-labeled_tokens3]": true, 
-  "tests/base/test_featurizers.py::test_lookup_tables[Is burrito my favorite food?-expected2-labeled_tokens2]": true, 
-  "tests/base/test_featurizers.py::test_lookup_tables[a cup of tea-expected1-labeled_tokens1]": true, 
-  "tests/base/test_featurizers.py::test_lookup_tables[lemonade and mapo tofu-expected0-labeled_tokens0]": true
-}
