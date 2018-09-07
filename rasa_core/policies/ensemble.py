@@ -230,8 +230,11 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             if (result.index(max_confidence) == 0 and
                     self.is_not_memo_policy(best_policy_name)
                     and isinstance(tracker.events[-1], UserUttered)):
-                result = fallback_policy.predict_action_probabilities(
-                                            tracker, domain, force=True)
+                logger.debug("Action listen was predicted after a user message."
+                             " Predicting fallback action: {}"
+                             "".format(type(fallback_policy).__name__))
+                result = fallback_policy.fallback_scores(domain)
+
                 best_policy_name = 'policy_{}_{}'.format(
                                             idx,
                                             type(fallback_policy).__name__)
