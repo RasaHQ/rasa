@@ -139,3 +139,19 @@ sklearn:
 
 .. literalinclude:: ../sample_configs/config_mitie_sklearn.yml
     :language: yaml
+
+
+Train your first custom Rasa NLU model!
+---------------------------------------
+After following the quickstart and installing Rasa NLU, the next step is to 
+build something yourself! To get you started, we have prepared a 
+Rasa NLU starter-pack which has all the files you need to train your first custom Rasa NLU model.
+On top of that, the starter-pack includes a training dataset ready 
+for you to use.
+
+Click the link below to get the Rasa NLU starter-pack:
+	
+`Rasa NLU starter-pack <https://github.com/RasaHQ/starter-pack-rasa-nlu>`_
+	
+Let us know how you are getting on! If you have any questions about the starter-pack or 
+using Rasa NLU in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!    
