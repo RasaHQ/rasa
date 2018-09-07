@@ -8,6 +8,7 @@ import os
 
 from rasa_core.evaluate import run_story_evaluation, \
     collect_story_predictions
+from rasa_core.run import AvailableEndpoints
 from tests.conftest import DEFAULT_STORIES_FILE
 
 
@@ -21,6 +22,7 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     run_story_evaluation(
             resource_name=DEFAULT_STORIES_FILE,
             policy_model_path=model_path,
+            endpoints= AvailableEndpoints(None, None, None, None),
             nlu_model_path=None,
             out_file_plot=img_path,
             max_stories=None,
@@ -40,6 +42,7 @@ def test_evaluation_script(tmpdir, default_agent):
     actual, preds, failed_stories = collect_story_predictions(
             resource_name=DEFAULT_STORIES_FILE,
             policy_model_path=model_path,
+            endpoints=AvailableEndpoints(None, None, None, None),
             nlu_model_path=None,
             max_stories=None)
     assert len(actual) == 14
