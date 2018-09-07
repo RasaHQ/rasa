@@ -301,7 +301,7 @@ class Agent(object):
         if not self.is_ready():
             return noop(message)  #
 
-        processor = self._create_processor(message_preprocessor)
+        processor = self.create_processor(message_preprocessor)
         return processor.handle_message(message)
 
     # noinspection PyUnusedLocal
@@ -313,7 +313,7 @@ class Agent(object):
         # type: (Text, Any) -> Dict[Text, Any]
         """Handle a single message."""
 
-        processor = self._create_processor()
+        processor = self.create_processor()
         return processor.predict_next(sender_id)
 
     # noinspection PyUnusedLocal
@@ -326,7 +326,7 @@ class Agent(object):
         # type: (...) -> Dict[Text, Any]
         """Append a message to a dialogue - does not predict actions."""
 
-        processor = self._create_processor(message_preprocessor)
+        processor = self.create_processor(message_preprocessor)
         tracker = processor.log_message(message)
         return tracker.current_state(should_include_events=True)
 
@@ -339,7 +339,7 @@ class Agent(object):
         # type: (...) -> DialogueStateTracker
         """Handle a single message."""
 
-        processor = self._create_processor()
+        processor = self.create_processor()
         dispatcher = Dispatcher(sender_id,
                                 output_channel,
                                 self.nlg)
@@ -613,7 +613,7 @@ class Agent(object):
                                 "You need to set an interpreter, a policy "
                                 "ensemble as well as a tracker store.")
 
-    def _create_processor(self, preprocessor=None):
+    def create_processor(self, preprocessor=None):
         # type: (Optional[Callable[[Text], Text]]) -> MessageProcessor
         """Instantiates a processor based on the set state of the agent."""
         # Checks that the interpreter and tracker store are set and
