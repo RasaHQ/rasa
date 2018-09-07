@@ -232,7 +232,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     and isinstance(tracker.events[-1], UserUttered)):
                 logger.debug("Action listen was predicted after a user message."
                              " Predicting fallback action: {}"
-                             "".format(type(fallback_policy).__name__))
+                             "".format(fallback_policy.fallback_action_name))
                 result = fallback_policy.fallback_scores(domain)
 
                 best_policy_name = 'policy_{}_{}'.format(
