@@ -3,11 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from collections import deque
+
 import copy
 import io
 import logging
-from collections import deque
-
 import typing
 from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
@@ -306,7 +306,7 @@ class DialogueStateTracker(object):
         Returns the dumped tracker as a string."""
         from rasa_core.training.structures import Story
 
-        story = Story.from_events(self.applied_events())
+        story = Story.from_events(self.applied_events(), self.sender_id)
         return story.as_story_string(flat=True)
 
     def export_stories_to_file(self, export_path="debug.md"):

@@ -80,7 +80,7 @@ class Event(object):
                           parameters,  # type: Dict[Text, Any]
                           default=None  # type: Optional[Type[Event]]
                           ):
-        # type: (...) -> Optional[Event]
+        # type: (...) -> Optional[List[Event]]
         event = Event.resolve_by_type(event_name, default)
 
         if event:
@@ -107,8 +107,9 @@ class Event(object):
 
     @classmethod
     def _from_story_string(cls, parameters):
+        # type: (Dict[Text, Any]) -> Optional[List[Event]]
         """Called to convert a parsed story line into an event."""
-        return cls(parameters.get("timestamp"))
+        return [cls(parameters.get("timestamp"))]
 
     def as_dict(self):
         return {
@@ -125,7 +126,7 @@ class Event(object):
         decide to handle parameters differently if the parsed parameters
         don't origin from a story file."""
 
-        return cls._from_story_string(parameters)
+        return [cls._from_story_string(parameters)]
 
     @staticmethod
     def resolve_by_type(type_name, default=None):
@@ -212,10 +213,11 @@ class UserUttered(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
+        # type: (Dict[Text, Any]) -> Optional[List[Event]]
         try:
-            return cls._from_parse_data(parameters.get("text"),
-                                        parameters.get("parse_data"),
-                                        parameters.get("timestamp"))
+            return [cls._from_parse_data(parameters.get("text"),
+                                         parameters.get("parse_data"),
+                                         parameters.get("timestamp"))]
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
@@ -334,6 +336,8 @@ class SlotSet(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
+        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+
         slots = []
         for slot_key, slot_val in parameters.items():
             slots.append(SlotSet(slot_key, slot_val))
@@ -509,12 +513,14 @@ class ReminderScheduled(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
+        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+
         trigger_date_time = parser.parse(parameters.get("date_time"))
-        return ReminderScheduled(parameters.get("action"),
-                                 trigger_date_time,
-                                 parameters.get("name", None),
-                                 parameters.get("kill_on_user_msg", True),
-                                 parameters.get("timestamp"))
+        return [ReminderScheduled(parameters.get("action"),
+                                  trigger_date_time,
+                                  parameters.get("name", None),
+                                  parameters.get("kill_on_user_msg", True),
+                                  parameters.get("timestamp"))]
 
 
 # noinspection PyProtectedMember
@@ -604,8 +610,10 @@ class FollowupAction(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        return FollowupAction(parameters.get("name"),
-                              parameters.get("timestamp"))
+        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+
+        return [FollowupAction(parameters.get("name"),
+                               parameters.get("timestamp"))]
 
     def as_dict(self):
         d = super(FollowupAction, self).as_dict()
@@ -676,7 +684,11 @@ class ActionExecuted(Event):
 
     type_name = "action"
 
-    def __init__(self, action_name, policy=None, policy_confidence=None, timestamp=None):
+    def __init__(self,
+                 action_name,
+                 policy=None,
+                 policy_confidence=None,
+                 timestamp=None):
         self.action_name = action_name
         self.policy = policy
         self.policy_confidence = policy_confidence
@@ -702,11 +714,13 @@ class ActionExecuted(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        return ActionExecuted(parameters.get("name"),
-                              parameters.get("policy"),
-                              parameters.get("policy_confidence"),
-                              parameters.get("timestamp")
-                              )
+        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+
+        return [ActionExecuted(parameters.get("name"),
+                               parameters.get("policy"),
+                               parameters.get("policy_confidence"),
+                               parameters.get("timestamp")
+                               )]
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()

@@ -8,18 +8,13 @@ from builtins import str
 import argparse
 import io
 import logging
-import uuid
-from difflib import SequenceMatcher
 from tqdm import tqdm
-from typing import Text, List, Tuple
 
 from rasa_core import training, run
 from rasa_core import utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
-from rasa_core.events import ActionExecuted, UserUttered, Event
-from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core.processor import MessageProcessor
+from rasa_core.events import ActionExecuted
+from rasa_core.interpreter import RasaNLUInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
@@ -60,67 +55,41 @@ def create_argument_parser():
     parser.add_argument(
             '--failed',
             type=str,
-            default="failed_stories.txt",
+            default="failed_stories.md",
             help="output path for the failed stories")
     parser.add_argument(
             '--endpoints',
             default=None,
             help="Configuration file for the connectors as a yml file")
+    parser.add_argument(
+            '--fail_on_prediction_errors',
+            action='store_true',
+            help="If a prediction error is encountered, an exception "
+                 "is thrown. This can be used to validate stories during "
+                 "tests, e.g. on travis.")
 
     utils.add_logging_option_arguments(parser)
     return parser
 
 
 # noinspection PyProtectedMember
-class WronglyPredictedAction(Event):
-    """The model predicted the wrong action."""
+class WronglyPredictedAction(ActionExecuted):
+    """The model predicted the wrong action.
+
+    Mostly used to mark wrong predictions and be able to
+    dump them as stories."""
 
     type_name = "wrong_action"
 
     def __init__(self, correct_action, predicted_action, timestamp=None):
         self.correct_action = correct_action
         self.predicted_action = predicted_action
-        super(WronglyPredictedAction, self).__init__(timestamp)
+        super(WronglyPredictedAction, self).__init__(correct_action,
+                                                     timestamp=timestamp)
 
     def as_story_string(self):
-        return self.correct_action + \
-               "   <!-- predicted: " + self.predicted_action + "-->"
-
-
-def align_lists(pred, actual):
-    # type: (List[Text], List[Text]) -> Tuple[List[Text], List[Text]]
-    """Align two lists trying to keep same elements at the same index.
-
-    If lists contain different items at some indices, the algorithm will
-    try to find the best alignment and pad with `None`
-    values where necessary."""
-
-    padded_pred = []
-    padded_actual = []
-    s = SequenceMatcher(None, pred, actual)
-
-    for tag, i1, i2, j1, j2 in s.get_opcodes():
-        padded_pred.extend(pred[i1:i2])
-        padded_pred.extend(["None"] * ((j2 - j1) - (i2 - i1)))
-
-        padded_actual.extend(actual[j1:j2])
-        padded_actual.extend(["None"] * ((i2 - i1) - (j2 - j1)))
-
-    return padded_pred, padded_actual
-
-
-def actions_since_last_utterance(tracker):
-    # type: (DialogueStateTracker) -> List[Text]
-    """Extract all events after the most recent utterance from the user."""
-
-    actions = []
-    for e in reversed(tracker.events):
-        if isinstance(e, UserUttered):
-            break
-        elif isinstance(e, ActionExecuted):
-            actions.append(e.action_name)
-    actions.reverse()
-    return actions
+        return "{}   <!-- predicted: {} -->".format(self.correct_action,
+                                                    self.predicted_action)
 
 
 def _generate_trackers(resource_name, agent, max_stories):
@@ -132,11 +101,48 @@ def _generate_trackers(resource_name, agent, max_stories):
     return g.generate()
 
 
+def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
+    processor = agent.create_processor()
+
+    golds = []
+    predictions = []
+
+    events = list(tracker.events)
+
+    partial_tracker = DialogueStateTracker.from_events(tracker.sender_id,
+                                                       events[:1],
+                                                       agent.domain.slots)
+
+    for event in events[1:]:
+        if isinstance(event, ActionExecuted):
+            action, _, _ = processor.predict_next_action(partial_tracker)
+
+            predicted = action.name()
+            gold = event.action_name
+
+            predictions.append(predicted)
+            golds.append(gold)
+
+            if predicted != gold:
+                partial_tracker.update(WronglyPredictedAction(gold, predicted))
+                if fail_on_prediction_errors:
+                    raise ValueError(
+                            "Model predicted a wrong action. Failed Story: "
+                            "\n\n{}".format(partial_tracker.export_stories()))
+            else:
+                partial_tracker.update(event)
+        else:
+            partial_tracker.update(event)
+
+    return golds, predictions, partial_tracker
+
+
 def collect_story_predictions(resource_name,
                               policy_model_path,
                               nlu_model_path,
                               max_stories,
-                              endpoints):
+                              endpoints,
+                              fail_on_prediction_errors=False):
     """Test the stories from a file, running them through the stored model."""
 
     interpreter = RasaNLUInterpreter.create(nlu_model_path, endpoints.nlu)
@@ -146,10 +152,8 @@ def collect_story_predictions(resource_name,
 
     completed_trackers = _generate_trackers(resource_name, agent, max_stories)
 
-    processor = agent.create_processor()  # type: MessageProcessor
-
     preds = []
-    actual = []
+    gold = []
 
     failed = []
 
@@ -157,38 +161,18 @@ def collect_story_predictions(resource_name,
                 "".format(len(completed_trackers)))
 
     for tracker in tqdm(completed_trackers):
-        contains_wrong_prediction = False
-        predicted_events = []
-        events = list(tracker.events)
+        curr_gold, curr_predictions, predicted_tracker = \
+            _predict_tracker_actions(tracker, agent, fail_on_prediction_errors)
 
-        for i, event in enumerate(events[1:]):
-            if isinstance(event, ActionExecuted):
-                sender_id = "default-" + uuid.uuid4().hex
-                partial_tracker = DialogueStateTracker.from_events(
-                        sender_id, events[:i + 1], agent.domain.slots)
-                action, _, _ = processor.predict_next_action(
-                        partial_tracker)
+        preds.extend(curr_predictions)
+        gold.extend(curr_gold)
 
-                preds.append(action.name())
-                actual.append(event.action_name)
+        all_predictions_are_correct = curr_gold == curr_predictions
 
-                if action.name() != event.action_name:
-                    contains_wrong_prediction = True
-                    predicted_events.append(WronglyPredictedAction(
-                            event.action_name,
-                            action.name()))
-                else:
-                    predicted_events.append(event)
-            else:
-                predicted_events.append(event)
+        if not all_predictions_are_correct:
+            failed.append(predicted_tracker)
 
-        if contains_wrong_prediction:
-            failure = DialogueStateTracker.from_events("test",
-                                                       predicted_events,
-                                                       agent.domain.slots)
-            failed.append(failure)
-
-    return actual, preds, failed
+    return gold, preds, failed
 
 
 def log_failed_stories(failed, failed_output):
@@ -210,13 +194,15 @@ def run_story_evaluation(resource_name, policy_model_path, endpoints,
                          nlu_model_path=None,
                          max_stories=None,
                          out_file_stories=None,
-                         out_file_plot=None):
+                         out_file_plot=None,
+                         fail_on_prediction_errors=False):
     """Run the evaluation of the stories, optionally plots the results."""
     test_y, preds, failed = collect_story_predictions(resource_name,
                                                       policy_model_path,
                                                       nlu_model_path,
                                                       max_stories,
-                                                      endpoints)
+                                                      endpoints,
+                                                      fail_on_prediction_errors)
     if out_file_plot:
         plot_story_evaluation(test_y, preds, out_file_plot)
 
@@ -253,6 +239,7 @@ if __name__ == '__main__':
                          cmdline_args.nlu,
                          cmdline_args.max_stories,
                          cmdline_args.failed,
-                         cmdline_args.output)
+                         cmdline_args.output,
+                         cmdline_args.fail_on_prediction_errors)
 
     logger.info("Finished evaluation")
