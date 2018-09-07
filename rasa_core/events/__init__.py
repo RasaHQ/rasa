@@ -58,7 +58,7 @@ def first_key(d, default_key):
 
 # noinspection PyProtectedMember
 class Event(object):
-    """Events describe everything that occurs in 
+    """Events describe everything that occurs in
     a conversation and tell the :class:`DialogueStateTracker`
     how to update its state."""
 
@@ -394,10 +394,10 @@ class Restarted(Event):
 
 # noinspection PyProtectedMember
 class UserUtteranceReverted(Event):
-    """Bot reverts everything until before the most recent user message. 
-    
-    The bot will revert all events after the latest `UserUttered`, this 
-    also means that the last event on the tracker is usually `action_listen` 
+    """Bot reverts everything until before the most recent user message.
+
+    The bot will revert all events after the latest `UserUttered`, this
+    also means that the last event on the tracker is usually `action_listen`
     and the bot is waiting for a new user message."""
 
     type_name = "rewind"
@@ -522,9 +522,9 @@ class ActionReverted(Event):
     """Bot undoes its last action.
 
     The bot everts everything until before the most recent action.
-    This includes the action itself, as well as any events that 
-    action created, like set slot events - the bot will now 
-    predict a new action using the state before the most recent 
+    This includes the action itself, as well as any events that
+    action created, like set slot events - the bot will now
+    predict a new action using the state before the most recent
     action."""
 
     type_name = "undo"
@@ -676,13 +676,17 @@ class ActionExecuted(Event):
 
     type_name = "action"
 
-    def __init__(self, action_name, timestamp=None):
+    def __init__(self, action_name, policy=None, policy_confidence=None, timestamp=None):
         self.action_name = action_name
+        self.policy = policy
+        self.policy_confidence = policy_confidence
         self.unpredictable = False
         super(ActionExecuted, self).__init__(timestamp)
 
     def __str__(self):
-        return "ActionExecuted(action: {})".format(self.action_name)
+        return ("ActionExecuted(action: {}, policy: {}, policy_confidence: {})"
+                "".format(self.action_name, self.policy,
+                          self.policy_confidence))
 
     def __hash__(self):
         return hash(self.action_name)
@@ -699,7 +703,10 @@ class ActionExecuted(Event):
     @classmethod
     def _from_story_string(cls, parameters):
         return ActionExecuted(parameters.get("name"),
-                              parameters.get("timestamp"))
+                              parameters.get("policy"),
+                              parameters.get("policy_confidence"),
+                              parameters.get("timestamp")
+                              )
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
