@@ -17,7 +17,7 @@ SYNONYM = "synonym"
 REGEX = "regex"
 available_sections = [INTENT, SYNONYM, REGEX]
 ent_regex = re.compile(r'\[(?P<entity_text>[^\]]+)'
-                       r'\]\((?P<entity>\w*?)'
+                       r'\]\((?P<entity>[^:)]*?)'
                        r'(?:\:(?P<value>[^)]+))?\)')  # [entity_text](entity_type(:entity_synonym)?)
 
 item_regex = re.compile(r'\s*[-\*+]\s*(.+)')
