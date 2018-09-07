@@ -216,7 +216,8 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         if endpoint:
             self.endpoint = endpoint
         else:
-            self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
+            self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL.format(
+                                           constants.DEFAULT_SERVER_PORT))
 
     def parse(self, text):
         """Parse a text message.

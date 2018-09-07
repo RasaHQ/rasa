@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 DEFAULT_SERVER_PORT = 5005
 
-DEFAULT_SERVER_URL = "http://localhost:{}".format(DEFAULT_SERVER_PORT)
+DEFAULT_SERVER_URL = "http://localhost:{}"
 
 MINIMUM_COMPATIBLE_VERSION = "0.11.0"
 

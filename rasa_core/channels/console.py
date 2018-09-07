@@ -12,7 +12,7 @@ import six
 from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string, RestInput
-from rasa_core.constants import DEFAULT_SERVER_URL
+from rasa_core.constants import DEFAULT_SERVER_URL, DEFAULT_SERVER_PORT
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
 
@@ -76,7 +76,7 @@ def send_message_receive_stream(server_url, auth_token, sender_id, message):
                 yield json.loads(line)
 
 
-def record_messages(server_url=DEFAULT_SERVER_URL,
+def record_messages(server_url=DEFAULT_SERVER_URL.format(DEFAULT_SERVER_PORT),
                     auth_token=None,
                     sender_id=UserMessage.DEFAULT_SENDER_ID,
                     max_message_limit=None,
