@@ -224,7 +224,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         # action is action_listen by a policy other than the MemoizationPolicy
 
         if FallbackPolicy.__name__ in policy_names:
-            idx = policy_names.index("FallbackPolicy")
+            idx = policy_names.index(FallbackPolicy.__name__)
             fallback_policy = self.policies[idx]
 
             if (result.index(max_confidence) == 0 and
