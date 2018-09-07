@@ -198,13 +198,10 @@ class PolicyEnsemble(object):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
 
-    def is_wrong_actionlisten(self, tracker, result, best_policy_name,
-                              max_confidence):
-        return (result.index(max_confidence) == 0 and not
-                (best_policy_name.endswith("." + MemoizationPolicy.__name__) or
-                best_policy_name.endswith("." +
-                                          AugmentedMemoizationPolicy.__name__))
-                and isinstance(tracker.events[-1], UserUttered))
+    def is_not_memo_policy(self, best_policy_name):
+        return not (best_policy_name.endswith("." + MemoizationPolicy.__name__)
+                    or best_policy_name.endswith(
+                                    "." + AugmentedMemoizationPolicy.__name__))
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
@@ -230,8 +227,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             idx = policy_names.index("FallbackPolicy")
             fallback_policy = self.policies[idx]
 
-            if self.is_wrong_actionlisten(tracker, result, best_policy_name,
-                                          max_confidence):
+            if (result.index(max_confidence) == 0 and
+                    self.is_not_memo_policy(best_policy_name)
+                    and isinstance(tracker.events[-1], UserUttered)):
                 result = fallback_policy.predict_action_probabilities(
                                             tracker, domain, force=True)
                 best_policy_name = 'policy_{}_{}'.format(
