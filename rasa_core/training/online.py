@@ -388,10 +388,10 @@ def serve_agent(agent, serve_forever=True, get_next_message=None):
 def serve_application(app, serve_forever=True, get_next_message=None):
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
     logger.info("Rasa Core server is up and running on "
-                "{}".format(DEFAULT_SERVER_URL.format(DEFAULT_SERVER_PORT)))
+                "{}".format(DEFAULT_SERVER_URL))
     http_server.start()
 
-    endpoint = EndpointConfig(url=DEFAULT_SERVER_URL.format(DEFAULT_SERVER_PORT))
+    endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
     start_online_learning_io(endpoint, http_server.stop, get_next_message)
 
     if serve_forever:

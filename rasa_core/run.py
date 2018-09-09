@@ -187,7 +187,7 @@ def start_server(input_channels,
 
     http_server = WSGIServer(('0.0.0.0', port), app)
     logger.info("Rasa Core server is up and running on "
-                "{}".format(constants.DEFAULT_SERVER_URL.format(port)))
+                "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
     http_server.start()
     return http_server
 
@@ -206,7 +206,7 @@ def serve_application(initial_agent,
                                port, initial_agent, enable_api)
 
     if channel == "cmdline":
-        start_cmdline_io(constants.DEFAULT_SERVER_URL.format(port),
+        start_cmdline_io(constants.DEFAULT_SERVER_FORMAT.format(port),
                          http_server.stop)
 
     try:

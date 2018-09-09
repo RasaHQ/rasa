@@ -140,7 +140,7 @@ def serve_application(model_directory,  # type: Text
     tracker = load_tracker_from_json(tracker_dump,
                                      agent.domain)
 
-    run.start_cmdline_io(constants.DEFAULT_SERVER_URL.format(port),
+    run.start_cmdline_io(constants.DEFAULT_SERVER_FORMAT.format(port),
                          http_server.stop, sender_id=tracker.sender_id)
 
     replay_events(tracker, agent)
