@@ -532,7 +532,7 @@ def _md_message(parse_data):
     if not parse_data.get("entities"):
         parse_data["entities"] = []
     # noinspection PyProtectedMember
-    return MarkdownWriter._generate_message_md(parse_data)
+    return MarkdownWriter()._generate_message_md(parse_data)
 
 
 def _validate_user_regex(latest_message, intents):
