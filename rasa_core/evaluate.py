@@ -60,7 +60,11 @@ def create_argument_parser():
             type=str,
             default="failed_stories.txt",
             help="output path for the failed stories")
-
+    parser.add_argument(
+            '--exit_code',
+            type=bool,
+            default=False,
+            help="if True, exit with code 1 if any stories fail. Default False")
     utils.add_logging_option_arguments(parser)
     return parser
 
@@ -191,7 +195,8 @@ def run_story_evaluation(resource_name, policy_model_path,
                          nlu_model_path=None,
                          max_stories=None,
                          out_file_stories=None,
-                         out_file_plot=None):
+                         out_file_plot=None,
+                         exit_code=False):
     """Run the evaluation of the stories, optionally plots the results."""
     test_y, preds, failed_stories = collect_story_predictions(resource_name,
                                                               policy_model_path,
@@ -201,6 +206,9 @@ def run_story_evaluation(resource_name, policy_model_path,
         plot_story_evaluation(test_y, preds, out_file_plot)
 
     log_failed_stories(failed_stories, out_file_stories)
+
+    if exit_code and len(failed_stories) > 0:
+        exit(1)
 
 
 def plot_story_evaluation(test_y, preds, out_file):
@@ -230,5 +238,6 @@ if __name__ == '__main__':
                          cmdline_args.nlu,
                          cmdline_args.max_stories,
                          cmdline_args.failed,
-                         cmdline_args.output)
+                         cmdline_args.output,
+                         cmdline_args.exit_code)
     logger.info("Finished evaluation")
