@@ -6,7 +6,7 @@ Choosing a Rasa NLU Pipeline
 ============================
 
 The Short Answer
-^^^^^^^^^^^^^^^^
+----------------
 
 If you have less than 1000 total training examples, and there is a spaCy model for your 
 language, use the ``spacy_sklearn`` pipeline:
@@ -28,7 +28,7 @@ It's good practice to define the ``language`` parameter in your configuration, b
 for the ``tensorflow_embedding`` pipeline this parameter doesn't affect anything.
 
 A Longer Answer
-^^^^^^^^^^^^^^^
+---------------
 
 The two most important pipelines are ``tensorflow_embedding`` and ``spacy_sklearn``.
 The biggest difference between them is that the ``spacy_sklearn`` pipeline uses pre-trained
@@ -60,7 +60,7 @@ We do not recommend that you use these; they are likely to be deprecated in a fu
 
 
 Multiple Intents
-~~~~~~~~~~~~~~~~
+----------------
 
 If you want to split intents into multiple labels, 
 e.g. for predicting multiple intents or for modeling hierarchical intent structure,
@@ -87,7 +87,7 @@ Here's an example configuration:
 
 
 Understanding the Rasa NLU Pipeline
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------
 
 In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
@@ -178,7 +178,7 @@ exactly. Instead it will return the trained synonym.
 
 
 Pre-configured Pipelines
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 
 A template is just a shortcut for 
 a full list of components. For example, these two configurations are equivalent:
@@ -294,7 +294,7 @@ To use the components and configure them separately:
 
 
 Custom pipelines
-^^^^^^^^^^^^^^^^
+----------------
 
 You don't have to use a template, you can run a fully custom pipeline
 by listing the names of the components you want to use:
@@ -313,12 +313,7 @@ You can find the details of each component in :ref:`section_pipeline`.
 If you want to use custom components in your pipeline, see :ref:`section_customcomponents`.
 
 
-Have questions or feedback?
----------------------------
-   
-We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
-that is happy to help you with your questions. If you have any feedback for us or a specific 
-suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 
+.. include:: feedback.inc
 
 .. raw:: html
    :file: livechat.html 

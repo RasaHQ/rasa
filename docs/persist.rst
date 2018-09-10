@@ -55,12 +55,8 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
 
 Models are gzipped before saving to cloud.
 
-Have questions or feedback?
----------------------------
-   
-We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
-that is happy to help you with your questions. If you have any feedback for us or a specific 
-suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 
+
+.. include:: feedback.inc
 
 .. raw:: html
    :file: livechat.html

@@ -80,12 +80,9 @@ A trained model from Chinese Wikipedia Dump and Baidu Baike can be `crownpku <ht
 
 .. _`MITIE Wordrep Tool`: https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep
 
-Have questions or feedback?
----------------------------
-   
-We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
-that is happy to help you with your questions. If you have any feedback for us or a specific 
-suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 
+
+.. include:: feedback.inc
 
 .. raw:: html
    :file: livechat.html
+

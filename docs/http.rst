@@ -175,12 +175,8 @@ This will unload a model from the server memory
 
     $ curl -X DELETE localhost:5000/models?project=my_restaurant_search_bot&model=model_XXXXXX
 
-Have questions or feedback?
----------------------------
-   
-We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
-that is happy to help you with your questions. If you have any feedback for us or a specific 
-suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 	
+
+.. include:: feedback.inc
 	
 .. raw:: html
    :file: livechat.html
