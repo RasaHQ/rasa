@@ -457,7 +457,10 @@ class TrainingDataGenerator(object):
 
             for tracker in incoming_trackers:
                 if tracker.sender_id:
-                    new_sender = tracker.sender_id + " > " + step.block_name
+                    if step.block_name not in tracker.sender_id.split(" > "):
+                        new_sender = tracker.sender_id + " > " + step.block_name
+                    else:
+                        new_sender = tracker.sender_id
                 else:
                     new_sender = step.block_name
                 trackers.append(tracker.copy(new_sender))
