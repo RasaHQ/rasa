@@ -29,7 +29,7 @@ def create_argument_parser():
 
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
-    group = parser.add_mutually_exclusive_group(required=True)
+    group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
             '-s', '--stories',
             type=str,
@@ -44,7 +44,7 @@ def create_argument_parser():
     parser.add_argument(
             '-o', '--out',
             type=str,
-            required=True,
+            required=False,
             help="directory to persist the trained model in")
     parser.add_argument(
             '-d', '--domain',
@@ -218,6 +218,8 @@ if __name__ == '__main__':
             raise ValueError("--load_model can only be used together with --online flag.")
         agent = Agent.load(cmdline_args.load_model, interpreter=_interpreter)
     else:
+        if not cmdlin_args.out:
+            raise ValueError("you must provide a path where the model will be saved using -o / --out")
         agent = train_dialogue_model(cmdline_args.domain,
                                  stories,
                                  cmdline_args.out,
