@@ -38,3 +38,6 @@ rasa_core_sdk~=0.11.0
 pymongo==3.5.1
 python-dateutil==2.7.3
 rocketchat_API==0.6.22
+colorclass==2.2.0
+terminaltables==3.1.0
+PyInquirer==1.0.2

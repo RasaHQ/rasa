@@ -296,9 +296,10 @@ def create_app(agent,
                             content_type="application/json")
 
         try:
+
             usermsg = UserMessage(message, None, sender_id, parse_data)
-            responses = agent.log_message(usermsg)
-            return jsonify(responses)
+            tracker_state = agent.log_message(usermsg)
+            return jsonify(tracker_state)
 
         except Exception as e:
             logger.exception("Caught an exception while logging message.")
