@@ -310,4 +310,15 @@ This creates a pipeline that only does entity recognition, but no
 intent classification. So Rasa NLU will not predict any intents.
 You can find the details of each component in :ref:`section_pipeline`.
 
-If you want to use custom components in your pipeline, see :ref:`section_customcomponents`. 
+If you want to use custom components in your pipeline, see :ref:`section_customcomponents`.
+
+
+Have questions or feedback?
+---------------------------
+   
+We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
+that is happy to help you with your questions. If you have any feedback for us or a specific 
+suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 
+
+.. raw:: html
+   :file: livechat.html 

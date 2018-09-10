@@ -131,3 +131,13 @@ Some extractors, like ``duckling``, may include additional information. For exam
     (`ner_crf` component). The duckling entity extractor will always return
     `1`. The `ner_spacy` extractor does not provide this information and
     returns `null`.
+
+Have questions or feedback?
+---------------------------
+   
+We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
+that is happy to help you with your questions. If you have any feedback for us or a specific 
+suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 	
+	
+.. raw:: html
+   :file: livechat.html	

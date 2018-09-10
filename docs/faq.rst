@@ -50,3 +50,13 @@ including all the information needed to reproduce the problem.
 Does it run with python 3?
 --------------------------
 Yes it does, Rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.
+
+Have questions or feedback?
+---------------------------
+   
+We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
+that is happy to help you with your questions. If you have any feedback for us or a specific 
+suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 
+
+.. raw:: html
+   :file: livechat.html

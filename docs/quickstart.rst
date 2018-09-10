@@ -164,4 +164,12 @@ To build a really great NLU system you'll want to collect some real user message
     like single quotes. Use doublequotes and escape where necessary.
     ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool``
 
-
+Have questions or feedback?
+---------------------------
+   
+We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
+that is happy to help you with your questions. If you have any feedback for us or a specific 
+suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 	
+	
+.. raw:: html
+   :file: livechat.html

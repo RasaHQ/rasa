@@ -30,4 +30,12 @@ confidence numbers, whereas the ``tensorflow_embedding`` pipeline usually provid
 One common misconception is that if your model reports high confidence on your training examples,
 it is a "better" model. In fact, this usually means that your model is overfitting.
 
+Have questions or feedback?
+---------------------------
+   
+We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
+that is happy to help you with your questions. If you have any feedback for us or a specific 
+suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 
 
+.. raw:: html
+   :file: livechat.html

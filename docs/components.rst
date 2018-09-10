@@ -658,3 +658,14 @@ ner_duckling_http
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
+
+		  
+Have questions or feedback?
+---------------------------
+   
+We have a very active support community on `Rasa Community Forum <https://forum.rasa.com>`_ 
+that is happy to help you with your questions. If you have any feedback for us or a specific 
+suggestion for improving the docs, feel free to shoot us a `message <support@rasa.com>`_. 		  
+		  
+.. raw:: html
+   :file: livechat.html		  
