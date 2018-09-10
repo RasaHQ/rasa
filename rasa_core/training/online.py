@@ -9,6 +9,7 @@ import io
 import logging
 import numpy as np
 import requests
+import textwrap
 import uuid
 from PyInquirer import prompt
 from colorclass import Color
@@ -263,6 +264,10 @@ def _request_intent_from_user(latest_message, intents, sender_id, endpoint):
 
 
 def _print_history(tracker_dump):
+    def wrap(text, max_width):
+        return "\n".join(textwrap.wrap(text, max_width,
+                                       replace_whitespace=False))
+
     # prints the historical interactions between the bot and the user,
     # to help with correctly identifying the action
     tr_json = []
@@ -276,10 +281,12 @@ def _print_history(tracker_dump):
 
     table_data = [
         ["#  ",
-         Color('{autoblue}Bot{/autoblue}'),
-         "     ",
-         Color('{hired}You{/hired}')],
+         Color('{autoblue}Bot{/autoblue}      '),
+         "  ",
+         Color('{hired}You{/hired}       ')],
     ]
+
+    table = SingleTable(table_data, 'Chat History')
 
     bot_column = ""
     for idx, evt in enumerate(tr_json):
@@ -294,33 +301,32 @@ def _print_history(tracker_dump):
             parsed = evt.get('parse_data', {})
             intent = parsed.get('intent', {}).get("name")
             md = _md_message(parsed)
-            msg = "{hired}" + md + "{/hired}\n"
+            msg = "{hired}" + wrap(md, table.column_max_width(3)) + "{/hired}\n"
             msg += ("intent: " + intent + "\n")
             table_data.append([len(table_data), "", "", Color(msg)])
         elif evt.get("event") == "bot":
             if bot_column:
                 bot_column += "\n"
-            bot_column += "{autoblue}" + format_bot_output(evt) + "{/autoblue}"
+            wrapped = wrap(format_bot_output(evt), table.column_max_width(1))
+            bot_column += ("{autoblue}" + wrapped + "{/autoblue}")
         elif evt.get("event") != "bot":
             e = Event.from_parameters(evt)
             if bot_column:
                 bot_column += "\n"
-            bot_column += e.as_story_string()
+            bot_column += wrap(e.as_story_string(), table.column_max_width(1))
 
     if bot_column:
         table_data.append([len(table_data), Color(bot_column), "", ""])
 
-    table_instance = SingleTable(table_data, 'Chat History')
-    table_instance.inner_heading_row_border = False
-    table_instance.inner_row_border = True
-    table_instance.inner_column_border = False
-    table_instance.outer_border = False
-    table_instance.justify_columns = {0: 'left', 1: 'right',
-                                      2: 'center', 3: 'left'}
+    table.inner_heading_row_border = False
+    table.inner_row_border = True
+    table.inner_column_border = False
+    table.outer_border = False
+    table.justify_columns = {0: 'left', 1: 'left', 2: 'center', 3: 'right'}
 
     print("------")
     print("Chat History\n")
-    print(table_instance.table)
+    print(table.table)
 
     slot_strs = []
     for k, s in tracker_dump.get("slots").items():
