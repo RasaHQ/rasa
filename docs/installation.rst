@@ -93,3 +93,9 @@ Click the linke below to get the Rasa Stack starter-pack:
 	
 Let us know how you are getting on! If you have any questions about the starter-pack or 
 using Rasa Stack in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!
+
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html

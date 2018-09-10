@@ -276,3 +276,10 @@ There have been some API changes to classes and methods:
       * inform{"location": "rome", "price": "cheap"}
          - action_on_it                     <!-- user utterance, in format _intent[entities] -->
          - action_ask_cuisine
+
+
+.. include:: feedback.inc 
+
+.. raw:: html
+   :file: livechat.html
+

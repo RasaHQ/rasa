@@ -67,3 +67,10 @@ called ``out_of_scope``, then you should add this as a story:
     ## fallback story
     * out_of_scope
       - action_default_fallback
+
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html
+   

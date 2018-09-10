@@ -56,3 +56,8 @@ The full list of options for the evaluation script is:
 
 .. program-output:: python -m rasa_core.evaluate_paper -h
 
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html
