@@ -83,6 +83,15 @@ def create_argument_parser():
             action='store_true',
             help="enable online training")
     parser.add_argument(
+            '--load_model',
+            default=None,
+            help="path to load a pre-trained model instead of training (for online mode only)")
+    parser.add_argument(
+            '--finetune',
+            default=False,
+            action='store_true',
+            help="retrain the model immediately based on feedback.")
+    parser.add_argument(
             '--augmentation',
             type=int,
             default=50,
@@ -203,14 +212,21 @@ if __name__ == '__main__':
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
 
-    a = train_dialogue_model(cmdline_args.domain,
-                             stories,
-                             cmdline_args.out,
-                             _interpreter,
-                             _endpoints,
-                             cmdline_args.history,
-                             cmdline_args.dump_stories,
-                             additional_arguments)
+    
+    if cmdline_args.load_model:
+        if not cmdline_args.online:
+            raise ValueError("--load_model can only be used together with --online flag.")
+        agent = Agent.load(cmdline_args.load_model, interpreter=_interpreter)
+    else:
+        agent = train_dialogue_model(cmdline_args.domain,
+                                 stories,
+                                 cmdline_args.out,
+                                 _interpreter,
+                                 _endpoints,
+                                 cmdline_args.history,
+                                 cmdline_args.dump_stories,
+                                 additional_arguments)
 
     if cmdline_args.online:
-        online.serve_agent(a)
+        online.serve_agent(agent, finetune=cmdline_args.finetune)  
+
