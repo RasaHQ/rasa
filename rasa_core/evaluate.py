@@ -14,7 +14,7 @@ from rasa_core import training, run
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted
-from rasa_core.interpreter import RasaNLUInterpreter
+from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
@@ -35,7 +35,6 @@ def create_argument_parser():
     parser.add_argument(
             '-m', '--max_stories',
             type=int,
-            default=100,
             help="maximum number of stories to test on")
     parser.add_argument(
             '-d', '--core',
@@ -91,7 +90,7 @@ class WronglyPredictedAction(ActionExecuted):
                                                     self.predicted_action)
 
 
-def _generate_trackers(resource_name, agent, max_stories):
+def _generate_trackers(resource_name, agent, max_stories=None):
     story_graph = training.extract_story_graph(resource_name, agent.domain,
                                                agent.interpreter)
     g = TrainingDataGenerator(story_graph, agent.domain,
@@ -136,28 +135,17 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
     return golds, predictions, partial_tracker
 
 
-def collect_story_predictions(resource_name,
-                              policy_model_path,
-                              nlu_model_path,
-                              max_stories,
-                              endpoints,
+def collect_story_predictions(completed_trackers,
+                              agent,
                               fail_on_prediction_errors=False):
     """Test the stories from a file, running them through the stored model."""
 
-    interpreter = RasaNLUInterpreter.create(nlu_model_path, endpoints.nlu)
-
-    agent = Agent.load(policy_model_path,
-                       interpreter=interpreter)
-
-    completed_trackers = _generate_trackers(resource_name, agent, max_stories)
-
     preds = []
     gold = []
-
     failed = []
 
-    logger.info("Evaluating {} stories\nProgress:"
-                "".format(len(completed_trackers)))
+    logger.info("Evaluating {} stories\n"
+                "Progress:".format(len(completed_trackers)))
 
     for tracker in tqdm(completed_trackers):
         curr_gold, curr_predictions, predicted_tracker = \
@@ -166,9 +154,8 @@ def collect_story_predictions(resource_name,
         preds.extend(curr_predictions)
         gold.extend(curr_gold)
 
-        all_predictions_are_correct = curr_gold == curr_predictions
-
-        if not all_predictions_are_correct:
+        if not curr_gold == curr_predictions:
+            # there is at least one prediction that is wrong
             failed.append(predicted_tracker)
 
     return gold, preds, failed
@@ -189,18 +176,17 @@ def log_failed_stories(failed, failed_output):
                 f.write("\n\n")
 
 
-def run_story_evaluation(resource_name, policy_model_path, endpoints,
-                         nlu_model_path=None,
+def run_story_evaluation(resource_name, agent,
                          max_stories=None,
                          out_file_stories=None,
                          out_file_plot=None,
                          fail_on_prediction_errors=False):
     """Run the evaluation of the stories, optionally plots the results."""
-    test_y, preds, failed = collect_story_predictions(resource_name,
-                                                      policy_model_path,
-                                                      nlu_model_path,
-                                                      max_stories,
-                                                      endpoints,
+
+    completed_trackers = _generate_trackers(resource_name, agent, max_stories)
+
+    test_y, preds, failed = collect_story_predictions(completed_trackers,
+                                                      agent,
                                                       fail_on_prediction_errors)
     if out_file_plot:
         plot_story_evaluation(test_y, preds, out_file_plot)
@@ -232,10 +218,14 @@ if __name__ == '__main__':
     logging.basicConfig(level=cmdline_args.loglevel)
     _endpoints = run.read_endpoints(cmdline_args.endpoints)
 
+    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                     _endpoints.nlu)
+
+    _agent = Agent.load(cmdline_args.core,
+                        interpreter=_interpreter)
+
     run_story_evaluation(cmdline_args.stories,
-                         cmdline_args.core,
-                         _endpoints,
-                         cmdline_args.nlu,
+                         _agent,
                          cmdline_args.max_stories,
                          cmdline_args.failed,
                          cmdline_args.output,
