@@ -72,7 +72,6 @@ def create_argument_parser():
     return parser
 
 
-# noinspection PyProtectedMember
 class WronglyPredictedAction(ActionExecuted):
     """The model predicted the wrong action.
 

@@ -456,6 +456,10 @@ class TrainingDataGenerator(object):
             # will use the same set of incoming trackers
 
             for tracker in incoming_trackers:
+                # sender id is used to be able for a human to see where the
+                # messages and events for this tracker came from - to do this
+                # we concatenate the story block names of the blocks that
+                # contribute to the trackers events
                 if tracker.sender_id:
                     if step.block_name not in tracker.sender_id.split(" > "):
                         new_sender = tracker.sender_id + " > " + step.block_name
