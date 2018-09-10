@@ -119,14 +119,20 @@ class Event(object):
 
     @classmethod
     def _from_parameters(cls, parameters):
-        """Called to convert a dictionary of parameters to an event.
+        """Called to convert a dictionary of parameters to a single event.
 
         By default uses the same implementation as the story line
         conversation ``_from_story_string``. But the subclass might
         decide to handle parameters differently if the parsed parameters
         don't origin from a story file."""
 
-        return [cls._from_story_string(parameters)]
+        result = cls._from_story_string(parameters)
+        if len(result) > 1:
+            logger.warning("Event from parameters called with parameters "
+                           "for multiple events. This is not supported, "
+                           "only the first event will be returned. "
+                           "Parameters: {}".format(parameters))
+        return result[0] if result else None
 
     @staticmethod
     def resolve_by_type(type_name, default=None):
