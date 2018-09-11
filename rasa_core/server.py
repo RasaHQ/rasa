@@ -70,10 +70,10 @@ def requires_auth(app, token=None):
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 return f(*args, **kwargs)
-            elif (app.config['JWT_ALGORITHM'] is not None
+            elif (app.config.get('JWT_ALGORITHM') is not None
                   and view_decorators._decode_jwt_from_headers()):
                 return f(*args, **kwargs)
-            elif token is None and app.config['JWT_ALGORITHM'] is None:
+            elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
             abort(401)
