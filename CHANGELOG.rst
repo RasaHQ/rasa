@@ -25,6 +25,19 @@ Removed
 Fixed
 -----
 
+[0.11.3] - 2018-09-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- callback output channel, receives messages and uses a REST endpoint to
+  respond with messages
+
+Changed
+-------
+- channel input creation moved to the channel, every channel can now
+  customize how it gets created from the credentials file
+
 [0.11.2] - 2018-09-04
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -40,7 +53,6 @@ Removed
 Fixed
 -----
 - read in fallback command line args
-
 
 [0.11.1] - 2018-08-30
 ^^^^^^^^^^^^^^^^^^^^^
@@ -72,6 +84,7 @@ Added
 - intent confidence support in RegexInterpreter
 - added paramter to train script to pull training data from an url instead
   of a stories file
+- added new policy: :ref:`embedding_policy` implemented in tensorflow
 
 Changed
 -------

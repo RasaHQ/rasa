@@ -270,3 +270,10 @@ Log an executed action
 
     .. literalinclude:: ../../rasa_core/events/__init__.py
       :pyobject: ActionExecuted.apply_to
+
+
+.. include:: ../feedback.inc
+
+.. raw:: html
+   :file: ../livechat.html
+   

@@ -17,9 +17,11 @@ from typing import Text, Optional, Any, List, Dict
 
 import rasa_core
 from rasa_core import utils, training, constants
-from rasa_core.events import SlotSet, ActionExecuted
+from rasa_core.events import SlotSet, ActionExecuted, UserUttered
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.policies.fallback import FallbackPolicy
+from rasa_core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -196,8 +198,13 @@ class PolicyEnsemble(object):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
 
+    def is_not_memo_policy(self, best_policy_name):
+        return not (best_policy_name.endswith("_" + MemoizationPolicy.__name__)
+                    or best_policy_name.endswith(
+                                    "_" + AugmentedMemoizationPolicy.__name__))
+
     def probabilities_using_best_policy(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
+        # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -208,9 +215,34 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
+
+        policy_names = [type(p).__name__ for p in self.policies]
+
+        # Trigger the fallback policy when ActionListen is predicted after
+        # a user utterance. This is done on the condition that: a fallback
+        # policy is present, there was just a user message and the predicted
+        # action is action_listen by a policy other than the MemoizationPolicy
+
+        if FallbackPolicy.__name__ in policy_names:
+            idx = policy_names.index(FallbackPolicy.__name__)
+            fallback_policy = self.policies[idx]
+
+            if (result.index(max_confidence) == 0 and
+                    self.is_not_memo_policy(best_policy_name)
+                    and isinstance(tracker.events[-1], UserUttered)):
+                logger.debug("Action listen was predicted after a user message."
+                             " Predicting fallback action: {}"
+                             "".format(fallback_policy.fallback_action_name))
+                result = fallback_policy.fallback_scores(domain)
+
+                best_policy_name = 'policy_{}_{}'.format(
+                                            idx,
+                                            type(fallback_policy).__name__)
+
         # normalize probablilities
         if np.sum(result) != 0:
-            result = result / np.linalg.norm(result)
+            result = result / np.nansum(result)
+
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
-        return result
+        return result, best_policy_name

@@ -155,6 +155,8 @@ You can implement the model of your choice by overriding these methods,
 or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
 
+.. _embedding_policy:
+
 Embedding policy
 ----------------
 
@@ -247,3 +249,10 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
           Parameter ``mu_neg`` is set to a negative value to mimic the original
           starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
           See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+
+.. include:: feedback.inc 
+
+.. raw:: html
+   :file: livechat.html		 
+   

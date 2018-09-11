@@ -11,7 +11,7 @@ import six
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string
+from rasa_core.channels.channel import button_to_string, RestInput
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
@@ -114,3 +114,13 @@ def record_messages(server_url=DEFAULT_SERVER_URL,
 
     if on_finish:
         on_finish()
+
+
+class CmdlineInput(RestInput):
+
+    @classmethod
+    def name(cls):
+        return "cmdline"
+
+    def url_prefix(self):
+        return RestInput.name()

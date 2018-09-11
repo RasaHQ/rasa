@@ -436,3 +436,8 @@ Endpoints
 
    :statuscode 200: no error
 
+
+.. include:: feedback.inc 
+
+.. raw:: html
+   :file: livechat.html

@@ -138,6 +138,13 @@ class BotFrameworkInput(InputChannel):
     def name(cls):
         return "botframework"
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("app_id"), credentials.get("app_password"))
+
     def __init__(self, app_id, app_password):
         # type: (Text, Text) -> None
         """Create a Bot Framework input channel.

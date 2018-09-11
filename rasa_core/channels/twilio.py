@@ -67,6 +67,15 @@ class TwilioInput(InputChannel):
     def name(cls):
         return "twilio"
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("account_sid"),
+                   credentials.get("auth_token"),
+                   credentials.get("twilio_number"))
+
     def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):
         self.account_sid = account_sid
         self.auth_token = auth_token
@@ -104,4 +113,5 @@ class TwilioInput(InputChannel):
                 logger.debug("Invalid message")
 
             return "success"
+
         return twilio_webhook

@@ -303,9 +303,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
             if old_states != states:
                 # check if we like new futures
-                logger.debug("Current tracker state {}".format(states))
                 memorised = self._recall_states(states)
                 if memorised is not None:
+                    logger.debug("Current tracker state {}".format(states))
                     return memorised
                 old_states = states
 
@@ -313,6 +313,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
 
         # No match found
+        logger.debug("Current tracker state {}".format(old_states))
         return None
 
     def recall(self,

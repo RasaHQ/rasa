@@ -377,9 +377,9 @@ def create_app(agent,
                             content_type="application/x-yml")
         else:
             return Response(
-                    """Invalid accept header. Domain can be provided 
-                    as json ("Accept: application/json")  
-                    or yml ("Accept: application/x-yml"). 
+                    """Invalid accept header. Domain can be provided
+                    as json ("Accept: application/json")
+                    or yml ("Accept: application/x-yml").
                     Make sure you've set the appropriate Accept header.""",
                     status=406)
 
@@ -437,9 +437,9 @@ def create_app(agent,
                                                  request_params,
                                                  agent.domain.slots)
         policy_ensemble = agent.policy_ensemble
-        probabilities = policy_ensemble.probabilities_using_best_policy(
-                tracker, agent.domain)
-
+        probabilities, _ = policy_ensemble.probabilities_using_best_policy(
+                                                tracker, agent.domain)
+        
         probability_dict = {agent.domain.action_names[idx]: probability
                             for idx, probability in enumerate(probabilities)}
 

@@ -26,10 +26,10 @@ Run the following to start interactive learning:
 
    python -m rasa_core_sdk.endpoint --actions actions&
 
-   python -m rasa_core.run \
-     --interactive -d models/dialogue \
-     --stories-out stories_interactive.md \
-     -u models/default/nlu
+   python -m rasa_core.train \
+     --online -o models/dialogue \
+     -d domain.yml -s stories.md \
+     --endpoints endpoints.yml
 
 The first command starts the action server (see :ref:`customactions`).
 
@@ -126,3 +126,9 @@ conversation. At any point you can type ``0`` and the bot will write the
 current conversation to a file and exit the conversation. Make sure to
 combine the dumped story with your original training data for the next
 training.
+
+
+.. include:: feedback.inc  
+
+.. raw:: html
+   :file: livechat.html

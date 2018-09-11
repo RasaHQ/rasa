@@ -71,6 +71,15 @@ class RocketChatInput(InputChannel):
     def name(cls):
         return "rocketchat"
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("user"),
+                   credentials.get("password"),
+                   credentials.get("server_url"))
+
     def __init__(self, user, password, server_url):
         # type: (Text, Text, Text) -> None
 
