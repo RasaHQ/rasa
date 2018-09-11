@@ -22,7 +22,6 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import online
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +47,8 @@ def create_argument_parser():
     group.add_argument(
             '--core',
             default=None,
-            help="path to load a pre-trained model instead of training (for online mode only)")
+            help="path to load a pre-trained model instead of training (for "
+                 "online mode only)")
 
     parser.add_argument(
             '-o', '--out',
@@ -217,26 +217,26 @@ if __name__ == '__main__':
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
 
-    
     if cmdline_args.core:
         if not cmdline_args.online:
-            raise ValueError("--core can only be used together with --online flag.")
+            raise ValueError("--core can only be used together with "
+                             "--online flag.")
         else:
             logger.info("loading a pre-trained model. ",
                         "all training-related parameters will be ignored")
-        agent = Agent.load(cmdline_args.core, interpreter=_interpreter)
+        _agent = Agent.load(cmdline_args.core, interpreter=_interpreter)
     else:
-        if not cmdlin_args.out:
-            raise ValueError("you must provide a path where the model will be saved using -o / --out")
-        agent = train_dialogue_model(cmdline_args.domain,
-                                 stories,
-                                 cmdline_args.out,
-                                 _interpreter,
-                                 _endpoints,
-                                 cmdline_args.history,
-                                 cmdline_args.dump_stories,
-                                 additional_arguments)
+        if not cmdline_args.out:
+            raise ValueError("you must provide a path where the model "
+                             "will be saved using -o / --out")
+        _agent = train_dialogue_model(cmdline_args.domain,
+                                      stories,
+                                      cmdline_args.out,
+                                      _interpreter,
+                                      _endpoints,
+                                      cmdline_args.history,
+                                      cmdline_args.dump_stories,
+                                      additional_arguments)
 
     if cmdline_args.online:
-        online.serve_agent(agent, finetune=cmdline_args.finetune)  
-
+        online.serve_agent(_agent, finetune=cmdline_args.finetune)

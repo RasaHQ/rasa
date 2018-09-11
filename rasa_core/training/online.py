@@ -14,7 +14,7 @@ import uuid
 from PyInquirer import prompt
 from colorclass import Color
 from gevent.pywsgi import WSGIServer
-from terminaltables import SingleTable
+from terminaltables import SingleTable, AsciiTable
 from threading import Thread
 from typing import Any, Text, Dict, List, Optional, Callable
 
@@ -285,63 +285,94 @@ def _request_intent_from_user(latest_message, intents, sender_id, endpoint):
 
 
 def _print_history(sender_id, endpoint):
-    def wrap(text, max_width):
-        return "\n".join(textwrap.wrap(text, max_width,
-                                       replace_whitespace=False))
 
     tracker_dump = retrieve_tracker(endpoint, sender_id,
                                     EventVerbosity.AFTER_RESTART)
+    evts = tracker_dump.get("events", [])
+
+    table = _chat_history_table(evts)
+    slot_strs = _slot_history(tracker_dump)
+
+    print("------")
+    print("Chat History\n")
+    print(table)
+
+    if slot_strs:
+        print("Current slots: {}\n".format(", ".join(slot_strs)))
+
+    print("------")
+
+
+def _chat_history_table(evts):
+    def wrap(txt, max_width):
+        return "\n".join(textwrap.wrap(txt, max_width,
+                                       replace_whitespace=False))
+
+    def colored(txt, color):
+        return "{" + color + "}" + txt + "{/" + color + "}"
+
+    def format_user_msg(user_evt, max_width):
+        _parsed = user_evt.get('parse_data', {})
+        _intent = _parsed.get('intent', {}).get("name")
+        _confidence = _parsed.get('intent', {}).get("confidence", 1.0)
+        _md = _md_message(_parsed)
+
+        _lines = [
+            colored(wrap(_md, max_width), "hired"),
+            "intent: {} {:03.2f}".format(_intent, _confidence)
+        ]
+        return "\n".join(_lines)
+
+    def bot_width(_table):
+        # type: (AsciiTable) -> int
+        return _table.column_max_width(1)
+
+    def user_width(_table):
+        # type: (AsciiTable) -> int
+        return _table.column_max_width(3)
+
+    def add_bot_cell(data, cell):
+        data.append([len(data), Color(cell), "", ""])
+
+    def add_user_cell(data, cell):
+        data.append([len(data), "", "", Color(cell)])
+
     # prints the historical interactions between the bot and the user,
     # to help with correctly identifying the action
-    tr_json = []
-    n_history = 0
-    for tr in reversed(tracker_dump.get("events", [])):
-        tr_json.append(tr)
-        if tr.get("event") == "action":
-            n_history += 1
-
-    tr_json = reversed(tr_json)
-
     table_data = [
         ["#  ",
-         Color('{autoblue}Bot{/autoblue}      '),
+         Color(colored('Bot      ', 'autoblue')),
          "  ",
-         Color('{hired}You{/hired}       ')],
+         Color(colored('You       ', 'hired'))],
     ]
 
     table = SingleTable(table_data, 'Chat History')
 
-    bot_column = ""
-    for idx, evt in enumerate(tr_json):
+    bot_column = []
+    for idx, evt in enumerate(evts):
         if evt.get("event") == "action":
-            if bot_column:
-                bot_column += "\n"
-            bot_column += "{autocyan}" + evt['name'] + "{/autocyan}"
+            bot_column.append(colored(evt['name'], 'autocyan'))
+
         elif evt.get("event") == 'user':
             if bot_column:
-                table_data.append([len(table_data), Color(bot_column), "", ""])
-                bot_column = ""
-            parsed = evt.get('parse_data', {})
-            intent = parsed.get('intent', {}).get("name")
-            confidence = parsed.get('intent', {}).get("confidence", 1.0)
-            md = _md_message(parsed)
-            msg = "{hired}" + wrap(md, table.column_max_width(3)) + "{/hired}\n"
-            msg += "intent: {} {:03.2f}\n".format(intent, confidence)
-            table_data.append([len(table_data), "", "", Color(msg)])
+                text = "\n".join(bot_column)
+                add_bot_cell(table_data, text)
+                bot_column = []
+
+            msg = format_user_msg(evt, user_width(table))
+            add_user_cell(table_data, msg)
+
         elif evt.get("event") == "bot":
-            if bot_column:
-                bot_column += "\n"
-            wrapped = wrap(console.format_bot_output(evt),
-                           table.column_max_width(1))
-            bot_column += ("{autoblue}" + wrapped + "{/autoblue}")
+            wrapped = wrap(console.format_bot_output(evt), bot_width(table))
+            bot_column.append(colored(wrapped, 'autoblue'))
+
         elif evt.get("event") != "bot":
             e = Event.from_parameters(evt)
-            if bot_column:
-                bot_column += "\n"
-            bot_column += wrap(e.as_story_string(), table.column_max_width(1))
+            bot_column.append(wrap(e.as_story_string(), bot_width(table)))
 
     if bot_column:
-        table_data.append([len(table_data), Color(bot_column), "", ""])
+        text = "\n".join(bot_column)
+        add_bot_cell(table_data, text)
 
     table.inner_heading_row_border = False
     table.inner_row_border = True
@@ -349,19 +380,16 @@ def _print_history(sender_id, endpoint):
     table.outer_border = False
     table.justify_columns = {0: 'left', 1: 'left', 2: 'center', 3: 'right'}
 
-    print("------")
-    print("Chat History\n")
-    print(table.table)
+    return table.table
 
+
+def _slot_history(tracker_dump):
     slot_strs = []
     for k, s in tracker_dump.get("slots").items():
         colored_value = utils.wrap_with_color(str(s),
                                               utils.bcolors.WARNING)
         slot_strs.append("{}: {}".format(k, colored_value))
-    if slot_strs:
-        print("Current slots: {}\n".format(", ".join(slot_strs)))
-
-    print("------")
+    return slot_strs
 
 
 def _ask_if_quit(sender_id, endpoint):
@@ -447,7 +475,6 @@ def _export_stories(sender_id, endpoint):
     }]
     answers = prompt(questions)
     if not answers:
-        # TODO: write to temp file, just to be save
         sys.exit()
 
     export_file_path = answers["export"]
@@ -495,9 +522,9 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
 
         action_name = predictions[pred_out].get("action")
 
+        _print_history(sender_id, endpoint)
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
-        _print_history(sender_id, endpoint)
 
 
 def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
