@@ -15,6 +15,7 @@ Added
 - ``DataRouter()`` class supports a ``model_server`` ``EndpointConfig``, which it regularly queries to fetch NLU models
 - this can be used with ``rasa_nlu.server`` with the ``--endpoint`` option (the key for this the model server config is ``model``)
 - docs on model fetching from a URL
+- ability to specify lookup tables in training data
 
 Changed
 -------

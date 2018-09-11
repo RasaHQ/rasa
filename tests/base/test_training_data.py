@@ -75,6 +75,28 @@ def test_dialogflow_data():
                                     "india": "indian"}
 
 
+def test_lookup_table_json():
+    lookup_fname = 'data/test/lookup_tables/plates.txt'
+    td_lookup = training_data.load_data(
+        'data/test/lookup_tables/lookup_table.json')
+    assert td_lookup.lookup_tables[0]['name'] == 'plates'
+    assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
+    assert td_lookup.lookup_tables[1]['name'] == 'drinks'
+    assert td_lookup.lookup_tables[1]['elements'] == [
+        'mojito', 'lemonade', 'sweet berry wine', 'tea', 'club mate']
+
+
+def test_lookup_table_md():
+    lookup_fname = 'data/test/lookup_tables/plates.txt'
+    td_lookup = training_data.load_data(
+        'data/test/lookup_tables/lookup_table.md')
+    assert td_lookup.lookup_tables[0]['name'] == 'plates'
+    assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
+    assert td_lookup.lookup_tables[1]['name'] == 'drinks'
+    assert td_lookup.lookup_tables[1]['elements'] == [
+        'mojito', 'lemonade', 'sweet berry wine', 'tea', 'club mate']
+
+
 @pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json", 'data/examples/rasa/demo-rasa.md'])
 def test_demo_data(filename):
     td = training_data.load_data(filename)

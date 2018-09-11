@@ -27,6 +27,7 @@ class RasaReader(JsonTrainingDataReader):
         entity_examples = data.get("entity_examples", [])
         entity_synonyms = data.get("entity_synonyms", [])
         regex_features = data.get("regex_features", [])
+        lookup_tables = data.get("lookup_tables", [])
 
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
@@ -45,7 +46,8 @@ class RasaReader(JsonTrainingDataReader):
                                 ex.get("entities"))
             training_examples.append(msg)
 
-        return TrainingData(training_examples, entity_synonyms, regex_features)
+        return TrainingData(training_examples, entity_synonyms,
+                            regex_features, lookup_tables)
 
 
 class RasaWriter(TrainingDataWriter):
@@ -66,6 +68,7 @@ class RasaWriter(TrainingDataWriter):
             "rasa_nlu_data": {
                 "common_examples": formatted_examples,
                 "regex_features": training_data.regex_features,
+                "lookup_tables": training_data.lookup_tables,
                 "entity_synonyms": formatted_synonyms
             }
         }, **kwargs)
@@ -119,6 +122,22 @@ def _rasa_nlu_data_schema():
         }
     }
 
+    lookup_table_schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "elements": {
+                "oneOf": [
+                    {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    {"type": "string"}
+                ]
+            }
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
@@ -140,6 +159,10 @@ def _rasa_nlu_data_schema():
                     "entity_examples": {
                         "type": "array",
                         "items": training_example_schema
+                    },
+                    "lookup_tables": {
+                        "type": "array",
+                        "items": lookup_table_schema
                     }
                 }
             }
