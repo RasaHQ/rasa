@@ -25,6 +25,7 @@ from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 from rasa_core.events import Event
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa_core.trackers import EventVerbosity
 from rasa_core.training.structures import Story
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
@@ -40,6 +41,15 @@ OTHER_INTENT = uuid.uuid4().hex
 
 
 class RestartConversation(Exception):
+    """Exception used to break out the flow and restart the conversation."""
+    pass
+
+
+class UndoLastStep(Exception):
+    """Exception used to break out the flow and undo the last step.
+
+    The last step is either the most recent user message or the most
+    recent action run by the bot."""
     pass
 
 
@@ -95,8 +105,9 @@ def retrieve_domain(endpoint):
     return r.json()
 
 
-def retrieve_tracker(endpoint, sender_id):
-    path = "/conversations/{}/tracker?ignore_restarts=true".format(sender_id)
+def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
+    path = "/conversations/{}/tracker?events={}".format(
+            sender_id, verbosity.name)
     r = endpoint.request(method="get",
                          subpath=path,
                          headers={"Accept": "application/json"})
@@ -142,7 +153,7 @@ def send_event(endpoint, sender_id, evt):
     return r.json()
 
 
-def send_events(endpoint, sender_id, evts):
+def replace_events(endpoint, sender_id, evts):
     # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
@@ -263,11 +274,13 @@ def _request_intent_from_user(latest_message, intents, sender_id, endpoint):
     return {'name': intent_name, 'confidence': 1.0}
 
 
-def _print_history(tracker_dump):
+def _print_history(sender_id, endpoint):
     def wrap(text, max_width):
         return "\n".join(textwrap.wrap(text, max_width,
                                        replace_whitespace=False))
 
+    tracker_dump = retrieve_tracker(endpoint, sender_id,
+                                    EventVerbosity.AFTER_RESTART)
     # prints the historical interactions between the bot and the user,
     # to help with correctly identifying the action
     tr_json = []
@@ -340,11 +353,6 @@ def _print_history(tracker_dump):
 
 
 def _ask_if_quit(sender_id, endpoint):
-    # continue
-    # start new conversation
-    # go back
-    # quit & export
-    # (go back to a previous point in the conversation)
     questions = [{
         "name": "abort",
         "type": "list",
@@ -354,18 +362,14 @@ def _ask_if_quit(sender_id, endpoint):
                 "name": "Continue",
                 "value": "continue",
             },
-            # {
-            #     "name": "Undo Last",
-            #     "value": "undo",
-            # },
+            {
+                "name": "Undo Last",
+                "value": "undo",
+            },
             {
                 "name": "Start Fresh",
                 "value": "restart",
             },
-            # {
-            #     "name": "Continue from previous point",
-            #     "value": "revert",
-            # },
             {
                 "name": "Export & Quit",
                 "value": "quit",
@@ -382,17 +386,15 @@ def _ask_if_quit(sender_id, endpoint):
     elif answers["abort"] == "restart":
         raise RestartConversation()
     elif answers["abort"] == "undo":
-        raise NotImplementedError("Well, we still need to do this")
-    elif answers["abort"] == "revert":
-        raise NotImplementedError("Well, we still need to do this")
+        raise UndoLastStep()
     else:
         logger.warning("Invalid selection. Answer: {}".format(answers))
 
 
-def _request_action_from_user(predictions, tracker_dump, endpoint):
+def _request_action_from_user(predictions, sender_id, endpoint):
     # given the intent and the text
     # what is the correct action?
-    _print_history(tracker_dump)
+    _print_history(sender_id, endpoint)
 
     sorted_actions = sorted(predictions,
                             key=lambda k: (-k['score'], k['action']))
@@ -408,14 +410,10 @@ def _request_action_from_user(predictions, tracker_dump, endpoint):
         "message": "What is the next action of the bot?",
         "choices": choices
     }]
-    answers = _ask_questions(questions, tracker_dump.get("sender_id"), endpoint)
-
-    if not answers:
-        _ask_if_quit(tracker_dump, endpoint)
-    else:
-        action_name = answers["action"]
-        print("Thanks! The bot will now run {}.\n".format(action_name))
-        return action_name
+    answers = _ask_questions(questions, sender_id, endpoint)
+    action_name = answers["action"]
+    print("Thanks! The bot will now run {}.\n".format(action_name))
+    return action_name
 
 
 def _export_stories(sender_id, endpoint):
@@ -477,7 +475,6 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
     listen = False
     while not listen:
         response = request_prediction(endpoint, sender_id)
-        tracker_dump = response.get("tracker")
         predictions = response.get("scores")
 
         probabilities = [prediction["score"] for prediction in predictions]
@@ -485,9 +482,9 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
 
         action_name = predictions[pred_out].get("action")
 
-        _print_history(tracker_dump)
-        listen = _validate_action(tracker_dump, action_name, predictions,
+        listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
+        _print_history(sender_id, endpoint)
 
 
 def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
@@ -495,7 +492,7 @@ def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
 
     latest_message["parse_data"] = corrected_nlu
 
-    send_events(endpoint, sender_id, corrected_events)
+    replace_events(endpoint, sender_id, corrected_events)
 
     send_message(endpoint, sender_id, latest_message.get("text"),
                  latest_message.get("parse_data"))
@@ -511,8 +508,7 @@ def _correct_wrong_action(corrected_action, endpoint, sender_id, finetune=False)
                       response.get("tracker", {}).get("events", []))
 
 
-def _validate_action(tracker_dump, action_name, predictions, endpoint,
-                     sender_id, finetune=False):
+def _validate_action(action_name, predictions, endpoint, sender_id, finetune=False):
     q = "The bot wants to run '{}', correct?".format(action_name)
     questions = [
         {
@@ -521,9 +517,9 @@ def _validate_action(tracker_dump, action_name, predictions, endpoint,
             "message": q,
         }
     ]
-    answers = _ask_questions(questions, tracker_dump.get("sender_id"), endpoint)
+    answers = _ask_questions(questions, sender_id, endpoint)
     if not answers["action"]:
-        corrected_action = _request_action_from_user(predictions, tracker_dump,
+        corrected_action = _request_action_from_user(predictions, sender_id,
                                                      endpoint)
         _correct_wrong_action(corrected_action, endpoint, sender_id, finetune=finetune)
         return corrected_action == ACTION_LISTEN_NAME
@@ -569,8 +565,11 @@ def _validate_user_text(latest_message, endpoint, sender_id):
     return answers["nlu"]
 
 
-def _validate_nlu(tracker_dump, intents, endpoint, sender_id):
-    latest_message, _ = revert_latest_message(tracker_dump.get("events", []))
+def _validate_nlu(intents, endpoint, sender_id):
+    tracker = retrieve_tracker(endpoint, sender_id,
+                               EventVerbosity.AFTER_RESTART)
+
+    latest_message, _ = revert_latest_message(tracker.get("events", []))
 
     if latest_message.get("text").startswith(INTENT_MESSAGE_PREFIX):
         valid = _validate_user_regex(latest_message, intents)
@@ -580,7 +579,7 @@ def _validate_nlu(tracker_dump, intents, endpoint, sender_id):
     if not valid:
         corrected_intent = _request_intent_from_user(latest_message, intents,
                                                      sender_id, endpoint)
-        evts = tracker_dump.get("events", [])
+        evts = tracker.get("events", [])
 
         entities = _validate_entities(latest_message, endpoint, sender_id)
         corrected_nlu = {
@@ -624,6 +623,41 @@ def _enter_user_message(sender_id, endpoint, exit_text):
     return tracker
 
 
+def is_listening_for_message(sender_id, endpoint):
+    tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.APPLIED)
+
+    for i, e in enumerate(reversed(tracker.get("events", []))):
+        if e.get("event") == "user":
+            return False
+        elif e.get("event") == "action":
+            return e.get("name") == ACTION_LISTEN_NAME
+    return False
+
+
+def revert_tracker(sender_id, endpoint):
+    # type: (...) -> None
+
+    tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
+
+    cutoff_index = None
+    last_event_type = None
+    for i, e in enumerate(reversed(tracker.get("events", []))):
+        if e.get("event") in {"user", "action"}:
+            cutoff_index = i
+            last_event_type = e.get("event")
+            break
+        elif e.get("event") == "restart":
+            break
+
+    if cutoff_index is not None:
+        events_to_keep = tracker["events"][:-(cutoff_index + 1)]
+        replace_events(endpoint, sender_id, events_to_keep)
+
+        return last_event_type
+    else:
+        return None
+
+
 def record_messages(endpoint,
                     sender_id=UserMessage.DEFAULT_SENDER_ID,
                     max_message_limit=None,
@@ -650,8 +684,9 @@ def record_messages(endpoint,
         num_messages = 0
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
-                tracker = _enter_user_message(sender_id, endpoint, exit_text)
-                _validate_nlu(tracker, intents, endpoint, sender_id)
+                if is_listening_for_message(sender_id, endpoint):
+                    _enter_user_message(sender_id, endpoint, exit_text)
+                    _validate_nlu(intents, endpoint, sender_id)
                 _predict_till_next_listen(endpoint, sender_id, finetune=finetune)
                 num_messages += 1
             except RestartConversation:
@@ -660,6 +695,9 @@ def record_messages(endpoint,
                                                  "name": ACTION_LISTEN_NAME})
 
                 logger.info("Restarted conversation, starting a new one.")
+            except UndoLastStep:
+                revert_tracker(sender_id, endpoint)
+                _print_history(sender_id, endpoint)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")

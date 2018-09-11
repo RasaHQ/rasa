@@ -7,7 +7,7 @@ from builtins import str
 
 import argparse
 
-from rasa_core import utils, run
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
@@ -18,6 +18,7 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.run import AvailableEndpoints
 from rasa_core.training import online
 
 
@@ -138,7 +139,7 @@ def create_argument_parser():
 
 def train_dialogue_model(domain_file, stories_file, output_path,
                          interpreter=None,
-                         endpoints=None,
+                         endpoints=AvailableEndpoints(),
                          max_history=None,
                          dump_flattened_stories=False,
                          kwargs=None):
@@ -208,7 +209,7 @@ if __name__ == '__main__':
     else:
         stories = cmdline_args.stories
 
-    _endpoints = run.read_endpoints(cmdline_args.endpoints)
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
 

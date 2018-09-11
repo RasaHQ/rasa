@@ -23,14 +23,9 @@ from rasa_core.channels import (
     BUILTIN_CHANNELS)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
-from rasa_core.utils import read_yaml_file
+from rasa_core.utils import read_yaml_file, AvailableEndpoints
 
 logger = logging.getLogger()  # get the root logger
-
-AvailableEndpoints = namedtuple('AvailableEndpoints', 'nlg '
-                                                      'nlu '
-                                                      'action '
-                                                      'model')
 
 
 def create_argument_parser():
@@ -88,19 +83,6 @@ def create_argument_parser():
 
     utils.add_logging_option_arguments(parser)
     return parser
-
-
-def read_endpoints(endpoint_file):
-    nlg = utils.read_endpoint_config(endpoint_file,
-                                     endpoint_type="nlg")
-    nlu = utils.read_endpoint_config(endpoint_file,
-                                     endpoint_type="nlu")
-    action = utils.read_endpoint_config(endpoint_file,
-                                        endpoint_type="action_endpoint")
-    model = utils.read_endpoint_config(endpoint_file,
-                                       endpoint_type="models")
-
-    return AvailableEndpoints(nlg, nlu, action, model)
 
 
 def _create_external_channels(channel, credentials_file):
@@ -248,7 +230,7 @@ if __name__ == '__main__':
 
     logger.info("Rasa process starting")
 
-    _endpoints = read_endpoints(cmdline_args.endpoints)
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
     _agent = load_agent(cmdline_args.core,

@@ -20,7 +20,7 @@ from rasa_core.events import (
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.tracker_store import (
     TrackerStore)
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
@@ -327,7 +327,7 @@ def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
     for tracker in trackers:
         out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
 
-        dumped = tracker.current_state(should_include_events=True)
+        dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
         utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
 
         restored_tracker = restore.load_tracker_from_json(out_path.strpath,
@@ -349,5 +349,6 @@ def test_read_json_dump(default_agent):
     assert restored_tracker.sender_id == "mysender"
     assert restored_tracker.events[-1].timestamp == 1517821726.211042
 
-    restored_state = restored_tracker.current_state(should_include_events=True)
+    restored_state = restored_tracker.current_state(
+            EventVerbosity.AFTER_RESTART)
     assert restored_state == tracker_json
