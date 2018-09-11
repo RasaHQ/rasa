@@ -51,7 +51,6 @@ class RasaReader(JsonTrainingDataReader):
 
 
 class RasaWriter(TrainingDataWriter):
-
     def dumps(self, training_data, **kwargs):
         """Writes Training Data to a string in json format."""
         js_entity_synonyms = defaultdict(list)
