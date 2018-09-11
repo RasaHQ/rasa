@@ -38,11 +38,12 @@ class RegexFeaturizer(Featurizer):
     requires = ["tokens"]
 
     def __init__(self, component_config=None,
-                 known_patterns=None, lookup_tables=[]):
+                 known_patterns=None, lookup_tables=None):
 
         super(RegexFeaturizer, self).__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
+        lookup_tables = lookup_tables or []
         self._add_lookup_table_regexes(lookup_tables)
 
     def train(self, training_data, config, **kwargs):
