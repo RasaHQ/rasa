@@ -473,3 +473,10 @@ this:
          payload: "great"
        - title: "super sad"
          payload: "super sad"
+
+		 
+.. include:: feedback.inc 
+
+.. raw:: html
+   :file: livechat.html
+   

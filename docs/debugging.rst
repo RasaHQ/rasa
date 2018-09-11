@@ -112,3 +112,8 @@ for example ``--nlu_data mydata.json``.
    path, and can be loaded by the visualization script using the module path
    given for the action in the domain (e.g. ``actions.ActionSearchVenues``).
 
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html

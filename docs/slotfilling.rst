@@ -212,3 +212,8 @@ like ``MyCustomFormField`` and overriding the ``validate()`` method.
    Typically your NLU model will assign this free-text input to 2-3 different intents. 
    It's easiest to add stories for each of these. 
 
+
+.. include:: feedback.inc 
+
+.. raw:: html
+   :file: livechat.html
