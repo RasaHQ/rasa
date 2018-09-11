@@ -316,7 +316,7 @@ def _print_history(sender_id, endpoint):
             confidence = parsed.get('intent', {}).get("confidence", 1.0)
             md = _md_message(parsed)
             msg = "{hired}" + wrap(md, table.column_max_width(3)) + "{/hired}\n"
-            msg += "{} {:03.2f}\n".format(intent, confidence)
+            msg += "intent: {} {:03.2f}\n".format(intent, confidence)
             table_data.append([len(table_data), "", "", Color(msg)])
         elif evt.get("event") == "bot":
             if bot_column:
