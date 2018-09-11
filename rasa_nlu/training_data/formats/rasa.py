@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class RasaReader(JsonTrainingDataReader):
-
     def read_from_json(self, js, **kwargs):
         """Loads training data stored in the rasa NLU data format."""
         validate_rasa_nlu_data(js)
