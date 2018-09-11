@@ -84,7 +84,7 @@ def create_argument_parser():
             action='store_true',
             help="enable online training")
     parser.add_argument(
-            '--load_model',
+            '--core',
             default=None,
             help="path to load a pre-trained model instead of training (for online mode only)")
     parser.add_argument(
@@ -214,10 +214,13 @@ if __name__ == '__main__':
                                                      _endpoints.nlu)
 
     
-    if cmdline_args.load_model:
+    if cmdline_args.core:
         if not cmdline_args.online:
-            raise ValueError("--load_model can only be used together with --online flag.")
-        agent = Agent.load(cmdline_args.load_model, interpreter=_interpreter)
+            raise ValueError("--core can only be used together with --online flag.")
+        else:
+            logger.info("loading a pre-trained model. ",
+                        "all training-related parameters will be ignored")
+        agent = Agent.load(cmdline_args.core, interpreter=_interpreter)
     else:
         if not cmdlin_args.out:
             raise ValueError("you must provide a path where the model will be saved using -o / --out")
