@@ -603,7 +603,7 @@ def _validate_entities(latest_message, endpoint, sender_id):
     answers = _ask_questions(questions, sender_id, endpoint)
     # noinspection PyProtectedMember
     parsed = MarkdownReader()._parse_training_example(answers["annotation"])
-    return parsed.get("entities")
+    return parsed.get("entities", [])
 
 
 def _enter_user_message(sender_id, endpoint, exit_text):
