@@ -16,12 +16,11 @@ from colorclass import Color
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable
 from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Tuple
+from typing import Any, Text, Dict, List, Optional, Callable
 
 from rasa_core import utils, server, events
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string
+from rasa_core.channels import UserMessage, console
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 from rasa_core.events import Event
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
@@ -59,6 +58,7 @@ def send_message(endpoint,  # type: EndpointConfig
                  parse_data=None  # type: Optional[Dict[Text, Any]]
                  ):
     # type: (...) -> Dict[Text, Any]
+    """Send a user message to a conversation."""
 
     payload = {
         "sender": "user",
@@ -80,6 +80,7 @@ def send_message(endpoint,  # type: EndpointConfig
 
 def request_prediction(endpoint, sender_id):
     # type: (EndpointConfig, Text) -> Dict[Text, Any]
+    """Request the next action prediction from core."""
 
     r = endpoint.request(method="post",
                          subpath="/conversations/{}/predict".format(sender_id))
@@ -93,6 +94,9 @@ def request_prediction(endpoint, sender_id):
 
 
 def retrieve_domain(endpoint):
+    # type: (EndpointConfig) -> Dict[Text, Any]
+    """Retrieve the domain from core."""
+
     r = endpoint.request(method="get",
                          subpath="/domain",
                          headers={"Accept": "application/json"})
@@ -106,6 +110,9 @@ def retrieve_domain(endpoint):
 
 
 def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
+    # type: (EndpointConfig, Text, EventVerbosity) -> Dict[Text, Any]
+    """Retrieve a tracker from core."""
+
     path = "/conversations/{}/tracker?events={}".format(
             sender_id, verbosity.name)
     r = endpoint.request(method="get",
@@ -122,6 +129,8 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
 
 def send_action(endpoint, sender_id, action_name):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
+    """Log an action to a conversation."""
+
     payload = {"action": action_name}
     subpath = "/conversations/{}/execute".format(sender_id)
 
@@ -139,6 +148,8 @@ def send_action(endpoint, sender_id, action_name):
 
 def send_event(endpoint, sender_id, evt):
     # type: (EndpointConfig, Text, Dict[Text, Any]) -> Dict[Text, Any]
+    """Log an event to a concersation."""
+
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
     r = endpoint.request(json=evt,
@@ -155,6 +166,8 @@ def send_event(endpoint, sender_id, evt):
 
 def replace_events(endpoint, sender_id, evts):
     # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
+    """Replace all the events of a concersation with the provided ones."""
+
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
     r = endpoint.request(json=evts,
@@ -171,6 +184,7 @@ def replace_events(endpoint, sender_id, evts):
 
 def send_finetune(endpoint, evts):
     # type: (EndpointConfig, List[Dict[Text, Any]]) -> None
+    """Finetune a core model on the provided additional training samples."""
 
     r = endpoint.request(json=evts,
                          method="post",
@@ -182,39 +196,35 @@ def send_finetune(endpoint, evts):
         r.encoding = 'utf-8'
 
 
-def revert_latest_message(
-        evts  # type: List[Dict[Text, Any]]
-):
-    # type: (...) -> Tuple[Optional[Dict[Text, Any]], List[Dict[Text, Any]]]
+def latest_user_message(evts):
+    # type: (List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
+    """Return most recent user message."""
 
     for i, e in enumerate(reversed(evts)):
         if e.get("event") == "user":
-            return e, evts[:-(i + 1)]
-    return None, evts
+            return e
+    return None
 
 
-def format_bot_output(message):
-    if "text" in message:
-        output = message.get("text")
-    else:
-        output = ""
+def all_events_before_latest_user_msg(evts):
+    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+    """Return all events that happened before the most recent user message."""
 
-    # Append all additional items
-    data = message.get("data")
-    if data.get("image"):
-        output += "\nImage: " + data.get("image")
-
-    if data.get("attachment"):
-        output += "\nAttachment: " + data.get("attachment")
-
-    if data.get("buttons"):
-        for idx, button in enumerate(data.get("buttons")):
-            button_str = button_to_string(button, idx)
-            output += "\n" + button_str
-    return output
+    for i, e in enumerate(reversed(evts)):
+        if e.get("event") == "user":
+            return evts[:-(i + 1)]
+    return evts
 
 
-def _ask_questions(questions, sender_id, endpoint, is_abort=None):
+def _ask_questions(
+        questions,  # type: List[Dict[Text, Any]]
+        sender_id,  # type: Text
+        endpoint,  # type: EndpointConfig
+        is_abort=None  # type: Optional[Callable[[Dict[Text, Text]], bool]]
+):
+    # type: (...) -> Dict[Text, Text]
+    """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
+
     should_retry = True
     answers = {}
 
@@ -228,7 +238,7 @@ def _ask_questions(questions, sender_id, endpoint, is_abort=None):
 
 
 def _request_intent_from_user(latest_message, intents, sender_id, endpoint):
-    # take in some argument and ask which intent it should have been
+    """Take in latest message and ask which intent it should have been."""
 
     predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
 
@@ -321,7 +331,8 @@ def _print_history(sender_id, endpoint):
         elif evt.get("event") == "bot":
             if bot_column:
                 bot_column += "\n"
-            wrapped = wrap(format_bot_output(evt), table.column_max_width(1))
+            wrapped = wrap(console.format_bot_output(evt),
+                           table.column_max_width(1))
             bot_column += ("{autoblue}" + wrapped + "{/autoblue}")
         elif evt.get("event") != "bot":
             e = Event.from_parameters(evt)
@@ -490,7 +501,8 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
 
 
 def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
-    latest_message, corrected_events = revert_latest_message(evts)
+    latest_message = latest_user_message(evts)
+    corrected_events = all_events_before_latest_user_msg(evts)
 
     latest_message["parse_data"] = corrected_nlu
 
@@ -574,7 +586,7 @@ def _validate_nlu(intents, endpoint, sender_id):
     tracker = retrieve_tracker(endpoint, sender_id,
                                EventVerbosity.AFTER_RESTART)
 
-    latest_message, _ = revert_latest_message(tracker.get("events", []))
+    latest_message = latest_user_message(tracker.get("events", []))
 
     if latest_message.get("text").startswith(INTENT_MESSAGE_PREFIX):
         valid = _validate_user_regex(latest_message, intents)

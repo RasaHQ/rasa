@@ -16,20 +16,31 @@ from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
 
-def print_bot_output(message, color=utils.bcolors.OKBLUE):
+def format_bot_output(message):
     if "text" in message:
-        utils.print_color(message.get("text"), color)
+        output = message.get("text")
+    else:
+        output = ""
 
-    if "image" in message:
-        utils.print_color("Image: " + message.get("image"), color)
+    # Append all additional items
+    data = message.get("data")
+    if data.get("image"):
+        output += "\nImage: " + data.get("image")
 
-    if "attachment" in message:
-        utils.print_color("Attachment: " + message.get("attachment"), color)
+    if data.get("attachment"):
+        output += "\nAttachment: " + data.get("attachment")
 
-    if "buttons" in message:
-        for idx, button in enumerate(message.get("buttons")):
+    if data.get("buttons"):
+        for idx, button in enumerate(data.get("buttons")):
             button_str = button_to_string(button, idx)
-            utils.print_color(button_str, color)
+            output += "\n" + button_str
+    return output
+
+
+def print_bot_output(message, color=utils.bcolors.OKBLUE):
+    text = format_bot_output(message)
+    if text:
+        utils.print_color(text, color)
 
 
 def get_cmd_input():
