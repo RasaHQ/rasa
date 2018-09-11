@@ -152,3 +152,10 @@ persistors:
           "feature_extractor": null,
           "backend": "spacy_sklearn"
       }
+
+
+.. include:: feedback.inc  
+	  
+.. raw:: html
+   :file: livechat.html
+   

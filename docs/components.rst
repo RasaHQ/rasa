@@ -658,3 +658,9 @@ ner_duckling_http
           # if not set the default timezone of Duckling is going to be used
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
+
+		  
+.. include:: feedback.inc		  
+		  
+.. raw:: html
+   :file: livechat.html

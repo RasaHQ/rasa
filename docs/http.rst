@@ -175,3 +175,8 @@ This will unload a model from the server memory
 
     $ curl -X DELETE localhost:5000/models?project=my_restaurant_search_bot&model=model_XXXXXX
 
+
+.. include:: feedback.inc
+	
+.. raw:: html
+   :file: livechat.html

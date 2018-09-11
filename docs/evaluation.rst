@@ -153,3 +153,7 @@ Which will produce the following output:
 .. program-output:: python -m rasa_nlu.evaluate --help
 
 
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html

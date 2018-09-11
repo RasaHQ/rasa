@@ -165,3 +165,7 @@ To build a really great NLU system you'll want to collect some real user message
     ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool``
 
 
+.. include:: feedback.inc	
+	
+.. raw:: html
+   :file: livechat.html
