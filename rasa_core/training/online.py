@@ -468,7 +468,8 @@ def _write_stories_to_file(export_file_path, sender_id, endpoint):
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                               sender_id,  # type: Text
-                              finetune): # type: Boolean
+                              finetune  # type: Boolean
+                              ):
     # type: (...) -> None
     # given a state, predict next action via asking a human
 
