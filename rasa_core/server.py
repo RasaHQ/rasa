@@ -68,10 +68,13 @@ def requires_auth(app, token=None):
         def decorated(*args, **kwargs):
             provided = request.args.get('token')
             # noinspection PyProtectedMember
-            if token is None or provided == token:
+            if token is not None and provided == token:
                 return f(*args, **kwargs)
             elif (app.config['JWT_ALGORITHM'] is not None
                   and view_decorators._decode_jwt_from_headers()):
+                return f(*args, **kwargs)
+            elif token is None and app.config['JWT_ALGORITHM'] is None:
+                # authentication is disabled
                 return f(*args, **kwargs)
             abort(401)
 
@@ -84,7 +87,7 @@ def create_app(agent,
                cors_origins=None,  # type: Optional[Union[Text, List[Text]]]
                auth_token=None,  # type: Optional[Text]
                jwt_secret=None,   # type: Optional[Text]
-               jwt_method=None,  # type: Optional[Text]
+               jwt_method="HS256",  # type: Optional[Text]
                ):
     """Class representing a Rasa Core HTTP server."""
 
@@ -93,7 +96,7 @@ def create_app(agent,
     cors_origins = cors_origins or []
 
     # Setup the Flask-JWT-Simple extension
-    if jwt_method:
+    if jwt_secret and jwt_method:
         # since we only want to check signatures, we don't actually care
         # about the JWT method and set the passed secret as either symmetric
         # or asymmetric key. jwt lib will choose the right one based on method
@@ -434,9 +437,12 @@ def create_app(agent,
                                                  request_params,
                                                  agent.domain.slots)
         policy_ensemble = agent.policy_ensemble
-        probabilities = policy_ensemble.probabilities_using_best_policy(tracker, agent.domain)
-        probability_dict = {agent.domain.action_for_index(idx, agent.action_endpoint).name(): probability
+        probabilities = policy_ensemble.probabilities_using_best_policy(
+                tracker, agent.domain)
+
+        probability_dict = {agent.domain.action_names[idx]: probability
                             for idx, probability in enumerate(probabilities)}
+
         return jsonify(probability_dict)
 
     return app
@@ -475,4 +481,6 @@ if __name__ == '__main__':
                           cmdline_args.credentials,
                           cmdline_args.cors,
                           cmdline_args.auth_token,
-                          cmdline_args.enable_api)
+                          cmdline_args.enable_api,
+                          cmdline_args.jwt_secret,
+                          cmdline_args.jwt_method)

@@ -100,6 +100,7 @@ def create_argument_parser():
     jwt_auth.add_argument(
             '--jwt_method',
             type=str,
+            default="HS256",
             help="Method used for the signature of the JWT authentication "
                  "payload.")
 
