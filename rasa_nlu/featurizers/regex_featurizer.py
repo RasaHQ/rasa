@@ -125,7 +125,7 @@ class RegexFeaturizer(Featurizer):
                     if new_element:
                         elements_to_regex.append(new_element)
 
-        """regex matching elements with word boundaries on either side """
+        # regex matching elements with word boundaries on either side
         regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_to_regex) + '\\b)'
         return regex_string
 
