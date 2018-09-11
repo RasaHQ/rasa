@@ -113,7 +113,13 @@ class RegexFeaturizer(Featurizer):
 
         # otherwise it's a file path.
         else:
-            with io.open(lookup_elements, 'r') as f:
+
+            try:
+                f = io.open(lookup_elements, 'r')
+            except IOError:
+                raise ValueError("Could not load lookup table {}".format(lookup_elements))
+
+            with f:
                 for line in f:
                     new_element = line.strip()
                     if new_element:
