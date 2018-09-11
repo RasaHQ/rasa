@@ -58,7 +58,7 @@ def create_argument_parser():
     parser.add_argument(
             '-d', '--domain',
             type=str,
-            required=True,
+            required=False,
             help="domain specification yaml file")
     parser.add_argument(
             '-u', '--nlu',
