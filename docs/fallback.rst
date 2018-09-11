@@ -31,3 +31,7 @@ One common misconception is that if your model reports high confidence on your t
 it is a "better" model. In fact, this usually means that your model is overfitting.
 
 
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html

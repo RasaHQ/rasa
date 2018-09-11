@@ -131,3 +131,9 @@ Some extractors, like ``duckling``, may include additional information. For exam
     (`ner_crf` component). The duckling entity extractor will always return
     `1`. The `ner_spacy` extractor does not provide this information and
     returns `null`.
+
+
+.. include:: feedback.inc
+	
+.. raw:: html
+   :file: livechat.html

@@ -11,15 +11,18 @@ import logging
 import os
 import re
 import tempfile
-
-import simplejson
-import six
-from builtins import str
-import yaml
-from future.utils import PY3
+from collections import namedtuple
 from typing import List, Any
 from typing import Optional
 from typing import Text
+
+import requests
+import simplejson
+import six
+import yaml
+from builtins import str
+from future.utils import PY3
+from requests.auth import HTTPBasicAuth
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -347,3 +350,147 @@ def create_temporary_file(data, suffix="", mode="w+"):
 
     f.close()
     return f.name
+
+
+def zip_folder(folder):
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)
+
+
+def concat_url(base, subpath):
+    # type: (Text, Optional[Text]) -> Text
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
+    if subpath:
+        url = base
+        if not base.endswith("/"):
+            url += "/"
+        if subpath.startswith("/"):
+            subpath = subpath[1:]
+        return url + subpath
+    else:
+        return base
+
+
+def read_endpoint_config(filename, endpoint_type):
+    # type: (Text, Text) -> Optional[EndpointConfig]
+    """Read an endpoint configuration file from disk and extract one
+
+    config. """
+    if not filename:
+        return None
+
+    content = read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
+
+
+def read_endpoints(endpoint_file):
+    model = read_endpoint_config(endpoint_file,
+                                 endpoint_type="model")
+    data = read_endpoint_config(endpoint_file,
+                                endpoint_type="data")
+
+    return AvailableEndpoints(model, data)
+
+
+# The EndpointConfig class is currently used to define external endpoints
+# for pulling NLU models from a server and training data
+AvailableEndpoints = namedtuple('AvailableEndpoints', 'model data')
+
+
+class EndpointConfig(object):
+    """Configuration for an external HTTP endpoint."""
+
+    def __init__(self, url, params=None, headers=None, basic_auth=None,
+                 token=None, token_name="token"):
+        self.url = url
+        self.params = params if params else {}
+        self.headers = headers if headers else {}
+        self.basic_auth = basic_auth
+        self.token = token
+        self.token_name = token_name
+
+    def request(self,
+                method="post",  # type: Text
+                subpath=None,  # type: Optional[Text]
+                content_type="application/json",  # type: Optional[Text]
+                **kwargs  # type: Any
+                ):
+        """Send a HTTP request to the endpoint.
+
+        All additional arguments will get passed through
+        to `requests.request`."""
+
+        # create the appropriate headers
+        headers = self.headers.copy()
+        if content_type:
+            headers["Content-Type"] = content_type
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
+
+        # create authentication parameters
+        if self.basic_auth:
+            auth = HTTPBasicAuth(self.basic_auth["username"],
+                                 self.basic_auth["password"])
+        else:
+            auth = None
+
+        url = concat_url(self.url, subpath)
+
+        # construct GET parameters
+        params = self.params.copy()
+
+        # set the authentication token if present
+        if self.token:
+            params[self.token_name] = self.token
+
+        if "params" in kwargs:
+            params.update(kwargs["params"])
+            del kwargs["params"]
+
+        return requests.request(method,
+                                url,
+                                headers=headers,
+                                params=params,
+                                auth=auth,
+                                **kwargs)
+
+    @classmethod
+    def from_dict(cls, data):
+        return EndpointConfig(
+                data.get("url"),
+                data.get("params"),
+                data.get("headers"),
+                data.get("basic_auth"),
+                data.get("token"),
+                data.get("token_name"))
+
+    def __eq__(self, other):
+        if isinstance(self, type(other)):
+            return (other.url == self.url and
+                    other.params == self.params and
+                    other.headers == self.headers and
+                    other.basic_auth == self.basic_auth and
+                    other.token == self.token and
+                    other.token_name == self.token_name)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

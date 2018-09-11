@@ -12,5 +12,6 @@ We want to ensure that you have the best experience when using Rasa Stack so if 
 
 For the customers of our commercial product `Rasa Platfrom <http://rasa.com/products/rasa-platform/>`_ we offer enterprise-grade support, so if you have any issues or questions you can contact us by using your custom support email or Slack channel.
 
-
+.. raw:: html
+   :file: livechat.html
 

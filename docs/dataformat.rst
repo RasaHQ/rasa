@@ -313,3 +313,8 @@ To train a model with this data, pass the path to the directory to the train scr
     For other file formats you have to use the single-file approach. You also cannot mix markdown
     and json
 
+
+.. include:: feedback.inc	
+	
+.. raw:: html
+   :file: livechat.html	
