@@ -60,7 +60,6 @@ def create_argument_parser():
             type=str,
             default="failed_stories.txt",
             help="output path for the failed stories")
-
     utils.add_logging_option_arguments(parser)
     return parser
 
