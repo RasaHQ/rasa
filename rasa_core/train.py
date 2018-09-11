@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from builtins import str
 
 import argparse
+import logging
 
 from rasa_core import utils
 from rasa_core.agent import Agent
@@ -22,6 +23,9 @@ from rasa_core.run import AvailableEndpoints
 from rasa_core.training import online
 
 
+logger = logging.getLogger(__name__)
+
+
 def create_argument_parser():
     """Parse all the command line arguments for the training script."""
 
@@ -30,7 +34,7 @@ def create_argument_parser():
 
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
-    group = parser.add_mutually_exclusive_group(required=False)
+    group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
             '-s', '--stories',
             type=str,
@@ -41,6 +45,10 @@ def create_argument_parser():
             help="If supplied, downloads a story file from a URL and "
                  "trains on it. Fetches the data by sending a GET request "
                  "to the supplied URL.")
+    group.add_argument(
+            '--core',
+            default=None,
+            help="path to load a pre-trained model instead of training (for online mode only)")
 
     parser.add_argument(
             '-o', '--out',
@@ -83,10 +91,6 @@ def create_argument_parser():
             default=False,
             action='store_true',
             help="enable online training")
-    parser.add_argument(
-            '--core',
-            default=None,
-            help="path to load a pre-trained model instead of training (for online mode only)")
     parser.add_argument(
             '--finetune',
             default=False,
