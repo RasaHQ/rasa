@@ -38,10 +38,13 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     ## regex:zipcode
     - [0-9]{5}
 
-    ## lookup:currencies   <!-- lookup table with (USD, Yen, euro, etc.) -->
+    ## lookup:currencies   <!-- lookup table list -->
     - Yen
     - USD
     - Euro
+
+    ## lookup:additional_currencies  <!-- no list to specify lookup table file -->
+    path/to/currencies.txt
 
 The training data for Rasa NLU is structured into different parts:
 examples, synonyms, regex features, and lookup tables. 
@@ -270,19 +273,6 @@ Alternatively, lookup elements may be directly included as a list
             ]
         }
     }
-
-In markdown data format, lookup table filenames are indicated by specifying a single file path directly after the lookup header.
-
-    # lookup:plates
-    data/test/lookup_tables/plates.txt
-
-whereas elements are inserted by `-`, `*`, or `+` tokens
-
-  # lookup:plates
-  - beans
-  - rice
-  - tacos
-  - cheese
 
 When lookup tables are supplied in training data, the contents are combined into a large, case-insensitive regex pattern that looks for exact matches in the training examples.  These regexes match over multiple tokens, so ``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``.  These regexes are processed identically to the regular regex patterns directly specified in the training data.
 
