@@ -7,9 +7,13 @@ import datetime
 import io
 import logging
 import os
-from builtins import object
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from typing import Text, Dict, Any, Optional, List
+
+from builtins import object
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils, config
 from rasa_nlu.components import ComponentBuilder
@@ -20,9 +24,6 @@ from rasa_nlu.project import Project, load_from_server
 from rasa_nlu.train import do_train_in_worker, TrainingException
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data.loading import load_data
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.logger import jsonFileLogObserver, Logger
 
 logger = logging.getLogger(__name__)
 
@@ -153,45 +154,35 @@ class DataRouter(object):
 
     def _create_project_store(self,
                               project_dir):
+        default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
+
         projects = self._collect_projects(project_dir)
 
         project_store = {}
 
-        for project in projects:
-            if self.model_server is not None:
-                project_store[project] = load_from_server(
-                        self.component_builder,
-                        project,
-                        self.project_dir,
-                        self.remote_storage,
-                        self.model_server,
-                        self.wait_time_between_pulls
-                )
-            else:
-                project_store[project] = Project(
-                        self.component_builder,
-                        project,
-                        self.project_dir,
-                        self.remote_storage
-                )
+        if self.model_server is not None:
+            project_store[default_project] = load_from_server(
+                    self.component_builder,
+                    default_project,
+                    self.project_dir,
+                    self.remote_storage,
+                    self.model_server,
+                    self.wait_time_between_pulls
+            )
+        else:
+            for project in projects:
+                project_store[project] = Project(self.component_builder,
+                                                 project,
+                                                 self.project_dir,
+                                                 self.remote_storage)
 
-        if not project_store:
-            default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-            if self.model_server is not None:
-                project_store[default_project] = load_from_server(
-                        self.component_builder,
-                        default_project,
-                        self.project_dir,
-                        self.remote_storage,
-                        self.model_server,
-                        self.wait_time_between_pulls
-                )
-            else:
-
+            if not project_store:
                 project_store[default_project] = Project(
                         project=default_project,
                         project_dir=self.project_dir,
-                        remote_storage=self.remote_storage)
+                        remote_storage=self.remote_storage
+                )
+
         return project_store
 
     def _pre_load(self, projects):

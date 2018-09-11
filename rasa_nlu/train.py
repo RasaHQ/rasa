@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import argparse
 import logging
 import typing
-from collections import namedtuple
 from typing import Optional, Any
 from typing import Text
 from typing import Tuple
@@ -18,7 +17,7 @@ from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 from rasa_nlu.training_data import load_data
 from rasa_nlu.training_data.loading import load_data_from_endpoint
-from rasa_nlu.utils import read_endpoints
+from rasa_nlu.utils import read_endpoints, EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +42,14 @@ def create_argument_parser():
                             "or a directory containing multiple training "
                             "data files.")
 
+    group.add_argument('-u', '--url',
+                       default=None,
+                       help="URL from which to retrieve training data.")
+
     group.add_argument('--endpoints',
                        default=None,
-                       help="EndpointConfig defining the server from which pull training data.")
+                       help="EndpointConfig defining the server from which "
+                            "pull training data.")
 
     parser.add_argument('-c', '--config',
                         required=True,
@@ -165,7 +169,10 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
-    _endpoints = read_endpoints(cmdline_args.endpoints)
+    if cmdline_args.url:
+        data_endpoint = EndpointConfig(cmdline_args.url)
+    else:
+        data_endpoint = read_endpoints(cmdline_args.endpoints).data
 
     do_train(config.load(cmdline_args.config),
              cmdline_args.data,
@@ -173,6 +180,6 @@ if __name__ == '__main__':
              cmdline_args.project,
              cmdline_args.fixed_model_name,
              cmdline_args.storage,
-             data_endpoint=_endpoints.data,
+             data_endpoint=data_endpoint,
              num_threads=cmdline_args.num_threads)
     logger.info("Finished training")
