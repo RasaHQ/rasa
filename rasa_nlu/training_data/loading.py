@@ -18,6 +18,7 @@ from rasa_nlu.training_data.formats import markdown
 from rasa_nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT,
     DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES)
+from rasa_nlu.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -61,14 +62,14 @@ def load_data(resource_name, language='en'):
         return data_sets[0].merge(*data_sets[1:])
 
 
-def load_data_from_url(url, language='en'):
-    # type: (Text, Optional[Text]) -> TrainingData
+def load_data_from_endpoint(data_endpoint, language='en'):
+    # type: (EndpointConfig, Optional[Text]) -> TrainingData
     """Load training data from a URL."""
 
-    if not utils.is_url(url):
-        raise requests.exceptions.InvalidURL(url)
+    if not utils.is_url(data_endpoint.url):
+        raise requests.exceptions.InvalidURL(data_endpoint.url)
     try:
-        response = requests.get(url)
+        response = data_endpoint.request("get")
         response.raise_for_status()
         temp_data_file = utils.create_temporary_file(response.content,
                                                      mode="w+b")

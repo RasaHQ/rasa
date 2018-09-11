@@ -4,6 +4,60 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.13.x to 0.13.3
+----------------
+- ``rasa_nlu.server`` has to  be supplied with a ``yml`` file defining the
+  model endpoint from which to retrieve training data. The file location has
+  be passed with the ``--endpoints`` argument, e.g.
+  ``python rasa_nlu.server --path projects --endpoints endpoints.yml``
+  ``endpoints.yml`` needs to contain the ``model`` key
+  with a ``url`` and an optional ``token``. Here's an example:
+
+  .. code-block:: yaml
+
+    model:
+      url: http://my_model_server.com/models/default/nlu/tags/latest
+      token: my_model_server_token
+
+  .. note::
+
+    If you configure ``rasa_nlu.server`` to pull models from a remote server,
+    the default project name will be used. It is defined
+    ``RasaNLUModelConfig.DEFAULT_PROJECT_NAME``.
+
+
+- ``rasa_nlu.train`` can also be run with the ``--endpoints`` argument
+  if you want to pull training data from a URL. Alternatively, the
+  current ``--url`` syntax is still supported.
+
+  .. code-block:: yaml
+
+    data:
+      url: http://my_data_server.com/projects/default/data
+      token: my_data_server_token
+
+  .. note::
+
+    Your endpoint file may contain entries for both ``model`` and ``data``.
+    ``rasa_nlu.server`` and ``rasa_nlu.train`` will pick the relevant entry.
+
+- If you directly access the ``DataRouter`` class or ``rasa_nlu.train``'s
+  ``do_train()`` method, you can directly create instances of
+  ``EndpointConfig`` without creating a ``yml`` file. Example:
+
+  .. code-block:: python
+
+    from rasa_nlu.utils import EndpointConfig
+    from rasa_nlu.data_router import DataRouter
+
+    model_endpoint = EndpointConfig(
+        url="http://my_model_server.com/models/default/nlu/tags/latest",
+        token="my_model_server_token"
+    )
+
+    interpreter = DataRouter("projects", model_server=model_endpoint)
+
+
 0.12.x to 0.13.0
 ----------------
 

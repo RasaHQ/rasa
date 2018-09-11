@@ -5,11 +5,11 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+from builtins import str
 from functools import wraps
 
 import simplejson
 import six
-from builtins import str
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -19,10 +19,10 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
     MaxTrainingError)
-from rasa_nlu.train import TrainingException
-from rasa_nlu.utils import json_to_string
-from rasa_nlu.version import __version__
 from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
+from rasa_nlu.train import TrainingException
+from rasa_nlu.utils import json_to_string, read_endpoints
+from rasa_nlu.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,13 @@ def create_argument_parser():
                         default=1,
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
+    parser.add_argument('--endpoints',
+                        help='Configuration file for the model server as a yaml file')
+    parser.add_argument('--wait_time_between_pulls',
+                        type=int,
+                        default=10,
+                        help='Wait time in seconds between NLU model server'
+                             'queries.')
     parser.add_argument('--response_log',
                         help='Directory where logs will be saved '
                              '(containing queries and responses).'
@@ -235,7 +242,7 @@ class RasaNLU(object):
                 request.setResponseCode(200)
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(
-                                  self.data_router.parse, data))
+                        self.data_router.parse, data))
                 returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)
@@ -253,8 +260,8 @@ class RasaNLU(object):
 
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(
-            {'version': __version__,
-             'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
+                {'version': __version__,
+                 'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
         )
 
     @app.route("/config", methods=['GET', 'OPTIONS'])
@@ -353,9 +360,8 @@ class RasaNLU(object):
             response = yield self.data_router.start_train_process(
                     data_file, project,
                     RasaNLUModelConfig(model_config), model_name)
-
-            returnValue(json_to_string({'info': 'new model trained: {}'
-                                                ''.format(response)}))
+            returnValue(json_to_string({'info': 'new model trained',
+                                        'model': response}))
         except MaxTrainingError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
@@ -402,8 +408,9 @@ class RasaNLU(object):
         try:
             request.setResponseCode(200)
             response = self.data_router.unload_model(
-                params.get('project', RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
-                params.get('model')
+                    params.get('project',
+                               RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
+                    params.get('model')
             )
             return simplejson.dumps(response)
         except Exception as e:
@@ -419,11 +426,17 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
     pre_load = cmdline_args.pre_load
 
-    router = DataRouter(cmdline_args.path,
-                        cmdline_args.max_training_processes,
-                        cmdline_args.response_log,
-                        cmdline_args.emulate,
-                        cmdline_args.storage)
+    _endpoints = read_endpoints(cmdline_args.endpoints)
+
+    router = DataRouter(
+            cmdline_args.path,
+            cmdline_args.max_training_processes,
+            cmdline_args.response_log,
+            cmdline_args.emulate,
+            cmdline_args.storage,
+            model_server=_endpoints.model,
+            wait_time_between_pulls=cmdline_args.wait_time_between_pulls
+    )
     if pre_load:
         logger.debug('Preloading....')
         if 'all' in pre_load:

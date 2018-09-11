@@ -3,9 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import mock
+import io
 
-from rasa_nlu.project import Project
+import mock
+import responses
+from rasa_nlu.project import Project, load_from_server
+from rasa_nlu.utils import EndpointConfig
 
 
 def test_dynamic_load_model_with_exists_model():
@@ -90,3 +93,21 @@ def test_dynamic_load_model_with_model_is_none():
                 result = project._dynamic_load_model(None)
 
                 assert result == LATEST_MODEL_NAME
+
+
+@responses.activate
+def test_project_with_model_server(zipped_nlu_model):
+    fingerprint = 'somehash'
+    model_endpoint = EndpointConfig('http://server.com/models/nlu/tags/latest')
+
+    # mock a response that returns a zipped model
+    with io.open(zipped_nlu_model, 'rb') as f:
+        responses.add(responses.GET,
+                      model_endpoint.url,
+                      headers={"ETag": fingerprint,
+                               "filename": "my_model_xyz.zip"},
+                      body=f.read(),
+                      content_type='application/zip',
+                      stream=True)
+    project = load_from_server(model_server=model_endpoint)
+    assert project.fingerprint == fingerprint

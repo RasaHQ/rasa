@@ -4,20 +4,28 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
-import glob
-
-import os
 import logging
-
-from builtins import object
-from threading import Lock
-
-from rasa_nlu import utils
+import os
+import tempfile
+import zipfile
+from threading import Lock, Thread
 from typing import Text, List
 
+import six
+import time
+from builtins import object
+from requests.exceptions import InvalidURL, RequestException
+
+from rasa_nlu import utils
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.model import Metadata, Interpreter
+from rasa_nlu.utils import is_url, EndpointConfig
+
+if six.PY2:
+    from StringIO import StringIO as IOReader
+else:
+    from io import BytesIO as IOReader
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +33,135 @@ MODEL_NAME_PREFIX = "model_"
 
 FALLBACK_MODEL_NAME = "fallback"
 
+DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
+
+
+def load_from_server(component_builder=None,  # type: Optional[Text]
+                     project=None,  # type: Optional[Text]
+                     project_dir=None,  # type: Optional[Text]
+                     remote_storage=None,  # type: Optional[Text]
+                     model_server=None,  # type: Optional[EndpointConfig]
+                     wait_time_between_pulls=None,  # type: Optional[int]
+                     ):
+    # type: (...) -> Project
+    """Load a persisted model from a server."""
+
+    project = Project(component_builder=component_builder,
+                      project=project,
+                      project_dir=project_dir,
+                      remote_storage=remote_storage)
+
+    _update_model_from_server(model_server, project)
+
+    if wait_time_between_pulls:
+        # continuously pull the model every `wait_time_between_pulls` seconds
+        start_model_pulling_in_worker(model_server,
+                                      wait_time_between_pulls,
+                                      project)
+    return project
+
+
+def _update_model_from_server(model_server, project):
+    # type: (EndpointConfig, Project) -> None
+    """Load a zipped Rasa NLU model from a URL and update the passed
+
+    project."""
+    if not is_url(model_server.url):
+        raise InvalidURL(model_server)
+
+    model_directory = tempfile.mkdtemp()
+
+    new_model_fingerprint, filename = _pull_model_and_fingerprint(
+            model_server, model_directory, project.fingerprint)
+    if new_model_fingerprint:
+        model_name = _get_remote_model_name(filename)
+        project.fingerprint = new_model_fingerprint
+        project.update_model_from_dir_and_unload_others(model_directory,
+                                                        model_name)
+    else:
+        logger.debug("No new model found at URL {}".format(model_server))
+
+
+def _get_remote_model_name(filename):
+    # type: (Optional[Text]) -> Text
+    """Get the name to save a model under that was fetched from a
+
+    remote server."""
+    if filename is not None:  # use the filename header if present
+        return filename.strip(".zip")
+    else:  # or else use a timestamp
+        timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+        return MODEL_NAME_PREFIX + timestamp
+
+
+def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
+    # type: (EndpointConfig, Text, Optional[Text]) -> (Optional[Text], Optional[Text])
+    """Queries the model server and returns a tuple of containing the
+
+    response's <ETag> header which contains the model hash, and the
+    <filename> header containing the model name."""
+    header = {"If-None-Match": fingerprint}
+    try:
+        logger.debug("Requesting model from server {}..."
+                     "".format(model_server))
+        response = model_server.request(method="GET",
+                                        headers=header,
+                                        timeout=DEFAULT_REQUEST_TIMEOUT)
+    except RequestException as e:
+        logger.warning("Tried to fetch model from server, but couldn't reach "
+                       "server. We'll retry later... Error: {}."
+                       "".format(e))
+        return None, None
+
+    if response.status_code == 204:
+        logger.debug("Model server returned 204 status code, indicating "
+                     "that no new model is available. "
+                     "Current fingerprint: {}".format(fingerprint))
+        return response.headers.get("ETag"), response.headers.get("filename")
+    elif response.status_code == 404:
+        logger.debug("Model server didn't find a model for our request. "
+                     "Probably no one did train a model for the project "
+                     "and tag combination yet.")
+        return None, None
+    elif response.status_code != 200:
+        logger.warn("Tried to fetch model from server, but server response "
+                    "status code is {}. We'll retry later..."
+                    "".format(response.status_code))
+        return None, None
+
+    zip_ref = zipfile.ZipFile(IOReader(response.content))
+    zip_ref.extractall(model_directory)
+    logger.debug("Unzipped model to {}"
+                 "".format(os.path.abspath(model_directory)))
+
+    # get the new fingerprint and filename
+    return response.headers.get("ETag"), response.headers.get("filename")
+
+
+def _run_model_pulling_worker(model_server, wait_time_between_pulls, project):
+    # type: (Text, int, Project) -> None
+    while True:
+        _update_model_from_server(model_server, project)
+        time.sleep(wait_time_between_pulls)
+
+
+def start_model_pulling_in_worker(model_server, wait_time_between_pulls,
+                                  project):
+    # type: (Text, int, Project) -> None
+
+    worker = Thread(target=_run_model_pulling_worker,
+                    args=(model_server, wait_time_between_pulls, project))
+    worker.setDaemon(True)
+    worker.start()
+
 
 class Project(object):
     def __init__(self,
                  component_builder=None,
                  project=None,
                  project_dir=None,
-                 remote_storage=None):
+                 remote_storage=None,
+                 fingerprint=None):
         self._component_builder = component_builder
         self._models = {}
         self.status = 0
@@ -43,6 +173,7 @@ class Project(object):
         self._path = None
         self._project = project
         self.remote_storage = remote_storage
+        self.fingerprint = fingerprint
 
         if project and project_dir:
             self._path = os.path.join(project_dir, project)
@@ -148,6 +279,33 @@ class Project(object):
 
         return status
 
+    def update_model_from_dir_and_unload_others(self,
+                                                model_dir,  # type: Text
+                                                model_name  # type: Text
+                                                ):
+        # unload all loaded models
+        for model in self._list_loaded_models():
+            self.unload(model)
+
+        self._begin_read()
+        status = False
+
+        logger.debug('Loading model {} from directory {}'.format(
+                model_name, model_dir))
+
+        self._loader_lock.acquire()
+        try:
+            interpreter = self._interpreter_for_model(
+                    model_name, model_dir)
+            self._models[model_name] = interpreter
+            status = True
+        finally:
+            self._loader_lock.release()
+
+        self._end_read()
+
+        return status
+
     def update(self, model_name):
         self._writer_lock.acquire()
         self._models[model_name] = None
@@ -193,16 +351,18 @@ class Project(object):
                 if model not in self._models:
                     self._models[model] = None
 
-    def _interpreter_for_model(self, model_name):
-        metadata = self._read_model_metadata(model_name)
+    def _interpreter_for_model(self, model_name, model_dir=None):
+        metadata = self._read_model_metadata(model_name, model_dir)
         return Interpreter.create(metadata, self._component_builder)
 
-    def _read_model_metadata(self, model_name):
+    def _read_model_metadata(self, model_name, model_dir):
         if model_name is None:
             data = Project._default_model_metadata()
             return Metadata(data, model_name)
         else:
-            if not os.path.isabs(model_name) and self._path:
+            if model_dir is not None:
+                path = model_dir
+            elif not os.path.isabs(model_name) and self._path:
                 path = os.path.join(self._path, model_name)
             else:
                 path = model_name

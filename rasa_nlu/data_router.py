@@ -3,30 +3,27 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import glob
+import datetime
 import io
 import logging
-import tempfile
-
-import datetime
 import os
-from builtins import object
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
-from future.utils import PY3
-from rasa_nlu.training_data import Message
+from typing import Text, Dict, Any, Optional, List
+
+from builtins import object
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils, config
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
 from rasa_nlu.model import InvalidProjectError
-from rasa_nlu.project import Project
+from rasa_nlu.project import Project, load_from_server
 from rasa_nlu.train import do_train_in_worker, TrainingException
+from rasa_nlu.training_data import Message
 from rasa_nlu.training_data.loading import load_data
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.logger import jsonFileLogObserver, Logger
-from typing import Text, Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
@@ -92,13 +89,17 @@ class DataRouter(object):
                  response_log=None,
                  emulation_mode=None,
                  remote_storage=None,
-                 component_builder=None):
+                 component_builder=None,
+                 model_server=None,
+                 wait_time_between_pulls=None):
         self._training_processes = max(max_training_processes, 1)
         self._current_training_processes = 0
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
         self.emulator = self._create_emulator(emulation_mode)
         self.remote_storage = remote_storage
+        self.model_server = model_server
+        self.wait_time_between_pulls = wait_time_between_pulls
 
         if component_builder:
             self.component_builder = component_builder
@@ -151,23 +152,37 @@ class DataRouter(object):
         projects.extend(self._list_projects_in_cloud())
         return projects
 
-    def _create_project_store(self, project_dir):
+    def _create_project_store(self,
+                              project_dir):
+        default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
+
         projects = self._collect_projects(project_dir)
 
         project_store = {}
 
-        for project in projects:
-            project_store[project] = Project(self.component_builder,
-                                             project,
-                                             self.project_dir,
-                                             self.remote_storage)
+        if self.model_server is not None:
+            project_store[default_project] = load_from_server(
+                    self.component_builder,
+                    default_project,
+                    self.project_dir,
+                    self.remote_storage,
+                    self.model_server,
+                    self.wait_time_between_pulls
+            )
+        else:
+            for project in projects:
+                project_store[project] = Project(self.component_builder,
+                                                 project,
+                                                 self.project_dir,
+                                                 self.remote_storage)
 
-        if not project_store:
-            default_model = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-            project_store[default_model] = Project(
-                    project=RasaNLUModelConfig.DEFAULT_PROJECT_NAME,
-                    project_dir=self.project_dir,
-                    remote_storage=self.remote_storage)
+            if not project_store:
+                project_store[default_project] = Project(
+                        project=default_project,
+                        project_dir=self.project_dir,
+                        remote_storage=self.remote_storage
+                )
+
         return project_store
 
     def _pre_load(self, projects):
@@ -351,19 +366,19 @@ class DataRouter(object):
                                "component. This blocks the server during "
                                "training.")
                 model_path = do_train_in_worker(
-                    train_config,
-                    data_file,
-                    path=self.project_dir,
-                    project=project,
-                    fixed_model_name=model_name,
-                    storage=self.remote_storage)
+                        train_config,
+                        data_file,
+                        path=self.project_dir,
+                        project=project,
+                        fixed_model_name=model_name,
+                        storage=self.remote_storage)
                 model_dir = os.path.basename(os.path.normpath(model_path))
                 training_callback(model_dir)
                 return model_dir
             except TrainingException as e:
                 logger.warning(e)
                 target_project = self.project_store.get(
-                    e.failed_target_project)
+                        e.failed_target_project)
                 if target_project:
                     target_project.status = 0
                 raise e
