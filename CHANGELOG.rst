@@ -29,6 +29,7 @@ Removed
 
 Fixed
 -----
+- re-added support for entity names with special characters in markdown format
 
 [0.13.2] - 2018-08-28
 ^^^^^^^^^^^^^^^^^^^^^

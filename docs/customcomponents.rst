@@ -49,3 +49,9 @@ Component
    .. automethod:: partially_process
 
    .. automethod:: can_handle_language
+
+
+.. include:: feedback.inc
+   
+.. raw:: html
+   :file: livechat.html

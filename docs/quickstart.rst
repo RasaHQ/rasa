@@ -158,19 +158,6 @@ To build a really great NLU system you'll want to collect some real user message
    :file: poll.html
 
 
-5. Start Building
------------------
-
-Clone the starter pack 
-
-.. copyable::
-
-   git clone https://github.com/RasaHQ/starter-pack.git
-
-The starter pack gets you set up with the right file structure, sample configurations, plus
-links to more training data! 
-
-
 .. note::
 
     **For windows users** the windows command line interface doesn't
@@ -178,3 +165,7 @@ links to more training data!
     ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool``
 
 
+.. include:: feedback.inc	
+	
+.. raw:: html
+   :file: livechat.html

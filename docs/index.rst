@@ -38,6 +38,7 @@ The main reasons for using open source NLU are that:
 You can read about the advantages of using open source NLU in this `blog post <https://medium.com/rasa-blog/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
 You can see an independent benchmark comparing Rasa NLU to closed source alternatives `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_. 
 
+.. include:: feedback.inc
 
 .. toctree::
    :maxdepth: 1
@@ -83,3 +84,6 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    license
    changelog
    support
+
+.. raw:: html
+   :file: livechat.html   
