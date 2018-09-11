@@ -125,3 +125,8 @@ The Slot base class
 
    .. automethod:: as_feature
 
+
+.. include:: ../feedback.inc
+
+.. raw:: html
+   :file: ../livechat.html

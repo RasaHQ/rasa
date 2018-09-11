@@ -31,3 +31,9 @@ You also have the option to use the container to train a model with:
 
 You may in addition run any Rasa Core command inside the container with
 ``docker run rasa_core run [COMMAND]``.
+
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html

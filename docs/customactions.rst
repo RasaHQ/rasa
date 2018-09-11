@@ -282,3 +282,9 @@ to the list of actions in your domain:
 
 Rasa Core will then call your action endpoint and treat it as every other
 custom action.
+
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html

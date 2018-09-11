@@ -84,3 +84,9 @@ and entities:
 .. code-block:: bash
 
     /add_to_shopping_list@0.825{"item": ["milk", "salt"]}
+
+	
+.. include:: ../feedback.inc
+
+.. raw:: html
+   :file: ../livechat.html
