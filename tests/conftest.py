@@ -147,6 +147,18 @@ def core_server(tmpdir_factory):
     return app
 
 
+@pytest.fixture(scope="module")
+def core_server_secured(default_agent):
+    app = server.create_app(default_agent,
+                            auth_token="rasa",
+                            jwt_secret="core")
+    channel.register([RestInput()],
+                     app,
+                     default_agent.handle_message,
+                     "/webhooks/")
+    return app
+
+
 @pytest.fixture
 def default_nlg(default_domain):
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
