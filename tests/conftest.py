@@ -96,7 +96,7 @@ def trained_moodbot_path():
             domain_file="examples/moodbot/domain.yml",
             stories_file="examples/moodbot/data/stories.md",
             output_path=MOODBOT_MODEL_PATH,
-            nlu_model_path=None,
+            interpreter=RegexInterpreter(),
             max_history=None,
             kwargs=None
     )

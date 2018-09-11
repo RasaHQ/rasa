@@ -20,7 +20,8 @@ from rasa_core.channels import (
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
+from rasa_core.utils import AvailableEndpoints
 from rasa_core.version import __version__
 from rasa_core.channels import UserMessage
 
@@ -129,7 +130,7 @@ def create_app(agent,
 
             # retrieve tracker and set to requested state
             tracker = agent.tracker_store.get_or_create_tracker(sender_id)
-            state = tracker.current_state(should_include_events=True)
+            state = tracker.current_state(EventVerbosity.AFTER_RESTART)
             return jsonify({"tracker": state,
                             "messages": out.messages})
 
@@ -162,7 +163,7 @@ def create_app(agent,
             logger.warning(
                     "Append event called, but could not extract a "
                     "valid event. Request JSON: {}".format(request_params))
-        return jsonify(tracker.current_state(should_include_events=True))
+        return jsonify(tracker.current_state(EventVerbosity.AFTER_RESTART))
 
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['PUT'])
@@ -178,7 +179,7 @@ def create_app(agent,
                                                  agent.domain.slots)
         # will override an existing tracker with the same id!
         agent.tracker_store.save(tracker)
-        return jsonify(tracker.current_state(should_include_events=True))
+        return jsonify(tracker.current_state(EventVerbosity.AFTER_RESTART))
 
     @app.route("/conversations",
                methods=['GET', 'OPTIONS'])
@@ -202,10 +203,20 @@ def create_app(agent,
                             status=503)
 
         # parameters
-        should_ignore_restarts = utils.bool_arg('ignore_restarts',
-                                                default=False)
-        should_include_events = utils.bool_arg('events',
-                                               default=True)
+        if request.args.get('ignore_restarts') is not None:
+            return Response("Parameter 'ignore_restarts' is not supported "
+                            "anymore. use `events` instead.",
+                            status=404)
+
+        event_verbosity_str = request.args.get('events', default="ALL").upper()
+        try:
+            verbosity = EventVerbosity[event_verbosity_str]
+        except KeyError:
+            enum_values = ", ".join([e.name for e in EventVerbosity])
+            return Response("Invalid parameter value for 'events'. Should be "
+                            "one of {}".format(enum_values),
+                            status=404)
+
         until_time = request.args.get('until', None)
 
         # retrieve tracker and set to requested state
@@ -219,9 +230,8 @@ def create_app(agent,
             tracker = tracker.travel_back_in_time(float(until_time))
 
         # dump and return tracker
-        state = tracker.current_state(
-                should_include_events=should_include_events,
-                should_ignore_restarts=should_ignore_restarts)
+
+        state = tracker.current_state(verbosity)
         return jsonify(state)
 
     @app.route("/conversations/<sender_id>/respond",
@@ -452,7 +462,7 @@ if __name__ == '__main__':
 
     logger.info("Rasa process starting")
 
-    _endpoints = run.read_endpoints(cmdline_args.endpoints)
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
     _agent = run.load_agent(cmdline_args.core,

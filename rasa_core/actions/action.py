@@ -203,10 +203,9 @@ class RemoteAction(Action):
     def _action_call_format(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> Dict[Text, Any]
         """Create the request json send to the action server."""
+        from rasa_core.trackers import EventVerbosity
 
-        tracker_state = tracker.current_state(
-                should_include_events=True,
-                should_ignore_restarts=True)
+        tracker_state = tracker.current_state(EventVerbosity.ALL)
 
         return {
             "next_action": self._name,
