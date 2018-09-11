@@ -5,7 +5,7 @@
 - I would like to drink [sweet berry wine](beverage) with my meal
 
 ## lookup:plates
-data/test/lookup_tables/plates.txt
+  data/test/lookup_tables/plates.txt
 
 ## lookup:drinks
  - mojito
