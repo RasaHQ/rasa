@@ -118,7 +118,8 @@ class RegexFeaturizer(Featurizer):
             try:
                 f = io.open(lookup_elements, 'r')
             except IOError:
-                raise ValueError("Could not load lookup table {}".format(lookup_elements))
+                raise ValueError("Could not load lookup table {}".format(lookup_elements)
+                                 "Make sure you've provided the correct path")
 
             with f:
                 for line in f:
