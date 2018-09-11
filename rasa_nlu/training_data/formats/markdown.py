@@ -80,7 +80,6 @@ class MarkdownReader(TrainingDataReader):
         filename into the lookup table slot for processing from the regex
         featurizer."""
         if self.current_section == LOOKUP:
-            # import pdb; pdb.set_trace()
             match = re.match(fname_regex, line)
             if match:
                 fname = match.group(1)
