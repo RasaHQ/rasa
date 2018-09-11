@@ -467,7 +467,8 @@ def _write_stories_to_file(export_file_path, sender_id, endpoint):
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
-                              sender_id  # type: Text
+                              sender_id,  # type: Text
+                              finetune  # type: Boolean
                               ):
     # type: (...) -> None
     # given a state, predict next action via asking a human
@@ -482,8 +483,9 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
 
         action_name = predictions[pred_out].get("action")
 
+        listen = _validate_action(action_name, predictions,
+                                  endpoint, sender_id, finetune=finetune)
         _print_history(sender_id, endpoint)
-        listen = _validate_action(action_name, predictions, endpoint, sender_id)
 
 
 def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
@@ -497,16 +499,17 @@ def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
                  latest_message.get("parse_data"))
 
 
-def _correct_wrong_action(corrected_action, endpoint, sender_id):
+def _correct_wrong_action(corrected_action, endpoint, sender_id, finetune=False):
     response = send_action(endpoint,
                            sender_id,
                            corrected_action)
 
-    send_finetune(endpoint,
-                  response.get("tracker", {}).get("events", []))
+    if finetune:
+        send_finetune(endpoint,
+                      response.get("tracker", {}).get("events", []))
 
 
-def _validate_action(action_name, predictions, endpoint, sender_id):
+def _validate_action(action_name, predictions, endpoint, sender_id, finetune=False):
     q = "The bot wants to run '{}', correct?".format(action_name)
     questions = [
         {
@@ -519,7 +522,7 @@ def _validate_action(action_name, predictions, endpoint, sender_id):
     if not answers["action"]:
         corrected_action = _request_action_from_user(predictions, sender_id,
                                                      endpoint)
-        _correct_wrong_action(corrected_action, endpoint, sender_id)
+        _correct_wrong_action(corrected_action, endpoint, sender_id, finetune=finetune)
         return corrected_action == ACTION_LISTEN_NAME
     else:
         send_action(endpoint, sender_id, action_name)
@@ -659,7 +662,8 @@ def revert_tracker(sender_id, endpoint):
 def record_messages(endpoint,
                     sender_id=UserMessage.DEFAULT_SENDER_ID,
                     max_message_limit=None,
-                    on_finish=None):
+                    on_finish=None,
+                    finetune=False):
     """Read messages from the command line and print bot responses."""
 
     try:
@@ -684,7 +688,7 @@ def record_messages(endpoint,
                 if is_listening_for_message(sender_id, endpoint):
                     _enter_user_message(sender_id, endpoint, exit_text)
                     _validate_nlu(intents, endpoint, sender_id)
-                _predict_till_next_listen(endpoint, sender_id)
+                _predict_till_next_listen(endpoint, sender_id, finetune=finetune)
                 num_messages += 1
             except RestartConversation:
                 send_event(endpoint, sender_id, {"event": "restart"})
@@ -704,28 +708,29 @@ def record_messages(endpoint,
             on_finish()
 
 
-def start_online_learning_io(endpoint, on_finish):
+def start_online_learning_io(endpoint, on_finish, finetune=False):
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
-                   "on_finish": on_finish})
+                   "on_finish": on_finish,
+                   "finetune": finetune})
     p.start()
 
 
-def serve_agent(agent, serve_forever=True):
+def serve_agent(agent, finetune=False, serve_forever=True):
     app = server.create_app(agent)
 
-    return serve_application(app, serve_forever)
+    return serve_application(app, finetune, serve_forever)
 
 
-def serve_application(app, serve_forever=True):
+def serve_application(app, finetune=False, serve_forever=True):
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    start_online_learning_io(endpoint, http_server.stop)
+    start_online_learning_io(endpoint, http_server.stop, finetune=finetune)
 
     if serve_forever:
         try:
