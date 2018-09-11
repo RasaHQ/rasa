@@ -126,8 +126,11 @@ class RegexFeaturizer(Featurizer):
                     if new_element:
                         elements_to_regex.append(new_element)
 
+        # sanitize the regex, escape special characters
+        elements_sanitized = [re.escape(e) for e in elements_to_regex]
+
         # regex matching elements with word boundaries on either side
-        regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_to_regex) + '\\b)'
+        regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_sanitized) + '\\b)'
         return regex_string
 
     @classmethod

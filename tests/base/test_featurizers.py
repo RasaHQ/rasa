@@ -108,13 +108,13 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     ("lemonade and mapo tofu", [1, 1], [0., 2., 3.]),
     ("a cup of tea", [1, 0], [3.]),
     ("Is burrito my favorite food?", [0, 1], [1.]),
-    ("I want club mate", [1, 0], [2., 3.])
+    ("I want club?mate", [1, 0], [2., 3.])
 ])
 def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 
     lookups = [
-        {"name": 'drinks', "elements": ["mojito", "lemonade", "sweet berry wine", "tea", "club mate"]},
+        {"name": 'drinks', "elements": ["mojito", "lemonade", "sweet berry wine", "tea", "club?mate"]},
         {"name": 'plates', "elements": "data/test/lookup_tables/plates.txt"}
     ]
     ftr = RegexFeaturizer(lookup_tables=lookups)
