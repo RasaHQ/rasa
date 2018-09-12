@@ -10,6 +10,7 @@ from typing import Any, List, Text
 from rasa_core.constants import FORM_SCORE, EXTRACTED_SLOT
 from rasa_core.policies import Policy
 
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -38,9 +39,26 @@ class FormPolicy(Policy):
         result = [0.0] * domain.num_actions
 
         if tracker.active_form:
-            intent = tracker.latest_message.intent.get('name', '')
-            if intent == EXTRACTED_SLOT:
-                idx = domain.index_for_action(tracker.active_form)
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                # predict next action after user utterance
+                intent = tracker.latest_message.intent.get('name', '')
+                if intent == EXTRACTED_SLOT:
+                    idx = domain.index_for_action(tracker.active_form)
+                    result[idx] = FORM_SCORE
+            elif tracker.latest_action_name == tracker.active_form:
+                # predict action_listen after form action
+                idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 result[idx] = FORM_SCORE
 
         return result
+
+    def persist(self, path):
+        # type: (Text) -> None
+        """Persists the policy to storage."""
+        pass
+
+    @classmethod
+    def load(cls, path):
+        # type: (Text) -> FormPolicy
+        pass
+
