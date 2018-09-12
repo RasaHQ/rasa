@@ -697,6 +697,8 @@ class EmbeddingPolicy(Policy):
         if not self.is_using_attention():
             return None
 
+        # reshape to (batch, time, memory_time) and ignore last time
+        # because time_mask is created for the next time step
         return tf.transpose(final_state.all_time_masks.stack(),
                             [1, 0, 2])[:, :-1, :]
 
