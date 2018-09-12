@@ -61,4 +61,4 @@ class FormPolicy(Policy):
     @classmethod
     def load(cls, path):
         # type: (Text) -> FormPolicy
-        return FormPolicy()
+        return cls()
