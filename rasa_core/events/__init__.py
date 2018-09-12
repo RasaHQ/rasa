@@ -15,6 +15,7 @@ from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa_core import utils
+from rasa_core.policies.form_policy import FormPolicy
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -710,7 +711,7 @@ class ActionExecuted(Event):
             return self.action_name == other.action_name
 
     def as_story_string(self):
-        if self.policy == 'FormPolicy':
+        if self.policy == FormPolicy.__name__:
             return 'form: ' + self.action_name
         else:
             return self.action_name
