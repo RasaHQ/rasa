@@ -121,7 +121,6 @@ class DialogueStateTracker(object):
         generated_states = domain.states_for_tracker_history(self)
         return deque((frozenset(s.items()) for s in generated_states))
 
-
     def activate_form(self, form):
         # type: (Form) -> ()
         self.active_form = form

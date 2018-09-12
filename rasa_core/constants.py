@@ -24,3 +24,5 @@ DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 FALLBACK_SCORE = 1.1
 
 EXTRACTED_SLOT = 'extracted_slot'
+
+FORM_SCORE = 1.2
