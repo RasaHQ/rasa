@@ -15,7 +15,6 @@ from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa_core import utils
-from rasa_core.policies.form_policy import FormPolicy
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -711,6 +710,7 @@ class ActionExecuted(Event):
             return self.action_name == other.action_name
 
     def as_story_string(self):
+        from rasa_core.policies.form_policy import FormPolicy
         if self.policy == FormPolicy.__name__:
             return 'form: ' + self.action_name
         else:
@@ -793,8 +793,9 @@ class AgentUttered(Event):
             raise ValueError("Failed to parse agent uttered event. "
                              "{}".format(e))
 
+
 class FormActivated(Event):
-    type_name = "start_form"
+    type_name = "form_activated"
     form_flag = 'activate'
 
     def __init__(self, form_name, timestamp=None):
@@ -819,7 +820,7 @@ class FormActivated(Event):
                              "{}".format(e))
 
 
-class FormDectivated(Event):
+class FormDeactivated(Event):
     type_name = 'form_deactivated'
     form_flag='deactivate'
 

@@ -37,7 +37,8 @@ class FormPolicy(Policy):
         """Predicts a form action if form is active"""
 
         result = [0.0] * domain.num_actions
-
+        print(tracker.active_form)
+        print(tracker.latest_action_name)
         if tracker.active_form:
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict next action after user utterance
@@ -60,5 +61,4 @@ class FormPolicy(Policy):
     @classmethod
     def load(cls, path):
         # type: (Text) -> FormPolicy
-        pass
-
+        return FormPolicy()

@@ -10,3 +10,4 @@ from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import (
     MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.policies.sklearn_policy import SklearnPolicy
+from rasa_core.policies.form_policy import FormPolicy
