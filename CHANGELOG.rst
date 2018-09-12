@@ -13,6 +13,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- JWT support: parameters to allow clients to authenticate requests to
+  the rasa_core.server using JWT's in addition to normal token based auth
 
 Changed
 -------

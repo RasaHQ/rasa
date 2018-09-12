@@ -9,6 +9,7 @@ import tempfile
 import zipfile
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
+from flask_jwt_simple import JWTManager, view_decorators
 from functools import wraps
 from typing import List
 from typing import Text, Optional
@@ -16,14 +17,13 @@ from typing import Union
 
 from rasa_core import utils, constants
 from rasa_core.channels import (
-    CollectingOutputChannel, UserMessage)
+    CollectingOutputChannel)
+from rasa_core.channels import UserMessage
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
-from rasa_core.channels import UserMessage
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +59,22 @@ def request_parameters():
             raise
 
 
-def requires_auth(token=None):
-    # type: (Optional[Text]) -> function
+def requires_auth(app, token=None):
+    # type: (Flask, Optional[Text]) -> function
     """Wraps a request handler with token authentication."""
 
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
             provided = request.args.get('token')
-            if token is None or provided == token:
+            # noinspection PyProtectedMember
+            if token is not None and provided == token:
+                return f(*args, **kwargs)
+            elif (app.config.get('JWT_ALGORITHM') is not None
+                  and view_decorators._decode_jwt_from_headers()):
+                return f(*args, **kwargs)
+            elif token is None and app.config.get('JWT_ALGORITHM') is None:
+                # authentication is disabled
                 return f(*args, **kwargs)
             abort(401)
 
@@ -79,12 +86,24 @@ def requires_auth(token=None):
 def create_app(agent,
                cors_origins=None,  # type: Optional[Union[Text, List[Text]]]
                auth_token=None,  # type: Optional[Text]
+               jwt_secret=None,   # type: Optional[Text]
+               jwt_method="HS256",  # type: Optional[Text]
                ):
     """Class representing a Rasa Core HTTP server."""
 
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
     cors_origins = cors_origins or []
+
+    # Setup the Flask-JWT-Simple extension
+    if jwt_secret and jwt_method:
+        # since we only want to check signatures, we don't actually care
+        # about the JWT method and set the passed secret as either symmetric
+        # or asymmetric key. jwt lib will choose the right one based on method
+        app.config['JWT_SECRET_KEY'] = jwt_secret
+        app.config['JWT_PUBLIC_KEY'] = jwt_secret
+        app.config['JWT_ALGORITHM'] = jwt_method
+        JWTManager(app)
 
     if not agent.is_ready():
         logger.info("The loaded agent is not ready to be used yet "
@@ -115,7 +134,7 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/execute",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def execute_action(sender_id):
         request_params = request.get_json(force=True)
@@ -147,7 +166,7 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def append_event(sender_id):
         """Append a list of events to the state of a conversation"""
@@ -167,7 +186,7 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['PUT'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def replace_events(sender_id):
         """Use a list of events to set a conversations tracker to a state."""
@@ -183,7 +202,7 @@ def create_app(agent,
     @app.route("/conversations",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     def list_trackers():
         if agent.tracker_store:
             return jsonify(list(agent.tracker_store.keys()))
@@ -193,7 +212,7 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     def retrieve_tracker(sender_id):
         """Get a dump of a conversations tracker including its events."""
 
@@ -227,7 +246,7 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def respond(sender_id):
         request_params = request_parameters()
@@ -261,7 +280,7 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/predict",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def predict(sender_id):
         try:
@@ -278,7 +297,7 @@ def create_app(agent,
 
     @app.route("/conversations/<sender_id>/messages", methods=['POST'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def log_message(sender_id):
         request_params = request.get_json(force=True)
@@ -308,7 +327,7 @@ def create_app(agent,
                             content_type="application/json")
 
     @app.route("/model", methods=['POST', 'OPTIONS'])
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def load_model():
         """Loads a zipped model, replacing the existing one."""
@@ -342,7 +361,7 @@ def create_app(agent,
     @app.route("/domain",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def get_domain():
         """Get current domain in yaml or json format."""
@@ -367,7 +386,7 @@ def create_app(agent,
     @app.route("/finetune",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def continue_training():
         request.headers.get("Accept")
@@ -394,7 +413,7 @@ def create_app(agent,
 
     @app.route("/status", methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     def status():
         return jsonify({
             "model_fingerprint": agent.fingerprint,
@@ -402,7 +421,7 @@ def create_app(agent,
         })
 
     @app.route("/predict", methods=['POST'])
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     @ensure_loaded_agent(agent)
     def tracker_predict():
@@ -421,10 +440,8 @@ def create_app(agent,
         probabilities, _ = policy_ensemble.probabilities_using_best_policy(
                                                 tracker, agent.domain)
         
-        probability_dict = {}
-        for idx, probability in enumerate(probabilities):
-            action_name = agent.domain.action_names[idx]
-            probability_dict[action_name] = probability
+        probability_dict = {agent.domain.action_names[idx]: probability
+                            for idx, probability in enumerate(probabilities)}
 
         return jsonify(probability_dict)
 
@@ -464,4 +481,6 @@ if __name__ == '__main__':
                           cmdline_args.credentials,
                           cmdline_args.cors,
                           cmdline_args.auth_token,
-                          cmdline_args.enable_api)
+                          cmdline_args.enable_api,
+                          cmdline_args.jwt_secret,
+                          cmdline_args.jwt_method)

@@ -24,7 +24,6 @@ from rasa_core.slots import Slot
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from rasa_core.actions import Action
     from rasa_core.domain import Domain
 
 
@@ -75,7 +74,7 @@ class DialogueStateTracker(object):
         # if tracker is paused, no actions should be taken
         self._paused = None
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME
+        self.followup_action = ACTION_LISTEN_NAME   # type: Optional[Text]
         self.latest_action_name = None
         self.latest_message = None
         # Stores the most recent message sent by the user
@@ -359,7 +358,7 @@ class DialogueStateTracker(object):
         return not self.__eq__(other)
 
     def trigger_follow_up_action(self, action):
-        # type: (Action) -> None
+        # type: (Text) -> None
         """Triggers another action following the execution of the current."""
 
         self.followup_action = action
