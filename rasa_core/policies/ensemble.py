@@ -223,9 +223,11 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 tracker.latest_action_name == ACTION_LISTEN_NAME and
                 self.is_not_memo_policy(best_policy_name)):
             # Trigger the fallback policy when ActionListen is predicted after
-            # a user utterance. This is done on the condition that: a fallback
-            # policy is present, there was just a user message and the predicted
-            # action is action_listen by a policy other than the MemoizationPolicy
+            # a user utterance. This is done on the condition that:
+            # - a fallback policy is present,
+            # - there was just a user message and the predicted
+            #   action is action_listen by a policy
+            #   other than the MemoizationPolicy
 
             fallback_idx_policy = [(i, p) for i, p in enumerate(self.policies)
                                    if isinstance(p, FallbackPolicy)]
