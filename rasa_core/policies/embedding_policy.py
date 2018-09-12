@@ -691,10 +691,14 @@ class EmbeddingPolicy(Policy):
 
         return tf.concat(alignment_history, -1)
 
-    @staticmethod
-    def _all_time_masks_from(final_state):
-        all_time_masks = final_state.all_time_masks
-        return tf.transpose(all_time_masks.stack(), [1, 0, 2])[:, :-1, :]
+    def _all_time_masks_from(self, final_state):
+        """Extract all time masks form final rnn cell state"""
+
+        if not self.is_using_attention():
+            return None
+
+        return tf.transpose(final_state.all_time_masks.stack(),
+                            [1, 0, 2])[:, :-1, :]
 
     def _sim_rnn_to_max_from(self, cell_output):
         """Save intermediate tensors for debug purposes"""
