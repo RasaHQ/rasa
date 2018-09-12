@@ -776,3 +776,47 @@ class AgentUttered(Event):
         except KeyError as e:
             raise ValueError("Failed to parse agent uttered event. "
                              "{}".format(e))
+
+class FormActivated(Event):
+    type_name = "start_form"
+    form_flag = 'activate'
+
+    def __init__(self, form_name, timestamp=None):
+        self.form = form_name
+        self.form_flag = 'activate'
+        super(FormActivated, self).__init__(timestamp)
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.activate_form(self.form)
+
+    def as_story_string(self):
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        try:
+            return FormActivated(parameters.get("form_name"),
+                                parameters.get("timestamp"))
+        except KeyError as e:
+            raise ValueError("Failed to parse StartForm event. "
+                             "{}".format(e))
+
+
+class FormDectivated(Event):
+    type_name = 'form_deactivated'
+    form_flag='deactivate'
+
+    def apply_to(self, tracker):
+        tracker.deactivate_form()
+
+    def as_story_string(self):
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        try:
+            return FormDeactivated(parameters.get("timestamp"))
+        except KeyError as e:
+            raise ValueError("Failed to parse EndForm event. "
+                             "{}".format(e))

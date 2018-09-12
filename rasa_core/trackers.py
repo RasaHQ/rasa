@@ -80,6 +80,7 @@ class DialogueStateTracker(object):
         # Stores the most recent message sent by the user
         self.latest_bot_utterance = None
         self._reset()
+        self.active_form = None
 
     ###
     # Public tracker interface
@@ -119,6 +120,22 @@ class DialogueStateTracker(object):
 
         generated_states = domain.states_for_tracker_history(self)
         return deque((frozenset(s.items()) for s in generated_states))
+
+
+    def activate_form(self, form):
+        # type: (Form) -> ()
+        self.active_form = form
+
+    def deactivate_form(self):
+        self.active_form = None
+
+    def should_be_featurized(self):
+        if self.active_form is None:
+            return True
+        elif self.events[-1].form_flag is not None:
+            return True
+        else:
+            return False
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
