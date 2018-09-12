@@ -203,6 +203,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                 'confidence': confidence,
             }],
             'entities': entities,
+            'slots': []
         }
 
 

@@ -158,11 +158,13 @@ class UserUttered(Event):
     def __init__(self, text,
                  intent=None,
                  entities=None,
+                 slots=None,
                  parse_data=None,
                  timestamp=None):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
+        self.slots = slots if slots else []
 
         if parse_data:
             self.parse_data = parse_data
@@ -170,7 +172,8 @@ class UserUttered(Event):
             self.parse_data = {
                 "intent": self.intent,
                 "entities": self.entities,
-                "text": text,
+                "slots": self.slots,
+                "text": text
             }
 
         super(UserUttered, self).__init__(timestamp)
@@ -178,25 +181,27 @@ class UserUttered(Event):
     @staticmethod
     def _from_parse_data(text, parse_data, timestamp=None):
         return UserUttered(text, parse_data["intent"], parse_data["entities"],
+                           parse_data["slots"],
                            parse_data,
                            timestamp)
 
     def __hash__(self):
         return hash((self.text, self.intent.get("name"),
-                     jsonpickle.encode(self.entities)))
+                     jsonpickle.encode(self.entities), jsonpickle.encode(self.slots)))
 
     def __eq__(self, other):
         if not isinstance(other, UserUttered):
             return False
         else:
             return (self.text, self.intent.get("name"),
-                    jsonpickle.encode(self.entities), self.parse_data) == \
+                    jsonpickle.encode(self.entities), jsonpickle.encode(self.slots), self.parse_data) == \
                    (other.text, other.intent.get("name"),
-                    jsonpickle.encode(other.entities), other.parse_data)
+                    jsonpickle.encode(other.entities), jsonpickle.encode(self.slots), other.parse_data)
 
     def __str__(self):
         return ("UserUttered(text: {}, intent: {}, "
-                "entities: {})".format(self.text, self.intent, self.entities))
+                "entities: {}, slots: {})".format(self.text, self.intent,
+                                                  self.entities, self.slots))
 
     @staticmethod
     def empty():
@@ -221,6 +226,7 @@ class UserUttered(Event):
 
     def as_story_string(self):
         if self.intent.get("name") == 'extracted_slot':
+            print(self.slots)
             slot_string = json.dumps({slot['name']: slot['value']
                                       for slot in self.slots})
             return "form: {intent}{slots}".format(
@@ -704,7 +710,10 @@ class ActionExecuted(Event):
             return self.action_name == other.action_name
 
     def as_story_string(self):
-        return self.action_name
+        if self.policy == 'FormPolicy':
+            return 'form: ' + self.action_name
+        else:
+            return self.action_name
 
     @classmethod
     def _from_story_string(cls, parameters):
