@@ -25,4 +25,4 @@ def train_agent():
 if __name__ == '__main__':
     utils.configure_colored_logging(loglevel="INFO")
     agent = train_agent()
-    online.serve_agent(agent)
+    online.run_online_learning(agent)

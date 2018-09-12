@@ -13,6 +13,7 @@ import textwrap
 import uuid
 from PyInquirer import prompt
 from colorclass import Color
+from flask import Flask
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
@@ -20,7 +21,9 @@ from typing import Any, Text, Dict, List, Optional, Callable
 
 from rasa_core import utils, server, events
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.channels import UserMessage, console
+from rasa_core.agent import Agent
+from rasa_core.channels import UserMessage
+from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 from rasa_core.events import Event
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
@@ -196,6 +199,30 @@ def send_finetune(endpoint, evts):
         r.encoding = 'utf-8'
 
 
+def format_bot_output(message):
+    # type: (Dict[Text, Any]) -> Text
+    """Format a bot response to be displayed in the history table."""
+
+    if "text" in message:
+        output = message.get("text")
+    else:
+        output = ""
+
+    # Append all additional items
+    data = message.get("data", {})
+    if data.get("image"):
+        output += "\nImage: " + data.get("image")
+
+    if data.get("attachment"):
+        output += "\nAttachment: " + data.get("attachment")
+
+    if data.get("buttons"):
+        for idx, button in enumerate(data.get("buttons")):
+            button_str = button_to_string(button, idx)
+            output += "\n" + button_str
+    return output
+
+
 def latest_user_message(evts):
     # type: (List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
     """Return most recent user message."""
@@ -222,7 +249,7 @@ def _ask_questions(
         endpoint,  # type: EndpointConfig
         is_abort=None  # type: Optional[Callable[[Dict[Text, Text]], bool]]
 ):
-    # type: (...) -> Dict[Text, Text]
+    # type: (...) -> Dict[Text, Any]
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
 
     should_retry = True
@@ -237,8 +264,61 @@ def _ask_questions(
     return answers
 
 
-def _request_intent_from_user(latest_message, intents, sender_id, endpoint):
-    """Take in latest message and ask which intent it should have been."""
+def _selection_choices_from_intent_prediction(predictions):
+    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Text]]
+    """"Given a list of ML predictions create a UI choice list."""
+
+    sorted_intents = sorted(predictions,
+                            key=lambda k: (-k['confidence'], k['name']))
+
+    choices = []
+    for p in sorted_intents:
+        name_with_confidence = "{:03.2f} {:40}".format(p.get("confidence"),
+                                                       p.get("name"))
+        choice = {
+            "name": name_with_confidence,
+            "value": p.get("name")
+        }
+        choices.append(choice)
+
+    return choices
+
+
+def _request_free_text_intent(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> Text
+    questions = [
+        {
+            "type": "input",
+            "name": "intent",
+            "message": "Please type the intent name",
+        }
+    ]
+    answers = _ask_questions(questions, sender_id, endpoint)
+    return answers["intent"]
+
+
+def _request_selection_from_intent_list(intent_list, sender_id, endpoint):
+    # type: (List[Dict[Text, Text]], Text, EndpointConfig) -> Text
+    questions = [
+        {
+            "type": "list",
+            "name": "intent",
+            "message": "What intent is it?",
+            "choices": intent_list
+        }
+    ]
+    return _ask_questions(questions, sender_id, endpoint)["intent"]
+
+
+def _request_intent_from_user(latest_message,
+                              intents,
+                              sender_id,
+                              endpoint
+                              ):
+    # type: (...) -> Dict[Text, Any]
+    """Take in latest message and ask which intent it should have been.
+
+    Returns the intent dict that has been selected by the user."""
 
     predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
 
@@ -246,45 +326,26 @@ def _request_intent_from_user(latest_message, intents, sender_id, endpoint):
 
     for i in intents:
         if i not in predicted_intents:
-            predictions.append({"name": i, "confidence": 0})
+            predictions.append({"name": i, "confidence": 0.0})
 
-    sorted_intents = sorted(predictions,
-                            key=lambda k: (-k['confidence'], k['name']))
+    # convert intents to ui list and add <other> as a free text alternative
+    choices = (_selection_choices_from_intent_prediction(predictions) +
+               [{"name": "     <other>", "value": OTHER_INTENT}])
 
-    choices = [
-        {"name": "{:03.2f} {:40}".format(p.get("confidence"),
-                                         p.get("name")),
-         "value": p.get("name")}
-        for p in sorted_intents]
+    intent_name = _request_selection_from_intent_list(choices,
+                                                      sender_id,
+                                                      endpoint)
 
-    other = {"name": "     <other>", "value": OTHER_INTENT}
-    questions = [
-        {
-            "type": "list",
-            "name": "intent",
-            "message": "What intent is it?",
-            "choices": choices + [other]
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    if intent_name == OTHER_INTENT:
+        intent_name = _request_free_text_intent(sender_id, endpoint)
 
-    if answers["intent"] == OTHER_INTENT:
-        questions = [
-            {
-                "type": "input",
-                "name": "intent",
-                "message": "Please type the intent name",
-            }
-        ]
-        answers = _ask_questions(questions, sender_id, endpoint)
-        intent_name = answers["intent"]
-    else:
-        intent_name = answers["intent"]
-
-    return {'name': intent_name, 'confidence': 1.0}
+    # returns the selected intent with the original probability value
+    return next((x for x in predictions if x["name"] == intent_name), None)
 
 
 def _print_history(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> None
+    """Print information about the conversation for the user."""
 
     tracker_dump = retrieve_tracker(endpoint, sender_id,
                                     EventVerbosity.AFTER_RESTART)
@@ -304,6 +365,12 @@ def _print_history(sender_id, endpoint):
 
 
 def _chat_history_table(evts):
+    # type: (List[Dict[Text, Any]]) -> Text
+    """Create a table containing bot and user messages.
+
+    Also includes additional information, like any events and
+    prediction probabilities."""
+
     def wrap(txt, max_width):
         return "\n".join(textwrap.wrap(txt, max_width,
                                        replace_whitespace=False))
@@ -315,7 +382,7 @@ def _chat_history_table(evts):
         _parsed = user_evt.get('parse_data', {})
         _intent = _parsed.get('intent', {}).get("name")
         _confidence = _parsed.get('intent', {}).get("confidence", 1.0)
-        _md = _md_message(_parsed)
+        _md = _as_md_message(_parsed)
 
         _lines = [
             colored(wrap(_md, max_width), "hired"),
@@ -363,7 +430,7 @@ def _chat_history_table(evts):
             add_user_cell(table_data, msg)
 
         elif evt.get("event") == "bot":
-            wrapped = wrap(console.format_bot_output(evt), bot_width(table))
+            wrapped = wrap(format_bot_output(evt), bot_width(table))
             bot_column.append(colored(wrapped, 'autoblue'))
 
         elif evt.get("event") != "bot":
@@ -384,6 +451,9 @@ def _chat_history_table(evts):
 
 
 def _slot_history(tracker_dump):
+    # type: (Dict[Text, Any]) -> List[Text]
+    """Create an array of slot representations to be displayed."""
+
     slot_strs = []
     for k, s in tracker_dump.get("slots").items():
         colored_value = utils.wrap_with_color(str(s),
@@ -393,6 +463,11 @@ def _slot_history(tracker_dump):
 
 
 def _ask_if_quit(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> bool
+    """Display the exit menu.
+
+    Return `True` if the previous question should be retried."""
+
     questions = [{
         "name": "abort",
         "type": "list",
@@ -418,22 +493,27 @@ def _ask_if_quit(sender_id, endpoint):
     }]
     answers = prompt(questions)
 
-    if not answers or answers["abort"] == "quit":
-        _export_stories(sender_id, endpoint)
-        sys.exit()
-    elif answers["abort"] == "continue":
+    if answers["abort"] == "continue":
+        # in this case we will just return, and the original
+        # question will get asked again
         return True
-    elif answers["abort"] == "restart":
-        raise RestartConversation()
     elif answers["abort"] == "undo":
         raise UndoLastStep()
+    elif answers["abort"] == "restart":
+        raise RestartConversation()
     else:
-        logger.warning("Invalid selection. Answer: {}".format(answers))
+        # answer is "quit"
+        export_file_path = _request_export_stories_info()
+        _write_stories_to_file(export_file_path, sender_id, endpoint)
+        logger.info("Successfully wrote stories to "
+                    "{}.".format(export_file_path))
+        sys.exit()
 
 
 def _request_action_from_user(predictions, sender_id, endpoint):
-    # given the intent and the text
-    # what is the correct action?
+    # type: (List[Dict[Text, Any]],Text, EndpointConfig) -> Text
+    """Ask the user to correct an action prediction."""
+
     _print_history(sender_id, endpoint)
 
     sorted_actions = sorted(predictions,
@@ -456,7 +536,10 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     return action_name
 
 
-def _export_stories(sender_id, endpoint):
+def _request_export_stories_info():
+    # type: () -> Text
+    """Request file path and export stories to that path"""
+
     def validate_path(path):
         try:
             with io.open(path, "a"):
@@ -473,34 +556,48 @@ def _export_stories(sender_id, endpoint):
         "default": DEFAULT_FILE_EXPORT_PATH,
         "validate": validate_path
     }]
+
     answers = prompt(questions)
     if not answers:
         sys.exit()
 
-    export_file_path = answers["export"]
-    _write_stories_to_file(export_file_path, sender_id, endpoint)
-    logger.info("Successfully wrote stories to {}.".format(export_file_path))
+    return answers["export"]
 
 
-def _write_stories_to_file(export_file_path, sender_id, endpoint):
-    tracker = retrieve_tracker(endpoint, sender_id)
-    evts = tracker.get("events", [])
-    split_events = []
+def _split_conversation_at_restarts(evts):
+    # type: (List[Dict[Text, Any]]) -> List[List[Dict[Text, Any]]]
+    """"Split a conversation at restart events.
+
+    Returns an array of event lists, without the restart events."""
+
+    sub_conversations = []
     current = []
     for e in evts:
         if e.get("event") == "restart":
             if current:
-                split_events.append(current)
+                sub_conversations.append(current)
             current = []
         else:
             current.append(e)
 
     if current:
-        split_events.append(current)
+        sub_conversations.append(current)
+
+    return sub_conversations
+
+
+def _write_stories_to_file(export_file_path, sender_id, endpoint):
+    # type: (Text, Text, EndpointConfig) -> None
+    """Write the conversation of the sender_id to the file path."""
+
+    tracker = retrieve_tracker(endpoint, sender_id)
+    evts = tracker.get("events", [])
+
+    sub_conversations = _split_conversation_at_restarts(evts)
 
     with io.open(export_file_path, 'a') as f:
-        for dialogue_events in split_events:
-            parsed_events = events.deserialise_events(dialogue_events)
+        for conversation in sub_conversations:
+            parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
             f.write(s.as_story_string(flat=True) + "\n")
 
@@ -510,7 +607,7 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                               finetune  # type: bool
                               ):
     # type: (...) -> None
-    # given a state, predict next action via asking a human
+    """Predict and validate actions until we need to wait for a user msg."""
 
     listen = False
     while not listen:
@@ -527,7 +624,14 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                                   endpoint, sender_id, finetune=finetune)
 
 
-def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
+def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
+                       evts,  # type: List[Dict[Text, Any]]
+                       endpoint,  # type: EndpointConfig
+                       sender_id  # type: Text
+                       ):
+    # type: (...) -> None
+    """A wrong NLU prediction got corrected, update core's tracker."""
+
     latest_message = latest_user_message(evts)
     corrected_events = all_events_before_latest_user_msg(evts)
 
@@ -539,8 +643,14 @@ def _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id):
                  latest_message.get("parse_data"))
 
 
-def _correct_wrong_action(corrected_action, endpoint, sender_id,
-                          finetune=False):
+def _correct_wrong_action(corrected_action,  # type: Text
+                          endpoint,  # type: EndpointConfig
+                          sender_id,  # type: Text
+                          finetune=False  # type: bool
+                          ):
+    # type: (...) -> None
+    """A wrong action prediction got corrected, update core's tracker."""
+
     response = send_action(endpoint,
                            sender_id,
                            corrected_action)
@@ -550,8 +660,17 @@ def _correct_wrong_action(corrected_action, endpoint, sender_id,
                       response.get("tracker", {}).get("events", []))
 
 
-def _validate_action(action_name, predictions, endpoint, sender_id,
-                     finetune=False):
+def _validate_action(action_name,  # type: Text
+                     predictions,  # type: List[Dict[Text, Any]]
+                     endpoint,  # type: EndpointConfig
+                     sender_id,  # type: Text
+                     finetune=False  # type: bool
+                     ):
+    # type: (...) -> bool
+    """Query the user to validate if an action prediction is correct.
+
+    Returns `True` if the prediction is correct, `False` otherwise."""
+
     q = "The bot wants to run '{}', correct?".format(action_name)
     questions = [
         {
@@ -572,7 +691,10 @@ def _validate_action(action_name, predictions, endpoint, sender_id,
         return action_name == ACTION_LISTEN_NAME
 
 
-def _md_message(parse_data):
+def _as_md_message(parse_data):
+    # type: (Dict[Text, Any]) -> Text
+    """Display the parse data of a message in markdown format."""
+
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data.get("text")
 
@@ -583,6 +705,12 @@ def _md_message(parse_data):
 
 
 def _validate_user_regex(latest_message, intents):
+    # type: (Dict[Text, Any], List[Text]) -> bool
+    """Validate if a users message input is correct.
+
+    This assumes the user entered an intent directly, e.g. using
+    `/greet`. Return `True` if the intent is a known one."""
+
     parse_data = latest_message.get("parse_data", {})
     intent = parse_data.get("intent", {}).get("name")
 
@@ -593,11 +721,18 @@ def _validate_user_regex(latest_message, intents):
 
 
 def _validate_user_text(latest_message, endpoint, sender_id):
+    # type: (Dict[Text, Any], EndpointConfig, Text) -> bool
+    """Validate a user message input as free text.
+
+    This assumes the user message is a text message (so NOT `/greet`)."""
+
     parse_data = latest_message.get("parse_data", {})
-    entities = _md_message(parse_data)
+    entities = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get("name")
-    q = "Is the NLU classification for '{}' with intent '{}' correct?".format(
-            entities, intent)
+
+    q = ("Is the NLU classification for '{}' with intent "
+         "'{}' correct?".format(entities, intent))
+
     questions = [
         {
             "type": "confirm",
@@ -610,6 +745,12 @@ def _validate_user_text(latest_message, endpoint, sender_id):
 
 
 def _validate_nlu(intents, endpoint, sender_id):
+    # type: (List[Text], EndpointConfig, Text) -> None
+    """Validate if a user message, either text or intent is correct.
+
+    If the prediction of the latest user message is incorrect,
+    the tracker will be corrected with the correct intent / entities."""
+
     tracker = retrieve_tracker(endpoint, sender_id,
                                EventVerbosity.AFTER_RESTART)
 
@@ -625,7 +766,7 @@ def _validate_nlu(intents, endpoint, sender_id):
                                                      sender_id, endpoint)
         evts = tracker.get("events", [])
 
-        entities = _validate_entities(latest_message, endpoint, sender_id)
+        entities = _correct_entities(latest_message, endpoint, sender_id)
         corrected_nlu = {
             "intent": corrected_intent,
             "entities": entities,
@@ -635,9 +776,14 @@ def _validate_nlu(intents, endpoint, sender_id):
         _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id)
 
 
-def _validate_entities(latest_message, endpoint, sender_id):
+def _correct_entities(latest_message, endpoint, sender_id):
+    # type: (Dict[Text, Any], EndpointConfig, Text) -> Dict[Text, Any]
+    """Validate the entities of a user message.
+
+    Returns the corrected entities"""
+
     q = "Please mark the entities using [value](type) notation"
-    entity_str = _md_message(latest_message.get("parse_data", {}))
+    entity_str = _as_md_message(latest_message.get("parse_data", {}))
     questions = [
         {
             "type": "input",
@@ -653,6 +799,9 @@ def _validate_entities(latest_message, endpoint, sender_id):
 
 
 def _enter_user_message(sender_id, endpoint, exit_text):
+    # type: (Text, EndpointConfig, Text) -> None
+    """Request a new message from the user."""
+
     questions = [{
         "name": "message",
         "type": "input",
@@ -663,11 +812,13 @@ def _enter_user_message(sender_id, endpoint, exit_text):
             questions, sender_id, endpoint,
             is_abort=lambda a: a["message"] == exit_text)
 
-    tracker = send_message(endpoint, sender_id, answers["message"])
-    return tracker
+    send_message(endpoint, sender_id, answers["message"])
 
 
 def is_listening_for_message(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> bool
+    """Check if the conversation is in need for a user message."""
+
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.APPLIED)
 
     for i, e in enumerate(reversed(tracker.get("events", []))):
@@ -678,35 +829,34 @@ def is_listening_for_message(sender_id, endpoint):
     return False
 
 
-def revert_tracker(sender_id, endpoint):
-    # type: (...) -> None
+def _undo_latest_msg(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> None
+    """Undo either the latest bot or user message, whatever is the last."""
 
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
 
     cutoff_index = None
-    last_event_type = None
     for i, e in enumerate(reversed(tracker.get("events", []))):
         if e.get("event") in {"user", "action"}:
             cutoff_index = i
-            last_event_type = e.get("event")
             break
         elif e.get("event") == "restart":
             break
 
     if cutoff_index is not None:
         events_to_keep = tracker["events"][:-(cutoff_index + 1)]
+
+        # reset the events of the conversation to the events before
+        # the most recent bot or user event
         replace_events(endpoint, sender_id, events_to_keep)
 
-        return last_event_type
-    else:
-        return None
 
-
-def record_messages(endpoint,
-                    sender_id=UserMessage.DEFAULT_SENDER_ID,
-                    max_message_limit=None,
-                    on_finish=None,
-                    finetune=False):
+def record_messages(endpoint,  # type: EndpointConfig
+                    sender_id=UserMessage.DEFAULT_SENDER_ID,  # type: Text
+                    max_message_limit=None,  # type: Optional[int]
+                    on_finish=None,  # type: Optional[Callable[[], None]]
+                    finetune=False  # type: bool
+                    ):
     """Read messages from the command line and print bot responses."""
 
     try:
@@ -741,7 +891,7 @@ def record_messages(endpoint,
 
                 logger.info("Restarted conversation, starting a new one.")
             except UndoLastStep:
-                revert_tracker(sender_id, endpoint)
+                _undo_latest_msg(sender_id, endpoint)
                 _print_history(sender_id, endpoint)
 
     except Exception:
@@ -752,7 +902,10 @@ def record_messages(endpoint,
             on_finish()
 
 
-def start_online_learning_io(endpoint, on_finish, finetune=False):
+def _start_online_learning_io(endpoint, on_finish, finetune=False):
+    # type: (EndpointConfig, Callable[[], None], bool) -> None
+    """Start the online learning message recording in a separate thread."""
+
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
@@ -761,20 +914,17 @@ def start_online_learning_io(endpoint, on_finish, finetune=False):
     p.start()
 
 
-def serve_agent(agent, finetune=False, serve_forever=True):
-    app = server.create_app(agent)
+def _serve_application(app, finetune=False, serve_forever=True):
+    # type: (Flask, bool, bool) -> WSGIServer
+    """Start a core server and attach the online learning IO."""
 
-    return serve_application(app, finetune, serve_forever)
-
-
-def serve_application(app, finetune=False, serve_forever=True):
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    start_online_learning_io(endpoint, http_server.stop, finetune=finetune)
+    _start_online_learning_io(endpoint, http_server.stop, finetune=finetune)
 
     if serve_forever:
         try:
@@ -783,3 +933,12 @@ def serve_application(app, finetune=False, serve_forever=True):
             logger.exception(exc)
 
     return http_server
+
+
+def run_online_learning(agent, finetune=False, serve_forever=True):
+    # type: (Agent, bool, bool) -> WSGIServer
+    """Start the online learning with the model of the agent."""
+
+    app = server.create_app(agent)
+
+    return _serve_application(app, finetune, serve_forever)

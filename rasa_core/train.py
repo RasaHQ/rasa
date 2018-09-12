@@ -239,4 +239,4 @@ if __name__ == '__main__':
                                       additional_arguments)
 
     if cmdline_args.online:
-        online.serve_agent(_agent, finetune=cmdline_args.finetune)
+        online.run_online_learning(_agent, finetune=cmdline_args.finetune)
