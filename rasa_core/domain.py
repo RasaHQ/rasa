@@ -23,6 +23,7 @@ from rasa_core.actions import Action, action
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
+from rasa_core.constants import EXTRACTED_SLOT
 
 logger = logging.getLogger(__name__)
 
@@ -333,7 +334,7 @@ class Domain(object):
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
         intent_name = tracker.latest_message.intent.get("name")
-        if intent_name is not 'extracted_slot':
+        if intent_name is not EXTRACTED_SLOT:
             for entity in tracker.latest_message.entities:
                 intent_config = self.intent_config(intent_name)
                 should_use_entity = intent_config.get('use_entities', True)
@@ -353,11 +354,11 @@ class Domain(object):
 
         if "intent_ranking" in latest_msg.parse_data:
             for intent in latest_msg.parse_data["intent_ranking"]:
-                if intent.get("name") and intent.get("name") is not 'extracted_slot':
+                if intent.get("name") and intent.get("name") is not EXTRACTED_SLOT:
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_msg.intent.get("name") and intent_name is not 'extracted_slot':
+        elif latest_msg.intent.get("name") and intent_name is not EXTRACTED_SLOT:
             intent_id = "intent_{}".format(latest_msg.intent["name"])
             state_dict[intent_id] = latest_msg.intent.get("confidence", 1.0)
 
@@ -395,7 +396,7 @@ class Domain(object):
         # type: (DialogueStateTracker) -> List[Dict[Text, float]]
         """Array of states for each state of the trackers history."""
         return [self.get_active_states(tr) for tr in
-                tracker.generate_all_prior_trackers()]
+                tracker.generate_all_prior_trackers() if tr.should_be_featurized()]
 
     def slots_for_entities(self, entities):
         if self.store_entities_as_slots:
