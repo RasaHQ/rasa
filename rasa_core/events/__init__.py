@@ -220,7 +220,13 @@ class UserUttered(Event):
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
     def as_story_string(self):
-        if self.intent:
+        if self.intent.get("name") == 'extracted_slot':
+            slot_string = json.dumps({slot['name']: slot['value']
+                                      for slot in self.slots})
+            return "form: {intent}{slots}".format(
+                    intent=self.intent.get("name", ""),
+                    slots=slot_string)
+        elif self.intent:
             if self.entities:
                 ent_string = json.dumps({ent['entity']: ent['value']
                                          for ent in self.entities})
