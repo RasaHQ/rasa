@@ -854,7 +854,7 @@ class EmbeddingPolicy(Policy):
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
-              **kwargs  # type: **Any
+              **kwargs  # type: Any
               ):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
@@ -1174,7 +1174,7 @@ class EmbeddingPolicy(Policy):
                       _mask) / np.sum(_mask)
 
     def continue_training(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+        # type: (List[DialogueStateTracker], Domain, Any) -> None
         """Continues training an already trained policy."""
 
         batch_size = kwargs.get("batch_size", 5)
