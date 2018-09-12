@@ -242,6 +242,19 @@ class MessageProcessor(object):
         else:
             parse_data = self._parse_message(message)
 
+        requested_slot_name = tracker.slots['requested_slot'].value
+        if requested_slot_name:
+            for entity in parse_data['entities']:
+                if entity['entity'] == requested_slot_name:
+                    parse_data = {'intent': {'name': 'extracted_slot',
+                                             'confidence': 1.0},
+                                  'entities': [],
+                                  'text': parse_data['text'],
+                                  'intent_ranking': [{'name': 'extracted_slot',
+                                                      'confidence': 1.0}],
+                                  'slots': [{'name': requested_slot_name,
+                                             'value': entity['value']}]}
+
         # don't ever directly mutate the tracker
         # - instead pass its events to log
         tracker.update(UserUttered(message.text, parse_data["intent"],
