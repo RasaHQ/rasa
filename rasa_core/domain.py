@@ -332,13 +332,14 @@ class Domain(object):
 
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
-        for entity in tracker.latest_message.entities:
-            intent_name = tracker.latest_message.intent.get("name")
-            intent_config = self.intent_config(intent_name)
-            should_use_entity = intent_config.get('use_entities', True)
-            if should_use_entity:
-                key = "entity_{0}".format(entity["entity"])
-                state_dict[key] = 1.0
+        intent_name = tracker.latest_message.intent.get("name")
+        if intent_name is not 'extracted_slot':
+            for entity in tracker.latest_message.entities:
+                intent_config = self.intent_config(intent_name)
+                should_use_entity = intent_config.get('use_entities', True)
+                if should_use_entity:
+                    key = "entity_{0}".format(entity["entity"])
+                    state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
@@ -352,11 +353,11 @@ class Domain(object):
 
         if "intent_ranking" in latest_msg.parse_data:
             for intent in latest_msg.parse_data["intent_ranking"]:
-                if intent.get("name"):
+                if intent.get("name") and intent.get("name") is not 'extracted_slot':
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_msg.intent.get("name"):
+        elif latest_msg.intent.get("name") and intent_name is not 'extracted_slot':
             intent_id = "intent_{}".format(latest_msg.intent["name"])
             state_dict[intent_id] = latest_msg.intent.get("confidence", 1.0)
 
