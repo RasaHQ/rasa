@@ -324,10 +324,16 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         if self._is_multi:
             # if there are several attention mechanisms,
             # create additional TimedNTMs for them
+            if len(attn_shift_range) == 1:
+                # original attn_shift_range might not be a list
+                attn_shift_range *= len(attention_mechanism)
+            elif len(attn_shift_range) != len(attention_mechanism):
+                raise ValueError(
+                    "If provided, `attn_shift_range` must contain exactly one "
+                    "integer per attention_mechanism, saw: {} vs {}"
+                    "".format(len(attn_shift_range), len(attention_mechanism))
+                )
             for i in range(1, len(attention_mechanism)):
-                if len(attn_shift_range) < i + 1:
-                    # original attn_shift_range might not be a list
-                    attn_shift_range.append(attn_shift_range[-1])
                 self._timed_ntms.append(TimedNTM(attn_shift_range[i],
                                                  sparse_attention,
                                                  name=str(i)))
@@ -337,7 +343,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         else:
             if not callable(rnn_and_attn_inputs_fn):
                 raise TypeError(
-                    "inputs_and_attn_inputs_fn must be callable, saw type: {}"
+                    "`rnn_and_attn_inputs_fn` must be callable, saw type: {}"
                     "".format(type(rnn_and_attn_inputs_fn).__name__)
                 )
         self._rnn_and_attn_inputs_fn = rnn_and_attn_inputs_fn
