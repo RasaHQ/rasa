@@ -21,7 +21,7 @@ from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.featurizers import (TrackerFeaturizer,
                                    FullDialogueTrackerFeaturizer,
                                    LabelTokenizerSingleStateFeaturizer)
-from rasa_core.policies import Policy
+from rasa_core.policies.policy import Policy
 
 import tensorflow as tf
 from rasa_core.policies.tf_utils import (TimeAttentionWrapper,

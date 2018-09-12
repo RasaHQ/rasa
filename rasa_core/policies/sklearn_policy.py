@@ -19,7 +19,7 @@ from sklearn.preprocessing import LabelEncoder
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
 
-from rasa_core.policies import Policy
+from rasa_core.policies.policy import Policy
 from rasa_core.featurizers import \
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 
