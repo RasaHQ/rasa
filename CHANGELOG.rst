@@ -24,6 +24,9 @@ Removed
 
 Fixed
 -----
+- fixed an issue with the followup (there was a name confusion, sometimes
+  the followup action would be set to the non existent ``follow_up_action``
+  attribute instead of ``followup_action``)
 
 [0.11.3] - 2018-09-04
 ^^^^^^^^^^^^^^^^^^^^^
