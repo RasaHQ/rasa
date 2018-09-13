@@ -193,8 +193,8 @@ def test_restart_event(default_domain):
     tracker.update(Restarted())
 
     assert len(tracker.events) == 5
-    assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action == ACTION_LISTEN_NAME
+    assert tracker.followup_action is not None
+    assert tracker.followup_action == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
     assert len(list(tracker.generate_all_prior_trackers())) == 1
 
