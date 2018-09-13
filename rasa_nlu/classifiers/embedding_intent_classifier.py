@@ -676,7 +676,7 @@ class EmbeddingIntentClassifier(Component):
                     cls.name + "_encoded_all_intents.pkl"), 'rb') as f:
                 encoded_all_intents = pickle.load(f)
 
-            return EmbeddingIntentClassifier(
+            return cls(
                     component_config=meta,
                     inv_intent_dict=inv_intent_dict,
                     encoded_all_intents=encoded_all_intents,
@@ -693,4 +693,4 @@ class EmbeddingIntentClassifier(Component):
             logger.warning("Failed to load nlu model. Maybe path {} "
                            "doesn't exist"
                            "".format(os.path.abspath(model_dir)))
-            return EmbeddingIntentClassifier(component_config=meta)
+            return cls(component_config=meta)

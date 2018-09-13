@@ -84,7 +84,7 @@ class EntitySynonymMapper(EntityExtractor):
             warnings.warn("Failed to load synonyms file from '{}'"
                           "".format(entity_synonyms_file))
 
-        return EntitySynonymMapper(meta, synonyms)
+        return cls(meta, synonyms)
 
     def replace_synonyms(self, entities):
         for entity in entities:

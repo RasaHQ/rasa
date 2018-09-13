@@ -58,9 +58,9 @@ class DucklingHTTPExtractor(EntityExtractor):
     def create(cls, config):
         # type: (RasaNLUModelConfig) -> DucklingHTTPExtractor
 
-        return DucklingHTTPExtractor(config.for_component(cls.name,
-                                                          cls.defaults),
-                                     config.language)
+        return cls(config.for_component(cls.name,
+                                        cls.defaults),
+                   config.language)
 
     def _locale(self):
         if not self.component_config.get("locale"):
