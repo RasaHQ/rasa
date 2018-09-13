@@ -11,6 +11,21 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.13.3] - 2018-09-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
 - ``EndpointConfig`` class that handles authenticated requests (ported from Rasa Core)
 - ``DataRouter()`` class supports a ``model_server`` ``EndpointConfig``, which it regularly queries to fetch NLU models
 - this can be used with ``rasa_nlu.server`` with the ``--endpoint`` option (the key for this the model server config is ``model``)
