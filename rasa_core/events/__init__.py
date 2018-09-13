@@ -814,7 +814,7 @@ class FormActivated(Event):
     def _from_parameters(cls, parameters):
         try:
             return FormActivated(parameters.get("form_name"),
-                                parameters.get("timestamp"))
+                                 parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse StartForm event. "
                              "{}".format(e))
@@ -822,7 +822,7 @@ class FormActivated(Event):
 
 class FormDeactivated(Event):
     type_name = 'form_deactivated'
-    form_flag='deactivate'
+    form_flag = 'deactivate'
 
     def apply_to(self, tracker):
         tracker.deactivate_form()

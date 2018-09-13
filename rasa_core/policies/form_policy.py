@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import typing
 
 from typing import Any, List, Text
@@ -15,6 +16,8 @@ from rasa_core.actions.action import ACTION_LISTEN_NAME
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
+
+logger = logging.getLogger(__name__)
 
 
 class FormPolicy(Policy):
@@ -37,9 +40,8 @@ class FormPolicy(Policy):
         """Predicts a form action if form is active"""
 
         result = [0.0] * domain.num_actions
-        print(tracker.active_form)
-        print(tracker.latest_action_name)
         if tracker.active_form:
+            logger.debug("Form {} is active".format(tracker.active_form))
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict next action after user utterance
                 intent = tracker.latest_message.intent.get('name', '')
@@ -50,6 +52,8 @@ class FormPolicy(Policy):
                 # predict action_listen after form action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 result[idx] = FORM_SCORE
+        else:
+            logger.debug("There is no active form")
 
         return result
 

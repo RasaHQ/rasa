@@ -131,8 +131,8 @@ class DialogueStateTracker(object):
     def should_be_featurized(self):
         if self.active_form is None:
             return True
-        elif self.events[-1].form_flag is not None:
-            return True
+        # elif self.events[-1].form_flag is not None:
+        #     return True
         else:
             return False
 
