@@ -616,8 +616,8 @@ class FollowupAction(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        return FollowupAction(parameters.get("name"),
-                              parameters.get("timestamp"))
+        return cls(parameters.get("name"),
+                   parameters.get("timestamp"))
 
     def as_dict(self):
         d = super(FollowupAction, self).as_dict()
@@ -718,11 +718,10 @@ class ActionExecuted(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        return ActionExecuted(parameters.get("name"),
-                              parameters.get("policy"),
-                              parameters.get("policy_confidence"),
-                              parameters.get("timestamp")
-                              )
+        return cls(parameters.get("name"),
+                   parameters.get("policy"),
+                   parameters.get("policy_confidence"),
+                   parameters.get("timestamp"))
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
@@ -799,7 +798,6 @@ class FormActivated(Event):
 
     def __init__(self, form_name, timestamp=None):
         self.form = form_name
-        self.form_flag = 'activate'
         super(FormActivated, self).__init__(timestamp)
 
     def apply_to(self, tracker):
@@ -807,16 +805,19 @@ class FormActivated(Event):
         tracker.activate_form(self.form)
 
     def as_story_string(self):
-        return None
+        props = json.dumps({self.form})
+        return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
-    def _from_parameters(cls, parameters):
-        try:
-            return FormActivated(parameters.get("form_name"),
-                                 parameters.get("timestamp"))
-        except KeyError as e:
-            raise ValueError("Failed to parse StartForm event. "
-                             "{}".format(e))
+    def _from_story_string(cls, parameters):
+        """Called to convert a parsed story line into an event."""
+        return cls(parameters.get("form_name"),
+                   parameters.get("timestamp"))
+
+    def as_dict(self):
+        d = super(FormActivated, self).as_dict()
+        d.update({"form_name": self.form})
+        return d
 
 
 class FormDeactivated(Event):
@@ -826,12 +827,9 @@ class FormDeactivated(Event):
         tracker.deactivate_form()
 
     def as_story_string(self):
-        return None
+        return self.type_name
 
     @classmethod
-    def _from_parameters(cls, parameters):
-        try:
-            return FormDeactivated(parameters.get("timestamp"))
-        except KeyError as e:
-            raise ValueError("Failed to parse EndForm event. "
-                             "{}".format(e))
+    def _from_story_string(cls, parameters):
+        """Called to convert a parsed story line into an event."""
+        return cls(parameters.get("timestamp"))

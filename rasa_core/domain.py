@@ -350,17 +350,17 @@ class Domain(object):
                         slot_id = "slot_{}_{}".format(key, i)
                         state_dict[slot_id] = slot_value
 
-        latest_msg = tracker.latest_message
+        message = tracker.form_message or tracker.latest_message
 
-        if "intent_ranking" in latest_msg.parse_data:
-            for intent in latest_msg.parse_data["intent_ranking"]:
+        if "intent_ranking" in message.parse_data:
+            for intent in message.parse_data["intent_ranking"]:
                 if intent.get("name"):
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_msg.intent.get("name"):
-            intent_id = "intent_{}".format(latest_msg.intent["name"])
-            state_dict[intent_id] = latest_msg.intent.get("confidence", 1.0)
+        elif message.intent.get("name"):
+            intent_id = "intent_{}".format(message.intent["name"])
+            state_dict[intent_id] = message.intent.get("confidence", 1.0)
 
         return state_dict
 
@@ -385,11 +385,22 @@ class Domain(object):
         else:
             return {}
 
+    @staticmethod
+    def get_active_form(tracker):
+        # type: (DialogueStateTracker) -> Dict[Text, float]
+        """Turns tracker's active form into a state name."""
+        form = tracker.active_form
+        if form is not None:
+            return {'active_form_{}'.format(form): 1.0}
+        else:
+            return {}
+
     def get_active_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
         """Return a bag of active states from the tracker state"""
         state_dict = self.get_parsing_states(tracker)
         state_dict.update(self.get_prev_action_states(tracker))
+        state_dict.update(self.get_active_form(tracker))
         return state_dict
 
     def states_for_tracker_history(self, tracker):
