@@ -79,7 +79,7 @@ def _update_model_from_server(model_server, project):
         project.update_model_from_dir_and_unload_others(model_directory,
                                                         model_name)
     else:
-        logger.debug("No new model found at URL {}".format(model_server))
+        logger.debug("No new model found at URL {}".format(model_server.url))
 
 
 def _get_remote_model_name(filename):
@@ -103,7 +103,7 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
     header = {"If-None-Match": fingerprint}
     try:
         logger.debug("Requesting model from server {}..."
-                     "".format(model_server))
+                     "".format(model_server.url))
         response = model_server.request(method="GET",
                                         headers=header,
                                         timeout=DEFAULT_REQUEST_TIMEOUT)
