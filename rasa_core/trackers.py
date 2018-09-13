@@ -21,6 +21,8 @@ from rasa_core.events import (
     BotUttered)
 from rasa_core.slots import Slot
 
+from rasa_core.constants import EXTRACTED_SLOT
+
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
@@ -80,6 +82,7 @@ class DialogueStateTracker(object):
         # Stores the most recent message sent by the user
         self.latest_bot_utterance = None
         self._reset()
+        self._should_be_featurized = True
         self.active_form = None
 
     ###
@@ -125,17 +128,21 @@ class DialogueStateTracker(object):
     def activate_form(self, form):
         # type: (Form) -> ()
         self.active_form = form
+        self._should_be_featurized = True
 
     def deactivate_form(self):
         self.active_form = None
+        self._should_be_featurized = False
 
+    @property
     def should_be_featurized(self):
-        if self.active_form is None:
-            return True
-        elif self.events[-1].form_flag is not None:
-            return True
+        should_be_featurized = self._should_be_featurized
+        if self.active_form is not None:
+            self._should_be_featurized = False
+            return should_be_featurized or False
         else:
-            return False
+            self._should_be_featurized = True
+            return should_be_featurized
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]

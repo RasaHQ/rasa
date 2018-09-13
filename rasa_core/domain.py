@@ -354,11 +354,11 @@ class Domain(object):
 
         if "intent_ranking" in latest_msg.parse_data:
             for intent in latest_msg.parse_data["intent_ranking"]:
-                if intent.get("name") and intent.get("name") is not EXTRACTED_SLOT:
+                if intent.get("name"):  # and intent.get("name") is not EXTRACTED_SLOT:
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_msg.intent.get("name") and intent_name is not EXTRACTED_SLOT:
+        elif latest_msg.intent.get("name"):  # and intent_name is not EXTRACTED_SLOT:
             intent_id = "intent_{}".format(latest_msg.intent["name"])
             state_dict[intent_id] = latest_msg.intent.get("confidence", 1.0)
 
@@ -395,8 +395,13 @@ class Domain(object):
     def states_for_tracker_history(self, tracker):
         # type: (DialogueStateTracker) -> List[Dict[Text, float]]
         """Array of states for each state of the trackers history."""
+
+        intent = tracker.latest_message.intent.get('name')
+
         return [self.get_active_states(tr) for tr in
-                tracker.generate_all_prior_trackers() if tr.should_be_featurized()]
+                tracker.generate_all_prior_trackers()
+                if tr.should_be_featurized or (tr == tracker and
+                                               intent != EXTRACTED_SLOT)]
 
     def slots_for_entities(self, entities):
         if self.store_entities_as_slots:

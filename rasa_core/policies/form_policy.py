@@ -41,13 +41,19 @@ class FormPolicy(Policy):
 
         result = [0.0] * domain.num_actions
         if tracker.active_form:
-            logger.debug("Form {} is active".format(tracker.active_form))
+            logger.debug("Form '{}' is active".format(tracker.active_form))
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict next action after user utterance
-                intent = tracker.latest_message.intent.get('name', '')
+                intent = tracker.latest_message.intent.get('name')
+                logger.debug("Got intent '{}'".format(intent))
                 if intent == EXTRACTED_SLOT:
                     idx = domain.index_for_action(tracker.active_form)
                     result[idx] = FORM_SCORE
+            elif tracker.latest_action_name != tracker.active_form:
+                # predict form action if we are in the form is active
+                # breaks multistep chitchat
+                idx = domain.index_for_action(tracker.active_form)
+                result[idx] = FORM_SCORE
             elif tracker.latest_action_name == tracker.active_form:
                 # predict action_listen after form action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
