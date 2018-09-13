@@ -37,7 +37,7 @@ class JiebaTokenizer(Tokenizer, Component):
         super(JiebaTokenizer, self).__init__(component_config)
 
         # path to dictionary file or None
-        self.dictionary_path = self.component_config.get('dictionary_path')
+        self.dictionary_path = self.component_config.get('user_dicts')
 
     @classmethod
     def required_packages(cls):
