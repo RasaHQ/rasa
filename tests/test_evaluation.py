@@ -10,7 +10,6 @@ from rasa_core import evaluate
 from rasa_core.evaluate import (
     run_story_evaluation,
     collect_story_predictions)
-from rasa_core.run import AvailableEndpoints
 from tests.conftest import DEFAULT_STORIES_FILE
 
 
@@ -36,8 +35,9 @@ def test_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
             DEFAULT_STORIES_FILE, default_agent)
 
-    actual, preds, failed_stories = collect_story_predictions(
+    golds, predictions, failed_stories = collect_story_predictions(
             completed_trackers, default_agent)
-    assert len(actual) == 14
-    assert len(preds) == 14
+
+    assert len(golds) == 14
+    assert len(predictions) == 14
     assert len(failed_stories) == 0

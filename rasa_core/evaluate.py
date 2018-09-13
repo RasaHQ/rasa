@@ -140,25 +140,25 @@ def collect_story_predictions(completed_trackers,
                               fail_on_prediction_errors=False):
     """Test the stories from a file, running them through the stored model."""
 
-    preds = []
-    gold = []
+    predictions = []
+    golds = []
     failed = []
 
     logger.info("Evaluating {} stories\n"
                 "Progress:".format(len(completed_trackers)))
 
     for tracker in tqdm(completed_trackers):
-        curr_gold, curr_predictions, predicted_tracker = \
+        current_gold, current_predictions, predicted_tracker = \
             _predict_tracker_actions(tracker, agent, fail_on_prediction_errors)
 
-        preds.extend(curr_predictions)
-        gold.extend(curr_gold)
+        predictions.extend(current_predictions)
+        golds.extend(current_gold)
 
-        if not curr_gold == curr_predictions:
+        if not current_gold == current_predictions:
             # there is at least one prediction that is wrong
             failed.append(predicted_tracker)
 
-    return gold, preds, failed
+    return golds, predictions, failed
 
 
 def log_failed_stories(failed, failed_output):
@@ -185,24 +185,24 @@ def run_story_evaluation(resource_name, agent,
 
     completed_trackers = _generate_trackers(resource_name, agent, max_stories)
 
-    test_y, preds, failed = collect_story_predictions(completed_trackers,
-                                                      agent,
-                                                      fail_on_prediction_errors)
+    test_y, predictions, failed = collect_story_predictions(
+            completed_trackers, agent, fail_on_prediction_errors)
     if out_file_plot:
-        plot_story_evaluation(test_y, preds, out_file_plot)
+        plot_story_evaluation(test_y, predictions, out_file_plot)
 
     log_failed_stories(failed, out_file_stories)
 
 
-def plot_story_evaluation(test_y, preds, out_file):
+def plot_story_evaluation(test_y, predictions, out_file):
     """Plot the results. of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     import matplotlib.pyplot as plt
 
-    log_evaluation_table(test_y, preds)
-    cnf_matrix = confusion_matrix(test_y, preds)
-    plot_confusion_matrix(cnf_matrix, classes=unique_labels(test_y, preds),
+    log_evaluation_table(test_y, predictions)
+    cnf_matrix = confusion_matrix(test_y, predictions)
+    plot_confusion_matrix(cnf_matrix,
+                          classes=unique_labels(test_y, predictions),
                           title='Action Confusion matrix')
 
     fig = plt.gcf()

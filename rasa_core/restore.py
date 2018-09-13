@@ -65,7 +65,7 @@ def _check_prediction_aligns_with_story(last_prediction,
                       "{} but got {}.".format(p, a))
 
 
-def align_lists(pred, actual):
+def align_lists(predictions, golds):
     # type: (List[Text], List[Text]) -> Tuple[List[Text], List[Text]]
     """Align two lists trying to keep same elements at the same index.
 
@@ -73,18 +73,18 @@ def align_lists(pred, actual):
     try to find the best alignment and pad with `None`
     values where necessary."""
 
-    padded_pred = []
-    padded_actual = []
-    s = SequenceMatcher(None, pred, actual)
+    padded_predictions = []
+    padded_golds = []
+    s = SequenceMatcher(None, predictions, golds)
 
     for tag, i1, i2, j1, j2 in s.get_opcodes():
-        padded_pred.extend(pred[i1:i2])
-        padded_pred.extend(["None"] * ((j2 - j1) - (i2 - i1)))
+        padded_predictions.extend(predictions[i1:i2])
+        padded_predictions.extend(["None"] * ((j2 - j1) - (i2 - i1)))
 
-        padded_actual.extend(actual[j1:j2])
-        padded_actual.extend(["None"] * ((i2 - i1) - (j2 - j1)))
+        padded_golds.extend(golds[j1:j2])
+        padded_golds.extend(["None"] * ((i2 - i1) - (j2 - j1)))
 
-    return padded_pred, padded_actual
+    return padded_predictions, padded_golds
 
 
 def actions_since_last_utterance(tracker):
