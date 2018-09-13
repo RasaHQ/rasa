@@ -18,6 +18,9 @@ Added
 
 Changed
 -------
+- improved the online learning experience on the CLI
+- made finetuning during online learning optional (use ``--finetune`` if
+  you want to enable it)
 
 Removed
 -------

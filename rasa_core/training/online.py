@@ -333,7 +333,8 @@ def _print_history(sender_id, endpoint):
     print(table)
 
     if slot_strs:
-        print("Current slots: {}\n".format(", ".join(slot_strs)))
+        print("\n")
+        print("Current slots: \n\t{}\n".format(", ".join(slot_strs)))
 
     print("------")
 
@@ -467,7 +468,14 @@ def _ask_if_quit(sender_id, endpoint):
     }]
     answers = prompt(questions)
 
-    if answers["abort"] == "continue":
+    if not answers or answers["abort"] == "quit":
+        # this is also the default answer if the user presses Ctrl-C
+        export_file_path = _request_export_stories_info()
+        _write_stories_to_file(export_file_path, sender_id, endpoint)
+        logger.info("Successfully wrote stories to "
+                    "{}.".format(export_file_path))
+        sys.exit()
+    elif answers["abort"] == "continue":
         # in this case we will just return, and the original
         # question will get asked again
         return True
@@ -475,13 +483,6 @@ def _ask_if_quit(sender_id, endpoint):
         raise UndoLastStep()
     elif answers["abort"] == "restart":
         raise RestartConversation()
-    else:
-        # answer is "quit"
-        export_file_path = _request_export_stories_info()
-        _write_stories_to_file(export_file_path, sender_id, endpoint)
-        logger.info("Successfully wrote stories to "
-                    "{}.".format(export_file_path))
-        sys.exit()
 
 
 def _request_action_from_user(predictions, sender_id, endpoint):
