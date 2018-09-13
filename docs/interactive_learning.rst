@@ -126,3 +126,9 @@ conversation. At any point you can type ``0`` and the bot will write the
 current conversation to a file and exit the conversation. Make sure to
 combine the dumped story with your original training data for the next
 training.
+
+
+.. include:: feedback.inc  
+
+.. raw:: html
+   :file: livechat.html

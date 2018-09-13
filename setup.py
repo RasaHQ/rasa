@@ -67,6 +67,7 @@ install_requires = [
     "python-dateutil~=2.7",
     "rasa_nlu~=0.13.0",
     "rasa_core_sdk~=0.11.0",
+    "flask-jwt-simple~=0.0.3"
 ]
 
 extras_requires = {

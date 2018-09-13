@@ -5,21 +5,26 @@
 HTTP API
 ========
 
+.. warning::
+
+    To protect your conversational data, make sure to secure the server.
+    Either by restricting access to the server (e.g. using firewalls) or
+    by enabling one of the authentication methods: :ref:`server_security`.
+
 .. note::
 
     Before you can use the server, you need to define a domain, create training
     data, and train a model. You can then use the trained model!
     See :ref:`quickstart` for an introduction.
 
+    If you are looking for documentation on how to run custom actions -
+    head over to :ref:`customactions`.
+
 
 The HTTP api exists to make it easy for python and non-python
 projects to interact with Rasa Core. The API allows you to modify
 the trackers (e.g. push or remote events).
 
-.. note::
-
-    If you are looking for documentation on how to run custom actions -
-    head over to :ref:`customactions`.
 
 .. contents::
 
@@ -110,6 +115,8 @@ at :ref:`events`. You need to send these json formats to the endpoint to
 log the event.
 
 
+.. _server_security:
+
 Security Considerations
 -----------------------
 
@@ -117,8 +124,12 @@ We recommend to not expose the Rasa Core server to the outside world but
 rather connect to it from your backend over a private connection (e.g.
 between docker containers).
 
-Nevertheless, there is built in token authentication. If you specify a token
-when starting the server, that token needs to be passed with every request:
+Nevertheless, there are two authentication methods built in:
+
+**Token Based Auth:**
+
+Pass in the token using ``--auth_token thisismysecret`` when starting
+the server:
 
 .. code-block:: bash
 
@@ -135,6 +146,31 @@ as a parameter:
 .. code-block:: bash
 
     $ curl -XGET localhost:5005/conversations/default/tracker?token=thisismysecret
+
+**JWT Based Auth:**
+
+Enable JWT based authentication using ``--jwt_secret thisismysecret``.
+Requests to the server need to contain a valid JWT token in
+the ``Authorization`` header that is signed using this secret
+and the ``HS256`` algorithm.
+
+.. code-block:: bash
+
+    $ python -m rasa_core.run \
+        --enable_api \
+        --jwt_secret thisismysecret \
+        -d models/dialogue \
+        -u models/nlu/current \
+        -o out.log
+
+Your requests should have set a proper JWT header:
+
+.. code-block:: json
+
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
+                     "zdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIi"
+                     "wiaWF0IjoxNTE2MjM5MDIyfQ.qdrr2_a7Sd80gmCWjnDomO"
+                     "Gl8eZFVfKXA6jhncgRn-I"
 
 
 Endpoints
@@ -400,3 +436,8 @@ Endpoints
 
    :statuscode 200: no error
 
+
+.. include:: feedback.inc 
+
+.. raw:: html
+   :file: livechat.html

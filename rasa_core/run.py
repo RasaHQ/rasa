@@ -86,6 +86,21 @@ def create_argument_parser():
             action="store_true",
             help="Start the web server api in addition to the input channel")
 
+    jwt_auth = parser.add_argument_group('JWT Authentication')
+    jwt_auth.add_argument(
+            '--jwt_secret',
+            type=str,
+            help="Public key for asymmetric JWT methods or shared secret"
+                 "for symmetric methods. Please also make sure to use "
+                 "--jwt_method to select the method of the signature, "
+                 "otherwise this argument will be ignored.")
+    jwt_auth.add_argument(
+            '--jwt_method',
+            type=str,
+            default="HS256",
+            help="Method used for the signature of the JWT authentication "
+                 "payload.")
+
     utils.add_logging_option_arguments(parser)
     return parser
 
@@ -165,13 +180,17 @@ def start_server(input_channels,
                  auth_token,
                  port,
                  initial_agent,
-                 enable_api=True):
+                 enable_api=True,
+                 jwt_secret=None,
+                 jwt_method=None):
     """Run the agent."""
 
     if enable_api:
         app = server.create_app(initial_agent,
                                 cors_origins=cors,
-                                auth_token=auth_token)
+                                auth_token=auth_token,
+                                jwt_secret=jwt_secret,
+                                jwt_method=jwt_method)
     else:
         app = Flask(__name__)
         CORS(app, resources={r"/*": {"origins": cors or ""}})
@@ -187,7 +206,7 @@ def start_server(input_channels,
 
     http_server = WSGIServer(('0.0.0.0', port), app)
     logger.info("Rasa Core server is up and running on "
-                "{}".format(constants.DEFAULT_SERVER_URL))
+                "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
     http_server.start()
     return http_server
 
@@ -198,15 +217,19 @@ def serve_application(initial_agent,
                       credentials_file=None,
                       cors=None,
                       auth_token=None,
-                      enable_api=True
+                      enable_api=True,
+                      jwt_secret=None,
+                      jwt_method=None,
                       ):
     input_channels = create_http_input_channels(channel, credentials_file)
 
     http_server = start_server(input_channels, cors, auth_token,
-                               port, initial_agent, enable_api)
+                               port, initial_agent, enable_api,
+                               jwt_secret, jwt_method)
 
     if channel == "cmdline":
-        start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop)
+        start_cmdline_io(constants.DEFAULT_SERVER_FORMAT.format(port),
+                         http_server.stop)
 
     try:
         http_server.serve_forever()
@@ -261,4 +284,6 @@ if __name__ == '__main__':
                       cmdline_args.credentials,
                       cmdline_args.cors,
                       cmdline_args.auth_token,
-                      cmdline_args.enable_api)
+                      cmdline_args.enable_api,
+                      cmdline_args.jwt_secret,
+                      cmdline_args.jwt_method)

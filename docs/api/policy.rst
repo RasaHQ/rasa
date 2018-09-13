@@ -13,3 +13,8 @@ A Policy decides what action to take at every step in a dialogue
 
    .. automethod:: predict_action_probabilities
 
+
+.. include:: ../feedback.inc
+
+.. raw:: html
+   :file: ../livechat.html

@@ -399,7 +399,7 @@ class Restarted(Event):
     def apply_to(self, tracker):
         from rasa_core.actions.action import ACTION_LISTEN_NAME
         tracker._reset()
-        tracker.trigger_follow_up_action(ACTION_LISTEN_NAME)
+        tracker.trigger_followup_action(ACTION_LISTEN_NAME)
 
 
 # noinspection PyProtectedMember
@@ -628,7 +628,7 @@ class FollowupAction(Event):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-        tracker.trigger_follow_up_action(self.action_name)
+        tracker.trigger_followup_action(self.action_name)
 
 
 # noinspection PyProtectedMember

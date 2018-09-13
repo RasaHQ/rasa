@@ -17,6 +17,8 @@ Added
   if used when running the evaluation, the script will fail with a non
   0 exit code if there is at least one prediction error. This can be
   used on CIs to validate models against test stories.
+- JWT support: parameters to allow clients to authenticate requests to
+  the rasa_core.server using JWT's in addition to normal token based auth
 
 Changed
 -------
@@ -30,6 +32,9 @@ Removed
 
 Fixed
 -----
+- fixed an issue with the followup (there was a name confusion, sometimes
+  the followup action would be set to the non existent ``follow_up_action``
+  attribute instead of ``followup_action``)
 
 [0.11.3] - 2018-09-04
 ^^^^^^^^^^^^^^^^^^^^^

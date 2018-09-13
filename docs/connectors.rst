@@ -670,3 +670,10 @@ posted this message to the channel:
 
 .. literalinclude:: ../rasa_core/channels/channel.py
    :pyobject: RestInput
+
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html   
+   
