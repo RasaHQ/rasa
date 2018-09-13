@@ -886,6 +886,7 @@ def _start_online_learning_io(endpoint, on_finish, finetune=False):
                    "endpoint": endpoint,
                    "on_finish": on_finish,
                    "finetune": finetune})
+    p.setDaemon(True)
     p.start()
 
 
