@@ -244,7 +244,7 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_message_md(self, message):
         """generates markdown for a message object."""
         md = ''
-        text = message.get('text')
+        text = message.get('text', "")
         entities = sorted(message.get('entities', []),
                           key=lambda k: k['start'])
 
