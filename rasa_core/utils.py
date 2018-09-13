@@ -623,6 +623,7 @@ class EndpointConfig(object):
                 content_type="application/json",  # type: Optional[Text]
                 **kwargs  # type: Any
                 ):
+        # type: (...) -> requests.Response
         """Send a HTTP request to the endpoint.
 
         All additional arguments will get passed through

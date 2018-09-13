@@ -55,6 +55,18 @@ class UndoLastStep(Exception):
     pass
 
 
+def _response_as_json(response):
+    # type: (requests.Response) -> Dict[Text, Any]
+    """Convert a HTTP response to json, raise exception if response failed."""
+
+    response.raise_for_status()
+
+    if response.encoding is None:
+        response.encoding = 'utf-8'
+
+    return response.json()
+
+
 def send_message(endpoint,  # type: EndpointConfig
                  sender_id,  # type: Text
                  message,  # type: Text
@@ -73,12 +85,7 @@ def send_message(endpoint,  # type: EndpointConfig
                          method="post",
                          subpath="/conversations/{}/messages".format(sender_id))
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
-
-    return r.json()
+    return _response_as_json(r)
 
 
 def request_prediction(endpoint, sender_id):
@@ -88,12 +95,7 @@ def request_prediction(endpoint, sender_id):
     r = endpoint.request(method="post",
                          subpath="/conversations/{}/predict".format(sender_id))
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
-
-    return r.json()
+    return _response_as_json(r)
 
 
 def retrieve_domain(endpoint):
@@ -104,12 +106,7 @@ def retrieve_domain(endpoint):
                          subpath="/domain",
                          headers={"Accept": "application/json"})
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
-
-    return r.json()
+    return _response_as_json(r)
 
 
 def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
@@ -122,12 +119,7 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
                          subpath=path,
                          headers={"Accept": "application/json"})
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
-
-    return r.json()
+    return _response_as_json(r)
 
 
 def send_action(endpoint, sender_id, action_name):
@@ -141,12 +133,7 @@ def send_action(endpoint, sender_id, action_name):
                          method="post",
                          subpath=subpath)
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
-
-    return r.json()
+    return _response_as_json(r)
 
 
 def send_event(endpoint, sender_id, evt):
@@ -159,12 +146,7 @@ def send_event(endpoint, sender_id, evt):
                          method="post",
                          subpath=subpath)
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
-
-    return r.json()
+    return _response_as_json(r)
 
 
 def replace_events(endpoint, sender_id, evts):
@@ -177,26 +159,18 @@ def replace_events(endpoint, sender_id, evts):
                          method="put",
                          subpath=subpath)
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
-
-    return r.json()
+    return _response_as_json(r)
 
 
 def send_finetune(endpoint, evts):
-    # type: (EndpointConfig, List[Dict[Text, Any]]) -> None
+    # type: (EndpointConfig, List[Dict[Text, Any]]) -> Dict[Text, Any]
     """Finetune a core model on the provided additional training samples."""
 
     r = endpoint.request(json=evts,
                          method="post",
                          subpath="/finetune")
 
-    r.raise_for_status()
-
-    if r.encoding is None:
-        r.encoding = 'utf-8'
+    return _response_as_json(r)
 
 
 def format_bot_output(message):
@@ -829,9 +803,9 @@ def is_listening_for_message(sender_id, endpoint):
     return False
 
 
-def _undo_latest_msg(sender_id, endpoint):
+def _undo_latest(sender_id, endpoint):
     # type: (Text, EndpointConfig) -> None
-    """Undo either the latest bot or user message, whatever is the last."""
+    """Undo either the latest bot action or user message, whatever is last."""
 
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
 
@@ -891,7 +865,7 @@ def record_messages(endpoint,  # type: EndpointConfig
 
                 logger.info("Restarted conversation, starting a new one.")
             except UndoLastStep:
-                _undo_latest_msg(sender_id, endpoint)
+                _undo_latest(sender_id, endpoint)
                 _print_history(sender_id, endpoint)
 
     except Exception:
