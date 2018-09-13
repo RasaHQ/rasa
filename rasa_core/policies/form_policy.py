@@ -38,22 +38,19 @@ class FormPolicy(Policy):
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
         """Predicts a form action if form is active"""
-
         result = [0.0] * domain.num_actions
+
         if tracker.active_form:
             logger.debug("Form '{}' is active".format(tracker.active_form))
-            if tracker.latest_action_name == ACTION_LISTEN_NAME:
-                # predict next action after user utterance
-                intent = tracker.latest_message.intent.get('name')
-                logger.debug("Got intent '{}'".format(intent))
-                if intent == EXTRACTED_SLOT:
-                    idx = domain.index_for_action(tracker.active_form)
-                    result[idx] = FORM_SCORE
 
-            elif tracker.latest_action_name == tracker.active_form:
+            if tracker.latest_action_name == tracker.active_form:
                 # predict action_listen after form action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
-                result[idx] = FORM_SCORE
+            else:
+                # always predict the form if it is active
+                idx = domain.index_for_action(tracker.active_form)
+            result[idx] = FORM_SCORE
+
         else:
             logger.debug("There is no active form")
 
