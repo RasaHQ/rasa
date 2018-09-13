@@ -42,15 +42,14 @@ class FormPolicy(Policy):
 
         if tracker.active_form:
             logger.debug("Form '{}' is active".format(tracker.active_form))
-
-            if tracker.latest_action_name == tracker.active_form:
+            if tracker.latest_action_name == ACTION_LISTEN_NAME:
+                # predict form action after user utterance
+                idx = domain.index_for_action(tracker.active_form)
+                result[idx] = FORM_SCORE
+            elif tracker.latest_action_name == tracker.active_form:
                 # predict action_listen after form action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
-            else:
-                # always predict the form if it is active
-                idx = domain.index_for_action(tracker.active_form)
-            result[idx] = FORM_SCORE
-
+                result[idx] = FORM_SCORE
         else:
             logger.debug("There is no active form")
 
