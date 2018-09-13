@@ -350,7 +350,7 @@ class Domain(object):
                         slot_id = "slot_{}_{}".format(key, i)
                         state_dict[slot_id] = slot_value
 
-        message = tracker.form_message or tracker.latest_message
+        message = tracker.message_for_states
 
         if "intent_ranking" in message.parse_data:
             for intent in message.parse_data["intent_ranking"]:

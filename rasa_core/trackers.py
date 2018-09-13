@@ -83,7 +83,7 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = None
-        self.form_message = None
+        self._form_message = None
 
     ###
     # Public tracker interface
@@ -128,15 +128,23 @@ class DialogueStateTracker(object):
     def activate_form(self, form_name):
         # type: (Text) -> ()
         self.active_form = form_name
-        self.form_message = self.latest_message
+        self._form_message = self.latest_message
 
     def deactivate_form(self):
         self.active_form = None
-        # self.form_message = None
 
     @property
     def should_be_featurized(self):
         return self.active_form is None
+
+    @property
+    def message_for_states(self):
+        if self.should_be_featurized:
+            message = self._form_message or self.latest_message
+            self._form_message = None
+        else:
+            message = self.latest_message
+        return message
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
