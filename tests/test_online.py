@@ -162,12 +162,6 @@ def test_as_md_message():
     assert md == "Hello there [rasa](name)."
 
 
-def test_as_md_on_empty_message():
-    parse_data = {}
-    md = online._as_md_message(parse_data)
-    assert md == ""
-
-
 def test_validate_user_message():
     parse_data = {
         "text": "Hello there rasa.",
