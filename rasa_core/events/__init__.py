@@ -796,7 +796,6 @@ class AgentUttered(Event):
 
 class FormActivated(Event):
     type_name = "form_activated"
-    form_flag = 'activate'
 
     def __init__(self, form_name, timestamp=None):
         self.form = form_name
@@ -822,7 +821,6 @@ class FormActivated(Event):
 
 class FormDeactivated(Event):
     type_name = 'form_deactivated'
-    form_flag = 'deactivate'
 
     def apply_to(self, tracker):
         tracker.deactivate_form()
