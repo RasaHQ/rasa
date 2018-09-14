@@ -190,7 +190,9 @@ class Domain(object):
         self.intent_properties = intent_properties
         self.entities = entities
         # TODO: this should really only be done when there's a FormPolicy present
-        slots.append(UnfeaturizedSlot('requested_slot'))
+        if 'requested_slot' not in [s.name for s in slots]:
+            slots.append(UnfeaturizedSlot('requested_slot'))
+        print(slots)
         self.slots = slots
         self.templates = templates
 
