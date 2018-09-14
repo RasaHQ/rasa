@@ -102,9 +102,6 @@ def create_argument_parser():
 def _create_external_channels(channel, credentials_file):
     # type: (Optional[Text], Optional[Text]) -> List[InputChannel]
 
-    if not channel and not credentials_file:
-        channel = "cmdline"
-
     if credentials_file:
         all_credentials = read_yaml_file(credentials_file)
     else:
@@ -206,6 +203,10 @@ def serve_application(initial_agent,
                       jwt_secret=None,
                       jwt_method=None,
                       ):
+
+    if not channel and not credentials_file:
+        channel = "cmdline"
+
     input_channels = create_http_input_channels(channel, credentials_file)
 
     http_server = start_server(input_channels, cors, auth_token,
