@@ -3,11 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from collections import deque
+
 import copy
 import io
 import logging
-from collections import deque
-
 import typing
 from enum import Enum
 from typing import Generator, Dict, Text, Any, Optional, Iterator
@@ -64,6 +64,15 @@ class DialogueStateTracker(object):
         the tracker, these events will be replayed to recreate the state."""
 
         evts = events.deserialise_events(events_as_dict)
+        return cls.from_events(sender_id, evts, slots, max_event_history)
+
+    @classmethod
+    def from_events(cls,
+                    sender_id,  # type: Text
+                    evts,  # type: List[Event]
+                    slots,  # type: List[Slot]
+                    max_event_history=None  # type: Optional[int]
+                    ):
         tracker = cls(sender_id, slots, max_event_history)
         for e in evts:
             tracker.update(e)
@@ -314,7 +323,7 @@ class DialogueStateTracker(object):
         Returns the dumped tracker as a string."""
         from rasa_core.training.structures import Story
 
-        story = Story.from_events(self.applied_events())
+        story = Story.from_events(self.applied_events(), self.sender_id)
         return story.as_story_string(flat=True)
 
     def export_stories_to_file(self, export_path="debug.md"):
