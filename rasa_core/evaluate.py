@@ -8,6 +8,9 @@ from builtins import str
 import argparse
 import io
 import logging
+import numpy as np
+import warnings
+from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 
 from rasa_core import training, run
@@ -17,7 +20,9 @@ from rasa_core.events import ActionExecuted
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
+from rasa_nlu.evaluate import (
+    plot_confusion_matrix,
+    get_evaluation_metrics)
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +148,7 @@ def collect_story_predictions(completed_trackers,
     predictions = []
     golds = []
     failed = []
+    correct_dialogues = []
 
     logger.info("Evaluating {} stories\n"
                 "Progress:".format(len(completed_trackers)))
@@ -154,9 +160,18 @@ def collect_story_predictions(completed_trackers,
         predictions.extend(current_predictions)
         golds.extend(current_gold)
 
-        if not current_gold == current_predictions:
+        if current_gold != current_predictions:
             # there is at least one prediction that is wrong
             failed.append(predicted_tracker)
+            correct_dialogues.append(0)
+        else:
+            correct_dialogues.append(1)
+
+    logger.info("Finished collecting predictions.")
+    log_evaluation_table([1] * len(completed_trackers),
+                         correct_dialogues,
+                         "DIALOGUE",
+                         include_report=False)
 
     return golds, predictions, failed
 
@@ -193,13 +208,32 @@ def run_story_evaluation(resource_name, agent,
     log_failed_stories(failed, out_file_stories)
 
 
+def log_evaluation_table(golds, predictions, name,
+                         include_report=True):  # pragma: no cover
+    """Log the sklearn evaluation metrics."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UndefinedMetricWarning)
+        report, precision, f1, accuracy = get_evaluation_metrics(golds,
+                                                                 predictions)
+
+    logger.info("Evaluation Results on {} level:".format(name))
+    logger.info("\tCorrect:   {} / {}".format(int(len(golds) * accuracy),
+                                              len(golds)))
+    logger.info("\tF1-Score:  {:.3f}".format(f1))
+    logger.info("\tPrecision: {:.3f}".format(precision))
+    logger.info("\tAccuracy:  {:.3f}".format(accuracy))
+
+    if include_report:
+        logger.info("\tClassification report: \n{}".format(report))
+
+
 def plot_story_evaluation(test_y, predictions, out_file):
     """Plot the results. of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     import matplotlib.pyplot as plt
 
-    log_evaluation_table(test_y, predictions)
+    log_evaluation_table(test_y, predictions, "ACTION", include_report=True)
     cnf_matrix = confusion_matrix(test_y, predictions)
     plot_confusion_matrix(cnf_matrix,
                           classes=unique_labels(test_y, predictions),
