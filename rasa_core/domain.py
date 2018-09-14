@@ -20,7 +20,7 @@ from typing import Text
 
 from rasa_core import utils
 from rasa_core.actions import Action, action
-from rasa_core.slots import Slot
+from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
 
@@ -189,7 +189,7 @@ class Domain(object):
 
         self.intent_properties = intent_properties
         self.entities = entities
-        self.slots = slots
+        self.slots = slots.append(UnfeaturizedSlot('requested_slot'))
         self.templates = templates
 
         # only includes custom actions and utterance actions
