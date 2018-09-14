@@ -22,8 +22,6 @@ from rasa_core.events import (
     BotUttered)
 from rasa_core.slots import Slot
 
-from rasa_core.constants import EXTRACTED_SLOT
-
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:

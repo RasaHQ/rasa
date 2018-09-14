@@ -23,7 +23,6 @@ from rasa_core.actions import Action, action
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from rasa_core.constants import EXTRACTED_SLOT
 
 logger = logging.getLogger(__name__)
 
@@ -334,13 +333,12 @@ class Domain(object):
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
         intent_name = tracker.latest_message.intent.get("name")
-        if intent_name is not EXTRACTED_SLOT:
-            for entity in tracker.latest_message.entities:
-                intent_config = self.intent_config(intent_name)
-                should_use_entity = intent_config.get('use_entities', True)
-                if should_use_entity:
-                    key = "entity_{0}".format(entity["entity"])
-                    state_dict[key] = 1.0
+        for entity in tracker.latest_message.entities:
+            intent_config = self.intent_config(intent_name)
+            should_use_entity = intent_config.get('use_entities', True)
+            if should_use_entity:
+                key = "entity_{0}".format(entity["entity"])
+                state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
