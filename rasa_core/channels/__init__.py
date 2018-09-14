@@ -13,6 +13,8 @@ from rasa_core.channels.channel import (
 
 # this prevents IDE's from optimizing the imports - we need to import the
 # above first, otherwise we will run into import cycles
+from rasa_core.channels.socketio import SocketIOInput
+
 pass
 
 from rasa_core.channels.botframework import BotFrameworkInput
@@ -29,7 +31,7 @@ from rasa_core.channels.twilio import TwilioInput
 input_channel_classes = [
     CmdlineInput, FacebookInput, SlackInput, TelegramInput, MattermostInput,
     TwilioInput, RasaChatInput, BotFrameworkInput, RocketChatInput,
-    CallbackInput, RestInput
+    CallbackInput, RestInput, SocketIOInput
 ]  # type: List[InputChannel]
 
 # Mapping from a input channel name to its class to allow name based lookup.

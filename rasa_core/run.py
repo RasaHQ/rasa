@@ -73,7 +73,6 @@ def create_argument_parser():
             help="Configuration file for the connectors as a yml file")
     parser.add_argument(
             '-c', '--connector',
-            default="cmdline",
             choices=list(BUILTIN_CHANNELS.keys()),
             help="service to connect to")
     parser.add_argument(
@@ -102,6 +101,9 @@ def create_argument_parser():
 
 def _create_external_channels(channel, credentials_file):
     # type: (Optional[Text], Optional[Text]) -> List[InputChannel]
+
+    if not channel and not credentials_file:
+        channel = "cmdline"
 
     if credentials_file:
         all_credentials = read_yaml_file(credentials_file)

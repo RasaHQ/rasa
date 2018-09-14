@@ -491,6 +491,51 @@ the port. The endpoint for receiving botframework channel messages
 is ``/webhooks/botframework/webhook``. This is the url you should
 add in your microsoft bot service configuration.
 
+.. _socketio_connector:
+
+SocketIO Setup
+--------------
+
+You can **either** attach the input channel running the provided
+``rasa_core.run`` script, or you can attach the channel in your
+own code.
+
+Using run script
+^^^^^^^^^^^^^^^^
+
+If you want to connect the socketio input channel using the run
+script, e.g. using:
+
+.. code-block:: bash
+
+  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+      --port 5002 --credentials credentials.yml
+
+you need to supply a ``credentials.yml`` with the following content:
+
+.. code-block:: yaml
+
+   socketio:
+     user_message_evt: user_uttered
+     bot_message_evt: bot_uttered
+
+These two configuration values define the event names used by Rasa Core
+when sending or receiving messages over socket.io.
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+Code to create a Socket.IO-compatible webserver looks like this:
+
+.. literalinclude:: ../tests/test_channels.py
+   :pyobject: test_socketio_channel
+   :lines: 2-
+   :end-before: END DOC INCLUDE
+
+The arguments for the ``handle_channels`` are the input channels and
+the port. Once started, you should be able to connect to
+``http://localhost:5005`` with your socket.io client.
+
 .. _ngrok:
 
 Using Ngrok For Local Testing

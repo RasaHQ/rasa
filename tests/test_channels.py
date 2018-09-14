@@ -320,6 +320,38 @@ def test_callback_channel():
         s.stop()
 
 
+# USED FOR DOCS - don't rename without changing in the docs
+def test_socketio_channel():
+    from rasa_core.channels.socketio import SocketIOInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+    input_channel = SocketIOInput(
+            # event name for messages sent from the user
+            user_message_evt="user_uttered",
+            # event name for messages sent from the bot
+            bot_message_evt="bot_uttered",
+            # socket.io namespace to use for the messages
+            namespace=None
+    )
+
+    # set serve_forever=False if you want to keep the server running
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+    # END DOC INCLUDE
+    # the above marker marks the end of the code snipped included
+    # in the docs
+    try:
+        assert s.started
+        routes_list = utils.list_routes(s.application)
+        assert routes_list.get("/webhooks/socketio/").startswith(
+                'socketio_webhook.health')
+    finally:
+        s.stop()
+
+
 def test_callback_calls_endpoint():
     from rasa_core.channels.callback import CallbackOutput
 

@@ -70,7 +70,8 @@ install_requires = [
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "PyInquirer~=1.0",
-    "flask-jwt-simple~=0.0.3"
+    "flask-jwt-simple~=0.0.3",
+    "python-socketio~=2.0",
 ]
 
 extras_requires = {
