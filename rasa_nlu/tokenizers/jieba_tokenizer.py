@@ -68,7 +68,7 @@ class JiebaTokenizer(Tokenizer, Component):
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
-        message.set("tokens", self.tokenize(message.text))
+        message.set("tokens", self.tokenize(message.text), True)
 
     def tokenize(self, text):
         # type: (Text) -> List[Token]
