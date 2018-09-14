@@ -850,3 +850,10 @@ class FormDeactivated(Event):
 
     def as_story_string(self):
         return self.type_name
+
+
+class ValidationFailed(Event):
+    type_name = 'validation_failed'
+
+    def as_story_string(self):
+        return None

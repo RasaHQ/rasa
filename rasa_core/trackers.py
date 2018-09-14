@@ -148,6 +148,7 @@ class DialogueStateTracker(object):
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
+        print(generated_states)
         return deque((frozenset(s.items()) for s in generated_states))
 
     def activate_form(self, form_name):
@@ -372,6 +373,8 @@ class DialogueStateTracker(object):
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
+        self.active_form = None
+        self._form_message = None
 
     def _reset_slots(self):
         # type: () -> None
