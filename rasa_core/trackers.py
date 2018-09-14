@@ -110,7 +110,7 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = None
-        self._form_message = None
+        self._should_be_featurized = True
 
     ###
     # Public tracker interface
@@ -148,29 +148,26 @@ class DialogueStateTracker(object):
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
-        print(generated_states)
         return deque((frozenset(s.items()) for s in generated_states))
 
     def activate_form(self, form_name):
         # type: (Text) -> ()
         self.active_form = form_name
-        self._form_message = self.latest_message
+        self._should_be_featurized = True
 
     def deactivate_form(self):
         self.active_form = None
+        self._should_be_featurized = False
 
     @property
     def should_be_featurized(self):
-        return self.active_form is None
-
-    @property
-    def message_for_states(self):
-        if self.should_be_featurized:
-            message = self._form_message or self.latest_message
-            self._form_message = None
+        should_be_featurized = self._should_be_featurized
+        if self.active_form is not None:
+            self._should_be_featurized = False
+            return should_be_featurized
         else:
-            message = self.latest_message
-        return message
+            self._should_be_featurized = True
+            return should_be_featurized
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
@@ -374,7 +371,7 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
         self.active_form = None
-        self._form_message = None
+        self._should_be_featurized = True
 
     def _reset_slots(self):
         # type: () -> None

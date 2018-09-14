@@ -352,17 +352,18 @@ class Domain(object):
                         slot_id = "slot_{}_{}".format(key, i)
                         state_dict[slot_id] = slot_value
 
-        message = tracker.message_for_states
+        latest_message = tracker.latest_message
 
-        if "intent_ranking" in message.parse_data:
-            for intent in message.parse_data["intent_ranking"]:
+        if "intent_ranking" in latest_message.parse_data:
+            for intent in latest_message.parse_data["intent_ranking"]:
                 if intent.get("name"):
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif message.intent.get("name"):
-            intent_id = "intent_{}".format(message.intent["name"])
-            state_dict[intent_id] = message.intent.get("confidence", 1.0)
+        elif latest_message.intent.get("name"):
+            intent_id = "intent_{}".format(latest_message.intent["name"])
+            state_dict[intent_id] = latest_message.intent.get("confidence",
+                                                              1.0)
 
         return state_dict
 
