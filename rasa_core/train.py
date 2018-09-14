@@ -219,7 +219,7 @@ if __name__ == '__main__':
 
     if cmdline_args.core:
         if not cmdline_args.online:
-            raise ValueError("--core can only be used together with "
+            raise ValueError("--core can only be used together with the"
                              "--online flag.")
         else:
             logger.info("loading a pre-trained model. ",

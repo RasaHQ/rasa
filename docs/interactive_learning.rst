@@ -130,7 +130,7 @@ In this case, the bot should ``action_show_concert_reviews`` (rather than venue
 reviews!) so we select that action.
 
 Now we can keep talking to the bot for as long as we like to create a longer
-conversation. At any point you can press ``Ctrl-C`` and the bot will write
+conversation. At any point you can press ``Ctrl-C`` and the bot will
 provide you with exit options, e.g. writing the created conversations as
 stories to a file. Make sure to combine the dumped story with your original
 training data for the next training.
