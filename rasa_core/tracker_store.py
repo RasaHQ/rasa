@@ -15,7 +15,9 @@ from typing import Text, Optional, List
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
-from rasa_core.trackers import DialogueStateTracker, ActionExecuted
+from rasa_core.trackers import (
+    DialogueStateTracker, ActionExecuted,
+    EventVerbosity)
 
 logger = logging.getLogger(__name__)
 
@@ -176,8 +178,7 @@ class MongoTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        state = tracker.current_state(should_include_events=True,
-                                      should_ignore_restarts=True)
+        state = tracker.current_state(EventVerbosity.ALL)
 
         self.conversations.update_one(
                 {"sender_id": tracker.sender_id},
