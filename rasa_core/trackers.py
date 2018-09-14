@@ -140,7 +140,8 @@ class DialogueStateTracker(object):
             "followup_action": self.followup_action,
             "paused": self.is_paused(),
             "events": evts,
-            "active_form": self.active_form
+            "active_form": self.active_form,
+            "latest_action_name": self.latest_action_name
         }
 
     def past_states(self, domain):
