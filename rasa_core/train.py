@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from builtins import str
 
 import argparse
+import logging
 
 from rasa_core import utils
 from rasa_core.agent import Agent
@@ -14,10 +15,14 @@ from rasa_core.constants import (
     DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
+from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.run import AvailableEndpoints
 from rasa_core.training import online
+
+logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
@@ -39,16 +44,21 @@ def create_argument_parser():
             help="If supplied, downloads a story file from a URL and "
                  "trains on it. Fetches the data by sending a GET request "
                  "to the supplied URL.")
+    group.add_argument(
+            '--core',
+            default=None,
+            help="path to load a pre-trained model instead of training (for "
+                 "online mode only)")
 
     parser.add_argument(
             '-o', '--out',
             type=str,
-            required=True,
+            required=False,
             help="directory to persist the trained model in")
     parser.add_argument(
             '-d', '--domain',
             type=str,
-            required=True,
+            required=False,
             help="domain specification yaml file")
     parser.add_argument(
             '-u', '--nlu',
@@ -81,6 +91,11 @@ def create_argument_parser():
             default=False,
             action='store_true',
             help="enable online training")
+    parser.add_argument(
+            '--finetune',
+            default=False,
+            action='store_true',
+            help="retrain the model immediately based on feedback.")
     parser.add_argument(
             '--augmentation',
             type=int,
@@ -127,15 +142,13 @@ def create_argument_parser():
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
-                         nlu_model_path=None,
-                         endpoints=None,
+                         interpreter=None,
+                         endpoints=AvailableEndpoints(),
                          max_history=None,
                          dump_flattened_stories=False,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
-
-    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
 
     fallback_args, kwargs = utils.extract_args(kwargs,
                                                {"nlu_threshold",
@@ -157,8 +170,9 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                             max_history=max_history))]
 
     agent = Agent(domain_file,
-                  action_endpoint=action_endpoint,
-                  interpreter=nlu_model_path,
+                  generator=endpoints.nlg,
+                  action_endpoint=endpoints.action,
+                  interpreter=interpreter,
                   policies=policies)
 
     data_load_args, kwargs = utils.extract_args(kwargs,
@@ -199,14 +213,30 @@ if __name__ == '__main__':
     else:
         stories = cmdline_args.stories
 
-    a = train_dialogue_model(cmdline_args.domain,
-                             stories,
-                             cmdline_args.out,
-                             cmdline_args.nlu,
-                             cmdline_args.endpoints,
-                             cmdline_args.history,
-                             cmdline_args.dump_stories,
-                             additional_arguments)
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
+    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                     _endpoints.nlu)
+
+    if cmdline_args.core:
+        if not cmdline_args.online:
+            raise ValueError("--core can only be used together with the"
+                             "--online flag.")
+        else:
+            logger.info("loading a pre-trained model. ",
+                        "all training-related parameters will be ignored")
+        _agent = Agent.load(cmdline_args.core, interpreter=_interpreter)
+    else:
+        if not cmdline_args.out:
+            raise ValueError("you must provide a path where the model "
+                             "will be saved using -o / --out")
+        _agent = train_dialogue_model(cmdline_args.domain,
+                                      stories,
+                                      cmdline_args.out,
+                                      _interpreter,
+                                      _endpoints,
+                                      cmdline_args.history,
+                                      cmdline_args.dump_stories,
+                                      additional_arguments)
 
     if cmdline_args.online:
-        online.serve_agent(a)
+        online.run_online_learning(_agent, finetune=cmdline_args.finetune)

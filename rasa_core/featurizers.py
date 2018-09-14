@@ -487,11 +487,13 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_states = []
         trackers_as_actions = []
 
-        logger.info("Creating states and action examples from "
-                    "collected trackers (by {}({}))..."
-                    "".format(type(self).__name__,
-                              type(self.state_featurizer).__name__))
-        pbar = tqdm(trackers, desc="Processed trackers")
+        logger.debug("Creating states and action examples from "
+                     "collected trackers (by {}({}))..."
+                     "".format(type(self).__name__,
+                               type(self.state_featurizer).__name__))
+        pbar = tqdm(trackers,
+                    desc="Processed trackers",
+                    disable=(not logger.isEnabledFor(logging.DEBUG)))
         for tracker in pbar:
             states = self._create_states(tracker, domain,
                                          is_binary_training=True)
@@ -596,11 +598,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         # we only need to keep one.
         hashed_examples = set()
 
-        logger.info("Creating states and action examples from "
-                    "collected trackers (by {}({}))..."
-                    "".format(type(self).__name__,
-                              type(self.state_featurizer).__name__))
-        pbar = tqdm(trackers, desc="Processed trackers")
+        logger.debug("Creating states and action examples from "
+                     "collected trackers (by {}({}))..."
+                     "".format(type(self).__name__,
+                               type(self.state_featurizer).__name__))
+        pbar = tqdm(trackers, desc="Processed trackers",
+                    disable=(not logger.isEnabledFor(logging.DEBUG)))
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
 
@@ -631,8 +634,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                                 len(trackers_as_actions))})
                     idx += 1
 
-        logger.info("Created {} action examples."
-                    "".format(len(trackers_as_actions)))
+        logger.debug("Created {} action examples."
+                     "".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 

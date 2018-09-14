@@ -14,7 +14,7 @@ from typing import Text, Optional, Dict, Any
 from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.events import Event
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -48,15 +48,13 @@ class RasaCoreClient(object):
     def tracker(self,
                 sender_id,  # type: Text
                 domain,  # type: Domain
-                should_ignore_restarts=False,  # type: bool
-                include_events=True,  # type: bool
+                event_verbosity=EventVerbosity.ALL,  # type: EventVerbosity
                 until=None  # type: Optional[int]
                 ):
         """Retrieve and recreate a tracker fetched from the remote instance."""
 
         tracker_json = self.tracker_json(
-                sender_id, should_ignore_restarts,
-                include_events, until)
+                sender_id, event_verbosity, until)
 
         tracker = DialogueStateTracker.from_dict(
                 sender_id, tracker_json.get("events", []), domain.slots)
@@ -64,14 +62,13 @@ class RasaCoreClient(object):
 
     def tracker_json(self,
                      sender_id,  # type: Text
-                     should_ignore_restarts=True,  # type: bool
-                     include_events=True,  # type: bool
+                     event_verbosity=EventVerbosity.ALL,  # type: EventVerbosity
                      until=None  # type: Optional[int]
                      ):
         """Retrieve a tracker's json representation from remote instance."""
 
-        url = "/conversations/{}/tracker?ignore_restarts={}&events={}".format(
-                sender_id, should_ignore_restarts, include_events)
+        url = "/conversations/{}/tracker?events={}".format(
+                sender_id, event_verbosity.name)
         if until:
             url += "&until={}".format(until)
 
