@@ -826,7 +826,7 @@ class FormActivated(Event):
         tracker.activate_form(self.form)
 
     def as_story_string(self):
-        props = json.dumps({self.form})
+        props = json.dumps({"form_name": self.form})
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
