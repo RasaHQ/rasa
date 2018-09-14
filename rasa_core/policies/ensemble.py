@@ -21,7 +21,8 @@ from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies.fallback import FallbackPolicy
-from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.policies.memoization import (MemoizationPolicy,
+                                            AugmentedMemoizationPolicy)
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 
@@ -202,8 +203,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     @staticmethod
     def is_not_memo_policy(best_policy_name):
-        # AugmentedMemoizationPolicy also ends with MemoizationPolicy
-        return not best_policy_name.endswith(MemoizationPolicy.__name__)
+        return not (best_policy_name.endswith("_" + MemoizationPolicy.__name__)
+                    or best_policy_name.endswith(
+                            "_" + AugmentedMemoizationPolicy.__name__))
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
