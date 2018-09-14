@@ -100,6 +100,7 @@ def _generate_trackers(resource_name, agent, max_stories=None):
                                                agent.interpreter)
     g = TrainingDataGenerator(story_graph, agent.domain,
                               use_story_concatenation=False,
+                              augmentation_factor=0,
                               tracker_limit=max_stories)
     return g.generate()
 
@@ -170,7 +171,7 @@ def collect_story_predictions(completed_trackers,
     logger.info("Finished collecting predictions.")
     log_evaluation_table([1] * len(completed_trackers),
                          correct_dialogues,
-                         "DIALOGUE",
+                         "CONVERSATION",
                          include_report=False)
 
     return golds, predictions, failed
