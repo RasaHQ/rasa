@@ -19,7 +19,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered)
+    BotUttered, FormActivated, FormDeactivated)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,6 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = None
-        self._should_be_featurized = True
 
     ###
     # Public tracker interface
@@ -154,21 +153,9 @@ class DialogueStateTracker(object):
     def activate_form(self, form_name):
         # type: (Text) -> ()
         self.active_form = form_name
-        self._should_be_featurized = True
 
     def deactivate_form(self):
         self.active_form = None
-        self._should_be_featurized = False
-
-    @property
-    def should_be_featurized(self):
-        should_be_featurized = self._should_be_featurized
-        if self.active_form is not None:
-            self._should_be_featurized = False
-            return should_be_featurized
-        else:
-            self._should_be_featurized = True
-            return should_be_featurized
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
@@ -236,10 +223,17 @@ class DialogueStateTracker(object):
         the trackers before each action."""
 
         tracker = self.init_copy()
-
+        active_form = None
         for event in self.applied_events():
             if isinstance(event, ActionExecuted):
-                yield tracker
+                if active_form:
+                    if tracker.latest_action_name != active_form or event.action_name != active_form:
+                        yield tracker
+                else:
+                    yield tracker
+
+                active_form = tracker.active_form
+
             tracker.update(event)
 
         yield tracker  # yields the final state
@@ -372,7 +366,6 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
         self.active_form = None
-        self._should_be_featurized = True
 
     def _reset_slots(self):
         # type: () -> None
