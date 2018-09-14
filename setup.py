@@ -34,10 +34,10 @@ install_requires = [
     "fakeredis~=0.10.0",
     "pymongo~=3.5",
     "future~=0.16",
-    "numpy~=1.13",
+    "numpy~=1.15",
     "typing~=3.0",
     "requests~=2.15",
-    "graphviz~=0.8.0",
+    "graphviz~=0.9.0",
     "keras~=2.0",
     "tensorflow~=1.10",
     "h5py~=2.0",
@@ -67,7 +67,11 @@ install_requires = [
     "python-dateutil~=2.7",
     "rasa_nlu~=0.13.0",
     "rasa_core_sdk~=0.11.0",
-    "flask-jwt-simple~=0.0.3"
+    "colorclass~=2.2",
+    "terminaltables~=3.1",
+    "PyInquirer~=1.0",
+    "flask-jwt-simple~=0.0.3",
+    "python-socketio~=2.0",
 ]
 
 extras_requires = {

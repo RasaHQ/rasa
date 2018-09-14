@@ -13,11 +13,23 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- a flag ``--fail_on_prediction_errors`` to the ``evaluate.py`` script -
+  if used when running the evaluation, the script will fail with a non
+  0 exit code if there is at least one prediction error. This can be
+  used on CIs to validate models against test stories.
 - JWT support: parameters to allow clients to authenticate requests to
   the rasa_core.server using JWT's in addition to normal token based auth
+- added socket.io input / output channel
 
 Changed
 -------
+- dump failed stories after evaluation in the normal story format instead of
+  as a text file
+- do not run actions during evaluation. instead, action are only predicted
+  and validated against the gold story.
+- improved the online learning experience on the CLI
+- made finetuning during online learning optional (use ``--finetune`` if
+  you want to enable it)
 
 Removed
 -------
