@@ -189,7 +189,9 @@ class Domain(object):
 
         self.intent_properties = intent_properties
         self.entities = entities
-        self.slots = slots.append(UnfeaturizedSlot('requested_slot'))
+        # TODO: this should really only be done when there's a FormPolicy present
+        slots.append(UnfeaturizedSlot('requested_slot'))
+        self.slots = slots
         self.templates = templates
 
         # only includes custom actions and utterance actions
