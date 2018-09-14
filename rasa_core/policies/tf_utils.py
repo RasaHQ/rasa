@@ -125,6 +125,9 @@ class TimedNTM(object):
         return probs, next_scores_state
 
     def _rearrange_fn(self, list_tensor_1d_mask_1d):
+        """Rearranges tensor_1d to put all the values
+            where mask_1d=1 to the right and
+            where mask_1d=0 to the left and sets them to -infinity"""
         tensor_1d, mask_1d = list_tensor_1d_mask_1d
 
         partitioned_tensor = tf.dynamic_partition(tensor_1d,
@@ -136,6 +139,12 @@ class TimedNTM(object):
 
     @staticmethod
     def _arrange_back_fn(list_tensor_1d_mask_1d):
+        """Arranges back tensor_1d to restore original order
+            modified by `_rearrange_fn` according to mask_1d:
+            - number of 0s in mask_1d values on the left are set to
+              their corresponding places where mask_1d=0,
+            - number of 1s in mask_1d values on the right are set to
+              their corresponding places where mask_1d=1"""
         tensor_1d, mask_1d = list_tensor_1d_mask_1d
 
         mask_indices = tf.dynamic_partition(tf.range(tf.shape(tensor_1d)[0]),
