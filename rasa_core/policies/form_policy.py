@@ -8,7 +8,7 @@ import typing
 
 from typing import Any, List, Text
 
-from rasa_core.constants import FORM_SCORE, EXTRACTED_SLOT
+from rasa_core.constants import FORM_SCORE
 from rasa_core.policies import Policy
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
