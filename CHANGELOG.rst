@@ -19,6 +19,7 @@ Added
   used on CIs to validate models against test stories.
 - JWT support: parameters to allow clients to authenticate requests to
   the rasa_core.server using JWT's in addition to normal token based auth
+- added socket.io input / output channel
 
 Changed
 -------
