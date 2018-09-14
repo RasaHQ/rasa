@@ -8,7 +8,7 @@ from typing import Text, Any, Dict, Optional
 
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.nlg.generator import NaturalLanguageGenerator
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -75,8 +75,7 @@ def nlg_request_format(template_name, tracker, output_channel, **kwargs):
     # type: (Text, DialogueStateTracker, Text, Any) -> Dict[Text, Any]
     """Create the json body for the NLG json body for the request."""
 
-    tracker_state = tracker.current_state(should_include_events=True,
-                                          should_ignore_restarts=True)
+    tracker_state = tracker.current_state(EventVerbosity.ALL)
 
     return {
         "template": template_name,

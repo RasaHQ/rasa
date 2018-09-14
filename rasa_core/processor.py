@@ -12,7 +12,7 @@ import warnings
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import UnknownTimeZoneError
 from types import LambdaType
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from typing import Text
 
 from rasa_core.actions import Action
@@ -33,7 +33,7 @@ from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ class MessageProcessor(object):
         return {
             "scores": scores,
             "policy": policy,
-            "tracker": tracker.current_state(should_include_events=True)
+            "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART)
         }
 
     def log_message(self, message):
@@ -423,7 +423,7 @@ class MessageProcessor(object):
         self.tracker_store.save(tracker)
 
     def _prob_array_for_action(self, action_name):
-        # type: (Text) -> Optional[List[float]]
+        # type: (Text) -> Tuple[Optional[List[float]], None]
         idx = self.domain.index_for_action(action_name)
         if idx is not None:
             result = [0.0] * self.domain.num_actions
@@ -432,8 +432,10 @@ class MessageProcessor(object):
         else:
             return None, None
 
-    def _get_next_action_probabilities(self, tracker):
-        # type: (DialogueStateTracker) -> List[float]
+    def _get_next_action_probabilities(self,
+                                       tracker  # type: DialogueStateTracker
+                                       ):
+        # type: (...) -> Tuple[Optional[List[float]], Optional[Text]]
 
         followup_action = tracker.followup_action
         if followup_action:

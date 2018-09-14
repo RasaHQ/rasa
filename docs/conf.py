@@ -35,6 +35,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
+    'sphinx.ext.extlinks',
     'sphinxcontrib.httpdomain',
     'sphinxcontrib.programoutput',
     'rasabaster.button',
@@ -340,6 +341,14 @@ from mock import Mock
 
 Agent.handle_channel = Mock('handle_channel')
 ''' % os.path.dirname(__file__)
+
+# extlinks configuration
+
+extlinks = {
+    'gh-code': (
+        'https://github.com/RasaHQ/rasa_core/tree/{}/%s'.format(release),
+        'github ')
+}
 
 # Sphinxcontrib configuration
 scv_priority = 'tags'

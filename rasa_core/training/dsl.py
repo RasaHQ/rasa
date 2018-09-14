@@ -287,11 +287,11 @@ class StoryFileReader(object):
         parsed_messages = []
         for m in messages:
             parse_data = self.interpreter.parse(m)
-            # a user uttered event's format is a bit different to the one of
-            # other events, so we need to take a shortcut here
-            parameters = {"text": m, "parse_data": parse_data}
-            utterance = Event.from_story_string(UserUttered.type_name,
-                                                parameters)
+            utterance = UserUttered(m,
+                                    parse_data.get("intent"),
+                                    parse_data.get("entities"),
+                                    parse_data)
+
             if m.startswith("_"):
                 c = utterance.as_story_string()
                 logger.warning("Stating user intents with a leading '_' is "
@@ -315,9 +315,9 @@ class StoryFileReader(object):
         if "name" not in parameters and event_name != SlotSet.type_name:
             parameters["name"] = event_name
 
-        parsed = Event.from_story_string(event_name, parameters,
-                                         default=ActionExecuted)
-        if parsed is None:
+        parsed_events = Event.from_story_string(event_name, parameters,
+                                                default=ActionExecuted)
+        if parsed_events is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "
                                   "nor an action).".format(event_name))
         if self.current_step_builder is None:
@@ -325,8 +325,5 @@ class StoryFileReader(object):
                                   "started story block available. "
                                   "".format(event_name))
 
-        if isinstance(parsed, list):
-            for p in parsed:
-                self.current_step_builder.add_event(p)
-        else:
-            self.current_step_builder.add_event(parsed)
+        for p in parsed_events:
+            self.current_step_builder.add_event(p)
