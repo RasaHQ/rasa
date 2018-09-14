@@ -8,18 +8,18 @@ from builtins import str
 import argparse
 import io
 import logging
-import numpy as np
 import warnings
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 
-from rasa_core import training, run
+from rasa_core import training
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
+from rasa_core.utils import AvailableEndpoints
 from rasa_nlu.evaluate import (
     plot_confusion_matrix,
     get_evaluation_metrics)
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     cmdline_args = arg_parser.parse_args()
 
     logging.basicConfig(level=cmdline_args.loglevel)
-    _endpoints = run.read_endpoints(cmdline_args.endpoints)
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)

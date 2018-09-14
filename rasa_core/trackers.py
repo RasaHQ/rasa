@@ -9,6 +9,7 @@ import copy
 import io
 import logging
 import typing
+from enum import Enum
 from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
@@ -25,6 +26,25 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
+
+
+class EventVerbosity(Enum):
+    """Filter on which events to include in tracker dumps."""
+
+    # no events will be included
+    NONE = 1
+
+    # all events, that contribute to the trackers state are included
+    # these are all you need to reconstruct the tracker state
+    APPLIED = 2
+
+    # include even more events, in this case everything that comes
+    # after the most recent restart event. this will also include
+    # utterances that got reverted and actions that got undone.
+    AFTER_RESTART = 3
+
+    # include every logged event
+    ALL = 4
 
 
 class DialogueStateTracker(object):
@@ -93,18 +113,16 @@ class DialogueStateTracker(object):
     ###
     # Public tracker interface
     ###
-    def current_state(self,
-                      should_include_events=False,
-                      should_ignore_restarts=False):
-        # type: (bool, bool) -> Dict[Text, Any]
+    def current_state(self, event_verbosity=EventVerbosity.NONE):
+        # type: (EventVerbosity) -> Dict[Text, Any]
         """Return the current tracker state as an object."""
 
-        if should_include_events:
-            if should_ignore_restarts:
-                es = self.events
-            else:
-                es = self.events_after_latest_restart()
-            evts = [e.as_dict() for e in es]
+        if event_verbosity == EventVerbosity.ALL:
+            evts = [e.as_dict() for e in self.events]
+        elif event_verbosity == EventVerbosity.AFTER_RESTART:
+            evts = [e.as_dict() for e in self.events_after_latest_restart()]
+        elif event_verbosity == EventVerbosity.APPLIED:
+            evts = [e.as_dict() for e in self.applied_events()]
         else:
             evts = None
 

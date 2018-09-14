@@ -27,6 +27,9 @@ Changed
   as a text file
 - do not run actions during evaluation. instead, action are only predicted
   and validated against the gold story.
+- improved the online learning experience on the CLI
+- made finetuning during online learning optional (use ``--finetune`` if
+  you want to enable it)
 
 Removed
 -------

@@ -21,6 +21,7 @@ from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.run import load_agent
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import AvailableEndpoints
 
 logger = logging.getLogger()  # get the root logger
 
@@ -159,7 +160,7 @@ def serve_application(model_directory,  # type: Text
                       ):
     from rasa_core import run
 
-    _endpoints = run.read_endpoints(endpoints)
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     nlu = NaturalLanguageInterpreter.create(nlu_model, _endpoints.nlu)
 

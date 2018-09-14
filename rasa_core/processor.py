@@ -33,7 +33,7 @@ from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ class MessageProcessor(object):
         return {
             "scores": scores,
             "policy": policy,
-            "tracker": tracker.current_state(should_include_events=True)
+            "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART)
         }
 
     def log_message(self, message):
