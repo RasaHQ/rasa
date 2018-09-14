@@ -156,6 +156,7 @@ def start_cmdline_io(server_url, on_finish, **kwargs):
 
     p = Thread(target=console.record_messages,
                kwargs=kwargs)
+    p.setDaemon(True)
     p.start()
 
 
