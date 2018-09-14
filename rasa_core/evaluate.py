@@ -154,13 +154,13 @@ def collect_story_predictions(completed_trackers,
                 "Progress:".format(len(completed_trackers)))
 
     for tracker in tqdm(completed_trackers):
-        current_gold, current_predictions, predicted_tracker = \
+        current_golds, current_predictions, predicted_tracker = \
             _predict_tracker_actions(tracker, agent, fail_on_prediction_errors)
 
         predictions.extend(current_predictions)
-        golds.extend(current_gold)
+        golds.extend(current_golds)
 
-        if current_gold != current_predictions:
+        if current_golds != current_predictions:
             # there is at least one prediction that is wrong
             failed.append(predicted_tracker)
             correct_dialogues.append(0)
