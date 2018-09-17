@@ -171,7 +171,7 @@ This policy has a pre-defined architecture, which comprises the following steps:
     - sum this raw recurrent embedding of a dialogue with system attention vector to create dialogue level embedding,
       this step allows the algorithm to repeat previous system action by copying its embedding vector directly to the current time output;
     - weight previous LSTM states with system attention probabilities to get the previous action embedding, the policy is likely payed attention to;
-    - if the similarity between this action embedding and current time dialogue embedding is high,
+    - if the similarity between this previous action embedding and current time dialogue embedding is high,
       overwrite current LSTM state with the one from the time when this action happened;
     - for each LSTM time step, calculate the similarity between the dialogue embedding and embedded system actions.
       This step is based on the starspace idea from: `<https://arxiv.org/abs/1709.03856>`_.
