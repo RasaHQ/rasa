@@ -356,8 +356,7 @@ scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ('semver',)
 scv_overflow = ("-A", "html_theme=rasabaster")
-scv_whitelist_branches = ('master', 'latest')
-#scv_whitelist_tags = ('None',)
+scv_whitelist_branches = (re.compile('^master$'),)
 scv_whitelist_tags = (re.compile(r'^[123456789]+\.\d+\.\d+$'),
                       re.compile(r'^0\.[23456789]\d+\.\d+$'),
                       re.compile(r'^0\.1[123456789]+\.\d+$'),
