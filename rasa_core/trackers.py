@@ -105,8 +105,8 @@ class DialogueStateTracker(object):
         # A deterministically scheduled action to be executed next
         self.followup_action = ACTION_LISTEN_NAME   # type: Optional[Text]
         self.latest_action_name = None
-        self.latest_message = None
         # Stores the most recent message sent by the user
+        self.latest_message = None
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = None
@@ -226,20 +226,22 @@ class DialogueStateTracker(object):
         if_featurized = []
         idx_of_failed = None
         for i, event in enumerate(self.applied_events()):
-
             if isinstance(event, ValidationFailed):
                 if_featurized.append(True)
                 idx_of_failed = i
             elif isinstance(event, FormIsBack):
-                if_featurized[idx_of_failed:] = [False]*len(if_featurized[idx_of_failed:])
+                if idx_of_failed is not None:
+                    if_featurized[idx_of_failed:] = [False] * len(if_featurized[idx_of_failed:])
                 if_featurized.append(False)
             else:
                 if_featurized.append(if_featurized[-1] if if_featurized else True)
 
+        print(if_featurized)
+
         tracker = self.init_copy()
         for i, event in enumerate(self.applied_events()):
             if isinstance(event, ActionExecuted):
-                if tracker.active_form is None or (tracker.active_form == self.active_form and if_featurized[i]):
+                if tracker.active_form is None or (tracker.active_form and if_featurized[i]):
                     yield tracker
 
             tracker.update(event)
