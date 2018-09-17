@@ -19,7 +19,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered, FormActivated, FormDeactivated)
+    BotUttered, FormActivated, FormDeactivated, ValidationFailed, FormIsBack)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -110,6 +110,7 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = None
+        self.postponed_events = []
 
     ###
     # Public tracker interface
@@ -222,21 +223,29 @@ class DialogueStateTracker(object):
         The resulting array is representing
         the trackers before each action."""
 
-        tracker = self.init_copy()
-        active_form = None
-        for event in self.applied_events():
-            if isinstance(event, ActionExecuted):
-                if active_form:
-                    if tracker.latest_action_name != active_form or event.action_name != active_form:
-                        yield tracker
-                else:
-                    yield tracker
+        if_featurized = []
+        idx_of_failed = None
+        for i, event in enumerate(self.applied_events()):
 
-                active_form = tracker.active_form
+            if isinstance(event, ValidationFailed):
+                if_featurized.append(True)
+                idx_of_failed = i
+            elif isinstance(event, FormIsBack):
+                if_featurized[idx_of_failed:] = [False]*len(if_featurized[idx_of_failed:])
+                if_featurized.append(False)
+            else:
+                if_featurized.append(if_featurized[-1] if if_featurized else True)
+
+        tracker = self.init_copy()
+        for i, event in enumerate(self.applied_events()):
+            if isinstance(event, ActionExecuted):
+                if tracker.active_form is None or (tracker.active_form == self.active_form and if_featurized[i]):
+                    yield tracker
 
             tracker.update(event)
 
-        yield tracker  # yields the final state
+        if tracker.active_form is None or not if_featurized or if_featurized[-1]:
+            yield tracker  # yields the final state
 
     def applied_events(self):
         # type: () -> List[Event]

@@ -66,6 +66,7 @@ class Event(object):
 
     def __init__(self, timestamp=None):
         self.timestamp = timestamp if timestamp else time.time()
+        self.postponed = False
 
     def __ne__(self, other):
         # Not strictly necessary, but to avoid having both x==y and x!=y
@@ -151,6 +152,12 @@ class Event(object):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
+        if self.postponed:
+            tracker.postponed_events.append(self)
+        else:
+            pass
+
+    def postponed_apply_to(self, tracker):
         pass
 
 
@@ -756,6 +763,9 @@ class ActionExecuted(Event):
         tracker.latest_action_name = self.action_name
         tracker.clear_followup_action()
 
+        for e in tracker.postponed_events:
+            e.postponed_apply_to(tracker)
+
 
 class AgentUttered(Event):
     """The agent has said something to the user.
@@ -819,10 +829,11 @@ class FormActivated(Event):
     type_name = "form_activated"
 
     def __init__(self, form_name, timestamp=None):
-        self.form = form_name
         super(FormActivated, self).__init__(timestamp)
+        self.form = form_name
+        self.postponed = True
 
-    def apply_to(self, tracker):
+    def postponed_apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
         tracker.activate_form(self.form)
 
@@ -845,7 +856,11 @@ class FormActivated(Event):
 class FormDeactivated(Event):
     type_name = 'form_deactivated'
 
-    def apply_to(self, tracker):
+    def __init__(self, timestamp=None):
+        super(FormDeactivated, self).__init__(timestamp)
+        self.postponed = True
+
+    def postponed_apply_to(self, tracker):
         tracker.deactivate_form()
 
     def as_story_string(self):
@@ -854,6 +869,13 @@ class FormDeactivated(Event):
 
 class ValidationFailed(Event):
     type_name = 'validation_failed'
+
+    def as_story_string(self):
+        return None
+
+
+class FormIsBack(Event):
+    type_name = 'form_is_back'
 
     def as_story_string(self):
         return None
