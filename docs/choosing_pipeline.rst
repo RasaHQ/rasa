@@ -246,6 +246,7 @@ default is to use a simple whitespace tokenizer:
     pipeline:
     - name: "tokenizer_whitespace"
     - name: "ner_crf"
+    - name: "ner_synonyms"
     - name: "intent_featurizer_count_vectors"
     - name: "intent_classifier_tensorflow_embedding"
 
