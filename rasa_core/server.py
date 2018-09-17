@@ -222,19 +222,29 @@ def create_app(agent,
                             status=503)
 
         # parameters
-        if request.args.get('ignore_restarts') is not None:
-            return Response("Parameter 'ignore_restarts' is not supported "
-                            "anymore. use `events` instead.",
-                            status=404)
+        default_verbosity = "AFTER_RESTART"
 
-        event_verbosity_str = request.args.get('events', default="ALL").upper()
+        # this is for backwards compatibility
+        if "ignore_restarts" in request.args:
+            ignore_restarts = utils.bool_arg('ignore_restarts', default=False)
+            if ignore_restarts:
+                default_verbosity = "ALL"
+
+        if "events" in request.args:
+            include_events = utils.bool_arg('events', default=True)
+            if not include_events:
+                default_verbosity = "NONE"
+
+        event_verbosity_str = request.args.get(
+                'include_events', default=default_verbosity).upper()
         try:
             verbosity = EventVerbosity[event_verbosity_str]
         except KeyError:
             enum_values = ", ".join([e.name for e in EventVerbosity])
-            return Response("Invalid parameter value for 'events'. Should be "
-                            "one of {}".format(enum_values),
-                            status=404)
+            return Response(
+                "Invalid parameter value for 'events'. Should be "
+                "one of {}".format(enum_values),
+                status=404)
 
         until_time = request.args.get('until', None)
 
