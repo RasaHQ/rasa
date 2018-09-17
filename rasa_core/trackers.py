@@ -236,12 +236,10 @@ class DialogueStateTracker(object):
             else:
                 if_featurized.append(if_featurized[-1] if if_featurized else True)
 
-        print(if_featurized)
-
         tracker = self.init_copy()
         for i, event in enumerate(self.applied_events()):
             if isinstance(event, ActionExecuted):
-                if tracker.active_form is None or (tracker.active_form and if_featurized[i]):
+                if tracker.active_form is None or (tracker.active_form == self.active_form and if_featurized[i]):
                     yield tracker
 
             tracker.update(event)
