@@ -140,7 +140,7 @@ class BooleanSlot(Slot):
             return [0.0, 0.0]
 
     def feature_dimensionality(self):
-        return 2
+        return len(self.as_feature())
 
 
 class TextSlot(Slot):
