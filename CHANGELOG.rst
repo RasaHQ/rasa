@@ -17,6 +17,7 @@ Changed
 
 Removed
 -------
+- pytest-services from requirements and setup.py since it wasn't used
 
 Fixed
 -----
