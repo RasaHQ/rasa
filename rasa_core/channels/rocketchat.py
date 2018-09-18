@@ -4,8 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-from flask import Blueprint, request, jsonify, make_response
 from typing import Text
+
+from flask import Blueprint, request, jsonify, make_response
 
 from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -92,7 +93,8 @@ class RocketChatInput(InputChannel):
             output_channel = RocketChatBot(
                     self.user, self.password, self.server_url)
 
-            user_msg = UserMessage(text, output_channel, recipient_id)
+            user_msg = UserMessage(text, output_channel, recipient_id,
+                                   input_channel=self.name())
             on_new_message(user_msg)
 
     def blueprint(self, on_new_message):

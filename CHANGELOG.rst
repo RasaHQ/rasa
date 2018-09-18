@@ -20,6 +20,9 @@ Added
 - JWT support: parameters to allow clients to authenticate requests to
   the rasa_core.server using JWT's in addition to normal token based auth
 - added socket.io input / output channel
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
 
 Changed
 -------
