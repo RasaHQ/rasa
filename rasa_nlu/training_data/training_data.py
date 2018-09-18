@@ -52,7 +52,6 @@ class TrainingData(object):
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
 
-        self.validate()
         self.print_stats()
 
     def merge(self, *others):
