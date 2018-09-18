@@ -139,6 +139,9 @@ class BooleanSlot(Slot):
             # we couldn't convert the value to float - using default value
             return [0.0, 0.0]
 
+    def feature_dimensionality(self):
+        return 2
+
 
 class TextSlot(Slot):
     type_name = "text"
