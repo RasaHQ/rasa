@@ -7,11 +7,10 @@ from __future__ import unicode_literals
 import logging
 
 from flask import Blueprint, request, jsonify
-
 from twilio.rest import Client
 
-from rasa_core.channels import UserMessage, OutputChannel
 from rasa_core.channels import InputChannel
+from rasa_core.channels import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,8 @@ class TwilioInput(InputChannel):
                    credentials.get("auth_token"),
                    credentials.get("twilio_number"))
 
-    def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):
+    def __init__(self, account_sid, auth_token, twilio_number,
+                 debug_mode=True):
         self.account_sid = account_sid
         self.auth_token = auth_token
         self.twilio_number = twilio_number
@@ -101,7 +101,8 @@ class TwilioInput(InputChannel):
                 try:
                     # @ signs get corrupted in SMSes by some carriers
                     text = text.replace('¡', '@')
-                    on_new_message(UserMessage(text, out_channel, sender))
+                    on_new_message(UserMessage(text, out_channel, sender,
+                                               input_channel=self.name()))
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))
