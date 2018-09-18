@@ -58,7 +58,8 @@
         ]
       },
       "event": "user",
-      "text": "/greet"
+      "text": "/greet",
+      "input_channel": null
     },
     {
       "timestamp": 1517821726.200373,
@@ -95,7 +96,8 @@
         ]
       },
       "event": "user",
-      "text": "/mood_great"
+      "text": "/mood_great",
+      "input_channel": null
     },
     {
       "timestamp": 1517821726.209908,
