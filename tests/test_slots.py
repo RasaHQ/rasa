@@ -82,13 +82,13 @@ class TestBooleanSlot(SlotTestCollection):
     def invalid_value(self, request):
         return request.param
 
-    @pytest.fixture(params=[(None, [0,0]),
-                            (True, [1,1]),
-                            ("9", [1,1]),
-                            (12, [1,1]),
-                            (False, [1,0]),
-                            ("0", [1,0]),
-                            (0, [1,0])])
+    @pytest.fixture(params=[(None, [0, 0]),
+                            (True, [1, 1]),
+                            ("9", [1, 1]),
+                            (12, [1, 1]),
+                            (False, [1, 0]),
+                            ("0", [1, 0]),
+                            (0, [1, 0])])
     def value_feature_pair(self, request):
         return request.param
 
