@@ -15,7 +15,6 @@ with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 tests_requires = [
     "pytest~=3.0",
     "pytest-pep8~=1.0",
-    "pytest-services~=1.0",
     "pytest-cov~=2.0",
     "pytest_localserver~=0.4.0",
     "treq~=17.0",
