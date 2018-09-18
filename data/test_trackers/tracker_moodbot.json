@@ -26,6 +26,7 @@
   "latest_event_time": 1517821726.211042,
   "followup_action": null,
   "slots": {"name": null},
+  "latest_input_channel": null,
   "events": [
     {
       "timestamp": 1517821726.211031,
