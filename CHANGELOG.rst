@@ -13,6 +13,25 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+
+
+Changed
+-------
+
+
+Removed
+-------
+
+
+Fixed
+-----
+
+
+[0.11.4] - 2018-09-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
 - a flag ``--fail_on_prediction_errors`` to the ``evaluate.py`` script -
   if used when running the evaluation, the script will fail with a non
   0 exit code if there is at least one prediction error. This can be
@@ -40,7 +59,6 @@ Fixed
 - fixed an issue with the followup (there was a name confusion, sometimes
   the followup action would be set to the non existent ``follow_up_action``
   attribute instead of ``followup_action``)
-- fixed an issue with boolean slots where False and None had the same value
 
 [0.11.3] - 2018-09-04
 ^^^^^^^^^^^^^^^^^^^^^
