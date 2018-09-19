@@ -314,7 +314,7 @@ class RemoteAction(Action):
             if response.status_code == 400:
                 logger.debug(response_data["error"])
                 return [ActionReverted(),
-                        ActionExecutionFailed(response_data["action"])]
+                        ActionExecutionFailed(self.name())]
             else:
                 response.raise_for_status()
 
