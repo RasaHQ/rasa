@@ -37,6 +37,8 @@ Fixed
 -----
 - don't fail if rasa and rest input channels are used together
 - wrong paramter name in rocketchat channel methods
+- Software 2.0 link on interactive learning documentation page went to
+  Tesla's homepage, now it links to Karpathy blogpost
 
 [0.11.6] - 2018-09-20
 ^^^^^^^^^^^^^^^^^^^^^
