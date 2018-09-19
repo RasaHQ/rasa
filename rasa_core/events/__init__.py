@@ -237,13 +237,7 @@ class UserUttered(Event):
     def as_story_string(self):
         from rasa_core.policies.form_policy import FormPolicy
 
-        if self.intent.get("name") == 'extracted_slot':
-            slot_string = json.dumps({slot['name']: slot['value']
-                                      for slot in self.slots})
-            return "form: {intent}{slots}".format(
-                    intent=self.intent.get("name", ""),
-                    slots=slot_string)
-        elif self.intent:
+        if self.intent:
             if self.entities:
                 ent_string = json.dumps({ent['entity']: ent['value']
                                          for ent in self.entities})
@@ -253,13 +247,13 @@ class UserUttered(Event):
             story_string = "{intent}{entities}".format(
                                 intent=self.intent.get("name", ""),
                                 entities=ent_string)
-
-            if self.policy == FormPolicy.__name__:
-                return "form: " + story_string
-            else:
-                return story_string
         else:
-            return self.text
+            story_string = self.text
+
+        if self.policy == FormPolicy.__name__:
+            return "form: " + story_string
+        else:
+            return story_string
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
