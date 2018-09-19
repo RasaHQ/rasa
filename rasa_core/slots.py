@@ -132,12 +132,12 @@ class BooleanSlot(Slot):
     def as_feature(self):
         try:
             if self.value is not None:
-                return [float(float(self.value) != 0.0)]
+                return [1.0, float(float(self.value) != 0.0)]
             else:
-                return [0.0]
+                return [0.0, 0.0]
         except (TypeError, ValueError):
             # we couldn't convert the value to float - using default value
-            return [0.0]
+            return [0.0, 0.0]
 
     def feature_dimensionality(self):
         return len(self.as_feature())

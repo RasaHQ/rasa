@@ -25,7 +25,8 @@ Removed
 
 Fixed
 -----
-
+- fixed an issue with boolean slots where False and None had the same value
+  (breaking model compatibility with models that use a boolean slot)
 
 [0.11.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^
