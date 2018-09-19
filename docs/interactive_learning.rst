@@ -11,7 +11,7 @@ to it. It is a powerful tool! Interactive learning is a powerful way
 to explore what your bot can do, and the easiest way to fix any mistakes
 it makes. One advantage of machine learning based dialogue is that when
 your bot doesn't know how to do something yet, you can just teach it!
-Some people are calling this `Software 2.0 <https://tesla.com>`_.
+Some people are calling this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
 
 
 1. Load up an existing bot
