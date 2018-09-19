@@ -27,6 +27,8 @@ Fixed
 -----
 - fixed an issue with boolean slots where False and None had the same value
   (breaking model compatibility with models that use a boolean slot)
+- Software 2.0 link on interactive learning documentation page went to Tesla's homepage, now it links to Karpathy
+  blogpost
 
 [0.11.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^
