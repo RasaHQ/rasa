@@ -19,7 +19,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered, FormActivated, FormDeactivated, ValidationFailed, FormIsBack)
+    BotUttered, FormActivated, FormDeactivated, ActionExecutionFailed, FormIsBack)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -226,7 +226,7 @@ class DialogueStateTracker(object):
         if_featurized = []
         idx_of_failed = None
         for i, event in enumerate(self.applied_events()):
-            if isinstance(event, ValidationFailed):
+            if isinstance(event, ActionExecutionFailed):
                 if_featurized.append(True)
                 idx_of_failed = i
             elif isinstance(event, FormIsBack):

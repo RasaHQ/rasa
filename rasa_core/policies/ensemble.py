@@ -17,7 +17,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
-from rasa_core.events import SlotSet, ActionExecuted, ValidationFailed
+from rasa_core.events import SlotSet, ActionExecuted, ActionExecutionFailed
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies.fallback import FallbackPolicy
@@ -215,10 +215,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         best_policy_name = None
 
         for i, p in enumerate(self.policies):
-            if isinstance(p, FormPolicy) and isinstance(tracker.events[-1],
-                                                        ValidationFailed):
-                continue
             probabilities = p.predict_action_probabilities(tracker, domain)
+            if isinstance(tracker.events[-1], ActionExecutionFailed):
+                probabilities[domain.index_for_action(
+                                    tracker.events[-1].action_name)] = 0.0
             confidence = np.max(probabilities)
             if confidence > max_confidence:
                 max_confidence = confidence
