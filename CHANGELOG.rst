@@ -33,6 +33,7 @@ Changed
 
 Removed
 -------
+- package pytest-services since it wasn't necessary
 
 Fixed
 -----
