@@ -410,7 +410,8 @@ def _chat_history_table(evts):
 
         elif evt.get("event") != "bot":
             e = Event.from_parameters(evt)
-            bot_column.append(wrap(e.as_story_string(), bot_width(table)))
+            if e.as_story_string():
+                bot_column.append(wrap(e.as_story_string(), bot_width(table)))
 
     if bot_column:
         text = "\n".join(bot_column)

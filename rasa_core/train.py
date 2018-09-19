@@ -19,6 +19,7 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import online
 
@@ -167,7 +168,8 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                 max_history=max_history),
         KerasPolicy(
                 MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                            max_history=max_history))]
+                                            max_history=max_history)),
+        FormPolicy()]
 
     agent = Agent(domain_file,
                   generator=endpoints.nlg,
