@@ -369,9 +369,9 @@ class CRFEntityExtractor(EntityExtractor):
 
         if os.path.exists(model_file):
             ent_tagger = joblib.load(model_file)
-            return CRFEntityExtractor(meta, ent_tagger)
+            return cls(meta, ent_tagger)
         else:
-            return CRFEntityExtractor(meta)
+            return cls(meta)
 
     def persist(self, model_dir):
         # type: (Text) -> Optional[Dict[Text, Any]]

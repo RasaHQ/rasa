@@ -263,6 +263,8 @@ And can be loaded as:
 
 Alternatively, lookup elements may be directly included as a list
 
+.. code-block:: json
+
     {
         "rasa_nlu_data": {
             "lookup_tables": [

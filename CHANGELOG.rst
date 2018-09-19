@@ -17,6 +17,7 @@ Changed
 
 Removed
 -------
+- pytest-services since it wasn't used and caused issues on Windows
 
 Fixed
 -----
