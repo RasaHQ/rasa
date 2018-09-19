@@ -76,7 +76,10 @@ def load_data_from_endpoint(data_endpoint, language='en'):
         response.raise_for_status()
         temp_data_file = utils.create_temporary_file(response.content,
                                                      mode="w+b")
-        return _load(temp_data_file, language)
+        training_data = _load(temp_data_file, language)
+        training_data.validate()
+
+        return training_data
     except Exception as e:
         logger.warning("Could not retrieve training data "
                        "from URL:\n{}".format(e))
