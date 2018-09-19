@@ -250,10 +250,10 @@ class UserUttered(Event):
         else:
             story_string = self.text
 
-        if self.policy == FormPolicy.__name__:
-            return "form: " + story_string
-        else:
-            return story_string
+        # if self.policy == FormPolicy.__name__:
+        #     return "form: " + story_string
+        # else:
+        return story_string
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
@@ -731,7 +731,8 @@ class ActionExecuted(Event):
 
     def as_story_string(self):
         from rasa_core.policies.form_policy import FormPolicy
-        if self.policy == FormPolicy.__name__:
+        print(self.policy)
+        if self.policy.endswith(FormPolicy.__name__):
             return 'form: ' + self.action_name
         else:
             return self.action_name
@@ -746,9 +747,22 @@ class ActionExecuted(Event):
                                parameters.get("timestamp")
                                )]
 
+    @classmethod
+    def _from_parameters(cls, parameters):
+        try:
+            print(parameters)
+            return ActionExecuted(parameters.get("name"),
+                                  parameters.get("policy"),
+                                  parameters.get("policy_confidence"),
+                                  parameters.get("timestamp"))
+        except KeyError as e:
+            raise ValueError("Failed to parse action executed event. {}".format(e))
+
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
-        d.update({"name": self.action_name})
+        d.update({"name": self.action_name,
+                  "policy": self.policy,
+                  "policy_confidence": self.policy_confidence})
         return d
 
     def apply_to(self, tracker):

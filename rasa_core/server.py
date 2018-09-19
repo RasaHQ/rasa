@@ -140,16 +140,20 @@ def create_app(agent,
     def execute_action(sender_id):
         request_params = request.get_json(force=True)
         action_to_execute = request_params.get("action", None)
-
+        policy = request_params.get("policy", None)
+        policy_confidence = request_params.get("policy_confidence", None)
         try:
             out = CollectingOutputChannel()
             agent.execute_action(sender_id,
                                  action_to_execute,
+                                 policy,
+                                 policy_confidence,
                                  out)
 
             # retrieve tracker and set to requested state
             tracker = agent.tracker_store.get_or_create_tracker(sender_id)
             state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+            print(state)
             return jsonify({"tracker": state,
                             "messages": out.messages})
 
@@ -450,7 +454,7 @@ def create_app(agent,
         policy_ensemble = agent.policy_ensemble
         probabilities, _ = policy_ensemble.probabilities_using_best_policy(
                                                 tracker, agent.domain)
-        
+
         probability_dict = {agent.domain.action_names[idx]: probability
                             for idx, probability in enumerate(probabilities)}
 

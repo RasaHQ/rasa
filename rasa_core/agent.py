@@ -334,6 +334,8 @@ class Agent(object):
             self,
             sender_id,  # type: Text
             action,  # type: Text
+            policy,  # type: Text
+            policy_confidence,  # type: float
             output_channel  # type: OutputChannel
     ):
         # type: (...) -> DialogueStateTracker
@@ -343,7 +345,7 @@ class Agent(object):
         dispatcher = Dispatcher(sender_id,
                                 output_channel,
                                 self.nlg)
-        return processor.execute_action(sender_id, action, dispatcher)
+        return processor.execute_action(sender_id, action, policy, policy_confidence, dispatcher)
 
     def handle_text(
             self,

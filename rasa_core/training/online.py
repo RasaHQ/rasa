@@ -94,7 +94,7 @@ def request_prediction(endpoint, sender_id):
 
     r = endpoint.request(method="post",
                          subpath="/conversations/{}/predict".format(sender_id))
-
+    # print (_response_as_json(r))
     return _response_as_json(r)
 
 
@@ -122,17 +122,18 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint, sender_id, action_name):
+def send_action(endpoint, sender_id, action_name, policy, policy_confidence):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
-    payload = {"action": action_name}
+    payload = {"action": action_name, "policy": policy, "policy_confidence": policy_confidence}
     subpath = "/conversations/{}/execute".format(sender_id)
 
     r = endpoint.request(json=payload,
                          method="post",
                          subpath=subpath)
 
+    # print(_response_as_json(r))
     return _response_as_json(r)
 
 
@@ -574,6 +575,8 @@ def _write_stories_to_file(export_file_path, sender_id, endpoint):
     with io.open(export_file_path, 'a') as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
+            print(parsed_events[0].policy)
+            print(parsed_events[2].policy)
             s = Story.from_events(parsed_events)
             f.write(s.as_story_string(flat=True) + "\n")
 
@@ -594,9 +597,13 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         pred_out = int(np.argmax(probabilities))
 
         action_name = predictions[pred_out].get("action")
+        print(response)
+        policy = response.get("policy")
+        policy_confidence = response.get("policy_confidence")
+        print(policy)
 
         _print_history(sender_id, endpoint)
-        listen = _validate_action(action_name, predictions,
+        listen = _validate_action(action_name, policy, policy_confidence, predictions,
                                   endpoint, sender_id, finetune=finetune)
 
 
@@ -637,6 +644,8 @@ def _correct_wrong_action(corrected_action,  # type: Text
 
 
 def _validate_action(action_name,  # type: Text
+                     policy,       # type: Text
+                     policy_confidence, # type: float
                      predictions,  # type: List[Dict[Text, Any]]
                      endpoint,  # type: EndpointConfig
                      sender_id,  # type: Text
@@ -663,7 +672,7 @@ def _validate_action(action_name,  # type: Text
                               finetune=finetune)
         return corrected_action == ACTION_LISTEN_NAME
     else:
-        send_action(endpoint, sender_id, action_name)
+        send_action(endpoint, sender_id, action_name, policy, policy_confidence)
         return action_name == ACTION_LISTEN_NAME
 
 
