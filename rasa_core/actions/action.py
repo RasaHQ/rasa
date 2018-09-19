@@ -294,7 +294,7 @@ class RemoteAction(Action):
             dispatcher.utter_response(draft)
 
     def run(self, dispatcher, tracker, domain):
-        from rasa_core.events import ValidationFailed, ActionReverted
+        from rasa_core.events import ActionExecutionFailed, ActionReverted
         json = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
@@ -310,11 +310,13 @@ class RemoteAction(Action):
                          "".format(self.name()))
             response = self.action_endpoint.request(
                     json=json, method="post", timeout=DEFAULT_REQUEST_TIMEOUT)
+            response_data = response.json()
             if response.status_code == 400:
-                return [ActionReverted(), ValidationFailed()]
+                logger.debug(response_data["error"])
+                return [ActionReverted(),
+                        ActionExecutionFailed(response_data["action"])]
             else:
                 response.raise_for_status()
-            response_data = response.json()
 
             self._validate_action_result(response_data)
         except requests.exceptions.ConnectionError as e:

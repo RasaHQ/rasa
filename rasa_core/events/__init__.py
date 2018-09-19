@@ -867,8 +867,12 @@ class FormDeactivated(Event):
         return self.type_name
 
 
-class ValidationFailed(Event):
-    type_name = 'validation_failed'
+class ActionExecutionFailed(Event):
+    type_name = 'action_execution_failed'
+
+    def __init__(self, action_name, timestamp=None):
+        super(ActionExecutionFailed, self).__init__(timestamp)
+        self.action_name = action_name
 
     def as_story_string(self):
         return None
