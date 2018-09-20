@@ -26,6 +26,12 @@ Removed
 Fixed
 -----
 
+[0.11.4] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- numpy version incompatibility between rasa core and tensorflow
 
 [0.11.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^
