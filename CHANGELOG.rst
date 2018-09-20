@@ -26,6 +26,15 @@ Removed
 Fixed
 -----
 
+[0.11.6] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
+
 [0.11.5] - 2018-09-20
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -45,9 +54,6 @@ Added
 - JWT support: parameters to allow clients to authenticate requests to
   the rasa_core.server using JWT's in addition to normal token based auth
 - added socket.io input / output channel
-- ``UserMessage`` and ``UserUttered`` classes have a new attribute
-  ``input_channel`` that stores the name of the ``InputChannel``
-  through which the message was received
 
 Changed
 -------
