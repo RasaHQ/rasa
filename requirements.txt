@@ -4,7 +4,7 @@ six==1.11.0
 redis==2.10.6
 fakeredis==0.10.3
 future==0.16.0
-numpy==1.15.1
+numpy==1.14.5
 typing==3.6.4
 ruamel.yaml==0.15.66
 requests==2.18.4
