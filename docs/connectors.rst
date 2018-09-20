@@ -603,7 +603,7 @@ After connecting the ``rest`` input channel, you can post messages to
 
    {
      "sender": "Rasa",
-     "text": "Hi there!"
+     "message": "Hi there!"
    }
 
 The response to this request will include the bot responses, e.g.
