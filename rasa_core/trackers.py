@@ -19,7 +19,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered, Form, ActionExecutionFailed, FormIsBack)
+    BotUttered, ActionExecutionFailed, Form)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -151,9 +151,9 @@ class DialogueStateTracker(object):
         generated_states = domain.states_for_tracker_history(self)
         return deque((frozenset(s.items()) for s in generated_states))
 
-    def form(self, form_name):
+    def change_form_to(self, name):
         # type: (Text) -> ()
-        self.active_form = form_name
+        self.active_form = name
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
@@ -220,29 +220,58 @@ class DialogueStateTracker(object):
         The resulting array is representing
         the trackers before each action."""
 
-        if_featurized = []
-        idx_of_failed = None
+        tracker = self.init_copy()
+
+        failed = False
+        ignored_trackers = []
+        latest_message = None
+
         for i, event in enumerate(self.applied_events()):
             if isinstance(event, ActionExecutionFailed):
-                if_featurized.append(True)
-                idx_of_failed = i
-            elif isinstance(event, FormIsBack):
-                if idx_of_failed is not None:
-                    if_featurized[idx_of_failed:] = [False] * len(if_featurized[idx_of_failed:])
-                if_featurized.append(False)
-            else:
-                if_featurized.append(if_featurized[-1] if if_featurized else True)
-
-        tracker = self.init_copy()
-        for i, event in enumerate(self.applied_events()):
-            if isinstance(event, ActionExecuted):
-                if tracker.active_form is None or (tracker.active_form == self.active_form and if_featurized[i]):
+                failed = True
+            elif isinstance(event, UserUttered):
+                if tracker.active_form is None or latest_message is None:
+                    # store latest user message before the form
+                    latest_message = event
+            elif isinstance(event, Form):
+                # form got either activated or deactivated, so override
+                # tracker's latest message
+                tracker.latest_message = latest_message
+            elif isinstance(event, ActionExecuted):
+                if tracker.active_form is None:
                     yield tracker
+
+                elif failed:
+                    for tr in ignored_trackers:
+                        yield tr
+                    yield tracker
+                    ignored_trackers = []
+                    # persist latest user message that failed the form
+                    latest_message = tracker.latest_message
+
+                elif event.action_name != tracker.active_form:
+                    # it is not known whether the form will be
+                    # successfully executed, so store this tracker for later
+                    tr = tracker.copy()
+                    # override tracker's latest message
+                    tr.latest_message = latest_message
+                    ignored_trackers.append(tr)
+
+                if event.action_name == tracker.active_form:
+                    # the form was successfully executed, so
+                    # remove all stored trackers
+                    failed = False
+                    ignored_trackers = []
 
             tracker.update(event)
 
-        if tracker.active_form is None or not if_featurized or if_featurized[-1]:
-            yield tracker  # yields the final state
+        # yields the final state
+        if tracker.active_form is None:
+            yield tracker
+        elif failed:
+            for tr in ignored_trackers:
+                yield tr
+            yield tracker
 
     def applied_events(self):
         # type: () -> List[Event]

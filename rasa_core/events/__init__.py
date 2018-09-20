@@ -66,7 +66,6 @@ class Event(object):
 
     def __init__(self, timestamp=None):
         self.timestamp = timestamp if timestamp else time.time()
-        self.postponed = False
 
     def __ne__(self, other):
         # Not strictly necessary, but to avoid having both x==y and x!=y
@@ -152,12 +151,6 @@ class Event(object):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-        if self.postponed:
-            tracker.postponed_events.append(self)
-        else:
-            pass
-
-    def postponed_apply_to(self, tracker):
         pass
 
 
@@ -771,9 +764,6 @@ class ActionExecuted(Event):
         tracker.latest_action_name = self.action_name
         tracker.clear_followup_action()
 
-        for e in tracker.postponed_events:
-            e.postponed_apply_to(tracker)
-
 
 class AgentUttered(Event):
     """The agent has said something to the user.
@@ -836,28 +826,27 @@ class AgentUttered(Event):
 class Form(Event):
     type_name = "form"
 
-    def __init__(self, form_name, timestamp=None):
+    def __init__(self, name, timestamp=None):
         super(Form, self).__init__(timestamp)
-        self.form = form_name
-        self.postponed = True
+        self.name = name
 
-    def postponed_apply_to(self, tracker):
+    def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-        tracker.form(self.form)
+        tracker.change_form_to(self.name)
 
     def as_story_string(self):
-        props = json.dumps({"form_name": self.form})
+        props = json.dumps({"name": self.name})
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
     def _from_story_string(cls, parameters):
         """Called to convert a parsed story line into an event."""
-        return [Form(parameters.get("form_name"),
-                              parameters.get("timestamp"))]
+        return [Form(parameters.get("name"),
+                     parameters.get("timestamp"))]
 
     def as_dict(self):
         d = super(Form, self).as_dict()
-        d.update({"form_name": self.form})
+        d.update({"name": self.name})
         return d
 
 
@@ -871,9 +860,3 @@ class ActionExecutionFailed(Event):
     def as_story_string(self):
         return None
 
-
-class FormIsBack(Event):
-    type_name = 'form_is_back'
-
-    def as_story_string(self):
-        return None
