@@ -227,24 +227,28 @@ class DialogueStateTracker(object):
         latest_message = None
 
         for i, event in enumerate(self.applied_events()):
-            if isinstance(event, ActionExecutionFailed):
-                failed = True
-            elif isinstance(event, UserUttered):
+            if isinstance(event, UserUttered):
                 if tracker.active_form is None or latest_message is None:
                     # store latest user message before the form
                     latest_message = event
+
             elif isinstance(event, Form):
                 # form got either activated or deactivated, so override
                 # tracker's latest message
                 tracker.latest_message = latest_message
+
+            elif isinstance(event, ActionExecutionFailed):
+                failed = True
+
             elif isinstance(event, ActionExecuted):
+                # yields the intermediate state
                 if tracker.active_form is None:
                     yield tracker
-
                 elif failed:
                     for tr in ignored_trackers:
                         yield tr
                     yield tracker
+
                     ignored_trackers = []
                     # persist latest user message that failed the form
                     latest_message = tracker.latest_message
