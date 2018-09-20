@@ -19,7 +19,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered, FormActivated, FormDeactivated, ActionExecutionFailed, FormIsBack)
+    BotUttered, Form, ActionExecutionFailed, FormIsBack)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -151,12 +151,9 @@ class DialogueStateTracker(object):
         generated_states = domain.states_for_tracker_history(self)
         return deque((frozenset(s.items()) for s in generated_states))
 
-    def activate_form(self, form_name):
+    def form(self, form_name):
         # type: (Text) -> ()
         self.active_form = form_name
-
-    def deactivate_form(self):
-        self.active_form = None
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]

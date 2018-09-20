@@ -833,17 +833,17 @@ class AgentUttered(Event):
                              "{}".format(e))
 
 
-class FormActivated(Event):
-    type_name = "form_activated"
+class Form(Event):
+    type_name = "form"
 
     def __init__(self, form_name, timestamp=None):
-        super(FormActivated, self).__init__(timestamp)
+        super(Form, self).__init__(timestamp)
         self.form = form_name
         self.postponed = True
 
     def postponed_apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-        tracker.activate_form(self.form)
+        tracker.form(self.form)
 
     def as_story_string(self):
         props = json.dumps({"form_name": self.form})
@@ -852,27 +852,13 @@ class FormActivated(Event):
     @classmethod
     def _from_story_string(cls, parameters):
         """Called to convert a parsed story line into an event."""
-        return [FormActivated(parameters.get("form_name"),
+        return [Form(parameters.get("form_name"),
                               parameters.get("timestamp"))]
 
     def as_dict(self):
-        d = super(FormActivated, self).as_dict()
+        d = super(Form, self).as_dict()
         d.update({"form_name": self.form})
         return d
-
-
-class FormDeactivated(Event):
-    type_name = 'form_deactivated'
-
-    def __init__(self, timestamp=None):
-        super(FormDeactivated, self).__init__(timestamp)
-        self.postponed = True
-
-    def postponed_apply_to(self, tracker):
-        tracker.deactivate_form()
-
-    def as_story_string(self):
-        return self.type_name
 
 
 class ActionExecutionFailed(Event):
