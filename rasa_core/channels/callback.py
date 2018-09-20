@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+
 from flask import Blueprint, jsonify, request
 
 from rasa_core.channels import (
@@ -69,7 +70,8 @@ class CallbackInput(RestInput):
             text = self._extract_message(request)
 
             collector = CallbackOutput(self.callback_endpoint)
-            on_new_message(UserMessage(text, collector, sender_id))
+            on_new_message(UserMessage(text, collector, sender_id,
+                                       input_channel=self.name()))
             return "success"
 
         return callback_webhook
