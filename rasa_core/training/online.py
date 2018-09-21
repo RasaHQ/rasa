@@ -113,7 +113,7 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     # type: (EndpointConfig, Text, EventVerbosity) -> Dict[Text, Any]
     """Retrieve a tracker from core."""
 
-    path = "/conversations/{}/tracker?events={}".format(
+    path = "/conversations/{}/tracker?include_events={}".format(
             sender_id, verbosity.name)
     r = endpoint.request(method="get",
                          subpath=path,

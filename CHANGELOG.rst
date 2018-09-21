@@ -13,6 +13,28 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+
+
+Changed
+-------
+
+
+Removed
+-------
+
+
+Fixed
+-----
+- fixed an issue with boolean slots where False and None had the same value
+  (breaking model compatibility with models that use a boolean slot)
+- Software 2.0 link on interactive learning documentation page went to Tesla's homepage, now it links to Karpathy
+  blogpost
+
+[0.11.4] - 2018-09-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
 - a flag ``--fail_on_prediction_errors`` to the ``evaluate.py`` script -
   if used when running the evaluation, the script will fail with a non
   0 exit code if there is at least one prediction error. This can be
@@ -20,6 +42,9 @@ Added
 - JWT support: parameters to allow clients to authenticate requests to
   the rasa_core.server using JWT's in addition to normal token based auth
 - added socket.io input / output channel
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
 
 Changed
 -------
@@ -33,6 +58,7 @@ Changed
 
 Removed
 -------
+- package pytest-services since it wasn't necessary
 
 Fixed
 -----

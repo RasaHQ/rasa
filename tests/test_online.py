@@ -115,7 +115,8 @@ def test_print_history(mock_endpoint):
     b = httpretty.latest_requests[-1].body.decode("utf-8")
     assert b == ""
     assert (httpretty.latest_requests[-1].path ==
-            "/conversations/{}/tracker?events=AFTER_RESTART".format(sender_id))
+            "/conversations/{}/tracker?include_events=AFTER_RESTART"
+            "".format(sender_id))
 
 
 def test_is_listening_for_messages(mock_endpoint):

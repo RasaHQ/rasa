@@ -5,13 +5,13 @@ from __future__ import unicode_literals
 
 import json
 import logging
+from typing import Text, Optional, List
 
 from flask import Blueprint, request, jsonify, make_response, Response
 from slackclient import SlackClient
-from typing import Text, Optional, List
 
-from rasa_core.channels.channel import UserMessage, OutputChannel
 from rasa_core.channels import InputChannel
+from rasa_core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +151,8 @@ class SlackInput(InputChannel):
 
         try:
             out_channel = SlackBot(self.slack_token)
-            user_msg = UserMessage(text, out_channel, sender_id)
+            user_msg = UserMessage(text, out_channel, sender_id,
+                                   input_channel=self.name())
             on_new_message(user_msg)
         except Exception as e:
             logger.error("Exception when trying to handle "
@@ -187,7 +188,8 @@ class SlackInput(InputChannel):
                             on_new_message,
                             text=self._get_button_reply(output),
                             sender_id=json.loads(
-                                    output['payload'][0]).get('user').get('id'))
+                                    output['payload'][0]).get('user').get(
+                                'id'))
 
             return make_response()
 

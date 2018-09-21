@@ -3,12 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from collections import deque
-
 import copy
 import io
 import logging
 import typing
+from collections import deque
 from enum import Enum
 from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
@@ -103,7 +102,7 @@ class DialogueStateTracker(object):
         # if tracker is paused, no actions should be taken
         self._paused = None
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME   # type: Optional[Text]
+        self.followup_action = ACTION_LISTEN_NAME  # type: Optional[Text]
         self.latest_action_name = None
         # Stores the most recent message sent by the user
         self.latest_message = None
@@ -140,6 +139,7 @@ class DialogueStateTracker(object):
             "followup_action": self.followup_action,
             "paused": self.is_paused(),
             "events": evts,
+            "latest_input_channel": self.get_latest_input_channel(),
             "active_form": self.active_form,
             "latest_action_name": self.latest_action_name
         }
@@ -181,6 +181,14 @@ class DialogueStateTracker(object):
         return (x.get("value")
                 for x in self.latest_message.entities
                 if x.get("entity") == entity_type)
+
+    def get_latest_input_channel(self):
+        # type: () -> Optional[Text]
+        """Get the name of the input_channel of the latest UserUttered event"""
+
+        for e in reversed(self.events):
+            if isinstance(e, UserUttered):
+                return e.input_channel
 
     def is_paused(self):
         # type: () -> bool

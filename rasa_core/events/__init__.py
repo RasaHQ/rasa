@@ -3,16 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import time
-from builtins import str
-
 import json
-import jsonpickle
 import logging
+import time
 import typing
 import uuid
-from dateutil import parser
+from builtins import str
 from typing import List, Dict, Text, Any, Type, Optional
+
+import jsonpickle
+from dateutil import parser
 
 from rasa_core import utils
 
@@ -166,10 +166,12 @@ class UserUttered(Event):
                  intent=None,
                  entities=None,
                  parse_data=None,
-                 timestamp=None):
+                 timestamp=None,
+                 input_channel=None):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
+        self.input_channel = input_channel
 
         if parse_data:
             self.parse_data = parse_data
@@ -183,10 +185,9 @@ class UserUttered(Event):
         super(UserUttered, self).__init__(timestamp)
 
     @staticmethod
-    def _from_parse_data(text, parse_data, timestamp=None):
+    def _from_parse_data(text, parse_data, timestamp=None, input_channel=None):
         return UserUttered(text, parse_data["intent"], parse_data["entities"],
-                           parse_data,
-                           timestamp)
+                           parse_data, timestamp, input_channel)
 
     def __hash__(self):
         return hash((self.text, self.intent.get("name"),
@@ -214,6 +215,7 @@ class UserUttered(Event):
         d.update({
             "text": self.text,
             "parse_data": self.parse_data,
+            "input_channel": self.input_channel
         })
         return d
 
@@ -223,7 +225,8 @@ class UserUttered(Event):
         try:
             return [cls._from_parse_data(parameters.get("text"),
                                          parameters.get("parse_data"),
-                                         parameters.get("timestamp"))]
+                                         parameters.get("timestamp"),
+                                         parameters.get("input_channel"))]
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
@@ -505,7 +508,8 @@ class ReminderScheduled(Event):
     def __str__(self):
         return ("ReminderScheduled("
                 "action: {}, trigger_date: {}, name: {}"
-                ")".format(self.action_name, self.trigger_date_time, self.name))
+                ")".format(self.action_name, self.trigger_date_time,
+                           self.name))
 
     def _data_obj(self):
         return {

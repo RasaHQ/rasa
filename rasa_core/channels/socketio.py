@@ -4,9 +4,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+from typing import Optional, Text
+
 import socketio
 from flask import Blueprint, jsonify
-from typing import Optional, Text
 
 from rasa_core.channels import InputChannel
 from rasa_core.channels.channel import (
@@ -138,7 +139,8 @@ class SocketIOInput(InputChannel):
         @sio.on(self.user_message_evt, namespace=self.namespace)
         def handle_message(sid, data):
             output_channel = SocketIOOutput(sio, self.bot_message_evt)
-            message = UserMessage(data['message'], output_channel, sid)
+            message = UserMessage(data['message'], output_channel, sid,
+                                  input_channel=self.name())
             on_new_message(message)
 
         return socketio_webhook
