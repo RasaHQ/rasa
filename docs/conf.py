@@ -42,7 +42,8 @@ extensions = [
     'rasabaster.card',
     'rasabaster.chatbubble',
     'rasabaster.runnable',
-    'rasabaster.copyable'
+    'rasabaster.copyable',
+    'rasabaster.apidoc',
 #    'numpydoc',
 ]
 

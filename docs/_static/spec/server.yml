@@ -1,0 +1,612 @@
+openapi: "3.0.1"
+info:
+  title: "Rasa Core - Server Endpoints"
+  version: "1.0.0"
+  description: >-
+    The Rasa Core server provides endpoints to retrieve trackers of
+    conversations as well as endpoints to modify them.
+paths:
+  /:
+    get:
+      tags:
+      - Status
+      summary: Say Hello to Core
+      description: >-
+        This URL can be used as an endpoint to run
+        health checks against. When Core is running
+        this will return a 200.
+      operationId: hello
+      responses:
+        200:
+          description: up and running
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: hello text
+              example: >-
+                hello from Rasa Core: 1.0.0
+
+  /version:
+    get:
+      tags:
+      - Status
+      summary: Meta Info
+      description: >-
+        Metadata about the running Core instance.
+      operationId: version
+      responses:
+        200:
+          description: Version of Core
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                    description: >-
+                      Core version number
+                  minimum_compatible_version:
+                    type: string
+                    description: >-
+                      Minimum version this Core is
+                      able to load models from
+              example: {
+                  "version": "1.0.0",
+                  "minimum_compatible_version": "0.9.0"
+                }
+  /status:
+    get:
+      security:
+      - TokenAuth: []
+      tags:
+      - Status
+      summary: Status
+      description: >-
+        Information about the currently loaded agent.
+      operationId: status
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_fingerprint:
+                    type: string
+                    description: >-
+                      Fingerprint of the loaded model
+                  is_ready:
+                    type: boolean
+                    description: >-
+                      Is there an agent loaded and is the
+                      server ready to receive user messages.
+              example: {
+                  "model_fingerprint": "4523wyfgr4q2",
+                  "is_ready": true
+                }
+  /conversations:
+    get:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      summary: List sender ids of all conversations
+      description: >-
+        Lists the sender ids of all the available conversations.
+        The trackers of the conversations are not returned
+        and need to be fetched individually.
+      deprecated: true
+      operationId: listConversations
+      responses:
+        200:
+          description: List of sender ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: sender id
+              example:
+                ["default", "rasa", "tom"]
+  /conversations/{sender_id}/tracker:
+    get:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      summary: Retrieve a conversations tracker
+      description: >-
+        Return the tracker of a conversation.
+      operationId: getTracker
+      parameters:
+      - in: path
+        name: sender_id
+        example: default
+        description: Id of the conversation
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: ignore_restarts
+        description: >-
+          Deprecated, use `include_events`. Specify if
+          only restarts after the most recent restart
+          should be included.
+        deprecated: true
+        schema:
+          type: string
+          default: false
+      - in: query
+        name: events
+        description: >-
+          Deprecated, use `include_events`. Specify if the
+          returned tracker should contain the event history.
+        deprecated: true
+        schema:
+          type: boolean
+          default: true
+      - in: query
+        name: include_events
+        description: >-
+          Specify which events of the tracker should
+          be included.
+        schema:
+          type: string
+          default: AFTER_RESTART
+          enum:
+            - ALL
+            - APPLIED
+            - AFTER_RESTART
+            - NONE
+      responses:
+        200:
+          description: Tracker of the conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        404:
+          description: Invalid request format
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Error message
+              example: >-
+                Invalid parameter value for 'events'.
+                Should be one of ALL, AFTER_RESTART, APPLIED, NONE
+        503:
+          description: Tracker store is unavailable
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Error message
+              example:
+                No tracker store available.
+
+  /conversations/{sender_id}/execute:
+    post:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      summary: Run an action in a conversation.
+      description: >-
+        Runs the action, calling the action server if necessary
+        Any responses sent by the executed action will be returned as
+        part of the endpoints result, they will not be sent over a
+        connected output channel.
+      operationId: executeAction
+      parameters:
+      - in: path
+        name: sender_id
+        example: default
+        description: Id of the conversation
+        schema:
+          type: string
+        required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  description: >-
+                    Name of the action to be executed
+                  type: string
+              required: ["action"]
+      responses:
+        200:
+          description: Successfull execution
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tracker:
+                    $ref: '#/components/schemas/Tracker'
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BotMessage'
+        400:
+          description: Invalid request format
+          content:
+            text/plain:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+        500:
+          description: An exception occured while running the action
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+  /conversations/{sender_id}/predict:
+    post:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      summary: Predict the next action
+      description: >-
+        Runs the conversations tracker through the models
+        policies to predict the next action. The action is
+        not executed, just returned. The state of the tracker
+        is not modified.
+      operationId: predictAction
+      parameters:
+      - in: path
+        name: sender_id
+        example: default
+        description: Id of the conversation
+        schema:
+          type: string
+        required: true
+      responses:
+        200:
+          description: Successfull prediction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  scores:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        action:
+                          type: string
+                          description: Action name
+                        score:
+                          type: float
+                          description: Assigned score
+                    $ref: '#/components/schemas/Tracker'
+                  policy:
+                    type: string
+                    description: >-
+                      Policy which predicted the most likely action
+                  tracker:
+                    $ref: '#/components/schemas/Tracker'
+        500:
+          description: An exception occured while running the action
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+
+  /conversations/{sender_id}/respond:
+    get:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      summary: Send user message
+      deprecated: true
+      description: >-
+        Deprecated, rather consider using the `RestInput` channel.
+        When added to Core, it will provide you an endpoint at
+        `/webhooks/rest/webhook` that returns the same output as
+        this endpoint. The only difference is, that you need to
+        send the message as `{"message": "<your text to parse>"}`.
+
+        Notify the dialogue engine that the user posted a new message,
+        and get a list of response messages the bot should send back.
+      operationId: respond
+      parameters:
+      - in: path
+        name: sender_id
+        example: default
+        description: Id of the conversation
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: q
+        description: >-
+          User message text
+        schema:
+          type: string
+        example:
+          hello
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BotMessage'
+        400:
+          description: No user message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+              example: {
+                "error": "Invalid respond parameter specified."}
+        500:
+          description: An exception occured while running the action
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+  /conversations/{sender_id}/tracker/events:
+    post:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      - Events
+      summary: Append an event to a tracker
+      description: >-
+        Append a new event to the tracker state of the conversation.
+        Any existing events will be kept and the new events will be
+        appended, updating the existing state.
+      operationId: appendEvent
+      parameters:
+      - in: path
+        name: sender_id
+        example: default
+        description: Id of the conversation
+        schema:
+          type: string
+        required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        200:
+          description: Successfully appended the event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+    put:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      - Events
+      - OnlineLearning
+      summary: Replace a trackers events
+      description: >-
+        Replace all of the events of a tracker with the passed
+        list of events. This endpoint should not be used to
+        modify trackers in a production setup, but rather
+        for creating training data.
+      operationId: replaceEvents
+      parameters:
+      - in: path
+        name: sender_id
+        example: default
+        description: Id of the conversation
+        schema:
+          type: string
+        required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Event'
+      responses:
+        200:
+          description: Successfully replaced events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+  /conversations/{sender_id}/messages:
+    post:
+      security:
+      - TokenAuth: []
+      tags:
+      - Tracker
+      summary: Add a message to a tracker
+      description: >-
+        Adds a message to a tracker. This doesn't trigger
+        the prediction loop. It will log the message
+        on the tracker and return, no actions will be
+        predicted or run.
+      operationId: addMessage
+      parameters:
+      - in: path
+        name: sender_id
+        example: default
+        description: Id of the conversation
+        schema:
+          type: string
+        required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: >-
+                    Message text
+                sender:
+                  type: string
+                  description: >-
+                    Origin of the message - who sent it
+                  enum:
+                    - user
+                parse_data:
+                  type: dict
+                  description: >-
+                    NLU parser information. If set, message
+                    will not be passed through NLU, but instead
+                    this parsing information will be used.
+              required: ["text", "sender"]
+      responses:
+        200:
+          description: Successfully logged message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        500:
+          description: An exception occured while logging the message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+components:
+  securitySchemes:
+    TokenAuth:
+      type: apiKey
+      in: query
+      name: token
+
+  schemas:
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+    Project:
+      type: object
+      properties:
+        project_id:
+          type: string
+        role:
+          type: string
+    Event:
+      type: object
+      properties:
+        event:
+          description: Type of the event, e.g. `slot`
+          type: string
+        timestamp:
+          description: Timestamp of the trigger date
+          type: float
+      required: ["event"]
+    BotMessage:
+      type: object
+      properties:
+        recipient_id:
+          type: string
+        text:
+          type: string
+        image:
+          type: string
+        buttons:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              payload:
+                type: string
+        attachement:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              payload:
+                type: string
+    Tracker:
+      type: object
+      properties:
+        sender_id:
+          type: string
+        slots:
+          type: array
+          items:
+            type: object
+        latest_message:
+          type: object
+          properties:
+            intent:
+              type: string
+            text:
+              type: string
+            entities:
+              type: array
+              items:
+                type: object
+                properties:
+                  entity:
+                    type: string
+                  value:
+                    type: string
+        latest_event_time:
+          type: number
+        followup_action:
+          type: string
+        paused:
+          type: bool
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+        latest_input_channel:
+          type: string
