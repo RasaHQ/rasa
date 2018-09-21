@@ -11,7 +11,7 @@ from typing import List, Text, Optional, Dict, Any
 
 from rasa_core import events
 from rasa_core.constants import DOCS_BASE_URL, DEFAULT_REQUEST_TIMEOUT
-from rasa_core.utils import EndpointConfig
+from rasa_core.utils import EndpointConfig, ActionExecutionError
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -313,11 +313,9 @@ class RemoteAction(Action):
             response_data = response.json()
             if response.status_code == 400:
                 logger.debug(response_data["error"])
-                return [ActionReverted(),
-                        ActionExecutionFailed(self.name())]
-            else:
-                response.raise_for_status()
-
+                raise ActionExecutionError(response_data["error"],
+                                           response_data["action_name"])
+            response.raise_for_status()
             self._validate_action_result(response_data)
         except requests.exceptions.ConnectionError as e:
 

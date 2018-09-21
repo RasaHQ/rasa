@@ -25,7 +25,7 @@ from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import ReminderScheduled, Event
 from rasa_core.events import SlotSet
-from rasa_core.events import UserUttered, ActionExecuted, BotUttered
+from rasa_core.events import UserUttered, ActionExecuted, BotUttered, ActionExecutionFailed
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
@@ -34,7 +34,7 @@ from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import EndpointConfig
+from rasa_core.utils import EndpointConfig, ActionExecutionError
 
 logger = logging.getLogger(__name__)
 
@@ -322,6 +322,10 @@ class MessageProcessor(object):
         # the tracker state after an action has been taken
         try:
             events = action.run(dispatcher, tracker, self.domain)
+        except ActionExecutionError as e:
+            events = [ActionExecutionFailed(e.action_name)]
+            tracker.update(events[0])
+            return self.should_predict_another_action(action.name(), events)
         except Exception as e:
             logger.error("Encountered an exception while running action '{}'. "
                          "Bot will continue, but the actions events are lost. "
