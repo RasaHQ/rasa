@@ -25,7 +25,7 @@ after_success:
 jobs:
   include:
   - stage: Test API specification
-    language: node
+    language: node_js
     install:
     - npm install -g swagger-cli
     script:
