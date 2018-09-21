@@ -184,7 +184,47 @@ Endpoints
       the ``RestInput`` channel. When added to core, it will provide you
       an endpoint at ``/webhooks/rest/webhook`` that returns the same
       output as this endpoint. The only difference is, that you need to send
-      the message as ``{"message": }"<your text to parse>"}``.
+      the message as ``{"message": "<your text to parse>"}``.
+
+   Notify the dialogue engine that the user posted a new message, and get
+   a list of response messages the bot should send back.
+   You must ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
+   you can do this with
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST localhost:5005/conversations/default/respond -d \
+        '{"query":"hello there"}' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      [
+        {
+          "text": "Hi! welcome to the pizzabot",
+          "data": {"title": "order pizza", "payload": "/start_order"},
+        }
+      ]
+
+   :statuscode 200: no error
+
+
+.. http:post:: /conversations/(str:sender_id)/respond
+
+   .. note::
+
+      This endpoint will be removed in the future. Rather consider using
+      the ``RestInput`` channel. When added to core, it will provide you
+      an endpoint at ``/webhooks/rest/webhook`` that returns the same
+      output as this endpoint. The only difference is, that you need to send
+      the message as ``{"message": "<your text to parse>"}``.
 
    Notify the dialogue engine that the user posted a new message, and get
    a list of response messages the bot should send back.

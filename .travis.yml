@@ -24,6 +24,14 @@ after_success:
 - coveralls
 jobs:
   include:
+  - stage: Test API specification
+    language: node
+    install:
+    - npm install -g swagger-cli
+    script:
+    - swagger-cli validate docs/openapi/server.yml
+    after_success:
+    - coveralls
   - stage: docs
     if: fork = false AND branch = "master"
     install:
