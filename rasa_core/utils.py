@@ -687,13 +687,3 @@ class EndpointConfig(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-
-class ActionExecutionError(Exception):
-
-    def __init__(self, message, action_name):
-        self.message = message
-        self.action_name = action_name
-
-    def __str__(self):
-        return self.message

@@ -189,10 +189,9 @@ class Domain(object):
 
         self.intent_properties = intent_properties
         self.entities = entities
-        # TODO: this should really only be done when there's a FormPolicy present
         if 'requested_slot' not in [s.name for s in slots]:
             slots.append(UnfeaturizedSlot('requested_slot'))
-        print(slots)
+
         self.slots = slots
         self.templates = templates
 
@@ -336,8 +335,8 @@ class Domain(object):
 
         # Set all found entities with the state value 1.0, unless they should
         # be ignored for the current intent
-        intent_name = tracker.latest_message.intent.get("name")
         for entity in tracker.latest_message.entities:
+            intent_name = tracker.latest_message.intent.get("name")
             intent_config = self.intent_config(intent_name)
             should_use_entity = intent_config.get('use_entities', True)
             if should_use_entity:

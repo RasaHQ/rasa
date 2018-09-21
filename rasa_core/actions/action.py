@@ -11,7 +11,7 @@ from typing import List, Text, Optional, Dict, Any
 
 from rasa_core import events
 from rasa_core.constants import DOCS_BASE_URL, DEFAULT_REQUEST_TIMEOUT
-from rasa_core.utils import EndpointConfig, ActionExecutionError
+from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -347,3 +347,12 @@ class RemoteAction(Action):
 
     def name(self):
         return self._name
+
+class ActionExecutionError(Exception):
+
+    def __init__(self, message, action_name):
+        self.message = message
+        self.action_name = action_name
+
+    def __str__(self):
+        return self.message

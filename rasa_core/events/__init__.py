@@ -179,7 +179,7 @@ class UserUttered(Event):
             self.parse_data = {
                 "intent": self.intent,
                 "entities": self.entities,
-                "text": text
+                "text": text,
             }
 
         super(UserUttered, self).__init__(timestamp)
@@ -231,8 +231,6 @@ class UserUttered(Event):
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
     def as_story_string(self):
-        from rasa_core.policies.form_policy import FormPolicy
-
         if self.intent:
             if self.entities:
                 ent_string = json.dumps({ent['entity']: ent['value']
@@ -240,16 +238,11 @@ class UserUttered(Event):
             else:
                 ent_string = ""
 
-            story_string = "{intent}{entities}".format(
-                                intent=self.intent.get("name", ""),
-                                entities=ent_string)
+            return "{intent}{entities}".format(
+                    intent=self.intent.get("name", ""),
+                    entities=ent_string)
         else:
-            story_string = self.text
-
-        # if self.policy == FormPolicy.__name__:
-        #     return "form: " + story_string
-        # else:
-        return story_string
+            return self.text
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
@@ -727,12 +720,7 @@ class ActionExecuted(Event):
             return self.action_name == other.action_name
 
     def as_story_string(self):
-        from rasa_core.policies.form_policy import FormPolicy
-        print(self.policy)
-        if self.policy.endswith(FormPolicy.__name__):
-            return 'form: ' + self.action_name
-        else:
-            return self.action_name
+        return self.action_name
 
     @classmethod
     def _from_story_string(cls, parameters):
@@ -743,17 +731,6 @@ class ActionExecuted(Event):
                                parameters.get("policy_confidence"),
                                parameters.get("timestamp")
                                )]
-
-    @classmethod
-    def _from_parameters(cls, parameters):
-        try:
-            print(parameters)
-            return ActionExecuted(parameters.get("name"),
-                                  parameters.get("policy"),
-                                  parameters.get("policy_confidence"),
-                                  parameters.get("timestamp"))
-        except KeyError as e:
-            raise ValueError("Failed to parse action executed event. {}".format(e))
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
@@ -828,15 +805,27 @@ class AgentUttered(Event):
 
 
 class Form(Event):
+    """A Form gets activated/deactivated
+
+    This  sets the `active_form` of the tracker"""
+
     type_name = "form"
 
     def __init__(self, name, timestamp=None):
-        super(Form, self).__init__(timestamp)
         self.name = name
+        super(Form, self).__init__(timestamp)
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
-        tracker.change_form_to(self.name)
+    def __str__(self):
+        return ("Form({})".format(self.name))
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if not isinstance(other, Form):
+            return False
+        else:
+            return self.name == other.name
 
     def as_story_string(self):
         props = json.dumps({"name": self.name})
@@ -853,14 +842,46 @@ class Form(Event):
         d.update({"name": self.name})
         return d
 
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.change_form_to(self.name)
+
 
 class ActionExecutionFailed(Event):
+    """Notify Core that the execution of an action has failed"""
+
     type_name = 'action_execution_failed'
 
-    def __init__(self, action_name, timestamp=None):
-        super(ActionExecutionFailed, self).__init__(timestamp)
+    def __init__(self, action_name, policy, policy_confidence, timestamp=None):
         self.action_name = action_name
+        self.policy = policy
+        self.policy_confidence = policy_confidence
+        super(ActionExecutionFailed, self).__init__(timestamp)
+
+    def __str__(self):
+        return ("ActionExecutionFailed(action: {}, policy: {}, "
+                "policy_confidence)".format(self.action_name, self.policy,
+                                            self.policy_confidence))
+
+    def __hash__(self):
+        return hash(self.action_name)
+
+    def __eq__(self, other):
+        if not isinstance(other, ActionExecutionFailed):
+            return False
+        else:
+            return self.action_name == other.action_name
 
     def as_story_string(self):
         return None
 
+    def as_dict(self):
+        d = super(ActionExecutionFailed, self).as_dict()
+        d.update({"name": self.action_name,
+                  "policy": self.policy,
+                  "policy_confidence": self.policy_confidence})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        pass
