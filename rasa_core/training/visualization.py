@@ -239,7 +239,8 @@ def visualize_stories(
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
         nlu_training_data=None,  # type: Optional[TrainingData]
         should_merge_nodes=True,  # type: bool
-        fontsize=12  # type: int
+        fontsize=12,  # type: int
+        silent=False  # type: bool
 ):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
@@ -282,7 +283,7 @@ def visualize_stories(
                               use_story_concatenation=False,
                               tracker_limit=100,
                               augmentation_factor=0)
-    completed_trackers = g.generate()
+    completed_trackers = g.generate(silent)
 
     for tracker in completed_trackers:
         message = None

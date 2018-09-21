@@ -191,8 +191,8 @@ class TrainingDataGenerator(object):
         else:
             return "data generation round {}".format(phase)
 
-    def generate(self):
-        # type: () -> List[TrackerWithCachedStates]
+    def generate(self, silent=False):
+        # type: (bool) -> List[TrackerWithCachedStates]
         if (self.config.remove_duplicates and
                 self.config.unique_last_num_states):
             logger.debug("Generated trackers will be deduplicated "
@@ -243,7 +243,8 @@ class TrainingDataGenerator(object):
             unused_checkpoints = set()  # type: Set[Text]
 
             pbar = tqdm(self.story_graph.ordered_steps(),
-                        desc="Processed Story Blocks")
+                        desc="Processed Story Blocks",
+                        disable=silent)
             for step in pbar:
                 incoming_trackers = []
                 for start in step.start_checkpoints:

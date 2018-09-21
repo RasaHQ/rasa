@@ -9,6 +9,7 @@ import io
 import logging
 import numpy as np
 import requests
+import tempfile
 import textwrap
 import uuid
 from PyInquirer import prompt
@@ -25,10 +26,14 @@ from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
+from rasa_core.domain import Domain
 from rasa_core.events import Event
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
+from rasa_core.training.dsl import StoryFileReader
+from rasa_core.training.image import show_image
 from rasa_core.training.structures import Story
+from rasa_core.training.visualization import visualize_stories
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
@@ -43,6 +48,11 @@ OTHER_INTENT = uuid.uuid4().hex
 
 
 class RestartConversation(Exception):
+    """Exception used to break out the flow and restart the conversation."""
+    pass
+
+
+class ForkTracker(Exception):
     """Exception used to break out the flow and restart the conversation."""
     pass
 
@@ -284,6 +294,45 @@ def _request_selection_from_intent_list(intent_list, sender_id, endpoint):
     return _ask_questions(questions, sender_id, endpoint)["intent"]
 
 
+def _request_fork_point_from_list(forks, sender_id, endpoint):
+    # type: (List[Dict[Text, Text]], Text, EndpointConfig) -> Text
+    questions = [
+        {
+            "type": "list",
+            "name": "fork",
+            "message": "Before which user message do you want to fork?",
+            "choices": forks
+        }
+    ]
+    return _ask_questions(questions, sender_id, endpoint)["fork"]
+
+
+def _request_fork_from_user(sender_id,
+                            endpoint
+                            ):
+    # type: (...) -> Optional[List[Dict[Text, Any]]]
+    """Take in latest message and ask which intent it should have been.
+
+    Returns the intent dict that has been selected by the user."""
+
+    tracker = retrieve_tracker(endpoint, sender_id,
+                               EventVerbosity.AFTER_RESTART)
+
+    choices = []
+    for i, e in enumerate(tracker.get("events", [])):
+        if e.get("event") == "user":
+            choices.append({"name": e.get("text"), "value": i})
+
+    fork_idx = _request_fork_point_from_list(list(reversed(choices)),
+                                             sender_id,
+                                             endpoint)
+
+    if fork_idx is not None:
+        return tracker.get("events", [])[:int(fork_idx)]
+    else:
+        return None
+
+
 def _request_intent_from_user(latest_message,
                               intents,
                               sender_id,
@@ -457,6 +506,10 @@ def _ask_if_quit(sender_id, endpoint):
                 "value": "undo",
             },
             {
+                "name": "Fork",
+                "value": "fork",
+            },
+            {
                 "name": "Start Fresh",
                 "value": "restart",
             },
@@ -481,6 +534,8 @@ def _ask_if_quit(sender_id, endpoint):
         return True
     elif answers["abort"] == "undo":
         raise UndoLastStep()
+    elif answers["abort"] == "fork":
+        raise ForkTracker()
     elif answers["abort"] == "restart":
         raise RestartConversation()
 
@@ -579,7 +634,11 @@ def _write_stories_to_file(export_file_path, sender_id, endpoint):
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                               sender_id,  # type: Text
-                              finetune  # type: bool
+                              finetune,  # type: bool
+                              sender_ids,
+                              domain,
+                              plot_file,
+                              story_graph
                               ):
     # type: (...) -> None
     """Predict and validate actions until we need to wait for a user msg."""
@@ -597,6 +656,7 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         _print_history(sender_id, endpoint)
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
+        _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph)
 
 
 def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
@@ -826,6 +886,26 @@ def _undo_latest(sender_id, endpoint):
         replace_events(endpoint, sender_id, events_to_keep)
 
 
+def _plot_trackers(sender_ids, domain, output_file, endpoint):
+    d = Domain.from_dict(domain)
+    temp_story_file = tempfile.NamedTemporaryFile(delete=False,
+                                                  suffix=".md")
+    temp_story_file.close()
+
+    print("Dumping to {}".format(temp_story_file.name))
+
+    for sender_id in sender_ids:
+        _write_stories_to_file(temp_story_file.name, sender_id, endpoint)
+
+    steps = StoryFileReader.read_from_file(temp_story_file.name, d)
+    visualize_stories(steps, d, output_file, max_history=2, silent=True)
+
+
+def _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph):
+    _plot_trackers(sender_ids, domain, plot_file, endpoint)
+    story_graph.update_image()
+
+
 def record_messages(endpoint,  # type: EndpointConfig
                     sender_id=UserMessage.DEFAULT_SENDER_ID,  # type: Text
                     max_message_limit=None,  # type: Optional[int]
@@ -851,13 +931,22 @@ def record_messages(endpoint,  # type: EndpointConfig
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
         num_messages = 0
+        sender_ids = [sender_id]
+
+        plot_file = "story_graph.gif"
+        _plot_trackers(sender_ids, domain, plot_file, endpoint)
+        story_graph = show_image(plot_file, "Story Graph")
+
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
                 if is_listening_for_message(sender_id, endpoint):
                     _enter_user_message(sender_id, endpoint, exit_text)
                     _validate_nlu(intents, endpoint, sender_id)
                 _predict_till_next_listen(endpoint, sender_id,
-                                          finetune=finetune)
+                                          finetune,
+                                          sender_ids, domain, plot_file,
+                                          story_graph)
+
                 num_messages += 1
             except RestartConversation:
                 send_event(endpoint, sender_id, {"event": "restart"})
@@ -868,6 +957,16 @@ def record_messages(endpoint,  # type: EndpointConfig
             except UndoLastStep:
                 _undo_latest(sender_id, endpoint)
                 _print_history(sender_id, endpoint)
+            except ForkTracker:
+                _print_history(sender_id, endpoint)
+
+                evts = _request_fork_from_user(sender_id, endpoint)
+                sender_id = uuid.uuid4().hex
+
+                if evts is not None:
+                    replace_events(endpoint, sender_id, evts)
+                    sender_ids.append(sender_id)
+                    _print_history(sender_id, endpoint)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")
