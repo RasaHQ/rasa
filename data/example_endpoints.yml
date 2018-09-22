@@ -7,4 +7,17 @@ nlg:
   # basic_auth:
   #   username: user
   #   password: pass
-
+# example of redis external tracker store config
+tracker_store:
+  store_type: redis
+  url: http://localhost
+  db: 0
+  password: password
+  timeout: 30000
+# example of mongoDB external tracker store config
+#tracker_store:
+  #store_type: mongod
+  #url: mongodb://localhost:27017
+  #db: rasa
+  #user: username
+  #password: password
