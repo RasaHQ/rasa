@@ -16,6 +16,9 @@ paths:
         health checks against. When Core is running
         this will return a 200.
       operationId: hello
+      x-code-samples:
+        - lang: shell
+          source: curl http://localhost:8000
       responses:
         200:
           description: up and running
@@ -164,7 +167,7 @@ paths:
             - NONE
       responses:
         200:
-          description: Tracker of the conversation
+          description: Success
           content:
             application/json:
               schema:
@@ -385,7 +388,6 @@ paths:
       - TokenAuth: []
       tags:
       - Tracker
-      - Events
       summary: Append an event to a tracker
       description: >-
         Append a new event to the tracker state of the conversation.
@@ -418,8 +420,6 @@ paths:
       - TokenAuth: []
       tags:
       - Tracker
-      - Events
-      - OnlineLearning
       summary: Replace a trackers events
       description: >-
         Replace all of the events of a tracker with the passed
@@ -512,6 +512,154 @@ paths:
                   error:
                     description: Error message
                     type: string
+  /finetune:
+    post:
+      security:
+      - TokenAuth: []
+      tags:
+      - Model
+      summary: Fintune ML model
+      description: >-
+        Continue the ML training of a model on the provided events.
+
+
+        **Fine tuning only works, if the model has been trained in
+        memory before. It does not work if the model got persisted
+        and loaded again.**
+      operationId: predictTemp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Event'
+      responses:
+        204:
+          description: Success
+        400:
+          description: Invalid Events
+          content:
+            text/plain:
+              schema:
+                type: string
+        500:
+          description: An exception occured while running the action
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+  /predict:
+    post:
+      security:
+      - TokenAuth: []
+      tags:
+      - Model
+      summary: Predict an action on a temporary state
+      description: >-
+        Predicts the next action on the tracker state as it is
+        posted to this endpoint. Core will create a temporary
+        tracker from the provided events and will use it to
+        predict an action. No messages will be sent and no
+        action will be run.
+      operationId: predictTemp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Event'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: Invalid Events
+          content:
+            text/plain:
+              schema:
+                type: string
+  /domain:
+    post:
+      security:
+      - TokenAuth: []
+      tags:
+      - Domain
+      summary: Retrieve the loaded domain
+      description: >-
+        Return the domain specification the currently loaded model
+        is using.
+      operationId: getDomain
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+            application/yaml:
+              schema:
+                $ref: '#/components/schemas/Domain'
+
+        500:
+          description: An exception occured while logging the message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    description: Error message
+                    type: string
+  /model:
+    get:
+      security:
+      - TokenAuth: []
+      tags:
+      - Model
+      summary: Upload a trained model
+      description: >-
+        Upload a trained model to the Core server. The server
+        will unzip the uploaded file and try to load the model
+        this will replace the previously loaded model.
+      operationId: uploadModel
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                model:
+                  description: Zipped model file
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: number
+                    enum:
+                      - 1
+        400:
+          description: No Model
+          content:
+            text/plain:
+              schema:
+                type: string
 components:
   securitySchemes:
     TokenAuth:
@@ -546,6 +694,30 @@ components:
           description: Timestamp of the trigger date
           type: float
       required: ["event"]
+    Domain:
+      type: object
+      properties:
+        config:
+          type: object
+          properties:
+            store_entities_as_slots:
+              type: boolean
+        intents:
+          type: array
+          items:
+            type: object
+        entities:
+          type: array
+          items:
+            type: string
+        slots:
+          type: object
+        templates:
+          type: object
+        actions:
+          type: array
+          items:
+            type: string
     BotMessage:
       type: object
       properties:

@@ -315,7 +315,8 @@ def create_app(agent,
                             status=500,
                             content_type="application/json")
 
-    @app.route("/conversations/<sender_id>/messages", methods=['POST'])
+    @app.route("/conversations/<sender_id>/messages",
+               methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
@@ -347,7 +348,8 @@ def create_app(agent,
                             status=500,
                             content_type="application/json")
 
-    @app.route("/model", methods=['POST', 'OPTIONS'])
+    @app.route("/model",
+               methods=['POST', 'OPTIONS'])
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def load_model():
@@ -432,7 +434,8 @@ def create_app(agent,
                             status=500,
                             content_type="application/json")
 
-    @app.route("/status", methods=['GET', 'OPTIONS'])
+    @app.route("/status",
+               methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(app, auth_token)
     def status():
@@ -441,7 +444,8 @@ def create_app(agent,
             "is_ready": agent.is_ready()
         })
 
-    @app.route("/predict", methods=['POST'])
+    @app.route("/predict",
+               methods=['POST', 'OPTIONS'])
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     @ensure_loaded_agent(agent)

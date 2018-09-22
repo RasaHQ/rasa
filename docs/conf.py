@@ -371,6 +371,8 @@ scv_greatest_tag = True
 
 
 def setup(sphinx):
+    sphinx.add_stylesheet('css/custom.css')
+
     try:
         sys.path.insert(0, os.path.abspath('./util'))
         from StoryLexer import StoryLexer
