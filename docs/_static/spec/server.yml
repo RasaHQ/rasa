@@ -5,6 +5,47 @@ info:
   description: >-
     The Rasa Core server provides endpoints to retrieve trackers of
     conversations as well as endpoints to modify them.
+
+x-reuse:
+  tracker:
+    &tracker-example
+    events:
+    - event: action
+      name: action_listen
+      timestamp: 1537645578.274815
+    - event: user
+      input_channel: rest
+      parse_data:
+        entities: []
+        intent:
+          confidence: 0.57
+          name: greet
+        intent_ranking:
+        - confidence: 0.57
+          name: greet
+        - confidence: 0.33
+          name: goodbye
+        text: hello
+      text: hello
+      timestamp: 1537645578.314389
+    followup_action:
+    latest_event_time: 1537645578.314389
+    latest_input_channel: rest
+    latest_message:
+      entities: []
+      intent:
+        confidence: 0.57
+        name: greet
+      intent_ranking:
+      - confidence: 0.57
+        name: greet
+      - confidence: 0.33
+        name: goodbye
+      text: hello
+    paused: false
+    sender_id: default
+    slots: {}
+
 paths:
   /:
     get:
@@ -95,7 +136,7 @@ paths:
       - TokenAuth: []
       - JWT: []
       tags:
-      - Tracker
+      - Conversation
       summary: List sender ids of all conversations
       description: >-
         Lists the sender ids of all the available conversations.
@@ -152,19 +193,7 @@ paths:
         schema:
           type: boolean
           default: true
-      - in: query
-        name: include_events
-        description: >-
-          Specify which events of the tracker should
-          be included.
-        schema:
-          type: string
-          default: AFTER_RESTART
-          enum:
-            - ALL
-            - APPLIED
-            - AFTER_RESTART
-            - NONE
+      - $ref: '#/components/parameters/includeEvents'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
@@ -204,6 +233,7 @@ paths:
       operationId: executeAction
       parameters:
       - $ref: '#/components/parameters/senderId'
+      - $ref: '#/components/parameters/includeEvents'
       requestBody:
         required: true
         content:
@@ -268,31 +298,17 @@ paths:
       operationId: predictAction
       parameters:
       - $ref: '#/components/parameters/senderId'
+      - $ref: '#/components/parameters/includeEvents'
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  scores:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        action:
-                          type: string
-                          description: Action name
-                        score:
-                          type: number
-                          description: Assigned score
-                  policy:
-                    type: string
-                    description: >-
-                      Policy which predicted the most likely action
-                  tracker:
-                    $ref: '#/components/schemas/Tracker'
+                $ref: '#/components/schemas/PredictResult'
+              examples:
+                PredictResult:
+                  $ref: '#/components/examples/PredictResult'
         500:
           description: An exception occured while running the action
           content:
@@ -326,7 +342,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/senderId'
       - in: query
-        name: q
+        name: query
         description: >-
           User message text
         schema:
@@ -379,6 +395,7 @@ paths:
       operationId: appendEvent
       parameters:
       - $ref: '#/components/parameters/senderId'
+      - $ref: '#/components/parameters/includeEvents'
       requestBody:
         $ref: '#/components/requestBodies/Event'
       responses:
@@ -399,6 +416,7 @@ paths:
       operationId: replaceEvents
       parameters:
       - $ref: '#/components/parameters/senderId'
+      - $ref: '#/components/parameters/includeEvents'
       requestBody:
         required: true
         content:
@@ -426,6 +444,7 @@ paths:
       operationId: addMessage
       parameters:
       - $ref: '#/components/parameters/senderId'
+      - $ref: '#/components/parameters/includeEvents'
       requestBody:
         required: true
         content:
@@ -518,6 +537,8 @@ paths:
         predict an action. No messages will be sent and no
         action will be run.
       operationId: predictTemp
+      parameters:
+      - $ref: '#/components/parameters/includeEvents'
       requestBody:
         required: true
         content:
@@ -526,13 +547,27 @@ paths:
               type: array
               items:
                 $ref: '#/components/schemas/Event'
+            example:
+              - event: action
+                name: action_listen
+              - event: user
+                parse_data:
+                  entities: []
+                  intent:
+                    confidence: 0.57
+                    name: greet
+                  text: hello
+                text: hello
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/PredictResult'
+              examples:
+                PredictResult:
+                  $ref: '#/components/examples/PredictResult'
         400:
           description: Invalid Events
           content:
@@ -595,17 +630,8 @@ paths:
                   type: string
                   format: binary
       responses:
-        200:
+        204:
           description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: number
-                    enum:
-                      - 1
         400:
           description: No Model
           content:
@@ -632,6 +658,20 @@ components:
       schema:
         type: string
       required: true
+    includeEvents:
+      in: query
+      name: include_events
+      description: >-
+        Specify which events of the tracker the response
+        should contain.
+      schema:
+        type: string
+        default: AFTER_RESTART
+        enum:
+          - ALL
+          - APPLIED
+          - AFTER_RESTART
+          - NONE
 
   requestBodies:
     Event:
@@ -641,19 +681,113 @@ components:
           schema:
             $ref: '#/components/schemas/Event'
           examples:
-            SlotSet:
-              $ref: '#/components/examples/SlotSet'
-            Restarted:
+            action:
+              $ref: '#/components/examples/ActionExecuted'
+            agent:
+              $ref: '#/components/examples/AgentUttered'
+            bot:
+              $ref: '#/components/examples/BotUttered'
+            export:
+              $ref: '#/components/examples/StoryExported'
+            followup:
+              $ref: '#/components/examples/FollowupAction'
+            pause:
+              $ref: '#/components/examples/ConversationPaused'
+            reminder:
+              $ref: '#/components/examples/ReminderScheduled'
+            reset_slots:
+              $ref: '#/components/examples/AllSlotsReset'
+            restart:
               $ref: '#/components/examples/Restarted'
+            resume:
+              $ref: '#/components/examples/ConversationResumed'
+            rewind:
+              $ref: '#/components/examples/UserUtteranceReverted'
+            slot:
+              $ref: '#/components/examples/SlotSet'
+            undo:
+              $ref: '#/components/examples/ActionReverted'
+            user:
+              $ref: '#/components/examples/UserUttered'
+
   examples:
+    Tracker:
+      value:
+        <<: *tracker-example
+
+    ActionExecuted:
+      value:
+        event: action
+        name: utter_greet
+    ActionReverted:
+      value:
+        event: undo
+    AgentUttered:
+      value:
+        event: agent
+        text: Hello
+    AllSlotsReset:
+      value:
+        event: rewind
+    BotUttered:
+      value:
+        event: bot
+        text: Hello there
+    ConversationPaused:
+      value:
+        event: pause
+    ConversationResumed:
+      value:
+        event: resume
+    FollowupAction:
+      value:
+        event: followup
+        name: utter_greet
+    ReminderScheduled:
+      value:
+        event: reminder
+        action: utter_greet
+        date_time: "2018-09-22T20:57:39.835946"
+        name: my_reminder
+        kill_on_user_msg: true
+    Restarted:
+      value:
+        event: restart
     SlotSet:
       value:
         event: slot
         name: cuisine
         value: italian
-    Restarted:
+    StoryExported:
       value:
-        event: restart
+        event: export
+    UserUtteranceReverted:
+      value:
+        event: rewind
+    UserUttered:
+      value:
+        event: user
+        text: I like mexican food
+        parse_data:
+          text: I like mexican food
+          intent:
+            name: restaurant_search
+            confidence: 0.85
+          entities:
+          - start: 7
+            end: 14
+            value: mexican
+            entity: cuisine
+    PredictResult:
+      value:
+        tracker:
+          <<: *tracker-example
+        policy: "KerasPolicy"
+        scores:
+          - action: utter_greet
+            score: 0.85
+          - action: action_listen
+            score: 0.15
 
   responses:
     200Tracker:
@@ -662,15 +796,40 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Tracker'
+          examples:
+            Tracker:
+              $ref: '#/components/examples/Tracker'
 
   schemas:
+    Entity:
+      type: object
+      description: Entities within a message
+      properties:
+        start:
+          type: integer
+          description: Char offset of the start
+        end:
+          type: integer
+          description: Char offset of the end
+        value:
+          type: string
+          description: Found value for entity
+        entity:
+          type: string
+          description: Type of the entity
+        confidence:
+          type: number
+      required: ["start", "end", "value", "entity"]
     Intent:
       type: object
+      description: Intent of the text
       properties:
         confidence:
-          type: integer
+          type: number
+          description: Confidence of the intent
         name:
           type: string
+          description: Intent name
       required: ["confidence", "name"]
     ParseData:
       type: object
@@ -678,7 +837,7 @@ components:
         entites:
           type: array
           items:
-            type: object
+            $ref: '#/components/schemas/Entity'
         intent:
           $ref: '#/components/schemas/Intent'
         intent_ranking:
@@ -687,68 +846,115 @@ components:
             $ref: '#/components/schemas/Intent'
         text:
           type: string
+          description: Text of the message
       description: >-
         NLU parser information. If set, message
         will not be passed through NLU, but instead
         this parsing information will be used.
       required: ["text"]
-    ActionExecuted:
+    action:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+        required: ["event", "name"]
+    agent:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          text:
+            type: string
+          data:
+            type: object
+        required: ["event", "text"]
+    bot:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          data:
+            type: object
+            nullable: true
+          text:
+            type: string
+        required: ["event", "text"]
+    export:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    followup:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+        required: ["event", "name"]
+    pause:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    reminder:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          action:
+            type: string
+          date_time:
+            type: string
+          name:
+            type: string
+          kill_on_user_msg:
+            default: true
+            type: boolean
+        required: ["event", "action", "date_time"]
+    reset_slots:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    restart:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    resume:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    rewind:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    slot:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+          value:
+            type: string
+    undo:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    user:
+      description: A message from a user
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          parse_data:
+            $ref: '#/components/schemas/ParseData'
+          text:
+            type: string
+        required: ["event", "text"]
+    Event:
       type: object
       properties:
         event:
           type: string
-          enum:
-          - action
-        name:
-          type: string
-        timestamp:
-          type: integer
-      required: ["event", "name"]
-    UserUttered:
-      type: object
-      properties:
-        event:
-          type: string
-          enum:
-          - user
-        parse_data:
-          $ref: '#/components/schemas/ParseData'
-        text:
-          type: string
-        timestamp:
-          type: integer
-      required: ["event", "text"]
-    BotUttered:
-      type: object
-      properties:
-        event:
-          type: string
-          enum:
-          - bot
-        data:
-          type: object
-          nullable: true
-        text:
-          type: string
-        timestamp:
-          type: integer
-      required: ["event", "text"]
-    Restarted:
-      type: object
-      properties:
-        event:
-          type: string
-          enum:
-          - restart
         timestamp:
           type: integer
       required: ["event"]
-    Event:
-      oneOf:
-      - $ref: '#/components/schemas/UserUttered'
-      - $ref: '#/components/schemas/BotUttered'
-      - $ref: '#/components/schemas/ActionExecuted'
-      - $ref: '#/components/schemas/Restarted'
+      discriminator:
+        propertyName: event
     Domain:
       type: object
       properties:
@@ -812,27 +1018,7 @@ components:
           items:
             type: object
         latest_message:
-          type: object
-          description: Most recent user message
-          properties:
-            intent:
-              type: string
-              description: Intent of the text
-            text:
-              type: string
-              description: Text of the message
-            entities:
-              type: array
-              description: Entities within the message
-              items:
-                type: object
-                properties:
-                  entity:
-                    type: string
-                    description: Type of the entity
-                  value:
-                    type: string
-                    description: Found value for entity
+          $ref: '#/components/schemas/ParseData'
         latest_event_time:
           type: number
         followup_action:
@@ -845,3 +1031,24 @@ components:
             $ref: '#/components/schemas/Event'
         latest_input_channel:
           type: string
+
+    PredictResult:
+      type: object
+      properties:
+        scores:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+                description: Action name
+              score:
+                type: number
+                description: Assigned score
+        policy:
+          type: string
+          description: >-
+            Policy which predicted the most likely action
+        tracker:
+          $ref: '#/components/schemas/Tracker'
