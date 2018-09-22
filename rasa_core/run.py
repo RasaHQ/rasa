@@ -232,14 +232,14 @@ def load_agent(core_model, interpreter, endpoints,
                 generator=endpoints.nlg,
                 action_endpoint=endpoints.action,
                 model_server=endpoints.model,
-                tracker_store=tracker_store,
+                tracker_store=endpoints.tracker_store,
                 wait_time_between_pulls=wait_time_between_pulls
         )
     else:
         return Agent.load(core_model,
                           interpreter=interpreter,
                           generator=endpoints.nlg,
-                          tracker_store=tracker_store,
+                          tracker_store=endpoints.tracker_store,
                           action_endpoint=endpoints.action)
 
 

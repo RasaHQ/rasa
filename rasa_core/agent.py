@@ -32,7 +32,7 @@ from rasa_core.policies import Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
-from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore, RedisTrackerStore, MongoTrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.utils import is_url
@@ -645,12 +645,14 @@ class Agent(object):
     @staticmethod
     def create_tracker_store(store, domain):
         # type: (Optional[TrackerStore], Domain) -> TrackerStore
-        if store is not None:
-            store.domain = domain
-            return store
-        else:
+        if store is None:
             return InMemoryTrackerStore(domain)
-
+        elif store.store_type == 'redis':
+            store = RedisTrackerStore(domain=domain,host=store.url,db=store.db,password=store.password,timeout=store.timeout)
+            return store
+        elif store.store_type == 'mongod':
+            store = MongoTrackerStore(domain=domain,host=store.url,db=store.db,username=store.user,password=store.password)
+        
     @staticmethod
     def _create_ensemble(
             policies  # type: Union[List[Policy], PolicyEnsemble, None]

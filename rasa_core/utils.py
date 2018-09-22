@@ -595,27 +595,34 @@ class AvailableEndpoints(object):
                 endpoint_file, endpoint_type="action_endpoint")
         model = read_endpoint_config(
                 endpoint_file, endpoint_type="models")
+        tracker_store = read_endpoint_config(endpoint_file, endpoint_type="tracker_store")
 
-        return cls(nlg, nlu, action, model)
+        return cls(nlg, nlu, action, model, tracker_store)
 
-    def __init__(self, nlg=None, nlu=None, action=None, model=None):
+    def __init__(self, nlg=None, nlu=None, action=None, model=None,tracker_store=None):
         self.model = model
         self.action = action
         self.nlu = nlu
         self.nlg = nlg
+        self.tracker_store = tracker_store
 
 
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
     def __init__(self, url, params=None, headers=None, basic_auth=None,
-                 token=None, token_name="token"):
+                 token=None, token_name="token",store_type=None,db=None,user=None,password=None,timeout=None):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
+        self.store_type = store_type
+        self.db = db
+        self.user = user
+        self.password= password
+        self.timeout = timeout
 
     def request(self,
                 method="post",  # type: Text
@@ -672,7 +679,12 @@ class EndpointConfig(object):
                 data.get("headers"),
                 data.get("basic_auth"),
                 data.get("token"),
-                data.get("token_name"))
+                data.get("token_name"),
+                data.get("store_type"),
+                data.get("db"),
+                data.get("user"),
+                data.get("password"),
+                data.get("timeout"))
 
     def __eq__(self, other):
         if isinstance(self, type(other)):
