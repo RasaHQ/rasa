@@ -21,7 +21,7 @@ paths:
           source: curl http://localhost:8000
       responses:
         200:
-          description: up and running
+          description: Up and running
           content:
             text/plain:
               schema:
@@ -55,14 +55,14 @@ paths:
                     description: >-
                       Minimum version this Core is
                       able to load models from
-              example: {
-                  "version": "1.0.0",
-                  "minimum_compatible_version": "0.9.0"
-                }
+              example:
+                version": 1.0.0
+                minimum_compatible_version: 0.9.0
   /status:
     get:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Status
       summary: Status
@@ -86,14 +86,14 @@ paths:
                     description: >-
                       Is there an agent loaded and is the
                       server ready to receive user messages.
-              example: {
-                  "model_fingerprint": "4523wyfgr4q2",
-                  "is_ready": true
-                }
+              example:
+                  model_fingerprint: 4523wyfgr4q2
+                  is_ready: true
   /conversations:
     get:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: List sender ids of all conversations
@@ -105,7 +105,7 @@ paths:
       operationId: listConversations
       responses:
         200:
-          description: List of sender ids
+          description: Success
           content:
             application/json:
               schema:
@@ -114,25 +114,25 @@ paths:
                   type: string
                   description: sender id
               example:
-                ["default", "rasa", "tom"]
+                - "default"
+                - "rasa"
+                - "34235421"
   /conversations/{sender_id}/tracker:
     get:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: Retrieve a conversations tracker
       description: >-
-        Return the tracker of a conversation.
+        The tracker represents the state of the conversation.
+        The state of the tracker is created by applying a
+        sequence of events, which modify the state. These
+        events can optionally be included in the response.
       operationId: getTracker
       parameters:
-      - in: path
-        name: sender_id
-        example: default
-        description: Id of the conversation
-        schema:
-          type: string
-        required: true
+      - $ref: '#/components/parameters/senderId'
       - in: query
         name: ignore_restarts
         description: >-
@@ -167,11 +167,7 @@ paths:
             - NONE
       responses:
         200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tracker'
+          $ref: '#/components/responses/200Tracker'
         404:
           description: Invalid request format
           content:
@@ -196,6 +192,7 @@ paths:
     post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: Run an action in a conversation.
@@ -206,13 +203,7 @@ paths:
         connected output channel.
       operationId: executeAction
       parameters:
-      - in: path
-        name: sender_id
-        example: default
-        description: Id of the conversation
-        schema:
-          type: string
-        required: true
+      - $ref: '#/components/parameters/senderId'
       requestBody:
         required: true
         content:
@@ -225,9 +216,11 @@ paths:
                     Name of the action to be executed
                   type: string
               required: ["action"]
+            example:
+              action: utter_greet
       responses:
         200:
-          description: Successfull execution
+          description: Success
           content:
             application/json:
               schema:
@@ -263,6 +256,7 @@ paths:
     post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: Predict the next action
@@ -273,16 +267,10 @@ paths:
         is not modified.
       operationId: predictAction
       parameters:
-      - in: path
-        name: sender_id
-        example: default
-        description: Id of the conversation
-        schema:
-          type: string
-        required: true
+      - $ref: '#/components/parameters/senderId'
       responses:
         200:
-          description: Successfull prediction
+          description: Success
           content:
             application/json:
               schema:
@@ -297,9 +285,8 @@ paths:
                           type: string
                           description: Action name
                         score:
-                          type: float
+                          type: number
                           description: Assigned score
-                    $ref: '#/components/schemas/Tracker'
                   policy:
                     type: string
                     description: >-
@@ -321,6 +308,7 @@ paths:
     get:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: Send user message
@@ -336,13 +324,7 @@ paths:
         and get a list of response messages the bot should send back.
       operationId: respond
       parameters:
-      - in: path
-        name: sender_id
-        example: default
-        description: Id of the conversation
-        schema:
-          type: string
-        required: true
+      - $ref: '#/components/parameters/senderId'
       - in: query
         name: q
         description: >-
@@ -386,6 +368,7 @@ paths:
     post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: Append an event to a tracker
@@ -395,29 +378,16 @@ paths:
         appended, updating the existing state.
       operationId: appendEvent
       parameters:
-      - in: path
-        name: sender_id
-        example: default
-        description: Id of the conversation
-        schema:
-          type: string
-        required: true
+      - $ref: '#/components/parameters/senderId'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Event'
+        $ref: '#/components/requestBodies/Event'
       responses:
         200:
-          description: Successfully appended the event
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tracker'
+          $ref: '#/components/responses/200Tracker'
     put:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: Replace a trackers events
@@ -428,13 +398,7 @@ paths:
         for creating training data.
       operationId: replaceEvents
       parameters:
-      - in: path
-        name: sender_id
-        example: default
-        description: Id of the conversation
-        schema:
-          type: string
-        required: true
+      - $ref: '#/components/parameters/senderId'
       requestBody:
         required: true
         content:
@@ -445,15 +409,12 @@ paths:
                 $ref: '#/components/schemas/Event'
       responses:
         200:
-          description: Successfully replaced events
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tracker'
+          $ref: '#/components/responses/200Tracker'
   /conversations/{sender_id}/messages:
     post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Tracker
       summary: Add a message to a tracker
@@ -464,13 +425,7 @@ paths:
         predicted or run.
       operationId: addMessage
       parameters:
-      - in: path
-        name: sender_id
-        example: default
-        description: Id of the conversation
-        schema:
-          type: string
-        required: true
+      - $ref: '#/components/parameters/senderId'
       requestBody:
         required: true
         content:
@@ -489,19 +444,12 @@ paths:
                   enum:
                     - user
                 parse_data:
-                  type: dict
-                  description: >-
-                    NLU parser information. If set, message
-                    will not be passed through NLU, but instead
-                    this parsing information will be used.
+                  $ref: '#/components/schemas/ParseData'
+
               required: ["text", "sender"]
       responses:
         200:
-          description: Successfully logged message
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Tracker'
+          $ref: '#/components/responses/200Tracker'
         500:
           description: An exception occured while logging the message
           content:
@@ -516,6 +464,7 @@ paths:
     post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Model
       summary: Fintune ML model
@@ -558,6 +507,7 @@ paths:
     post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Model
       summary: Predict an action on a temporary state
@@ -593,6 +543,7 @@ paths:
     post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Domain
       summary: Retrieve the loaded domain
@@ -622,9 +573,10 @@ paths:
                     description: Error message
                     type: string
   /model:
-    get:
+    post:
       security:
       - TokenAuth: []
+      - JWT: []
       tags:
       - Model
       summary: Upload a trained model
@@ -666,34 +618,137 @@ components:
       type: apiKey
       in: query
       name: token
+    JWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    senderId:
+      in: path
+      name: sender_id
+      example: default
+      description: Id of the conversation
+      schema:
+        type: string
+      required: true
+
+  requestBodies:
+    Event:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Event'
+          examples:
+            SlotSet:
+              $ref: '#/components/examples/SlotSet'
+            Restarted:
+              $ref: '#/components/examples/Restarted'
+  examples:
+    SlotSet:
+      value:
+        event: slot
+        name: cuisine
+        value: italian
+    Restarted:
+      value:
+        event: restart
+
+  responses:
+    200Tracker:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tracker'
 
   schemas:
-    User:
+    Intent:
       type: object
       properties:
-        username:
+        confidence:
+          type: integer
+        name:
           type: string
-        password:
-          type: string
-        role:
-          type: string
-    Project:
+      required: ["confidence", "name"]
+    ParseData:
       type: object
       properties:
-        project_id:
+        entites:
+          type: array
+          items:
+            type: object
+        intent:
+          $ref: '#/components/schemas/Intent'
+        intent_ranking:
+          type: array
+          items:
+            $ref: '#/components/schemas/Intent'
+        text:
           type: string
-        role:
-          type: string
-    Event:
+      description: >-
+        NLU parser information. If set, message
+        will not be passed through NLU, but instead
+        this parsing information will be used.
+      required: ["text"]
+    ActionExecuted:
       type: object
       properties:
         event:
-          description: Type of the event, e.g. `slot`
+          type: string
+          enum:
+          - action
+        name:
           type: string
         timestamp:
-          description: Timestamp of the trigger date
-          type: float
+          type: integer
+      required: ["event", "name"]
+    UserUttered:
+      type: object
+      properties:
+        event:
+          type: string
+          enum:
+          - user
+        parse_data:
+          $ref: '#/components/schemas/ParseData'
+        text:
+          type: string
+        timestamp:
+          type: integer
+      required: ["event", "text"]
+    BotUttered:
+      type: object
+      properties:
+        event:
+          type: string
+          enum:
+          - bot
+        data:
+          type: object
+          nullable: true
+        text:
+          type: string
+        timestamp:
+          type: integer
+      required: ["event", "text"]
+    Restarted:
+      type: object
+      properties:
+        event:
+          type: string
+          enum:
+          - restart
+        timestamp:
+          type: integer
       required: ["event"]
+    Event:
+      oneOf:
+      - $ref: '#/components/schemas/UserUttered'
+      - $ref: '#/components/schemas/BotUttered'
+      - $ref: '#/components/schemas/ActionExecuted'
+      - $ref: '#/components/schemas/Restarted'
     Domain:
       type: object
       properties:
@@ -750,32 +805,40 @@ components:
       properties:
         sender_id:
           type: string
+          description: Id of the conversation
         slots:
           type: array
+          description: Slot values
           items:
             type: object
         latest_message:
           type: object
+          description: Most recent user message
           properties:
             intent:
               type: string
+              description: Intent of the text
             text:
               type: string
+              description: Text of the message
             entities:
               type: array
+              description: Entities within the message
               items:
                 type: object
                 properties:
                   entity:
                     type: string
+                    description: Type of the entity
                   value:
                     type: string
+                    description: Found value for entity
         latest_event_time:
           type: number
         followup_action:
           type: string
         paused:
-          type: bool
+          type: boolean
         events:
           type: array
           items:

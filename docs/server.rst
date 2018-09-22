@@ -23,7 +23,7 @@ HTTP API
 
 The HTTP api exists to make it easy for python and non-python
 projects to interact with Rasa Core. The API allows you to modify
-the trackers (e.g. push or remote events).
+the trackers.
 
 
 .. contents::
