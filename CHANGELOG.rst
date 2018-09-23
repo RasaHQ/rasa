@@ -22,13 +22,21 @@ Changed
 Removed
 -------
 
+Fixed
+-----
+
 
 [0.11.7] - 2018-09-26
 ^^^^^^^^^^^^^^^^^^^^^
 
+Added
+-----
+- custom message method in rocketchat channel
+
 Fixed
 -----
 - don't fail if rasa and rest input channels are used together
+- wrong paramter name in rocketchat channel methods
 
 [0.11.6] - 2018-09-20
 ^^^^^^^^^^^^^^^^^^^^^
