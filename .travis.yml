@@ -29,7 +29,7 @@ jobs:
     install:
     - npm install -g swagger-cli
     script:
-    - swagger-cli validate docs/openapi/server.yml
+    - swagger-cli validate docs/_static/spec/server.yml
     after_success:
     - coveralls
   - stage: docs
