@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from flask import json
 import logging
 import os
 import tempfile
@@ -96,7 +97,7 @@ def requires_auth(app, token=None):
 
 def error(status, reason, message, details=None, help_url=None):
     return Response(
-            jsonify({
+            json.dumps({
                 "version": __version__,
                 "status": "failure",
                 "message": message,
@@ -343,7 +344,7 @@ def create_app(agent,
 
         except Exception as e:
             logger.exception("Caught an exception during prediction.")
-            return error(500, "ActionException",
+            return error(500, "PredictionException",
                          "Server failure. Error: {}".format(e))
 
     @app.route("/conversations/<sender_id>/messages",

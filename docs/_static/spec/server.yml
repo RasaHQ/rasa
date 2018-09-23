@@ -1,37 +1,24 @@
 openapi: "3.0.1"
 info:
   title: "Rasa Core - Server Endpoints"
-  version: "1.0.0"
+  version: "0.12.0"
   description: >-
     The Rasa Core server provides endpoints to retrieve trackers of
     conversations as well as endpoints to modify them.
-
+servers:
+  - url: "http://localhost:5005"
+    description: "Local development server"
 x-reuse:
   tracker:
     &tracker-example
-    events:
-    - event: action
-      name: action_listen
-      timestamp: 1537645578.274815
-    - event: user
-      input_channel: rest
-      parse_data:
-        entities: []
-        intent:
-          confidence: 0.57
-          name: greet
-        intent_ranking:
-        - confidence: 0.57
-          name: greet
-        - confidence: 0.33
-          name: goodbye
-        text: hello
-      text: hello
-      timestamp: 1537645578.314389
-    followup_action:
+    sender_id: default
     latest_event_time: 1537645578.314389
     latest_input_channel: rest
+    paused: false
+    slots: {}
+    followup_action:
     latest_message:
+      text: hello
       entities: []
       intent:
         confidence: 0.57
@@ -41,10 +28,25 @@ x-reuse:
         name: greet
       - confidence: 0.33
         name: goodbye
+    events:
+    - event: action
+      name: action_listen
+      timestamp: 1537645578.274815
+    - event: user
+      input_channel: rest
       text: hello
-    paused: false
-    sender_id: default
-    slots: {}
+      timestamp: 1537645578.314389
+      parse_data:
+        text: hello
+        entities: []
+        intent:
+          confidence: 0.57
+          name: greet
+        intent_ranking:
+        - confidence: 0.57
+          name: greet
+        - confidence: 0.33
+          name: goodbye
 
 paths:
   /:
@@ -69,7 +71,7 @@ paths:
                 type: string
                 description: hello text
               example: >-
-                hello from Rasa Core: 1.0.0
+                hello from Rasa Core: 0.12.0
 
   /version:
     get:
@@ -97,7 +99,7 @@ paths:
                       Minimum version this Core is
                       able to load models from
               example:
-                version": 1.0.0
+                version": 0.12.0
                 minimum_compatible_version: 0.9.0
   /status:
     get:
@@ -198,24 +200,32 @@ paths:
         200:
           $ref: '#/components/responses/200Tracker'
         404:
-          description: Invalid request format
+          description: Invalid event verbosity format
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                description: Error message
-              example: >-
-                Invalid parameter value for 'events'.
-                Should be one of ALL, AFTER_RESTART, APPLIED, NONE
+                $ref: '#/components/schemas/Error'
+              example:
+                version: "0.12.0"
+                status: "failure"
+                message: >-
+                  Invalid parameter value for 'include_events'.
+                  Should be one of ALL, AFTER_RESTART, APPLIED, NONE
+                reason: "InvalidParameter"
+                code: 400
         503:
           description: Tracker store is unavailable
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                description: Error message
+                $ref: '#/components/schemas/Error'
               example:
-                No tracker store available.
+                version: "0.12.0"
+                status: "failure"
+                message: >-
+                  No tracker store available.
+                reason: "NoTrackerStore"
+                code: 503
 
   /conversations/{sender_id}/execute:
     post:
@@ -265,23 +275,19 @@ paths:
         400:
           description: Invalid request format
           content:
-            text/plain:
-              schema:
-                type: object
-                properties:
-                  error:
-                    description: Error message
-                    type: string
-        500:
-          description: An exception occured while running the action
-          content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    description: Error message
-                    type: string
+                $ref: '#/components/schemas/Error'
+              example:
+                version: "0.12.0"
+                status: "failure"
+                message: >-
+                  Invalid Request format.
+                reason: "InvalidParameter"
+                code: 400
+        500:
+          $ref: '#/components/responses/500Action'
+
   /conversations/{sender_id}/predict:
     post:
       security:
@@ -310,15 +316,7 @@ paths:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
         500:
-          description: An exception occured while running the action
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    description: Error message
-                    type: string
+          $ref: '#/components/responses/500Action'
 
   /conversations/{sender_id}/respond:
     get:
@@ -371,15 +369,8 @@ paths:
               example: {
                 "error": "Invalid respond parameter specified."}
         500:
-          description: An exception occured while running the action
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    description: Error message
-                    type: string
+          $ref: '#/components/responses/500Action'
+
   /conversations/{sender_id}/tracker/events:
     post:
       security:
@@ -425,9 +416,15 @@ paths:
               type: array
               items:
                 $ref: '#/components/schemas/Event'
+            examples:
+              Events:
+                $ref: '#/components/examples/Events'
+
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400Events'
   /conversations/{sender_id}/messages:
     post:
       security:
@@ -464,21 +461,37 @@ paths:
                     - user
                 parse_data:
                   $ref: '#/components/schemas/ParseData'
-
               required: ["text", "sender"]
+            example:
+              sender: user
+              text: hello
+              parse_data:
+                text: hello
+                entities: []
+                intent:
+                  confidence: 0.57
+                  name: greet
+                intent_ranking:
+                - confidence: 0.57
+                  name: greet
+                - confidence: 0.33
+                  name: goodbye
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
         500:
-          description: An exception occured while logging the message
+          description: Message Exception
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    description: Error message
-                    type: string
+                $ref: '#/components/schemas/Error'
+              example:
+                version: "0.12.0"
+                status: "failure"
+                message: >-
+                  An exception occurred while logging the message
+                reason: "MessageException"
+                code: 500
   /finetune:
     post:
       security:
@@ -503,25 +516,16 @@ paths:
               type: array
               items:
                 $ref: '#/components/schemas/Event'
+            examples:
+              Events:
+                $ref: '#/components/examples/Events'
       responses:
         204:
           description: Success
         400:
-          description: Invalid Events
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/400Events'
         500:
-          description: An exception occured while running the action
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    description: Error message
-                    type: string
+          $ref: '#/components/responses/500Action'
   /predict:
     post:
       security:
@@ -569,13 +573,10 @@ paths:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
         400:
-          description: Invalid Events
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/400Events'
+
   /domain:
-    post:
+    get:
       security:
       - TokenAuth: []
       - JWT: []
@@ -596,17 +597,6 @@ paths:
             application/yaml:
               schema:
                 $ref: '#/components/schemas/Domain'
-
-        500:
-          description: An exception occured while logging the message
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    description: Error message
-                    type: string
   /model:
     post:
       security:
@@ -635,9 +625,16 @@ paths:
         400:
           description: No Model
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
+              example:
+                version: "0.12.0"
+                status: "failure"
+                message: >-
+                  No agent loaded.
+                reason: "NoAgent"
+                code: 400
 components:
   securitySchemes:
     TokenAuth:
@@ -715,6 +712,19 @@ components:
       value:
         <<: *tracker-example
 
+    Events:
+      value:
+      - event: action
+        name: action_listen
+      - event: user
+        text: hello
+        parse_data:
+          entities: []
+          intent:
+            confidence: 0.57
+            name: greet
+          text: hello
+
     ActionExecuted:
       value:
         event: action
@@ -780,14 +790,14 @@ components:
             entity: cuisine
     PredictResult:
       value:
-        tracker:
-          <<: *tracker-example
-        policy: "KerasPolicy"
         scores:
           - action: utter_greet
             score: 0.85
           - action: action_listen
             score: 0.15
+        policy: "policy_2_KerasPolicy"
+        tracker:
+          <<: *tracker-example
 
   responses:
     200Tracker:
@@ -799,6 +809,34 @@ components:
           examples:
             Tracker:
               $ref: '#/components/examples/Tracker'
+
+    500Action:
+      description: Action Exception
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              An exception occurred while running the action
+            reason: "ActionException"
+            code: 500
+
+    400Events:
+      description: Invalid Events
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Supplied events are not valid.
+            reason: "InvalidParameter"
+            code: 400
 
   schemas:
     Entity:
@@ -836,12 +874,14 @@ components:
       properties:
         entites:
           type: array
+          description: Parsed entities
           items:
             $ref: '#/components/schemas/Entity'
         intent:
           $ref: '#/components/schemas/Intent'
         intent_ranking:
           type: array
+          description: Scores of all intents
           items:
             $ref: '#/components/schemas/Intent'
         text:
@@ -859,6 +899,7 @@ components:
         properties:
           name:
             type: string
+            description: Action name
         required: ["event", "name"]
     agent:
       allOf:
@@ -867,8 +908,10 @@ components:
         properties:
           text:
             type: string
+            description: Message
           data:
             type: object
+            description: Additional data
         required: ["event", "text"]
     bot:
       allOf:
@@ -878,8 +921,10 @@ components:
           data:
             type: object
             nullable: true
+            description: Additional data
           text:
             type: string
+            description: Message
         required: ["event", "text"]
     export:
       allOf:
@@ -891,6 +936,7 @@ components:
         properties:
           name:
             type: string
+            description: Action to be triggered
         required: ["event", "name"]
     pause:
       allOf:
@@ -902,13 +948,17 @@ components:
         properties:
           action:
             type: string
+            description: Action to be triggered
           date_time:
             type: string
+            description: Trigger date
           name:
             type: string
+            description: Name of the reminder
           kill_on_user_msg:
             default: true
             type: boolean
+            description: Cancel the reminder if there is a user message
         required: ["event", "action", "date_time"]
     reset_slots:
       allOf:
@@ -929,8 +979,10 @@ components:
         properties:
           name:
             type: string
+            description: Name of slot
           value:
             type: string
+            description: Value of slot
     undo:
       allOf:
       - $ref: '#/components/schemas/Event'
@@ -950,8 +1002,10 @@ components:
       properties:
         event:
           type: string
+          description: Event name
         timestamp:
           type: integer
+          description: Time of application
       required: ["event"]
       discriminator:
         propertyName: event
@@ -960,22 +1014,29 @@ components:
       properties:
         config:
           type: object
+          description: Addional option
           properties:
             store_entities_as_slots:
               type: boolean
+              description: Store all entites as slot when found
         intents:
           type: array
+          description: All intent names and properties
           items:
             type: object
         entities:
           type: array
+          description: All entity names
           items:
             type: string
         slots:
+          description: Slot names and configuration
           type: object
         templates:
+          description: Bot response templates
           type: object
         actions:
+          description: Available action names
           type: array
           items:
             type: string
@@ -984,30 +1045,40 @@ components:
       properties:
         recipient_id:
           type: string
+          description: Id of the message receiver
         text:
           type: string
+          description: Message
         image:
           type: string
+          description: Image URL
         buttons:
           type: array
+          description: Quick reply buttons
           items:
             type: object
             properties:
               title:
                 type: string
+                description: Button caption
               payload:
                 type: string
+                description: Payload to be sent if button is clicked
         attachement:
           type: array
+          description: Additional information
           items:
             type: object
             properties:
               title:
                 type: string
+                description: Attachement caption
               payload:
                 type: string
+                description: Attachement payload
     Tracker:
       type: object
+      description: A conversations state
       properties:
         sender_id:
           type: string
@@ -1021,22 +1092,54 @@ components:
           $ref: '#/components/schemas/ParseData'
         latest_event_time:
           type: number
+          description: Most recent event time
         followup_action:
           type: string
+          description: Deterministic scheduled next action
         paused:
           type: boolean
+          description: Bot is pasued
         events:
           type: array
+          description: Event history
           items:
             $ref: '#/components/schemas/Event'
         latest_input_channel:
           type: string
+          description: Communication channel
+
+    Error:
+      type: object
+      properties:
+        version:
+          type: string
+          description: Core version
+        status:
+          type: string
+          enum: ["failure"]
+          description: Status of the requested action
+        message:
+          type: string
+          description: Error message
+        reason:
+          type: string
+          description: Error category
+        details:
+          type: object
+          description: Additional error information
+        help:
+          type: string
+          description: Optional URL to additonal material
+        code:
+          type: number
+          description: HTTP status code
 
     PredictResult:
       type: object
       properties:
         scores:
           type: array
+          description: Prediction results
           items:
             type: object
             properties:
