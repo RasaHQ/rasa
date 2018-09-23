@@ -111,7 +111,7 @@ def error(status, reason, message, details=None, help_url=None):
 
 def event_verbosity_parameter(default_verbosity):
     event_verbosity_str = request.args.get(
-            'include_events', default=default_verbosity).upper()
+            'include_events', default=default_verbosity.name).upper()
     try:
         return EventVerbosity[event_verbosity_str]
     except KeyError:
@@ -266,18 +266,18 @@ def create_app(agent,
                          "a tracker store when starting the server.")
 
         # parameters
-        default_verbosity = "AFTER_RESTART"
+        default_verbosity = EventVerbosity.AFTER_RESTART
 
         # this is for backwards compatibility
         if "ignore_restarts" in request.args:
             ignore_restarts = utils.bool_arg('ignore_restarts', default=False)
             if ignore_restarts:
-                default_verbosity = "ALL"
+                default_verbosity = EventVerbosity.ALL
 
         if "events" in request.args:
             include_events = utils.bool_arg('events', default=True)
             if not include_events:
-                default_verbosity = "NONE"
+                default_verbosity = EventVerbosity.NONE
 
         verbosity = event_verbosity_parameter(default_verbosity)
 
