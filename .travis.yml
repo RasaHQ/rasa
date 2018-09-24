@@ -22,6 +22,14 @@ after_success:
 - coveralls
 jobs:
   include:
+  - stage: Test API specification
+    language: python
+    install:
+    - npm install -g swagger-cli
+    script:
+    - swagger-cli validate docs/_static/spec/server.yml
+    after_success:
+    - coveralls
   - stage: docs
     if: fork = false AND branch = "master"
     install:
