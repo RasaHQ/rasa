@@ -348,6 +348,7 @@ class RemoteAction(Action):
     def name(self):
         return self._name
 
+
 class ActionExecutionError(Exception):
 
     def __init__(self, message, action_name):

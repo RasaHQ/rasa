@@ -333,7 +333,7 @@ class MessageProcessor(object):
         try:
             events = action.run(dispatcher, tracker, self.domain)
         except ActionExecutionError as e:
-            events = [ActionExecutionFailed(e.action_name)]
+            events = [ActionExecutionFailed(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name(), events)
         except Exception as e:
