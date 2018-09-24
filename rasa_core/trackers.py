@@ -109,7 +109,6 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = None
-        self.postponed_events = []
 
     ###
     # Public tracker interface
