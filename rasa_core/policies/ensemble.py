@@ -23,7 +23,6 @@ from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.memoization import (MemoizationPolicy,
                                             AugmentedMemoizationPolicy)
-from rasa_core.policies.form_policy import FormPolicy
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 

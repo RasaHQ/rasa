@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class FormPolicy(Policy):
+    """Policy which handles deterministic prediction of Forms"""
+
     @staticmethod
     def _standard_featurizer():
         return None

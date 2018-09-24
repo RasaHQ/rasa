@@ -202,7 +202,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                 'name': intent,
                 'confidence': confidence,
             }],
-            'entities': entities
+            'entities': entities,
         }
 
 
