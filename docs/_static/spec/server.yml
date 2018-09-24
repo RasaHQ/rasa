@@ -100,7 +100,7 @@ paths:
                       able to load models from
               example:
                 version": 0.12.0
-                minimum_compatible_version: 0.9.0
+                minimum_compatible_version: 0.12.0
   /status:
     get:
       security:
@@ -437,7 +437,8 @@ paths:
         Adds a message to a tracker. This doesn't trigger
         the prediction loop. It will log the message
         on the tracker and return, no actions will be
-        predicted or run.
+        predicted or run. This is often used together with the
+        [predict endpoint](https://rasa.com/docs/core/server.html#operation/predictAction).
       operationId: addMessage
       parameters:
       - $ref: '#/components/parameters/senderId'
@@ -505,7 +506,7 @@ paths:
 
 
         **Fine tuning only works, if the model has been trained in
-        memory before. It does not work if the model got persisted
+        memory before. It does not work if the model was persisted
         and loaded again.**
       operationId: predictTemp
       requestBody:
