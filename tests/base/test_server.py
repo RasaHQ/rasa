@@ -5,11 +5,16 @@ import tempfile
 import time
 
 import pytest
+import tempfile
+import mock
+import pytest
+import os
+import time
 import ruamel.yaml as yaml
 from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter
-from rasa_nlu.server import RasaNLU
+from rasa_nlu.server import RasaNLU, get_absolute_path, parse_pre_load
 from tests import utilities
 from tests.utilities import ResponseTest
 
@@ -270,3 +275,172 @@ def test_unload_fallback(app):
     rjs = yield response.json()
     assert response.code == 200, "Fallback model unloaded"
     assert rjs == "fallback"
+
+
+def mock_os_path_is_file(path):
+    return 'model' in path
+
+def mock_os_path_is_dir(path):
+    return 'project' in path
+
+
+def test_pre_load_project():
+    with mock.patch('os.path.isfile', return_value=False):
+        with mock.patch('os.path.isdir', return_value=True):
+            with mock.patch.object(DataRouter, '_pre_load', return_value=None):
+                project_name_1 = 'projectA/'
+                assert(os.path.isdir(project_name_1) == True)
+                assert(os.path.isfile(project_name_1) == False)
+
+                assert(parse_pre_load([project_name_1], '/project_path/') == [('projectA', None, '/project_path/projectA')])
+
+                project_name_2 = 'projectB'
+                assert(os.path.isdir(project_name_2) == True)
+                assert(os.path.isfile(project_name_2) == False)
+
+                assert(parse_pre_load([project_name_2], '/project_path') == [('projectB', None, '/project_path/projectB')])
+
+                project_name_3 = '/projectC'
+                assert(os.path.isdir(project_name_3) == True)
+                assert(os.path.isfile(project_name_3) == False)
+
+                assert(parse_pre_load([project_name_3], '/project_path') == [('projectC', None, '/projectC')])
+
+                project_name_4 = '/projectD/'
+                assert(os.path.isdir(project_name_4) == True)
+                assert(os.path.isfile(project_name_4) == False)
+
+                assert(parse_pre_load([project_name_4], '/project_path') == [('projectD', None, '/projectD')])
+
+def test_pre_load_project_not_found_locally():
+    with mock.patch('os.path.isfile', return_value=False):
+        with mock.patch('os.path.isdir', return_value=False):
+            with mock.patch.object(DataRouter, '_pre_load', return_value=None):
+                project_name_1 = 'projectA/'
+                assert(os.path.isdir(project_name_1) == False)
+                assert(os.path.isfile(project_name_1) == False)
+
+                assert(parse_pre_load([project_name_1], '/project_path/') == [('projectA', None, '/project_path/projectA')])
+
+                project_name_2 = 'projectB'
+                assert(os.path.isdir(project_name_2) == False)
+                assert(os.path.isfile(project_name_2) == False)
+
+                assert(parse_pre_load([project_name_2], '/project_path') == [('projectB', None, '/project_path/projectB')])
+
+                project_name_3 = '/projectC'
+                assert(os.path.isdir(project_name_3) == False)
+                assert(os.path.isfile(project_name_3) == False)
+
+                assert(parse_pre_load([project_name_3], '/project_path') == [('projectC', None, '/projectC')])
+
+                project_name_4 = '/projectD/'
+                assert(os.path.isdir(project_name_4) == False)
+                assert(os.path.isfile(project_name_4) == False)
+
+                assert(parse_pre_load([project_name_4], '/project_path') == [('projectD', None, '/projectD')])
+
+
+
+def test_pre_load_model():
+  with mock.patch('os.path.isfile', return_value=True):
+        with mock.patch('os.path.isdir', return_value=False):
+            with mock.patch.object(DataRouter, '_pre_load', return_value=None):
+                model_name_1 = 'projectA/modelX/'
+                assert(os.path.isfile(model_name_1) == True)
+                assert(os.path.isdir(model_name_1) == False)
+
+                assert(parse_pre_load([model_name_1], '/model_path/') == [('projectA', 'modelX', '/model_path/projectA/modelX'),('modelX', None, '/model_path/projectA/modelX')])
+
+                model_name_2 = 'projectB/modelY'
+                assert(os.path.isfile(model_name_2) == True)
+                assert(os.path.isdir(model_name_2) == False)
+
+                assert(parse_pre_load([model_name_2], '/model_path') == [('projectB', 'modelY', '/model_path/projectB/modelY'), ('modelY', None, '/model_path/projectB/modelY')])
+
+                model_name_3 = '/projectC/modelZ'
+                assert(os.path.isfile(model_name_3) == True)
+                assert(os.path.isdir(model_name_3) == False)
+
+                assert(parse_pre_load([model_name_3], '/model_path') == [('projectC', 'modelZ', '/projectC/modelZ'), ('modelZ', None, '/projectC/modelZ')])
+
+                model_name_4 = '/projectD/modelW'
+                assert(os.path.isfile(model_name_4) == True)
+                assert(os.path.isdir(model_name_4) == False)
+
+                assert(parse_pre_load([model_name_4], '/model_path') == [('projectD', 'modelW', '/projectD/modelW'), ('modelW', None, '/projectD/modelW')])
+
+
+def test_pre_load_model_not_found_locally():
+  with mock.patch('os.path.isfile', return_value=False):
+        with mock.patch('os.path.isdir', return_value=False):
+            with mock.patch.object(DataRouter, '_pre_load', return_value=None):
+                model_name_1 = 'projectA/modelX/'
+                assert(os.path.isfile(model_name_1) == False)
+                assert(os.path.isdir(model_name_1) == False)
+
+                assert(parse_pre_load([model_name_1], '/model_path/') == [('projectA', 'modelX', '/model_path/projectA/modelX'), ('modelX', None, '/model_path/projectA/modelX')])
+
+                model_name_2 = 'projectB/modelY'
+                assert(os.path.isfile(model_name_2) == False)
+                assert(os.path.isdir(model_name_2) == False)
+
+                assert(parse_pre_load([model_name_2], '/model_path') == [('projectB', 'modelY', '/model_path/projectB/modelY'), ('modelY', None, '/model_path/projectB/modelY')])
+
+                model_name_3 = '/projectC/modelZ'
+                assert(os.path.isfile(model_name_3) == False)
+                assert(os.path.isdir(model_name_3) == False)
+
+                assert(parse_pre_load([model_name_3], '/model_path') == [('projectC', 'modelZ', '/projectC/modelZ'), ('modelZ', None, '/projectC/modelZ')])
+
+                model_name_4 = '/projectD/modelW'
+                assert(os.path.isfile(model_name_4) == False)
+                assert(os.path.isdir(model_name_4) == False)
+
+                assert(parse_pre_load([model_name_4], '/model_path') == [('projectD', 'modelW', '/projectD/modelW'), ('modelW', None, '/projectD/modelW')])
+
+
+
+def test_get_absolute_path():
+    # given a relative path to a model, it should relative an absolute path (without the trailing /)
+    assert(
+        get_absolute_path('projectA/modelX', '/example_path/')
+        ==
+        '/example_path/projectA/modelX'
+    )
+    # given an absolute path to model, it should return this path
+    assert(
+        get_absolute_path('/projectA/modelX', '/example_path/')
+        ==
+        '/projectA/modelX'
+    )
+    # given a relative path to a model, it should return an absolute path (without the trailing /)
+    assert(
+        get_absolute_path('projectA/modelX/', '/example_path/')
+        ==
+        '/example_path/projectA/modelX'
+    )
+    # given an absolute path to a model, it should return an absolute path (without the trailing / and double /)
+    assert(
+        get_absolute_path('/projectA/modelX/', '/example_path/')
+        ==
+        '/projectA/modelX'
+    )
+    # given a relative path to a model, it should return an absolute path (without the trailing /)
+    assert(
+        get_absolute_path('projectA/modelX/', 'example_path/')
+        ==
+        '/example_path/projectA/modelX'
+    )
+    # given a relative path to a model, it should return an absolute path (without the trailing / and double /)
+    assert(
+        get_absolute_path('projectA/modelX/', '/example_path')
+        ==
+        '/example_path/projectA/modelX'
+    )
+    # given a relative path to a model
+    assert(
+        get_absolute_path('projectA/modelX', 'example_path')
+        ==
+        '/example_path/projectA/modelX'
+    )

@@ -265,10 +265,11 @@ class Project(object):
 
         return response
 
-    def load_model(self):
+    def load_model(self, model_name=None):
         self._begin_read()
         status = False
-        model_name = self._dynamic_load_model()
+        if not model_name:
+            model_name = self._dynamic_load_model()
         logger.debug('Loading model %s', model_name)
 
         self._loader_lock.acquire()

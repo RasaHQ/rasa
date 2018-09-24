@@ -12,7 +12,7 @@ Added
 - Added a detailed warning showing which entities are overlapping
 - Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
 - `SpacyEntityExtractor` supports same entity filtering as `DucklingHTTPExtractor`
-
+- ability to preload specific models on startup with the ``--pre_load_model`` option
 Changed
 -------
 - validate training data only if used for training
@@ -108,6 +108,12 @@ Changed
 - updated cloudpickle version to 0.6.1
 - updated requirements to match Core and SDK
 - pinned keras dependecies
+- use cloudpickle version 0.6.1
+- replaced ``yaml`` with ``ruamel.yaml``
+- the ``load_model`` method in ``Project`` class now takes an optional ``model_name`` parameter
+- ``pre_load`` command line argument is now the path of the model or project, relative to the path argument
+- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
+  ``TrainingData`` object
 
 Removed
 -------

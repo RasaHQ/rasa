@@ -8,6 +8,8 @@ import simplejson
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
+from os.path import normpath, basename
+import os
 
 from rasa_nlu import config, utils
 import rasa_nlu.cli.server as cli
@@ -24,7 +26,77 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(description='parse incoming text')
+<<<<<<< HEAD
     cli.add_server_arguments(parser)
+=======
+
+    parser.add_argument('-e', '--emulate',
+                        choices=['wit', 'luis', 'dialogflow'],
+                        help='which service to emulate (default: None i.e. use'
+                             ' simple built in format)')
+    parser.add_argument('-P', '--port',
+                        type=int,
+                        default=5000,
+                        help='port on which to run server')
+    parser.add_argument('--pre_load',
+                        nargs='+',
+                        default=[],
+                        help='Preload specific projects or models into memory '
+                             'before starting the server. \nEg: python -m '
+                             'rasa_nlu.server --pre_load projectX/'
+                             'my_model_1 --pre_load projectY/my_model_2 '
+                             '-c config.yaml')
+    parser.add_argument('-t', '--token',
+                        help="auth token. If set, reject requests which don't "
+                             "provide this token as a query parameter")
+    parser.add_argument('-w', '--write',
+                        help='file where logs will be saved')
+    parser.add_argument('--path',
+                        required=True,
+                        help="working directory of the server. Models are"
+                             "loaded from this directory and trained models "
+                             "will be saved here.")
+    parser.add_argument('--cors',
+                        nargs="*",
+                        help='List of domain patterns from where CORS '
+                             '(cross-origin resource sharing) calls are '
+                             'allowed. The default value is `[]` which '
+                             'forbids all CORS requests.')
+
+    parser.add_argument('--max_training_processes',
+                        type=int,
+                        default=1,
+                        help='Number of processes used to handle training '
+                             'requests. Increasing this value will have a '
+                             'great impact on memory usage. It is '
+                             'recommended to keep the default value.')
+    parser.add_argument('--num_threads',
+                        type=int,
+                        default=1,
+                        help='Number of parallel threads to use for '
+                             'handling parse requests.')
+    parser.add_argument('--endpoints',
+                        help='Configuration file for the model server '
+                             'as a yaml file')
+    parser.add_argument('--wait_time_between_pulls',
+                        type=int,
+                        default=10,
+                        help='Wait time in seconds between NLU model server'
+                             'queries.')
+    parser.add_argument('--response_log',
+                        help='Directory where logs will be saved '
+                             '(containing queries and responses).'
+                             'If set to ``null`` logging will be disabled.')
+    parser.add_argument('--storage',
+                        help='Set the remote location where models are stored. '
+                             'E.g. on AWS. If nothing is configured, the '
+                             'server will only serve the models that are '
+                             'on disk in the configured `path`.')
+    parser.add_argument('-c', '--config',
+                        help="Default model configuration file used for "
+                             "training.")
+
+>>>>>>> dynamically load models with _pre_load_model
     utils.add_logging_option_arguments(parser)
 
     return parser
@@ -343,6 +415,7 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
+<<<<<<< HEAD
 def get_token(_clitoken: str) -> str:
     _envtoken = os.environ.get("RASA_NLU_TOKEN")
 
@@ -358,11 +431,113 @@ def get_token(_clitoken: str) -> str:
     token = _clitoken or _envtoken
     return token
 
+def get_absolute_path(model_path, current_path):
+    model_path = model_path.rstrip("/")
+    current_path = current_path.rstrip("/")
+    if not current_path.startswith('/'):
+        current_path = '/' + current_path
+    if(model_path.startswith('/')):
+        return model_path
+    else:
+        return current_path + "/" + model_path
+
+
+def parse_model(path):
+    project, model = filter(None, path.split('/')[-2:])
+    return (project, model)
+
+
+def parse_project(path):
+    project = path.split('/')[-1]
+    return project
+
+
+def parse_pre_load_path(pre_load_path):
+    pre_load_path_split = pre_load_path.lstrip("/").split('/')
+    is_potential_model_or_project_path = len(pre_load_path_split) > 1
+    is_potential_project_path = len(pre_load_path_split) > 0
+    return (
+        pre_load_path_split,
+        is_potential_model_or_project_path,
+        is_potential_project_path
+    )
+
+def should_fetch_from_cloud(
+    is_local_model,
+    is_local_project,
+    is_potential_model_or_project_path):
+    return (
+        not is_local_model and
+        not is_local_project and
+        is_potential_model_or_project_path
+    )
+
+
+def parse_project_and_model(
+        is_local_model,
+        is_local_project,
+        pre_load_path,
+        absolute_path):
+
+    (
+        pre_load_path_split,
+        is_potential_model_or_project_path,
+        is_potential_project_path
+    ) = parse_pre_load_path(pre_load_path)
+
+    result = []
+    if is_local_model:
+        # the argument is a model
+        project, model = parse_model(pre_load_path)
+        result = result + (project, model, absolute_path)
+
+    elif is_local_project or is_potential_project_path:
+        # the argument is a project
+        project = parse_project(pre_load_path)
+        result = result + (project, None, absolute_path)
+
+    if should_fetch_from_cloud(
+        is_local_model,
+        is_local_project,
+        is_potential_model_or_project_path):
+        # if we did not find anything locally,
+        # we can assume the project or model is stored on the cloud
+        # we do not know yet if it is a project or a model,
+        # so we try to load both
+        result = result + [
+            (project, model, absolute_path),
+            (model, None, absolute_path)
+        ]
+    return result
+
+
+def parse_pre_load(pre_load_args, path):
+    parsed_results = []
+    for pre_load_path in pre_load_args:
+
+        pre_load_path = pre_load_path.rstrip("/")
+        absolute_path = get_absolute_path(pre_load_path, path)
+
+        is_local_model = os.path.isfile(absolute_path + '/metadata.json')
+        is_local_project = os.path.isdir(pre_load_path)
+
+        parsed_projects_and_models = parse_project_and_model(
+            is_local_model,
+            is_local_project,
+            pre_load_path,
+            absolute_path
+        )
+        if len(parsed_projects_and_models) == 0:
+            logger.error('invalid input')
+        parsed_results = parsed_results + parsed_projects_and_models
+
+    return parsed_results
+
+
 
 def main(args):
     utils.configure_colored_logging(args.loglevel)
     pre_load = args.pre_load
-
     _endpoints = read_endpoints(args.endpoints)
 
     router = DataRouter(
@@ -374,11 +549,12 @@ def main(args):
         model_server=_endpoints.model,
         wait_time_between_pulls=args.wait_time_between_pulls
     )
+
     if pre_load:
         logger.debug('Preloading....')
-        if 'all' in pre_load:
-            pre_load = router.project_store.keys()
-        router._pre_load(pre_load)
+        parsed_input = parse_pre_load(pre_load, cmdline_args.path)
+        for (project, model, absolute_path) in parsed_input:
+            router._pre_load(project, model, absolute_path)
 
     rasa = RasaNLU(
         router,

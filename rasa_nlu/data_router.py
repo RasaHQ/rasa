@@ -189,11 +189,32 @@ class DataRouter(object):
 
         return project_store
 
-    def _pre_load(self, projects: List[Text]) -> None:
-        logger.debug("loading %s", projects)
-        for project in self.project_store:
-            if project in projects:
-                self.project_store[project].load_model()
+    def _pre_load(self, project, model=None, absolute_path=None):
+        if model is None:
+            self._pre_load_project(project)
+        else:
+            self._pre_load_model(project, model)
+
+    def _pre_load_project(self, project) -> None:
+        logger.debug("loading %s", project)
+        if project in self.project_store:
+            logger.info('loading project %s', project)
+            self.project_store[project].load_model()
+        else:
+            logger.debug(
+                'project %s does not exist in the project store',
+                project
+            )
+
+    def _pre_load_model(self, project, model=None) -> None:
+        if project in self.project_store:
+            logger.info("loading model %s from project %s", model, project)
+            self.project_store[project].load_model(model)
+        else:
+            logger.debug(
+                'project %s does not exist in the project store',
+                project
+            )
 
     def _list_projects_in_cloud(self) -> List[Text]:
         # noinspection PyBroadException

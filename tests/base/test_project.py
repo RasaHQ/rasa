@@ -5,7 +5,6 @@ import responses
 from rasa_nlu.project import Project, load_from_server
 from rasa_nlu.utils import EndpointConfig
 
-
 def test_dynamic_load_model_with_exists_model():
     MODEL_NAME = 'model_name'
 
@@ -119,3 +118,33 @@ def test_project_with_model_server(zipped_nlu_model):
                       stream=True)
     project = load_from_server(model_server=model_endpoint)
     assert project.fingerprint == fingerprint
+
+
+def test_load_model_without_args():
+
+    @staticmethod
+    def mock_load(model_dir):
+        data = Project._default_model_metadata()
+        return Metadata(data, model_dir)
+
+    with mock.patch.object(Metadata, "load", mock_load):
+        with mock.patch.object(Project, "_load_model_from_cloud", return_value=None):
+            with mock.patch.object(Project, "_dynamic_load_model", return_value='') as mock_dynamic_load_model:
+                project = Project()
+                project.load_model()
+    mock_dynamic_load_model.assert_called_once_with()
+
+
+def test_load_model_with_args():
+
+    @staticmethod
+    def mock_load(model_dir):
+        data = Project._default_model_metadata()
+        return Metadata(data, model_dir)
+
+    with mock.patch.object(Metadata, "load", mock_load):
+        with mock.patch.object(Project, "_load_model_from_cloud", return_value=None):
+            with mock.patch.object(Project, "_dynamic_load_model", return_value='') as mock_dynamic_load_model:
+                project = Project()
+                project.load_model('my_model')
+    mock_dynamic_load_model.assert_not_called()
