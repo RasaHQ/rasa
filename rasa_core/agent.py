@@ -323,12 +323,11 @@ class Agent(object):
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
             **kwargs  # type: Any
     ):
-        # type: (...) -> Dict[Text, Any]
+        # type: (...) -> DialogueStateTracker
         """Append a message to a dialogue - does not predict actions."""
 
         processor = self.create_processor(message_preprocessor)
-        tracker = processor.log_message(message)
-        return tracker.current_state(EventVerbosity.AFTER_RESTART)
+        return processor.log_message(message)
 
     def execute_action(
             self,

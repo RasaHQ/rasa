@@ -70,7 +70,7 @@ class PolicyEnsemble(object):
                         "training samples.")
 
     def probabilities_using_best_policy(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
+        # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
         raise NotImplementedError
 
     def _max_histories(self):

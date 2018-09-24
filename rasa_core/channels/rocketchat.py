@@ -28,7 +28,7 @@ class RocketChatBot(OutputChannel):
 
         for message_part in message.split("\n\n"):
             self.rocket.chat_post_message(message_part,
-                                          roomId=recipient_id)
+                                          room_id=recipient_id)
 
     def send_image_url(self, recipient_id, image_url):
         image_attachment = [{
@@ -37,12 +37,12 @@ class RocketChatBot(OutputChannel):
         }]
 
         return self.rocket.chat_post_message(None,
-                                             roomId=recipient_id,
+                                             room_id=recipient_id,
                                              attachments=image_attachment)
 
     def send_attachment(self, recipient_id, attachment, message=""):
         return self.rocket.chat_post_message(None,
-                                             roomId=recipient_id,
+                                             room_id=recipient_id,
                                              attachments=[attachment])
 
     @staticmethod
@@ -61,8 +61,11 @@ class RocketChatBot(OutputChannel):
             {"actions": self._convert_to_rocket_buttons(buttons)}]
 
         return self.rocket.chat_post_message(message,
-                                             roomId=recipient_id,
+                                             room_id=recipient_id,
                                              attachments=button_attachment)
+
+    def send_custom_message(self, recipient_id, elements):
+        return self.rocket.chat_post_message(None, room_id=recipient_id, attachments=elements)
 
 
 class RocketChatInput(InputChannel):

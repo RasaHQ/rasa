@@ -13,6 +13,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- custom message method in rocketchat channel
 
 
 Changed
@@ -25,6 +26,7 @@ Removed
 
 Fixed
 -----
+- wrong paramter name in rocketchat channel methods
 - fixed an issue with boolean slots where False and None had the same value
   (breaking model compatibility with models that use a boolean slot)
 - Software 2.0 link on interactive learning documentation page went to Tesla's homepage, now it links to Karpathy
