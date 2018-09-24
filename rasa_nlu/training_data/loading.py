@@ -55,11 +55,14 @@ def load_data(resource_name, language='en'):
     data_sets = [_load(f, language) for f in files]
     data_sets = [ds for ds in data_sets if ds]
     if len(data_sets) == 0:
-        return TrainingData()
+        training_data = TrainingData()
     elif len(data_sets) == 1:
-        return data_sets[0]
+        training_data = data_sets[0]
     else:
-        return data_sets[0].merge(*data_sets[1:])
+        training_data = data_sets[0].merge(*data_sets[1:])
+
+    training_data.validate()
+    return training_data
 
 
 def load_data_from_endpoint(data_endpoint, language='en'):
@@ -73,7 +76,10 @@ def load_data_from_endpoint(data_endpoint, language='en'):
         response.raise_for_status()
         temp_data_file = utils.create_temporary_file(response.content,
                                                      mode="w+b")
-        return _load(temp_data_file, language)
+        training_data = _load(temp_data_file, language)
+        training_data.validate()
+
+        return training_data
     except Exception as e:
         logger.warning("Could not retrieve training data "
                        "from URL:\n{}".format(e))
