@@ -58,7 +58,7 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: trigger website rebuild
-    if: if: fork = false AND branch = "master"
+    if: fork = false AND branch = "master" AND type != "pull_request"
     script:
     - eval "$(ssh-agent -s)";
       touch nlu_docs_to_website_trigger_key;
