@@ -294,7 +294,6 @@ class RemoteAction(Action):
             dispatcher.utter_response(draft)
 
     def run(self, dispatcher, tracker, domain):
-        from rasa_core.events import ActionExecutionFailed, ActionReverted
         json = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
