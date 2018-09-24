@@ -146,14 +146,13 @@ def create_app(agent,
             out = CollectingOutputChannel()
             agent.execute_action(sender_id,
                                  action_to_execute,
+                                 out,
                                  policy,
-                                 policy_confidence,
-                                 out)
+                                 policy_confidence)
 
             # retrieve tracker and set to requested state
             tracker = agent.tracker_store.get_or_create_tracker(sender_id)
             state = tracker.current_state(EventVerbosity.AFTER_RESTART)
-            print(state)
             return jsonify({"tracker": state,
                             "messages": out.messages})
 

@@ -18,7 +18,8 @@ from typing import Text
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME)
+    ACTION_RESTART_NAME,
+    ActionExecutionError)
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.channels import UserMessage
 from rasa_core.dispatcher import Dispatcher
@@ -34,7 +35,7 @@ from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import EndpointConfig, ActionExecutionError
+from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -129,15 +130,22 @@ class MessageProcessor(object):
                            "'{}'.".format(message.sender_id))
         return tracker
 
-    def execute_action(self, sender_id, action_name, policy, policy_confidence, dispatcher):
-        # type: (Text, Text, Dispatcher) -> Optional[DialogueStateTracker]
+    def execute_action(self,
+                       sender_id,  # type: Text
+                       action_name,  # type: Text
+                       dispatcher,  # type: Dispatcher
+                       policy,  # type: Text
+                       policy_confidence  # type: float
+                       ):
+        # type: (...) -> Optional[DialogueStateTracker]
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(sender_id)
         if tracker:
             action = self._get_action(action_name)
-            self._run_action(action, tracker, dispatcher, policy, policy_confidence)
+            self._run_action(action, tracker, dispatcher, policy,
+                             policy_confidence)
 
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -318,7 +326,8 @@ class MessageProcessor(object):
                                       id=e.name,
                                       replace_existing=True)
 
-    def _run_action(self, action, tracker, dispatcher, policy=None, confidence=None):
+    def _run_action(self, action, tracker, dispatcher, policy=None,
+                    confidence=None):
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:

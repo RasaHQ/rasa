@@ -334,9 +334,9 @@ class Agent(object):
             self,
             sender_id,  # type: Text
             action,  # type: Text
+            output_channel,  # type: OutputChannel
             policy,  # type: Text
-            policy_confidence,  # type: float
-            output_channel  # type: OutputChannel
+            policy_confidence  # type: float
     ):
         # type: (...) -> DialogueStateTracker
         """Handle a single message."""
@@ -345,7 +345,8 @@ class Agent(object):
         dispatcher = Dispatcher(sender_id,
                                 output_channel,
                                 self.nlg)
-        return processor.execute_action(sender_id, action, policy, policy_confidence, dispatcher)
+        return processor.execute_action(sender_id, action, dispatcher, policy,
+                                        policy_confidence)
 
     def handle_text(
             self,
