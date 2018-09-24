@@ -872,6 +872,13 @@ class ActionExecutionFailed(Event):
         else:
             return self.action_name == other.action_name
 
+    @classmethod
+    def _from_parameters(cls, parameters):
+        return ActionExecutionFailed(parameters.get("action_name"),
+                                     parameters.get("policy"),
+                                     parameters.get("policy_confidence"),
+                                     parameters.get("timestamp"))
+
     def as_story_string(self):
         return None
 
