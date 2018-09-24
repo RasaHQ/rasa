@@ -19,8 +19,6 @@ script:
 - travis_wait py.test tests --cov rasa_core --pep8 -v
  #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
-- openssl aes-256-cbc -K $encrypted_15dbb0d66e34_key -iv $encrypted_15dbb0d66e34_iv
-  -in secrets.tar.enc -out secrets.tar -d
 - coveralls
 jobs:
   include:
