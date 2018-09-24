@@ -130,7 +130,8 @@ def test_is_listening_for_messages(mock_endpoint):
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
 
     httpretty.enable()
-    is_listening = interactive.is_listening_for_message(sender_id, mock_endpoint)
+    is_listening = interactive.is_listening_for_message(sender_id,
+                                                        mock_endpoint)
     httpretty.disable()
 
     assert is_listening
