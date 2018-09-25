@@ -362,7 +362,8 @@ class MessageProcessor(object):
         for e in events:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
-                if s and s.has_features():
+                if s and s.has_features() or (e.key == 'requested_slot' and
+                                              not tracker.active_form):
                     logger.warning(
                             "Action '{0}' set a slot type '{1}' that "
                             "it never set during the training. This "
