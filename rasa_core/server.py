@@ -75,16 +75,18 @@ def requires_auth(app, token=None):
     """Wraps a request handler with token authentication."""
 
     def decorator(f):
-        def sufficient_scope(f, args):
+        def sufficient_scope(*args):
             jwt_data = view_decorators._decode_jwt_from_headers()
             role = jwt_data.get("role", None)
             username = jwt_data.get("username", None)
+            sender_id = args[0] if len(args) > 0 else None
 
             if role == "admin":
                 return True
             elif role == "user":
                 argnames = getargspec(f).args
-                return ('sender_id' in argnames and
+                return (sender_id is not None and 
+                        'sender_id' in argnames and
                         username == args[0])
             else:
                 return False
@@ -95,8 +97,13 @@ def requires_auth(app, token=None):
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 return f(*args, **kwargs)
-            elif (app.config.get('JWT_ALGORITHM') is not None                  and sufficient_scope(f)):
-                return f(*args, **kwargs)
+            elif (app.config.get('JWT_ALGORITHM') is not None:
+                if sufficient_scope(*args)):
+                    return f(*args, **kwargs)
+                else:
+                    abort(error(
+                        403, "NotAuthorized", "User has insufficient permissions.",
+                        help_url=_docs("/server.html#security-considerations")))
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
