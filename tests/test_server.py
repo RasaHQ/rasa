@@ -230,6 +230,7 @@ def test_list_conversations_with_jwt(secured_app):
                                headers=jwt_header)
     assert response.status_code == 403
 
+
 def test_get_tracker_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
@@ -247,7 +248,6 @@ def test_get_tracker_with_jwt(secured_app):
     response = secured_app.get("/conversations/testuser/tracker",
                                headers=jwt_header)
     assert response.status_code == 200
-
 
     # {"username": "testuser", "role": "user"}
     jwt_header = {
