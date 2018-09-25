@@ -12,6 +12,7 @@ from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 from functools import wraps
+from inspect import getargspec
 from typing import List
 from typing import Text, Optional
 from typing import Union
@@ -74,14 +75,27 @@ def requires_auth(app, token=None):
     """Wraps a request handler with token authentication."""
 
     def decorator(f):
+        def sufficient_scope(f, args):
+            jwt_data = view_decorators._decode_jwt_from_headers()
+            role = jwt_data.get("role", None)
+            username = jwt_data.get("username", None)
+
+            if role == "admin":
+                return True
+            elif role == "user":
+                argnames = getargspec(f).args
+                return ('sender_id' in argnames and
+                        username == args[0])
+            else:
+                return False
+
         @wraps(f)
         def decorated(*args, **kwargs):
             provided = request.args.get('token')
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 return f(*args, **kwargs)
-            elif (app.config.get('JWT_ALGORITHM') is not None
-                  and view_decorators._decode_jwt_from_headers()):
+            elif (app.config.get('JWT_ALGORITHM') is not None                  and sufficient_scope(f)):
                 return f(*args, **kwargs)
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
