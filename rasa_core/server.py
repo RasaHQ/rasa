@@ -11,7 +11,6 @@ from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 from functools import wraps
-from inspect import getargspec
 from typing import List
 from typing import Text, Optional
 from typing import Union
@@ -66,19 +65,28 @@ def requires_auth(app, token=None):
     """Wraps a request handler with token authentication."""
 
     def decorator(f):
-        def sufficient_scope(*args):
+        def sender_id_from_args(f, args, kwargs):
+            argnames = utils.arguments_of(f)
+            try:
+                sender_id_arg_idx = argnames.index("sender_id")
+                if "sender_id" in kwargs:   # try to fetch from kwargs first
+                    return kwargs["sender_id"]
+                if sender_id_arg_idx < len(args):
+                    return args[sender_id_arg_idx]
+                return None
+            except ValueError:
+                return None
+
+        def sufficient_scope(*args, **kwargs):
             jwt_data = view_decorators._decode_jwt_from_headers()
             role = jwt_data.get("role", None)
             username = jwt_data.get("username", None)
-            sender_id = args[0] if len(args) > 0 else None
 
             if role == "admin":
                 return True
             elif role == "user":
-                argnames = getargspec(f).args
-                return (sender_id is not None and 
-                        'sender_id' in argnames and
-                        username == args[0])
+                sender_id = sender_id_from_args(f, args, kwargs)
+                return sender_id is not None and username == sender_id
             else:
                 return False
 
@@ -88,17 +96,19 @@ def requires_auth(app, token=None):
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 return f(*args, **kwargs)
-            elif (app.config.get('JWT_ALGORITHM') is not None:
-                if sufficient_scope(*args)):
+            elif app.config.get('JWT_ALGORITHM') is not None:
+                if sufficient_scope(*args, **kwargs):
                     return f(*args, **kwargs)
-                else:
-                    abort(error(
-                        403, "NotAuthorized", "User has insufficient permissions.",
-                        help_url=_docs("/server.html#security-considerations")))
+                abort(error(
+                    403, "NotAuthorized", "User has insufficient permissions.",
+                    help_url=_docs("/server.html#security-considerations")))
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
-            abort(401)
+
+            abort(error(
+                    401, "NotAuthenticated", "User is not authenticated.",
+                    help_url=_docs("/server.html#security-considerations")))
 
         return decorated
 
