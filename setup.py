@@ -71,6 +71,7 @@ install_requires = [
     "PyInquirer~=1.0",
     "flask-jwt-simple~=0.0.3",
     "python-socketio~=2.0",
+    "pillow~=5.2",
 ]
 
 extras_requires = {
