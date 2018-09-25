@@ -10,8 +10,9 @@ from typing import Any, Text, List, Dict, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.domain import Domain
-from rasa_core.events import UserUttered, ActionExecuted
+from rasa_core.events import UserUttered, ActionExecuted, Event
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.training.structures import StoryGraph, StoryStep
 from rasa_nlu.training_data import TrainingData, Message
@@ -166,6 +167,12 @@ def _merge_equivalent_nodes(graph, max_history):
                          idx + 1:]:  # assumes node equivalence is cumulative
                     if graph.has_node(j) and \
                             _nodes_are_equivalent(graph, i, j, max_history):
+                        # make sure we keep the dotted style
+                        style = graph.nodes(data=True)[j].get("style", "")
+                        ostyle = graph.nodes(data=True)[i]
+                        if "dotted" in style:
+                            ostyle["style"] = style
+
                         changed = True
                         # moves all outgoing edges to the other node
                         j_outgoing_edges = list(graph.out_edges(j, keys=True,
@@ -229,6 +236,142 @@ def persist_graph(graph, output_file):
     expg.layout("dot", args="-Goverlap=false -Gsplines=true "
                             "-Gconcentrate=true -Gfontname=typewriter")
     expg.draw(output_file)
+
+
+def _length_of_common_prefix(this, other):
+    num_common_events = 0
+    t_cleaned = [e for e in this if e.type_name in {"user", "action"}]
+    o_cleaned = [e for e in other if e.type_name in {"user", "action"}]
+
+    for i, e in enumerate(t_cleaned):
+        if i == len(o_cleaned):
+            break
+        elif e.type_name == "user" and o_cleaned[i].type_name == "user":
+            continue
+        elif (e.type_name == "action"
+              and o_cleaned[i].type_name == "action"
+              and o_cleaned[i].action_name == e.action_name):
+            num_common_events += 1
+        else:
+            break
+    return num_common_events
+
+
+def visualize_neighborhood(
+        current,  # type: List[Event]
+        event_sequences,  # type: List[List[Event]]
+        output_file,  # type: Optional[Text]
+        max_history,  # type: int
+        interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
+        nlu_training_data=None,  # type: Optional[TrainingData]
+        should_merge_nodes=True,  # type: bool
+        fontsize=12,  # type: int
+        max_distance=1
+):
+    import networkx as nx
+
+    graph = nx.MultiDiGraph()
+    next_node_idx = 0
+    graph.add_node(0, label="START", fillcolor="green", style="filled",
+                   fontsize=fontsize)
+    graph.add_node(-1, label="END", fillcolor="red", style="filled",
+                   fontsize=fontsize)
+    graph.add_node(-2, label="TMP", style="invisible")
+    special_node_idx = -3
+    path_ellipsis_ends = set()
+
+    for events in event_sequences:
+        if current and max_distance:
+            prefix = _length_of_common_prefix(current, events)
+        else:
+            prefix = len(events)
+
+        message = None
+        current_node = 0
+        idx = 0
+        for idx, el in enumerate(events):
+            if not prefix:
+                idx -= 1
+                break
+            if isinstance(el, UserUttered):
+                message = interpreter.parse(el.text)
+            elif (isinstance(el, ActionExecuted) and
+                  el.action_name != ACTION_LISTEN_NAME):
+                next_node_idx += 1
+                graph.add_node(next_node_idx, label=el.action_name,
+                               fontsize=fontsize)
+
+                if message:
+                    message_key = message.get("intent", {}).get("name", None)
+                    message_label = message.get("text", None)
+                else:
+                    message_key = None
+                    message_label = None
+
+                _add_edge(graph, current_node, next_node_idx, message_key,
+                          message_label)
+                current_node = next_node_idx
+
+                message = None
+                prefix -= 1
+
+        if events == current:
+            if message:
+                target = -2
+            if (isinstance(events[idx], ActionExecuted)
+                    and events[idx].action_name == ACTION_LISTEN_NAME):
+                next_node_idx += 1
+                graph.add_node(next_node_idx,
+                               label=message or "  ?  ",
+                               style="filled,dotted",
+                               fillcolor="lightblue",
+                               shape="box",
+                               fontsize=fontsize)
+                target = next_node_idx
+            elif current_node:
+                d = graph.nodes(data=True)[current_node]
+                d["style"] = "dotted"
+                target = -2
+        elif idx == len(events):
+            target = -1
+        elif current_node and current_node not in path_ellipsis_ends:
+            graph.add_node(special_node_idx, label="...", fillcolor="grey",
+                           style="filled")
+            target = special_node_idx
+            path_ellipsis_ends.add(current_node)
+            special_node_idx -= 1
+        else:
+            target = -1
+
+        if message:
+            message_key = message.get("intent", {}).get("name", None)
+            message_label = message.get("text", None)
+            graph.add_edge(current_node, target,
+                           key=message_key, label=message_label)
+        else:
+            graph.add_edge(current_node, target, key=EDGE_NONE_LABEL)
+
+    if should_merge_nodes:
+        _merge_equivalent_nodes(graph, max_history)
+    _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
+                                    nlu_training_data, fontsize)
+    graph.remove_node(-2)
+    if not len(list(graph.predecessors(-1))):
+        graph.remove_node(-1)
+
+    # remove duplicated ... nodes after merging
+    ps = set()
+    for i in range(special_node_idx+1, -2):
+        preds = list(graph.predecessors(i))
+        if preds:
+            if preds[0] in ps:
+                graph.remove_node(i)
+            else:
+                ps.add(preds[0])
+
+    if output_file:
+        persist_graph(graph, output_file)
+    return graph
 
 
 def visualize_stories(

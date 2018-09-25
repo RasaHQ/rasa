@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import six
 import sys
 
 import io
@@ -27,13 +28,15 @@ from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 from rasa_core.domain import Domain
-from rasa_core.events import Event
+from rasa_core.events import Event, ActionExecuted
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.training.image import show_image
 from rasa_core.training.structures import Story
-from rasa_core.training.visualization import visualize_stories
+from rasa_core.training.visualization import (
+    visualize_stories,
+    visualize_neighborhood)
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
@@ -654,6 +657,7 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         action_name = predictions[pred_out].get("action")
 
         _print_history(sender_id, endpoint)
+        _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph, action_name)
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
         _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph)
@@ -886,23 +890,32 @@ def _undo_latest(sender_id, endpoint):
         replace_events(endpoint, sender_id, events_to_keep)
 
 
-def _plot_trackers(sender_ids, domain, output_file, endpoint):
-    d = Domain.from_dict(domain)
+def _plot_trackers(sender_ids, domain, output_file, endpoint, unconfirmed=None):
     temp_story_file = tempfile.NamedTemporaryFile(delete=False,
                                                   suffix=".md")
     temp_story_file.close()
 
-    print("Dumping to {}".format(temp_story_file.name))
-
+    event_sequences = []
     for sender_id in sender_ids:
-        _write_stories_to_file(temp_story_file.name, sender_id, endpoint)
+        if isinstance(sender_id, six.string_types):
+            tracker = retrieve_tracker(endpoint, sender_id)
+            evts = tracker.get("events", [])
+            sub_conversations = _split_conversation_at_restarts(evts)
 
-    steps = StoryFileReader.read_from_file(temp_story_file.name, d)
-    visualize_stories(steps, d, output_file, max_history=2, silent=True)
+            for conversation in sub_conversations:
+                parsed_events = events.deserialise_events(conversation)
+                event_sequences.append(parsed_events)
+        else:
+            event_sequences.append(sender_id)
+
+    if unconfirmed:
+        event_sequences[-1].append(ActionExecuted(unconfirmed))
+    visualize_neighborhood(
+            event_sequences[-1], event_sequences, output_file, max_history=2)
 
 
-def _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph):
-    _plot_trackers(sender_ids, domain, plot_file, endpoint)
+def _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph, unconfirmed=None):
+    _plot_trackers(sender_ids, domain, plot_file, endpoint, unconfirmed)
     story_graph.update_image()
 
 
@@ -910,9 +923,14 @@ def record_messages(endpoint,  # type: EndpointConfig
                     sender_id=UserMessage.DEFAULT_SENDER_ID,  # type: Text
                     max_message_limit=None,  # type: Optional[int]
                     on_finish=None,  # type: Optional[Callable[[], None]]
-                    finetune=False  # type: bool
+                    finetune=False,  # type: bool
+                    stories=None,
                     ):
     """Read messages from the command line and print bot responses."""
+
+    from rasa_core import training
+
+
 
     try:
         exit_text = INTENT_MESSAGE_PREFIX + 'stop'
@@ -928,10 +946,15 @@ def record_messages(endpoint,  # type: EndpointConfig
                              "Is the server running?".format(endpoint.url))
             return
 
+        trackers = training.load_data(stories, Domain.from_dict(domain),
+                                      augmentation_factor=0,
+                                      use_story_concatenation=False,
+                                      )
+
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
         num_messages = 0
-        sender_ids = [sender_id]
+        sender_ids = [t.events for t in trackers] + [sender_id]
 
         plot_file = "story_graph.gif"
         _plot_trackers(sender_ids, domain, plot_file, endpoint)
@@ -967,6 +990,8 @@ def record_messages(endpoint,  # type: EndpointConfig
                     replace_events(endpoint, sender_id, evts)
                     sender_ids.append(sender_id)
                     _print_history(sender_id, endpoint)
+                    _plot_and_show(sender_ids, domain, plot_file, endpoint,
+                                   story_graph)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")
@@ -976,7 +1001,7 @@ def record_messages(endpoint,  # type: EndpointConfig
             on_finish()
 
 
-def _start_online_learning_io(endpoint, on_finish, finetune=False):
+def _start_online_learning_io(endpoint, stories, on_finish, finetune=False):
     # type: (EndpointConfig, Callable[[], None], bool) -> None
     """Start the online learning message recording in a separate thread."""
 
@@ -984,12 +1009,13 @@ def _start_online_learning_io(endpoint, on_finish, finetune=False):
                kwargs={
                    "endpoint": endpoint,
                    "on_finish": on_finish,
+                   "stories": stories,
                    "finetune": finetune})
     p.setDaemon(True)
     p.start()
 
 
-def _serve_application(app, finetune=False, serve_forever=True):
+def _serve_application(app, stories, finetune=False, serve_forever=True):
     # type: (Flask, bool, bool) -> WSGIServer
     """Start a core server and attach the online learning IO."""
 
@@ -999,7 +1025,7 @@ def _serve_application(app, finetune=False, serve_forever=True):
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    _start_online_learning_io(endpoint, http_server.stop, finetune=finetune)
+    _start_online_learning_io(endpoint, stories, http_server.stop, finetune=finetune)
 
     if serve_forever:
         try:
@@ -1010,10 +1036,10 @@ def _serve_application(app, finetune=False, serve_forever=True):
     return http_server
 
 
-def run_online_learning(agent, finetune=False, serve_forever=True):
+def run_online_learning(agent, stories, finetune=False, serve_forever=True):
     # type: (Agent, bool, bool) -> WSGIServer
     """Start the online learning with the model of the agent."""
 
     app = server.create_app(agent)
 
-    return _serve_application(app, finetune, serve_forever)
+    return _serve_application(app, stories, finetune, serve_forever)
