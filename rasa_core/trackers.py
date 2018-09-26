@@ -259,7 +259,6 @@ class DialogueStateTracker(object):
                     ignored_trackers = []
                     # persist latest user message that failed the form
                     latest_message = tracker.latest_message
-
                 elif event.action_name != tracker.active_form:
                     # it is not known whether the form will be
                     # successfully executed, so store this tracker for later

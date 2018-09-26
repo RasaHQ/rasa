@@ -15,7 +15,7 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.conversation import Dialogue
-from rasa_core.events import UserUttered, ActionExecuted, Event
+from rasa_core.events import UserUttered, ActionExecuted, Form, Event
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -31,6 +31,8 @@ STORY_END = None
 # need abbreviations otherwise they are not visualized well
 GENERATED_CHECKPOINT_PREFIX = "GENR_"
 CHECKPOINT_CYCLE_PREFIX = "CYCL_"
+
+FORM_PREFIX = "form: "
 
 GENERATED_HASH_LENGTH = 5
 
@@ -112,13 +114,62 @@ class StoryStep(object):
             for s in self.start_checkpoints:
                 if s.name != STORY_START:
                     result += "> {}\n".format(s.as_story_string())
+
+        active_form = None
+        failed = False
+        result_with_prefix = ''
+        result_without_prefix = ''
+
         for s in self.events:
             if isinstance(s, UserUttered):
-                result += "* {}\n".format(s.as_story_string())
+                if active_form is None:
+                    result += "* {}\n".format(s.as_story_string())
+                else:
+                    result_with_prefix += "* {}{}\n".format(FORM_PREFIX,
+                                                            s.as_story_string())
+                    result_without_prefix += "* {}\n".format(s.as_story_string())
+
+            elif isinstance(s, Form):
+                active_form = s.name
+
+                if active_form is None:
+                    result += result_with_prefix
+                    result_with_prefix = ''
+
+                result += "    - {}\n".format(s.as_story_string())
+
+            elif isinstance(s, ActionExecuted):
+                if active_form is None:
+                    result += "    - {}\n".format(s.as_story_string())
+                else:
+                    if s.action_name != active_form:
+                        failed = True
+
+                    if failed:
+                        result += result_without_prefix
+                        result += "    - {}\n".format(s.as_story_string())
+                        result_with_prefix = ''
+                        result_without_prefix = ''
+                    else:
+                        result += result_with_prefix
+                        result += "    - {}{}\n".format(FORM_PREFIX,
+                                                        s.as_story_string())
+                        result_with_prefix = ''
+                        result_without_prefix = ''
+
+                    if s.action_name == active_form:
+                        failed = False
+
             elif isinstance(s, Event):
                 converted = s.as_story_string()
                 if converted:
-                    result += "    - {}\n".format(s.as_story_string())
+                    if active_form is None:
+                        result += "    - {}\n".format(s.as_story_string())
+                    else:
+                        result_with_prefix += "    - {}{}\n".format(FORM_PREFIX,
+                                                                    s.as_story_string())
+                        result_without_prefix += "    - {}\n".format(s.as_story_string())
+
             else:
                 raise Exception("Unexpected element in story step: "
                                 "{}".format(s))
