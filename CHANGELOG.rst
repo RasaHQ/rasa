@@ -26,7 +26,6 @@ Removed
 
 Fixed
 -----
-<<<<<<< HEAD
 - wrong paramter name in rocketchat channel methods
 - fixed an issue with boolean slots where False and None had the same value
   (breaking model compatibility with models that use a boolean slot)
