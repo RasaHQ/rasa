@@ -26,12 +26,33 @@ Removed
 
 Fixed
 -----
+<<<<<<< HEAD
 - wrong paramter name in rocketchat channel methods
 - fixed an issue with boolean slots where False and None had the same value
   (breaking model compatibility with models that use a boolean slot)
 - Software 2.0 link on interactive learning documentation page went to Tesla's homepage, now it links to Karpathy
   blogpost
+
+[0.11.7] - 2018-09-26
+^^^^^^^^^^^^^^^^^^^^^
+
 - don't fail if rasa and rest input channels are used together
+
+[0.11.6] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
+
+[0.11.5] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- numpy version incompatibility between rasa core and tensorflow
 
 [0.11.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^
