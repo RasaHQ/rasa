@@ -242,7 +242,8 @@ class DialogueStateTracker(object):
             elif isinstance(event, Form):
                 # form got either activated or deactivated, so override
                 # tracker's latest message
-                tracker.latest_message = latest_message
+                if latest_message is not None:
+                    tracker.latest_message = latest_message
 
             elif isinstance(event, ActionExecutionFailed):
                 failed = True
