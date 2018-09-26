@@ -13,29 +13,38 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
-- custom message method in rocketchat channel
-
+- openapi documentation of server API
 
 Changed
 -------
-
+- improved response format for ``/predict`` endpoint
+- all error messages from the server are now in json format
+- ``agent.log_message`` now returns a tracker instead of the trackers state
 
 Removed
 -------
 
+Fixed
+-----
 
 Fixed
 -----
-- wrong paramter name in rocketchat channel methods
 - fixed an issue with boolean slots where False and None had the same value
   (breaking model compatibility with models that use a boolean slot)
-- Software 2.0 link on interactive learning documentation page went to Tesla's homepage, now it links to Karpathy
-  blogpost
 
 [0.11.7] - 2018-09-26
 ^^^^^^^^^^^^^^^^^^^^^
 
+Added
+-----
+- custom message method in rocketchat channel
+
+Fixed
+-----
 - don't fail if rasa and rest input channels are used together
+- wrong paramter name in rocketchat channel methods
+- Software 2.0 link on interactive learning documentation page went to
+  Tesla's homepage, now it links to Karpathy blogpost
 
 [0.11.6] - 2018-09-20
 ^^^^^^^^^^^^^^^^^^^^^
