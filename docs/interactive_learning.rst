@@ -27,7 +27,7 @@ Run the following to start interactive learning:
    python -m rasa_core_sdk.endpoint --actions actions&
 
    python -m rasa_core.train \
-     --online -o models/dialogue \
+     --interactive -o models/dialogue \
      -d domain.yml -s stories.md \
      --endpoints endpoints.yml
 
