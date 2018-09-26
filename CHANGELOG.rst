@@ -13,13 +13,16 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- custom message method in rocketchat channel
 - openapi documentation of server API
+
 
 Changed
 -------
 - improved response format for ``/predict`` endpoint
 - all error messages from the server are now in json format
 - ``agent.log_message`` now returns a tracker instead of the trackers state
+- JWT authentication now checks user roles. The ``admin`` role may access all endpoints. For endpoints which contain a ``sender_id`` parameter, users with the ``user`` role may only call endpoints where the ``sender_id`` matches the user's ``username``.
 
 Removed
 -------
