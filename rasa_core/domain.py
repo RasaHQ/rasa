@@ -101,12 +101,14 @@ class Domain(object):
         additional_arguments = data.get("config", {})
         intent_properties = cls.collect_intent_properties(data.get("intents",
                                                                    {}))
+        actions = data.get("actions", []) + data.get("forms", [])
         return cls(
                 intent_properties,
                 data.get("entities", []),
                 slots,
                 utter_templates,
-                data.get("actions", []),
+                actions,
+                data.get("forms", []),
                 **additional_arguments
         )
 
@@ -182,6 +184,7 @@ class Domain(object):
                  slots,  # type: List[Slot]
                  templates,  # type: Dict[Text, Any]
                  action_names,  # type: List[Text]
+                 form_names,  # type: List[Text]
                  store_entities_as_slots=True,  # type: bool
                  restart_intent="restart"  # type: Text
                  ):
@@ -189,7 +192,8 @@ class Domain(object):
 
         self.intent_properties = intent_properties
         self.entities = entities
-        if 'requested_slot' not in [s.name for s in slots]:
+        self.form_names = form_names
+        if self.form_names and 'requested_slot' not in [s.name for s in slots]:
             slots.append(UnfeaturizedSlot('requested_slot'))
 
         self.slots = slots
@@ -200,7 +204,6 @@ class Domain(object):
         # includes all actions (custom, utterance, and default actions)
         self.action_names = action.combine_user_with_default_actions(
                 action_names)
-
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
@@ -305,6 +308,13 @@ class Domain(object):
         return ["entity_{0}".format(e)
                 for e in self.entities]
 
+    # noinspection PyTypeChecker
+    @utils.lazyproperty
+    def form_states(self):
+        # type: () -> List[Text]
+        print(self.form_names)
+        return ["active_form_{0}".format(f) for f in self.form_names]
+
     def index_of_state(self, state_name):
         # type: (Text) -> Optional[int]
         """Provides the index of a state."""
@@ -326,7 +336,8 @@ class Domain(object):
             self.intent_states + \
             self.entity_states + \
             self.slot_states + \
-            self.prev_action_states
+            self.prev_action_states + \
+            self.form_states
 
     def get_parsing_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
@@ -459,6 +470,8 @@ class Domain(object):
 
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
+        print(states)
+        print(self.input_states)
         if states != self.input_states:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
@@ -485,7 +498,9 @@ class Domain(object):
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
-            "actions": self.user_actions,  # class names of the actions
+            "actions": [a for a in self.user_actions if a not in
+                        self.form_names],  # class names of the actions
+            "forms": self.form_names
         }
 
     def persist(self, filename):

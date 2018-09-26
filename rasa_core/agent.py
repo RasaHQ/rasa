@@ -28,7 +28,7 @@ from rasa_core.domain import Domain, check_domain_sanity
 from rasa_core.exceptions import AgentNotReady
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
-from rasa_core.policies import Policy
+from rasa_core.policies import Policy, FormPolicy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
@@ -197,6 +197,13 @@ class Agent(object):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
+        if (self.domain.form_names and type(FormPolicy())
+                not in [type(p) for p in self.policy_ensemble.policies]):
+            logger.warning(
+                    "You have defined a form action, but haven't added the "
+                    "FormPolicy to your policy ensemble. The form won't "
+                    "behave as expected"
+            )
 
         if not isinstance(interpreter, NaturalLanguageInterpreter):
             if interpreter is not None:
