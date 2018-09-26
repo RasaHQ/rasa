@@ -14,7 +14,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 Added
 -----
 - custom message method in rocketchat channel
-
+- JWT authentication now checks user roles. The ``admin`` role may access all endpoints. For endpoints which contain a ``sender_id`` parameter, users with the ``user`` role may only call endpoints where the ``sender_id`` matches the user's ``username``.
 
 Changed
 -------

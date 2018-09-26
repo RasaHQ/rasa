@@ -154,6 +154,11 @@ Requests to the server need to contain a valid JWT token in
 the ``Authorization`` header that is signed using this secret
 and the ``HS256`` algorithm.
 
+The user must have ``username`` and ``role`` attributes.
+If the ``role`` is ``admin``, all endpoints are accessible.
+If the ``role`` is ``user``, endpoints with a ``sender_id`` parameter are only accessible
+if the ``sender_id`` matches the user's ``username``.
+
 .. code-block:: bash
 
     $ python -m rasa_core.run \
