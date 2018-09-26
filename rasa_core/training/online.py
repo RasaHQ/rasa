@@ -657,7 +657,8 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         action_name = predictions[pred_out].get("action")
 
         _print_history(sender_id, endpoint)
-        _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph, action_name)
+        _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph,
+                       action_name)
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
         _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph)
@@ -914,7 +915,8 @@ def _plot_trackers(sender_ids, domain, output_file, endpoint, unconfirmed=None):
             event_sequences[-1], event_sequences, output_file, max_history=2)
 
 
-def _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph, unconfirmed=None):
+def _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph,
+                   unconfirmed=None):
     _plot_trackers(sender_ids, domain, plot_file, endpoint, unconfirmed)
     story_graph.update_image()
 
@@ -929,8 +931,6 @@ def record_messages(endpoint,  # type: EndpointConfig
     """Read messages from the command line and print bot responses."""
 
     from rasa_core import training
-
-
 
     try:
         exit_text = INTENT_MESSAGE_PREFIX + 'stop'
@@ -1025,7 +1025,8 @@ def _serve_application(app, stories, finetune=False, serve_forever=True):
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    _start_online_learning_io(endpoint, stories, http_server.stop, finetune=finetune)
+    _start_online_learning_io(endpoint, stories, http_server.stop,
+                              finetune=finetune)
 
     if serve_forever:
         try:

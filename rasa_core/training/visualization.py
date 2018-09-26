@@ -12,7 +12,6 @@ from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted, Event
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.training.structures import StoryGraph, StoryStep
 from rasa_nlu.training_data import TrainingData, Message
@@ -294,7 +293,10 @@ def visualize_neighborhood(
                 idx -= 1
                 break
             if isinstance(el, UserUttered):
-                message = interpreter.parse(el.text)
+                if not el.intent:
+                    message = interpreter.parse(el.text)
+                else:
+                    message = el.parse_data
             elif (isinstance(el, ActionExecuted) and
                   el.action_name != ACTION_LISTEN_NAME):
                 next_node_idx += 1
@@ -361,7 +363,7 @@ def visualize_neighborhood(
 
     # remove duplicated ... nodes after merging
     ps = set()
-    for i in range(special_node_idx+1, -2):
+    for i in range(special_node_idx + 1, -2):
         preds = list(graph.predecessors(i))
         if preds:
             if preds[0] in ps:
