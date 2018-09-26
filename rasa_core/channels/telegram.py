@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+
 from flask import Blueprint, request, jsonify
 from telegram import (
     Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
@@ -154,13 +155,16 @@ class TelegramInput(InputChannel):
                 sender_id = msg.chat.id
                 try:
                     if text == '_restart' or text == '/restart':
-                        on_new_message(UserMessage(text, out_channel,
-                                                   sender_id))
-                        on_new_message(UserMessage('/start', out_channel,
-                                                   sender_id))
+                        on_new_message(UserMessage(
+                                text, out_channel, sender_id,
+                                input_channel=self.name()))
+                        on_new_message(UserMessage(
+                                '/start', out_channel, sender_id,
+                                input_channel=self.name()))
                     else:
-                        on_new_message(UserMessage(text, out_channel,
-                                                   sender_id))
+                        on_new_message(UserMessage(
+                                text, out_channel, sender_id,
+                                input_channel=self.name()))
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))

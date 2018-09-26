@@ -97,7 +97,8 @@ class MattermostInput(InputChannel):
                                                 self.user,
                                                 self.pw,
                                                 self.bot_channel)
-                    user_msg = UserMessage(text, out_channel, sender_id)
+                    user_msg = UserMessage(text, out_channel, sender_id,
+                                           input_channel=self.name())
                     on_new_message(user_msg)
                 except Exception as e:
                     logger.error("Exception when trying to handle "

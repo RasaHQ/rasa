@@ -30,6 +30,15 @@ Fixed
 -----
 - don't fail if rasa and rest input channels are used together
 
+[0.11.6] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
+
 [0.11.5] - 2018-09-20
 ^^^^^^^^^^^^^^^^^^^^^
 

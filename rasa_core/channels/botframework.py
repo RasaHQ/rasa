@@ -176,7 +176,8 @@ class BotFrameworkInput(InputChannel):
                                                postdata["serviceUrl"])
 
                     user_msg = UserMessage(postdata["text"], out_channel,
-                                           postdata["from"]["id"])
+                                           postdata["from"]["id"],
+                                           input_channel=self.name())
                     on_new_message(user_msg)
                 else:
                     logger.info("Not received message type")

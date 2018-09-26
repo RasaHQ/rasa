@@ -5,10 +5,11 @@ from __future__ import unicode_literals
 
 import inspect
 import json
-from flask import Blueprint, jsonify, request, Flask, Response
 from multiprocessing import Queue
 from threading import Thread
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable
+
+from flask import Blueprint, jsonify, request, Flask, Response
 
 from rasa_core import utils
 from rasa_core.constants import DOCS_BASE_URL
@@ -30,7 +31,8 @@ class UserMessage(object):
                  text,  # type: Optional[Text]
                  output_channel=None,  # type: Optional[OutputChannel]
                  sender_id=None,  # type: Text
-                 parse_data=None  # type: Dict[Text, Any]
+                 parse_data=None,  # type: Dict[Text, Any]
+                 input_channel=None  # type: Text
                  ):
         # type: (...) -> None
 
@@ -45,6 +47,8 @@ class UserMessage(object):
             self.sender_id = sender_id
         else:
             self.sender_id = self.DEFAULT_SENDER_ID
+
+        self.input_channel = input_channel
 
         self.parse_data = parse_data
 
@@ -279,7 +283,8 @@ class RestInput(InputChannel):
     def on_message_wrapper(on_new_message, text, queue, sender_id):
         collector = QueueOutputChannel(queue)
 
-        message = UserMessage(text, collector, sender_id)
+        message = UserMessage(text, collector, sender_id,
+                              input_channel=RestInput.name())
         on_new_message(message)
 
         queue.put("DONE")
@@ -327,7 +332,8 @@ class RestInput(InputChannel):
                         content_type='text/event-stream')
             else:
                 collector = CollectingOutputChannel()
-                on_new_message(UserMessage(text, collector, sender_id))
+                on_new_message(UserMessage(text, collector, sender_id,
+                                           input_channel=self.name()))
                 return jsonify(collector.messages)
 
         return custom_webhook
