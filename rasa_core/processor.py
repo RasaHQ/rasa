@@ -362,19 +362,22 @@ class MessageProcessor(object):
         for e in events:
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
-                if s and s.has_features() or (e.key == 'requested_slot' and
-                                              not tracker.active_form):
-                    logger.warning(
-                            "Action '{0}' set a slot type '{1}' that "
-                            "it never set during the training. This "
-                            "can throw of the prediction. Make sure to "
-                            "include training examples in your stories "
-                            "for the different types of slots this "
-                            "action can return. Remember: you need to "
-                            "set the slots manually in the stories by "
-                            "adding '- slot{{\"{1}\": {2}}}' "
-                            "after the action."
-                            "".format(action_name, e.key, json.dumps(e.value)))
+                if s and s.has_features():
+                    if e.key == 'requested_slot' and tracker.active_form:
+                        pass
+                    else:
+                        logger.warning(
+                                "Action '{0}' set a slot type '{1}' that "
+                                "it never set during the training. This "
+                                "can throw of the prediction. Make sure to "
+                                "include training examples in your stories "
+                                "for the different types of slots this "
+                                "action can return. Remember: you need to "
+                                "set the slots manually in the stories by "
+                                "adding '- slot{{\"{1}\": {2}}}' "
+                                "after the action."
+                                "".format(action_name, e.key,
+                                          json.dumps(e.value)))
 
     @staticmethod
     def log_bot_utterances_on_tracker(tracker, dispatcher):
