@@ -197,8 +197,9 @@ class Agent(object):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
-        if (self.domain.form_names and type(FormPolicy())
-                not in [type(p) for p in self.policy_ensemble.policies]):
+        if (self.domain.form_names and not
+                any(isinstance(p, FormPolicy) for p
+                    in self.policy_ensemble.policies)):
             logger.warning(
                     "You have defined a form action, but haven't added the "
                     "FormPolicy to your policy ensemble. The form won't "
