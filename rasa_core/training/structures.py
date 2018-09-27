@@ -43,10 +43,6 @@ class AsStoryStringHelper:
     form_string = ''
     no_form_string = ''
 
-    def reset_stored_strings(self):
-        self.form_string = ''
-        self.no_form_string = ''
-
 
 class Checkpoint(object):
     def __init__(self, name, conditions=None):
@@ -117,6 +113,39 @@ class StoryStep(object):
         if not self._is_action_listen(event):
             self.events.append(event)
 
+    @staticmethod
+    def _checkpoint_string(story_step_element):
+        return "> {}\n".format(story_step_element.as_story_string())
+
+    @staticmethod
+    def _user_string(story_step_element, prefix=''):
+        return "* {}{}\n".format(prefix, story_step_element.as_story_string())
+
+    def _store_user_strings(self, story_step_element):
+        self.as_story_string_helper.no_form_string += self._user_string(
+                story_step_element
+        )
+        self.as_story_string_helper.form_string += self._user_string(
+                story_step_element, FORM_PREFIX
+        )
+
+    @staticmethod
+    def _bot_string(story_step_element, prefix=''):
+        return "    - {}{}\n".format(prefix,
+                                     story_step_element.as_story_string())
+
+    def _store_bot_strings(self, story_step_element):
+        self.as_story_string_helper.no_form_string += self._bot_string(
+                story_step_element
+        )
+        self.as_story_string_helper.form_string += self._bot_string(
+                story_step_element, FORM_PREFIX
+        )
+
+    def reset_stored_strings(self):
+        self.as_story_string_helper.form_string = ''
+        self.as_story_string_helper.no_form_string = ''
+
     def as_story_string(self, flat=False):
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
@@ -132,23 +161,18 @@ class StoryStep(object):
             result = "\n## {}\n".format(self.block_name)
             for s in self.start_checkpoints:
                 if s.name != STORY_START:
-                    result += "> {}\n".format(s.as_story_string())
+                    result += self._checkpoint_string(s)
 
         for s in self.events:
             if isinstance(s, UserUttered):
                 if self.as_story_string_helper.active_form is None:
-                    result += "* {}\n".format(s.as_story_string())
+                    result += self._user_string(s)
                 else:
                     # form is active
                     # it is not known whether the form will be
                     # successfully executed, so store this
                     # story string for later
-                    self.as_story_string_helper.no_form_string += (
-                            "* {}\n".format(s.as_story_string())
-                    )
-                    self.as_story_string_helper.form_string += (
-                            "* {}{}\n".format(FORM_PREFIX, s.as_story_string())
-                    )
+                    self._store_user_strings(s)
 
             elif isinstance(s, Form):
                 # form got either activated or deactivated
@@ -159,13 +183,13 @@ class StoryStep(object):
                     # so add story string with form prefix
                     result += self.as_story_string_helper.form_string
                     # remove all stored story strings
-                    self.as_story_string_helper.reset_stored_strings()
+                    self.reset_stored_strings()
 
-                result += "    - {}\n".format(s.as_story_string())
+                result += self._bot_string(s)
 
             elif isinstance(s, ActionExecuted):
                 if self.as_story_string_helper.active_form is None:
-                    result += "    - {}\n".format(s.as_story_string())
+                    result += self._bot_string(s)
                 else:
                     # form is active
                     if (s.action_name !=
@@ -176,14 +200,13 @@ class StoryStep(object):
                     if self.as_story_string_helper.form_failed:
                         # form failed, so add story string without form prefix
                         result += self.as_story_string_helper.no_form_string
-                        result += "    - {}\n".format(s.as_story_string())
+                        result += self._bot_string(s)
                     else:
                         # form succeeded, so add story string with form prefix
                         result += self.as_story_string_helper.form_string
-                        result += "    - {}{}\n".format(FORM_PREFIX,
-                                                        s.as_story_string())
+                        result += self._bot_string(s, FORM_PREFIX)
                     # remove all stored story strings
-                    self.as_story_string_helper.reset_stored_strings()
+                    self.reset_stored_strings()
 
                     if (s.action_name ==
                             self.as_story_string_helper.active_form):
@@ -194,19 +217,13 @@ class StoryStep(object):
                 converted = s.as_story_string()
                 if converted:
                     if self.as_story_string_helper.active_form is None:
-                        result += "    - {}\n".format(s.as_story_string())
+                        result += self._bot_string(s)
                     else:
                         # form is active
                         # it is not known whether the form will be
                         # successfully executed, so store this
                         # story string for later
-                        self.as_story_string_helper.no_form_string += (
-                                "    - {}\n".format(s.as_story_string())
-                        )
-                        self.as_story_string_helper.form_string += (
-                                "    - {}{}\n".format(FORM_PREFIX,
-                                                      s.as_story_string())
-                        )
+                        self._store_bot_strings(s)
 
             else:
                 raise Exception("Unexpected element in story step: "
