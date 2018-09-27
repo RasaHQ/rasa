@@ -142,7 +142,7 @@ class StoryStep(object):
                 story_step_element, FORM_PREFIX
         )
 
-    def reset_stored_strings(self):
+    def _reset_stored_strings(self):
         self.as_story_string_helper.form_string = ''
         self.as_story_string_helper.no_form_string = ''
 
@@ -183,7 +183,7 @@ class StoryStep(object):
                     # so add story string with form prefix
                     result += self.as_story_string_helper.form_string
                     # remove all stored story strings
-                    self.reset_stored_strings()
+                    self._reset_stored_strings()
 
                 result += self._bot_string(s)
 
@@ -206,7 +206,7 @@ class StoryStep(object):
                         result += self.as_story_string_helper.form_string
                         result += self._bot_string(s, FORM_PREFIX)
                     # remove all stored story strings
-                    self.reset_stored_strings()
+                    self._reset_stored_strings()
 
                     if (s.action_name ==
                             self.as_story_string_helper.active_form):
