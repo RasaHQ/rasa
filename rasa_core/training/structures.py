@@ -38,16 +38,10 @@ GENERATED_HASH_LENGTH = 5
 
 
 class AsStoryStringHelper:
-    def __init__(self,
-                 active_form=None,
-                 form_failed=False,
-                 form_string='',
-                 no_form_string=''
-                 ):
-        self.active_form = active_form
-        self.form_failed = form_failed
-        self.form_string = form_string
-        self.no_form_string = no_form_string
+    active_form = None
+    form_failed = False
+    form_string = ''
+    no_form_string = ''
 
 
 class Checkpoint(object):
