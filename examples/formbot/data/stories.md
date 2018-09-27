@@ -47,7 +47,7 @@
 * thank
     - utter_noworries
 
-## Generated Story -9155310465400161964 (example from interactive learning)
+## Generated Story -9155310465400161964 (example from interactive learning, "form: " will be excluded from training)
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
