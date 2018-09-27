@@ -4,7 +4,7 @@ import uuid
 from httpretty import httpretty
 
 from rasa_core import utils
-from rasa_core.training import online
+from rasa_core.training import interactive
 from rasa_core.utils import EndpointConfig
 
 
@@ -21,7 +21,7 @@ def test_send_message(mock_endpoint):
     httpretty.register_uri(httpretty.POST, url, body='{}')
 
     httpretty.enable()
-    online.send_message(mock_endpoint, sender_id, "Hello")
+    interactive.send_message(mock_endpoint, sender_id, "Hello")
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
@@ -40,7 +40,7 @@ def test_request_prediction(mock_endpoint):
     httpretty.register_uri(httpretty.POST, url, body='{}')
 
     httpretty.enable()
-    online.request_prediction(mock_endpoint, sender_id)
+    interactive.request_prediction(mock_endpoint, sender_id)
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
@@ -58,7 +58,7 @@ def test_bot_output_format():
                 {"title": "no", "payload": "/no"}]
         }
     }
-    formatted = online.format_bot_output(message)
+    formatted = interactive.format_bot_output(message)
     assert formatted == ("Hello!\n"
                          "Image: http://example.com/myimage.png\n"
                          "Attachment: My Attachment\n"
@@ -70,7 +70,7 @@ def test_latest_user_message():
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(utils.read_file(tracker_dump))
 
-    m = online.latest_user_message(tracker_json.get("events"))
+    m = interactive.latest_user_message(tracker_json.get("events"))
 
     assert m is not None
     assert m["event"] == "user"
@@ -78,7 +78,7 @@ def test_latest_user_message():
 
 
 def test_latest_user_message_on_no_events():
-    m = online.latest_user_message([])
+    m = interactive.latest_user_message([])
 
     assert m is None
 
@@ -88,14 +88,14 @@ def test_all_events_before_user_msg():
     tracker_json = json.loads(utils.read_file(tracker_dump))
     evts = tracker_json.get("events")
 
-    m = online.all_events_before_latest_user_msg(evts)
+    m = interactive.all_events_before_latest_user_msg(evts)
 
     assert m is not None
     assert m == evts[:4]
 
 
 def test_all_events_before_user_msg_on_no_events():
-    assert online.all_events_before_latest_user_msg([]) == []
+    assert interactive.all_events_before_latest_user_msg([]) == []
 
 
 def test_print_history(mock_endpoint):
@@ -109,7 +109,7 @@ def test_print_history(mock_endpoint):
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
 
     httpretty.enable()
-    online._print_history(sender_id, mock_endpoint)
+    interactive._print_history(sender_id, mock_endpoint)
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
@@ -130,7 +130,8 @@ def test_is_listening_for_messages(mock_endpoint):
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
 
     httpretty.enable()
-    is_listening = online.is_listening_for_message(sender_id, mock_endpoint)
+    is_listening = interactive.is_listening_for_message(sender_id,
+                                                        mock_endpoint)
     httpretty.disable()
 
     assert is_listening
@@ -143,7 +144,7 @@ def test_splitting_conversation_at_restarts():
     evts.insert(2, {"event": "restart"})
     evts.append({"event": "restart"})
 
-    split = online._split_conversation_at_restarts(evts)
+    split = interactive._split_conversation_at_restarts(evts)
     assert len(split) == 2
     assert [e for s in split for e in s] == evts_wo_restarts
     assert len(split[0]) == 2
@@ -159,7 +160,7 @@ def test_as_md_message():
                       "value": "rasa"}],
         "intent": {"name": "greeting", "confidence": 0.9}
     }
-    md = online._as_md_message(parse_data)
+    md = interactive._as_md_message(parse_data)
     assert md == "Hello there [rasa](name)."
 
 
@@ -174,8 +175,8 @@ def test_validate_user_message():
             "intent": {"name": "greeting", "confidence": 0.9}
         }
     }
-    assert online._validate_user_regex(parse_data, ["greeting", "goodbye"])
-    assert not online._validate_user_regex(parse_data, ["goodbye"])
+    assert interactive._validate_user_regex(parse_data, ["greeting", "goodbye"])
+    assert not interactive._validate_user_regex(parse_data, ["goodbye"])
 
 
 def test_undo_latest_msg(mock_endpoint):
@@ -194,12 +195,12 @@ def test_undo_latest_msg(mock_endpoint):
     httpretty.register_uri(httpretty.PUT, replace_url)
 
     httpretty.enable()
-    online._undo_latest(sender_id, mock_endpoint)
+    interactive._undo_latest(sender_id, mock_endpoint)
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
 
-    # this should be the events the online call send to the endpoint
+    # this should be the events the interactive call send to the endpoint
     # these events should have the last utterance omitted
     replaced_evts = json.loads(b)
     assert len(replaced_evts) == 6
