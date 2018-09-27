@@ -124,10 +124,10 @@ class StoryStep(object):
             if s.name == STORY_START:
                 # first story step in the story, so reset helper
                 self.as_story_string_helper = AsStoryStringHelper(
-                    active_form=None,
-                    form_failed=False,
-                    form_string='',
-                    no_form_string=''
+                        active_form=None,
+                        form_failed=False,
+                        form_string='',
+                        no_form_string=''
                 )
 
         if flat:
