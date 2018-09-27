@@ -122,6 +122,7 @@ class StoryStep(object):
 
         for s in self.start_checkpoints:
             if s.name == STORY_START:
+                # first story step in the story, so reset helper
                 self.as_story_string_helper = AsStoryStringHelper(
                     active_form=None,
                     form_failed=False,
@@ -142,18 +143,26 @@ class StoryStep(object):
                 if self.as_story_string_helper.active_form is None:
                     result += "* {}\n".format(s.as_story_string())
                 else:
-                    self.as_story_string_helper.form_string += (
-                            "* {}{}\n".format(FORM_PREFIX, s.as_story_string())
-                    )
+                    # form is active
+                    # it is not known whether the form will be
+                    # successfully executed, so store this
+                    # story string for later
                     self.as_story_string_helper.no_form_string += (
                             "* {}\n".format(s.as_story_string())
                     )
+                    self.as_story_string_helper.form_string += (
+                            "* {}{}\n".format(FORM_PREFIX, s.as_story_string())
+                    )
 
             elif isinstance(s, Form):
+                # form got either activated or deactivated
                 self.as_story_string_helper.active_form = s.name
 
                 if self.as_story_string_helper.active_form is None:
+                    # form deactivated, so form succeeded,
+                    # so add story string with form prefix
                     result += self.as_story_string_helper.form_string
+                    # remove all stored story strings
                     self.as_story_string_helper.form_string = ''
                     self.as_story_string_helper.no_form_string = ''
 
@@ -163,22 +172,28 @@ class StoryStep(object):
                 if self.as_story_string_helper.active_form is None:
                     result += "    - {}\n".format(s.as_story_string())
                 else:
+                    # form is active
                     if (s.action_name !=
                             self.as_story_string_helper.active_form):
+                        # form failed
                         self.as_story_string_helper.form_failed = True
 
                     if self.as_story_string_helper.form_failed:
+                        # form failed, so add story string without form prefix
                         result += self.as_story_string_helper.no_form_string
                         result += "    - {}\n".format(s.as_story_string())
                     else:
+                        # form succeeded, so add story string with form prefix
                         result += self.as_story_string_helper.form_string
                         result += "    - {}{}\n".format(FORM_PREFIX,
                                                         s.as_story_string())
+                    # remove all stored story strings
                     self.as_story_string_helper.form_string = ''
                     self.as_story_string_helper.no_form_string = ''
 
                     if (s.action_name ==
                             self.as_story_string_helper.active_form):
+                        # form was successfully executed
                         self.as_story_string_helper.form_failed = False
 
             elif isinstance(s, Event):
@@ -187,12 +202,16 @@ class StoryStep(object):
                     if self.as_story_string_helper.active_form is None:
                         result += "    - {}\n".format(s.as_story_string())
                     else:
+                        # form is active
+                        # it is not known whether the form will be
+                        # successfully executed, so store this
+                        # story string for later
+                        self.as_story_string_helper.no_form_string += (
+                                "    - {}\n".format(s.as_story_string())
+                        )
                         self.as_story_string_helper.form_string += (
                                 "    - {}{}\n".format(FORM_PREFIX,
                                                       s.as_story_string())
-                        )
-                        self.as_story_string_helper.no_form_string += (
-                                "    - {}\n".format(s.as_story_string())
                         )
 
             else:
@@ -266,6 +285,7 @@ class Story(object):
     def as_story_string(self, flat=False):
         story_content = ""
 
+        # initialize helper for first story step
         as_story_string_helper = AsStoryStringHelper(
                 active_form=None,
                 form_failed=False,
@@ -274,10 +294,11 @@ class Story(object):
         )
 
         for step in self.story_steps:
+            # use helper from previous story step
             step.as_story_string_helper = as_story_string_helper
-
+            # create string for current story step
             story_content += step.as_story_string(flat)
-
+            # override helper for next story step
             as_story_string_helper = step.as_story_string_helper
 
         if flat:
