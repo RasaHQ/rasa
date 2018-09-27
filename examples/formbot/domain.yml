@@ -1,0 +1,34 @@
+intents:
+  - thank
+  - request_restaurant
+  - inform
+  - chitchat
+
+entities:
+  - cuisine
+  - num_people
+
+slots:
+  cuisine:
+    type: unfeaturized
+  num_people:
+    type: unfeaturized
+  requested_slot:
+    type: unfeaturized
+
+templates:
+  utter_ask_num_people:
+    - text: "how many people?"
+  utter_ask_cuisine:
+    - text: "what cuisine?"
+  utter_noworries:
+    - text: "you are welcome :)"
+  utter_chitchat:
+    - text: "chitchat"
+
+actions:
+  - utter_noworries
+  - utter_chitchat
+
+forms:
+  - restaurant_form
