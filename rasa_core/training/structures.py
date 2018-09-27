@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from collections import deque, defaultdict
+from collections import deque, defaultdict, namedtuple
 
 import io
 import json
@@ -35,6 +35,11 @@ CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 FORM_PREFIX = "form: "
 
 GENERATED_HASH_LENGTH = 5
+
+AsStoryStringHelper = namedtuple("AsStoryStringHelper", "active_form "
+                                                        "form_failed "
+                                                        "form_string "
+                                                        "no_form_string")
 
 
 class Checkpoint(object):
@@ -80,6 +85,13 @@ class StoryStep(object):
         self.block_name = block_name
         self.id = uuid.uuid4().hex  # type: Text
 
+        self.as_story_string_helper = AsStoryStringHelper(
+                active_form=None,
+                form_failed=False,
+                form_string='',
+                no_form_string=''
+        )
+
     def create_copy(self, use_new_id):
         copied = StoryStep(self.block_name, self.start_checkpoints,
                            self.end_checkpoints,
@@ -115,60 +127,63 @@ class StoryStep(object):
                 if s.name != STORY_START:
                     result += "> {}\n".format(s.as_story_string())
 
-        active_form = None
-        failed = False
-        result_with_prefix = ''
-        result_without_prefix = ''
-
         for s in self.events:
             if isinstance(s, UserUttered):
-                if active_form is None:
+                if self.as_story_string_helper.active_form is None:
                     result += "* {}\n".format(s.as_story_string())
                 else:
-                    result_with_prefix += "* {}{}\n".format(FORM_PREFIX,
-                                                            s.as_story_string())
-                    result_without_prefix += "* {}\n".format(s.as_story_string())
+                    self.as_story_string_helper.form_string += (
+                            "* {}{}\n".format(FORM_PREFIX, s.as_story_string())
+                    )
+                    self.as_story_string_helper.no_form_string += (
+                            "* {}\n".format(s.as_story_string())
+                    )
 
             elif isinstance(s, Form):
-                active_form = s.name
+                self.as_story_string_helper.active_form = s.name
 
-                if active_form is None:
-                    result += result_with_prefix
-                    result_with_prefix = ''
+                if self.as_story_string_helper.active_form is None:
+                    result += self.as_story_string_helper.form_string
+                    self.as_story_string_helper.form_string = ''
+                    self.as_story_string_helper.no_form_string = ''
 
                 result += "    - {}\n".format(s.as_story_string())
 
             elif isinstance(s, ActionExecuted):
-                if active_form is None:
+                if self.as_story_string_helper.active_form is None:
                     result += "    - {}\n".format(s.as_story_string())
                 else:
-                    if s.action_name != active_form:
-                        failed = True
+                    if (s.action_name !=
+                            self.as_story_string_helper.active_form):
+                        self.as_story_string_helper.form_failed = True
 
-                    if failed:
-                        result += result_without_prefix
+                    if self.as_story_string_helper.form_failed:
+                        result += self.as_story_string_helper.no_form_string
                         result += "    - {}\n".format(s.as_story_string())
-                        result_with_prefix = ''
-                        result_without_prefix = ''
                     else:
-                        result += result_with_prefix
+                        result += self.as_story_string_helper.form_string
                         result += "    - {}{}\n".format(FORM_PREFIX,
                                                         s.as_story_string())
-                        result_with_prefix = ''
-                        result_without_prefix = ''
+                    self.as_story_string_helper.form_string = ''
+                    self.as_story_string_helper.no_form_string = ''
 
-                    if s.action_name == active_form:
-                        failed = False
+                    if (s.action_name ==
+                            self.as_story_string_helper.active_form):
+                        self.as_story_string_helper.form_failed = False
 
             elif isinstance(s, Event):
                 converted = s.as_story_string()
                 if converted:
-                    if active_form is None:
+                    if self.as_story_string_helper.active_form is None:
                         result += "    - {}\n".format(s.as_story_string())
                     else:
-                        result_with_prefix += "    - {}{}\n".format(FORM_PREFIX,
-                                                                    s.as_story_string())
-                        result_without_prefix += "    - {}\n".format(s.as_story_string())
+                        self.as_story_string_helper.form_string += (
+                                "    - {}{}\n".format(FORM_PREFIX,
+                                                      s.as_story_string())
+                        )
+                        self.as_story_string_helper.no_form_string += (
+                                "    - {}\n".format(s.as_story_string())
+                        )
 
             else:
                 raise Exception("Unexpected element in story step: "
@@ -240,8 +255,20 @@ class Story(object):
 
     def as_story_string(self, flat=False):
         story_content = ""
+
+        as_story_string_helper = AsStoryStringHelper(
+                active_form=None,
+                form_failed=False,
+                form_string='',
+                no_form_string=''
+        )
+
         for step in self.story_steps:
+            step.as_story_string_helper = as_story_string_helper
+
             story_content += step.as_story_string(flat)
+
+            as_story_string_helper = step.as_story_string_helper
 
         if flat:
             if self.story_name:
