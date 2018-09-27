@@ -245,7 +245,6 @@ class TrainingDataGenerator(object):
             pbar = tqdm(self.story_graph.ordered_steps(),
                         desc="Processed Story Blocks")
             for step in pbar:
-                print(step)
                 incoming_trackers = []
                 for start in step.start_checkpoints:
                     if active_trackers[start.name]:
