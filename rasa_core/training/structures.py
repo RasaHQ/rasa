@@ -43,6 +43,9 @@ class AsStoryStringHelper:
     form_string = ''
     no_form_string = ''
 
+    def reset_stored_strings(self):
+        self.form_string = ''
+        self.no_form_string = ''
 
 class Checkpoint(object):
     def __init__(self, name, conditions=None):
@@ -155,8 +158,7 @@ class StoryStep(object):
                     # so add story string with form prefix
                     result += self.as_story_string_helper.form_string
                     # remove all stored story strings
-                    self.as_story_string_helper.form_string = ''
-                    self.as_story_string_helper.no_form_string = ''
+                    self.as_story_string_helper.reset_stored_strings()
 
                 result += "    - {}\n".format(s.as_story_string())
 
@@ -180,8 +182,7 @@ class StoryStep(object):
                         result += "    - {}{}\n".format(FORM_PREFIX,
                                                         s.as_story_string())
                     # remove all stored story strings
-                    self.as_story_string_helper.form_string = ''
-                    self.as_story_string_helper.no_form_string = ''
+                    self.as_story_string_helper.reset_stored_strings()
 
                     if (s.action_name ==
                             self.as_story_string_helper.active_form):
