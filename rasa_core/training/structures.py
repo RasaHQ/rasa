@@ -119,6 +119,16 @@ class StoryStep(object):
     def as_story_string(self, flat=False):
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
+
+        for s in self.start_checkpoints:
+            if s.name == STORY_START:
+                self.as_story_string_helper = AsStoryStringHelper(
+                    active_form=None,
+                    form_failed=False,
+                    form_string='',
+                    no_form_string=''
+                )
+
         if flat:
             result = ""
         else:
