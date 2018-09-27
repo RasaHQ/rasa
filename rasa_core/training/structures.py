@@ -47,6 +47,7 @@ class AsStoryStringHelper:
         self.form_string = ''
         self.no_form_string = ''
 
+
 class Checkpoint(object):
     def __init__(self, name, conditions=None):
         # type: (Optional[Text], Optional[Dict[Text, Any]]) -> None
