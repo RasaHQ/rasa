@@ -164,11 +164,21 @@ class MessageProcessor(object):
         # type: (ReminderScheduled, Dispatcher) -> None
         """Handle a reminder that is triggered asynchronously."""
 
-        def has_message_after_reminder(evts):
-            """If the user sent a message after the reminder got scheduled -
-            it might be better to cancel it."""
+        def is_reminder_still_valid(t):
+            # type: (DialogueStateTracker) -> bool
+            """Check if the conversation has been restarted after reminder."""
 
-            for e in reversed(evts):
+            for e in reversed(tracker.applied_events()):
+                if (isinstance(e, ReminderScheduled) and
+                        e.name == reminder_event.name):
+                    return True
+            return False  # not found in applied events --> has been restarted
+
+        def has_message_after_reminder(t):
+            # type: (DialogueStateTracker) -> bool
+            """Check if the user sent a message after the reminder."""
+
+            for e in reversed(t.events):
                 if (isinstance(e, ReminderScheduled) and
                         e.name == reminder_event.name):
                     return False
@@ -183,8 +193,9 @@ class MessageProcessor(object):
                            "'{}'.".format(dispatcher.sender_id))
             return None
 
-        if (reminder_event.kill_on_user_message and
-                has_message_after_reminder(tracker.events)):
+        if (reminder_event.kill_on_user_message
+                and has_message_after_reminder(tracker)
+                or not is_reminder_still_valid(tracker)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -317,7 +328,8 @@ class MessageProcessor(object):
                                       id=e.name,
                                       replace_existing=True)
 
-    def _run_action(self, action, tracker, dispatcher, policy=None, confidence=None):
+    def _run_action(self, action, tracker, dispatcher, policy=None,
+                    confidence=None):
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
