@@ -22,6 +22,8 @@ Removed
 
 Fixed
 -----
+- ``Project`` set up to pull models from a remote server only use
+  the pulled model instead of searching for models locally
 
 [0.13.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^
