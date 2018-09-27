@@ -93,12 +93,7 @@ class StoryStep(object):
         self.block_name = block_name
         self.id = uuid.uuid4().hex  # type: Text
 
-        self.as_story_string_helper = AsStoryStringHelper(
-                active_form=None,
-                form_failed=False,
-                form_string='',
-                no_form_string=''
-        )
+        self.as_story_string_helper = AsStoryStringHelper()
 
     def create_copy(self, use_new_id):
         copied = StoryStep(self.block_name, self.start_checkpoints,
