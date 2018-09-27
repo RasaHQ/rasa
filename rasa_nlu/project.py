@@ -221,8 +221,8 @@ class Project(object):
         # type: (Text) -> Text
 
         # If the Project was configured to pull models from a
-        # server, only one was model is in memory at a time.
-        # Use this model if possible.
+        # server, only one model is in memory at a time.
+        # Use this model if it exists.
         if self.pull_models and requested_model_name is None:
             for model, interpreter in self._models.items():
                 if interpreter is not None:
