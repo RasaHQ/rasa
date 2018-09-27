@@ -312,7 +312,6 @@ class Domain(object):
     @utils.lazyproperty
     def form_states(self):
         # type: () -> List[Text]
-        print(self.form_names)
         return ["active_form_{0}".format(f) for f in self.form_names]
 
     def index_of_state(self, state_name):
@@ -470,8 +469,6 @@ class Domain(object):
 
         loaded_domain_spec = self.load_specification(path)
         states = loaded_domain_spec["states"]
-        print(states)
-        print(self.input_states)
         if states != self.input_states:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
@@ -498,6 +495,8 @@ class Domain(object):
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
+            # don't save forms to the actions in the domain yml to avoid action
+            # duplication
             "actions": [a for a in self.user_actions if a not in
                         self.form_names],  # class names of the actions
             "forms": self.form_names
