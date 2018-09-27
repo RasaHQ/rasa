@@ -36,10 +36,18 @@ FORM_PREFIX = "form: "
 
 GENERATED_HASH_LENGTH = 5
 
-AsStoryStringHelper = namedtuple("AsStoryStringHelper", "active_form "
-                                                        "form_failed "
-                                                        "form_string "
-                                                        "no_form_string")
+
+class AsStoryStringHelper:
+    def __init__(self,
+                 active_form=None,
+                 form_failed=False,
+                 form_string='',
+                 no_form_string=''
+                 ):
+        self.active_form = active_form
+        self.form_failed = form_failed
+        self.form_string = form_string
+        self.no_form_string = no_form_string
 
 
 class Checkpoint(object):
@@ -123,12 +131,7 @@ class StoryStep(object):
         for s in self.start_checkpoints:
             if s.name == STORY_START:
                 # first story step in the story, so reset helper
-                self.as_story_string_helper = AsStoryStringHelper(
-                        active_form=None,
-                        form_failed=False,
-                        form_string='',
-                        no_form_string=''
-                )
+                self.as_story_string_helper = AsStoryStringHelper()
 
         if flat:
             result = ""
@@ -286,12 +289,7 @@ class Story(object):
         story_content = ""
 
         # initialize helper for first story step
-        as_story_string_helper = AsStoryStringHelper(
-                active_form=None,
-                form_failed=False,
-                form_string='',
-                no_form_string=''
-        )
+        as_story_string_helper = AsStoryStringHelper()
 
         for step in self.story_steps:
             # use helper from previous story step
