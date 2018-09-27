@@ -3,12 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import str
-
 import argparse
 import io
+import json
 import logging
+import tempfile
 import warnings
+from builtins import str
+
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 
@@ -23,6 +25,10 @@ from rasa_core.utils import AvailableEndpoints
 from rasa_nlu.evaluate import (
     plot_confusion_matrix,
     get_evaluation_metrics)
+from rasa_nlu.evaluate import run_evaluation as run_nlu_evaluation
+from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data.formats import MarkdownReader
+from rasa_nlu.training_data.formats.markdown import INTENT
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +198,60 @@ def log_failed_stories(failed, failed_output):
                 f.write("\n\n")
 
 
+class EndToEndReader(MarkdownReader):
+    def reads(self, s, **kwargs):
+        """Read markdown string and create TrainingData object"""
+        self.__init__()
+        s = self._strip_comments(s)
+        for line in s.splitlines():
+            line = line.strip()
+            self._parse_item(line)
+        return TrainingData(self.training_examples, self.entity_synonyms,
+                            self.regex_features, self.lookup_tables)
+
+    def _parse_item(self, line):
+        """Parses an md list item line for intent examples."""
+        import re
+        item_regex = re.compile(r'\s*[-\*+]\s*(.+?):\s*(.*)')
+        match = re.match(item_regex, line)
+        if match:
+            self._set_current_section(INTENT, match.group(1))
+            parsed = self._parse_training_example(match.group(2))
+            self.training_examples.append(parsed)
+
+
+def extract_nlu_data(resource_name):
+    nlu_data_reader = EndToEndReader()
+    nlu_training_data = nlu_data_reader.read(resource_name)
+    tmpdir = tempfile.mkdtemp()
+    nlu_training_data.persist(tmpdir)
+    return tmpdir
+
+
+def run_e2e_evaluation(resource_name, agent,
+                       nlu_model_path,
+                       max_stories=None,
+                       out_file_stories=None,
+                       out_file_plot=None,
+                       fail_on_prediction_errors=False):
+    """Run the evaluation of the stories, optionally plots the results."""
+    nlu_data_path = extract_nlu_data(resource_name)
+    print("have td", nlu_data_path)
+    print("have nlu model path", nlu_model_path)
+    nlu_eval = run_nlu_evaluation(nlu_data_path, nlu_model_path)
+    print('have nlu_eval', json.dumps(nlu_eval, indent=4))
+    completed_trackers = _generate_trackers(resource_name, agent, max_stories)
+    print('have tracker', json.dumps(completed_trackers[0].current_state(),
+                                     indent=2))
+
+    test_y, predictions, failed = collect_story_predictions(
+            completed_trackers, agent, fail_on_prediction_errors)
+    if out_file_plot:
+        plot_story_evaluation(test_y, predictions, out_file_plot)
+
+    log_failed_stories(failed, out_file_stories)
+
+
 def run_story_evaluation(resource_name, agent,
                          max_stories=None,
                          out_file_stories=None,
@@ -259,11 +319,18 @@ if __name__ == '__main__':
     _agent = Agent.load(cmdline_args.core,
                         interpreter=_interpreter)
 
-    run_story_evaluation(cmdline_args.stories,
-                         _agent,
-                         cmdline_args.max_stories,
-                         cmdline_args.failed,
-                         cmdline_args.output,
-                         cmdline_args.fail_on_prediction_errors)
+    # run_story_evaluation(cmdline_args.stories,
+    #                      _agent,
+    #                      cmdline_args.max_stories,
+    #                      cmdline_args.failed,
+    #                      cmdline_args.output,
+    #                      cmdline_args.fail_on_prediction_errors)
+    run_e2e_evaluation(cmdline_args.stories,
+                       _agent,
+                       cmdline_args.nlu,
+                       cmdline_args.max_stories,
+                       cmdline_args.failed,
+                       cmdline_args.output,
+                       cmdline_args.fail_on_prediction_errors)
 
     logger.info("Finished evaluation")
