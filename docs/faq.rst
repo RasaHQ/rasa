@@ -4,6 +4,19 @@
 Frequently Asked Questions
 ==========================
 
+Which languages does the Rasa NLU support?
+------------------------------------------
+Rasa NLU can be used to understand any language, but some backends are restricted to specific languages.
+
+The ``tensorflow_embedding`` pipeline can be used for any language, because
+it trains custom word embeddings for your domain using the data you provide in the NLU training examples.
+
+Other backends use pre-trained word vectors and therefore are restricted to languages which have pre-trained
+vectors available. 
+
+You can read more about the Rasa NLU supported languages in :ref:`section_languages`.
+
+
 How many training examples do I need?
 -------------------------------------
 Unfortunately, the answer is *it depends*. 
