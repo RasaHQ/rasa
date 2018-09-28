@@ -41,13 +41,7 @@ tmp/
 tokens.dat
 graph.png
 debug.md
-examples/moodbot/models
-examples/restaurantbot/models
-examples/concertbot/models
-examples/moodbot/*.png
-examples/moodbot/errors.json
+examples/*
 docs/key 
 docs/key.pub
 failed_stories.md
-examples/concertbot/nlu.md
-examples/concertbot/stories.md

@@ -39,8 +39,8 @@ logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-DEFAULT_FILE_EXPORT_PATH = {"stories": "stories.md",
-                            "nlu": "nlu.md"}
+DEFAULT_FILE_EXPORT_PATH = {"stories": "data/stories.md",
+                            "nlu": "data/nlu.md"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
@@ -535,8 +535,8 @@ def _request_export_info():
         "validate": validate_path
     },{"name": "export nlu",
         "type": "input",
-        "message": "Export nlu data to (if file exists, this "
-                   "will append the training examples)",
+        "message": "Export NLU data to (if file exists, this "
+                   "will merge learned data with previous training examples)",
         "default": DEFAULT_FILE_EXPORT_PATH["nlu"],
         "validate": validate_path}]
 
@@ -580,16 +580,17 @@ def _write_to_file(export_file_paths, sender_id, endpoint):
     sub_conversations = _split_conversation_at_restarts(evts)
     msgs = []
     previous_examples = TrainingData()
+    safe_to_write = 'w'
 
     try:
         previous_examples = load_data(export_file_paths[1])
     except:
-        pass
-
+        safe_to_write = 'a'
+        print("Could not load NLU data from existing file, new data will be appended to prevent loss of existing data")
 
     for evt in evts:
-        if evt["event"] == "user":
-            data = evt["parse_data"]
+        if evt.get("event") == "user":
+            data = evt.get("parse_data")
             msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
             msgs.append(msg)
 
@@ -600,7 +601,7 @@ def _write_to_file(export_file_paths, sender_id, endpoint):
             f.write(s.as_story_string(flat=True) + "\n")
 
     if msgs:
-        with io.open(export_file_paths[1], 'w') as f:
+        with io.open(export_file_paths[1], safe_to_write) as f:
             nlu_data = TrainingData(msgs).merge(previous_examples)
             f.write(nlu_data.as_markdown())
 
