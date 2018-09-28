@@ -32,7 +32,6 @@ class RestaurantForm(FormAction):
             return False
 
     def validate(self, dispatcher, tracker, domain):
-
         slot_to_fill = tracker.slots[REQUESTED_SLOT]
 
         events = super(RestaurantForm,
