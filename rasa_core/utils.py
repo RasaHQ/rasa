@@ -489,11 +489,11 @@ def arguments_of(func):
 
     try:
         # python 3.x is used
-        return inspect.signature(func).parameters.keys()
+        return list(inspect.signature(func).parameters.keys())
     except AttributeError:
         # python 2.x is used
         # noinspection PyDeprecation
-        return inspect.getargspec(func).args
+        return list(inspect.getargspec(func).args)
 
 
 def concat_url(base, subpath):

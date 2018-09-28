@@ -7,13 +7,14 @@ import logging
 import os
 import tempfile
 import zipfile
-from flask import Flask, request, abort, Response, jsonify
-from flask_cors import CORS, cross_origin
-from flask_jwt_simple import JWTManager, view_decorators
 from functools import wraps
 from typing import List
 from typing import Text, Optional
 from typing import Union
+
+from flask import Flask, request, abort, Response, jsonify
+from flask_cors import CORS, cross_origin
+from flask_jwt_simple import JWTManager, view_decorators
 
 from rasa_core import utils, constants
 from rasa_core.channels import (
@@ -65,19 +66,48 @@ def requires_auth(app, token=None):
     """Wraps a request handler with token authentication."""
 
     def decorator(f):
+        def sender_id_from_args(f, args, kwargs):
+            argnames = utils.arguments_of(f)
+            try:
+                sender_id_arg_idx = argnames.index("sender_id")
+                if "sender_id" in kwargs:   # try to fetch from kwargs first
+                    return kwargs["sender_id"]
+                if sender_id_arg_idx < len(args):
+                    return args[sender_id_arg_idx]
+                return None
+            except ValueError:
+                return None
+
+        def sufficient_scope(*args, **kwargs):
+            jwt_data = view_decorators._decode_jwt_from_headers()
+            role = jwt_data.get("role", None)
+            username = jwt_data.get("username", None)
+
+            if role == "admin":
+                return True
+            elif role == "user":
+                sender_id = sender_id_from_args(f, args, kwargs)
+                return sender_id is not None and username == sender_id
+            else:
+                return False
+
         @wraps(f)
         def decorated(*args, **kwargs):
             provided = request.args.get('token')
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 return f(*args, **kwargs)
-            elif (app.config.get('JWT_ALGORITHM') is not None
-                  and view_decorators._decode_jwt_from_headers()):
-                return f(*args, **kwargs)
+            elif app.config.get('JWT_ALGORITHM') is not None:
+                if sufficient_scope(*args, **kwargs):
+                    return f(*args, **kwargs)
+                return Response("User has insufficient permissions.",
+                                status=403)
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
-            abort(401)
+
+            return Response("User is not authenticated.",
+                            status=401)
 
         return decorated
 
