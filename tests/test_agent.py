@@ -4,11 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
-import rasa_core
 
 import pytest
 import responses
 
+import rasa_core
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.policies.memoization import AugmentedMemoizationPolicy
@@ -36,7 +37,7 @@ def test_agent_train(tmpdir, default_domain):
 
     # test policies
     assert type(loaded.policy_ensemble) is type(
-        agent.policy_ensemble)  # nopep8
+            agent.policy_ensemble)  # nopep8
     assert [type(p) for p in loaded.policy_ensemble.policies] == \
            [type(p) for p in agent.policy_ensemble.policies]
 
@@ -61,10 +62,11 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
 
 
 @responses.activate
-def test_agent_with_model_server(tmpdir, zipped_moodbot_model):
+def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
+                                 moodbot_domain, moodbot_metadata):
     fingerprint = 'somehash'
     model_endpoint_config = EndpointConfig.from_dict(
-        {"url": 'http://server.com/model/default_core@latest'}
+            {"url": 'http://server.com/model/default_core@latest'}
     )
 
     # mock a response that returns a zipped model
@@ -75,5 +77,13 @@ def test_agent_with_model_server(tmpdir, zipped_moodbot_model):
                       body=f.read(),
                       content_type='application/zip',
                       stream=True)
-    agent = rasa_core.agent.load_from_server(model_server=model_endpoint_config)
+    agent = rasa_core.agent.load_from_server(
+            model_server=model_endpoint_config)
     assert agent.fingerprint == fingerprint
+
+    assert agent.domain.as_dict() == moodbot_domain.as_dict()
+
+    agent_policies = set(utils.module_path_from_instance(p) for p in
+                         agent.policy_ensemble.policies)
+    moodbot_policies = set(moodbot_metadata["policy_names"])
+    assert agent_policies == moodbot_policies

@@ -4,8 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-from builtins import str
 import os
+from builtins import str
 
 import matplotlib
 import pytest
@@ -18,7 +18,7 @@ from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
-from rasa_core.policies.ensemble import SimplePolicyEnsemble
+from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import (
     MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.processor import MessageProcessor
@@ -114,6 +114,17 @@ def zipped_moodbot_model():
     zip_path = zip_folder(MOODBOT_MODEL_PATH)
 
     return zip_path
+
+
+@pytest.fixture(scope="session")
+def moodbot_domain():
+    domain_path = os.path.join(MOODBOT_MODEL_PATH, 'domain.yml')
+    return Domain.load(domain_path)
+
+
+@pytest.fixture(scope="session")
+def moodbot_metadata():
+    return PolicyEnsemble.load_metadata(MOODBOT_MODEL_PATH)
 
 
 @pytest.fixture(scope="module")
