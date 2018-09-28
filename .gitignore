@@ -49,3 +49,5 @@ examples/moodbot/errors.json
 docs/key 
 docs/key.pub
 failed_stories.md
+examples/concertbot/nlu.md
+examples/concertbot/stories.md

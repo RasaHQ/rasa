@@ -31,12 +31,16 @@ from rasa_core.trackers import EventVerbosity
 from rasa_core.training.structures import Story
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+from rasa_nlu.training_data.loading import load_data
+from rasa_nlu.training_data.message import Message
+from rasa_nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-DEFAULT_FILE_EXPORT_PATH = "stories.md"
+DEFAULT_FILE_EXPORT_PATH = {"stories": "stories.md",
+                            "nlu": "nlu.md"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
@@ -470,10 +474,9 @@ def _ask_if_quit(sender_id, endpoint):
 
     if not answers or answers["abort"] == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        export_file_path = _request_export_stories_info()
-        _write_stories_to_file(export_file_path, sender_id, endpoint)
-        logger.info("Successfully wrote stories to "
-                    "{}.".format(export_file_path))
+        export_file_paths = _request_export_info()
+        _write_to_file(export_file_paths, sender_id, endpoint)
+        logger.info("Successfully wrote stories and NLU data")
         sys.exit()
     elif answers["abort"] == "continue":
         # in this case we will just return, and the original
@@ -511,9 +514,9 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     return action_name
 
 
-def _request_export_stories_info():
+def _request_export_info():
     # type: () -> Text
-    """Request file path and export stories to that path"""
+    """Request file path and export stories & nlu data to that path"""
 
     def validate_path(path):
         try:
@@ -522,21 +525,27 @@ def _request_export_stories_info():
         except Exception as e:
             return "Failed to open file. {}".format(e)
 
-    # export current stories and quit
+    # export training data and quit
     questions = [{
-        "name": "export",
+        "name": "export stories",
         "type": "input",
         "message": "Export stories to (if file exists, this "
                    "will append the stories)",
-        "default": DEFAULT_FILE_EXPORT_PATH,
+        "default": DEFAULT_FILE_EXPORT_PATH["stories"],
         "validate": validate_path
-    }]
+    },{"name": "export nlu",
+        "type": "input",
+        "message": "Export nlu data to (if file exists, this "
+                   "will append the training examples)",
+        "default": DEFAULT_FILE_EXPORT_PATH["nlu"],
+        "validate": validate_path}]
+
 
     answers = prompt(questions)
     if not answers:
         sys.exit()
 
-    return answers["export"]
+    return [answers["export stories"], answers["export nlu"]]
 
 
 def _split_conversation_at_restarts(evts):
@@ -561,20 +570,39 @@ def _split_conversation_at_restarts(evts):
     return sub_conversations
 
 
-def _write_stories_to_file(export_file_path, sender_id, endpoint):
+def _write_to_file(export_file_paths, sender_id, endpoint):
     # type: (Text, Text, EndpointConfig) -> None
-    """Write the conversation of the sender_id to the file path."""
+    """Write the conversation and nlu data of the sender_id to the file paths."""
 
     tracker = retrieve_tracker(endpoint, sender_id)
     evts = tracker.get("events", [])
 
     sub_conversations = _split_conversation_at_restarts(evts)
+    msgs = []
+    previous_examples = TrainingData()
 
-    with io.open(export_file_path, 'a') as f:
+    try:
+        previous_examples = load_data(export_file_paths[1])
+    except:
+        pass
+
+
+    for evt in evts:
+        if evt["event"] == "user":
+            data = evt["parse_data"]
+            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
+            msgs.append(msg)
+
+    with io.open(export_file_paths[0], 'a') as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
             f.write(s.as_story_string(flat=True) + "\n")
+
+    if msgs:
+        with io.open(export_file_paths[1], 'w') as f:
+            nlu_data = TrainingData(msgs).merge(previous_examples)
+            f.write(nlu_data.as_markdown())
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
