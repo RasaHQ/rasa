@@ -25,51 +25,67 @@ class TimedNTM(object):
         # interpolation gate
         self.name = 'timed_ntm_' + name
 
-        self.inter_gate = tf.layers.Dense(
+        self._inter_gate = tf.layers.Dense(
                 units=1,
                 activation=tf.sigmoid,
                 name=self.name + '/inter_gate'
         )
         # if use sparsemax instead of softmax for probs
-        self.sparse_attention = sparse_attention
+        self._sparse_attention = sparse_attention
+
+        if sparse_attention:
+            # sparsemax doesn't support inf
+            self._inf = float(5000)
+        else:
+            self._inf = float('inf')
 
         # shift weighting if range is provided
         if attn_shift_range:
-            self.shift_weight = tf.layers.Dense(
+            self._shift_weight = tf.layers.Dense(
                     units=2 * attn_shift_range + 1,
                     activation=tf.nn.softmax,
                     name=self.name + '/shift_weight'
             )
         else:
-            self.shift_weight = None
+            self._shift_weight = None
 
         # sharpening parameter
-        self.gamma_sharp = tf.layers.Dense(
+        self._gamma_sharp = tf.layers.Dense(
                 units=1,
                 activation=lambda a: tf.nn.softplus(a) + 1,
                 bias_initializer=tf.constant_initializer(1),
                 name=self.name + '/gamma_sharp'
         )
 
-    def __call__(self, cell_output, scores, scores_state, ignore_mask):
+    def __call__(self, attn_inputs, scores, scores_state, mask):
         # apply exponential moving average with interpolation gate weight
         # to scores from previous time which are equal to probs at this point
         # different from original NTM where it is applied after softmax
-        i_g = self.inter_gate(cell_output)
+        i_g = self._inter_gate(attn_inputs)
 
         # scores limited by time
         scores = tf.concat([i_g * scores[:, :-1] + (1 - i_g) * scores_state,
                             scores[:, -1:]], 1)
         next_scores_state = scores
 
+        if mask is not None:
+            # apply mask to scores
+            if self._shift_weight is not None:
+                # rearrange scores to make them continuous for convolution
+                scores = tf.map_fn(self._rearrange_fn,
+                                   [scores, mask], dtype=scores.dtype)
+            else:
+                scores = tf.where(mask > 0,
+                                  scores, -self._inf * tf.ones_like(scores))
+
         # create probabilities for attention
-        if self.sparse_attention:
+        if self._sparse_attention:
             probs = tf.contrib.sparsemax.sparsemax(scores)
         else:
             probs = tf.nn.softmax(scores)
 
-        if self.shift_weight is not None:
-            s_w = self.shift_weight(cell_output)
+        if self._shift_weight is not None:
+            s_w = self._shift_weight(attn_inputs)
 
             # we want to go back in time during convolution
             conv_probs = tf.reverse(probs, axis=[1])
@@ -94,25 +110,57 @@ class TimedNTM(object):
 
             probs = tf.reverse(conv_probs, axis=[1])
 
-        # Sharpening
-        g_sh = self.gamma_sharp(cell_output)
+            if mask is not None:
+                # arrange probs back to their original time order
+                probs = tf.map_fn(self._arrange_back_fn,
+                                  [probs, mask], dtype=probs.dtype)
+
+        # sharpening
+        g_sh = self._gamma_sharp(attn_inputs)
 
         powed_probs = tf.pow(probs, g_sh)
         probs = powed_probs / (
                 tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
 
-        # set probs for no intents and action_listens to zero
-        if ignore_mask is not None:
-            probs = tf.concat([tf.where(ignore_mask,
-                                        tf.zeros_like(probs[:, :-1]),
-                                        probs[:, :-1]),
-                               probs[:, -1:]], 1)
         return probs, next_scores_state
+
+    def _rearrange_fn(self, list_tensor_1d_mask_1d):
+        """Rearranges tensor_1d to put all the values
+            where mask_1d=1 to the right and
+            where mask_1d=0 to the left and sets them to -infinity"""
+        tensor_1d, mask_1d = list_tensor_1d_mask_1d
+
+        partitioned_tensor = tf.dynamic_partition(tensor_1d,
+                                                  mask_1d, 2)
+        partitioned_tensor[0] = \
+            -self._inf * tf.ones_like(partitioned_tensor[0])
+
+        return tf.concat(partitioned_tensor, 0)
+
+    @staticmethod
+    def _arrange_back_fn(list_tensor_1d_mask_1d):
+        """Arranges back tensor_1d to restore original order
+            modified by `_rearrange_fn` according to mask_1d:
+            - number of 0s in mask_1d values on the left are set to
+              their corresponding places where mask_1d=0,
+            - number of 1s in mask_1d values on the right are set to
+              their corresponding places where mask_1d=1"""
+        tensor_1d, mask_1d = list_tensor_1d_mask_1d
+
+        mask_indices = tf.dynamic_partition(tf.range(tf.shape(tensor_1d)[0]),
+                                            mask_1d, 2)
+
+        mask_sum = tf.reduce_sum(mask_1d, axis=0)
+        partitioned_tensor = [tf.zeros_like(tensor_1d[:-mask_sum]),
+                              tensor_1d[-mask_sum:]]
+
+        return tf.dynamic_stitch(mask_indices, partitioned_tensor)
 
 
 def _compute_time_attention(attention_mechanism, attn_inputs, attention_state,
                             # time is added to calculate time attention
-                            time, timed_ntm, ignore_mask, attention_layer):
+                            time, timed_ntm, time_mask, ignore_mask,
+                            attention_layer):
     """Computes the attention and alignments limited by time
         for a given attention_mechanism.
 
@@ -123,15 +171,20 @@ def _compute_time_attention(attention_mechanism, attn_inputs, attention_state,
     # take only scores from current and past times
     timed_scores = scores[:, :time + 1]
     timed_scores_state = attention_state[:, :time]
+
+    # get mask for past times
+    timed_time_mask = time_mask[:, :time]
     if ignore_mask is not None:
-        timed_ignore_mask = ignore_mask[:, :time]
-    else:
-        timed_ignore_mask = None
+        timed_time_mask *= 1 - ignore_mask[:, :time]
+
+    # set mask for current time to 1
+    timed_time_mask = tf.concat([timed_time_mask,
+                                 tf.ones_like(time_mask[:, :1])], 1)
 
     # pass these scores to NTM
     probs, next_scores_state = timed_ntm(attn_inputs, timed_scores,
                                          timed_scores_state,
-                                         timed_ignore_mask)
+                                         timed_time_mask)
 
     # concatenate probs with zeros to get new alignments
     zeros = tf.zeros_like(scores)
@@ -165,14 +218,17 @@ def _compute_time_attention(attention_mechanism, attn_inputs, attention_state,
     return attention, alignments, next_attention_state
 
 
+# noinspection PyProtectedMember
 class TimeAttentionWrapperState(
             namedtuple("TimeAttentionWrapperState",
                        tf.contrib.seq2seq.AttentionWrapperState._fields +
-                       ("all_cell_states",))):  # added
+                       ("all_time_masks", "all_cell_states"))):  # added
     """Modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
         see there for description of the parameters
 
     Additional fields:
+        - `all_time_masks`: A mask applied to a memory
+           that filters certain time steps
         - `all_cell_states`: All states of the wrapped `RNNCell`
            at all the previous time steps.
     """
@@ -209,7 +265,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  sparse_attention=False,
                  attention_layer_size=None,
                  alignment_history=False,
-                 inputs_and_attn_inputs_fn=None,
+                 rnn_and_attn_inputs_fn=None,
                  ignore_mask=None,
                  cell_input_fn=None,
                  index_of_attn_to_copy=None,
@@ -277,28 +333,34 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         if self._is_multi:
             # if there are several attention mechanisms,
             # create additional TimedNTMs for them
+            if len(attn_shift_range) == 1:
+                # original attn_shift_range might not be a list
+                attn_shift_range *= len(attention_mechanism)
+            elif len(attn_shift_range) != len(attention_mechanism):
+                raise ValueError(
+                    "If provided, `attn_shift_range` must contain exactly one "
+                    "integer per attention_mechanism, saw: {} vs {}"
+                    "".format(len(attn_shift_range), len(attention_mechanism))
+                )
             for i in range(1, len(attention_mechanism)):
-                if len(attn_shift_range) < i + 1:
-                    # original attn_shift_range might not be a list
-                    attn_shift_range.append(attn_shift_range[-1])
                 self._timed_ntms.append(TimedNTM(attn_shift_range[i],
                                                  sparse_attention,
                                                  name=str(i)))
 
-        if inputs_and_attn_inputs_fn is None:
-            inputs_and_attn_inputs_fn = self._default_inputs_and_attn_inputs_fn
+        if rnn_and_attn_inputs_fn is None:
+            rnn_and_attn_inputs_fn = self._default_rnn_and_attn_inputs_fn
         else:
-            if not callable(inputs_and_attn_inputs_fn):
+            if not callable(rnn_and_attn_inputs_fn):
                 raise TypeError(
-                    "inputs_and_attn_inputs_fn must be callable, saw type: {}"
-                    "".format(type(inputs_and_attn_inputs_fn).__name__)
+                    "`rnn_and_attn_inputs_fn` must be callable, saw type: {}"
+                    "".format(type(rnn_and_attn_inputs_fn).__name__)
                 )
-        self._inputs_and_attn_inputs_fn = inputs_and_attn_inputs_fn
+        self._rnn_and_attn_inputs_fn = rnn_and_attn_inputs_fn
 
         if not isinstance(ignore_mask, list):
-            self._ignore_mask = [ignore_mask]
+            self._ignore_mask = [tf.cast(ignore_mask, tf.int32)]
         else:
-            self._ignore_mask = ignore_mask
+            self._ignore_mask = [tf.cast(i_m, tf.int32) for i_m in ignore_mask]
 
         self._index_of_attn_to_copy = index_of_attn_to_copy
 
@@ -306,7 +368,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         self._tensor_not_to_copy = tensor_not_to_copy
 
     @staticmethod
-    def _default_inputs_and_attn_inputs_fn(inputs, cell_state):
+    def _default_rnn_and_attn_inputs_fn(inputs, cell_state):
         if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
             return inputs, tf.concat([inputs, cell_state.h], -1)
         else:
@@ -362,6 +424,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 alignments=state_size.alignments,
                 attention_state=state_size.attention_state,
                 alignment_history=state_size.alignment_history,
+                all_time_masks=self._sequence_len,
                 all_cell_states=all_cell_states)
 
     def zero_state(self, batch_size, dtype):
@@ -374,6 +437,15 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         with tf.name_scope(type(self).__name__ + "ZeroState",
                            values=[batch_size]):
+            # store time masks
+            all_time_masks = tf.TensorArray(
+                    tf.int32,
+                    size=self._sequence_len + 1,
+                    dynamic_size=False,
+                    clear_after_read=False
+            ).write(0, tf.zeros([batch_size, self.state_size.all_time_masks],
+                                tf.int32))
+
             # store all cell states into a tensor array to allow
             # copy mechanism to go back in time
             if isinstance(self._cell.state_size,
@@ -402,8 +474,240 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                     alignments=zero_state.alignments,
                     attention_state=zero_state.attention_state,
                     alignment_history=zero_state.alignment_history,
+                    all_time_masks=all_time_masks,
                     all_cell_states=all_cell_states
             )
+
+    def call(self, inputs, state):
+        """Perform a step of attention-wrapped RNN.
+
+        The order has changed:
+        - Step 1: Calculate attention inputs based on the previous cell state
+                  and current inputs
+        - Step 2: Score the output with `attention_mechanism`.
+        - Step 3: Calculate the alignments by passing the score through the
+                  `normalizer` and limit them by time.
+        - Step 4: Calculate the context vector as the inner product between the
+                  alignments and the attention_mechanism's values (memory).
+        - Step 5: Calculate the attention output by concatenating
+                  the cell output and context through the attention layer
+                  (a linear layer with `attention_layer_size` outputs).
+        - Step 6: Mix the `inputs` and `attention` output via
+                  `cell_input_fn` to get cell inputs.
+        - Step 7: Call the wrapped `cell` with these cell inputs and
+                  its previous state.
+        - Step 8: (optional) Maybe copy output and cell state from history
+
+        Args:
+          inputs: (Possibly nested tuple of) Tensor,
+                  the input at this time step.
+          state: An instance of `TimeAttentionWrapperState`
+                 containing tensors from the previous time step.
+
+        Returns:
+          A tuple `(attention_or_cell_output, next_state)`, where:
+
+          - `attention_or_cell_output` depending on `output_attention`.
+          - `next_state` is an instance of `TimeAttentionWrapperState`
+             containing the state calculated at this time step.
+
+        Raises:
+          TypeError: If `state` is not an instance of
+          `TimeAttentionWrapperState`.
+        """
+        if not isinstance(state, TimeAttentionWrapperState):
+            raise TypeError("Expected state to be instance of "
+                            "TimeAttentionWrapperState. "
+                            "Received type {} instead.".format(type(state)))
+
+        # Step 1: Calculate attention based on
+        #         the previous output and current input
+        cell_state = state.cell_state
+
+        rnn_inputs, attn_inputs = self._rnn_and_attn_inputs_fn(inputs,
+                                                               cell_state)
+
+        cell_batch_size = (
+                attn_inputs.shape[0].value or
+                tf.shape(attn_inputs)[0])
+        error_message = (
+                "When applying AttentionWrapper %s: " % self.name +
+                "Non-matching batch sizes between the memory "
+                "(encoder output) and the query (decoder output).  "
+                "Are you using "
+                "the BeamSearchDecoder?  "
+                "You may need to tile your memory input via "
+                "the tf.contrib.seq2seq.tile_batch function with argument "
+                "multiple=beam_width.")
+        with tf.control_dependencies(
+                self._batch_size_checks(cell_batch_size, error_message)):
+            attn_inputs = tf.identity(
+                    attn_inputs, name="checked_attn_inputs")
+
+        if self._is_multi:
+            previous_attention_state = state.attention_state
+            previous_alignment_history = state.alignment_history
+        else:
+            previous_attention_state = [state.attention_state]
+            previous_alignment_history = [state.alignment_history]
+
+        all_alignments = []
+        all_attentions = []
+        all_attention_states = []
+        maybe_all_histories = []
+
+        prev_time_masks = self._read_from_tensor_array(state.all_time_masks,
+                                                       state.time)
+        prev_time_mask = prev_time_masks[:, -1, :]
+
+        for i, attention_mechanism in enumerate(self._attention_mechanisms):
+            # Steps 2 - 5 are performed inside `_compute_time_attention`
+            (attention, alignments,
+             next_attention_state) = _compute_time_attention(
+                    attention_mechanism, attn_inputs,
+                    previous_attention_state[i],
+                    # time is added to calculate time attention
+                    state.time, self._timed_ntms[i],
+                    # provide boolean masks, to ignore some time steps
+                    prev_time_mask, self._ignore_mask[i],
+                    self._attention_layers[i]
+                    if self._attention_layers else None)
+
+            alignment_history = previous_alignment_history[i].write(
+                    state.time, alignments) if self._alignment_history else ()
+
+            all_attention_states.append(next_attention_state)
+            all_alignments.append(alignments)
+            all_attentions.append(attention)
+            maybe_all_histories.append(alignment_history)
+
+        attention = tf.concat(all_attentions, 1)
+
+        # Step 6: Mix the `inputs` and `attention` output via
+        #         `cell_input_fn` to get cell inputs.
+        cell_inputs = self._cell_input_fn(rnn_inputs, attention)
+
+        # Step 7: Call the wrapped `cell` with these cell inputs and
+        #         its previous state.
+        cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
+
+        prev_all_cell_states = state.all_cell_states
+
+        time_mask = tf.concat([prev_time_mask[:, :state.time],
+                               tf.ones_like(prev_time_mask[:, :1]),
+                               prev_time_mask[:, state.time + 1:]], 1)
+
+        if self._index_of_attn_to_copy is not None:
+            # Step 8: Maybe copy output and cell state from history
+
+            # get relevant previous outputs from history
+            attn_to_copy = all_attentions[self._index_of_attn_to_copy]
+            # copy them to current output
+            cell_output_with_attn = cell_output + attn_to_copy
+
+            memory_probs = self._get_memory_probs(all_alignments, state.time)
+
+            # check that we do not pay attention to `tensor_not_to_copy`
+            bin_likelihood_not_to_copy, _ = self._likelihood_fn(
+                    cell_output_with_attn, self._tensor_not_to_copy)
+            # recalculate probs
+            memory_probs *= 1 - bin_likelihood_not_to_copy
+
+            history_alignments = self._history_alignments(memory_probs)
+
+            # get previous output from the history
+            prev_output = self._prev_output(cell_output_with_attn,
+                                            history_alignments,
+                                            state.time)
+
+            # check that current output is close to
+            # the one in the history to which we pay attention to
+            bin_likelihood_to_copy, _ = self._likelihood_fn(
+                    cell_output_with_attn, prev_output)
+            # recalculate probs
+            memory_probs *= bin_likelihood_to_copy
+
+            history_alignments = self._history_alignments(memory_probs)
+            current_time_prob = history_alignments[:, -1:]
+
+            # create additional likelihoods to maximize
+            attn_likelihood = self._additional_likelihood(
+                    attn_to_copy,
+                    prev_output,
+                    current_time_prob
+            )
+            state_likelihood = self._additional_likelihood(
+                    cell_output + tf.stop_gradient(attn_to_copy),
+                    prev_output,
+                    current_time_prob
+            )
+
+            # recalculate time_mask
+            time_mask = self._apply_alignments_to_history(
+                    tf.cast(history_alignments, time_mask.dtype),
+                    prev_time_masks[:, :-1, :],
+                    time_mask
+            )
+
+            # recalculate new next_cell_state based on history_alignments
+            next_cell_state = self._new_next_cell_state(
+                    prev_all_cell_states,
+                    next_cell_state,
+                    cell_output_with_attn,
+                    history_alignments,
+                    state.time
+            )
+
+            all_cell_states = self._all_cell_states(
+                    prev_all_cell_states,
+                    next_cell_state,
+                    state.time
+            )
+
+            if self._output_attention:
+                # concatenate cell outputs, attention, additional likelihoods
+                # and copy_attn_debug
+                output = tf.concat([cell_output_with_attn,
+                                    cell_output,
+                                    attention,
+                                    # additional likelihoods
+                                    attn_likelihood, state_likelihood,
+                                    # copy_attn_debug
+                                    bin_likelihood_not_to_copy,
+                                    bin_likelihood_to_copy,
+                                    current_time_prob], 1)
+            else:
+                output = cell_output_with_attn
+
+        else:
+            # do not waste resources on storing history
+            all_cell_states = prev_all_cell_states
+
+            if self._output_attention:
+                output = tf.concat([cell_output, attention], 1)
+            else:
+                output = cell_output
+
+        all_time_masks = state.all_time_masks.write(state.time + 1, time_mask)
+
+        next_state = TimeAttentionWrapperState(
+                time=state.time + 1,
+                cell_state=next_cell_state,
+                attention=attention,
+                attention_state=self._item_or_tuple(all_attention_states),
+                alignments=self._item_or_tuple(all_alignments),
+                alignment_history=self._item_or_tuple(maybe_all_histories),
+                all_time_masks=all_time_masks,
+                all_cell_states=all_cell_states
+        )
+        return output, next_state
+
+    # helper for TensorArray
+    @staticmethod
+    def _read_from_tensor_array(tensor_array, time):
+        """TensorArray time reader"""
+        return tf.transpose(tensor_array.gather(tf.range(0, time + 1)),
+                            [1, 0, 2])
 
     # helper methods for copy mechanism
     def _get_memory_probs(self, all_alignments, time):
@@ -411,12 +715,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         memory_probs = tf.stop_gradient(all_alignments[
                 self._index_of_attn_to_copy][:, :time])
-        # filter memory_probs with ignore_mask
-        memory_probs = tf.where(
-                self._ignore_mask[self._index_of_attn_to_copy][:, :time],
-                tf.zeros_like(memory_probs),
-                memory_probs
-        )
+
         # binarize memory_probs only if max value is larger than margin=0.1
         memory_probs_max = tf.reduce_max(memory_probs, axis=1, keepdims=True)
         memory_probs_max = tf.where(memory_probs_max > 0.1,
@@ -486,10 +785,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # we do not want to pay attention to it,
         # but we need to read it instead of
         # adding conditional flow if time == 0
-        prev_cell_states = tf.transpose(
-                prev_all_cell_states.gather(
-                        tf.range(0, time + 1)), [1, 0, 2]
-        )[:, :-1, :]
+        prev_cell_states = self._read_from_tensor_array(prev_all_cell_states,
+                                                        time)[:, :-1, :]
 
         return self._apply_alignments_to_history(alignments,
                                                  prev_cell_states,
@@ -530,212 +827,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             )
         else:
             return prev_all_cell_states.write(time + 1, next_cell_state)
-
-    def call(self, inputs, state):
-        """Perform a step of attention-wrapped RNN.
-
-        The order has changed:
-        - Step 1: Calculate attention inputs based on the previous cell state
-                  and current inputs
-        - Step 2: Score the output with `attention_mechanism`.
-        - Step 3: Calculate the alignments by passing the score through the
-                  `normalizer` and limit them by time.
-        - Step 4: Calculate the context vector as the inner product between the
-                  alignments and the attention_mechanism's values (memory).
-        - Step 5: Calculate the attention output by concatenating
-                  the cell output and context through the attention layer
-                  (a linear layer with `attention_layer_size` outputs).
-        - Step 6: Mix the `inputs` and `attention` output via
-                  `cell_input_fn` to get cell inputs.
-        - Step 7: Call the wrapped `cell` with these cell inputs and
-                  its previous state.
-        - Step 8: (optional) Maybe copy output and cell state from history
-
-        Args:
-          inputs: (Possibly nested tuple of) Tensor,
-                  the input at this time step.
-          state: An instance of `TimeAttentionWrapperState`
-                 containing tensors from the previous time step.
-
-        Returns:
-          A tuple `(attention_or_cell_output, next_state)`, where:
-
-          - `attention_or_cell_output` depending on `output_attention`.
-          - `next_state` is an instance of `TimeAttentionWrapperState`
-             containing the state calculated at this time step.
-
-        Raises:
-          TypeError: If `state` is not an instance of
-          `TimeAttentionWrapperState`.
-        """
-        if not isinstance(state, TimeAttentionWrapperState):
-            raise TypeError("Expected state to be instance of "
-                            "TimeAttentionWrapperState. "
-                            "Received type {} instead.".format(type(state)))
-
-        # Step 1: Calculate attention based on
-        #         the previous output and current input
-        cell_state = state.cell_state
-
-        inputs, attn_inputs = self._inputs_and_attn_inputs_fn(inputs,
-                                                              cell_state)
-
-        cell_batch_size = (
-                attn_inputs.shape[0].value or
-                tf.shape(attn_inputs)[0])
-        error_message = (
-                "When applying AttentionWrapper %s: " % self.name +
-                "Non-matching batch sizes between the memory "
-                "(encoder output) and the query (decoder output).  "
-                "Are you using "
-                "the BeamSearchDecoder?  "
-                "You may need to tile your memory input via "
-                "the tf.contrib.seq2seq.tile_batch function with argument "
-                "multiple=beam_width.")
-        with tf.control_dependencies(
-                self._batch_size_checks(cell_batch_size, error_message)):
-            attn_inputs = tf.identity(
-                    attn_inputs, name="checked_attn_inputs")
-
-        if self._is_multi:
-            previous_attention_state = state.attention_state
-            previous_alignment_history = state.alignment_history
-        else:
-            previous_attention_state = [state.attention_state]
-            previous_alignment_history = [state.alignment_history]
-
-        all_alignments = []
-        all_attentions = []
-        all_attention_states = []
-        maybe_all_histories = []
-
-        for i, attention_mechanism in enumerate(self._attention_mechanisms):
-            # Steps 2 - 5 are performed inside `_compute_time_attention`
-            (attention, alignments,
-             next_attention_state) = _compute_time_attention(
-                    attention_mechanism, attn_inputs,
-                    previous_attention_state[i],
-                    # time is added to calculate time attention
-                    state.time, self._timed_ntms[i],
-                    # provide boolean mask, to ignore some time steps
-                    self._ignore_mask[i],
-                    self._attention_layers[i]
-                    if self._attention_layers else None)
-
-            alignment_history = previous_alignment_history[i].write(
-                    state.time, alignments) if self._alignment_history else ()
-
-            all_attention_states.append(next_attention_state)
-            all_alignments.append(alignments)
-            all_attentions.append(attention)
-            maybe_all_histories.append(alignment_history)
-
-        attention = tf.concat(all_attentions, 1)
-
-        # Step 6: Mix the `inputs` and `attention` output via
-        #         `cell_input_fn` to get cell inputs.
-        cell_inputs = self._cell_input_fn(inputs, attention)
-
-        # Step 7: Call the wrapped `cell` with these cell inputs and
-        #         its previous state.
-        cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
-
-        prev_all_cell_states = state.all_cell_states
-
-        if self._index_of_attn_to_copy is not None:
-            # Step 8: Maybe copy output and cell state from history
-
-            # get relevant previous outputs from history
-            attn_to_copy = all_attentions[self._index_of_attn_to_copy]
-            # copy them to current output
-            cell_output_with_attn = cell_output + attn_to_copy
-
-            memory_probs = self._get_memory_probs(all_alignments, state.time)
-
-            # check that we do not pay attention to `tensor_not_to_copy`
-            bin_likelihood_not_to_copy, _ = self._likelihood_fn(
-                    cell_output_with_attn, self._tensor_not_to_copy)
-            # recalculate probs
-            memory_probs *= 1 - bin_likelihood_not_to_copy
-
-            history_alignments = self._history_alignments(memory_probs)
-
-            # get previous output from the history
-            prev_output = self._prev_output(cell_output_with_attn,
-                                            history_alignments,
-                                            state.time)
-
-            # check that current output is close to
-            # the one in the history to which we pay attention to
-            bin_likelihood_to_copy, _ = self._likelihood_fn(
-                    cell_output_with_attn, prev_output)
-            # recalculate probs
-            memory_probs *= bin_likelihood_to_copy
-
-            history_alignments = self._history_alignments(memory_probs)
-            current_time_prob = history_alignments[:, -1:]
-
-            # create additional likelihoods to maximize
-            attn_likelihood = self._additional_likelihood(
-                    attn_to_copy,
-                    prev_output,
-                    current_time_prob
-            )
-            state_likelihood = self._additional_likelihood(
-                    cell_output + tf.stop_gradient(attn_to_copy),
-                    prev_output,
-                    current_time_prob
-            )
-
-            # recalculate new next_cell_state based on history_alignments
-            next_cell_state = self._new_next_cell_state(
-                    prev_all_cell_states,
-                    next_cell_state,
-                    cell_output_with_attn,
-                    history_alignments,
-                    state.time
-            )
-
-            all_cell_states = self._all_cell_states(
-                    prev_all_cell_states,
-                    next_cell_state,
-                    state.time
-            )
-
-            if self._output_attention:
-                # concatenate cell outputs, attention, additional likelihoods
-                # and copy_attn_debug
-                output = tf.concat([cell_output_with_attn,
-                                    cell_output,
-                                    attention,
-                                    # additional likelihoods
-                                    attn_likelihood, state_likelihood,
-                                    # copy_attn_debug
-                                    bin_likelihood_not_to_copy,
-                                    bin_likelihood_to_copy,
-                                    current_time_prob], 1)
-            else:
-                output = cell_output_with_attn
-
-        else:
-            # do not waste resources on storing history
-            all_cell_states = prev_all_cell_states
-
-            if self._output_attention:
-                output = tf.concat([cell_output, attention], 1)
-            else:
-                output = cell_output
-
-        next_state = TimeAttentionWrapperState(
-                time=state.time + 1,
-                cell_state=next_cell_state,
-                attention=attention,
-                attention_state=self._item_or_tuple(all_attention_states),
-                alignments=self._item_or_tuple(all_alignments),
-                alignment_history=self._item_or_tuple(maybe_all_histories),
-                all_cell_states=all_cell_states
-        )
-        return output, next_state
 
 
 class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
