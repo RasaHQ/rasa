@@ -232,7 +232,6 @@ def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
         remote_action.run(default_dispatcher_collecting,
                           tracker,
                           default_domain)
-    print(execinfo)
     httpretty.disable()
     assert "Failed to execute custom action." in str(execinfo.value)
 
