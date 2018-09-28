@@ -29,6 +29,7 @@ Fixed
 -----
 - fixed an issue with boolean slots where False and None had the same value
   (breaking model compatibility with models that use a boolean slot)
+- use utf8 everywhere when handling file IO
 
 [0.11.8] - 2018-09-28
 ^^^^^^^^^^^^^^^^^^^^^
