@@ -54,3 +54,9 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     If there is no container with the name ``AZURE_CONTAINER`` Rasa will create it.
 
 Models are gzipped before saving to cloud.
+
+
+.. include:: feedback.inc
+
+.. raw:: html
+   :file: livechat.html

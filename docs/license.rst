@@ -4,3 +4,6 @@ License
 
 
 .. literalinclude:: ../LICENSE.txt
+
+.. raw:: html
+   :file: livechat.html

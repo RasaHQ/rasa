@@ -7,6 +7,8 @@ import logging
 import os
 import re
 import warnings
+import io
+import sys
 
 import typing
 from typing import Any, Dict, List, Optional, Text
@@ -35,15 +37,20 @@ class RegexFeaturizer(Featurizer):
 
     requires = ["tokens"]
 
-    def __init__(self, component_config=None, known_patterns=None):
+    def __init__(self, component_config=None,
+                 known_patterns=None, lookup_tables=None):
+
         super(RegexFeaturizer, self).__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
+        lookup_tables = lookup_tables or []
+        self._add_lookup_table_regexes(lookup_tables)
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
         self.known_patterns = training_data.regex_features
+        self._add_lookup_table_regexes(training_data.lookup_tables)
 
         for example in training_data.training_examples:
             updated = self._text_features_with_regex(example)
@@ -61,6 +68,15 @@ class RegexFeaturizer(Featurizer):
             return self._combine_with_existing_text_features(message, extras)
         else:
             return message.get("text_features")
+
+    def _add_lookup_table_regexes(self, lookup_tables):
+        # appends the regex features from the lookup tables to
+        # self.known_patterns
+        for table in lookup_tables:
+            regex_pattern = self._generate_lookup_regex(table)
+            lookup_regex = {'name': table['name'],
+                            'pattern': regex_pattern}
+            self.known_patterns.append(lookup_regex)
 
     def features_for_patterns(self, message):
         """Checks which known patterns match the message.
@@ -86,6 +102,38 @@ class RegexFeaturizer(Featurizer):
                 t.set("pattern", patterns)
         found = [1.0 if m is not None else 0.0 for m in matches]
         return np.array(found)
+
+    def _generate_lookup_regex(self, lookup_table):
+        """creates a regex out of the contents of a lookup table file"""
+        lookup_elements = lookup_table['elements']
+        elements_to_regex = []
+
+        # if it's a list, it should be the elements directly
+        if isinstance(lookup_elements, list):
+            elements_to_regex = lookup_elements
+
+        # otherwise it's a file path.
+        else:
+
+            try:
+                f = io.open(lookup_elements, 'r')
+            except IOError:
+                raise ValueError("Could not load lookup table {}"
+                                 "Make sure you've provided the correct path"
+                                 .format(lookup_elements))
+
+            with f:
+                for line in f:
+                    new_element = line.strip()
+                    if new_element:
+                        elements_to_regex.append(new_element)
+
+        # sanitize the regex, escape special characters
+        elements_sanitized = [re.escape(e) for e in elements_to_regex]
+
+        # regex matching elements with word boundaries on either side
+        regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_sanitized) + '\\b)'
+        return regex_string
 
     @classmethod
     def load(cls,

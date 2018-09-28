@@ -14,6 +14,7 @@ from rasa_nlu import utils
 from rasa_nlu.convert import convert_training_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa_nlu.training_data.formats import MarkdownReader
 from rasa_nlu.training_data.formats.rasa import validate_rasa_nlu_data
 
 
@@ -72,6 +73,28 @@ def test_dialogflow_data():
     assert non_trivial_synonyms == {"mexico": "mexican",
                                     "china": "chinese",
                                     "india": "indian"}
+
+
+def test_lookup_table_json():
+    lookup_fname = 'data/test/lookup_tables/plates.txt'
+    td_lookup = training_data.load_data(
+        'data/test/lookup_tables/lookup_table.json')
+    assert td_lookup.lookup_tables[0]['name'] == 'plates'
+    assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
+    assert td_lookup.lookup_tables[1]['name'] == 'drinks'
+    assert td_lookup.lookup_tables[1]['elements'] == [
+        'mojito', 'lemonade', 'sweet berry wine', 'tea', 'club mate']
+
+
+def test_lookup_table_md():
+    lookup_fname = 'data/test/lookup_tables/plates.txt'
+    td_lookup = training_data.load_data(
+        'data/test/lookup_tables/lookup_table.md')
+    assert td_lookup.lookup_tables[0]['name'] == 'plates'
+    assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
+    assert td_lookup.lookup_tables[1]['name'] == 'drinks'
+    assert td_lookup.lookup_tables[1]['elements'] == [
+        'mojito', 'lemonade', 'sweet berry wine', 'tea', 'club mate']
 
 
 @pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json", 'data/examples/rasa/demo-rasa.md'])
@@ -380,3 +403,50 @@ def test_url_data_format():
     data = utils.read_json_file(fname)
     assert data is not None
     validate_rasa_nlu_data(data)
+
+
+def test_markdown_entity_regex():
+    r = MarkdownReader()
+
+    md = """
+## intent:restaurant_search
+- i'm looking for a place to eat
+- i'm looking for a place in the [north](loc-direction) of town
+- show me [chines](cuisine:chinese) restaurants
+- show me [chines](22_ab-34*3.A:43er*+?df) restaurants
+    """
+
+    result = r.reads(md)
+
+    assert len(result.training_examples) == 4
+    first = result.training_examples[0]
+    assert first.data == {"intent": "restaurant_search"}
+    assert first.text == "i'm looking for a place to eat"
+
+    second = result.training_examples[1]
+    assert second.data == {'intent': 'restaurant_search',
+                           'entities': [
+                               {'start': 31,
+                                'end': 36,
+                                'value': 'north',
+                                'entity': 'loc-direction'}
+                           ]}
+    assert second.text == "i'm looking for a place in the north of town"
+
+    third = result.training_examples[2]
+    assert third.data == {'intent': 'restaurant_search',
+                          'entities': [
+                              {'start': 8,
+                               'end': 14,
+                               'value': 'chinese',
+                               'entity': 'cuisine'}]}
+    assert third.text == "show me chines restaurants"
+
+    fourth = result.training_examples[3]
+    assert fourth.data == {'intent': 'restaurant_search',
+                           'entities': [
+                               {'start': 8,
+                                'end': 14,
+                                'value': '43er*+?df',
+                                'entity': '22_ab-34*3.A'}]}
+    assert fourth.text == "show me chines restaurants"

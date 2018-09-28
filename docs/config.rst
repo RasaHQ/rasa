@@ -134,4 +134,7 @@ CORS
 
 By default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your Rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
 
+.. include:: feedback.inc
 
+.. raw:: html
+   :file: livechat.html

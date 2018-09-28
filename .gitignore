@@ -40,3 +40,5 @@ rasa_nlu/tmbo_test.py
 *.tar.gz
 docs/key
 docs/key.pub
+secrets.tar
+.pytest_cache

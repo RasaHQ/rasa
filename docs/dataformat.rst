@@ -26,6 +26,7 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     - what is my balance <!-- no entity -->
     - how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
     - how much do I have on my [savings account](source_account:savings) <!-- synonyms, method 1-->
+    - Could I pay in [yen](currency)?  <!-- entity matched by lookup table -->
 
     ## intent:greet
     - hey
@@ -37,13 +38,21 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     ## regex:zipcode
     - [0-9]{5}
 
+    ## lookup:currencies   <!-- lookup table list -->
+    - Yen
+    - USD
+    - Euro
+
+    ## lookup:additional_currencies  <!-- no list to specify lookup table file -->
+    path/to/currencies.txt
 
 The training data for Rasa NLU is structured into different parts:
-examples, synonyms, and regex features. 
+examples, synonyms, regex features, and lookup tables. 
 
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
 However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up. 
 
+Lookup tables may be specified either directly as lists or as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.  For example, in this case a list of currency names is supplied so that it is easier to pick out this entity.
 
 JSON Format
 -----------
@@ -58,6 +67,7 @@ The most important one is ``common_examples``.
         "rasa_nlu_data": {
             "common_examples": [],
             "regex_features" : [],
+            "lookup_tables"  : [],
             "entity_synonyms": []
         }
     }
@@ -230,6 +240,51 @@ for these extractors. Currently, all intent classifiers make use of available re
     training data!
 
 
+Lookup Tables
+-------------
+Lookup tables in the form of external files or lists of elements may also be specified in the training data.  The externally supplied lookup tables must be in a newline-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
+
+.. include:: ../data/test/lookup_tables/plates.txt
+
+And can be loaded as:
+
+.. code-block:: json
+
+    {
+        "rasa_nlu_data": {
+            "lookup_tables": [
+                {
+                    "name": "plates",
+                    "elements": "data/test/lookup_tables/plates.txt"
+                }
+            ]
+        }
+    }
+
+Alternatively, lookup elements may be directly included as a list
+
+.. code-block:: json
+
+    {
+        "rasa_nlu_data": {
+            "lookup_tables": [
+                {
+                    "name": "plates",
+                    "elements": ["beans", "rice", "tacos", "cheese"]
+                }
+            ]
+        }
+    }
+
+When lookup tables are supplied in training data, the contents are combined into a large, case-insensitive regex pattern that looks for exact matches in the training examples.  These regexes match over multiple tokens, so ``lettuce wrap`` would match ``get me a lettuce wrap ASAP`` as ``[0 0 0 1 1 0]``.  These regexes are processed identically to the regular regex patterns directly specified in the training data.
+
+.. note::
+    For lookup tables to be effective, there must be a few examples of matches in your training data.  Otherwise the model will not learn to use the lookup table match features.
+
+.. warning::
+    One must be careful with what kind of data is present in the lookup table.  For example if some of the elements are matched with commonly occuring words that are not the entity you wish to extract, this will limit the effectiveness of this method.  In fact, it might hurt the performance of entity recognition.  Therefore, try to use lookup tables only when you have a list of unambiguous phrases or tokens that you wish to match and make sure you filter out potentially problematic elements.
+
+
 Organization
 ------------
 
@@ -260,3 +315,8 @@ To train a model with this data, pass the path to the directory to the train scr
     For other file formats you have to use the single-file approach. You also cannot mix markdown
     and json
 
+
+.. include:: feedback.inc	
+	
+.. raw:: html
+   :file: livechat.html	

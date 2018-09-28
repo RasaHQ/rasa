@@ -128,4 +128,7 @@ ComponentBuilder
    .. automethod:: load_component
 
 
-
+.. include:: feedback.inc
+   
+.. raw:: html
+   :file: livechat.html

@@ -4,16 +4,17 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import json
 import os
 import pickle
 import tempfile
 
 import pytest
-
+from httpretty import httpretty
 from rasa_nlu import utils
 from rasa_nlu.utils import (
     relative_normpath, create_dir, is_url, ordered, is_model_dir, remove_model,
-    write_json_to_file, write_to_file)
+    write_json_to_file, write_to_file, EndpointConfig)
 
 
 @pytest.fixture
@@ -108,3 +109,37 @@ def test_remove_model_invalid(empty_model_dir):
 def test_is_url():
     assert not is_url('./some/file/path')
     assert is_url('https://rasa.com/')
+
+
+def test_endpoint_config():
+    endpoint = EndpointConfig(
+            "https://abc.defg/",
+            params={"A": "B"},
+            headers={"X-Powered-By": "Rasa"},
+            basic_auth={"username": "user",
+                        "password": "pass"},
+            token="mytoken",
+            token_name="letoken"
+    )
+
+    httpretty.register_uri(
+            httpretty.POST,
+            'https://abc.defg/test',
+            status=500,
+            body='')
+
+    httpretty.enable()
+    endpoint.request("post", subpath="test",
+                     content_type="application/text",
+                     json={"c": "d"},
+                     params={"P": "1"})
+    httpretty.disable()
+
+    r = httpretty.latest_requests[-1]
+
+    assert json.loads(str(r.body.decode("utf-8"))) == {"c": "d"}
+    assert r.headers.get("X-Powered-By") == "Rasa"
+    assert r.headers.get("Authorization") == "Basic dXNlcjpwYXNz"
+    assert r.querystring.get("A") == ["B"]
+    assert r.querystring.get("P") == ["1"]
+    assert r.querystring.get("letoken") == ["mytoken"]
