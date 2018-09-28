@@ -309,12 +309,14 @@ class RemoteAction(Action):
                          "".format(self.name()))
             response = self.action_endpoint.request(
                     json=json, method="post", timeout=DEFAULT_REQUEST_TIMEOUT)
-            response_data = response.json()
+
             if response.status_code == 400:
+                response_data = response.json()
                 logger.debug(response_data["error"])
                 raise ActionExecutionError(response_data["error"],
                                            response_data["action_name"])
             response.raise_for_status()
+            response_data = response.json()
             self._validate_action_result(response_data)
         except requests.exceptions.ConnectionError as e:
 

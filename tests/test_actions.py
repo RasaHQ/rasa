@@ -51,7 +51,8 @@ def test_domain_action_instantiation():
             entities=[],
             slots=[],
             templates={},
-            action_names=["my_module.ActionTest", "utter_test"])
+            action_names=["my_module.ActionTest", "utter_test"],
+            form_names=[])
 
     instantiated_actions = domain.actions(None)
 
@@ -69,7 +70,8 @@ def test_domain_fails_on_duplicated_actions():
                entities=[],
                slots=[],
                templates={},
-               action_names=["random_name", "random_name"])
+               action_names=["random_name", "random_name"],
+               form_names=[])
 
 
 def test_remote_action_runs(default_dispatcher_collecting, default_domain):
@@ -106,6 +108,8 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
                 'intent': {},
                 'text': None
             },
+            'active_form': None,
+            'latest_action_name': None,
             'sender_id': 'default',
             'paused': False,
             'latest_event_time': None,
@@ -159,6 +163,8 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
                 'intent': {},
                 'text': None
             },
+            'active_form': None,
+            'latest_action_name': None,
             'sender_id': 'default',
             'paused': False,
             'followup_action': 'action_listen',
@@ -226,6 +232,7 @@ def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
         remote_action.run(default_dispatcher_collecting,
                           tracker,
                           default_domain)
+    print(execinfo)
     httpretty.disable()
     assert "Failed to execute custom action." in str(execinfo.value)
 
