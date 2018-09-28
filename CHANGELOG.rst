@@ -14,15 +14,24 @@ Added
 
 Changed
 -------
+- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
+  ``TrainingData`` object
 
 Removed
 -------
-- pytest-services since it wasn't used and caused issues on Windows
 
 Fixed
 -----
 
-[0.13.3] - 2018-09-28
+[0.13.4] - 2018-09-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pinned matplotlib to 2.x (not ready for 3.0 yet)
+- pytest-services since it wasn't used and caused issues on Windows
+
+[0.13.3] - 2018-08-28
 ^^^^^^^^^^^^^^^^^^^^^
 
 Added
