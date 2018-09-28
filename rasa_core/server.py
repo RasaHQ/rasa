@@ -109,9 +109,9 @@ def requires_auth(app, token=None):
             return Response("User is not authenticated.",
                             status=401)
 
-            return decorated
+        return decorated
 
-        return decorator
+    return decorator
 
 
 def create_app(agent,
