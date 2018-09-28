@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import argparse
 import io
-import json
 import logging
 import tempfile
 import warnings
@@ -234,22 +233,12 @@ def run_e2e_evaluation(resource_name, agent,
                        out_file_stories=None,
                        out_file_plot=None,
                        fail_on_prediction_errors=False):
-    """Run the evaluation of the stories, optionally plots the results."""
+    """Run the combined evaluation of NLU intent examples and stories"""
     nlu_data_path = extract_nlu_data(resource_name)
-    print("have td", nlu_data_path)
-    print("have nlu model path", nlu_model_path)
     nlu_eval = run_nlu_evaluation(nlu_data_path, nlu_model_path)
-    print('have nlu_eval', json.dumps(nlu_eval, indent=4))
-    completed_trackers = _generate_trackers(resource_name, agent, max_stories)
-    print('have tracker', json.dumps(completed_trackers[0].current_state(),
-                                     indent=2))
 
-    test_y, predictions, failed = collect_story_predictions(
-            completed_trackers, agent, fail_on_prediction_errors)
-    if out_file_plot:
-        plot_story_evaluation(test_y, predictions, out_file_plot)
-
-    log_failed_stories(failed, out_file_stories)
+    run_story_evaluation(resource_name, agent, max_stories, out_file_stories,
+                         out_file_plot, fail_on_prediction_errors)
 
 
 def run_story_evaluation(resource_name, agent,
@@ -319,18 +308,20 @@ if __name__ == '__main__':
     _agent = Agent.load(cmdline_args.core,
                         interpreter=_interpreter)
 
-    # run_story_evaluation(cmdline_args.stories,
-    #                      _agent,
-    #                      cmdline_args.max_stories,
-    #                      cmdline_args.failed,
-    #                      cmdline_args.output,
-    #                      cmdline_args.fail_on_prediction_errors)
-    run_e2e_evaluation(cmdline_args.stories,
-                       _agent,
-                       cmdline_args.nlu,
-                       cmdline_args.max_stories,
-                       cmdline_args.failed,
-                       cmdline_args.output,
-                       cmdline_args.fail_on_prediction_errors)
+    if 1:
+        run_e2e_evaluation(cmdline_args.stories,
+                           _agent,
+                           cmdline_args.nlu,
+                           cmdline_args.max_stories,
+                           cmdline_args.failed,
+                           cmdline_args.output,
+                           cmdline_args.fail_on_prediction_errors)
+    else:
+        run_story_evaluation(cmdline_args.stories,
+                             _agent,
+                             cmdline_args.max_stories,
+                             cmdline_args.failed,
+                             cmdline_args.output,
+                             cmdline_args.fail_on_prediction_errors)
 
     logger.info("Finished evaluation")
