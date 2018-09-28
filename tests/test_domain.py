@@ -175,6 +175,7 @@ def test_domain_to_yaml():
 config:
   store_entities_as_slots: true
 entities: []
+forms: []
 intents: []
 slots: {}
 templates:
