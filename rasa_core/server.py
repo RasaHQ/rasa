@@ -7,13 +7,14 @@ import logging
 import os
 import tempfile
 import zipfile
-from flask import Flask, request, abort, Response, jsonify
-from flask_cors import CORS, cross_origin
-from flask_jwt_simple import JWTManager, view_decorators
 from functools import wraps
 from typing import List
 from typing import Text, Optional
 from typing import Union
+
+from flask import Flask, request, abort, Response, jsonify
+from flask_cors import CORS, cross_origin
+from flask_jwt_simple import JWTManager, view_decorators
 
 from rasa_core import utils, constants
 from rasa_core.channels import (
@@ -99,20 +100,18 @@ def requires_auth(app, token=None):
             elif app.config.get('JWT_ALGORITHM') is not None:
                 if sufficient_scope(*args, **kwargs):
                     return f(*args, **kwargs)
-                abort(error(
-                    403, "NotAuthorized", "User has insufficient permissions.",
-                    help_url=_docs("/server.html#security-considerations")))
+                return Response("User has insufficient permissions.",
+                                status=403)
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
 
-            abort(error(
-                    401, "NotAuthenticated", "User is not authenticated.",
-                    help_url=_docs("/server.html#security-considerations")))
+            return Response("User is not authenticated.",
+                            status=401)
 
-        return decorated
+            return decorated
 
-    return decorator
+        return decorator
 
 
 def create_app(agent,
