@@ -86,6 +86,8 @@ def test_requesting_non_existent_tracker(app):
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [{"event": "action",
                                   "name": "action_listen",
+                                  "policy": None,
+                                  "policy_confidence": None,
                                   "timestamp": 1514764800}]
     assert content["latest_message"] == {"text": None,
                                          "intent": {},
