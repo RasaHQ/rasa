@@ -26,7 +26,11 @@ from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import ReminderScheduled, Event
 from rasa_core.events import SlotSet
-from rasa_core.events import UserUttered, ActionExecuted, BotUttered, ActionExecutionFailed
+from rasa_core.events import (
+    UserUttered,
+    ActionExecuted,
+    BotUttered,
+    ActionExecutionFailed)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
@@ -332,7 +336,7 @@ class MessageProcessor(object):
         # the tracker state after an action has been taken
         try:
             events = action.run(dispatcher, tracker, self.domain)
-        except ActionExecutionError as e:
+        except ActionExecutionError:
             events = [ActionExecutionFailed(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name(), events)
