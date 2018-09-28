@@ -14,11 +14,21 @@ Added
 
 Changed
 -------
-- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
-  ``TrainingData`` object
 
 Removed
 -------
+
+Fixed
+-----
+
+
+[0.13.5] - 2018-09-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
+  ``TrainingData`` object
 
 Fixed
 -----
