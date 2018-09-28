@@ -6,8 +6,6 @@
 * thank
     - utter_noworries
 
-
-
 ## chitchat once
 * request_restaurant
     - restaurant_form
@@ -56,15 +54,14 @@
     - utter_chitchat
     - restaurant_form
     - form: slot{"requested_slot": "cuisine"}
-* form: inform{"cuisine": "1"}
-    - form: slot{"cuisine": "1"}
+* form: inform{"cuisine": "mexican"}
+    - form: slot{"cuisine": "mexican"}
     - form: restaurant_form
-    - form: slot{"cuisine": "1"}
+    - form: slot{"cuisine": "mexican"}
     - form: slot{"requested_slot": "num_people"}
-* form: inform{"num_people": "1"}
-    - form: slot{"num_people": "1"}
+* form: inform{"number": "2"}
     - form: restaurant_form
-    - form: slot{"num_people": "1"}
+    - form: slot{"num_people": "2"}
     - form{"name": null}
     - slot{"requested_slot": null}
 * thank

@@ -7,7 +7,7 @@ config:
   store_entities_as_slots: true
 entities:
 - cuisine
-- num_people
+- number
 forms:
 - restaurant_form
 intents:
@@ -38,3 +38,9 @@ templates:
   - text: chitchat
   utter_noworries:
   - text: you are welcome :)
+  utter_submit:
+  - text: done!
+  utter_wrong_cuisine:
+  - text: cuisine type is not in the database, please try again
+  utter_wrong_num_people:
+  - text: number of people should be a positive integer, please try again

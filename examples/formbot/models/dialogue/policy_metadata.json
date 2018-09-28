@@ -11,7 +11,7 @@
     }
   },
   "rasa_core": "0.12.0a4",
-  "python": "3.6.6",
+  "python": "3.6.5",
   "max_histories": [
     null,
     3,

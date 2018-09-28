@@ -5,7 +5,7 @@
     "intent_request_restaurant",
     "intent_thank",
     "entity_cuisine",
-    "entity_num_people",
+    "entity_number",
     "prev_action_listen",
     "prev_action_restart",
     "prev_action_default_fallback",
