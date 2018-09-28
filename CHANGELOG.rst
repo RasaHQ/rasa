@@ -24,7 +24,20 @@ Removed
 
 Fixed
 -----
+
+[0.11.8] - 2018-09-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
 - cancel reminders if there has been a restarted event after the reminder
+
+Changed
+-------
+- JWT authentication now checks user roles. The ``admin`` role may access all
+  endpoints. For endpoints which contain a ``sender_id`` parameter, users
+  with the ``user`` role may only call endpoints where the ``sender_id``
+  matches the user's ``username``.
 
 [0.11.7] - 2018-09-26
 ^^^^^^^^^^^^^^^^^^^^^
