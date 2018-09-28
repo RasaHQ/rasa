@@ -22,6 +22,8 @@
     ]
   },
   "sender_id": "mysender",
+  "latest_action_name": "action_listen",
+  "active_form": null,
   "paused": false,
   "latest_event_time": 1517821726.211042,
   "followup_action": null,
@@ -31,7 +33,10 @@
     {
       "timestamp": 1517821726.211031,
       "event": "action",
-      "name": "action_listen"
+      "name": "action_listen",
+      "policy": null,
+      "policy_confidence": null
+
     },
     {
       "timestamp": 1517821726.200036,
@@ -64,12 +69,16 @@
     {
       "timestamp": 1517821726.200373,
       "event": "action",
-      "name": "utter_greet"
+      "name": "utter_greet",
+      "policy": null,
+      "policy_confidence": null
     },
     {
       "timestamp": 1517821726.211038,
       "event": "action",
-      "name": "action_listen"
+      "name": "action_listen",
+      "policy": null,
+      "policy_confidence": null
     },
     {
       "timestamp": 1517821726.209836,
@@ -102,12 +111,16 @@
     {
       "timestamp": 1517821726.209908,
       "event": "action",
-      "name": "utter_happy"
+      "name": "utter_happy",
+      "policy": null,
+      "policy_confidence": null
     },
     {
       "timestamp": 1517821726.211042,
       "event": "action",
-      "name": "action_listen"
+      "name": "action_listen",
+      "policy": null,
+      "policy_confidence": null
     }
   ]
 }
