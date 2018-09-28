@@ -73,7 +73,7 @@ def create_argument_parser():
             help="Configuration file for the connectors as a yml file")
     parser.add_argument(
             '-c', '--connector',
-            choices=list(BUILTIN_CHANNELS.keys()),
+            type=str,
             help="service to connect to")
     parser.add_argument(
             '--enable_api',
@@ -144,7 +144,13 @@ def create_http_input_channels(channel,  # type: Union[None, Text, RestInput]
             c = utils.class_from_module_path(channel)
             return [c()]
         except Exception:
-            raise Exception("Unknown input channel for running main.")
+            raise Exception("Failed to instantiate input channel '{}' "
+                            "for running main. "
+                            "Did you misspell a built in channel? If this "
+                            "is your custom channel, make sure to use "
+                            "the complete module path. Also check that "
+                            "the `__init__` method works without parameters."
+                            "".format(channel))
 
 
 def start_cmdline_io(server_url, on_finish, **kwargs):
