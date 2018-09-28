@@ -83,7 +83,7 @@ def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
 
     assert agent.domain.as_dict() == moodbot_domain.as_dict()
 
-    agent_policies = set(utils.module_path_from_instance(p) for p in
-                         agent.policy_ensemble.policies)
+    agent_policies = {utils.module_path_from_instance(p)
+                      for p in agent.policy_ensemble.policies}
     moodbot_policies = set(moodbot_metadata["policy_names"])
     assert agent_policies == moodbot_policies
