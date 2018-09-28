@@ -24,7 +24,7 @@ Removed
 
 Fixed
 -----
-
+- cancel reminders if there has been a restarted event after the reminder
 
 [0.11.7] - 2018-09-26
 ^^^^^^^^^^^^^^^^^^^^^
