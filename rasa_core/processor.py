@@ -388,7 +388,7 @@ class MessageProcessor(object):
             dispatcher.latest_bot_messages = []
 
     def _log_action_on_tracker(self, tracker, action_name, events, policy,
-                               policy_confidence):
+                               confidence):
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
         # returns `None` for some other reason.
@@ -402,8 +402,7 @@ class MessageProcessor(object):
 
         if action_name is not None:
             # log the action and its produced events
-            tracker.update(ActionExecuted(action_name, policy,
-                                          policy_confidence))
+            tracker.update(ActionExecuted(action_name, policy, confidence))
 
         for e in events:
             # this makes sure the events are ordered by timestamp -

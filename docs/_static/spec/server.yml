@@ -929,6 +929,12 @@ components:
           name:
             type: string
             description: Action name
+          policy:
+            type: string
+            description: Policy that predicted the action
+          confidence:
+            type: number
+            description: Confidence of the prediction
         required: ["event", "name"]
     agent:
       allOf:
