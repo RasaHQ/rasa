@@ -333,7 +333,7 @@ class Agent(object):
             self,
             sender_id,  # type: Text
             action,  # type: Text
-            output_channel,  # type: OutputChannel
+            output_channel  # type: OutputChannel
     ):
         # type: (...) -> DialogueStateTracker
         """Handle a single message."""

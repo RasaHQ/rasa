@@ -118,7 +118,7 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     """Retrieve a tracker from core."""
 
     path = "/conversations/{}/tracker?include_events={}".format(
-        sender_id, verbosity.name)
+            sender_id, verbosity.name)
     r = endpoint.request(method="get",
                          subpath=path,
                          headers={"Accept": "application/json"})

@@ -737,6 +737,7 @@ class ActionExecuted(Event):
             "policy": self.policy,
             "confidence": self.confidence
         })
+        return d
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
