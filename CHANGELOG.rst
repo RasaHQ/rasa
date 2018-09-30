@@ -20,7 +20,6 @@ Added
 
 Changed
 -------
-- The Policy used by Rasa Core now writes its confidence to the tracker when executing an action
 - improved response format for ``/predict`` endpoint
 - all error messages from the server are now in json format
 - ``agent.log_message`` now returns a tracker instead of the trackers state
