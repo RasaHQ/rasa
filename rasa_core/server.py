@@ -207,15 +207,13 @@ def create_app(agent,
     def execute_action(sender_id):
         request_params = request.get_json(force=True)
         action_to_execute = request_params.get("action", None)
-        confidence = request_params.get("policy_confidence", None)
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
 
         try:
             out = CollectingOutputChannel()
             agent.execute_action(sender_id,
                                  action_to_execute,
-                                 out,
-                                 confidence)
+                                 out)
 
             # retrieve tracker and set to requested state
             tracker = agent.tracker_store.get_or_create_tracker(sender_id)

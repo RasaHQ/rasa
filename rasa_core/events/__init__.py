@@ -697,19 +697,17 @@ class ActionExecuted(Event):
     def __init__(self,
                  action_name,
                  policy=None,
-                 policy_confidence=None,
+                 confidence=None,
                  timestamp=None):
         self.action_name = action_name
         self.policy = policy
-        self.policy_confidence = policy_confidence
+        self.confidence = confidence
         self.unpredictable = False
         super(ActionExecuted, self).__init__(timestamp)
 
     def __str__(self):
-        return ("ActionExecuted(action: {}, policy: {}, policy_confidence: {})"
-                "".format(self.action_name, self.policy,
-                          self.policy_confidence))
-
+        return ("ActionExecuted(action: {}, policy: {}, confidence: {})"
+                "".format(self.action_name, self.policy, self.confidence))
     def __hash__(self):
         return hash(self.action_name)
 
@@ -728,15 +726,17 @@ class ActionExecuted(Event):
 
         return [ActionExecuted(parameters.get("name"),
                                parameters.get("policy"),
-                               parameters.get("policy_confidence"),
+                               parameters.get("confidence"),
                                parameters.get("timestamp")
                                )]
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
-        d.update({"name": self.action_name})
-        d.update({"policy_confidence": self.policy_confidence})
-        return d
+        d.update({
+            "name": self.action_name,
+            "policy": self.policy,
+            "confidence": self.confidence
+        })
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None

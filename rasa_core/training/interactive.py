@@ -126,12 +126,11 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint, sender_id, action_name, policy_confidence=None):
+def send_action(endpoint, sender_id, action_name):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
-    payload = {"action": action_name,
-               "policy_confidence": policy_confidence}
+    payload = {"action": action_name}
     subpath = "/conversations/{}/execute".format(sender_id)
 
     r = endpoint.request(json=payload,
@@ -399,8 +398,7 @@ def _chat_history_table(evts):
     for idx, evt in enumerate(evts):
         if evt.get("event") == "action":
             bot_column.append(colored(evt['name'], 'autocyan'))
-            if evt['policy_confidence']:
-                bot_column[-1] += (colored(" {:03.2f}".format(evt['policy_confidence']), 'autowhite'))
+            bot_column[-1] += (colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
 
         elif evt.get("event") == 'user':
             if bot_column:
@@ -634,10 +632,9 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         pred_out = int(np.argmax(probabilities))
 
         action_name = predictions[pred_out].get("action")
-        action_score = predictions[pred_out].get("score")
 
         _print_history(sender_id, endpoint)
-        listen = _validate_action(action_name, predictions, action_score,
+        listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
 
 
@@ -679,7 +676,6 @@ def _correct_wrong_action(corrected_action,  # type: Text
 
 def _validate_action(action_name,  # type: Text
                      predictions,  # type: List[Dict[Text, Any]]
-                     action_score,  # type: Int
                      endpoint,  # type: EndpointConfig
                      sender_id,  # type: Text
                      finetune=False  # type: bool
@@ -705,7 +701,7 @@ def _validate_action(action_name,  # type: Text
                               finetune=finetune)
         return corrected_action == ACTION_LISTEN_NAME
     else:
-        send_action(endpoint, sender_id, action_name, action_score)
+        send_action(endpoint, sender_id, action_name)
         return action_name == ACTION_LISTEN_NAME
 
 
