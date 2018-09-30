@@ -32,7 +32,7 @@
       "timestamp": 1517821726.211031,
       "event": "action",
       "name": "action_listen",
-      "policy confidence": null
+      "policy_confidence": 0.99
     },
     {
       "timestamp": 1517821726.200036,
@@ -66,13 +66,13 @@
       "timestamp": 1517821726.200373,
       "event": "action",
       "name": "utter_greet",
-      "policy confidence": null
+      "policy_confidence": 0.99
     },
     {
       "timestamp": 1517821726.211038,
       "event": "action",
       "name": "action_listen",
-      "policy confidence": null
+      "policy_confidence": 0.99
     },
     {
       "timestamp": 1517821726.209836,
@@ -106,13 +106,13 @@
       "timestamp": 1517821726.209908,
       "event": "action",
       "name": "utter_happy",
-      "policy confidence": null
+      "policy_confidence": 0.99
     },
     {
       "timestamp": 1517821726.211042,
       "event": "action",
       "name": "action_listen",
-      "policy confidence": null
+      "policy_confidence": 0.99
     }
   ]
 }
