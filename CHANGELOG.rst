@@ -13,6 +13,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- openapi documentation of server API
 - NLU data learned through interactive learning will now be stored in a separate markdown-format file (any previous NLU
   data is merged)
 - Command line interface for interactive learning now displays policy confidence alongside the action name
@@ -20,6 +21,9 @@ Added
 Changed
 -------
 - The Policy used by Rasa Core now writes its confidence to the tracker when executing an action
+- improved response format for ``/predict`` endpoint
+- all error messages from the server are now in json format
+- ``agent.log_message`` now returns a tracker instead of the trackers state
 
 Removed
 -------

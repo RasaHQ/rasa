@@ -920,9 +920,9 @@ def record_messages(endpoint,  # type: EndpointConfig
             on_finish()
 
 
-def _start_online_learning_io(endpoint, on_finish, finetune=False):
+def _start_interactive_learning_io(endpoint, on_finish, finetune=False):
     # type: (EndpointConfig, Callable[[], None], bool) -> None
-    """Start the online learning message recording in a separate thread."""
+    """Start the interactive learning message recording in a separate thread."""
 
     p = Thread(target=record_messages,
                kwargs={
@@ -935,7 +935,7 @@ def _start_online_learning_io(endpoint, on_finish, finetune=False):
 
 def _serve_application(app, finetune=False, serve_forever=True):
     # type: (Flask, bool, bool) -> WSGIServer
-    """Start a core server and attach the online learning IO."""
+    """Start a core server and attach the interactive learning IO."""
 
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
     logger.info("Rasa Core server is up and running on "
@@ -943,7 +943,7 @@ def _serve_application(app, finetune=False, serve_forever=True):
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    _start_online_learning_io(endpoint, http_server.stop, finetune=finetune)
+    _start_interactive_learning_io(endpoint, http_server.stop, finetune=finetune)
 
     if serve_forever:
         try:
@@ -954,9 +954,9 @@ def _serve_application(app, finetune=False, serve_forever=True):
     return http_server
 
 
-def run_online_learning(agent, finetune=False, serve_forever=True):
+def run_interactive_learning(agent, finetune=False, serve_forever=True):
     # type: (Agent, bool, bool) -> WSGIServer
-    """Start the online learning with the model of the agent."""
+    """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)
 

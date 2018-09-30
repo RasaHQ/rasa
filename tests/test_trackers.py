@@ -30,6 +30,7 @@ domain = Domain.load("data/test_domains/default.yml")
 class MockRedisTrackerStore(RedisTrackerStore):
     def __init__(self, domain):
         self.red = fakeredis.FakeStrictRedis()
+        self.record_exp = None
         TrackerStore.__init__(self, domain)
 
 

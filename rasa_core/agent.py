@@ -221,11 +221,11 @@ class Agent(object):
     def update_model(
             self,
             domain,  # type: Union[Text, Domain]
-            policies,  # type: Union[PolicyEnsemble, List[Policy], None]
+            policy_ensemble,  # type: PolicyEnsemble
             fingerprint  # type: Optional[Text]
     ):
         self.domain = domain
-        self.policy_ensemble = self._create_ensemble(policies)
+        self.policy_ensemble = policy_ensemble
 
         self._set_fingerprint(fingerprint)
 
@@ -323,12 +323,11 @@ class Agent(object):
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
             **kwargs  # type: Any
     ):
-        # type: (...) -> Dict[Text, Any]
+        # type: (...) -> DialogueStateTracker
         """Append a message to a dialogue - does not predict actions."""
 
         processor = self.create_processor(message_preprocessor)
-        tracker = processor.log_message(message)
-        return tracker.current_state(EventVerbosity.AFTER_RESTART)
+        return processor.log_message(message)
 
     def execute_action(
             self,

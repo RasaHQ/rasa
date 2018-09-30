@@ -210,13 +210,57 @@ def test_predict(http_app, app):
 def test_list_conversations_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
+
+    # {"username": "testadmin", "role": "admin"}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
-                         "zdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIi"
-                         "wiaWF0IjoxNTE2MjM5MDIyfQ.qEJb6l_PyWk7lnVTHxCSPt"
-                         "8R6fvjd7bfISPR1yIF8Fg"
+                         "1c2VybmFtZSI6InRlc3RhZG1pbiIsInJvbGUiOiJhZG1pbi"
+                         "J9.3gp-0pEEUJpU_NoR76lVYMrW86Aedx_QULKUcw3ODbo"
     }
     response = secured_app.get("/conversations",
+                               headers=jwt_header)
+    assert response.status_code == 200
+
+    # {"username": "testuser", "role": "user"}
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
+                         "1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InVzZXIifQ"
+                         ".X4wN0sLRW0Urd9E-ProsCK_IQHjuNZ5SJwm4RXiX6fQ"
+    }
+    response = secured_app.get("/conversations",
+                               headers=jwt_header)
+    assert response.status_code == 403
+
+
+def test_get_tracker_with_jwt(secured_app):
+    # token generated with secret "core" and algorithm HS256
+    # on https://jwt.io/
+
+    # {"username": "testadmin", "role": "admin"}
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
+                         "1c2VybmFtZSI6InRlc3RhZG1pbiIsInJvbGUiOiJhZG1pbi"
+                         "J9.3gp-0pEEUJpU_NoR76lVYMrW86Aedx_QULKUcw3ODbo"
+    }
+    response = secured_app.get("/conversations/testadmin/tracker",
+                               headers=jwt_header)
+    assert response.status_code == 200
+
+    response = secured_app.get("/conversations/testuser/tracker",
+                               headers=jwt_header)
+    assert response.status_code == 200
+
+    # {"username": "testuser", "role": "user"}
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
+                         "1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InVzZXIifQ"
+                         ".X4wN0sLRW0Urd9E-ProsCK_IQHjuNZ5SJwm4RXiX6fQ"
+    }
+    response = secured_app.get("/conversations/testadmin/tracker",
+                               headers=jwt_header)
+    assert response.status_code == 403
+
+    response = secured_app.get("/conversations/testuser/tracker",
                                headers=jwt_header)
     assert response.status_code == 200
 
