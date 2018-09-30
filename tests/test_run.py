@@ -8,9 +8,9 @@ def test_create_http_input_channels():
     assert len(channels) == 5
 
     # ensure correct order
-    assert [c.name() for c in channels] == ["twilio", "slack",
+    assert {c.name() for c in channels} == {"twilio", "slack",
                                             "telegram", "mattermost",
-                                            "facebook"]
+                                            "facebook"}
 
 
 def test_create_single_input_channels():
