@@ -118,7 +118,7 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     """Retrieve a tracker from core."""
 
     path = "/conversations/{}/tracker?include_events={}".format(
-            sender_id, verbosity.name)
+        sender_id, verbosity.name)
     r = endpoint.request(method="get",
                          subpath=path,
                          headers={"Accept": "application/json"})
@@ -126,7 +126,7 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint, sender_id, action_name, policy_confidence = None):
+def send_action(endpoint, sender_id, action_name, policy_confidence=None):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
@@ -536,13 +536,12 @@ def _request_export_info():
                    "will append the stories)",
         "default": DEFAULT_FILE_EXPORT_PATH["stories"],
         "validate": validate_path
-    },{"name": "export nlu",
+    }, {"name": "export nlu",
         "type": "input",
         "message": "Export NLU data to (if file exists, this "
                    "will merge learned data with previous training examples)",
         "default": DEFAULT_FILE_EXPORT_PATH["nlu"],
         "validate": validate_path}]
-
 
     answers = prompt(questions)
     if not answers:
@@ -553,7 +552,7 @@ def _request_export_info():
 
 def _split_conversation_at_restarts(evts):
     # type: (List[Dict[Text, Any]]) -> List[List[Dict[Text, Any]]]
-    """"Split a conversation at restart events.
+    """Split a conversation at restart events.
 
     Returns an array of event lists, without the restart events."""
 
@@ -573,6 +572,21 @@ def _split_conversation_at_restarts(evts):
     return sub_conversations
 
 
+def _collect_messages(evts):
+    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+    """Collect the message text and parsed data from the UserMessage events into a list"""
+
+    msgs = []
+
+    for evt in evts:
+        if evt.get("event") == "user":
+            data = evt.get("parse_data")
+            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
+            msgs.append(msg)
+
+    return msgs
+
+
 def _write_to_file(export_file_paths, sender_id, endpoint):
     # type: (Text, Text, EndpointConfig) -> None
     """Write the conversation and nlu data of the sender_id to the file paths."""
@@ -581,7 +595,7 @@ def _write_to_file(export_file_paths, sender_id, endpoint):
     evts = tracker.get("events", [])
 
     sub_conversations = _split_conversation_at_restarts(evts)
-    msgs = []
+    msgs = _collect_messages(evts)
     previous_examples = TrainingData()
     failsafe_toggle = 'w'
 
@@ -589,13 +603,8 @@ def _write_to_file(export_file_paths, sender_id, endpoint):
         previous_examples = load_data(export_file_paths[1])
     except:
         failsafe_toggle = 'a'
-        print("Could not load NLU data from existing file, new data will be appended to prevent loss of existing data")
-
-    for evt in evts:
-        if evt.get("event") == "user":
-            data = evt.get("parse_data")
-            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
-            msgs.append(msg)
+        logger.exception("Could not load NLU data from existing file, new data will be appended to prevent loss of"
+                         "existing data")
 
     with io.open(export_file_paths[0], 'a') as f:
         for conversation in sub_conversations:
@@ -818,8 +827,8 @@ def _enter_user_message(sender_id, endpoint, exit_text):
     }]
 
     answers = _ask_questions(
-            questions, sender_id, endpoint,
-            is_abort=lambda a: a["message"] == exit_text)
+        questions, sender_id, endpoint,
+        is_abort=lambda a: a["message"] == exit_text)
 
     send_message(endpoint, sender_id, answers["message"])
 
