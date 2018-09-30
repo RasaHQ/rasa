@@ -13,11 +13,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
-
+- NLU data learned through interactive learning will now be stored in a separate markdown-format file (any previous NLU
+  data is merged)
+- Command line interface for interactive learning now displays policy confidence alongside the action name
 
 Changed
 -------
-
+- The Policy used by Rasa Core now writes its confidence to the tracker when executing an action
 
 Removed
 -------
