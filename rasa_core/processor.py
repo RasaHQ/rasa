@@ -128,7 +128,7 @@ class MessageProcessor(object):
                            "'{}'.".format(message.sender_id))
         return tracker
 
-    def execute_action(self, sender_id, action_name, dispatcher):
+    def execute_action(self, sender_id, action_name, dispatcher, confidence=None):
         # type: (Text, Text, Dispatcher) -> Optional[DialogueStateTracker]
 
         # we have a Tracker instance for each user
@@ -136,7 +136,7 @@ class MessageProcessor(object):
         tracker = self._get_tracker(sender_id)
         if tracker:
             action = self._get_action(action_name)
-            self._run_action(action, tracker, dispatcher)
+            self._run_action(action, tracker, dispatcher, confidence=confidence)
 
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)

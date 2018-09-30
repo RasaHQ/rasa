@@ -735,6 +735,7 @@ class ActionExecuted(Event):
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
         d.update({"name": self.action_name})
+        d.update({"policy_confidence": self.policy_confidence})
         return d
 
     def apply_to(self, tracker):

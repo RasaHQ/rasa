@@ -126,11 +126,12 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint, sender_id, action_name):
+def send_action(endpoint, sender_id, action_name, policy_confidence = None):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
-    payload = {"action": action_name}
+    payload = {"action": action_name,
+               "policy_confidence": policy_confidence}
     subpath = "/conversations/{}/execute".format(sender_id)
 
     r = endpoint.request(json=payload,
@@ -142,7 +143,7 @@ def send_action(endpoint, sender_id, action_name):
 
 def send_event(endpoint, sender_id, evt):
     # type: (EndpointConfig, Text, Dict[Text, Any]) -> Dict[Text, Any]
-    """Log an event to a concersation."""
+    """Log an event to a conversation."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
@@ -155,7 +156,7 @@ def send_event(endpoint, sender_id, evt):
 
 def replace_events(endpoint, sender_id, evts):
     # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
-    """Replace all the events of a concersation with the provided ones."""
+    """Replace all the events of a conversation with the provided ones."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
@@ -398,6 +399,8 @@ def _chat_history_table(evts):
     for idx, evt in enumerate(evts):
         if evt.get("event") == "action":
             bot_column.append(colored(evt['name'], 'autocyan'))
+            if evt['policy_confidence']:
+                bot_column[-1] += (colored(" {:03.2f}".format(evt['policy_confidence']), 'autowhite'))
 
         elif evt.get("event") == 'user':
             if bot_column:
@@ -580,12 +583,12 @@ def _write_to_file(export_file_paths, sender_id, endpoint):
     sub_conversations = _split_conversation_at_restarts(evts)
     msgs = []
     previous_examples = TrainingData()
-    safe_to_write = 'w'
+    failsafe_toggle = 'w'
 
     try:
         previous_examples = load_data(export_file_paths[1])
     except:
-        safe_to_write = 'a'
+        failsafe_toggle = 'a'
         print("Could not load NLU data from existing file, new data will be appended to prevent loss of existing data")
 
     for evt in evts:
@@ -601,7 +604,7 @@ def _write_to_file(export_file_paths, sender_id, endpoint):
             f.write(s.as_story_string(flat=True) + "\n")
 
     if msgs:
-        with io.open(export_file_paths[1], safe_to_write) as f:
+        with io.open(export_file_paths[1], failsafe_toggle) as f:
             nlu_data = TrainingData(msgs).merge(previous_examples)
             f.write(nlu_data.as_markdown())
 
@@ -622,9 +625,10 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         pred_out = int(np.argmax(probabilities))
 
         action_name = predictions[pred_out].get("action")
+        action_score = predictions[pred_out].get("score")
 
         _print_history(sender_id, endpoint)
-        listen = _validate_action(action_name, predictions,
+        listen = _validate_action(action_name, predictions, action_score,
                                   endpoint, sender_id, finetune=finetune)
 
 
@@ -666,6 +670,7 @@ def _correct_wrong_action(corrected_action,  # type: Text
 
 def _validate_action(action_name,  # type: Text
                      predictions,  # type: List[Dict[Text, Any]]
+                     action_score,  # type: Int
                      endpoint,  # type: EndpointConfig
                      sender_id,  # type: Text
                      finetune=False  # type: bool
@@ -691,7 +696,7 @@ def _validate_action(action_name,  # type: Text
                               finetune=finetune)
         return corrected_action == ACTION_LISTEN_NAME
     else:
-        send_action(endpoint, sender_id, action_name)
+        send_action(endpoint, sender_id, action_name, action_score)
         return action_name == ACTION_LISTEN_NAME
 
 
