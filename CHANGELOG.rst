@@ -14,7 +14,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 Added
 -----
 - openapi documentation of server API
-
+- added action prediction confidence & policy to ``ActionExecuted`` event
 
 Changed
 -------
