@@ -398,7 +398,8 @@ def _chat_history_table(evts):
     for idx, evt in enumerate(evts):
         if evt.get("event") == "action":
             bot_column.append(colored(evt['name'], 'autocyan'))
-            bot_column[-1] += (colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
+            if evt['confidence']:
+                bot_column[-1] += (colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
 
         elif evt.get("event") == 'user':
             if bot_column:
