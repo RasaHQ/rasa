@@ -62,6 +62,12 @@ def create_argument_parser():
             help="output path for the created evaluation plot. If set to None"
                  "or an empty string, no plot will be generated.")
     parser.add_argument(
+            '--e2e', '--end-to-end',
+            action='store_true',
+            help="Run an end-to-end evaluation for combined action and "
+                 "intent prediction. Requires a story file in end-to-end "
+                 "format.")
+    parser.add_argument(
             '--failed',
             type=str,
             default="failed_stories.md",
@@ -235,8 +241,8 @@ def run_e2e_evaluation(resource_name, agent,
                        fail_on_prediction_errors=False):
     """Run the combined evaluation of NLU intent examples and stories"""
     nlu_data_path = extract_nlu_data(resource_name)
-    nlu_eval = run_nlu_evaluation(nlu_data_path, nlu_model_path)
 
+    run_nlu_evaluation(nlu_data_path, nlu_model_path)
     run_story_evaluation(resource_name, agent, max_stories, out_file_stories,
                          out_file_plot, fail_on_prediction_errors)
 
@@ -308,7 +314,7 @@ if __name__ == '__main__':
     _agent = Agent.load(cmdline_args.core,
                         interpreter=_interpreter)
 
-    if 1:
+    if cmdline_args.e2e:
         run_e2e_evaluation(cmdline_args.stories,
                            _agent,
                            cmdline_args.nlu,
