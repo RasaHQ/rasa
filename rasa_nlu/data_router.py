@@ -361,7 +361,7 @@ class DataRouter(object):
 
         # tensorflow training is not executed in a separate thread on python 2,
         # as this may cause training to freeze
-        if self._tf_in_pipeline(train_config) and six.PY2:
+        if six.PY2 and self._tf_in_pipeline(train_config):
             try:
                 logger.warning("Training a pipeline with a tensorflow "
                                "component. This blocks the server during "
