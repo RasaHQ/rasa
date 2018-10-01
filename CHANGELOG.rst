@@ -17,6 +17,8 @@ Added
 - NLU data learned through interactive learning will now be stored in a separate markdown-format file (any previous NLU
   data is merged)
 - Command line interface for interactive learning now displays policy confidence alongside the action name
+- added action prediction confidence & policy to ``ActionExecuted`` event
+
 
 Changed
 -------
