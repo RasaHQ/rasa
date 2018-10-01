@@ -40,6 +40,7 @@ class PolicyEnsemble(object):
         # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
         self.training_trackers = None
+        self.date_trained = None
 
         if action_fingerprints:
             self.action_fingerprints = action_fingerprints
@@ -66,6 +67,7 @@ class PolicyEnsemble(object):
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
             self.training_trackers = training_trackers
+            self.date_trained = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
@@ -117,7 +119,6 @@ class PolicyEnsemble(object):
                 self.training_trackers)
 
         action_fingerprints = self._create_action_fingerprints(training_events)
-        date_trained = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
         metadata = {
             "action_fingerprints": action_fingerprints,
@@ -126,7 +127,7 @@ class PolicyEnsemble(object):
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names,
-            "trained_at": date_trained
+            "trained_at": self.date_trained
         }
 
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
