@@ -15,6 +15,7 @@ Added
 -----
 - openapi documentation of server API
 - added action prediction confidence & policy to ``ActionExecuted`` event
+- both the date and the time at which a model was trained are now included in the policy's metadata when it is persisted
 
 Changed
 -------
