@@ -20,6 +20,9 @@ Removed
 
 Fixed
 -----
+- Allow training of pipelines containing ``EmbeddingIntentClassifier`` in
+  a separate thread on python 3. This makes http server calls to ``/train``
+  non-blocking
 
 
 [0.13.5] - 2018-09-28

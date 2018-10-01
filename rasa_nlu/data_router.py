@@ -10,6 +10,7 @@ import os
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from typing import Text, Dict, Any, Optional, List
 
+import six
 from builtins import object
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -358,9 +359,9 @@ class DataRouter(object):
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
 
-        # tensorflow training is not executed in a separate thread, as this may
-        # cause training to freeze
-        if self._tf_in_pipeline(train_config):
+        # tensorflow training is not executed in a separate thread on python 2,
+        # as this may cause training to freeze
+        if self._tf_in_pipeline(train_config) and six.PY2:
             try:
                 logger.warning("Training a pipeline with a tensorflow "
                                "component. This blocks the server during "
