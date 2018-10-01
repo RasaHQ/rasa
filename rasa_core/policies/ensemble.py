@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import sys
+import time
 from collections import defaultdict
 
 import numpy as np
@@ -116,6 +117,7 @@ class PolicyEnsemble(object):
                 self.training_trackers)
 
         action_fingerprints = self._create_action_fingerprints(training_events)
+        date_trained = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
         metadata = {
             "action_fingerprints": action_fingerprints,
@@ -123,7 +125,8 @@ class PolicyEnsemble(object):
             "python": ".".join([str(s) for s in sys.version_info[:3]]),
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
-            "policy_names": policy_names
+            "policy_names": policy_names,
+            "trained_at": date_trained
         }
 
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
