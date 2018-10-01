@@ -101,6 +101,8 @@ def test_event_has_proper_implementation(one_event, another_event):
 
     ActionExecuted("my_action"),
 
+    ActionExecuted("my_action", "policy_1_KerasPolicy", 0.8),
+
     FollowupAction("my_action"),
 
     BotUttered("my_text", "my_data"),

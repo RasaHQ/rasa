@@ -229,11 +229,11 @@ class Agent(object):
     def update_model(
             self,
             domain,  # type: Union[Text, Domain]
-            policies,  # type: Union[PolicyEnsemble, List[Policy], None]
+            policy_ensemble,  # type: PolicyEnsemble
             fingerprint  # type: Optional[Text]
     ):
         self.domain = domain
-        self.policy_ensemble = self._create_ensemble(policies)
+        self.policy_ensemble = policy_ensemble
 
         self._set_fingerprint(fingerprint)
 

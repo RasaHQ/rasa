@@ -85,6 +85,8 @@ def test_requesting_non_existent_tracker(app):
     assert content["slots"] == {"location": None, "cuisine": None}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [{"event": "action",
+                                  "policy": None,
+                                  "confidence": None,
                                   "name": "action_listen",
                                   "policy": None,
                                   "policy_confidence": None,

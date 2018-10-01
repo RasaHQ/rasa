@@ -173,21 +173,33 @@ class MessageProcessor(object):
                 action.name(), probabilities[max_index]))
         return action, policy, probabilities[max_index]
 
+    @staticmethod
+    def _is_reminder_still_valid(tracker, reminder_event):
+        # type: (DialogueStateTracker, ReminderScheduled) -> bool
+        """Check if the conversation has been restarted after reminder."""
+
+        for e in reversed(tracker.applied_events()):
+            if (isinstance(e, ReminderScheduled) and
+                    e.name == reminder_event.name):
+                return True
+        return False  # not found in applied events --> has been restarted
+
+    @staticmethod
+    def _has_message_after_reminder(tracker, reminder_event):
+        # type: (DialogueStateTracker, ReminderScheduled) -> bool
+        """Check if the user sent a message after the reminder."""
+
+        for e in reversed(tracker.events):
+            if (isinstance(e, ReminderScheduled) and
+                    e.name == reminder_event.name):
+                return False
+            elif isinstance(e, UserUttered) and e.text:
+                return True
+        return True  # tracker has probably been restarted
+
     def handle_reminder(self, reminder_event, dispatcher):
         # type: (ReminderScheduled, Dispatcher) -> None
         """Handle a reminder that is triggered asynchronously."""
-
-        def has_message_after_reminder(evts):
-            """If the user sent a message after the reminder got scheduled -
-            it might be better to cancel it."""
-
-            for e in reversed(evts):
-                if (isinstance(e, ReminderScheduled) and
-                        e.name == reminder_event.name):
-                    return False
-                elif isinstance(e, UserUttered) and e.text:
-                    return True
-            return True  # tracker has probably been restarted
 
         tracker = self._get_tracker(dispatcher.sender_id)
 
@@ -196,8 +208,9 @@ class MessageProcessor(object):
                            "'{}'.".format(dispatcher.sender_id))
             return None
 
-        if (reminder_event.kill_on_user_message and
-                has_message_after_reminder(tracker.events)):
+        if (reminder_event.kill_on_user_message
+                and self._has_message_after_reminder(tracker, reminder_event)
+                or not self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -396,7 +409,7 @@ class MessageProcessor(object):
             dispatcher.latest_bot_messages = []
 
     def _log_action_on_tracker(self, tracker, action_name, events, policy,
-                               policy_confidence):
+                               confidence):
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
         # returns `None` for some other reason.
@@ -410,8 +423,7 @@ class MessageProcessor(object):
 
         if action_name is not None:
             # log the action and its produced events
-            tracker.update(ActionExecuted(action_name, policy,
-                                          policy_confidence))
+            tracker.update(ActionExecuted(action_name, policy, confidence))
 
         for e in events:
             # this makes sure the events are ordered by timestamp -
