@@ -22,6 +22,8 @@ def test_dynamic_load_model_with_exists_model():
 
         project._models = (MODEL_NAME, )
 
+        project.pull_models = None
+
         result = project._dynamic_load_model(MODEL_NAME)
 
         assert result == MODEL_NAME
@@ -41,6 +43,8 @@ def test_dynamic_load_model_with_refresh_exists_model():
             project = Project()
 
             project._models = ()
+
+            project.pull_models = None
 
             result = project._dynamic_load_model(MODEL_NAME)
 
@@ -66,6 +70,8 @@ def test_dynamic_load_model_with_refresh_not_exists_model():
 
                 project._models = ()
 
+                project.pull_models = None
+
                 result = project._dynamic_load_model('model_name')
 
                 assert result == LATEST_MODEL_NAME
@@ -89,6 +95,8 @@ def test_dynamic_load_model_with_model_is_none():
                 project = Project()
 
                 project._models = ()
+
+                project.pull_models = None
 
                 result = project._dynamic_load_model(None)
 

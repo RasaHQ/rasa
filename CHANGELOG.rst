@@ -14,8 +14,6 @@ Added
 
 Changed
 -------
-- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
-  ``TrainingData`` object
 - ``boto3`` is now loaded lazily in ``AWSPersistor`` and is not included in ``requirements_bare.txt`` anymore
 
 Removed
@@ -23,6 +21,20 @@ Removed
 
 Fixed
 -----
+
+
+[0.13.5] - 2018-09-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
+  ``TrainingData`` object
+
+Fixed
+-----
+- ``Project`` set up to pull models from a remote server only use
+  the pulled model instead of searching for models locally
 
 [0.13.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^
