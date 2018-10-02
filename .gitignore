@@ -41,7 +41,9 @@ tmp/
 tokens.dat
 graph.png
 debug.md
-examples/*
+examples/concertbot/data*
+examples/concertbot/models*
+examples/moodbot/models*
 docs/key 
 docs/key.pub
 secrets.tar

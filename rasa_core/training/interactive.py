@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-DEFAULT_FILE_EXPORT_PATH = {"stories": "data/stories.md",
+PATHS = {"stories": "data/stories.md",
                             "nlu": "data/nlu.md"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
@@ -398,7 +398,7 @@ def _chat_history_table(evts):
     for idx, evt in enumerate(evts):
         if evt.get("event") == "action":
             bot_column.append(colored(evt['name'], 'autocyan'))
-            if evt['confidence']:
+            if evt['confidence'] is not None:
                 bot_column[-1] += (colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
 
         elif evt.get("event") == 'user':
@@ -517,7 +517,7 @@ def _request_action_from_user(predictions, sender_id, endpoint):
 
 
 def _request_export_info():
-    # type: () -> Text
+    # type: () -> (Text, Text)
     """Request file path and export stories & nlu data to that path"""
 
     def validate_path(path):
@@ -533,20 +533,20 @@ def _request_export_info():
         "type": "input",
         "message": "Export stories to (if file exists, this "
                    "will append the stories)",
-        "default": DEFAULT_FILE_EXPORT_PATH["stories"],
+        "default": PATHS["stories"],
         "validate": validate_path
     }, {"name": "export nlu",
         "type": "input",
         "message": "Export NLU data to (if file exists, this "
                    "will merge learned data with previous training examples)",
-        "default": DEFAULT_FILE_EXPORT_PATH["nlu"],
+        "default": PATHS["nlu"],
         "validate": validate_path}]
 
     answers = prompt(questions)
     if not answers:
         sys.exit()
 
-    return [answers["export stories"], answers["export nlu"]]
+    return answers["export stories"], answers["export nlu"]
 
 
 def _split_conversation_at_restarts(evts):
