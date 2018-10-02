@@ -147,8 +147,7 @@ class PolicyEnsemble(object):
     @classmethod
     def load_metadata(cls, path):
         metadata_path = os.path.join(path, 'policy_metadata.json')
-        with io.open(os.path.abspath(metadata_path)) as f:
-            metadata = json.loads(f.read())
+        metadata = json.loads(utils.read_file(os.path.abspath(metadata_path)))
         return metadata
 
     @staticmethod

@@ -430,9 +430,8 @@ class Domain(object):
         # type: (Text) -> Dict[Text, Any]
         """Load a domains specification from a dumped model directory."""
 
-        matadata_path = os.path.join(path, 'domain.json')
-        with io.open(matadata_path) as f:
-            specification = json.loads(f.read())
+        metadata_path = os.path.join(path, 'domain.json')
+        specification = json.loads(utils.read_file(metadata_path))
         return specification
 
     def compare_with_specification(self, path):

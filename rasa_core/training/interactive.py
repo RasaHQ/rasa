@@ -522,7 +522,7 @@ def _request_export_info():
 
     def validate_path(path):
         try:
-            with io.open(path, "a"):
+            with io.open(path, "a", encoding="utf-8"):
                 return True
         except Exception as e:
             return "Failed to open file. {}".format(e)
@@ -605,14 +605,14 @@ def _write_to_file(export_file_paths, sender_id, endpoint):
         logger.exception("Could not load NLU data from existing file, new data will be appended to prevent loss of"
                          "existing data")
 
-    with io.open(export_file_paths[0], 'a') as f:
+    with io.open(export_file_path[0], 'a', encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
             f.write(s.as_story_string(flat=True) + "\n")
 
     if msgs:
-        with io.open(export_file_paths[1], failsafe_toggle) as f:
+        with io.open(export_file_paths[1], failsafe_toggle, encoding="utf-8") as f:
             nlu_data = TrainingData(msgs).merge(previous_examples)
             f.write(nlu_data.as_markdown())
 
