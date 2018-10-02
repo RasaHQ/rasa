@@ -15,7 +15,7 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.conversation import Dialogue
-from rasa_core.events import UserUttered, ActionExecuted, Form, Event
+from rasa_core.events import UserUttered, ActionExecuted, Form, SlotSet, Event
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -121,12 +121,12 @@ class StoryStep(object):
     def _user_string(story_step_element, prefix=''):
         return "* {}{}\n".format(prefix, story_step_element.as_story_string())
 
-    def _store_user_strings(self, story_step_element):
+    def _store_user_strings(self, story_step_element, prefix=''):
         self.as_story_string_helper.no_form_string += self._user_string(
                 story_step_element
         )
         self.as_story_string_helper.form_string += self._user_string(
-                story_step_element, FORM_PREFIX
+                story_step_element, prefix
         )
 
     @staticmethod
@@ -134,12 +134,12 @@ class StoryStep(object):
         return "    - {}{}\n".format(prefix,
                                      story_step_element.as_story_string())
 
-    def _store_bot_strings(self, story_step_element):
+    def _store_bot_strings(self, story_step_element, prefix=''):
         self.as_story_string_helper.no_form_string += self._bot_string(
                 story_step_element
         )
         self.as_story_string_helper.form_string += self._bot_string(
-                story_step_element, FORM_PREFIX
+                story_step_element, prefix
         )
 
     def _reset_stored_strings(self):
@@ -172,7 +172,7 @@ class StoryStep(object):
                     # it is not known whether the form will be
                     # successfully executed, so store this
                     # story string for later
-                    self._store_user_strings(s)
+                    self._store_user_strings(s, FORM_PREFIX)
 
             elif isinstance(s, Form):
                 # form got either activated or deactivated
@@ -213,6 +213,17 @@ class StoryStep(object):
                         # form was successfully executed
                         self.as_story_string_helper.form_failed = False
 
+            elif isinstance(s, SlotSet):
+                if self.as_story_string_helper.active_form is None:
+                    result += self._bot_string(s)
+                else:
+                    # form is active
+                    # it is not known whether the form will be
+                    # successfully executed, so store this
+                    # story string for later
+                    # slots should be always printed without prefix
+                    self._store_bot_strings(s)
+
             elif isinstance(s, Event):
                 converted = s.as_story_string()
                 if converted:
@@ -223,7 +234,7 @@ class StoryStep(object):
                         # it is not known whether the form will be
                         # successfully executed, so store this
                         # story string for later
-                        self._store_bot_strings(s)
+                        self._store_bot_strings(s, FORM_PREFIX)
 
             else:
                 raise Exception("Unexpected element in story step: "
