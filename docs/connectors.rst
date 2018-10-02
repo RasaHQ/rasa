@@ -356,7 +356,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
 .. code-block:: yaml
 
-   twillio:
+   twilio:
      account_sid: "ACbc2dxxxxxxxxxxxx19d54bdcd6e41186"
      auth_token: "e231c197493a7122d475b4xxxxxxxxxx"
      twilio_number: "+440123456789"

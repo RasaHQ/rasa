@@ -14,7 +14,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 Added
 -----
 - openapi documentation of server API
-
+- added action prediction confidence & policy to ``ActionExecuted`` event
 
 Changed
 -------
@@ -30,6 +30,8 @@ Fixed
 - fixed an issue with boolean slots where False and None had the same value
   (breaking model compatibility with models that use a boolean slot)
 - use utf8 everywhere when handling file IO
+- argument ``--connector`` on run script accepts custom channel module names
+- properly handle non ascii categorical slot values, e.g. ``大于100亿元``
 
 [0.11.8] - 2018-09-28
 ^^^^^^^^^^^^^^^^^^^^^
