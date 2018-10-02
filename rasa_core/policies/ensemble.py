@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import sys
-import time
+import datetime
 from collections import defaultdict
 
 import numpy as np
@@ -40,7 +40,6 @@ class PolicyEnsemble(object):
         # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
         self.training_trackers = None
-        self.date_trained = None
 
         if action_fingerprints:
             self.action_fingerprints = action_fingerprints
@@ -127,7 +126,7 @@ class PolicyEnsemble(object):
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names,
-            "trained_at": self.date_trained
+            "trained_at": datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         }
 
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
