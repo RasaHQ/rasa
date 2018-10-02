@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- ``boto3`` is now loaded lazily in ``AWSPersistor`` and is not included in ``requirements_bare.txt`` anymore
 
 Removed
 -------
