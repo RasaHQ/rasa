@@ -61,7 +61,7 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
     graph = training.extract_story_graph("data/test_stories/stories.md",
                                          default_domain)
     out_path = tmpdir.join("persisted_story.md")
-    with io.open(out_path.strpath, "w") as f:
+    with io.open(out_path.strpath, "w", encoding="utf-8") as f:
         f.write(graph.as_story_string())
 
     recovered_trackers = training.load_data(
