@@ -16,6 +16,7 @@ Changed
 -------
 - Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
   ``TrainingData`` object
+- ``boto3`` is now loaded lazily in ``AWSPersistor`` and is not included in ``requirements_bare.txt`` anymore
 
 Removed
 -------
