@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import datetime
 import io
 import logging
+import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from typing import Text, Dict, Any, Optional, List
@@ -108,7 +109,16 @@ class DataRouter(object):
             self.component_builder = ComponentBuilder(use_cache=True)
 
         self.project_store = self._create_project_store(project_dir)
+
+        if six.PY3:
+            # tensorflow sessions are not fork-safe,
+            # and training processes have to be spawned instead of forked.
+            # See https://github.com/tensorflow/tensorflow/issues/5448#issuecomment-258934405
+            multiprocessing.set_start_method('spawn', force=True)
+
         self.pool = ProcessPool(self._training_processes)
+
+
 
     def __del__(self):
         """Terminates workers pool processes"""
