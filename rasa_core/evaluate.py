@@ -194,7 +194,7 @@ def log_failed_stories(failed, failed_output):
     if not failed_output:
         return
 
-    with io.open(failed_output, 'w') as f:
+    with io.open(failed_output, 'w', encoding="utf-8") as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
         else:
