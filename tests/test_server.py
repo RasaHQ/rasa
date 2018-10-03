@@ -215,8 +215,8 @@ def test_list_conversations_with_jwt(secured_app):
     # {"user": {"user": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRtaW4ifX0."
-                         "VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
+                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
@@ -225,8 +225,8 @@ def test_list_conversations_with_jwt(secured_app):
     # {"user": {"user": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2VyIn19."
-                         "_Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
+                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
@@ -240,8 +240,8 @@ def test_get_tracker_with_jwt(secured_app):
     # {"user": {"user": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRtaW4ifX0."
-                         "VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
+                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
@@ -254,8 +254,8 @@ def test_get_tracker_with_jwt(secured_app):
     # {"user": {"user": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2VyIn19."
-                         "_Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
+                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
