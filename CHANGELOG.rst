@@ -33,6 +33,7 @@ Fixed
 - use utf8 everywhere when handling file IO
 - argument ``--connector`` on run script accepts custom channel module names
 - properly handle non ascii categorical slot values, e.g. ``大于100亿元``
+- fixed HTTP server attempting to authenticate based on incorrect path to the correct JWT data field
 
 [0.11.8] - 2018-09-28
 ^^^^^^^^^^^^^^^^^^^^^
