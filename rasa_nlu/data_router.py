@@ -118,8 +118,6 @@ class DataRouter(object):
 
         self.pool = ProcessPool(self._training_processes)
 
-
-
     def __del__(self):
         """Terminates workers pool processes"""
         self.pool.shutdown()
