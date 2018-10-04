@@ -3,19 +3,20 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import six
 import sys
 
 import io
 import logging
 import numpy as np
+import os
 import requests
+import six
 import tempfile
 import textwrap
 import uuid
 from PyInquirer import prompt
 from colorclass import Color
-from flask import Flask
+from flask import Flask, send_from_directory, send_file, abort
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
@@ -26,16 +27,14 @@ from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
-from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
+from rasa_core.constants import (
+    DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL)
 from rasa_core.domain import Domain
 from rasa_core.events import Event, ActionExecuted
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
-from rasa_core.training.dsl import StoryFileReader
-from rasa_core.training.image import show_image
 from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
-    visualize_stories,
     visualize_neighborhood)
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
@@ -641,7 +640,6 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                               sender_ids,
                               domain,
                               plot_file,
-                              story_graph
                               ):
     # type: (...) -> None
     """Predict and validate actions until we need to wait for a user msg."""
@@ -657,11 +655,11 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         action_name = predictions[pred_out].get("action")
 
         _print_history(sender_id, endpoint)
-        _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph,
+        _plot_and_show(sender_ids, domain, plot_file, endpoint,
                        action_name)
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
-        _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph)
+        _plot_and_show(sender_ids, domain, plot_file, endpoint)
 
 
 def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
@@ -915,10 +913,10 @@ def _plot_trackers(sender_ids, domain, output_file, endpoint, unconfirmed=None):
             event_sequences[-1], event_sequences, output_file, max_history=2)
 
 
-def _plot_and_show(sender_ids, domain, plot_file, endpoint, story_graph,
+def _plot_and_show(sender_ids, domain, plot_file, endpoint,
                    unconfirmed=None):
     _plot_trackers(sender_ids, domain, plot_file, endpoint, unconfirmed)
-    story_graph.update_image()
+    # story_graph.update_image()
 
 
 def record_messages(endpoint,  # type: EndpointConfig
@@ -935,8 +933,11 @@ def record_messages(endpoint,  # type: EndpointConfig
     try:
         exit_text = INTENT_MESSAGE_PREFIX + 'stop'
 
-        utils.print_color("Bot loaded. Type a message and press enter "
-                          "(use '{}' to exit). ".format(exit_text),
+        utils.print_color("Bot loaded. Visualisation at "
+                          "{}/visualization.html.\n"
+                          "Type a message and press enter "
+                          "(use '{}' to exit). ".format(DEFAULT_SERVER_URL,
+                                                        exit_text),
                           utils.bcolors.OKGREEN)
 
         try:
@@ -956,9 +957,8 @@ def record_messages(endpoint,  # type: EndpointConfig
         num_messages = 0
         sender_ids = [t.events for t in trackers] + [sender_id]
 
-        plot_file = "story_graph.gif"
+        plot_file = "story_graph.png"
         _plot_trackers(sender_ids, domain, plot_file, endpoint)
-        story_graph = show_image(plot_file, "Story Graph")
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -967,8 +967,7 @@ def record_messages(endpoint,  # type: EndpointConfig
                     _validate_nlu(intents, endpoint, sender_id)
                 _predict_till_next_listen(endpoint, sender_id,
                                           finetune,
-                                          sender_ids, domain, plot_file,
-                                          story_graph)
+                                          sender_ids, domain, plot_file)
 
                 num_messages += 1
             except RestartConversation:
@@ -990,8 +989,7 @@ def record_messages(endpoint,  # type: EndpointConfig
                     replace_events(endpoint, sender_id, evts)
                     sender_ids.append(sender_id)
                     _print_history(sender_id, endpoint)
-                    _plot_and_show(sender_ids, domain, plot_file, endpoint,
-                                   story_graph)
+                    _plot_and_show(sender_ids, domain, plot_file, endpoint)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")
@@ -1020,7 +1018,9 @@ def _serve_application(app, stories, finetune=False, serve_forever=True):
     # type: (Flask, bool, bool) -> WSGIServer
     """Start a core server and attach the interactive learning IO."""
 
-    http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
+    _add_visualization_routes(app, "story_graph.png")
+
+    http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app, log=None)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
     http_server.start()
@@ -1036,6 +1036,23 @@ def _serve_application(app, stories, finetune=False, serve_forever=True):
             logger.exception(exc)
 
     return http_server
+
+
+def _add_visualization_routes(app, image_path=None):
+    # type: (Flask, Text) -> None
+    """Start a flask server and serve the visualisation."""
+
+    @app.route("/visualization.html", methods=["GET"])
+    def visualisation_html():
+        return send_from_directory(os.path.dirname(__file__),
+                                   'visualization.html')
+
+    @app.route("/visualization.png", methods=["GET"])
+    def visualisation_png():
+        try:
+            return send_file(os.path.abspath(image_path), cache_timeout=-1)
+        except FileNotFoundError:
+            abort(404)
 
 
 def run_interactive_learning(agent, stories,
