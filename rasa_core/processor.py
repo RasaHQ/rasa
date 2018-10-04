@@ -112,7 +112,7 @@ class MessageProcessor(object):
         return {
             "scores": scores,
             "policy": policy,
-            "policy_confidence": np.max(probabilities),
+            "confidence": np.max(probabilities),
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART)
         }
 
@@ -139,7 +139,7 @@ class MessageProcessor(object):
                        action_name,  # type: Text
                        dispatcher,  # type: Dispatcher
                        policy,  # type: Text
-                       policy_confidence  # type: float
+                       confidence  # type: float
                        ):
         # type: (...) -> Optional[DialogueStateTracker]
 
@@ -149,7 +149,7 @@ class MessageProcessor(object):
         if tracker:
             action = self._get_action(action_name)
             self._run_action(action, tracker, dispatcher, policy,
-                             policy_confidence)
+                             confidence)
 
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)

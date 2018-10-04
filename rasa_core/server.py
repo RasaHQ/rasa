@@ -210,7 +210,7 @@ def create_app(agent,
         request_params = request.get_json(force=True)
         action_to_execute = request_params.get("action", None)
         policy = request_params.get("policy", None)
-        policy_confidence = request_params.get("policy_confidence", None)
+        confidence = request_params.get("confidence", None)
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
 
         try:
@@ -219,7 +219,7 @@ def create_app(agent,
                                  action_to_execute,
                                  out,
                                  policy,
-                                 policy_confidence)
+                                 confidence)
 
             # retrieve tracker and set to requested state
             tracker = agent.tracker_store.get_or_create_tracker(sender_id)

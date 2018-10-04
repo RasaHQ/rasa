@@ -126,13 +126,13 @@ def send_action(endpoint,  # type: EndpointConfig
                 sender_id,  # type: Text
                 action_name,  # type: Text
                 policy=None,  # type: Optional[Text]
-                policy_confidence=None  # type: Optional[float]
+                confidence=None  # type: Optional[float]
                 ):
     # type: (...) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
     payload = {"action": action_name, "policy": policy,
-               "policy_confidence": policy_confidence}
+               "confidence": confidence}
     subpath = "/conversations/{}/execute".format(sender_id)
 
     r = endpoint.request(json=payload,
@@ -601,10 +601,10 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
 
         action_name = predictions[pred_out].get("action")
         policy = response.get("policy")
-        policy_confidence = response.get("policy_confidence")
+        confidence = response.get("confidence")
 
         _print_history(sender_id, endpoint)
-        listen = _validate_action(action_name, policy, policy_confidence,
+        listen = _validate_action(action_name, policy, confidence,
                                   predictions, endpoint, sender_id,
                                   finetune=finetune)
 
@@ -647,7 +647,7 @@ def _correct_wrong_action(corrected_action,  # type: Text
 
 def _validate_action(action_name,  # type: Text
                      policy,       # type: Text
-                     policy_confidence,  # type: float
+                     confidence,  # type: float
                      predictions,  # type: List[Dict[Text, Any]]
                      endpoint,  # type: EndpointConfig
                      sender_id,  # type: Text
@@ -674,7 +674,7 @@ def _validate_action(action_name,  # type: Text
                               finetune=finetune)
         return corrected_action == ACTION_LISTEN_NAME
     else:
-        send_action(endpoint, sender_id, action_name, policy, policy_confidence)
+        send_action(endpoint, sender_id, action_name, policy, confidence)
         return action_name == ACTION_LISTEN_NAME
 
 
