@@ -227,7 +227,10 @@ if __name__ == '__main__':
         else:
             logger.info("loading a pre-trained model. ",
                         "all training-related parameters will be ignored")
-        _agent = Agent.load(cmdline_args.core, interpreter=_interpreter)
+        _agent = Agent.load(cmdline_args.core,
+                            interpreter=_interpreter,
+                            generator=_endpoints.nlg,
+                            action_endpoint=_endpoints.action)
     else:
         if not cmdline_args.out:
             raise ValueError("you must provide a path where the model "
