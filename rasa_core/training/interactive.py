@@ -34,7 +34,6 @@ from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 from rasa_nlu.training_data import TrainingData
-from rasa_nlu.utils import create_temporary_file
 
 logger = logging.getLogger(__name__)
 
@@ -615,23 +614,25 @@ def _write_nlu_to_file(export_nlu_path, evts):
 
     try:
         previous_examples = load_data(export_nlu_path)
-        nlu_data = previous_examples.merge(TrainingData(msgs))
-
-        with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
-            if _guess_format(export_nlu_path) == "md":
-                f.write(nlu_data.as_markdown())
-            else:
-                f.write(nlu_data.as_json())
 
     except:
         questions = [{"name": "export nlu",
                      "type": "input",
-                     "message": "Could not load NLU data from existing file, please specify where to store learned "
-                                "NLU data",
+                     "message": "Could not load existing NLU data, please specify where to store NLU data "
+                                "learned in this session (this will overwrite any existing file)",
                      "default": PATHS["backup"]}]
 
         answers = prompt(questions)
-        _write_nlu_to_file(answers["export nlu"], evts)
+        export_nlu_path = answers["export nlu"]
+        previous_examples = TrainingData()
+
+    nlu_data = previous_examples.merge(TrainingData(msgs))
+
+    with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
+        if _guess_format(export_nlu_path) in ["md", "unk"]:
+            f.write(nlu_data.as_markdown())
+        else:
+            f.write(nlu_data.as_json())
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
