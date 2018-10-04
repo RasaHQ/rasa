@@ -354,7 +354,9 @@ class ActionExecutionRejected(Exception):
 
     def __init__(self, action_name, message=None):
         self.action_name = action_name
-        self.message = message
+        self.message = (message or
+                        "Custom action '{}' rejected to run"
+                        "".format(action_name))
 
     def __str__(self):
         return self.message
