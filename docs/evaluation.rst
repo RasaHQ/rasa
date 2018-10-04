@@ -155,5 +155,4 @@ Which will produce the following output:
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

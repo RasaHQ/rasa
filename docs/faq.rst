@@ -67,5 +67,4 @@ Yes it does, Rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If ther
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

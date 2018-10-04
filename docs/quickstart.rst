@@ -167,5 +167,4 @@ To build a really great NLU system you'll want to collect some real user message
 
 .. include:: feedback.inc	
 	
-.. raw:: html
-   :file: livechat.html
+

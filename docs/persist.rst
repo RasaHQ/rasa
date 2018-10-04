@@ -58,5 +58,3 @@ Models are gzipped before saving to cloud.
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html

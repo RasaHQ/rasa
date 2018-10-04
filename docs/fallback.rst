@@ -33,5 +33,4 @@ it is a "better" model. In fact, this usually means that your model is overfitti
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+
