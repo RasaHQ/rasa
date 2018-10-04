@@ -18,7 +18,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered, ActionExecutionFailed, Form)
+    BotUttered, ActionExecutionRejected, Form)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -244,7 +244,7 @@ class DialogueStateTracker(object):
                 # tracker's latest message
                 tracker.latest_message = latest_message
 
-            elif isinstance(event, ActionExecutionFailed):
+            elif isinstance(event, ActionExecutionRejected):
                 failed = True
 
             elif isinstance(event, ActionExecuted):

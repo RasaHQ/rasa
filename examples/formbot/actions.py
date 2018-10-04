@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core_sdk import ActionExecutionRejected
+from rasa_core_sdk import ActionExecutionRejection
 from rasa_core_sdk.forms import FormAction, REQUESTED_SLOT
 from rasa_core_sdk.events import SlotSet
 
@@ -47,10 +47,10 @@ class RestaurantForm(FormAction):
 
         events = self.extract(dispatcher, tracker, domain)
         if events is None:
-            raise ActionExecutionRejected(self.name(),
-                                          "Failed to validate slot {0} "
-                                          "with action {1}"
-                                          "".format(slot_to_fill, self.name()))
+            raise ActionExecutionRejection(self.name(),
+                                           "Failed to validate slot {0} "
+                                           "with action {1}"
+                                           "".format(slot_to_fill, self.name()))
 
         extracted_slots = []
         for e in events:
