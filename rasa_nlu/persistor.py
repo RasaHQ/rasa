@@ -9,8 +9,6 @@ import os
 import shutil
 import tarfile
 
-import boto3
-import botocore
 from builtins import object
 from typing import Optional, Tuple, List, Text
 
@@ -143,6 +141,7 @@ class AWSPersistor(Persistor):
 
     def __init__(self, bucket_name, endpoint_url=None):
         # type: (Text, Optional[Text]) -> None
+        import boto3
         super(AWSPersistor, self).__init__()
         self.s3 = boto3.resource('s3', endpoint_url=endpoint_url)
         self._ensure_bucket_exists(bucket_name)
@@ -173,6 +172,8 @@ class AWSPersistor(Persistor):
             return []
 
     def _ensure_bucket_exists(self, bucket_name):
+        import boto3
+        import botocore
         bucket_config = {
             'LocationConstraint': boto3.DEFAULT_SESSION.region_name}
         try:

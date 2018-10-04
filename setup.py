@@ -99,5 +99,5 @@ setup(
 
 print("\nWelcome to Rasa NLU!")
 print("If any questions please visit documentation "
-      "page https://nlu.rasa.com")
-print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu")
+      "page https://rasa.com/docs/nlu/")
+print("or join the community discussions on https://forum.rasa.com")

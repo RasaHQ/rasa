@@ -14,12 +14,30 @@ Added
 
 Changed
 -------
+- ``boto3`` is now loaded lazily in ``AWSPersistor`` and is not included in ``requirements_bare.txt`` anymore
 
 Removed
 -------
 
 Fixed
 -----
+- Allow training of pipelines containing ``EmbeddingIntentClassifier`` in
+  a separate thread on python 3. This makes http server calls to ``/train``
+  non-blocking
+
+
+[0.13.5] - 2018-09-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
+  ``TrainingData`` object
+
+Fixed
+-----
+- ``Project`` set up to pull models from a remote server only use
+  the pulled model instead of searching for models locally
 
 [0.13.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^

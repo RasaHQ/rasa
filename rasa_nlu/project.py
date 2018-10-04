@@ -49,7 +49,8 @@ def load_from_server(component_builder=None,  # type: Optional[Text]
     project = Project(component_builder=component_builder,
                       project=project,
                       project_dir=project_dir,
-                      remote_storage=remote_storage)
+                      remote_storage=remote_storage,
+                      pull_models=True)
 
     _update_model_from_server(model_server, project)
 
@@ -161,7 +162,8 @@ class Project(object):
                  project=None,
                  project_dir=None,
                  remote_storage=None,
-                 fingerprint=None):
+                 fingerprint=None,
+                 pull_models=None):
         self._component_builder = component_builder
         self._models = {}
         self.status = 0
@@ -174,6 +176,7 @@ class Project(object):
         self._project = project
         self.remote_storage = remote_storage
         self.fingerprint = fingerprint
+        self.pull_models = pull_models
 
         if project and project_dir:
             self._path = os.path.join(project_dir, project)
@@ -216,6 +219,14 @@ class Project(object):
 
     def _dynamic_load_model(self, requested_model_name=None):
         # type: (Text) -> Text
+
+        # If the Project was configured to pull models from a
+        # server, only one model is in memory at a time.
+        # Use this model if it exists.
+        if self.pull_models and requested_model_name is None:
+            for model, interpreter in self._models.items():
+                if interpreter is not None:
+                    return model
 
         # first try load from local cache
         local_model = self._load_local_model(requested_model_name)
