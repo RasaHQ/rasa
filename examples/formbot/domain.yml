@@ -41,6 +41,8 @@ templates:
     - text: "number of people should be a positive integer, please try again"
   utter_submit:
     - text: "done!"
+  utter_default:
+    - text: "sorry, I didn't understand you, please try input something else"
 
 actions:
   - utter_noworries
