@@ -204,7 +204,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 4. commit all the above changes and tag a new release, e.g. using 
     ```
     git tag -f 0.7.0 -m "Some helpful line describing the release"
-    git push origin master --tags
+    git push origin 0.7.0
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa_nlu)
 5. only if it is a **major release**, a new branch should be created pointing to the same commit as the tag to allow for future minor patches, e.g.
