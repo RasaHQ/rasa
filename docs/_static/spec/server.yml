@@ -213,6 +213,8 @@ paths:
                   Should be one of ALL, AFTER_RESTART, APPLIED, NONE
                 reason: "InvalidParameter"
                 code: 400
+        403:
+          $ref: '#/components/responses/403Permissions'
         503:
           description: Tracker store is unavailable
           content:
@@ -285,6 +287,8 @@ paths:
                   Invalid Request format.
                 reason: "InvalidParameter"
                 code: 400
+        403:
+          $ref: '#/components/responses/403Permissions'
         500:
           $ref: '#/components/responses/500Action'
 
@@ -315,6 +319,8 @@ paths:
               examples:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
+        403:
+          $ref: '#/components/responses/403Permissions'
         500:
           $ref: '#/components/responses/500Action'
 
@@ -368,6 +374,8 @@ paths:
                     type: string
               example: {
                 "error": "Invalid respond parameter specified."}
+        403:
+          $ref: '#/components/responses/403Permissions'
         500:
           $ref: '#/components/responses/500Action'
 
@@ -392,6 +400,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
+        403:
+          $ref: '#/components/responses/403Permissions'
     put:
       security:
       - TokenAuth: []
@@ -425,6 +435,8 @@ paths:
           $ref: '#/components/responses/200Tracker'
         400:
           $ref: '#/components/responses/400Events'
+        403:
+          $ref: '#/components/responses/403Permissions'
   /conversations/{sender_id}/messages:
     post:
       security:
@@ -480,6 +492,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
+        403:
+          $ref: '#/components/responses/403Permissions'
         500:
           description: Message Exception
           content:
@@ -839,6 +853,20 @@ components:
             reason: "InvalidParameter"
             code: 400
 
+    403Permissions:
+      description: User has insufficient permission.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              User has insufficient permission to access resource.
+            code: 403
+
+
   schemas:
     Entity:
       type: object
@@ -901,6 +929,12 @@ components:
           name:
             type: string
             description: Action name
+          policy:
+            type: string
+            description: Policy that predicted the action
+          confidence:
+            type: number
+            description: Confidence of the prediction
         required: ["event", "name"]
     agent:
       allOf:

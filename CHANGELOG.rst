@@ -13,24 +13,71 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
-- custom message method in rocketchat channel
-
+- openapi documentation of server API
+- added action prediction confidence & policy to ``ActionExecuted`` event
+- both the date and the time at which a model was trained are now included in the policy's metadata when it is persisted
 
 Changed
 -------
-
+- improved response format for ``/predict`` endpoint
+- all error messages from the server are now in json format
+- ``agent.log_message`` now returns a tracker instead of the trackers state
 
 Removed
 -------
 
+Fixed
+-----
+- fixed an issue with boolean slots where False and None had the same value
+  (breaking model compatibility with models that use a boolean slot)
+- use utf8 everywhere when handling file IO
+- argument ``--connector`` on run script accepts custom channel module names
+- properly handle non ascii categorical slot values, e.g. ``大于100亿元``
+- fixed HTTP server attempting to authenticate based on incorrect path to the correct JWT data field
+
+[0.11.8] - 2018-09-28
+^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
+- cancel reminders if there has been a restarted event after the reminder
+
+Changed
+-------
+- JWT authentication now checks user roles. The ``admin`` role may access all
+  endpoints. For endpoints which contain a ``sender_id`` parameter, users
+  with the ``user`` role may only call endpoints where the ``sender_id``
+  matches the user's ``username``.
+
+[0.11.7] - 2018-09-26
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- custom message method in rocketchat channel
+
+Fixed
+-----
+- don't fail if rasa and rest input channels are used together
 - wrong paramter name in rocketchat channel methods
-- fixed an issue with boolean slots where False and None had the same value
-  (breaking model compatibility with models that use a boolean slot)
-- Software 2.0 link on interactive learning documentation page went to Tesla's homepage, now it links to Karpathy
-  blogpost
+- Software 2.0 link on interactive learning documentation page went to
+  Tesla's homepage, now it links to Karpathy blogpost
+
+[0.11.6] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
+
+[0.11.5] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- numpy version incompatibility between rasa core and tensorflow
 
 [0.11.4] - 2018-09-19
 ^^^^^^^^^^^^^^^^^^^^^

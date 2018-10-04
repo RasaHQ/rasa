@@ -202,7 +202,7 @@ class Story(object):
             return story_content
 
     def dump_to_file(self, filename, flat=False):
-        with io.open(filename, "a") as f:
+        with io.open(filename, "a", encoding="utf-8") as f:
             f.write(self.as_story_string(flat))
 
 

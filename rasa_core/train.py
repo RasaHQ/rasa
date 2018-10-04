@@ -20,7 +20,7 @@ from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.run import AvailableEndpoints
-from rasa_core.training import online
+from rasa_core.training import interactive
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def create_argument_parser():
             '--core',
             default=None,
             help="path to load a pre-trained model instead of training (for "
-                 "online mode only)")
+                 "interactive mode only)")
 
     parser.add_argument(
             '-o', '--out',
@@ -87,10 +87,10 @@ def create_argument_parser():
             default=20,
             help="number of training samples to put into one training batch")
     parser.add_argument(
-            '--online',
+            '--interactive',
             default=False,
             action='store_true',
-            help="enable online training")
+            help="enable interactive training")
     parser.add_argument(
             '--finetune',
             default=False,
@@ -218,13 +218,19 @@ if __name__ == '__main__':
                                                      _endpoints.nlu)
 
     if cmdline_args.core:
-        if not cmdline_args.online:
+        if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
-                             "--online flag.")
+                             "--interactive flag.")
+        elif cmdline_args.finetune:
+            raise ValueError("--core can only be used together with the"
+                             "--interactive flag and without --finetune flag.")
         else:
             logger.info("loading a pre-trained model. ",
                         "all training-related parameters will be ignored")
-        _agent = Agent.load(cmdline_args.core, interpreter=_interpreter)
+        _agent = Agent.load(cmdline_args.core,
+                            interpreter=_interpreter,
+                            generator=_endpoints.nlg,
+                            action_endpoint=_endpoints.action)
     else:
         if not cmdline_args.out:
             raise ValueError("you must provide a path where the model "
@@ -238,5 +244,6 @@ if __name__ == '__main__':
                                       cmdline_args.dump_stories,
                                       additional_arguments)
 
-    if cmdline_args.online:
-        online.run_online_learning(_agent, stories, finetune=cmdline_args.finetune)
+    if cmdline_args.interactive:
+        interactive.run_interactive_learning(_agent, stories,
+                                             finetune=cmdline_args.finetune)
