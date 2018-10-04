@@ -34,17 +34,6 @@
 * thank
     - utter_noworries
 
-## unhappy path
-* request_restaurant
-    - restaurant_form
-    - form{"name": "restaurant_form"}
-* thank
-    - utter_chitchat
-    - restaurant_form
-    - form{"name": null}
-* thank
-    - utter_noworries
-
 ## Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
 * request_restaurant
     - restaurant_form
