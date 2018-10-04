@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import argparse
 import io
+import json
 import logging
 import tempfile
 import warnings
@@ -180,9 +181,12 @@ def collect_story_predictions(completed_trackers,
             correct_dialogues.append(1)
 
     logger.info("Finished collecting predictions.")
+    report, precision, f1, accuracy = get_evaluation_metrics(
+            [1] * len(completed_trackers), correct_dialogues)
+
     log_evaluation_table([1] * len(completed_trackers),
-                         correct_dialogues,
                          "CONVERSATION",
+                         report, precision, f1, accuracy,
                          include_report=False)
 
     return golds, predictions, failed
@@ -236,15 +240,17 @@ def extract_nlu_data(resource_name):
 def run_e2e_evaluation(resource_name, agent,
                        nlu_model_path,
                        max_stories=None,
-                       out_file_stories=None,
-                       out_file_plot=None,
-                       fail_on_prediction_errors=False):
+                       out_file_stories=None):
     """Run the combined evaluation of NLU intent examples and stories"""
     nlu_data_path = extract_nlu_data(resource_name)
+    nlu_result = run_nlu_evaluation(nlu_data_path, nlu_model_path)
+    print(json.dumps(nlu_result, indent=2))
 
-    run_nlu_evaluation(nlu_data_path, nlu_model_path)
-    run_story_evaluation(resource_name, agent, max_stories, out_file_stories,
-                         out_file_plot, fail_on_prediction_errors)
+    story_result = run_story_evaluation(resource_name,
+                                        agent,
+                                        max_stories,
+                                        out_file_stories)
+    print(json.dumps(story_result, indent=2))
 
 
 def run_story_evaluation(resource_name, agent,
@@ -258,19 +264,31 @@ def run_story_evaluation(resource_name, agent,
 
     test_y, predictions, failed = collect_story_predictions(
             completed_trackers, agent, fail_on_prediction_errors)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UndefinedMetricWarning)
+        report, precision, f1, accuracy = get_evaluation_metrics(test_y,
+                                                                 predictions)
+
     if out_file_plot:
-        plot_story_evaluation(test_y, predictions, out_file_plot)
+        plot_story_evaluation(report, precision, f1, accuracy, out_file_plot)
 
     log_failed_stories(failed, out_file_stories)
 
+    return {
+        "story_evaluation": {
+            "report": report,
+            "precision": precision,
+            "f1": f1,
+            "accuracy": accuracy
+        }
+    }
 
-def log_evaluation_table(golds, predictions, name,
+
+def log_evaluation_table(golds, name,
+                         report, precision, f1, accuracy,
                          include_report=True):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UndefinedMetricWarning)
-        report, precision, f1, accuracy = get_evaluation_metrics(golds,
-                                                                 predictions)
 
     logger.info("Evaluation Results on {} level:".format(name))
     logger.info("\tCorrect:   {} / {}".format(int(len(golds) * accuracy),
@@ -283,14 +301,20 @@ def log_evaluation_table(golds, predictions, name,
         logger.info("\tClassification report: \n{}".format(report))
 
 
-def plot_story_evaluation(test_y, predictions, out_file):
+def plot_story_evaluation(test_y, predictions,
+                          report, precision, f1, accuracy,
+                          out_file):
     """Plot the results. of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     import matplotlib.pyplot as plt
 
-    log_evaluation_table(test_y, predictions, "ACTION", include_report=True)
+    log_evaluation_table(test_y, "ACTION",
+                         report, precision, f1, accuracy,
+                         include_report=True)
+
     cnf_matrix = confusion_matrix(test_y, predictions)
+
     plot_confusion_matrix(cnf_matrix,
                           classes=unique_labels(test_y, predictions),
                           title='Action Confusion matrix')
@@ -319,9 +343,7 @@ if __name__ == '__main__':
                            _agent,
                            cmdline_args.nlu,
                            cmdline_args.max_stories,
-                           cmdline_args.failed,
-                           cmdline_args.output,
-                           cmdline_args.fail_on_prediction_errors)
+                           cmdline_args.failed)
     else:
         run_story_evaluation(cmdline_args.stories,
                              _agent,
