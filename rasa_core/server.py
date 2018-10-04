@@ -90,7 +90,7 @@ def requires_auth(app, token=None):
             jwt_data = view_decorators._decode_jwt_from_headers()
             user = jwt_data.get("user", {})
 
-            username = user.get("user", None)
+            username = user.get("username", None)
             role = user.get("role", None)
 
             if role == "admin":
