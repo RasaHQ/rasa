@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-from rasa_core_sdk import ActionExecutionError
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+from rasa_core_sdk import ActionExecutionRejected
 from rasa_core_sdk.forms import FormAction, REQUESTED_SLOT
 from rasa_core_sdk.events import SlotSet
 
@@ -19,13 +24,15 @@ class RestaurantForm(FormAction):
                 "outdoor_seating": {'affirm': True, 'deny': False},
                 "preferences": self.FREETEXT}
 
-    cuisine_db = ["caribbean",
-                  "chinese",
-                  "french",
-                  "greek",
-                  "indian",
-                  "italian",
-                  "mexican"]
+    @staticmethod
+    def cuisine_db():
+        return ["caribbean",
+                "chinese",
+                "french",
+                "greek",
+                "indian",
+                "italian",
+                "mexican"]
 
     @staticmethod
     def is_int(string):
@@ -36,26 +43,29 @@ class RestaurantForm(FormAction):
             return False
 
     def validate(self, dispatcher, tracker, domain):
-        slot_to_fill = tracker.slots[REQUESTED_SLOT]
+        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
         events = self.extract(dispatcher, tracker, domain)
         if events is None:
-            raise ActionExecutionError("Failed to validate slot {0} "
-                                       "with action {1}"
-                                       "".format(slot_to_fill,
-                                                 self.name()),
-                                       self.name())
+            raise ActionExecutionRejected(self.name(),
+                                          "Failed to validate slot {0} "
+                                          "with action {1}"
+                                          "".format(slot_to_fill, self.name()))
 
-        entity = events[0]['value']
+        extracted_slots = []
+        for e in events:
+            if e['event'] == 'slot':
+                extracted_slots.append(e['value'])
 
-        if slot_to_fill == 'cuisine':
-            if entity.lower() not in self.cuisine_db:
-                dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                events = [SlotSet(slot_to_fill, None)]
-        elif slot_to_fill == 'num_people':
-            if not self.is_int(entity) or int(entity) <= 0:
-                dispatcher.utter_template('utter_wrong_num_people', tracker)
-                events = [SlotSet(slot_to_fill, None)]
+        for slot in extracted_slots:
+            if slot_to_fill == 'cuisine':
+                if slot.lower() not in self.cuisine_db():
+                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
+                    events = [SlotSet(slot_to_fill, None)]
+            elif slot_to_fill == 'num_people':
+                if not self.is_int(slot) or int(slot) <= 0:
+                    dispatcher.utter_template('utter_wrong_num_people', tracker)
+                    events = [SlotSet(slot_to_fill, None)]
 
         return events
 

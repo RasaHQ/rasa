@@ -19,7 +19,7 @@ from rasa_core.actions import Action
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
     ACTION_RESTART_NAME,
-    ActionExecutionError)
+    ActionExecutionRejected)
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.channels import UserMessage
 from rasa_core.dispatcher import Dispatcher
@@ -349,7 +349,7 @@ class MessageProcessor(object):
         # the tracker state after an action has been taken
         try:
             events = action.run(dispatcher, tracker, self.domain)
-        except ActionExecutionError:
+        except ActionExecutionRejected:
             events = [ActionExecutionFailed(action.name(), policy, confidence)]
             tracker.update(events[0])
             return self.should_predict_another_action(action.name(), events)
