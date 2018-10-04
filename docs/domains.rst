@@ -233,6 +233,5 @@ featurized as normal.
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html	
+
 	
