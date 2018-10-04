@@ -38,7 +38,7 @@ class RestaurantForm(FormAction):
             - an extracted entity
             - a dictionary of intent: value pairs
             - a whole message
-            or a list of all of them"""
+            or a list of all of them, where a first match will be picked"""
 
         return {"cuisine": "cuisine",
                 "num_people": "number",
