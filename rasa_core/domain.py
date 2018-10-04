@@ -23,6 +23,7 @@ from rasa_core.actions import Action, action
 from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
+from rasa_core.constants import REQUESTED_SLOT
 
 logger = logging.getLogger(__name__)
 
@@ -193,9 +194,6 @@ class Domain(object):
         self.intent_properties = intent_properties
         self.entities = entities
         self.form_names = form_names
-        if self.form_names and 'requested_slot' not in [s.name for s in slots]:
-            slots.append(UnfeaturizedSlot('requested_slot'))
-
         self.slots = slots
         self.templates = templates
 
@@ -221,6 +219,11 @@ class Domain(object):
         """Number of used input states for the action prediction."""
 
         return len(self.input_states)
+
+    def add_requested_slot(self):
+        if self.form_names and REQUESTED_SLOT not in [s.name for
+                                                      s in self.slots]:
+            self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
     def action_for_name(self, action_name, action_endpoint):
         # type: (Text, Optional[EndpointConfig]) -> Optional[Action]
