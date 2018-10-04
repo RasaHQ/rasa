@@ -42,7 +42,7 @@ class RestaurantForm(FormAction):
         if events is None:
             raise ActionExecutionError("Failed to validate slot {0} "
                                        "with action {1}"
-                                       "".format(tracker.slots[REQUESTED_SLOT],
+                                       "".format(slot_to_fill,
                                                  self.name()),
                                        self.name())
 
