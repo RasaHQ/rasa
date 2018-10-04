@@ -3,6 +3,8 @@ intents:
   - request_restaurant
   - inform
   - chitchat
+  - affirm
+  - deny
 
 entities:
   - cuisine
@@ -13,6 +15,10 @@ slots:
     type: unfeaturized
   num_people:
     type: unfeaturized
+  outdoor_seating:
+    type: unfeaturized
+  preferences:
+    type: unfeaturized
   requested_slot:
     type: unfeaturized
 
@@ -21,8 +27,12 @@ templates:
     - text: "how many people?"
   utter_ask_cuisine:
     - text: "what cuisine?"
+  utter_ask_outdoor_seating:
+  - text: "do you want to seat outside?"
+  utter_ask_preferences:
+  - text: "please provide additional preferences"
   utter_noworries:
-    - text: "you are welcome :)"
+    - text: "you are welcome :)\ngot slots: cuisine: {cuisine}, num_people: {num_people}, outdoor_seating: {outdoor_seating}, preferences: {preferences}"
   utter_chitchat:
     - text: "chitchat"
   utter_wrong_cuisine:

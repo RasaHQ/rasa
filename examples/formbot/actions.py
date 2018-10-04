@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from rasa_core_sdk import ActionExecutionError
 from rasa_core_sdk.forms import FormAction, REQUESTED_SLOT
 from rasa_core_sdk.events import SlotSet
 
@@ -10,10 +11,13 @@ class RestaurantForm(FormAction):
 
     @staticmethod
     def required_slots():
-        return ["cuisine", "num_people"]
+        return ["cuisine", "num_people", "outdoor_seating", "preferences"]
 
     def slot_mapping(self):
-        return {"cuisine": "cuisine", "num_people": "number"}
+        return {"cuisine": "cuisine",
+                "num_people": "number",
+                "outdoor_seating": {'affirm': True, 'deny': False},
+                "preferences": self.FREETEXT}
 
     cuisine_db = ["caribbean",
                   "chinese",
@@ -34,8 +38,13 @@ class RestaurantForm(FormAction):
     def validate(self, dispatcher, tracker, domain):
         slot_to_fill = tracker.slots[REQUESTED_SLOT]
 
-        events = super(RestaurantForm,
-                       self).validate(dispatcher, tracker, domain)
+        events = self.extract(dispatcher, tracker, domain)
+        if events is None:
+            raise ActionExecutionError("Failed to validate slot {0} "
+                                       "with action {1}"
+                                       "".format(tracker.slots[REQUESTED_SLOT],
+                                                 self.name()),
+                                       self.name())
 
         entity = events[0]['value']
 
