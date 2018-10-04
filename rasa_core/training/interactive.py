@@ -31,16 +31,18 @@ from rasa_core.trackers import EventVerbosity
 from rasa_core.training.structures import Story
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
-from rasa_nlu.training_data.loading import load_data
+from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.utils import create_temporary_file
 
 logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
 PATHS = {"stories": "data/stories.md",
-                            "nlu": "data/nlu.md"}
+         "nlu": "data/nlu.md",
+         "backup": "data/nlu_interactive.md"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
@@ -476,8 +478,14 @@ def _ask_if_quit(sender_id, endpoint):
 
     if not answers or answers["abort"] == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        export_file_paths = _request_export_info()
-        _write_to_file(export_file_paths, sender_id, endpoint)
+        story_path, nlu_path = _request_export_info()
+
+        tracker = retrieve_tracker(endpoint, sender_id)
+        evts = tracker.get("events", [])
+
+        _write_stories_to_file(story_path, evts)
+        _write_nlu_to_file(nlu_path, evts)
+
         logger.info("Successfully wrote stories and NLU data")
         sys.exit()
     elif answers["abort"] == "continue":
@@ -586,35 +594,44 @@ def _collect_messages(evts):
     return msgs
 
 
-def _write_to_file(export_file_paths, sender_id, endpoint):
-    # type: (Text, Text, EndpointConfig) -> None
-    """Write the conversation and nlu data of the sender_id to the file paths."""
-
-    tracker = retrieve_tracker(endpoint, sender_id)
-    evts = tracker.get("events", [])
+def _write_stories_to_file(export_story_path, evts):
+    # type: (Text, List[Dict[Text, Any]]) -> None
+    """Write the conversation of the sender_id to the file paths."""
 
     sub_conversations = _split_conversation_at_restarts(evts)
-    msgs = _collect_messages(evts)
-    previous_examples = TrainingData()
-    failsafe_toggle = 'w'
 
-    try:
-        previous_examples = load_data(export_file_paths[1])
-    except:
-        failsafe_toggle = 'a'
-        logger.exception("Could not load NLU data from existing file, new data will be appended to prevent loss of"
-                         "existing data")
-
-    with io.open(export_file_path[0], 'a', encoding="utf-8") as f:
+    with io.open(export_story_path, 'a', encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
             f.write(s.as_story_string(flat=True) + "\n")
 
-    if msgs:
-        with io.open(export_file_paths[1], failsafe_toggle, encoding="utf-8") as f:
-            nlu_data = TrainingData(msgs).merge(previous_examples)
-            f.write(nlu_data.as_markdown())
+
+def _write_nlu_to_file(export_nlu_path, evts):
+    # type: (Text, List[Dict[Text, Any]]) -> None
+    """Write the nlu data of the sender_id to the file paths."""
+
+    msgs = _collect_messages(evts)
+
+    try:
+        previous_examples = load_data(export_nlu_path)
+        nlu_data = previous_examples.merge(TrainingData(msgs))
+
+        with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
+            if _guess_format(export_nlu_path) == "md":
+                f.write(nlu_data.as_markdown())
+            else:
+                f.write(nlu_data.as_json())
+
+    except:
+        questions = [{"name": "export nlu",
+                     "type": "input",
+                     "message": "Could not load NLU data from existing file, please specify where to store learned "
+                                "NLU data",
+                     "default": PATHS["backup"]}]
+
+        answers = prompt(questions)
+        _write_nlu_to_file(answers["export nlu"], evts)
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
