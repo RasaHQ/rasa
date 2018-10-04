@@ -73,7 +73,7 @@ def create_argument_parser():
             help="Configuration file for the connectors as a yml file")
     parser.add_argument(
             '-c', '--connector',
-            choices=list(BUILTIN_CHANNELS.keys()),
+            type=str,
             help="service to connect to")
     parser.add_argument(
             '--enable_api',
@@ -99,8 +99,9 @@ def create_argument_parser():
     return parser
 
 
-def _create_external_channels(channel, credentials_file):
+def create_http_input_channels(channel, credentials_file):
     # type: (Optional[Text], Optional[Text]) -> List[InputChannel]
+    """Instantiate the chosen input channel."""
 
     if credentials_file:
         all_credentials = read_yaml_file(credentials_file)
@@ -122,29 +123,13 @@ def _create_single_channel(channel, credentials):
         try:
             input_channel_class = utils.class_from_module_path(channel)
             return input_channel_class.from_credentials(credentials)
-        except Exception:
+        except (AttributeError, ImportError):
             raise Exception(
                     "Failed to find input channel class for '{}'. Unknown "
                     "input channel. Check your credentials configuration to "
                     "make sure the mentioned channel is not misspelled. If you "
                     "are creating your own channel, make sure it is a proper "
                     "name of a class in a module.".format(channel))
-
-
-def create_http_input_channels(channel,  # type: Union[None, Text, RestInput]
-                               credentials_file  # type: Optional[Text]
-                               ):
-    # type: (...) -> List[InputChannel]
-    """Instantiate the chosen input channel."""
-
-    if channel is None or channel in rasa_core.channels.BUILTIN_CHANNELS:
-        return _create_external_channels(channel, credentials_file)
-    else:
-        try:
-            c = utils.class_from_module_path(channel)
-            return [c()]
-        except Exception:
-            raise Exception("Unknown input channel for running main.")
 
 
 def start_cmdline_io(server_url, on_finish, **kwargs):

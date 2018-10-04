@@ -430,7 +430,7 @@ class TrackerFeaturizer(object):
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
         utils.create_dir_for_file(featurizer_file)
-        with io.open(featurizer_file, 'w') as f:
+        with io.open(featurizer_file, 'w', encoding="utf-8") as f:
             # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
 
@@ -438,9 +438,7 @@ class TrackerFeaturizer(object):
     def load(path):
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            with io.open(featurizer_file, 'r') as f:
-                _json = f.read()
-            return jsonpickle.decode(_json)
+            return jsonpickle.decode(utils.read_file(featurizer_file))
         else:
             logger.error("Couldn't load featurizer for policy. "
                          "File '{}' doesn't exist.".format(featurizer_file))

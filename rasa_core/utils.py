@@ -107,7 +107,7 @@ def dump_obj_as_str_to_file(filename, text):
     # type: (Text, Text) -> None
     """Dump a text to a file."""
 
-    with io.open(filename, 'w') as f:
+    with io.open(filename, 'w', encoding="utf-8") as f:
         # noinspection PyTypeChecker
         f.write(str(text))
 
@@ -547,7 +547,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
     line_filter = re.compile(line_pattern)
 
-    with io.open(filename, 'r') as f:
+    with io.open(filename, 'r', encoding="utf-8") as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)

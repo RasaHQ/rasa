@@ -392,7 +392,7 @@ class DialogueStateTracker(object):
         # type: (Text) -> None
         """Dump the tracker as a story to a file."""
 
-        with io.open(export_path, 'a') as f:
+        with io.open(export_path, 'a', encoding="utf-8") as f:
             f.write(self.export_stories() + "\n")
 
     ###

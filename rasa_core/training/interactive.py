@@ -524,7 +524,7 @@ def _request_export_stories_info():
 
     def validate_path(path):
         try:
-            with io.open(path, "a"):
+            with io.open(path, "a", encoding="utf-8"):
                 return True
         except Exception as e:
             return "Failed to open file. {}".format(e)
@@ -577,7 +577,7 @@ def _write_stories_to_file(export_file_path, sender_id, endpoint):
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
-    with io.open(export_file_path, 'a') as f:
+    with io.open(export_file_path, 'a', encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)

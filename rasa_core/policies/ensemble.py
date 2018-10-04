@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import sys
+import datetime
 from collections import defaultdict
 
 import numpy as np
@@ -39,6 +40,7 @@ class PolicyEnsemble(object):
         # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
         self.training_trackers = None
+        self.date_trained = None
 
         if action_fingerprints:
             self.action_fingerprints = action_fingerprints
@@ -65,6 +67,7 @@ class PolicyEnsemble(object):
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
             self.training_trackers = training_trackers
+            self.date_trained = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
@@ -123,7 +126,8 @@ class PolicyEnsemble(object):
             "python": ".".join([str(s) for s in sys.version_info[:3]]),
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
-            "policy_names": policy_names
+            "policy_names": policy_names,
+            "trained_at": self.date_trained
         }
 
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
@@ -147,8 +151,7 @@ class PolicyEnsemble(object):
     @classmethod
     def load_metadata(cls, path):
         metadata_path = os.path.join(path, 'policy_metadata.json')
-        with io.open(os.path.abspath(metadata_path)) as f:
-            metadata = json.loads(f.read())
+        metadata = json.loads(utils.read_file(os.path.abspath(metadata_path)))
         return metadata
 
     @staticmethod
