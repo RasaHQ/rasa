@@ -646,7 +646,7 @@ After connecting the ``callback`` input channel, you can post messages to
 
    {
      "sender": "Rasa",
-     "text": "Hi there!"
+     "message": "Hi there!"
    }
 
 The response will simply be ``success``. Once Core wants to send a

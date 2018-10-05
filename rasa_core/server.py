@@ -385,7 +385,7 @@ def create_app(agent,
     @ensure_loaded_agent(agent)
     def log_message(sender_id):
         request_params = request.get_json(force=True)
-        message = request_params.get("text")
+        message = request_params.get("message")
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
