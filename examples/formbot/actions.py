@@ -42,7 +42,8 @@ class RestaurantForm(FormAction):
             or a list of all of them, where a first match will be picked"""
 
         return {"cuisine": self.from_entity(entity="cuisine"),
-                "num_people": [self.from_entity(entity="number"),
+                "num_people": [self.from_entity(entity="number",
+                                                intent="inform"),
                                self.from_intent(intent='deny',
                                                 value="number of people "
                                                       "not known")],
