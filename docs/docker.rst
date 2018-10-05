@@ -15,5 +15,4 @@ The host must have a x86_64 CPU with AVX support.
 
 .. include:: feedback.inc	
 	
-.. raw:: html
-   :file: livechat.html
+
