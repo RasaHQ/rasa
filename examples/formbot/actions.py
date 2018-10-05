@@ -81,7 +81,8 @@ class RestaurantForm(FormAction):
             raise ActionExecutionRejection(self.name(),
                                            "Failed to validate slot {0} "
                                            "with action {1}"
-                                           "".format(slot_to_fill, self.name()))
+                                           "".format(slot_to_fill,
+                                                     self.name()))
 
         extracted_slots = []
         validated_events = []
@@ -103,7 +104,8 @@ class RestaurantForm(FormAction):
 
             elif slot_to_fill == 'num_people':
                 if not self.is_int(slot) or int(slot) <= 0:
-                    dispatcher.utter_template('utter_wrong_num_people', tracker)
+                    dispatcher.utter_template('utter_wrong_num_people',
+                                              tracker)
                     # validation failed, set this slot to None
                     validated_events.append(SlotSet(slot_to_fill, None))
                     continue
