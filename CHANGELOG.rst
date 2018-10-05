@@ -25,6 +25,13 @@ Removed
 Fixed
 -----
 
+[0.11.11] - 2018-10-05
+^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Add missing name() to facebook Messenger class
+
 [0.11.10] - 2018-10-05
 ^^^^^^^^^^^^^^^^^^^^^^
 
