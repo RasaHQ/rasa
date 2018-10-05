@@ -44,7 +44,8 @@ class RestaurantForm(FormAction):
         return {"cuisine": "cuisine",
                 "num_people": "number",
                 "outdoor_seating": {'affirm': True, 'deny': False},
-                "preferences": {'inform': self.FREETEXT}}
+                "preferences": {'inform': self.FREETEXT,
+                                'deny': "no additional preferences"}}
 
     @staticmethod
     def cuisine_db():
