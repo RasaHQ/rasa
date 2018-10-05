@@ -879,7 +879,7 @@ class ActionExecutionRejected(Event):
 
     @classmethod
     def _from_parameters(cls, parameters):
-        return ActionExecutionRejected(parameters.get("action_name"),
+        return ActionExecutionRejected(parameters.get("name"),
                                        parameters.get("policy"),
                                        parameters.get("confidence"),
                                        parameters.get("timestamp"))
