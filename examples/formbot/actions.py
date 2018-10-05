@@ -36,20 +36,25 @@ class RestaurantForm(FormAction):
     def slot_mapping(self):
         # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
         """A dictionary to map required slots to
-            - an extracted entity;
-            - a dictionary of intent: value pairs,
-                if value is FREETEXT, use a whole message as value;
-            - a whole message;
-            or a list of all of them, where a first match will be picked"""
+            - an extracted entity
+            - intent: value pairs
+            - a whole message
+            or a list of them, where a first match will be picked"""
 
-        return {"cuisine": "cuisine",
-                "num_people": ["number",
-                               {'deny': "number of people not known"}],
-                "outdoor_seating": ["seating",
-                                    {'affirm': True, 'deny': False}],
-                "preferences": {'inform': self.FREETEXT,
-                                'deny': "no additional preferences"},
-                "feedback": ["feedback", self.FREETEXT]}
+        return {"cuisine": self.from_entity(entity="cuisine",
+                                            intent="inform"),
+                "num_people": self.from_entity(entity="number"),
+                "outdoor_seating": [self.from_entity(entity="seating"),
+                                    self.from_intent(intent='affirm',
+                                                     value=True),
+                                    self.from_intent(intent='deny',
+                                                     value=False)],
+                "preferences": [self.from_text(intent='inform'),
+                                self.from_intent(intent='deny',
+                                                 value="no additional "
+                                                       "preferences")],
+                "feedback": [self.from_entity(entity="feedback"),
+                             self.from_text()]}
 
     @staticmethod
     def cuisine_db():
@@ -119,9 +124,14 @@ class RestaurantForm(FormAction):
                     validated_events.append(SlotSet(slot_to_fill, slot))
 
             elif slot_to_fill == 'outdoor_seating':
-                if 'out' in slot:
+                if isinstance(slot, bool):
+                    # slot already boolean
+                    validated_events.append(SlotSet(slot_to_fill, slot))
+                elif 'out' in slot:
+                    # convert out... to True
                     validated_events.append(SlotSet(slot_to_fill, True))
                 elif 'in' in slot:
+                    # convert in... to False
                     validated_events.append(SlotSet(slot_to_fill, False))
                 else:
                     # set a slot to whatever it is
