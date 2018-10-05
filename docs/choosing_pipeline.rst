@@ -316,5 +316,4 @@ If you want to use custom components in your pipeline, see :ref:`section_customc
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html 
+
