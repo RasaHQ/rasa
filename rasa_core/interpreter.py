@@ -119,6 +119,12 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                            "Error: {}".format(confidence_str, e))
             return 0.0
 
+    def _starts_with_intent_prefix(self, text):
+        for c in self.allowed_prefixes():
+            if text.startswith(c):
+                return True
+        return False
+
     @staticmethod
     def extract_intent_and_entities(user_input):
         # type: (Text) -> object
@@ -192,8 +198,13 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             intent, confidence, entities = \
                 self.extract_intent_and_entities(text)
 
+        if self._starts_with_intent_prefix(text):
+            message_text = text
+        else:
+            message_text = INTENT_MESSAGE_PREFIX + text
+
         return {
-            'text': text,
+            'text': message_text,
             'intent': {
                 'name': intent,
                 'confidence': confidence,

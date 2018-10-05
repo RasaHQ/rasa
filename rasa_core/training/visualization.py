@@ -138,16 +138,37 @@ def _nodes_are_equivalent(graph, node_a, node_b, max_history):
              _fingerprint_node(graph, node_b, max_history)))
 
 
-def _add_edge(graph, u, v, key, label=None):
+def _add_edge(graph, u, v, key, label=None, **kwargs):
     """Adds an edge to the graph if the edge is not already present. Uses the
     label as the key."""
 
-    if key is None or key == EDGE_NONE_LABEL:
-        # Can't use `None` as a label
-        if not graph.has_edge(u, v, key=EDGE_NONE_LABEL):
-            graph.add_edge(u, v, key=EDGE_NONE_LABEL, label="")
-    elif not graph.has_edge(u, v, key):
-        graph.add_edge(u, v, key=key, label=label)
+    if key is None:
+        key = EDGE_NONE_LABEL
+
+    if key == EDGE_NONE_LABEL:
+        label = ""
+
+    if not graph.has_edge(u, v, key=EDGE_NONE_LABEL):
+        graph.add_edge(u, v, key=key, label=label, **kwargs)
+    else:
+        d = graph.get_edge_data(u, v, key=EDGE_NONE_LABEL)
+        _transfer_style(kwargs, d)
+
+
+def _transfer_style(source, target):
+    clazzes = source.get("class", "")
+
+    special_classes = {"dashed", "active"}
+
+    if "class" not in target:
+        target["class"] = ""
+
+    for c in special_classes:
+        if c in clazzes and c not in target["class"]:
+            target["class"] += " " + c
+
+    target["class"] = target["class"].strip()
+    return target
 
 
 def _merge_equivalent_nodes(graph, max_history):
@@ -166,24 +187,24 @@ def _merge_equivalent_nodes(graph, max_history):
                          idx + 1:]:  # assumes node equivalence is cumulative
                     if graph.has_node(j) and \
                             _nodes_are_equivalent(graph, i, j, max_history):
-                        # make sure we keep the dotted style
-                        style = graph.nodes(data=True)[j].get("style", "")
-                        ostyle = graph.nodes(data=True)[i]
-                        if "dotted" in style:
-                            ostyle["style"] = style
+                        # make sure we keep special styles
+                        _transfer_style(graph.nodes(data=True)[j],
+                                        graph.nodes(data=True)[i])
 
                         changed = True
                         # moves all outgoing edges to the other node
                         j_outgoing_edges = list(graph.out_edges(j, keys=True,
                                                                 data=True))
                         for _, succ_node, k, d in j_outgoing_edges:
-                            _add_edge(graph, i, succ_node, k, d.get("label"))
+                            _add_edge(graph, i, succ_node, k, d.get("label"),
+                                      **{"class": d.get("class", "")})
                             graph.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
                         j_incoming_edges = list(graph.in_edges(j, keys=True,
                                                                data=True))
                         for prev_node, _, k, d in j_incoming_edges:
-                            _add_edge(graph, prev_node, i, k, d.get("label"))
+                            _add_edge(graph, prev_node, i, k, d.get("label"),
+                                      **{"class": d.get("class", "")})
                             graph.remove_edge(prev_node, j)
                         graph.remove_node(j)
 
@@ -191,8 +212,7 @@ def _merge_equivalent_nodes(graph, max_history):
 def _replace_edge_labels_with_nodes(graph,
                                     next_id,
                                     interpreter,
-                                    nlu_training_data,
-                                    fontsize):
+                                    nlu_training_data):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
 
@@ -218,12 +238,10 @@ def _replace_edge_labels_with_nodes(graph,
             graph.remove_edge(s, e, k)
             graph.add_node(next_id,
                            label=label,
-                           style="filled",
-                           fillcolor="lightblue",
-                           shape="box",
-                           fontsize=fontsize)
-            graph.add_edge(s, next_id)
-            graph.add_edge(next_id, e)
+                           shape="rect",
+                           **_transfer_style(d, {"class": "intent"}))
+            graph.add_edge(s, next_id, **{"class": d.get("class", "")})
+            graph.add_edge(next_id, e, **{"class": d.get("class", "")})
 
 
 def persist_graph(graph, output_file):
@@ -259,8 +277,8 @@ def _length_of_common_prefix(this, other):
 def visualize_neighborhood(
         current,  # type: List[Event]
         event_sequences,  # type: List[List[Event]]
-        output_file,  # type: Optional[Text]
-        max_history,  # type: int
+        output_file=None,  # type: Optional[Text]
+        max_history=2,  # type: int
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
         nlu_training_data=None,  # type: Optional[TrainingData]
         should_merge_nodes=True,  # type: bool
@@ -271,11 +289,9 @@ def visualize_neighborhood(
 
     graph = nx.MultiDiGraph()
     next_node_idx = 0
-    graph.add_node(0, label="START", fillcolor="green", style="filled",
-                   fontsize=fontsize)
-    graph.add_node(-1, label="END", fillcolor="red", style="filled",
-                   fontsize=fontsize)
-    graph.add_node(-2, label="TMP", style="invisible")
+    graph.add_node(0, label="START", **{"class": "start active"})
+    graph.add_node(-1, label="END", **{"class": "end"})
+    graph.add_node(-2, label="TMP", **{"class": "invisible"})
     special_node_idx = -3
     path_ellipsis_ends = set()
 
@@ -288,6 +304,8 @@ def visualize_neighborhood(
         message = None
         current_node = 0
         idx = 0
+        is_current = events == current
+
         for idx, el in enumerate(events):
             if not prefix:
                 idx -= 1
@@ -301,7 +319,7 @@ def visualize_neighborhood(
                   el.action_name != ACTION_LISTEN_NAME):
                 next_node_idx += 1
                 graph.add_node(next_node_idx, label=el.action_name,
-                               fontsize=fontsize)
+                               **{"class": "active" if is_current else ""})
 
                 if message:
                     message_key = message.get("intent", {}).get("name", None)
@@ -311,13 +329,14 @@ def visualize_neighborhood(
                     message_label = None
 
                 _add_edge(graph, current_node, next_node_idx, message_key,
-                          message_label)
+                          message_label,
+                          **{"class": "active" if is_current else ""})
                 current_node = next_node_idx
 
                 message = None
                 prefix -= 1
 
-        if events == current:
+        if is_current:
             if message:
                 target = -2
             if (isinstance(events[idx], ActionExecuted)
@@ -325,20 +344,18 @@ def visualize_neighborhood(
                 next_node_idx += 1
                 graph.add_node(next_node_idx,
                                label=message or "  ?  ",
-                               style="filled,dotted",
-                               fillcolor="lightblue",
-                               shape="box",
-                               fontsize=fontsize)
+                               shape="rect",
+                               **{"class": "intent dashed active"})
                 target = next_node_idx
             elif current_node:
                 d = graph.nodes(data=True)[current_node]
-                d["style"] = "dotted"
+                d["class"] = "dashed active"
                 target = -2
         elif idx == len(events):
             target = -1
         elif current_node and current_node not in path_ellipsis_ends:
-            graph.add_node(special_node_idx, label="...", fillcolor="grey",
-                           style="filled")
+            graph.add_node(special_node_idx, label="...",
+                           **{"class": "ellipsis"})
             target = special_node_idx
             path_ellipsis_ends.add(current_node)
             special_node_idx -= 1
@@ -349,14 +366,16 @@ def visualize_neighborhood(
             message_key = message.get("intent", {}).get("name", None)
             message_label = message.get("text", None)
             graph.add_edge(current_node, target,
-                           key=message_key, label=message_label)
+                           key=message_key, label=message_label,
+                           **{"class": "active" if is_current else ""})
         else:
-            graph.add_edge(current_node, target, key=EDGE_NONE_LABEL)
+            graph.add_edge(current_node, target, key=EDGE_NONE_LABEL,
+                           **{"class": "active" if is_current else ""})
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
     _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
-                                    nlu_training_data, fontsize)
+                                    nlu_training_data)
     graph.remove_node(-2)
     if not len(list(graph.predecessors(-1))):
         graph.remove_node(-1)
@@ -463,7 +482,7 @@ def visualize_stories(
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
     _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
-                                    nlu_training_data, fontsize)
+                                    nlu_training_data)
 
     if output_file:
         persist_graph(graph, output_file)

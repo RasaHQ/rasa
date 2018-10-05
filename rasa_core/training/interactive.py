@@ -638,7 +638,6 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                               sender_id,  # type: Text
                               finetune,  # type: bool
                               sender_ids,
-                              domain,
                               plot_file,
                               ):
     # type: (...) -> None
@@ -655,11 +654,10 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         action_name = predictions[pred_out].get("action")
 
         _print_history(sender_id, endpoint)
-        _plot_and_show(sender_ids, domain, plot_file, endpoint,
-                       action_name)
+        _plot_trackers(sender_ids, plot_file, endpoint, action_name)
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
-        _plot_and_show(sender_ids, domain, plot_file, endpoint)
+        _plot_trackers(sender_ids, plot_file, endpoint)
 
 
 def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
@@ -889,7 +887,7 @@ def _undo_latest(sender_id, endpoint):
         replace_events(endpoint, sender_id, events_to_keep)
 
 
-def _plot_trackers(sender_ids, domain, output_file, endpoint, unconfirmed=None):
+def _plot_trackers(sender_ids, output_file, endpoint, unconfirmed=None):
     temp_story_file = tempfile.NamedTemporaryFile(delete=False,
                                                   suffix=".md")
     temp_story_file.close()
@@ -909,14 +907,14 @@ def _plot_trackers(sender_ids, domain, output_file, endpoint, unconfirmed=None):
 
     if unconfirmed:
         event_sequences[-1].append(ActionExecuted(unconfirmed))
-    visualize_neighborhood(
-            event_sequences[-1], event_sequences, output_file, max_history=2)
 
+    graph = visualize_neighborhood(event_sequences[-1],
+                                   event_sequences,
+                                   output_file=None,
+                                   max_history=2)
 
-def _plot_and_show(sender_ids, domain, plot_file, endpoint,
-                   unconfirmed=None):
-    _plot_trackers(sender_ids, domain, plot_file, endpoint, unconfirmed)
-    # story_graph.update_image()
+    from networkx.drawing.nx_agraph import write_dot
+    write_dot(graph, output_file)
 
 
 def record_messages(endpoint,  # type: EndpointConfig
@@ -957,8 +955,8 @@ def record_messages(endpoint,  # type: EndpointConfig
         num_messages = 0
         sender_ids = [t.events for t in trackers] + [sender_id]
 
-        plot_file = "story_graph.png"
-        _plot_trackers(sender_ids, domain, plot_file, endpoint)
+        plot_file = "story_graph.dot"
+        _plot_trackers(sender_ids, plot_file, endpoint)
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -967,7 +965,7 @@ def record_messages(endpoint,  # type: EndpointConfig
                     _validate_nlu(intents, endpoint, sender_id)
                 _predict_till_next_listen(endpoint, sender_id,
                                           finetune,
-                                          sender_ids, domain, plot_file)
+                                          sender_ids, plot_file)
 
                 num_messages += 1
             except RestartConversation:
@@ -989,7 +987,7 @@ def record_messages(endpoint,  # type: EndpointConfig
                     replace_events(endpoint, sender_id, evts)
                     sender_ids.append(sender_id)
                     _print_history(sender_id, endpoint)
-                    _plot_and_show(sender_ids, domain, plot_file, endpoint)
+                    _plot_trackers(sender_ids, plot_file, endpoint)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")
@@ -1018,7 +1016,7 @@ def _serve_application(app, stories, finetune=False, serve_forever=True):
     # type: (Flask, bool, bool) -> WSGIServer
     """Start a core server and attach the interactive learning IO."""
 
-    _add_visualization_routes(app, "story_graph.png")
+    _add_visualization_routes(app, "story_graph.dot")
 
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app, log=None)
     logger.info("Rasa Core server is up and running on "
@@ -1047,10 +1045,12 @@ def _add_visualization_routes(app, image_path=None):
         return send_from_directory(os.path.dirname(__file__),
                                    'visualization.html')
 
-    @app.route("/visualization.png", methods=["GET"])
+    @app.route("/visualization.dot", methods=["GET"])
     def visualisation_png():
         try:
-            return send_file(os.path.abspath(image_path), cache_timeout=-1)
+            response = send_file(os.path.abspath(image_path))
+            response.headers['Cache-Control'] = "no-cache"
+            return response
         except FileNotFoundError:
             abort(404)
 
