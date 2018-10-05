@@ -35,15 +35,16 @@ class RestaurantForm(FormAction):
     def slot_mapping(self):
         # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
         """A dictionary to map required slots to
-            - an extracted entity
-            - a dictionary of intent: value pairs
-            - a whole message
+            - an extracted entity;
+            - a dictionary of intent: value pairs,
+                if value is FREETEXT, use a whole message as value;
+            - a whole message;
             or a list of all of them, where a first match will be picked"""
 
         return {"cuisine": "cuisine",
                 "num_people": "number",
                 "outdoor_seating": {'affirm': True, 'deny': False},
-                "preferences": self.FREETEXT}
+                "preferences": {'inform': self.FREETEXT}}
 
     @staticmethod
     def cuisine_db():
