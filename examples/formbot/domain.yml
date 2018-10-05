@@ -5,10 +5,13 @@ intents:
   - chitchat
   - affirm
   - deny
+  - stop
 
 entities:
   - cuisine
   - number
+  - feedback
+  - seating
 
 slots:
   cuisine:
@@ -18,6 +21,8 @@ slots:
   outdoor_seating:
     type: unfeaturized
   preferences:
+    type: unfeaturized
+  feedback:
     type: unfeaturized
   requested_slot:
     type: unfeaturized
@@ -31,22 +36,35 @@ templates:
   - text: "do you want to seat outside?"
   utter_ask_preferences:
   - text: "please provide additional preferences"
+  utter_ask_feedback:
+  - text: "please give your feedback"
+  utter_submit:
+  - text: "done!"
+  utter_slots_values:
+  - text: "got slots:\n
+           - cuisine: {cuisine}\n
+           - num_people: {num_people}\n
+           - outdoor_seating: {outdoor_seating}\n
+           - preferences: {preferences}\n
+           - feedback: {feedback}"
   utter_noworries:
-    - text: "you are welcome :)\ngot slots: cuisine: {cuisine}, num_people: {num_people}, outdoor_seating: {outdoor_seating}, preferences: {preferences}"
+    - text: "you are welcome :)"
   utter_chitchat:
     - text: "chitchat"
+  utter_ask_continue:
+    - text: "do you want to continue?"
   utter_wrong_cuisine:
     - text: "cuisine type is not in the database, please try again"
   utter_wrong_num_people:
     - text: "number of people should be a positive integer, please try again"
-  utter_submit:
-    - text: "done!"
   utter_default:
     - text: "sorry, I didn't understand you, please try input something else"
 
 actions:
+  - utter_slots_values
   - utter_noworries
   - utter_chitchat
+  - utter_ask_continue
 
 forms:
   - restaurant_form

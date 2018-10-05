@@ -30,7 +30,8 @@ class RestaurantForm(FormAction):
         # type: () -> List[Text]
         """A list of required slots that the form has to fill"""
 
-        return ["cuisine", "num_people", "outdoor_seating", "preferences"]
+        return ["cuisine", "num_people", "outdoor_seating",
+                "preferences", "feedback"]
 
     def slot_mapping(self):
         # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
@@ -42,10 +43,13 @@ class RestaurantForm(FormAction):
             or a list of all of them, where a first match will be picked"""
 
         return {"cuisine": "cuisine",
-                "num_people": "number",
-                "outdoor_seating": {'affirm': True, 'deny': False},
+                "num_people": ["number",
+                               {'deny': "number of people not known"}],
+                "outdoor_seating": ["seating",
+                                    {'affirm': True, 'deny': False}],
                 "preferences": {'inform': self.FREETEXT,
-                                'deny': "no additional preferences"}}
+                                'deny': "no additional preferences"},
+                "feedback": ["feedback", self.FREETEXT]}
 
     @staticmethod
     def cuisine_db():
@@ -100,7 +104,9 @@ class RestaurantForm(FormAction):
                     dispatcher.utter_template('utter_wrong_cuisine', tracker)
                     # validation failed, set this slot to None
                     validated_events.append(SlotSet(slot_to_fill, None))
-                    continue
+                else:
+                    # validation succeeded
+                    validated_events.append(SlotSet(slot_to_fill, slot))
 
             elif slot_to_fill == 'num_people':
                 if not self.is_int(slot) or int(slot) <= 0:
@@ -108,10 +114,22 @@ class RestaurantForm(FormAction):
                                               tracker)
                     # validation failed, set this slot to None
                     validated_events.append(SlotSet(slot_to_fill, None))
-                    continue
+                else:
+                    # validation succeeded
+                    validated_events.append(SlotSet(slot_to_fill, slot))
 
-            # validation succeeded
-            validated_events.append(SlotSet(slot_to_fill, slot))
+            elif slot_to_fill == 'outdoor_seating':
+                if 'out' in slot:
+                    validated_events.append(SlotSet(slot_to_fill, True))
+                elif 'in' in slot:
+                    validated_events.append(SlotSet(slot_to_fill, False))
+                else:
+                    # set a slot to whatever it is
+                    validated_events.append(SlotSet(slot_to_fill, slot))
+
+            else:
+                # no validation needed
+                validated_events.append(SlotSet(slot_to_fill, slot))
 
         return validated_events
 

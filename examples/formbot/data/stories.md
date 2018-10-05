@@ -3,17 +3,7 @@
     - restaurant_form
     - form{"name": "restaurant_form"}
     - form{"name": null}
-* thank
-    - utter_noworries
-
-## chitchat once
-* request_restaurant
-    - restaurant_form
-    - form{"name": "restaurant_form"}
-* chitchat
-    - utter_chitchat
-    - restaurant_form
-    - form{"name": null}
+    - utter_slots_values
 * thank
     - utter_noworries
 
@@ -31,8 +21,93 @@
     - utter_chitchat
     - restaurant_form
     - form{"name": null}
+    - utter_slots_values
 * thank
     - utter_noworries
+
+## stop but continue path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+* stop
+    - utter_ask_continue
+* affirm
+    - restaurant_form
+    - form{"name": null}
+    - utter_slots_values
+* thank
+    - utter_noworries
+
+## chitchat stop but continue path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+* chitchat
+    - utter_chitchat
+    - restaurant_form
+* stop
+    - utter_ask_continue
+* affirm
+    - restaurant_form
+    - form{"name": null}
+    - utter_slots_values
+* thank
+    - utter_noworries
+
+## stop but continue and chitchat path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+* stop
+    - utter_ask_continue
+* affirm
+    - restaurant_form
+* chitchat
+    - utter_chitchat
+    - restaurant_form
+    - form{"name": null}
+    - utter_slots_values
+* thank
+    - utter_noworries
+
+## chitchat stop but continue and chitchat path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+* chitchat
+    - utter_chitchat
+    - restaurant_form
+* stop
+    - utter_ask_continue
+* affirm
+    - restaurant_form
+* chitchat
+    - utter_chitchat
+    - restaurant_form
+    - form{"name": null}
+    - utter_slots_values
+* thank
+    - utter_noworries
+
+## stop and really stop path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+* stop
+    - utter_ask_continue
+* deny
+    - action_restart
+
+## stop and really stop path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+* chitchat
+    - utter_chitchat
+* stop
+    - utter_ask_continue
+* deny
+    - action_restart
 
 ## Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
 * request_restaurant
@@ -65,5 +140,6 @@
     - slot{"preferences": "rubbish"}
     - form{"name": null}
     - slot{"requested_slot": null}
+    - utter_slots_values
 * thank
     - utter_noworries
