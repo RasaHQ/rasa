@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 class Messenger(BaseMessenger):
     """Implement a fbmessenger to parse incoming webhooks and send msgs."""
 
+    @classmethod
+    def name(cls):
+        return "facebook"
+
     def __init__(self, page_access_token, on_new_message):
         # type: (Text, Callable[[UserMessage], None]) -> None
 
