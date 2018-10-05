@@ -30,6 +30,11 @@ logger = logging.getLogger(__name__)
 PREV_PREFIX = 'prev_'
 
 
+class InvalidDomain(Exception):
+    """Exception that can be raised when domain is not valid."""
+    pass
+
+
 def check_domain_sanity(domain):
     """Makes sure the domain is properly configured.
 
@@ -68,11 +73,11 @@ def check_domain_sanity(domain):
             duplicate_intents or \
             duplicate_slots or \
             duplicate_entities:
-        raise Exception(get_exception_message([
-            (duplicate_actions, "actions"),
-            (duplicate_intents, "intents"),
-            (duplicate_slots, "slots"),
-            (duplicate_entities, "entities")]))
+        raise InvalidDomain(get_exception_message([
+                (duplicate_actions, "actions"),
+                (duplicate_intents, "intents"),
+                (duplicate_slots, "slots"),
+                (duplicate_entities, "entities")]))
 
 
 class Domain(object):
@@ -84,7 +89,7 @@ class Domain(object):
     @classmethod
     def load(cls, filename):
         if not os.path.isfile(filename):
-            raise Exception(
+            raise FileNotFoundError(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(filename)))
         return cls.from_yaml(read_file(filename))
@@ -129,10 +134,10 @@ class Domain(object):
         try:
             c.validate(raise_exception=True)
         except SchemaError:
-            raise ValueError("Failed to validate your domain yaml. "
-                             "Make sure the file is correct, to do so"
-                             "take a look at the errors logged during "
-                             "validation previous to this exception. ")
+            raise InvalidDomain("Failed to validate your domain yaml. "
+                                "Make sure the file is correct, to do so"
+                                "take a look at the errors logged during "
+                                "validation previous to this exception. ")
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -171,9 +176,9 @@ class Domain(object):
                 if isinstance(t, string_types):
                     validated_variations.append({"text": t})
                 elif "text" not in t:
-                    raise Exception("Utter template '{}' needs to contain"
-                                    "'- text: ' attribute to be a proper"
-                                    "template".format(template_key))
+                    raise InvalidDomain("Utter template '{}' needs to contain"
+                                        "'- text: ' attribute to be a proper"
+                                        "template".format(template_key))
                 else:
                     validated_variations.append(t)
             templates[template_key] = validated_variations
@@ -243,7 +248,7 @@ class Domain(object):
         This method resolves the index to the actions name."""
 
         if self.num_actions <= index or index < 0:
-            raise Exception(
+            raise IndexError(
                     "Can not access action at index {}. "
                     "Domain has {} actions.".format(index, self.num_actions))
         return self.action_for_name(self.action_names[index], action_endpoint)
@@ -264,7 +269,7 @@ class Domain(object):
     def _raise_action_not_found_exception(self, action_name):
         action_names = "\n".join(["\t - {}".format(a)
                                   for a in self.action_names])
-        raise Exception(
+        raise NameError(
                 "Can not access action '{}', "
                 "as that name is not a registered action for this domain. "
                 "Available actions are: \n{}".format(action_name, action_names))
@@ -474,7 +479,7 @@ class Domain(object):
         if states != self.input_states:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
-            raise Exception(
+            raise InvalidDomain(
                     "Domain specification has changed. "
                     "You MUST retrain the policy. " +
                     "Detected mismatch in domain specification. " +
