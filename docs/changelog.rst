@@ -19,5 +19,6 @@ to:
 in files: server.yml, docs/connectors.rst, rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 
 - Change
-FROM username = user.get("user", None) to username = user.get("username", None) 
+FROM username = user.get("user", None) TO username = user.get("username", None) 
 in file rasa_core/blob/master/rasa_core/server.py#L93
+     - Rolled back: the change caused build server failed
