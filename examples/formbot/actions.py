@@ -39,7 +39,7 @@ class RestaurantForm(FormAction):
             - an extracted entity
             - intent: value pairs
             - a whole message
-            or a list of all of them, where a first match will be picked"""
+            or a list of them, where a first match will be picked"""
 
         return {"cuisine": self.from_entity(entity="cuisine",
                                             intent="inform"),
