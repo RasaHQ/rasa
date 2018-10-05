@@ -41,12 +41,9 @@ class RestaurantForm(FormAction):
             - a whole message
             or a list of all of them, where a first match will be picked"""
 
-        return {"cuisine": self.from_entity(entity="cuisine"),
-                "num_people": [self.from_entity(entity="number",
-                                                intent="inform"),
-                               self.from_intent(intent='deny',
-                                                value="number of people "
-                                                      "not known")],
+        return {"cuisine": self.from_entity(entity="cuisine",
+                                            intent="inform"),
+                "num_people": self.from_entity(entity="number"),
                 "outdoor_seating": [self.from_entity(entity="seating"),
                                     self.from_intent(intent='affirm',
                                                      value=True),
