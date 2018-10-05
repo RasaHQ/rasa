@@ -145,6 +145,5 @@ A trained model from Chinese Wikipedia Dump and Baidu Baike can be `crownpku <ht
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+
 

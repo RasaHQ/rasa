@@ -85,5 +85,3 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    changelog
    support
 
-.. raw:: html
-   :file: livechat.html   

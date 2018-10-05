@@ -662,5 +662,4 @@ ner_duckling_http
 		  
 .. include:: feedback.inc		  
 		  
-.. raw:: html
-   :file: livechat.html
+
