@@ -328,11 +328,11 @@ class DataRouter(object):
         if not project:
             raise InvalidProjectError("Missing project name to train")
 
+        if self._training_processes <= self._current_training_processes:
+            raise MaxTrainingError
+
         if project in self.project_store:
-            if self._training_processes <= self._current_training_processes:
-                raise MaxTrainingError
-            else:
-                self.project_store[project].status = 1
+            self.project_store[project].status = 1
         elif project not in self.project_store:
             self.project_store[project] = Project(
                     self.component_builder, project,

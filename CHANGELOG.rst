@@ -20,6 +20,10 @@ Removed
 
 Fixed
 -----
+- ``rasa_nlu.server`` allowed more than ``max_training_processes``
+  to be trained if they belong to different projects.
+  ``max_training_processes`` is now a global parameter, regardless of what
+  project the training process belongs to.
 
 [0.13.6] - 2018-10-04
 ^^^^^^^^^^^^^^^^^^^^^
