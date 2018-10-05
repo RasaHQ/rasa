@@ -102,8 +102,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
     def _append_current_state(self):
         # type: () -> None
 
-        state = self.domain.get_active_states(self)
-        self._states.append(frozenset(state.items()))
+        if self._states is None:
+            self._states = self.past_states(self.domain)
+        else:
+            state = self.domain.get_active_states(self)
+            self._states.append(frozenset(state.items()))
 
     def update(self, event, skip_states=False):
         # type: (Event, bool) -> None
@@ -115,8 +118,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         if self._states is None and not skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
-            self._states = super(TrackerWithCachedStates, self).past_states(
-                    self.domain)
+            self._states = self.past_states(self.domain)
 
         super(TrackerWithCachedStates, self).update(event)
 
