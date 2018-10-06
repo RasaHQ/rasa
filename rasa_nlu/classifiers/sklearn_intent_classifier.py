@@ -58,9 +58,8 @@ class SklearnIntentClassifier(Component):
         # C parameter of the svm - cross validation will select the best value
         "C": [1, 2, 5, 10, 20, 100],
 
-        # gamma parameter of the svm - cross validation will
-        # select the best value
-        "gamma": [0.00001, 0.0001, 0.001, 0.1, 1, 10, 100, 1000],
+        # gamma parameter of the svm
+        "gamma": [0.1],
 
         # the kernels to use for the svm training - cross validation will
         # decide which one of them performs best
