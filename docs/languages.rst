@@ -4,11 +4,73 @@
 Language Support
 ================
 
-Rasa NLU can be used to understand any language, but some backends are 
-restricted to specific languages.
+**You can use Rasa NLU to build assistants in any language you want!** The 
+``tensorflow_embedding`` pipeline can be used for **any language** because
+it trains custom word embeddings for your domain. Read more about this
+pipeline in :ref:`choosing_pipeline`.
 
-The ``tensorflow_embedding`` pipeline can be used for any language, because
-it trains custom word embeddings for your domain.
+Other backends have some restrictions and support those languages
+which have pre-trained word vectors available.
+
+Training a model in any language using the tensorflow_embedding pipeline
+------------------------------------------------------------------------
+To train the Rasa NLU model in your preferred language you have to define the 
+tensorflow_embedding pipeline and save it as a yaml file inside your project directory.
+One way to define the pipeline configuration is to use a template configuration: 
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "tensorflow_embedding"
+	
+Another way is to define a custom configuration by listing all components you would like your pipeline to use.
+The tensorflow pipeline supports any language that can be tokenized. The default is to use a simple 
+whitespace tokenizer:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "tokenizer_whitespace"
+    - name: "ner_crf"
+    - name: "ner_synonyms"
+    - name: "intent_featurizer_count_vectors"
+    - name: "intent_classifier_tensorflow_embedding"
+
+If your chosen language cannot be tokenized using the whitespace you can use your own custom tokenizer 
+and use it instead of the whitespace tokenizer.
+
+After you define the ``tensorflow_embedding`` processing pipeline you are good to generate some NLU training 
+examples in your chosen language and train the model. For example, if you wanted to build an assistant 
+in Norwegian, then your NLU data examples could look something like this:
+
+.. code-block:: md
+
+    ## intent:hallo
+    - Hallo!
+    - Hei
+    - Lenge siden sist.
+    - God morgen
+
+    ## intent:farvel
+    - Ha det!
+    - På Gjensyn
+    - Ses i morgen.
+	
+Let's say you saved training examples as nlu_data.md and one of the pipeline configuration examples mentioned above as config.yml,
+then you can train the model by running:
+
+.. code-block:: console
+
+    $ python -m rasa_nlu.train \
+        --config config.yml \
+        --data nlu_data/ \
+        --path projects
+		
+Once the training is finished, you can test your model's Norwegian language skills.
+
 
 Pre-trained Word Vectors
 ------------------------
@@ -83,6 +145,5 @@ A trained model from Chinese Wikipedia Dump and Baidu Baike can be `crownpku <ht
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+
 

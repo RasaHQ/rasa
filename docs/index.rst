@@ -55,8 +55,8 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    :hidden:
 
    choosing_pipeline
-   entities
    languages
+   entities
    evaluation
    fallback
    faq
@@ -85,5 +85,3 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    changelog
    support
 
-.. raw:: html
-   :file: livechat.html   

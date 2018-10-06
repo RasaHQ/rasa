@@ -178,5 +178,4 @@ This will unload a model from the server memory
 
 .. include:: feedback.inc
 	
-.. raw:: html
-   :file: livechat.html
+

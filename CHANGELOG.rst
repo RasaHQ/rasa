@@ -20,6 +20,26 @@ Removed
 
 Fixed
 -----
+- ``rasa_nlu.server`` allowed more than ``max_training_processes``
+  to be trained if they belong to different projects.
+  ``max_training_processes`` is now a global parameter, regardless of what
+  project the training process belongs to.
+
+[0.13.6] - 2018-10-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- ``boto3`` is now loaded lazily in ``AWSPersistor`` and is not
+  included in ``requirements_bare.txt`` anymore
+
+Fixed
+-----
+- Allow training of pipelines containing ``EmbeddingIntentClassifier`` in
+  a separate thread on python 3. This makes http server calls to ``/train``
+  non-blocking
+- require ``scikit-learn<0.20`` in setup py to avoid corrupted installations
+  with the most recent scikit learn
 
 
 [0.13.5] - 2018-09-28

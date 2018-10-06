@@ -7,6 +7,8 @@ import os
 
 import mock
 import pytest
+import boto3
+import botocore
 from moto import mock_s3
 
 from tests import utilities

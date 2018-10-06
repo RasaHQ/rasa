@@ -159,5 +159,4 @@ using Rasa NLU in general, post your questions on `Rasa Community Forum <https:/
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

@@ -135,5 +135,4 @@ Some extractors, like ``duckling``, may include additional information. For exam
 
 .. include:: feedback.inc
 	
-.. raw:: html
-   :file: livechat.html
+
