@@ -66,5 +66,4 @@ The full list of options for the evaluation script is:
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

@@ -33,6 +33,30 @@ Fixed
 - use utf8 everywhere when handling file IO
 - argument ``--connector`` on run script accepts custom channel module names
 - properly handle non ascii categorical slot values, e.g. ``大于100亿元``
+- fixed HTTP server attempting to authenticate based on incorrect path to the correct JWT data field
+
+[0.11.11] - 2018-10-05
+^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Add missing name() to facebook Messenger class
+
+
+[0.11.10] - 2018-10-05
+^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- backport fix to JWT schema
+
+
+[0.11.9] - 2018-10-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- pin tensorflow 1.10.0
 
 [0.11.8] - 2018-09-28
 ^^^^^^^^^^^^^^^^^^^^^

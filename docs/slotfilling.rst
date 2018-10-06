@@ -215,5 +215,4 @@ like ``MyCustomFormField`` and overriding the ``validate()`` method.
 
 .. include:: feedback.inc 
 
-.. raw:: html
-   :file: livechat.html
+
