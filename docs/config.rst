@@ -136,5 +136,4 @@ By default CORS (cross-origin resource sharing) calls are not allowed. If you wa
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

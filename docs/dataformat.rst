@@ -318,5 +318,4 @@ To train a model with this data, pass the path to the directory to the train scr
 
 .. include:: feedback.inc	
 	
-.. raw:: html
-   :file: livechat.html	
+
