@@ -5,30 +5,29 @@ from __future__ import unicode_literals
 
 import argparse
 import io
-import json
 import logging
-import tempfile
+import re
 import warnings
-from builtins import str
+from typing import Optional, Text
 
+from builtins import str
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 
 from rasa_core import training
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.events import ActionExecuted
+from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.utils import AvailableEndpoints
+from rasa_core.utils import AvailableEndpoints, pad_list_to_size
 from rasa_nlu.evaluate import (
     plot_confusion_matrix,
-    get_evaluation_metrics)
-from rasa_nlu.evaluate import run_evaluation as run_nlu_evaluation
-from rasa_nlu.training_data import TrainingData
+    get_evaluation_metrics, get_intent_predictions, get_entity_predictions)
+from rasa_nlu.model import Interpreter
+from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.training_data.formats import MarkdownReader
-from rasa_nlu.training_data.formats.markdown import INTENT
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +87,18 @@ def create_argument_parser():
     return parser
 
 
+class EndToEndReader(MarkdownReader):
+    def _parse_item(self, line: Text) -> Optional[Message]:
+        """Parses an md list item line based on the current section type."""
+        item_regex = re.compile(r'\s*(.+?):\s*(.*)')
+        match = re.match(item_regex, line)
+        if match:
+            intent = match.group(1)
+            self.current_title = intent
+            example = match.group(2)
+            return self._parse_training_example(example)
+
+
 class WronglyPredictedAction(ActionExecuted):
     """The model predicted the wrong action.
 
@@ -107,6 +118,40 @@ class WronglyPredictedAction(ActionExecuted):
                                                     self.predicted_action)
 
 
+class WronglyClassifiedUserUtterance(UserUttered):
+    """The model predicted the wrong intent.
+
+    Mostly used to mark wrong predictions and be able to
+    dump them as stories."""
+
+    type_name = "wrong_utterance"
+
+    def __init__(self,
+                 text,
+                 correct_intent,
+                 predicted_intent,
+                 correct_entities=None,
+                 predicted_entities=None,
+                 timestamp=None):
+        self.correct_intent = {"name": correct_intent}
+        self.predicted_intent = predicted_intent
+        self.correct_entities = correct_entities
+        self.predicted_entities = predicted_entities
+        super(WronglyClassifiedUserUtterance, self).__init__(
+                text, self.correct_intent, timestamp=timestamp)
+
+    def as_story_string(self):
+        s = self.correct_intent.get("name")
+        if self.correct_intent["name"] != self.predicted_intent:
+            s += ("   <!-- predicted: {} -->"
+                  "").format(self.predicted_intent)
+        if self.correct_entities != self.predicted_entities:
+            s += ("   <!-- entities: {} - predicted: {} -->"
+                  "").format(self.correct_entities, self.predicted_entities)
+
+        return s
+
+
 def _generate_trackers(resource_name, agent, max_stories=None):
     story_graph = training.extract_story_graph(resource_name, agent.domain,
                                                agent.interpreter)
@@ -117,7 +162,8 @@ def _generate_trackers(resource_name, agent, max_stories=None):
     return g.generate()
 
 
-def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
+def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
+                             interpreter=None):
     processor = agent.create_processor()
 
     golds = []
@@ -128,6 +174,8 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
     partial_tracker = DialogueStateTracker.from_events(tracker.sender_id,
                                                        events[:1],
                                                        agent.domain.slots)
+
+    e2e_reader = EndToEndReader()
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
@@ -147,6 +195,50 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
                             "\n\n{}".format(partial_tracker.export_stories()))
             else:
                 partial_tracker.update(event)
+        elif interpreter is not None and isinstance(event, UserUttered):
+            message = e2e_reader._parse_item(event.text)
+
+            training_data = TrainingData([message])
+
+            intent_gold = message.get("intent")
+            intent_results = get_intent_predictions([intent_gold],
+                                                    interpreter,
+                                                    training_data)
+            predicted_intent = intent_results[0].prediction
+            predictions.append(predicted_intent)
+            golds.append(intent_gold)
+
+            entity_golds, predicted_entities = [], []
+
+            if training_data.entity_examples:
+                entities = training_data.entity_examples[0].get("entities")
+                entity_golds.extend([ent["entity"] for ent in entities])
+                golds.extend(entity_golds)
+
+                entity_results, _ = get_entity_predictions(interpreter,
+                                                           training_data)
+
+                predicted_entities.extend(
+                        [ent["entity"] for ent in entity_results[0]])
+
+                padded_entities = pad_list_to_size(predicted_entities,
+                                                   len(entity_golds),
+                                                   "None")
+                predictions.extend(padded_entities)
+
+            if predicted_intent != intent_gold or \
+                    predicted_entities != entity_golds:
+                partial_tracker.update(
+                        WronglyClassifiedUserUtterance(
+                                message.text, intent_gold, predicted_intent,
+                                entity_golds, predicted_entities)
+                )
+                if fail_on_prediction_errors:
+                    raise ValueError(
+                            "NLU model predicted a wrong intent. Failed Story:"
+                            " \n\n{}".format(partial_tracker.export_stories()))
+            else:
+                partial_tracker.update(event)
         else:
             partial_tracker.update(event)
 
@@ -155,7 +247,8 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
 
 def collect_story_predictions(completed_trackers,
                               agent,
-                              fail_on_prediction_errors=False):
+                              fail_on_prediction_errors=False,
+                              interpreter=None):
     """Test the stories from a file, running them through the stored model."""
 
     predictions = []
@@ -168,7 +261,8 @@ def collect_story_predictions(completed_trackers,
 
     for tracker in tqdm(completed_trackers):
         current_golds, current_predictions, predicted_tracker = \
-            _predict_tracker_actions(tracker, agent, fail_on_prediction_errors)
+            _predict_tracker_actions(tracker, agent,
+                                     fail_on_prediction_errors, interpreter)
 
         predictions.extend(current_predictions)
         golds.extend(current_golds)
@@ -207,63 +301,24 @@ def log_failed_stories(failed, failed_output):
                 f.write("\n\n")
 
 
-class EndToEndReader(MarkdownReader):
-    def reads(self, s, **kwargs):
-        """Read markdown string and create TrainingData object"""
-        self.__init__()
-        s = self._strip_comments(s)
-        for line in s.splitlines():
-            line = line.strip()
-            self._parse_item(line)
-        return TrainingData(self.training_examples, self.entity_synonyms,
-                            self.regex_features, self.lookup_tables)
-
-    def _parse_item(self, line):
-        """Parses an md list item line for intent examples."""
-        import re
-        item_regex = re.compile(r'\s*[-\*+]\s*(.+?):\s*(.*)')
-        match = re.match(item_regex, line)
-        if match:
-            self._set_current_section(INTENT, match.group(1))
-            parsed = self._parse_training_example(match.group(2))
-            self.training_examples.append(parsed)
-
-
-def extract_nlu_data(resource_name):
-    nlu_data_reader = EndToEndReader()
-    nlu_training_data = nlu_data_reader.read(resource_name)
-    tmpdir = tempfile.mkdtemp()
-    nlu_training_data.persist(tmpdir)
-    return tmpdir
-
-
-def run_e2e_evaluation(resource_name, agent,
-                       nlu_model_path,
-                       max_stories=None,
-                       out_file_stories=None):
-    """Run the combined evaluation of NLU intent examples and stories"""
-    nlu_data_path = extract_nlu_data(resource_name)
-    nlu_result = run_nlu_evaluation(nlu_data_path, nlu_model_path)
-    print(json.dumps(nlu_result, indent=2))
-
-    story_result = run_story_evaluation(resource_name,
-                                        agent,
-                                        max_stories,
-                                        out_file_stories)
-    print(json.dumps(story_result, indent=2))
-
-
 def run_story_evaluation(resource_name, agent,
+                         nlu_model_path=None,
                          max_stories=None,
                          out_file_stories=None,
                          out_file_plot=None,
-                         fail_on_prediction_errors=False):
+                         fail_on_prediction_errors=False,
+                         interpreter=None):
     """Run the evaluation of the stories, optionally plots the results."""
+
+    if nlu_model_path is not None:
+        interpreter = Interpreter.load(nlu_model_path)
+    else:
+        interpreter = None
 
     completed_trackers = _generate_trackers(resource_name, agent, max_stories)
 
     test_y, predictions, failed = collect_story_predictions(
-            completed_trackers, agent, fail_on_prediction_errors)
+            completed_trackers, agent, fail_on_prediction_errors, interpreter)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)
@@ -271,7 +326,8 @@ def run_story_evaluation(resource_name, agent,
                                                                  predictions)
 
     if out_file_plot:
-        plot_story_evaluation(report, precision, f1, accuracy, out_file_plot)
+        plot_story_evaluation(test_y, predictions, report, precision,
+                              f1, accuracy, out_file_plot)
 
     log_failed_stories(failed, out_file_stories)
 
@@ -339,11 +395,13 @@ if __name__ == '__main__':
                         interpreter=_interpreter)
 
     if cmdline_args.e2e:
-        run_e2e_evaluation(cmdline_args.stories,
-                           _agent,
-                           cmdline_args.nlu,
-                           cmdline_args.max_stories,
-                           cmdline_args.failed)
+        run_story_evaluation(cmdline_args.stories,
+                             _agent,
+                             cmdline_args.nlu,
+                             cmdline_args.max_stories,
+                             cmdline_args.failed,
+                             cmdline_args.output,
+                             cmdline_args.fail_on_prediction_errors)
     else:
         run_story_evaluation(cmdline_args.stories,
                              _agent,
