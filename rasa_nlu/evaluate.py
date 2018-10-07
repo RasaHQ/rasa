@@ -3,13 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import itertools
 import json
 import logging
 import shutil
 from collections import defaultdict
 from collections import namedtuple
 
-import itertools
 import numpy as np
 
 from rasa_nlu import training_data, utils, config
@@ -158,6 +158,9 @@ def log_evaluation_table(report, precision, f1, accuracy):  # pragma: no cover
 def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
+
+    targets = clean_intent_labels(targets)
+    predictions = clean_intent_labels(predictions)
 
     report = metrics.classification_report(targets, predictions)
     precision = metrics.precision_score(targets, predictions,
@@ -674,8 +677,17 @@ def run_evaluation(data_path, model,
                                                            confmat_filename,
                                                            intent_hist_filename)
 
+        predictions = [
+            {
+                "text": res.message,
+                "intent": res.target,
+                "predicted": res.prediction,
+                "confidence": res.confidence
+            } for res in intent_results
+        ]
+
         result['intent_evaluation'] = {
-            "predictions": intent_results,
+            "predictions": predictions,
             "report": report,
             "precision": precision,
             "f1_score": f1,
