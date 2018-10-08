@@ -88,6 +88,8 @@ def test_requesting_non_existent_tracker(app):
                                   "policy": None,
                                   "confidence": None,
                                   "name": "action_listen",
+                                  "policy": None,
+                                  "confidence": None,
                                   "timestamp": 1514764800}]
     assert content["latest_message"] == {"text": None,
                                          "intent": {},
