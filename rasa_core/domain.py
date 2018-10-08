@@ -28,6 +28,7 @@ from rasa_core.constants import REQUESTED_SLOT
 logger = logging.getLogger(__name__)
 
 PREV_PREFIX = 'prev_'
+ACTIVE_FORM_PREFIX = 'active_form_'
 
 
 class InvalidDomain(Exception):
@@ -417,7 +418,7 @@ class Domain(object):
         """Turns tracker's active form into a state name."""
         form = tracker.active_form
         if form is not None:
-            return {'active_form_{}'.format(form): 1.0}
+            return {ACTIVE_FORM_PREFIX + form: 1.0}
         else:
             return {}
 

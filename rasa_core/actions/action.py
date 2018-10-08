@@ -27,11 +27,14 @@ ACTION_RESTART_NAME = "action_restart"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
+ACTION_NO_FORM_VALIDATION_NAME = "action_no_form_validation"
+
 
 def default_actions():
     # type: () -> List[Action]
     """List default actions."""
-    return [ActionListen(), ActionRestart(), ActionDefaultFallback()]
+    return [ActionListen(), ActionRestart(),
+            ActionDefaultFallback(), ActionNoFormValidation()]
 
 
 def default_action_names():
@@ -191,6 +194,18 @@ class ActionDefaultFallback(Action):
                                   silent_fail=True)
 
         return [UserUtteranceReverted()]
+
+
+class ActionNoFormValidation(Action):
+    """Technical action that is predicted
+        if the form should not be validated"""
+
+    def name(self):
+        return ACTION_NO_FORM_VALIDATION_NAME
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import ActionReverted
+        return [ActionReverted()]
 
 
 class RemoteAction(Action):
