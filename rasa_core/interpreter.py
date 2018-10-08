@@ -5,12 +5,12 @@ from __future__ import unicode_literals
 
 import json
 import logging
-import re
-
 import os
+import re
+from typing import Text, List, Dict, Any
+
 import requests
 from builtins import str
-from typing import Text, List, Dict, Any
 
 from rasa_core import constants
 from rasa_core.utils import EndpointConfig
@@ -21,7 +21,7 @@ INTENT_MESSAGE_PREFIX = "/"
 
 
 class NaturalLanguageInterpreter(object):
-    def parse(self, text):
+    def parse(self, text, **kwargs):
         raise NotImplementedError(
                 "Interpreter needs to be able to parse "
                 "messages into structured output.")
@@ -182,7 +182,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                 and (text.find("{") == -1 or
                      text.find("[") < text.find("{")))
 
-    def parse(self, text):
+    def parse(self, text, **kwargs):
         """Parse a text message."""
 
         if self.is_using_deprecated_format(text):
@@ -218,7 +218,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    def parse(self, text):
+    def parse(self, text, **kwargs):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
@@ -274,14 +274,14 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         else:
             self.interpreter = None
 
-    def parse(self, text):
+    def parse(self, text, **kwargs):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        return self.interpreter.parse(text)
+        return self.interpreter.parse(text, **kwargs)
 
     def _load_interpreter(self):
         from rasa_nlu.model import Interpreter

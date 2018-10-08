@@ -25,7 +25,6 @@ from rasa_core.utils import AvailableEndpoints, pad_list_to_size
 from rasa_nlu.evaluate import (
     plot_confusion_matrix,
     get_evaluation_metrics, get_intent_predictions, get_entity_predictions)
-from rasa_nlu.model import Interpreter
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.training_data.formats import MarkdownReader
 
@@ -148,10 +147,10 @@ class WronglyClassifiedUserUtterance(UserUttered):
     def as_story_string(self):
         s = self.correct_intent.get("name")
         if self.correct_intent["name"] != self.predicted_intent:
-            s += ("   <!-- predicted: {} -->"
+            s += ("   <!-- predicted intent: {} -->"
                   "").format(self.predicted_intent)
         if self.correct_entities != self.predicted_entities:
-            s += ("   <!-- entities: {} - predicted: {} -->"
+            s += ("   <!-- entities: {} - predicted entities: {} -->"
                   "").format(self.correct_entities, self.predicted_entities)
 
         return s
@@ -341,7 +340,6 @@ def log_failed_stories(failed, failed_output):
 
 
 def run_story_evaluation(resource_name, agent,
-                         nlu_model_path=None,
                          max_stories=None,
                          out_file_stories=None,
                          out_file_plot=None,
@@ -349,18 +347,15 @@ def run_story_evaluation(resource_name, agent,
                          e2e=False):
     """Run the evaluation of the stories, optionally plots the results."""
 
-    if e2e and not nlu_model_path:
-        raise ""
-    elif e2e and nlu_model_path:
-        interpreter = Interpreter.load(nlu_model_path)
-    else:
-        interpreter = None
+    if e2e and not agent.interpreter:
+        raise ValueError("End-to-end evaluation of dialogue and NLU models "
+                         "requires `nlu_model_path` to be set.")
 
     completed_trackers = _generate_trackers(resource_name, agent, max_stories)
 
     test_y, predictions, failed = collect_story_predictions(
             completed_trackers, agent, fail_on_prediction_errors, e2e,
-            interpreter)
+            agent.interpreter)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)
@@ -438,7 +433,6 @@ if __name__ == '__main__':
 
     run_story_evaluation(cmdline_args.stories,
                          _agent,
-                         cmdline_args.nlu,
                          cmdline_args.max_stories,
                          cmdline_args.failed,
                          cmdline_args.output,
