@@ -204,7 +204,7 @@ def run_story_evaluation(resource_name, agent,
 
     test_y, predictions, failed, _ = collect_story_predictions(
             completed_trackers, agent, fail_on_prediction_errors)
-    num
+
     if out_file_plot:
         plot_story_evaluation(test_y, predictions, out_file_plot)
 
