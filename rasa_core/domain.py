@@ -89,7 +89,7 @@ class Domain(object):
     @classmethod
     def load(cls, filename):
         if not os.path.isfile(filename):
-            raise FileNotFoundError(
+            raise Exception(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(filename)))
         return cls.from_yaml(read_file(filename))
@@ -107,13 +107,12 @@ class Domain(object):
         additional_arguments = data.get("config", {})
         intent_properties = cls.collect_intent_properties(data.get("intents",
                                                                    {}))
-        actions = data.get("actions", []) + data.get("forms", [])
         return cls(
                 intent_properties,
                 data.get("entities", []),
                 slots,
                 utter_templates,
-                actions,
+                data.get("actions", []),
                 data.get("forms", []),
                 **additional_arguments
         )
@@ -204,13 +203,19 @@ class Domain(object):
 
         # only includes custom actions and utterance actions
         self.user_actions = action_names
-        # includes all actions (custom, utterance, and default actions)
+        # includes all actions (custom, utterance, default actions and forms)
         self.action_names = action.combine_user_with_default_actions(
-                action_names)
+                action_names) + self.form_names
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
         action.ensure_action_name_uniqueness(self.action_names)
+
+    @utils.lazyproperty
+    def user_actions_and_forms(self):
+        """Returns combination of user actions and forms"""
+
+        return self.user_actions + self.form_names
 
     @utils.lazyproperty
     def num_actions(self):
@@ -239,7 +244,7 @@ class Domain(object):
 
         return action.action_from_name(action_name,
                                        action_endpoint,
-                                       self.user_actions)
+                                       self.user_actions_and_forms)
 
     def action_for_index(self, index, action_endpoint):
         # type: (int, Optional[EndpointConfig]) -> Optional[Action]
@@ -251,7 +256,8 @@ class Domain(object):
             raise IndexError(
                     "Can not access action at index {}. "
                     "Domain has {} actions.".format(index, self.num_actions))
-        return self.action_for_name(self.action_names[index], action_endpoint)
+        return self.action_for_name(self.action_names[index],
+                                    action_endpoint)
 
     def actions(self, action_endpoint):
         return [self.action_for_name(name, action_endpoint)
@@ -502,10 +508,7 @@ class Domain(object):
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
-            # don't save forms to the actions in the domain yml to avoid action
-            # duplication
-            "actions": [a for a in self.user_actions if a not in
-                        self.form_names],  # class names of the actions
+            "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names
         }
 
