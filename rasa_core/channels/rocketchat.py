@@ -4,8 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-from flask import Blueprint, request, jsonify, make_response
 from typing import Text
+
+from flask import Blueprint, request, jsonify, make_response
 
 from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -27,7 +28,7 @@ class RocketChatBot(OutputChannel):
 
         for message_part in message.split("\n\n"):
             self.rocket.chat_post_message(message_part,
-                                          roomId=recipient_id)
+                                          room_id=recipient_id)
 
     def send_image_url(self, recipient_id, image_url):
         image_attachment = [{
@@ -36,12 +37,12 @@ class RocketChatBot(OutputChannel):
         }]
 
         return self.rocket.chat_post_message(None,
-                                             roomId=recipient_id,
+                                             room_id=recipient_id,
                                              attachments=image_attachment)
 
     def send_attachment(self, recipient_id, attachment, message=""):
         return self.rocket.chat_post_message(None,
-                                             roomId=recipient_id,
+                                             room_id=recipient_id,
                                              attachments=[attachment])
 
     @staticmethod
@@ -60,8 +61,11 @@ class RocketChatBot(OutputChannel):
             {"actions": self._convert_to_rocket_buttons(buttons)}]
 
         return self.rocket.chat_post_message(message,
-                                             roomId=recipient_id,
+                                             room_id=recipient_id,
                                              attachments=button_attachment)
+
+    def send_custom_message(self, recipient_id, elements):
+        return self.rocket.chat_post_message(None, room_id=recipient_id, attachments=elements)
 
 
 class RocketChatInput(InputChannel):
@@ -70,6 +74,15 @@ class RocketChatInput(InputChannel):
     @classmethod
     def name(cls):
         return "rocketchat"
+
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("user"),
+                   credentials.get("password"),
+                   credentials.get("server_url"))
 
     def __init__(self, user, password, server_url):
         # type: (Text, Text, Text) -> None
@@ -83,7 +96,8 @@ class RocketChatInput(InputChannel):
             output_channel = RocketChatBot(
                     self.user, self.password, self.server_url)
 
-            user_msg = UserMessage(text, output_channel, recipient_id)
+            user_msg = UserMessage(text, output_channel, recipient_id,
+                                   input_channel=self.name())
             on_new_message(user_msg)
 
     def blueprint(self, on_new_message):

@@ -74,15 +74,13 @@ class TrackerWithCachedStates(DialogueStateTracker):
     def init_copy(self):
         # type: () -> TrackerWithCachedStates
         """Create a new state tracker with the same initial values."""
-        from rasa_core.channels import UserMessage
-
-        return type(self)(UserMessage.DEFAULT_SENDER_ID,
+        return type(self)("",
                           self.slots.values(),
                           self._max_event_history,
                           self.domain)
 
-    def copy(self):
-        # type: () -> TrackerWithCachedStates
+    def copy(self, sender_id=""):
+        # type: (Text) -> TrackerWithCachedStates
         """Creates a duplicate of this tracker.
 
         A new tracker will be created and all events
@@ -92,6 +90,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # the states would be lost and we would need to recalculate them
 
         tracker = self.init_copy()
+        tracker.sender_id = sender_id
 
         for event in self.events:
             tracker.update(event, skip_states=True)
@@ -205,7 +204,7 @@ class TrainingDataGenerator(object):
         active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
         init_tracker = TrackerWithCachedStates(
-                UserMessage.DEFAULT_SENDER_ID,
+                "",
                 self.domain.slots,
                 max_event_history=self.config.tracker_limit,
                 domain=self.domain
@@ -449,14 +448,26 @@ class TrainingDataGenerator(object):
 
         events = step.explicit_events(self.domain)
 
+        trackers = []
         if events:  # small optimization
 
             # need to copy the tracker as multiple story steps
             # might start with the same checkpoint and all of them
             # will use the same set of incoming trackers
-            trackers = [tracker.copy() for tracker in incoming_trackers]
-        else:
-            trackers = []
+
+            for tracker in incoming_trackers:
+                # sender id is used to be able for a human to see where the
+                # messages and events for this tracker came from - to do this
+                # we concatenate the story block names of the blocks that
+                # contribute to the trackers events
+                if tracker.sender_id:
+                    if step.block_name not in tracker.sender_id.split(" > "):
+                        new_sender = tracker.sender_id + " > " + step.block_name
+                    else:
+                        new_sender = tracker.sender_id
+                else:
+                    new_sender = step.block_name
+                trackers.append(tracker.copy(new_sender))
 
         new_trackers = []
         for event in events:

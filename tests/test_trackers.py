@@ -20,7 +20,7 @@ from rasa_core.events import (
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.tracker_store import (
     TrackerStore)
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
@@ -30,6 +30,7 @@ domain = Domain.load("data/test_domains/default.yml")
 class MockRedisTrackerStore(RedisTrackerStore):
     def __init__(self, domain):
         self.red = fakeredis.FakeStrictRedis()
+        self.record_exp = None
         TrackerStore.__init__(self, domain)
 
 
@@ -193,8 +194,8 @@ def test_restart_event(default_domain):
     tracker.update(Restarted())
 
     assert len(tracker.events) == 5
-    assert tracker.follow_up_action is not None
-    assert tracker.follow_up_action == ACTION_LISTEN_NAME
+    assert tracker.followup_action is not None
+    assert tracker.followup_action == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
     assert len(list(tracker.generate_all_prior_trackers())) == 1
 
@@ -327,7 +328,7 @@ def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
     for tracker in trackers:
         out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
 
-        dumped = tracker.current_state(should_include_events=True)
+        dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
         utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
 
         restored_tracker = restore.load_tracker_from_json(out_path.strpath,
@@ -349,5 +350,70 @@ def test_read_json_dump(default_agent):
     assert restored_tracker.sender_id == "mysender"
     assert restored_tracker.events[-1].timestamp == 1517821726.211042
 
-    restored_state = restored_tracker.current_state(should_include_events=True)
+    restored_state = restored_tracker.current_state(
+            EventVerbosity.AFTER_RESTART)
     assert restored_state == tracker_json
+
+
+def test_current_state_after_restart(default_agent):
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(utils.read_file(tracker_dump))
+
+    tracker_json["events"].insert(3, {"event": "restart"})
+
+    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
+                                             tracker_json.get("events", []),
+                                             default_agent.domain.slots)
+
+    events_after_restart = [e.as_dict() for e in list(tracker.events)[4:]]
+
+    state = tracker.current_state(EventVerbosity.AFTER_RESTART)
+    assert state.get("events") == events_after_restart
+
+
+def test_current_state_all_events(default_agent):
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(utils.read_file(tracker_dump))
+
+    tracker_json["events"].insert(3, {"event": "restart"})
+
+    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
+                                             tracker_json.get("events", []),
+                                             default_agent.domain.slots)
+
+    evts = [e.as_dict() for e in tracker.events]
+
+    state = tracker.current_state(EventVerbosity.ALL)
+    assert state.get("events") == evts
+
+
+def test_current_state_no_events(default_agent):
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(utils.read_file(tracker_dump))
+
+    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
+                                             tracker_json.get("events", []),
+                                             default_agent.domain.slots)
+
+    state = tracker.current_state(EventVerbosity.NONE)
+    assert state.get("events") is None
+
+
+def test_current_state_applied_events(default_agent):
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(utils.read_file(tracker_dump))
+
+    # add some events that result in other events not being applied anymore
+    tracker_json["events"].insert(1, {"event": "restart"})
+    tracker_json["events"].insert(7, {"event": "rewind"})
+    tracker_json["events"].insert(8, {"event": "undo"})
+
+    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
+                                             tracker_json.get("events", []),
+                                             default_agent.domain.slots)
+
+    evts = [e.as_dict() for e in tracker.events]
+    applied_events = [evts[2], evts[9]]
+
+    state = tracker.current_state(EventVerbosity.APPLIED)
+    assert state.get("events") == applied_events

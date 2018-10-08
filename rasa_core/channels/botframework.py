@@ -138,6 +138,13 @@ class BotFrameworkInput(InputChannel):
     def name(cls):
         return "botframework"
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("app_id"), credentials.get("app_password"))
+
     def __init__(self, app_id, app_password):
         # type: (Text, Text) -> None
         """Create a Bot Framework input channel.
@@ -169,7 +176,8 @@ class BotFrameworkInput(InputChannel):
                                                postdata["serviceUrl"])
 
                     user_msg = UserMessage(postdata["text"], out_channel,
-                                           postdata["from"]["id"])
+                                           postdata["from"]["id"],
+                                           input_channel=self.name())
                     on_new_message(user_msg)
                 else:
                     logger.info("Not received message type")

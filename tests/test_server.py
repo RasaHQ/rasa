@@ -4,31 +4,21 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import json
-import os
-import signal
-import uuid
-from multiprocessing import Process
-
-import pytest
 from builtins import str
+
+import json
+import pytest
+import uuid
 from freezegun import freeze_time
-from pytest_localserver.http import WSGIServer
 
 import rasa_core
-from rasa_core import server, events, constants
+from rasa_core import events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.agent import Agent
-from rasa_core.channels import UserMessage
-from rasa_core.channels import CollectingOutputChannel
 from rasa_core.domain import Domain
 from rasa_core.events import (
     UserUttered, BotUttered, SlotSet, Event, ActionExecuted)
-from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.remote import RasaCoreClient
 from rasa_core.utils import EndpointConfig
-from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
 test_events = [
@@ -52,8 +42,19 @@ def app(core_server):
     return core_server.test_client()
 
 
+@pytest.fixture(scope="module")
+def secured_app(core_server_secured):
+    return core_server_secured.test_client()
+
+
 def test_root(app):
     response = app.get("http://dummy/")
+    content = response.get_data(as_text=True)
+    assert response.status_code == 200 and content.startswith("hello")
+
+
+def test_root_secured(secured_app):
+    response = secured_app.get("http://dummy/")
     content = response.get_data(as_text=True)
     assert response.status_code == 200 and content.startswith("hello")
 
@@ -84,7 +85,11 @@ def test_requesting_non_existent_tracker(app):
     assert content["slots"] == {"location": None, "cuisine": None}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [{"event": "action",
+                                  "policy": None,
+                                  "confidence": None,
                                   "name": "action_listen",
+                                  "policy": None,
+                                  "confidence": None,
                                   "timestamp": 1514764800}]
     assert content["latest_message"] == {"text": None,
                                          "intent": {},
@@ -203,3 +208,88 @@ def test_predict(http_app, app):
     response = app.post('/predict',
                         json=event_dicts)
     assert response.status_code == 200
+
+
+def test_list_conversations_with_jwt(secured_app):
+    # token generated with secret "core" and algorithm HS256
+    # on https://jwt.io/
+
+    # {"user": {"user": "testadmin", "role": "admin"}}
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
+                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
+    }
+    response = secured_app.get("/conversations",
+                               headers=jwt_header)
+    assert response.status_code == 200
+
+    # {"user": {"user": "testuser", "role": "user"}}
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
+                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
+    }
+    response = secured_app.get("/conversations",
+                               headers=jwt_header)
+    assert response.status_code == 403
+
+
+def test_get_tracker_with_jwt(secured_app):
+    # token generated with secret "core" and algorithm HS256
+    # on https://jwt.io/
+
+    # {"user": {"user": "testadmin", "role": "admin"}}
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
+                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
+    }
+    response = secured_app.get("/conversations/testadmin/tracker",
+                               headers=jwt_header)
+    assert response.status_code == 200
+
+    response = secured_app.get("/conversations/testuser/tracker",
+                               headers=jwt_header)
+    assert response.status_code == 200
+
+    # {"user": {"user": "testuser", "role": "user"}}
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
+                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
+    }
+    response = secured_app.get("/conversations/testadmin/tracker",
+                               headers=jwt_header)
+    assert response.status_code == 403
+
+    response = secured_app.get("/conversations/testuser/tracker",
+                               headers=jwt_header)
+    assert response.status_code == 200
+
+
+def test_list_conversations_with_token(secured_app):
+    response = secured_app.get("/conversations?token=rasa")
+    assert response.status_code == 200
+
+
+def test_list_conversations_with_wrong_token(secured_app):
+    response = secured_app.get("/conversations?token=Rasa")
+    assert response.status_code == 401
+
+
+def test_list_conversations_without_auth(secured_app):
+    response = secured_app.get("/conversations")
+    assert response.status_code == 401
+
+
+def test_list_conversations_with_wrong_jwt(secured_app):
+    jwt_header = {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
+                         "zdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIi"
+                         "wiaWF0IjoxNTE2MjM5MDIyfQ.qdrr2_a7Sd80gmCWjnDomO"
+                         "Gl8eZFVfKXA6jhncgRn-I"
+    }
+    response = secured_app.get("/conversations",
+                               headers=jwt_header)
+    assert response.status_code == 422

@@ -3,15 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from builtins import str
+
 import argparse
 import json
 import logging
 import warnings
+from difflib import SequenceMatcher
+from typing import Text, Optional, List, Tuple
 
-from builtins import str
-from typing import Text, Optional, List
-
-from rasa_core import utils, evaluate, constants
+from rasa_core import utils, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage, CollectingOutputChannel, console
@@ -20,6 +21,7 @@ from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.run import load_agent
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import AvailableEndpoints
 
 logger = logging.getLogger()  # get the root logger
 
@@ -57,11 +59,47 @@ def _check_prediction_aligns_with_story(last_prediction,
     # type: (List[Text], List[Text]) -> None
     """Emit a warning if predictions do not align with expected actions."""
 
-    p, a = evaluate.align_lists(last_prediction, actions_between_utterances)
+    p, a = align_lists(last_prediction, actions_between_utterances)
     if p != a:
         warnings.warn("Model predicted different actions than the "
                       "model used to create the story! Expected: "
                       "{} but got {}.".format(p, a))
+
+
+def align_lists(predictions, golds):
+    # type: (List[Text], List[Text]) -> Tuple[List[Text], List[Text]]
+    """Align two lists trying to keep same elements at the same index.
+
+    If lists contain different items at some indices, the algorithm will
+    try to find the best alignment and pad with `None`
+    values where necessary."""
+
+    padded_predictions = []
+    padded_golds = []
+    s = SequenceMatcher(None, predictions, golds)
+
+    for tag, i1, i2, j1, j2 in s.get_opcodes():
+        padded_predictions.extend(predictions[i1:i2])
+        padded_predictions.extend(["None"] * ((j2 - j1) - (i2 - i1)))
+
+        padded_golds.extend(golds[j1:j2])
+        padded_golds.extend(["None"] * ((i2 - i1) - (j2 - j1)))
+
+    return padded_predictions, padded_golds
+
+
+def actions_since_last_utterance(tracker):
+    # type: (DialogueStateTracker) -> List[Text]
+    """Extract all events after the most recent utterance from the user."""
+
+    actions = []
+    for e in reversed(tracker.events):
+        if isinstance(e, UserUttered):
+            break
+        elif isinstance(e, ActionExecuted):
+            actions.append(e.action_name)
+    actions.reverse()
+    return actions
 
 
 def replay_events(tracker, agent):
@@ -93,7 +131,7 @@ def replay_events(tracker, agent):
                 console.print_bot_output(m)
 
             tracker = agent.tracker_store.retrieve(tracker.sender_id)
-            last_prediction = evaluate.actions_since_last_utterance(tracker)
+            last_prediction = actions_since_last_utterance(tracker)
 
         elif isinstance(event, ActionExecuted):
             actions_between_utterances.append(event.action_name)
@@ -122,7 +160,7 @@ def serve_application(model_directory,  # type: Text
                       ):
     from rasa_core import run
 
-    _endpoints = run.read_endpoints(endpoints)
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     nlu = NaturalLanguageInterpreter.create(nlu_model, _endpoints.nlu)
 
@@ -140,8 +178,8 @@ def serve_application(model_directory,  # type: Text
     tracker = load_tracker_from_json(tracker_dump,
                                      agent.domain)
 
-    run.start_cmdline_io(constants.DEFAULT_SERVER_URL, http_server.stop,
-                         sender_id=tracker.sender_id)
+    run.start_cmdline_io(constants.DEFAULT_SERVER_FORMAT.format(port),
+                         http_server.stop, sender_id=tracker.sender_id)
 
     replay_events(tracker, agent)
 

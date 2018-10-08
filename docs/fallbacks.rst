@@ -14,7 +14,7 @@ be executed if the intent recognition has a confidence below ``nlu_threshold``
 or if none of the dialogue policies predict an action with
 confidence higher than ``core_threshold``.
 
-The ``rasa_core.run`` scripts provides parameters to adjust these
+The ``rasa_core.train`` scripts provides parameters to adjust these
 thresholds:
 
 +-----------------------+------------------------------------------------------+
@@ -43,7 +43,7 @@ If you want to run this from python, use:
    agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
 
 
-``action_fallback`` is a default action in Rasa Core, which will send the
+``action_default_fallback`` is a default action in Rasa Core, which will send the
 ``utter_default`` template message to the user. Make sure to specify
 this template in your domain file. It will also revert back to the
 state of the conversation before the user message that caused the
@@ -67,3 +67,9 @@ called ``out_of_scope``, then you should add this as a story:
     ## fallback story
     * out_of_scope
       - action_default_fallback
+
+
+.. include:: feedback.inc
+
+
+   

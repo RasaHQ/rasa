@@ -3,12 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from flask import json
 import logging
 import os
 import tempfile
 import zipfile
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
+from flask_jwt_simple import JWTManager, view_decorators
 from functools import wraps
 from typing import List
 from typing import Text, Optional
@@ -16,16 +18,22 @@ from typing import Union
 
 from rasa_core import utils, constants
 from rasa_core.channels import (
-    CollectingOutputChannel, UserMessage)
+    CollectingOutputChannel)
+from rasa_core.channels import UserMessage
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
+from rasa_core.utils import AvailableEndpoints
 from rasa_core.version import __version__
-from rasa_core.channels import UserMessage
-
 
 logger = logging.getLogger(__name__)
+
+
+def _docs(sub_url):
+    # type: (Text) -> Text
+    """Create a url to a subpart of the docs."""
+    return constants.DOCS_BASE_URL + sub_url
 
 
 def ensure_loaded_agent(agent):
@@ -35,10 +43,12 @@ def ensure_loaded_agent(agent):
         @wraps(f)
         def decorated(*args, **kwargs):
             if not agent.is_ready():
-                return Response(
-                        "No agent loaded. To continue processing, a model "
-                        "of a trained agent needs to be loaded.",
-                        status=503)
+                return error(
+                        503,
+                        "NoAgent",
+                        "No agent loaded. To continue processing, a "
+                        "model of a trained agent needs to be loaded.",
+                        help_url=_docs("/server.html#running-the-http-server"))
 
             return f(*args, **kwargs)
 
@@ -59,32 +69,111 @@ def request_parameters():
             raise
 
 
-def requires_auth(token=None):
-    # type: (Optional[Text]) -> function
+def requires_auth(app, token=None):
+    # type: (Flask, Optional[Text]) -> function
     """Wraps a request handler with token authentication."""
 
     def decorator(f):
+        def sender_id_from_args(f, args, kwargs):
+            argnames = utils.arguments_of(f)
+            try:
+                sender_id_arg_idx = argnames.index("sender_id")
+                if "sender_id" in kwargs:   # try to fetch from kwargs first
+                    return kwargs["sender_id"]
+                if sender_id_arg_idx < len(args):
+                    return args[sender_id_arg_idx]
+                return None
+            except ValueError:
+                return None
+
+        def sufficient_scope(*args, **kwargs):
+            jwt_data = view_decorators._decode_jwt_from_headers()
+            user = jwt_data.get("user", {})
+
+            username = user.get("user", None)
+            role = user.get("role", None)
+
+            if role == "admin":
+                return True
+            elif role == "user":
+                sender_id = sender_id_from_args(f, args, kwargs)
+                return sender_id is not None and username == sender_id
+            else:
+                return False
+
         @wraps(f)
         def decorated(*args, **kwargs):
             provided = request.args.get('token')
-            if token is None or provided == token:
+            # noinspection PyProtectedMember
+            if token is not None and provided == token:
                 return f(*args, **kwargs)
-            abort(401)
+            elif app.config.get('JWT_ALGORITHM') is not None:
+                if sufficient_scope(*args, **kwargs):
+                    return f(*args, **kwargs)
+                abort(error(
+                    403, "NotAuthorized", "User has insufficient permissions.",
+                    help_url=_docs("/server.html#security-considerations")))
+            elif token is None and app.config.get('JWT_ALGORITHM') is None:
+                # authentication is disabled
+                return f(*args, **kwargs)
+
+            abort(error(
+                    401, "NotAuthenticated", "User is not authenticated.",
+                    help_url=_docs("/server.html#security-considerations")))
 
         return decorated
 
     return decorator
 
 
+def error(status, reason, message, details=None, help_url=None):
+    return Response(
+            json.dumps({
+                "version": __version__,
+                "status": "failure",
+                "message": message,
+                "reason": reason,
+                "details": details or {},
+                "help": help_url,
+                "code": status}),
+            status=status,
+            content_type="application/json")
+
+
+def event_verbosity_parameter(default_verbosity):
+    event_verbosity_str = request.args.get(
+            'include_events', default=default_verbosity.name).upper()
+    try:
+        return EventVerbosity[event_verbosity_str]
+    except KeyError:
+        enum_values = ", ".join([e.name for e in EventVerbosity])
+        abort(error(404, "InvalidParameter",
+                    "Invalid parameter value for 'include_events'. "
+                    "Should be one of {}".format(enum_values),
+                    {"parameter": "include_events", "in": "query"}))
+
+
 def create_app(agent,
                cors_origins=None,  # type: Optional[Union[Text, List[Text]]]
                auth_token=None,  # type: Optional[Text]
+               jwt_secret=None,  # type: Optional[Text]
+               jwt_method="HS256",  # type: Optional[Text]
                ):
     """Class representing a Rasa Core HTTP server."""
 
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
     cors_origins = cors_origins or []
+
+    # Setup the Flask-JWT-Simple extension
+    if jwt_secret and jwt_method:
+        # since we only want to check signatures, we don't actually care
+        # about the JWT method and set the passed secret as either symmetric
+        # or asymmetric key. jwt lib will choose the right one based on method
+        app.config['JWT_SECRET_KEY'] = jwt_secret
+        app.config['JWT_PUBLIC_KEY'] = jwt_secret
+        app.config['JWT_ALGORITHM'] = jwt_method
+        JWTManager(app)
 
     if not agent.is_ready():
         logger.info("The loaded agent is not ready to be used yet "
@@ -115,11 +204,12 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/execute",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def execute_action(sender_id):
         request_params = request.get_json(force=True)
         action_to_execute = request_params.get("action", None)
+        verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
 
         try:
             out = CollectingOutputChannel()
@@ -129,25 +219,21 @@ def create_app(agent,
 
             # retrieve tracker and set to requested state
             tracker = agent.tracker_store.get_or_create_tracker(sender_id)
-            state = tracker.current_state(should_include_events=True)
+            state = tracker.current_state(verbosity)
             return jsonify({"tracker": state,
                             "messages": out.messages})
 
         except ValueError as e:
-            return Response(jsonify(error="".format(e)),
-                            status=400,
-                            content_type="application/json")
+            return error(400, "ValueError", e)
         except Exception as e:
             logger.exception(e)
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
+            return error(500, "ValueError",
+                         "Server failure. Error: {}".format(e))
 
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def append_event(sender_id):
         """Append a list of events to the state of a conversation"""
@@ -155,35 +241,43 @@ def create_app(agent,
         request_params = request.get_json(force=True)
         evt = Event.from_parameters(request_params)
         tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
+
         if evt:
             tracker.update(evt)
             agent.tracker_store.save(tracker)
+            return jsonify(tracker.current_state(verbosity))
         else:
             logger.warning(
                     "Append event called, but could not extract a "
                     "valid event. Request JSON: {}".format(request_params))
-        return jsonify(tracker.current_state(should_include_events=True))
+            return error(400, "InvalidParameter",
+                         "Couldn't extract a proper event from the request "
+                         "body.",
+                         {"parameter": "", "in": "body"})
 
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['PUT'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def replace_events(sender_id):
         """Use a list of events to set a conversations tracker to a state."""
 
         request_params = request.get_json(force=True)
+        verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
+
         tracker = DialogueStateTracker.from_dict(sender_id,
                                                  request_params,
                                                  agent.domain.slots)
         # will override an existing tracker with the same id!
         agent.tracker_store.save(tracker)
-        return jsonify(tracker.current_state(should_include_events=True))
+        return jsonify(tracker.current_state(verbosity))
 
     @app.route("/conversations",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     def list_trackers():
         if agent.tracker_store:
             return jsonify(list(agent.tracker_store.keys()))
@@ -193,41 +287,53 @@ def create_app(agent,
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     def retrieve_tracker(sender_id):
         """Get a dump of a conversations tracker including its events."""
 
         if not agent.tracker_store:
-            return Response("No tracker store available.",
-                            status=503)
+            return error(503, "NoTrackerStore",
+                         "No tracker store available. Make sure to configure "
+                         "a tracker store when starting the server.")
 
         # parameters
-        should_ignore_restarts = utils.bool_arg('ignore_restarts',
-                                                default=False)
-        should_include_events = utils.bool_arg('events',
-                                               default=True)
+        default_verbosity = EventVerbosity.AFTER_RESTART
+
+        # this is for backwards compatibility
+        if "ignore_restarts" in request.args:
+            ignore_restarts = utils.bool_arg('ignore_restarts', default=False)
+            if ignore_restarts:
+                default_verbosity = EventVerbosity.ALL
+
+        if "events" in request.args:
+            include_events = utils.bool_arg('events', default=True)
+            if not include_events:
+                default_verbosity = EventVerbosity.NONE
+
+        verbosity = event_verbosity_parameter(default_verbosity)
+
         until_time = request.args.get('until', None)
 
         # retrieve tracker and set to requested state
         tracker = agent.tracker_store.get_or_create_tracker(sender_id)
         if not tracker:
-            return Response("Could not retrieve tracker. Most likely "
-                            "because there is no domain set on the agent.",
-                            status=503)
+            return error(503,
+                         "NoDomain",
+                         "Could not retrieve tracker. Most likely "
+                         "because there is no domain set on the agent.")
 
         if until_time is not None:
             tracker = tracker.travel_back_in_time(float(until_time))
 
         # dump and return tracker
-        state = tracker.current_state(
-                should_include_events=should_include_events,
-                should_ignore_restarts=should_ignore_restarts)
+
+        state = tracker.current_state(verbosity)
         return jsonify(state)
 
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def respond(sender_id):
         request_params = request_parameters()
@@ -237,10 +343,10 @@ def create_app(agent,
         elif 'q' in request_params:
             message = request_params.pop('q')
         else:
-            return Response(jsonify(error="Invalid respond parameter "
-                                          "specified."),
-                            status=400,
-                            mimetype="application/json")
+            return error(400,
+                         "InvalidParameter",
+                         "Missing the message parameter.",
+                         {"parameter": "query", "in": "query"})
 
         try:
             # Set the output channel
@@ -253,15 +359,13 @@ def create_app(agent,
 
         except Exception as e:
             logger.exception("Caught an exception during respond.")
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
+            return error(500, "ActionException",
+                         "Server failure. Error: {}".format(e))
 
     @app.route("/conversations/<sender_id>/predict",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def predict(sender_id):
         try:
@@ -271,51 +375,52 @@ def create_app(agent,
 
         except Exception as e:
             logger.exception("Caught an exception during prediction.")
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
+            return error(500, "PredictionException",
+                         "Server failure. Error: {}".format(e))
 
-    @app.route("/conversations/<sender_id>/messages", methods=['POST'])
+    @app.route("/conversations/<sender_id>/messages",
+               methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def log_message(sender_id):
         request_params = request.get_json(force=True)
         message = request_params.get("text")
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
+        verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
 
         # TODO: implement properly for agent / bot
         if sender != "user":
-            return Response(jsonify(error="Currently, only user messages can "
-                                          "be passed to this endpoint. "
-                                          "Messages of sender '{}' can not be "
-                                          "handled. ".format(sender)),
-                            status=500,
-                            content_type="application/json")
+            return error(500,
+                         "NotSupported",
+                         "Currently, only user messages can be passed "
+                         "to this endpoint. Messages of sender '{}' "
+                         "can not be handled. ".format(sender),
+                         {"parameter": "sender", "in": "body"})
 
         try:
             usermsg = UserMessage(message, None, sender_id, parse_data)
-            responses = agent.log_message(usermsg)
-            return jsonify(responses)
+            tracker = agent.log_message(usermsg)
+            return jsonify(tracker.current_state(verbosity))
 
         except Exception as e:
             logger.exception("Caught an exception while logging message.")
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
+            return error(500, "MessageException",
+                         "Server failure. Error: {}".format(e))
 
-    @app.route("/model", methods=['POST', 'OPTIONS'])
-    @requires_auth(auth_token)
+    @app.route("/model",
+               methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def load_model():
         """Loads a zipped model, replacing the existing one."""
 
         if 'model' not in request.files:
             # model file is missing
-            abort(400)
+            return error(400, "InvalidParameter",
+                         "You did not supply a model as part of your request.",
+                         {"parameter": "model", "in": "body"})
 
         model_file = request.files['model']
 
@@ -337,12 +442,12 @@ def create_app(agent,
         ensemble = PolicyEnsemble.load(model_directory)
         agent.policy_ensemble = ensemble
         logger.debug("Finished loading new agent.")
-        return jsonify({'success': 1})
+        return '', 204
 
     @app.route("/domain",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def get_domain():
         """Get current domain in yaml or json format."""
@@ -357,26 +462,34 @@ def create_app(agent,
                             status=200,
                             content_type="application/x-yml")
         else:
-            return Response(
-                    """Invalid accept header. Domain can be provided 
-                    as json ("Accept: application/json")  
-                    or yml ("Accept: application/x-yml"). 
-                    Make sure you've set the appropriate Accept header.""",
-                    status=406)
+            return error(406,
+                         "InvalidHeader",
+                         """Invalid accept header. Domain can be provided
+                            as json ("Accept: application/json")
+                            or yml ("Accept: application/x-yml").
+                            Make sure you've set the appropriate Accept 
+                            header.""")
 
     @app.route("/finetune",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
     def continue_training():
         request.headers.get("Accept")
         epochs = request.args.get("epochs", 30)
         batch_size = request.args.get("batch_size", 5)
         request_params = request.get_json(force=True)
-        tracker = DialogueStateTracker.from_dict(UserMessage.DEFAULT_SENDER_ID,
-                                                 request_params,
-                                                 agent.domain.slots)
+        sender_id = UserMessage.DEFAULT_SENDER_ID
+
+        try:
+            tracker = DialogueStateTracker.from_dict(sender_id,
+                                                     request_params,
+                                                     agent.domain.slots)
+        except Exception as e:
+            return error(400, "InvalidParameter",
+                         "Supplied events are not valid. {}".format(e),
+                         {"parameter": "", "in": "body"})
 
         try:
             # Fetches the appropriate bot response in a json format
@@ -387,41 +500,52 @@ def create_app(agent,
 
         except Exception as e:
             logger.exception("Caught an exception during prediction.")
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
+            return error(500, "TrainingException",
+                         "Server failure. Error: {}".format(e))
 
-    @app.route("/status", methods=['GET', 'OPTIONS'])
+    @app.route("/status",
+               methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
+    @requires_auth(app, auth_token)
     def status():
         return jsonify({
             "model_fingerprint": agent.fingerprint,
             "is_ready": agent.is_ready()
         })
 
-    @app.route("/predict", methods=['POST'])
-    @requires_auth(auth_token)
+    @app.route("/predict",
+               methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     @ensure_loaded_agent(agent)
     def tracker_predict():
         """ Given a list of events, predicts the next action"""
+
         sender_id = UserMessage.DEFAULT_SENDER_ID
         request_params = request.get_json(force=True)
-        for param in request_params:
-            if param.get('event', None) is None:
-                return Response(
-                    """Invalid list of events provided.""",
-                    status=400)
-        tracker = DialogueStateTracker.from_dict(sender_id,
-                                                 request_params,
-                                                 agent.domain.slots)
+        verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
+
+        try:
+            tracker = DialogueStateTracker.from_dict(sender_id,
+                                                     request_params,
+                                                     agent.domain.slots)
+        except Exception as e:
+            return error(400, "InvalidParameter",
+                         "Supplied events are not valid. {}".format(e),
+                         {"parameter": "", "in": "body"})
+
         policy_ensemble = agent.policy_ensemble
-        probabilities = policy_ensemble.probabilities_using_best_policy(tracker, agent.domain)
-        probability_dict = {agent.domain.action_for_index(idx, agent.action_endpoint).name(): probability
-                            for idx, probability in enumerate(probabilities)}
-        return jsonify(probability_dict)
+        probabilities, policy = policy_ensemble.probabilities_using_best_policy(
+                tracker, agent.domain)
+
+        scores = [{"action": a, "score": p}
+                  for a, p in zip(agent.domain.action_names, probabilities)]
+
+        return jsonify({
+            "scores": scores,
+            "policy": policy,
+            "tracker": tracker.current_state(verbosity)
+        })
 
     return app
 
@@ -446,7 +570,7 @@ if __name__ == '__main__':
 
     logger.info("Rasa process starting")
 
-    _endpoints = run.read_endpoints(cmdline_args.endpoints)
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
     _agent = run.load_agent(cmdline_args.core,
@@ -459,4 +583,6 @@ if __name__ == '__main__':
                           cmdline_args.credentials,
                           cmdline_args.cors,
                           cmdline_args.auth_token,
-                          cmdline_args.enable_api)
+                          cmdline_args.enable_api,
+                          cmdline_args.jwt_secret,
+                          cmdline_args.jwt_method)

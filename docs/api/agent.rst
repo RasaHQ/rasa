@@ -15,3 +15,7 @@ that lets you access most of Rasa Core's functionality.
     :members:
 
 
+.. include:: ../feedback.inc
+
+.. raw:: html
+   :file: ../livechat.html	

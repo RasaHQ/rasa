@@ -107,3 +107,8 @@ it is probably better to restructure your domain and/or intents:
     * affirm OR thankyou
       - action_handle_affirmation
 
+
+.. include:: feedback.inc 
+
+
+   

@@ -3,13 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import inspect
 import json
-from flask import Blueprint, jsonify, request, Flask, Response
 from multiprocessing import Queue
 from threading import Thread
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable
 
+from flask import Blueprint, jsonify, request, Flask, Response
+
 from rasa_core import utils
+from rasa_core.constants import DOCS_BASE_URL
 
 try:
     from urlparse import urljoin
@@ -28,7 +31,8 @@ class UserMessage(object):
                  text,  # type: Optional[Text]
                  output_channel=None,  # type: Optional[OutputChannel]
                  sender_id=None,  # type: Text
-                 parse_data=None  # type: Dict[Text, Any]
+                 parse_data=None,  # type: Dict[Text, Any]
+                 input_channel=None  # type: Text
                  ):
         # type: (...) -> None
 
@@ -43,6 +47,8 @@ class UserMessage(object):
             self.sender_id = sender_id
         else:
             self.sender_id = self.DEFAULT_SENDER_ID
+
+        self.input_channel = input_channel
 
         self.parse_data = parse_data
 
@@ -72,6 +78,10 @@ class InputChannel(object):
         """Every input channel needs a name to identify it."""
         return cls.__name__
 
+    @classmethod
+    def from_credentials(cls, credentials):
+        return cls()
+
     def url_prefix(self):
         return self.name()
 
@@ -83,6 +93,17 @@ class InputChannel(object):
         incoming routes it registered for."""
         raise NotImplementedError(
                 "Component listener needs to provide blueprint.")
+
+    @classmethod
+    def raise_missing_credentials_exception(cls):
+        raise Exception("To use the {} input channel, you need to "
+                        "pass a credentials file using '--credentials'. "
+                        "The argument should be a file path pointing to"
+                        "a yml file containing the {} authentication"
+                        "information. Details in the docs: "
+                        "{}/connectors/#{}-setup".
+                        format(cls.name(), cls.name(),
+                               DOCS_BASE_URL, cls.name()))
 
 
 class OutputChannel(object):
@@ -240,6 +261,9 @@ class QueueOutputChannel(CollectingOutputChannel):
         # type: (Queue) -> None
         self.messages = Queue() if not message_queue else message_queue
 
+    def latest_output(self):
+        raise NotImplemented("A queue doesn't allow to peek at messages.")
+
     def _persist_message(self, message):
         self.messages.put(message)
 
@@ -259,7 +283,8 @@ class RestInput(InputChannel):
     def on_message_wrapper(on_new_message, text, queue, sender_id):
         collector = QueueOutputChannel(queue)
 
-        message = UserMessage(text, collector, sender_id)
+        message = UserMessage(text, collector, sender_id,
+                              input_channel=RestInput.name())
         on_new_message(message)
 
         queue.put("DONE")
@@ -287,7 +312,9 @@ class RestInput(InputChannel):
                 yield json.dumps(response) + "\n"
 
     def blueprint(self, on_new_message):
-        custom_webhook = Blueprint('custom_webhook', __name__)
+        custom_webhook = Blueprint(
+                'custom_webhook_{}'.format(type(self).__name__),
+                inspect.getmodule(self).__name__)
 
         @custom_webhook.route("/", methods=['GET'])
         def health():
@@ -305,7 +332,8 @@ class RestInput(InputChannel):
                         content_type='text/event-stream')
             else:
                 collector = CollectingOutputChannel()
-                on_new_message(UserMessage(text, collector, sender_id))
+                on_new_message(UserMessage(text, collector, sender_id,
+                                           input_channel=self.name()))
                 return jsonify(collector.messages)
 
         return custom_webhook

@@ -13,6 +13,7 @@ from typing import Any, List, Text
 
 from rasa_core import utils
 from rasa_core.policies.policy import Policy
+from rasa_core.constants import FALLBACK_SCORE
 
 logger = logging.getLogger(__name__)
 
@@ -79,13 +80,19 @@ class FallbackPolicy(Policy):
         return (nlu_confidence < self.nlu_threshold and
                 last_action_name != self.fallback_action_name)
 
+    def fallback_scores(self, domain, fallback_score=FALLBACK_SCORE):
+        """Prediction scores used if a fallback is necessary."""
+
+        result = [0.0] * domain.num_actions
+        idx = domain.index_for_action(self.fallback_action_name)
+        result[idx] = fallback_score
+        return result
+
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
         """Predicts a fallback action if NLU confidence is low
             or no other policy has a high-confidence prediction"""
 
-        result = [0.0] * domain.num_actions
-        idx = domain.index_for_action(self.fallback_action_name)
         nlu_data = tracker.latest_message.parse_data
 
         # if NLU interpreter does not provide confidence score,
@@ -94,8 +101,10 @@ class FallbackPolicy(Policy):
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
 
         if tracker.latest_action_name == self.fallback_action_name:
+            result = [0.0] * domain.num_actions
             idx = domain.index_for_action('action_listen')
-            score = 1.1
+            result[idx] = FALLBACK_SCORE
+
         elif self.should_fallback(nlu_confidence, tracker.latest_action_name):
             logger.debug("NLU confidence {} is lower "
                          "than NLU threshold {}. "
@@ -104,14 +113,13 @@ class FallbackPolicy(Policy):
                                    self.fallback_action_name))
             # we set this to 1.1 to make sure fallback overrides
             # the memoization policy
-            score = 1.1
+            result = self.fallback_scores(domain)
         else:
             # NLU confidence threshold is met, so
             # predict fallback action with confidence `core_threshold`
             # if this is the highest confidence in the ensemble,
             # the fallback action will be executed.
-            score = self.core_threshold
-        result[idx] = score
+            result = self.fallback_scores(domain, self.core_threshold)
 
         return result
 
@@ -134,7 +142,6 @@ class FallbackPolicy(Policy):
         if os.path.exists(path):
             meta_path = os.path.join(path, "fallback_policy.json")
             if os.path.isfile(meta_path):
-                with io.open(meta_path) as f:
-                    meta = json.loads(f.read())
+                meta = json.loads(utils.read_file(meta_path))
 
         return cls(**meta)

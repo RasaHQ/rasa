@@ -150,8 +150,8 @@ class MemoizationPolicy(Policy):
          trackers_as_actions) = self.featurizer.training_states_and_actions(
                 training_trackers, domain)
         self._add(trackers_as_states, trackers_as_actions, domain)
-        logger.info("Memorized {} unique action examples."
-                    "".format(len(self.lookup)))
+        logger.debug("Memorized {} unique action examples."
+                     "".format(len(self.lookup)))
 
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
@@ -232,8 +232,7 @@ class MemoizationPolicy(Policy):
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
-            with io.open(memorized_file) as f:
-                data = json.loads(f.read())
+            data = json.loads(utils.read_file(memorized_file))
             return cls(featurizer=featurizer, lookup=data["lookup"])
         else:
             logger.info("Couldn't load memoization for policy. "
@@ -303,9 +302,9 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
             if old_states != states:
                 # check if we like new futures
-                logger.debug("Current tracker state {}".format(states))
                 memorised = self._recall_states(states)
                 if memorised is not None:
+                    logger.debug("Current tracker state {}".format(states))
                     return memorised
                 old_states = states
 
@@ -313,6 +312,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
 
         # No match found
+        logger.debug("Current tracker state {}".format(old_states))
         return None
 
     def recall(self,

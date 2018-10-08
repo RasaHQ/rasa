@@ -33,7 +33,7 @@ from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
-from rasa_core.trackers import DialogueStateTracker
+from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.utils import is_url
 
@@ -221,11 +221,11 @@ class Agent(object):
     def update_model(
             self,
             domain,  # type: Union[Text, Domain]
-            policies,  # type: Union[PolicyEnsemble, List[Policy], None]
+            policy_ensemble,  # type: PolicyEnsemble
             fingerprint  # type: Optional[Text]
     ):
         self.domain = domain
-        self.policy_ensemble = self._create_ensemble(policies)
+        self.policy_ensemble = policy_ensemble
 
         self._set_fingerprint(fingerprint)
 
@@ -301,7 +301,7 @@ class Agent(object):
         if not self.is_ready():
             return noop(message)  #
 
-        processor = self._create_processor(message_preprocessor)
+        processor = self.create_processor(message_preprocessor)
         return processor.handle_message(message)
 
     # noinspection PyUnusedLocal
@@ -313,7 +313,7 @@ class Agent(object):
         # type: (Text, Any) -> Dict[Text, Any]
         """Handle a single message."""
 
-        processor = self._create_processor()
+        processor = self.create_processor()
         return processor.predict_next(sender_id)
 
     # noinspection PyUnusedLocal
@@ -323,12 +323,11 @@ class Agent(object):
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
             **kwargs  # type: Any
     ):
-        # type: (...) -> Dict[Text, Any]
+        # type: (...) -> DialogueStateTracker
         """Append a message to a dialogue - does not predict actions."""
 
-        processor = self._create_processor(message_preprocessor)
-        tracker = processor.log_message(message)
-        return tracker.current_state(should_include_events=True)
+        processor = self.create_processor(message_preprocessor)
+        return processor.log_message(message)
 
     def execute_action(
             self,
@@ -339,7 +338,7 @@ class Agent(object):
         # type: (...) -> DialogueStateTracker
         """Handle a single message."""
 
-        processor = self._create_processor()
+        processor = self.create_processor()
         dispatcher = Dispatcher(sender_id,
                                 output_channel,
                                 self.nlg)
@@ -617,7 +616,7 @@ class Agent(object):
                                 "You need to set an interpreter, a policy "
                                 "ensemble as well as a tracker store.")
 
-    def _create_processor(self, preprocessor=None):
+    def create_processor(self, preprocessor=None):
         # type: (Optional[Callable[[Text], Text]]) -> MessageProcessor
         """Instantiates a processor based on the set state of the agent."""
         # Checks that the interpreter and tracker store are set and

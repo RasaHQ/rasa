@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+
 from flask import Blueprint, request, jsonify
 from telegram import (
     Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
@@ -46,14 +47,16 @@ class TelegramOutput(Bot, OutputChannel):
         """
         if button_type == "inline":
             button_list = [[InlineKeyboardButton(s["title"],
-                            callback_data=s["payload"]) for s in buttons]]
+                                                 callback_data=s["payload"])
+                            for s in buttons]]
             reply_markup = InlineKeyboardMarkup(button_list)
-            
+
         elif button_type == "vertical":
             button_list = [[InlineKeyboardButton(s["title"],
-                            callback_data=s["payload"])] for s in buttons]
+                                                 callback_data=s["payload"])]
+                           for s in buttons]
             reply_markup = InlineKeyboardMarkup(button_list)
-            
+
         elif button_type == "custom":
             button_list = []
             for bttn in buttons:
@@ -79,6 +82,15 @@ class TelegramInput(InputChannel):
     @classmethod
     def name(cls):
         return "telegram"
+
+    @classmethod
+    def from_credentials(cls, credentials):
+        if not credentials:
+            cls.raise_missing_credentials_exception()
+
+        return cls(credentials.get("access_token"),
+                   credentials.get("verify"),
+                   credentials.get("webhook_url"))
 
     def __init__(self, access_token, verify, webhook_url, debug_mode=True):
         self.access_token = access_token
@@ -115,7 +127,7 @@ class TelegramInput(InputChannel):
             else:
                 logger.warning("Webhook Setup Failed")
                 return "Invalid webhook"
-        
+
         @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
         def message():
             if request.method == 'POST':
@@ -143,13 +155,16 @@ class TelegramInput(InputChannel):
                 sender_id = msg.chat.id
                 try:
                     if text == '_restart' or text == '/restart':
-                        on_new_message(UserMessage(text, out_channel,
-                                                   sender_id))
-                        on_new_message(UserMessage('/start', out_channel,
-                                                   sender_id))
+                        on_new_message(UserMessage(
+                                text, out_channel, sender_id,
+                                input_channel=self.name()))
+                        on_new_message(UserMessage(
+                                '/start', out_channel, sender_id,
+                                input_channel=self.name()))
                     else:
-                        on_new_message(UserMessage(text, out_channel,
-                                                   sender_id))
+                        on_new_message(UserMessage(
+                                text, out_channel, sender_id,
+                                input_channel=self.name()))
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))

@@ -29,3 +29,7 @@ The steps are:
 
 
 The process is handled by the :class:`rasa_core.agent.Agent` class.
+
+
+.. include:: feedback.inc
+
