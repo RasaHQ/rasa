@@ -281,7 +281,10 @@ class TrainingDataGenerator(object):
                 pbar.set_postfix({"# trackers": "{:d}".format(
                         len(incoming_trackers))})
 
-                trackers = self._process_step(step, incoming_trackers)
+                trackers, end_trackers = self._process_step(step,
+                                                            incoming_trackers)
+                # append end trackers to finished trackers
+                finished_trackers.extend(end_trackers)
 
                 # update our tracker dictionary with the trackers
                 # that handled the events of the step and
@@ -441,7 +444,7 @@ class TrainingDataGenerator(object):
             step,  # type: StoryStep
             incoming_trackers  # type: List[TrackerWithCachedStates]
     ):
-        # type: (...) -> List[TrackerWithCachedStates]
+        # type: (...) -> TrackersTuple
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will
@@ -471,16 +474,18 @@ class TrainingDataGenerator(object):
                     new_sender = step.block_name
                 trackers.append(tracker.copy(new_sender))
 
-        new_trackers = []
+        end_trackers = []
         for event in events:
             for tracker in trackers:
-                if isinstance(event, (ActionReverted, UserUtteranceReverted)):
-                    new_trackers.append(tracker.copy())
+                if isinstance(event, (ActionReverted,
+                                      UserUtteranceReverted,
+                                      Restarted)):
+                    end_trackers.append(tracker.copy())
                 tracker.update(event)
 
-        trackers.extend(new_trackers)
-
-        return trackers
+        # end trackers should be returned separately
+        # to avoid using them for augmentation
+        return trackers, end_trackers
 
     def _remove_duplicate_trackers(self, trackers):
         # type: (List[TrackerWithCachedStates]) -> TrackersTuple
