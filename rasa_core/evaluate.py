@@ -88,8 +88,13 @@ def create_argument_parser():
 
 
 class EndToEndReader(MarkdownReader):
-    def _parse_item(self, line: Text) -> Optional[Message]:
-        """Parses an md list item line based on the current section type."""
+    def _parse_item(self, line):
+        # type: (Text) -> Optional[Message]
+        """Parses an md list item line based on the current section type.
+
+        Matches expressions of the form `<intent>:<example>. For the
+        syntax of <example> see the Rasa NLU docs on training data:
+        https://rasa.com/docs/nlu/dataformat/#markdown-format"""
         item_regex = re.compile(r'\s*(.+?):\s*(.*)')
         match = re.match(item_regex, line)
         if match:
@@ -119,7 +124,7 @@ class WronglyPredictedAction(ActionExecuted):
 
 
 class WronglyClassifiedUserUtterance(UserUttered):
-    """The model predicted the wrong intent.
+    """The NLU model predicted the wrong user utterance.
 
     Mostly used to mark wrong predictions and be able to
     dump them as stories."""
@@ -162,8 +167,82 @@ def _generate_trackers(resource_name, agent, max_stories=None):
     return g.generate()
 
 
+def _collect_user_uttered_predictions(e2e_reader, event, interpreter,
+                                      partial_tracker,
+                                      fail_on_prediction_errors):
+    predictions, golds = [], []
+    message = e2e_reader._parse_item(event.text)
+
+    training_data = TrainingData([message])
+
+    intent_gold = message.get("intent")
+    intent_results = get_intent_predictions([intent_gold],
+                                            interpreter,
+                                            training_data)
+    predicted_intent = intent_results[0].prediction
+    predictions.append(predicted_intent)
+    golds.append(intent_gold)
+
+    entity_golds, predicted_entities = [], []
+
+    if training_data.entity_examples:
+        entities = training_data.entity_examples[0].get("entities")
+        entity_golds.extend([ent["entity"] for ent in entities])
+        golds.extend(entity_golds)
+
+        entity_results, _ = get_entity_predictions(interpreter,
+                                                   training_data)
+
+        predicted_entities.extend(
+                [ent["entity"] for ent in entity_results[0]])
+
+        padded_entities = pad_list_to_size(predicted_entities,
+                                           len(entity_golds),
+                                           "None")
+        predictions.extend(padded_entities)
+
+    if predicted_intent != intent_gold or \
+            predicted_entities != entity_golds:
+        partial_tracker.update(
+                WronglyClassifiedUserUtterance(
+                        message.text, intent_gold, predicted_intent,
+                        entity_golds, predicted_entities)
+        )
+        if fail_on_prediction_errors:
+            raise ValueError(
+                    "NLU model predicted a wrong intent. Failed Story:"
+                    " \n\n{}".format(partial_tracker.export_stories()))
+    else:
+        partial_tracker.update(event)
+
+    return predictions, golds
+
+
+def _collect_action_executed_predictions(processor, partial_tracker, event,
+                                         fail_on_prediction_errors):
+    golds, predictions = [], []
+    action, _, _ = processor.predict_next_action(partial_tracker)
+
+    predicted = action.name()
+    gold = event.action_name
+
+    predictions.append(predicted)
+    golds.append(gold)
+
+    if predicted != gold:
+        partial_tracker.update(WronglyPredictedAction(gold, predicted))
+        if fail_on_prediction_errors:
+            raise ValueError(
+                    "Model predicted a wrong action. Failed Story: "
+                    "\n\n{}".format(partial_tracker.export_stories()))
+    else:
+        partial_tracker.update(event)
+
+    return golds, predictions
+
+
 def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
-                             interpreter=None):
+                             e2e=False, interpreter=None):
     processor = agent.create_processor()
 
     golds = []
@@ -179,66 +258,24 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action, _, _ = processor.predict_next_action(partial_tracker)
-
-            predicted = action.name()
-            gold = event.action_name
-
-            predictions.append(predicted)
-            golds.append(gold)
-
-            if predicted != gold:
-                partial_tracker.update(WronglyPredictedAction(gold, predicted))
-                if fail_on_prediction_errors:
-                    raise ValueError(
-                            "Model predicted a wrong action. Failed Story: "
-                            "\n\n{}".format(partial_tracker.export_stories()))
-            else:
-                partial_tracker.update(event)
-        elif interpreter is not None and isinstance(event, UserUttered):
-            message = e2e_reader._parse_item(event.text)
-
-            training_data = TrainingData([message])
-
-            intent_gold = message.get("intent")
-            intent_results = get_intent_predictions([intent_gold],
-                                                    interpreter,
-                                                    training_data)
-            predicted_intent = intent_results[0].prediction
-            predictions.append(predicted_intent)
-            golds.append(intent_gold)
-
-            entity_golds, predicted_entities = [], []
-
-            if training_data.entity_examples:
-                entities = training_data.entity_examples[0].get("entities")
-                entity_golds.extend([ent["entity"] for ent in entities])
-                golds.extend(entity_golds)
-
-                entity_results, _ = get_entity_predictions(interpreter,
-                                                           training_data)
-
-                predicted_entities.extend(
-                        [ent["entity"] for ent in entity_results[0]])
-
-                padded_entities = pad_list_to_size(predicted_entities,
-                                                   len(entity_golds),
-                                                   "None")
-                predictions.extend(padded_entities)
-
-            if predicted_intent != intent_gold or \
-                    predicted_entities != entity_golds:
-                partial_tracker.update(
-                        WronglyClassifiedUserUtterance(
-                                message.text, intent_gold, predicted_intent,
-                                entity_golds, predicted_entities)
+            action_executed_golds, action_executed_predictions = \
+                _collect_action_executed_predictions(
+                        processor, partial_tracker, event,
+                        fail_on_prediction_errors
                 )
-                if fail_on_prediction_errors:
-                    raise ValueError(
-                            "NLU model predicted a wrong intent. Failed Story:"
-                            " \n\n{}".format(partial_tracker.export_stories()))
-            else:
-                partial_tracker.update(event)
+
+            golds.extend(action_executed_golds)
+            predictions.extend(action_executed_predictions)
+
+        elif e2e and isinstance(event, UserUttered):
+            user_uttered_golds, user_uttered_predictions = \
+                _collect_user_uttered_predictions(
+                        e2e_reader, event, interpreter, partial_tracker,
+                        fail_on_prediction_errors
+                )
+
+            golds.extend(user_uttered_golds)
+            predictions.extend(user_uttered_predictions)
         else:
             partial_tracker.update(event)
 
@@ -248,6 +285,7 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
 def collect_story_predictions(completed_trackers,
                               agent,
                               fail_on_prediction_errors=False,
+                              e2e=False,
                               interpreter=None):
     """Test the stories from a file, running them through the stored model."""
 
@@ -262,7 +300,8 @@ def collect_story_predictions(completed_trackers,
     for tracker in tqdm(completed_trackers):
         current_golds, current_predictions, predicted_tracker = \
             _predict_tracker_actions(tracker, agent,
-                                     fail_on_prediction_errors, interpreter)
+                                     fail_on_prediction_errors, e2e,
+                                     interpreter)
 
         predictions.extend(current_predictions)
         golds.extend(current_golds)
@@ -307,10 +346,12 @@ def run_story_evaluation(resource_name, agent,
                          out_file_stories=None,
                          out_file_plot=None,
                          fail_on_prediction_errors=False,
-                         interpreter=None):
+                         e2e=False):
     """Run the evaluation of the stories, optionally plots the results."""
 
-    if nlu_model_path is not None:
+    if e2e and not nlu_model_path:
+        raise ""
+    elif e2e and nlu_model_path:
         interpreter = Interpreter.load(nlu_model_path)
     else:
         interpreter = None
@@ -318,7 +359,8 @@ def run_story_evaluation(resource_name, agent,
     completed_trackers = _generate_trackers(resource_name, agent, max_stories)
 
     test_y, predictions, failed = collect_story_predictions(
-            completed_trackers, agent, fail_on_prediction_errors, interpreter)
+            completed_trackers, agent, fail_on_prediction_errors, e2e,
+            interpreter)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)
@@ -394,20 +436,13 @@ if __name__ == '__main__':
     _agent = Agent.load(cmdline_args.core,
                         interpreter=_interpreter)
 
-    if cmdline_args.e2e:
-        run_story_evaluation(cmdline_args.stories,
-                             _agent,
-                             cmdline_args.nlu,
-                             cmdline_args.max_stories,
-                             cmdline_args.failed,
-                             cmdline_args.output,
-                             cmdline_args.fail_on_prediction_errors)
-    else:
-        run_story_evaluation(cmdline_args.stories,
-                             _agent,
-                             cmdline_args.max_stories,
-                             cmdline_args.failed,
-                             cmdline_args.output,
-                             cmdline_args.fail_on_prediction_errors)
+    run_story_evaluation(cmdline_args.stories,
+                         _agent,
+                         cmdline_args.nlu,
+                         cmdline_args.max_stories,
+                         cmdline_args.failed,
+                         cmdline_args.output,
+                         cmdline_args.fail_on_prediction_errors,
+                         cmdline_args.e2e)
 
     logger.info("Finished evaluation")
