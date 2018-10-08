@@ -280,6 +280,5 @@ There have been some API changes to classes and methods:
 
 .. include:: feedback.inc 
 
-.. raw:: html
-   :file: livechat.html
+
 
