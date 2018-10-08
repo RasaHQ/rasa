@@ -189,5 +189,4 @@ Documentation of the server API as
 
 .. include:: feedback.inc 
 
-.. raw:: html
-   :file: livechat.html
+
