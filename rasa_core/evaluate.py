@@ -241,7 +241,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
 
 
 def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
-                             e2e=False, interpreter=None):
+                             e2e=False):
     processor = agent.create_processor()
 
     golds = []
@@ -269,7 +269,7 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
         elif e2e and isinstance(event, UserUttered):
             user_uttered_golds, user_uttered_predictions = \
                 _collect_user_uttered_predictions(
-                        e2e_reader, event, interpreter, partial_tracker,
+                        e2e_reader, event, agent.interpreter, partial_tracker,
                         fail_on_prediction_errors
                 )
 
@@ -284,8 +284,7 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
 def collect_story_predictions(completed_trackers,
                               agent,
                               fail_on_prediction_errors=False,
-                              e2e=False,
-                              interpreter=None):
+                              e2e=False):
     """Test the stories from a file, running them through the stored model."""
 
     predictions = []
@@ -299,8 +298,7 @@ def collect_story_predictions(completed_trackers,
     for tracker in tqdm(completed_trackers):
         current_golds, current_predictions, predicted_tracker = \
             _predict_tracker_actions(tracker, agent,
-                                     fail_on_prediction_errors, e2e,
-                                     interpreter)
+                                     fail_on_prediction_errors, e2e)
 
         predictions.extend(current_predictions)
         golds.extend(current_golds)
@@ -354,8 +352,7 @@ def run_story_evaluation(resource_name, agent,
     completed_trackers = _generate_trackers(resource_name, agent, max_stories)
 
     test_y, predictions, failed = collect_story_predictions(
-            completed_trackers, agent, fail_on_prediction_errors, e2e,
-            agent.interpreter)
+            completed_trackers, agent, fail_on_prediction_errors, e2e)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)
