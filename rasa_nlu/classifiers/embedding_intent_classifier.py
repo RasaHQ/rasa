@@ -91,12 +91,12 @@ class EmbeddingIntentClassifier(Component):
         "num_neg": 20,
         # flag: if true, only minimize the maximum similarity for
         # incorrect intent labels
-        "use_max_sim_neg": True,  # flag which loss function to use
+        "use_max_sim_neg": True,
 
         # regularization parameters
         # the scale of L2 regularization
         "C2": 0.002,
-        # the scale of how critical the algorithm shouldbe of minimizing the
+        # the scale of how critical the algorithm should be of minimizing the
         # maximum similarity between embeddings of different intent labels
         "C_emb": 0.8,
         # dropout rate for rnn

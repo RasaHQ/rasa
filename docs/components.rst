@@ -327,8 +327,8 @@ intent_classifier_tensorflow_embedding
 
     The algorithm also has hyperparameters to control:
         - neural network's architecture:
-            - ``num_hidden_layers_a`` and ``hidden_layer_size_a`` set the number of hidden layers and their sizes before embedding layer for user inputs;
-            - ``num_hidden_layers_b`` and ``hidden_layer_size_b`` set the number of hidden layers and their sizes before embedding layer for intent labels;
+            - ``hidden_layers_sizes_a`` sets the number of hidden layers and their sizes before the embedding layer for user inputs;
+            - ``hidden_layers_sizes_b`` sets the number of hidden layers and their sizes before the embedding layer for intent labels;
         - training:
             - ``batch_size`` sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you'll need;
             - ``epochs`` sets the number of times the algorithm will see training data, where ``one epoch`` = one forward pass and one backward pass of all the training examples;
@@ -357,10 +357,8 @@ intent_classifier_tensorflow_embedding
         pipeline:
         - name: "intent_classifier_tensorflow_embedding"
           # nn architecture
-          "num_hidden_layers_a": 2
-          "hidden_layer_size_a": [256, 128]
-          "num_hidden_layers_b": 0
-          "hidden_layer_size_b": []
+          "hidden_layers_sizes_a": [256, 128]
+          "hidden_layers_sizes_b": []
           "batch_size": [64, 256]
           "epochs": 300
           # embedding parameters
@@ -374,7 +372,7 @@ intent_classifier_tensorflow_embedding
           "C2": 0.002
           "C_emb": 0.8
           "droprate": 0.2
-          # flag if to tokenize intents
+          # flag for tokenizing intents
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
           # visualization of accuracy
