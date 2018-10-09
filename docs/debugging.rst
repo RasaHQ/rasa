@@ -47,16 +47,19 @@ or made a mistake when extracting entities. If this is the case, you probably
 want to go and improve your NLU model.
 
 If any slots are set, those will show up in line ``6``.
-and in lines ``9-11`` we can see which policy was used to predict the next action.
-If this exact story was already in the training data and the :class:`MemoizationPolicy`
-is part of the ensemble, this will be used to predict the next action with probability 1.
+and in lines ``9-11`` we can see which policy was used to
+predict the next action.
+If this exact story was already in the training data and the
+``MemoizationPolicy`` is part of the ensemble, this will be used to predict
+the next action with probability 1.
 
-If all the slot and NLU information is correct but the wrong action is still predicted,
-you should check which policy was used to make the prediction. 
-If the prediction came from the :class:`MemoizationPolicy`, then there is an error in
-your stories. If a probabilistic policy like the :class:`KerasPolicy` was used,
-then your model just made a prediction that wasn't right. In that case 
-it is a good idea to run the bot with interactive learning switched on so you can
+If all the slot and NLU information is correct but the wrong action
+is still predicted, you should check which policy was used to make
+the prediction. If the prediction came from the ``MemoizationPolicy``,
+then there is an error in your stories. If a probabilistic policy
+like the ``KerasPolicy`` was used, then your model just made a
+prediction that wasn't right. In that case it is a good idea to run
+the bot with interactive learning switched on so you can
 create the relevant stories to add to your training data.
 
 

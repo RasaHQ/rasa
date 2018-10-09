@@ -62,6 +62,11 @@ source_suffix = ['.rst', '.ipynb']
 master_doc = 'index'
 
 nitpicky = True
+nitpick_ignore = [
+    ('py:class', 'List'),
+    # TODO: remove when https://github.com/sphinx-doc/sphinx/issues/5480 fixed
+    ('py:class', 'Domain'),
+]
 
 # General information about the project.
 project = u'Rasa Core'

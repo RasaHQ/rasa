@@ -89,6 +89,7 @@ The Rasa Core dialogue engine
    api/interpreter
    api/policy
    api/featurizer
+   api/dispatcher
 
 .. toctree::
    :maxdepth: 1

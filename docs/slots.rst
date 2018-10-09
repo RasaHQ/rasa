@@ -73,7 +73,7 @@ Slots Set By Clicking Buttons
 
 You can use buttons as a shortcut.
 Rasa Core will send messages starting with a ``/`` to the
-:class:`RegexInterpreter`, which expects NLU input in the same format
+``RegexInterpreter``, which expects NLU input in the same format
 as in story files, e.g. ``/intent{entities}``. For example, if you let
 users choose a color by clicking a button, the button payloads might
 be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``.
