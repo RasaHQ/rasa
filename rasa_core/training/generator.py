@@ -485,7 +485,7 @@ class TrainingDataGenerator(object):
                 if isinstance(event, (ActionReverted,
                                       UserUtteranceReverted,
                                       Restarted)):
-                    end_trackers.append(tracker.copy())
+                    end_trackers.append(tracker.copy(tracker.sender_id))
                 tracker.update(event)
 
         # end trackers should be returned separately
