@@ -217,8 +217,9 @@ def test_list_conversations_with_jwt(secured_app):
     # {"user": {"user": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZSI6ImF"
-                         "kbWluIn19.NAQr0kbtSrY7d28XTqRzawq2uQRre7IWTuIDrCn5AIw"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZ"
+                         "SI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2uQRre7IWT"
+                         "uIDrCn5AIw"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
@@ -242,8 +243,9 @@ def test_get_tracker_with_jwt(secured_app):
     # {"user": {"user": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZSI6ImF"
-                         "kbWluIn19.NAQr0kbtSrY7d28XTqRzawq2uQRre7IWTuIDrCn5AIw"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZ"
+                         "SI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2uQRre7IWT"
+                         "uIDrCn5AIw"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
