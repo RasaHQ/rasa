@@ -219,8 +219,7 @@ class StoryFileReader(object):
             event_name = m.group(1).strip()
             slots_str = m.group(2)
             parameters = StoryFileReader._parameters_from_json_string(
-                    slots_str,
-                    line)
+                    slots_str, line)
             return event_name, parameters
         else:
             warnings.warn("Failed to parse action line '{}'. "
@@ -273,9 +272,8 @@ class StoryFileReader(object):
                 return self.template_variables[varname]
             else:
                 raise ValueError("Unknown variable `{var}` "
-                                 "in template line '{line}'".format(
-                        var=varname,
-                        line=line))
+                                 "in template line '{line}'"
+                                 "".format(var=varname, line=line))
 
         template_rx = re.compile(r"`([^`]+)`")
         return template_rx.sub(process_match, line)
