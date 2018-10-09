@@ -232,7 +232,8 @@ class TrainingDataGenerator(object):
         # checkpoints that seem to be reachable. This is a heuristic,
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
-        while not everything_reachable_is_reached or phase < min_num_aug_phases:
+        while (not everything_reachable_is_reached or
+                phase < min_num_aug_phases):
             phase_name = self._phase_name(everything_reachable_is_reached,
                                           phase)
 
