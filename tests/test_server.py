@@ -214,7 +214,7 @@ def test_list_conversations_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
 
-    # {"user": {"user": "testadmin", "role": "admin"}}
+    # {"user": {"username": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
                          "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZ"
@@ -225,7 +225,7 @@ def test_list_conversations_with_jwt(secured_app):
                                headers=jwt_header)
     assert response.status_code == 200
 
-    # {"user": {"user": "testuser", "role": "user"}}
+    # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
                          "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
@@ -240,7 +240,7 @@ def test_get_tracker_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
 
-    # {"user": {"user": "testadmin", "role": "admin"}}
+    # {"user": {"username": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
                          "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZ"
@@ -255,11 +255,11 @@ def test_get_tracker_with_jwt(secured_app):
                                headers=jwt_header)
     assert response.status_code == 200
 
-    # {"user": {"user": "testuser", "role": "user"}}
+    # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
-                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb2xlIjoid"
+                         "XNlciJ9fQ.EPJ8zMVdQPqnNvM0zkTONS-M8ptfOv0kbqMZqcauYSI"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
