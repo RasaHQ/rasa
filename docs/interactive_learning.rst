@@ -137,6 +137,6 @@ stories to a file. Make sure to combine the dumped story with your original
 training data for the next training.
 
 
-.. include:: feedback.inc  
+.. include:: feedback.inc
 
 
