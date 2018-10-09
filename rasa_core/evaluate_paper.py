@@ -16,6 +16,8 @@ import numpy as np
 
 from rasa_core import utils
 from rasa_core.evaluate import collect_story_predictions
+from rasa_core.agent import Agent
+from rasa_core.evaluate import _generate_trackers
 from rasa_nlu import utils as nlu_utils
 
 logger = logging.getLogger(__name__)
@@ -60,9 +62,13 @@ def run_comparison_evaluation(models, stories, output):
         for model in sorted(nlu_utils.list_subdirectories(run)):
             logger.info("Evaluating model {}".format(model))
 
+            agent = Agent.load(model)
+
+            completed_trackers = _generate_trackers(stories, agent)
+
             actual, preds, failed_stories, no_of_stories = \
-                collect_story_predictions(stories,
-                                          model)
+                collect_story_predictions(completed_trackers,
+                                          agent)
             if 'keras' in model:
                 correct_keras.append(no_of_stories - len(failed_stories))
             elif 'embed' in model:
