@@ -59,7 +59,7 @@ def first_key(d, default_key):
 # noinspection PyProtectedMember
 class Event(object):
     """Events describe everything that occurs in
-    a conversation and tell the :class:`DialogueStateTracker`
+    a conversation and tell the :class:`rasa_core.trackers.DialogueStateTracker`
     how to update its state."""
 
     type_name = "event"
@@ -708,6 +708,7 @@ class ActionExecuted(Event):
     def __str__(self):
         return ("ActionExecuted(action: {}, policy: {}, confidence: {})"
                 "".format(self.action_name, self.policy, self.confidence))
+
 
     def __hash__(self):
         return hash(self.action_name)

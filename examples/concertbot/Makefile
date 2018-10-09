@@ -21,6 +21,6 @@ run-actions:
 train-core:
 	python train.py
 
-run-online:
+run-interactive:
 	make run-actions&
-	python train_online.py
+	python train_interactive.py

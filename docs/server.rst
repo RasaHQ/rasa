@@ -187,6 +187,6 @@ Documentation of the server API as
 .. apidoc::
    :path: ../_downloads/server.yml
 
-.. include:: feedback.inc 
+.. include:: feedback.inc
 
 
