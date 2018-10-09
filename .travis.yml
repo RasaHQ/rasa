@@ -30,15 +30,13 @@ jobs:
     after_success:
     - coveralls
   - stage: Test Docs
-    env:
-      # be strict about warnings --> they will be treated as errors
-      SPHINXBUILD=-W --keep-going -A html_theme=rasabaster
     install:
     - pip install -r docs-requirements.txt
     - pip install -e .
     - pip list
     script:
-    - cd docs && make html
+      # be strict about warnings --> they will be treated as errors
+    - cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
   - stage: build docs
     if: fork = false AND branch = "master"
     install:
