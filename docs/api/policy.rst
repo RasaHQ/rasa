@@ -15,6 +15,3 @@ A Policy decides what action to take at every step in a dialogue
 
 
 .. include:: ../feedback.inc
-
-.. raw:: html
-   :file: ../livechat.html
