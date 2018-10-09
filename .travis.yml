@@ -9,7 +9,6 @@ python:
 - '3.5'
 - '3.6'
 install:
-- sudo apt-get update
 - sudo apt-get install graphviz graphviz-dev
 - pip install -r dev-requirements.txt
 - pip install -e .
@@ -30,10 +29,19 @@ jobs:
     - swagger-cli validate docs/_static/spec/server.yml
     after_success:
     - coveralls
-  - stage: docs
+  - stage: Test Docs
+    env:
+      # be strict about warnings --> they will be treated as errors
+      SPHINXBUILD=-W --keep-going -A html_theme=rasabaster
+    install:
+    - pip install -r docs-requirements.txt
+    - pip install -e .
+    - pip list
+    script:
+    - cd docs && make html
+  - stage: build docs
     if: fork = false AND branch = "master"
     install:
-    - sudo apt-get update
     - pip install -r docs-requirements.txt
     - pip install -e .
     - pip list

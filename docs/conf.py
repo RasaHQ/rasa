@@ -61,6 +61,8 @@ source_suffix = ['.rst', '.ipynb']
 # The master toctree document.
 master_doc = 'index'
 
+nitpicky = True
+
 # General information about the project.
 project = u'Rasa Core'
 copyright = u'2018, Rasa Technologies GmbH'
