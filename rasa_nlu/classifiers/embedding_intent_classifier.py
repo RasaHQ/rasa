@@ -61,10 +61,13 @@ class EmbeddingIntentClassifier(Component):
 
     defaults = {
         # nn architecture
-        "num_hidden_layers_a": 2,
-        "hidden_layer_size_a": [256, 128],
-        "num_hidden_layers_b": 0,
-        "hidden_layer_size_b": [],
+        # nn architecture
+        # a list of hidden layers sizes before user embed layer
+        # number of hidden layers is equal to the length of this list
+        "hidden_layers_sizes_a": [256, 128],
+        # a list of hidden layers sizes before bot embed layer
+        # number of hidden layers is equal to the length of this list
+        "hidden_layers_sizes_b": [],
         "batch_size": [64, 256],
         "epochs": 300,
 
@@ -95,15 +98,15 @@ class EmbeddingIntentClassifier(Component):
         # type: () -> List[Text]
         return ["tensorflow"]
 
-    def _load_nn_architecture_params(self):
-        self.num_hidden_layers_a = self.component_config['num_hidden_layers_a']
-        self.hidden_layer_size_a = self.component_config['hidden_layer_size_a']
-        self.num_hidden_layers_b = self.component_config['num_hidden_layers_b']
-        self.hidden_layer_size_b = self.component_config['hidden_layer_size_b']
-        self.batch_size = self.component_config['batch_size']
+    def _load_nn_architecture_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.hidden_layer_sizes = {'a': config['hidden_layers_sizes_a'],
+                                   'b': config['hidden_layers_sizes_b']}
+
+        self.batch_size = config['batch_size']
         if not isinstance(self.batch_size, list):
             self.batch_size = [self.batch_size, self.batch_size]
-        self.epochs = self.component_config['epochs']
+        self.epochs = config['epochs']
 
     def _load_embedding_params(self):
         self.embed_dim = self.component_config['embed_dim']
@@ -135,38 +138,6 @@ class EmbeddingIntentClassifier(Component):
             self.evaluate_every_num_epochs = self.epochs
         self.evaluate_on_num_examples = self.component_config[
                                             'evaluate_on_num_examples']
-
-    @staticmethod
-    def _check_hidden_layer_sizes(num_layers, layer_size, name=''):
-        num_layers = int(num_layers)
-
-        if num_layers < 0:
-            logger.error("num_hidden_layers_{} = {} < 0."
-                         "Set it to 0".format(name, num_layers))
-            num_layers = 0
-
-        if isinstance(layer_size, list) and len(layer_size) != num_layers:
-            if len(layer_size) == 0:
-                raise ValueError("hidden_layer_size_{} = {} "
-                                 "is an empty list, "
-                                 "while num_hidden_layers_{} = {} > 0"
-                                 "".format(name, layer_size,
-                                           name, num_layers))
-
-            logger.error("The length of hidden_layer_size_{} = {} "
-                         "does not correspond to num_hidden_layers_{} "
-                         "= {}. Set hidden_layer_size_{} to "
-                         "the first element = {} for all layers"
-                         "".format(name, len(layer_size),
-                                   name, num_layers,
-                                   name, layer_size[0]))
-
-            layer_size = layer_size[0]
-
-        if not isinstance(layer_size, list):
-            layer_size = [layer_size for _ in range(num_layers)]
-
-        return num_layers, layer_size
 
     @staticmethod
     def _check_tensorflow():
@@ -296,14 +267,14 @@ class EmbeddingIntentClassifier(Component):
 
     # tf helpers:
     def _create_tf_embed_nn(self, x_in, is_training,
-                            num_layers, layer_size, name):
+                            layer_sizes, name):
         """Create embed nn for layer with name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         x = x_in
-        for i in range(num_layers):
+        for i, layer_size in enumerate(layer_sizes):
             x = tf.layers.dense(inputs=x,
-                                units=layer_size[i],
+                                units=layer_size,
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg,
                                 name='hidden_layer_{}_{}'.format(name, i))
@@ -319,12 +290,10 @@ class EmbeddingIntentClassifier(Component):
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(a_in, is_training,
-                                         self.num_hidden_layers_a,
-                                         self.hidden_layer_size_a,
+                                         self.hidden_layer_sizes['a'],
                                          name='a')
         emb_b = self._create_tf_embed_nn(b_in, is_training,
-                                         self.num_hidden_layers_b,
-                                         self.hidden_layer_size_b,
+                                         self.hidden_layer_sizes['b'],
                                          name='b')
         return emb_a, emb_b
 
