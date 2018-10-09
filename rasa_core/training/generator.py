@@ -14,7 +14,6 @@ from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple
 
 from rasa_core import utils
-from rasa_core.channels import UserMessage
 from rasa_core.events import (
     ActionExecuted, UserUttered,
     ActionReverted, UserUtteranceReverted, Restarted, Event)
