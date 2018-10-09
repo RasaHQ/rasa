@@ -6,5 +6,5 @@ pygments==2.2.0
 sphinxcontrib-httpdomain==1.6.1
 sphinxcontrib-websupport==1.1.0
 https://storage.googleapis.com/docs-theme/rasabaster-0.7.15.tar.gz
-git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+git+https://github.com/RasaHQ/sphinxcontrib-versioning.git#egg=sphinxcontrib-versioning
 git+https://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
