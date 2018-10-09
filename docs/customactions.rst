@@ -104,7 +104,7 @@ which might look like this:
          return "action_check_restaurants"
 
       def run(self, dispatcher, tracker, domain):
-         # type: (Dispatcher, DialogueStateTracker, Domain) -> List[Event]
+         # type: (Dispatcher, Tracker, Domain) -> List[Event]
 
          cuisine = tracker.get_slot('cuisine')
          q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
