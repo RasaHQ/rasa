@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import copy
 import logging
 import os
 from tqdm import tqdm
@@ -61,7 +62,6 @@ class EmbeddingIntentClassifier(Component):
 
     defaults = {
         # nn architecture
-        # nn architecture
         # a list of hidden layers sizes before user embed layer
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_a": [256, 128],
@@ -98,55 +98,6 @@ class EmbeddingIntentClassifier(Component):
         # type: () -> List[Text]
         return ["tensorflow"]
 
-    def _load_nn_architecture_params(self, config):
-        # type: (Dict[Text, Any]) -> None
-        self.hidden_layer_sizes = {'a': config['hidden_layers_sizes_a'],
-                                   'b': config['hidden_layers_sizes_b']}
-
-        self.batch_size = config['batch_size']
-        if not isinstance(self.batch_size, list):
-            self.batch_size = [self.batch_size, self.batch_size]
-        self.epochs = config['epochs']
-
-    def _load_embedding_params(self):
-        self.embed_dim = self.component_config['embed_dim']
-        self.mu_pos = self.component_config['mu_pos']
-        self.mu_neg = self.component_config['mu_neg']
-        self.similarity_type = self.component_config['similarity_type']
-        self.num_neg = self.component_config['num_neg']
-        self.use_max_sim_neg = self.component_config['use_max_sim_neg']
-
-    def _load_regularization_params(self):
-        self.C2 = self.component_config['C2']
-        self.C_emb = self.component_config['C_emb']
-        self.droprate = self.component_config['droprate']
-
-    def _load_flag_if_tokenize_intents(self):
-        self.intent_tokenization_flag = self.component_config[
-                                            'intent_tokenization_flag']
-        self.intent_split_symbol = self.component_config[
-                                        'intent_split_symbol']
-        if self.intent_tokenization_flag and not self.intent_split_symbol:
-            logger.warning("intent_split_symbol was not specified, "
-                           "so intent tokenization will be ignored")
-            self.intent_tokenization_flag = False
-
-    def _load_visual_params(self):
-        self.evaluate_every_num_epochs = self.component_config[
-                                            'evaluate_every_num_epochs']
-        if self.evaluate_every_num_epochs < 1:
-            self.evaluate_every_num_epochs = self.epochs
-        self.evaluate_on_num_examples = self.component_config[
-                                            'evaluate_on_num_examples']
-
-    @staticmethod
-    def _check_tensorflow():
-        if tf is None:
-            raise ImportError(
-                'Failed to import `tensorflow`. '
-                'Please install `tensorflow`. '
-                'For example with `pip install tensorflow`.')
-
     def __init__(self,
                  component_config=None,  # type: Optional[Dict[Text, Any]]
                  inv_intent_dict=None,  # type: Optional[Dict[int, Text]]
@@ -164,28 +115,7 @@ class EmbeddingIntentClassifier(Component):
         self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
-        # nn architecture parameters
-        self._load_nn_architecture_params()
-        # embedding parameters
-        self._load_embedding_params()
-        # regularization
-        self._load_regularization_params()
-        # flag if tokenize intents
-        self._load_flag_if_tokenize_intents()
-        # visualization of accuracy
-        self._load_visual_params()
-
-        # check if hidden_layer_sizes are valid
-        (self.num_hidden_layers_a,
-         self.hidden_layer_size_a) = self._check_hidden_layer_sizes(
-                                        self.num_hidden_layers_a,
-                                        self.hidden_layer_size_a,
-                                        name='a')
-        (self.num_hidden_layers_b,
-         self.hidden_layer_size_b) = self._check_hidden_layer_sizes(
-                                        self.num_hidden_layers_b,
-                                        self.hidden_layer_size_b,
-                                        name='b')
+        self._load_params()
 
         # transform numbers to intents
         self.inv_intent_dict = inv_intent_dict
@@ -202,6 +132,68 @@ class EmbeddingIntentClassifier(Component):
         # persisted embeddings
         self.word_embed = word_embed
         self.intent_embed = intent_embed
+
+    # init helpers
+    def _load_nn_architecture_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.hidden_layer_sizes = {'a': config['hidden_layers_sizes_a'],
+                                   'b': config['hidden_layers_sizes_b']}
+
+        self.batch_size = config['batch_size']
+        if not isinstance(self.batch_size, list):
+            self.batch_size = [self.batch_size, self.batch_size]
+        self.epochs = config['epochs']
+
+    def _load_embedding_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.embed_dim = config['embed_dim']
+        self.mu_pos = config['mu_pos']
+        self.mu_neg = config['mu_neg']
+        self.similarity_type = config['similarity_type']
+        self.num_neg = config['num_neg']
+        self.use_max_sim_neg = config['use_max_sim_neg']
+
+    def _load_regularization_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.C2 = config['C2']
+        self.C_emb = config['C_emb']
+        self.droprate = config['droprate']
+
+    def _load_flag_if_tokenize_intents(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.intent_tokenization_flag = config['intent_tokenization_flag']
+        self.intent_split_symbol = config['intent_split_symbol']
+        if self.intent_tokenization_flag and not self.intent_split_symbol:
+            logger.warning("intent_split_symbol was not specified, "
+                           "so intent tokenization will be ignored")
+            self.intent_tokenization_flag = False
+
+    def _load_visual_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
+        if self.evaluate_every_num_epochs < 1:
+            self.evaluate_every_num_epochs = self.epochs
+
+        self.evaluate_on_num_examples = config['evaluate_on_num_examples']
+
+    def _load_params(self, **kwargs):
+        # type: (Dict[Text, Any]) -> None
+        config = copy.deepcopy(self.defaults)
+        config.update(kwargs)
+
+        self._load_nn_architecture_params(config)
+        self._load_embedding_params(config)
+        self._load_regularization_params(config)
+        self._load_flag_if_tokenize_intents(config)
+        self._load_visual_params(config)
+
+    @staticmethod
+    def _check_tensorflow():
+        if tf is None:
+            raise ImportError(
+                'Failed to import `tensorflow`. '
+                'Please install `tensorflow`. '
+                'For example with `pip install tensorflow`.')
 
     # training data helpers:
     @staticmethod
