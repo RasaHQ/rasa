@@ -709,6 +709,7 @@ class ActionExecuted(Event):
         return ("ActionExecuted(action: {}, policy: {}, confidence: {})"
                 "".format(self.action_name, self.policy, self.confidence))
 
+
     def __hash__(self):
         return hash(self.action_name)
 
