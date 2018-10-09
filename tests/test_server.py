@@ -258,8 +258,9 @@ def test_get_tracker_with_jwt(secured_app):
     # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb2xlIjoid"
-                         "XNlciJ9fQ.EPJ8zMVdQPqnNvM0zkTONS-M8ptfOv0kbqMZqcauYSI"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJ"
+                         "yb2xlIjoidXNlciJ9fQ.EPJ8zMVdQPqnNvM0zkTO"
+                         "NS-M8ptfOv0kbqMZqcauYSI"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
