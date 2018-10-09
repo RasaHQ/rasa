@@ -62,11 +62,11 @@ class EmbeddingIntentClassifier(Component):
 
     defaults = {
         # nn architecture
-        # a list of hidden layers sizes before the embedding layer for input words
-        # number of hidden layers is equal to the length of this list
+        # sizes of hidden layers before the embedding layer for input words
+        # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_a": [256, 128],
-        # a list of hidden layers sizes before the embedding layer for intent labels
-        # number of hidden layers is equal to the length of this list
+        # sizes of hidden layers before the embedding layer for intent labels
+        # the number of hidden layers is thus equal to the length of this list
         "hidden_layers_sizes_b": [],
 
         # training parameters
@@ -89,14 +89,15 @@ class EmbeddingIntentClassifier(Component):
         # the number of incorrect intents, the algorithm will minimize
         # their similarity to the input words during training
         "num_neg": 20,
-        # flag: if true, only minimize the maximum similarity for incorrect intent labels
+        # flag: if true, only minimize the maximum similarity for
+        # incorrect intent labels
         "use_max_sim_neg": True,  # flag which loss function to use
 
         # regularization parameters
         # the scale of L2 regularization
         "C2": 0.002,
-        # the scale of how critical the algorithm should be of minimizing the maximum similarity
-        # between embeddings of different intent labels
+        # the scale of how critical the algorithm shouldbe of minimizing the
+        # maximum similarity between embeddings of different intent labels
         "C_emb": 0.8,
         # dropout rate for rnn
         "droprate": 0.2,
@@ -114,11 +115,6 @@ class EmbeddingIntentClassifier(Component):
         # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 1000  # large values may hurt performance
     }
-
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["tensorflow"]
 
     def __init__(self,
                  component_config=None,  # type: Optional[Dict[Text, Any]]
@@ -209,6 +205,12 @@ class EmbeddingIntentClassifier(Component):
         self._load_flag_if_tokenize_intents(config)
         self._load_visual_params(config)
 
+    # package safety checks
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["tensorflow"]
+
     @staticmethod
     def _check_tensorflow():
         if tf is None:
@@ -220,6 +222,7 @@ class EmbeddingIntentClassifier(Component):
     # training data helpers:
     @staticmethod
     def _create_intent_dict(training_data):
+        # type: (TrainingData) -> Dict[Text, Int]
         """Create intent dictionary"""
 
         distinct_intents = set([example.get("intent")
@@ -229,6 +232,7 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _create_intent_token_dict(intents, intent_split_symbol):
+        # type: (List[Text], Text) -> Dict[Text, Int]
         """Create intent token dictionary"""
 
         distinct_tokens = set([token
@@ -239,8 +243,9 @@ class EmbeddingIntentClassifier(Component):
                 for idx, token in enumerate(sorted(distinct_tokens))}
 
     def _create_encoded_intents(self, intent_dict):
-        """Create matrix with intents encoded in rows as bag of words,
-        if intent_tokenization_flag = False this is identity matrix"""
+        # type: Dict[Text, Int] -> np.ndarray
+        """Create matrix with intents encoded in rows as bag of words.
+           If intent_tokenization_flag is off, returns identity matrix"""
 
         if self.intent_tokenization_flag:
             intent_token_dict = self._create_intent_token_dict(
@@ -256,16 +261,15 @@ class EmbeddingIntentClassifier(Component):
         else:
             return np.eye(len(intent_dict))
 
-    # data helpers:
     def _create_all_Y(self, size):
-        # stack encoded_all_intents on top of each other
-        # to create candidates for training examples
-        # to calculate training accuracy
-        all_Y = np.stack([self.encoded_all_intents for _ in range(size)])
-
-        return all_Y
+        # type: (Int) -> np.ndarray
+        """Stack encoded_all_intents on top of each other
+            to create candidates for training examples
+            to calculate training accuracy"""
+        return np.stack([self.encoded_all_intents] * size)
 
     def _prepare_data_for_training(self, training_data, intent_dict):
+        # type: (TrainingData, Dict[Text, Int]) -> Tuple(np.ndarray, np.ndarray, np.ndarray)
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features")
@@ -282,7 +286,8 @@ class EmbeddingIntentClassifier(Component):
     # tf helpers:
     def _create_tf_embed_nn(self, x_in, is_training,
                             layer_sizes, name):
-        """Create embed nn for layer with name"""
+        # type: (tf.Tensor, Bool, List, Text) -> tf.Tensor
+        """Create nn with hidden layers and name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         x = x_in
@@ -301,6 +306,7 @@ class EmbeddingIntentClassifier(Component):
         return x
 
     def _create_tf_embed(self, a_in, b_in, is_training):
+        # type: (tf.Tensor, tf.Tensor, Bool) -> tf.Tensor
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(a_in, is_training,
@@ -312,25 +318,29 @@ class EmbeddingIntentClassifier(Component):
         return emb_a, emb_b
 
     def _tf_sim(self, a, b):
-        """Define similarity"""
+        # type: (tf.Tensor, tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]
+        """Define similarity in two cases:
+            sim: similarity between embedded words and embedded intent labels
+            sim_emb: similarity between individual embedded intent labels only"""
 
         if self.similarity_type == 'cosine':
+            # normalize embedding vectors for cosine similarity
             a = tf.nn.l2_normalize(a, -1)
             b = tf.nn.l2_normalize(b, -1)
 
-        if self.similarity_type == 'cosine' or self.similarity_type == 'inner':
+        if self.similarity_type in ['cosine', 'inner']:
             sim = tf.reduce_sum(tf.expand_dims(a, 1) * b, -1)
-
-            # similarity between intent embeddings
             sim_emb = tf.reduce_sum(b[:, 0:1, :] * b[:, 1:, :], -1)
 
             return sim, sim_emb
+
         else:
             raise ValueError("Wrong similarity type {}, "
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
     def _tf_loss(self, sim, sim_emb):
+        # type: (tf.Tensor, tf.Tensor) -> tf.Tensor
         """Define loss"""
 
         if self.use_max_sim_neg:
