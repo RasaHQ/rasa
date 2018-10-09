@@ -19,18 +19,18 @@ Stable (Most recent release)
 
 The recommended way to install Rasa Core is using pip:
 
-.. copyable:: 
+.. copyable::
 
     pip install rasa_core
 
 
 If you alredy have `rasa_core` installed and want to update it run:
 
-.. copyable:: 
+.. copyable::
 
     pip install -U rasa_core
 
-Unless you've already got numpy & scipy installed, we highly recommend 
+Unless you've already got numpy & scipy installed, we highly recommend
 that you install and use `Anaconda <https://www.continuum.io\/downloads>`_.
 
 .. note::
@@ -75,23 +75,23 @@ We use Rasa NLU for intent classification & entity extraction. To get it, run:
 Full instructions can be found
 `in the NLU documentation <https://rasa.com/docs/nlu/installation/>`_.
 
-You can also use other NLU services like wit.ai, dialogflow, or LUIS. 
+You can also use other NLU services like wit.ai, dialogflow, or LUIS.
 In fact, you don't need to use NLU at all, if your messaging app uses buttons
 rather than free text.
 
 Build your first Rasa assistant!
 --------------------------------
-After following the quickstart and installing Rasa Core, the next step is to 
-build your first Rasa assistant yourself! To get you started, we have prepared a 
-Rasa Stack starter-pack which has all the files you need to build your first custom 
-chatbot. On top of that, the starter-pack includes a training data set ready 
+After following the quickstart and installing Rasa Core, the next step is to
+build your first Rasa assistant yourself! To get you started, we have prepared a
+Rasa Stack starter-pack which has all the files you need to build your first custom
+chatbot. On top of that, the starter-pack includes a training data set ready
 for you to use.
 
 Click the linke below to get the Rasa Stack starter-pack:
 	
 `Rasa Stack starter-pack <https://github.com/RasaHQ/starter-pack-rasa-stack>`_
 	
-Let us know how you are getting on! If you have any questions about the starter-pack or 
+Let us know how you are getting on! If you have any questions about the starter-pack or
 using Rasa Stack in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!
 
 

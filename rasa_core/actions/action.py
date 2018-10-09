@@ -110,7 +110,7 @@ class Action(object):
         Args:
             dispatcher (Dispatcher): the dispatcher which is used to send
                 messages back to the user. Use ``dipatcher.utter_message()``
-                or any other :class:`Dispatcher` method.
+                or any other :class:`rasa_core.dispatcher.Dispatcher` method.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using
                 ``tracker.get_slot(slot_name)`` and the most recent user
@@ -118,7 +118,7 @@ class Action(object):
             domain (Domain): the bot's domain
 
         Returns:
-            List[Event]: A list of :class:`Event` instances
+            List[Event]: A list of :class:`rasa_core.events.Event` instances
         """
 
         raise NotImplementedError

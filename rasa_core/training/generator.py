@@ -14,7 +14,6 @@ from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple
 
 from rasa_core import utils
-from rasa_core.channels import UserMessage
 from rasa_core.events import (
     ActionExecuted, UserUttered,
     ActionReverted, UserUtteranceReverted, Restarted, Event)
@@ -89,7 +88,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # This is an optimization, we could use the original copy, but
         # the states would be lost and we would need to recalculate them
 
-        tracker = self.init_copy()
+        tracker = self.init_copy()  # type: TrackerWithCachedStates
         tracker.sender_id = sender_id
 
         for event in self.events:
@@ -214,9 +213,9 @@ class TrainingDataGenerator(object):
         active_trackers[STORY_START].append(init_tracker)
 
         # trackers that are sent to a featurizer
-        finished_trackers = []
+        finished_trackers = []  # type: List[TrackerWithCachedStates]
         # keep story end trackers separately for augmentation
-        story_end_trackers = []
+        story_end_trackers = []  # type: List[TrackerWithCachedStates]
 
         phase = 0  # one phase is one traversal of all story steps.
         min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
@@ -232,7 +231,8 @@ class TrainingDataGenerator(object):
         # checkpoints that seem to be reachable. This is a heuristic,
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
-        while not everything_reachable_is_reached or phase < min_num_aug_phases:
+        while (not everything_reachable_is_reached or
+                phase < min_num_aug_phases):
             phase_name = self._phase_name(everything_reachable_is_reached,
                                           phase)
 
@@ -247,7 +247,7 @@ class TrainingDataGenerator(object):
             pbar = tqdm(self.story_graph.ordered_steps(),
                         desc="Processed Story Blocks")
             for step in pbar:
-                incoming_trackers = []
+                incoming_trackers = []  # type: List[TrackerWithCachedStates]
                 for start in step.start_checkpoints:
                     if active_trackers[start.name]:
                         ts = start.filter_trackers(active_trackers[start.name])
@@ -260,7 +260,8 @@ class TrainingDataGenerator(object):
                         unused_checkpoints.add(start.name)
 
                 if not incoming_trackers:
-                    # if there are no trackers, we can skip the rest of the loop
+                    # if there are no trackers,
+                    # we can skip the rest of the loop
                     continue
 
                 # these are the trackers that reached this story
@@ -370,8 +371,11 @@ class TrainingDataGenerator(object):
         """Count the number of trackers in the tracker dictionary."""
         return sum(len(ts) for ts in active_trackers.values())
 
-    def _subsample_trackers(self, incoming_trackers):
-        # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
+    def _subsample_trackers(
+            self,
+            incoming_trackers  # type: List[TrackerWithCachedStates]
+    ):
+        # type: (...) -> List[TrackerWithCachedStates]
         """Subsample the list of trackers to retrieve a random subset."""
 
         # if flows get very long and have a lot of forks we
@@ -453,7 +457,7 @@ class TrainingDataGenerator(object):
 
         events = step.explicit_events(self.domain)
 
-        trackers = []
+        trackers = []  # type: List[TrackerWithCachedStates]
         if events:  # small optimization
 
             # need to copy the tracker as multiple story steps
@@ -467,20 +471,21 @@ class TrainingDataGenerator(object):
                 # contribute to the trackers events
                 if tracker.sender_id:
                     if step.block_name not in tracker.sender_id.split(" > "):
-                        new_sender = tracker.sender_id + " > " + step.block_name
+                        new_sender = (tracker.sender_id +
+                                      " > " + step.block_name)
                     else:
                         new_sender = tracker.sender_id
                 else:
                     new_sender = step.block_name
                 trackers.append(tracker.copy(new_sender))
 
-        end_trackers = []
+        end_trackers = []  # type: List[TrackerWithCachedStates]
         for event in events:
             for tracker in trackers:
                 if isinstance(event, (ActionReverted,
                                       UserUtteranceReverted,
                                       Restarted)):
-                    end_trackers.append(tracker.copy())
+                    end_trackers.append(tracker.copy(tracker.sender_id))
                 tracker.update(event)
 
         # end trackers should be returned separately
