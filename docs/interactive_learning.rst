@@ -74,7 +74,8 @@ so make sure you have the domain & data for it. You can download
 the data from :gh-code:`examples/concertbot`.
 
 If you ask ``/search_concerts``, the bot should suggest
-``action_search_concerts`` and then ``action_listen``.
+``action_search_concerts`` and then ``action_listen`` (the confidence at which
+the policy selected its next action will be displayed next to the action name).
 Now let's enter ``/compare_reviews`` as the next user message.
 The bot **might** choose the wrong one out of the two
 possibilities (depending on the training run, it might also be correct):
@@ -91,8 +92,8 @@ possibilities (depending on the training run, it might also be correct):
      2                                            /search_concerts
                                       intent: search_concerts 1.00
     ───────────────────────────────────────────────────────────────
-     3    action_search_concerts
-          action_listen
+     3    action_search_concerts 0.72
+          action_listen 0.78
     ───────────────────────────────────────────────────────────────
      4                                            /compare_reviews
                                       intent: compare_reviews 1.00
@@ -136,7 +137,6 @@ stories to a file. Make sure to combine the dumped story with your original
 training data for the next training.
 
 
-.. include:: feedback.inc  
+.. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+
