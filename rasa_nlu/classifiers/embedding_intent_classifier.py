@@ -269,7 +269,7 @@ class EmbeddingIntentClassifier(Component):
         return np.stack([self.encoded_all_intents] * size)
 
     def _prepare_data_for_training(self, training_data, intent_dict):
-        # type: (TrainingData, Dict[Text, Int]) -> Tuple(np.ndarray, np.ndarray, np.ndarray)
+        # type: (TrainingData, Dict[Text, Int]) -> Tuple
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features")
@@ -320,8 +320,8 @@ class EmbeddingIntentClassifier(Component):
     def _tf_sim(self, a, b):
         # type: (tf.Tensor, tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]
         """Define similarity in two cases:
-            sim: similarity between embedded words and embedded intent labels
-            sim_emb: similarity between individual embedded intent labels only"""
+            sim: between embedded words and embedded intent labels
+            sim_emb: between individual embedded intent labels only"""
 
         if self.similarity_type == 'cosine':
             # normalize embedding vectors for cosine similarity
@@ -368,6 +368,7 @@ class EmbeddingIntentClassifier(Component):
 
     # training helpers:
     def _create_batch_b(self, batch_pos_b, intent_ids):
+        # type: (np.ndarray, np.ndarray) -> np.ndarray
         """Create batch of intents, where the first is correct intent
             and the rest are wrong intents sampled randomly"""
 
@@ -389,6 +390,7 @@ class EmbeddingIntentClassifier(Component):
         return np.concatenate([batch_pos_b, batch_neg_b], 1)
 
     def _linearly_increasing_batch_size(self, ep):
+        # type: (Int) -> Int
         if self.epochs > 1:
             return int(self.batch_size[0] +
                        ep * (self.batch_size[1] - self.batch_size[0]) /
@@ -398,6 +400,7 @@ class EmbeddingIntentClassifier(Component):
 
     def _train_tf(self, X, Y, intents_for_X,
                   loss, is_training, train_op):
+        # type: (...) -> None
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
@@ -456,6 +459,7 @@ class EmbeddingIntentClassifier(Component):
                         "".format(last_loss, train_acc))
 
     def _output_training_stat(self, X, intents_for_X, is_training):
+        # type: (np.ndarray, np.ndarray, Bool) -> Float
         """Output training statistics"""
         n = self.evaluate_on_num_examples
         ids = np.random.permutation(len(X))[:n]
@@ -523,6 +527,7 @@ class EmbeddingIntentClassifier(Component):
 
     # process helpers
     def _calculate_message_sim(self, X, all_Y):
+        # type: (np.ndarray, np.ndarray) -> Tuple[List[Int], List[Int]]
         """Load tf graph and calculate message similarities"""
 
         message_sim = self.session.run(self.sim_op,
