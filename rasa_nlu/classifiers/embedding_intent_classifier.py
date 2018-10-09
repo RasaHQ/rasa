@@ -62,34 +62,56 @@ class EmbeddingIntentClassifier(Component):
 
     defaults = {
         # nn architecture
-        # a list of hidden layers sizes before user embed layer
+        # a list of hidden layers sizes before the embedding layer for input words
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_a": [256, 128],
-        # a list of hidden layers sizes before bot embed layer
+        # a list of hidden layers sizes before the embedding layer for intent labels
         # number of hidden layers is equal to the length of this list
         "hidden_layers_sizes_b": [],
+
+        # training parameters
+        # initial and final batch sizes - batch size will be
+        # linearly increased for each epoch
         "batch_size": [64, 256],
+        # number of epochs
         "epochs": 300,
 
         # embedding parameters
+        # dimension size of embedding vectors
         "embed_dim": 20,
+        # how similar the algorithm should try
+        # to make embedding vectors for correct intent labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        # maximum negative similarity for incorrect intent labels
         "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        # the type of the similarity
         "similarity_type": 'cosine',  # string 'cosine' or 'inner'
+        # the number of incorrect intents, the algorithm will minimize
+        # their similarity to the input words during training
         "num_neg": 20,
+        # flag: if true, only minimize the maximum similarity for incorrect intent labels
         "use_max_sim_neg": True,  # flag which loss function to use
 
-        # regularization
+        # regularization parameters
+        # the scale of L2 regularization
         "C2": 0.002,
+        # the scale of how critical the algorithm should be of minimizing the maximum similarity
+        # between embeddings of different intent labels
         "C_emb": 0.8,
+        # dropout rate for rnn
         "droprate": 0.2,
 
-        # flag if tokenize intents
+
+        # flag: if true, the algorithm will split the intent labels into tokens
+        #       and use bag-of-words representations for them
         "intent_tokenization_flag": False,
+        # delimiter string to split the intent labels
         "intent_split_symbol": '_',
 
         # visualization of accuracy
+        # how often to calculate training accuracy
         "evaluate_every_num_epochs": 10,  # small values may hurt performance
+        # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 1000  # large values may hurt performance
     }
 
@@ -419,7 +441,7 @@ class EmbeddingIntentClassifier(Component):
                 })
 
         if self.evaluate_on_num_examples:
-            logger.info("Finished training embedding policy, "
+            logger.info("Finished training embedding classifier, "
                         "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
 
