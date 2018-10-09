@@ -63,7 +63,7 @@ may take a few seconds to start up. If you are running locally,
 copy the text between the triple quotes (``"""``)
 and save it in a file called ``stories.md``.
 
-.. runnable:: 
+.. runnable::
    :description: core-write-stories
 
    stories_md = """
@@ -109,7 +109,7 @@ The domain defines the universe your bot lives in.
 Here is an example domain for our bot which we'll write to a
 file called ``domain.yml``:
 
-.. runnable:: 
+.. runnable::
    :description: core-write-domain
 
    domain_yml = """
@@ -474,8 +474,7 @@ this:
        - title: "super sad"
          payload: "super sad"
 
-		 
-.. include:: feedback.inc 
+		
+.. include:: feedback.inc
 
 
-   

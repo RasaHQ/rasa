@@ -10,12 +10,9 @@ conversation are received and updated after actions have been executed
 
    .. automethod:: DialogueStateTracker.current_state
    .. automethod:: DialogueStateTracker.current_slot_values
-   .. automethod:: DialogueStateTracker.get_slot    
+   .. automethod:: DialogueStateTracker.get_slot
    .. automethod:: DialogueStateTracker.get_latest_entity_values
    .. automethod:: DialogueStateTracker.copy
 
-   
-.. include:: ../feedback.inc
 
-.. raw:: html
-   :file: ../livechat.html
+.. include:: ../feedback.inc
