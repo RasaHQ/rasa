@@ -6,7 +6,7 @@ Story Data Format
 =================
 
 
-A training example for the Rasa Core dialogue system is called a **story**. 
+A training example for the Rasa Core dialogue system is called a **story**.
 This is a guide to the story data format.
 
 .. note::
@@ -29,7 +29,7 @@ data (converted into Rasa stories):
    * greet
       - action_ask_howcanhelp
    * inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
-      - action_on_it                     
+      - action_on_it
       - action_ask_cuisine
    * inform{"cuisine": "spanish"}
       - action_ask_numpeople        <!-- action that the bot should execute -->
@@ -37,7 +37,7 @@ data (converted into Rasa stories):
       - action_ack_dosearch
 
 
-This is what we call a **story**. 
+This is what we call a **story**.
 
 
 - A story starts with a name preceded by two hashes ``## story_03248462``.
@@ -108,7 +108,6 @@ it is probably better to restructure your domain and/or intents:
       - action_handle_affirmation
 
 
-.. include:: feedback.inc 
+.. include:: feedback.inc
 
 
-   

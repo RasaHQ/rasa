@@ -5,13 +5,13 @@
 Debugging
 =========
 
-.. note:: 
+.. note::
 
    Wherever you are talking to the bot (command line, slack, facebook, etc), you can
    clear the tracker and start a new conversation by sending the message ``/restart``.
 
 
-To debug your bot, run it on the command line with the ``--debug`` flag. 
+To debug your bot, run it on the command line with the ``--debug`` flag.
 
 For example:
 
@@ -26,12 +26,12 @@ For example:
 .. code-block:: bash
    :linenos:
 
-    Bot loaded. Type a message and press enter: 
+    Bot loaded. Type a message and press enter:
     /greet
     rasa_core.tracker_store - Creating a new tracker for id 'default'.
     rasa_core.processor - Received user message '/greet' with intent '{'confidence': 1.0, 'name': 'greet'}' and entities '[]'
     rasa_core.processor - Logged UserUtterance - tracker now has 2 events
-    rasa_core.processor - Current slot values: 
+    rasa_core.processor - Current slot values:
 
     rasa_core.policies.memoization - Current tracker state [None, {}, {'prev_action_listen': 1.0, 'intent_greet': 1.0}]
     rasa_core.policies.memoization - There is a memorised next action '2'
@@ -101,7 +101,7 @@ create a ``visualize.py`` in ``examples/concertbot`` with the following code:
 
 .. literalinclude:: ../examples/concertbot/visualize.py
 
-Which will create the same image as the previous command. 
+Which will create the same image as the previous command.
 The graph we show here is still very simple, graphs can quickly get very complex.
 
 You can make your graph a little easier to read by replacing the user messages

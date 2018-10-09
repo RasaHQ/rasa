@@ -9,8 +9,8 @@ Training and Policies
 Training
 --------
 
-Rasa Core works by creating training data from your stories and 
-training a model on that data. 
+Rasa Core works by creating training data from your stories and
+training a model on that data.
 
 You can run training from the command line like in the :ref:`quickstart`:
 
@@ -35,11 +35,11 @@ Or by creating an agent and running the train method yourself:
 Data Augmentation
 ^^^^^^^^^^^^^^^^^
 
-By default, Rasa Core will create longer stories by randomly glueing together 
+By default, Rasa Core will create longer stories by randomly glueing together
 the ones in your stories file. This is because if you have stories like:
 
 .. code-block:: story
-   
+
     # thanks
     * thankyou
        - utter_youarewelcome
@@ -69,7 +69,7 @@ action to take next.
 You can set the ``max_history`` using the training script's ``--history``
 flag or by passing it to your policy's ``Featurizer``.
 
-.. note:: 
+.. note::
 
     Only the ``MaxHistoryTrackerFeaturizer`` uses a max history,
     whereas the ``FullDialogueTrackerFeaturizer`` always looks at
@@ -110,7 +110,7 @@ Policies
 --------
 
 The :class:`rasa_core.policies.Policy` class decides which action to take
-at every step in the conversation. 
+at every step in the conversation.
 
 There are different policies to choose from, and you can include
 multiple policies in a single :class:`rasa_core.agent.Agent`. At
@@ -147,8 +147,8 @@ Keras Policy
 
 The ``KerasPolicy`` uses a neural network implemented in
 `Keras <http://keras.io>`_ to select the next action.
-The default architecture is based on an LSTM, but you can override the 
-``KerasPolicy.model_architecture`` method to implement your own architecture. 
+The default architecture is based on an LSTM, but you can override the
+``KerasPolicy.model_architecture`` method to implement your own architecture.
 
 
 .. literalinclude:: ../rasa_core/policies/keras_policy.py
@@ -338,7 +338,6 @@ It is recommended to use
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
 
-.. include:: feedback.inc 
+.. include:: feedback.inc
 
-	 
-   
+	
