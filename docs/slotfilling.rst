@@ -126,7 +126,7 @@ e.g. ``utter_ask_cuisine``, ``utter_ask_num_people``, in a restaurant bot.
     You don't *have* to use a ``FormAction`` to do slot filling! It just means you need
     fewer stories to get the initial flow working.
 
-A form action has a set of required fields, which you define for the class:
+A form action has a set of required slots, which you define for the class:
 
 .. code-block:: python
 
@@ -148,8 +148,8 @@ A form action has a set of required fields, which you define for the class:
                 "preferences", "feedback"]
 
 
-The way this works is that every time you call this action, it will pick one of the
-``REQUIRED_FIELDS`` that's still missing and ask the user for it. You can also ask a yes/no
+The way this works is that every time you call this action, it will pick one slot from the
+``required_slots()`` that's still missing and ask the user for it. You can also ask a yes/no
 question by providing intent - value pairs in ``slot_mapping``:
 
 .. code-block:: python
