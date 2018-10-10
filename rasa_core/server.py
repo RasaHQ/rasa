@@ -386,8 +386,8 @@ def create_app(agent,
     def log_message(sender_id):
         request_params = request.get_json(force=True)
         try:
-            message = request_params.get("message")
-        except:
+            message = request_params["message"]
+        except KeyError:
             message = request_params.get("text")
             
         sender = request_params.get("sender")
