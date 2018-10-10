@@ -140,6 +140,6 @@ The endpoint then needs to respond with the generated response:
 The bot will then use this response and sent it back to the user.
 
 
-.. include:: feedback.inc 
+.. include:: feedback.inc
 
 

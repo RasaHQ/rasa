@@ -127,6 +127,3 @@ The Slot base class
 
 
 .. include:: ../feedback.inc
-
-.. raw:: html
-   :file: ../livechat.html
