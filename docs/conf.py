@@ -42,7 +42,8 @@ extensions = [
     'rasabaster.card',
     'rasabaster.chatbubble',
     'rasabaster.runnable',
-    'rasabaster.copyable'
+    'rasabaster.copyable',
+    'rasabaster.apidoc',
 #    'numpydoc',
 ]
 
@@ -59,6 +60,13 @@ source_suffix = ['.rst', '.ipynb']
 
 # The master toctree document.
 master_doc = 'index'
+
+nitpicky = True
+nitpick_ignore = [
+    ('py:class', 'List'),
+    # TODO: remove when https://github.com/sphinx-doc/sphinx/issues/5480 fixed
+    ('py:class', 'Domain'),
+]
 
 # General information about the project.
 project = u'Rasa Core'
@@ -370,8 +378,11 @@ scv_greatest_tag = True
 
 
 def setup(sphinx):
+    sphinx.add_stylesheet('css/custom.css')
+
     try:
-        sys.path.insert(0, os.path.abspath('./util'))
+        utils_path = os.path.abspath(os.path.join(__file__, '..', 'util'))
+        sys.path.insert(0, utils_path)
         from StoryLexer import StoryLexer
         sphinx.add_lexer("story", StoryLexer())
     except ImportError:

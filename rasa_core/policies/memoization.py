@@ -232,8 +232,7 @@ class MemoizationPolicy(Policy):
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
-            with io.open(memorized_file) as f:
-                data = json.loads(f.read())
+            data = json.loads(utils.read_file(memorized_file))
             return cls(featurizer=featurizer, lookup=data["lookup"])
         else:
             logger.info("Couldn't load memoization for policy. "

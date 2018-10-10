@@ -54,6 +54,9 @@ To specify, your action server use the ``endpoints.yml``:
 
 And pass it to the scripts using ``--endpoints endpoints.yml``.
 
+You can create an action server in node.js, .NET, java, or any
+other language and define your actions there - but we provide
+a small python sdk to make development there even easier.
 
 Custom Actions Written in Python
 --------------------------------
@@ -80,12 +83,6 @@ called ``actions.py``, run this command:
 .. code-block:: bash
 
     python -m rasa_core_sdk.endpoint --actions actions
-
-However, you can also create a server in node.js, .NET, java, or any
-other language and define your acitons there.
-
-Whichever option you go for, you will then need to add an entry into your
-``endpoints.yml`` as follows:
 
 .. _custom_action_example:
 
@@ -119,7 +116,7 @@ three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
 back to the user with the ``dispatcher`` object, by calling
 ``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
-:class:`Dispatcher` method.
+:class:`rasa_core.dispatcher.Dispatcher` method.
 
 Details of the ``run`` method:
 
@@ -286,5 +283,4 @@ custom action.
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

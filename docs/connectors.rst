@@ -15,7 +15,7 @@ Currently, there is code for connecting to
 facebook, slack, telegram, mattermost and twilio. If the connection
 you want is missing, this is a great place to start contributing!
 
-If you're testing on your local machine (e.g. not a server), you 
+If you're testing on your local machine (e.g. not a server), you
 will need to use ngrok_. This gives your machine a domain name
 and so that facebook, slack, etc. know where to send messages.
 
@@ -356,7 +356,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
 .. code-block:: yaml
 
-   twillio:
+   twilio:
      account_sid: "ACbc2dxxxxxxxxxxxx19d54bdcd6e41186"
      auth_token: "e231c197493a7122d475b4xxxxxxxxxx"
      twilio_number: "+440123456789"
@@ -719,6 +719,4 @@ posted this message to the channel:
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html   
-   
+
