@@ -1,5 +1,5 @@
 ## happy path               <!-- name of the story - just for debugging -->
-* greet              
+* greet
   - utter_greet
 * mood_great               <!-- user utterance, in format _intent[entities] -->
   - utter_happy

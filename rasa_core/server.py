@@ -471,7 +471,7 @@ def create_app(agent,
                          """Invalid accept header. Domain can be provided
                             as json ("Accept: application/json")
                             or yml ("Accept: application/x-yml").
-                            Make sure you've set the appropriate Accept 
+                            Make sure you've set the appropriate Accept
                             header.""")
 
     @app.route("/finetune",

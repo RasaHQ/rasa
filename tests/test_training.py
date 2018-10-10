@@ -77,3 +77,12 @@ def test_training_script_with_max_history_set(tmpdir):
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
             assert policy.featurizer.max_history == max_history
+
+
+def test_training_script_with_restart_stories(tmpdir):
+    train_dialogue_model(DEFAULT_DOMAIN_PATH,
+                         "data/test_stories/stories_restart.md",
+                         tmpdir.strpath,
+                         interpreter=RegexInterpreter(),
+                         kwargs={})
+    assert True
