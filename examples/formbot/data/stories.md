@@ -97,6 +97,7 @@
     - utter_ask_continue
 * deny
     - action_restart
+    - restart
 
 ## stop and really stop path
 * request_restaurant
@@ -108,6 +109,7 @@
     - utter_ask_continue
 * deny
     - action_restart
+    - restart
 
 ## Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
 * request_restaurant
