@@ -267,6 +267,7 @@ def test_get_tracker_with_jwt(secured_app):
                                headers=jwt_header)
     assert response.status_code == 200
 
+
 def test_list_conversations_with_token(secured_app):
     response = secured_app.get("/conversations?token=rasa")
     assert response.status_code == 200
