@@ -10,7 +10,9 @@ import typing
 from typing import List, Text, Optional, Dict, Any
 
 from rasa_core import events
-from rasa_core.constants import DOCS_BASE_URL, DEFAULT_REQUEST_TIMEOUT
+from rasa_core.constants import (DOCS_BASE_URL,
+                                 DEFAULT_REQUEST_TIMEOUT,
+                                 REQUESTED_SLOT)
 from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -27,11 +29,14 @@ ACTION_RESTART_NAME = "action_restart"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
+ACTION_DEACTIVATE_FORM = "action_deactivate_form"
+
 
 def default_actions():
     # type: () -> List[Action]
     """List default actions."""
-    return [ActionListen(), ActionRestart(), ActionDefaultFallback()]
+    return [ActionListen(), ActionRestart(),
+            ActionDefaultFallback(), ActionDeactivateForm()]
 
 
 def default_action_names():
@@ -191,6 +196,17 @@ class ActionDefaultFallback(Action):
                                   silent_fail=True)
 
         return [UserUtteranceReverted()]
+
+
+class ActionDeactivateForm(Action):
+    """Deactivates a form"""
+
+    def name(self):
+        return ACTION_DEACTIVATE_FORM
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import Form, SlotSet
+        return [Form(None), SlotSet(REQUESTED_SLOT, None)]
 
 
 class RemoteAction(Action):
