@@ -241,7 +241,7 @@ class EmbeddingIntentClassifier(Component):
                 for idx, token in enumerate(sorted(distinct_tokens))}
 
     def _create_encoded_intents(self, intent_dict):
-        # type: Dict[Text, Int] -> np.ndarray
+        # type: (Dict[Text, Int]) -> np.ndarray
         """Create matrix with intents encoded in rows as bag of words.
            If intent_tokenization_flag is off, returns identity matrix"""
 
@@ -342,7 +342,7 @@ class EmbeddingIntentClassifier(Component):
         """Define loss"""
 
         # loss for maximizing similarity with correct action
-        loss = tf.maximum(0., self.mu_pos - sim[:, 0]
+        loss = tf.maximum(0., self.mu_pos - sim[:, 0])
 
         if self.use_max_sim_neg:
             # minimize only maximum similarity over incorrect actions
