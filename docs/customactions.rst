@@ -104,7 +104,7 @@ which might look like this:
          return "action_check_restaurants"
 
       def run(self, dispatcher, tracker, domain):
-         # type: (Dispatcher, DialogueStateTracker, Domain) -> List[Event]
+         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[dict]
 
          cuisine = tracker.get_slot('cuisine')
          q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
@@ -119,11 +119,11 @@ three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
 back to the user with the ``dispatcher`` object, by calling
 ``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
-:class:`Dispatcher` method.
+:class:`CollectingDispatcher` method.
 
 Details of the ``run`` method:
 
-.. automethod:: rasa_core.actions.Action.run
+.. automethod:: rasa_core_sdk.Action.run
 
 
 There is an example of a ``SlotSet`` event
