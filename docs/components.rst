@@ -327,8 +327,8 @@ intent_classifier_tensorflow_embedding
 
     The algorithm also has hyperparameters to control:
         - neural network's architecture:
-            - ``hidden_layers_sizes_a`` sets the number of hidden layers and their sizes before the embedding layer for user inputs;
-            - ``hidden_layers_sizes_b`` sets the number of hidden layers and their sizes before the embedding layer for intent labels;
+            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before the embedding layer for user inputs, the number of hidden layers is equal to the length of the list
+            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before the embedding layer for intent labels, the number of hidden layers is equal to the length of the list
         - training:
             - ``batch_size`` sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you'll need;
             - ``epochs`` sets the number of times the algorithm will see training data, where ``one epoch`` = one forward pass and one backward pass of all the training examples;

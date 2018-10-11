@@ -158,8 +158,6 @@ class EmbeddingIntentClassifier(Component):
                                    'b': config['hidden_layers_sizes_b']}
 
         self.batch_size = config['batch_size']
-        if not isinstance(self.batch_size, list):
-            self.batch_size = [self.batch_size, self.batch_size]
         self.epochs = config['epochs']
 
     def _load_embedding_params(self, config):
@@ -286,7 +284,7 @@ class EmbeddingIntentClassifier(Component):
     # tf helpers:
     def _create_tf_embed_nn(self, x_in, is_training,
                             layer_sizes, name):
-        # type: (tf.Tensor, Bool, List, Text) -> tf.Tensor
+        # type: (tf.Tensor, tf.Tensor, List[Int], Text) -> tf.Tensor
         """Create nn with hidden layers and name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
@@ -306,7 +304,7 @@ class EmbeddingIntentClassifier(Component):
         return x
 
     def _create_tf_embed(self, a_in, b_in, is_training):
-        # type: (tf.Tensor, tf.Tensor, Bool) -> tf.Tensor
+        # type: (tf.Tensor, tf.Tensor, tf.Tensor) -> tf.Tensor
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(a_in, is_training,
@@ -328,7 +326,7 @@ class EmbeddingIntentClassifier(Component):
             a = tf.nn.l2_normalize(a, -1)
             b = tf.nn.l2_normalize(b, -1)
 
-        if self.similarity_type in ['cosine', 'inner']:
+        if self.similarity_type in {'cosine', 'inner'}:
             sim = tf.reduce_sum(tf.expand_dims(a, 1) * b, -1)
             sim_emb = tf.reduce_sum(b[:, 0:1, :] * b[:, 1:, :], -1)
 
@@ -343,27 +341,24 @@ class EmbeddingIntentClassifier(Component):
         # type: (tf.Tensor, tf.Tensor) -> tf.Tensor
         """Define loss"""
 
+        # loss for maximizing similarity with correct action
+        loss = tf.maximum(0., self.mu_pos - sim[:, 0]
+
         if self.use_max_sim_neg:
+            # minimize only maximum similarity over incorrect actions
             max_sim_neg = tf.reduce_max(sim[:, 1:], -1)
-            loss = tf.reduce_mean(tf.maximum(0., self.mu_pos - sim[:, 0]) +
-                                  tf.maximum(0., self.mu_neg + max_sim_neg))
+            loss += tf.maximum(0., self.mu_neg + max_sim_neg)
         else:
-            # create an array for mu
-            mu = self.mu_neg * np.ones(self.num_neg + 1)
-            mu[0] = self.mu_pos
+            # minimize all similarities with incorrect actions
+            max_margin = tf.maximum(0., self.mu_neg + sim[:, 1:])
+            loss += tf.reduce_sum(max_margin, -1)
 
-            factors = tf.concat([-1 * tf.ones([1, 1]),
-                                 tf.ones([1, tf.shape(sim)[1] - 1])], 1)
-            max_margin = tf.maximum(0., mu + factors * sim)
-            loss = tf.reduce_mean(tf.reduce_sum(max_margin, -1))
-
+        # penalize max similarity between intent embeddings
         max_sim_emb = tf.maximum(0., tf.reduce_max(sim_emb, -1))
+        loss += max_sim_emb * self.C_emb
 
-        loss = (loss +
-                # penalize max similarity between intent embeddings
-                tf.reduce_mean(max_sim_emb) * self.C_emb +
-                # add regularization losses
-                tf.losses.get_regularization_loss())
+        # average the loss over the batch and add regularization losses
+        loss = (tf.reduce_mean(loss) + tf.losses.get_regularization_loss())
         return loss
 
     # training helpers:
@@ -389,18 +384,24 @@ class EmbeddingIntentClassifier(Component):
 
         return np.concatenate([batch_pos_b, batch_neg_b], 1)
 
-    def _linearly_increasing_batch_size(self, ep):
+    def _linearly_increasing_batch_size(self, epoch):
         # type: (Int) -> Int
+        """Linearly increase batch size with every epoch.
+            The idea comes from https://arxiv.org/abs/1711.00489"""
+        if not isinstance(self.batch_size, list):
+            return int(self.batch_size)
+
         if self.epochs > 1:
             return int(self.batch_size[0] +
-                       ep * (self.batch_size[1] - self.batch_size[0]) /
-                       (self.epochs - 1))
+                       epoch * (self.batch_size[1] -
+                                self.batch_size[0]) / (self.epochs - 1))
         else:
             return int(self.batch_size[0])
 
     def _train_tf(self, X, Y, intents_for_X,
                   loss, is_training, train_op):
-        # type: (...) -> None
+        # type: (tf.Tensor, tf.Tensor, np.ndarray,
+        #        tf.Tensor, tf.Tensor, tf.Tensor) -> None
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
@@ -459,7 +460,7 @@ class EmbeddingIntentClassifier(Component):
                         "".format(last_loss, train_acc))
 
     def _output_training_stat(self, X, intents_for_X, is_training):
-        # type: (np.ndarray, np.ndarray, Bool) -> Float
+        # type: (np.ndarray, np.ndarray, tf.Tensor) -> Float
         """Output training statistics"""
         n = self.evaluate_on_num_examples
         ids = np.random.permutation(len(X))[:n]
