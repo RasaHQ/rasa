@@ -719,6 +719,5 @@ posted this message to the channel:
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html   
+
    

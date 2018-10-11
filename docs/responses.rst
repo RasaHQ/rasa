@@ -142,5 +142,4 @@ The bot will then use this response and sent it back to the user.
 
 .. include:: feedback.inc 
 
-.. raw:: html
-   :file: livechat.html
+

@@ -138,5 +138,4 @@ training data for the next training.
 
 .. include:: feedback.inc  
 
-.. raw:: html
-   :file: livechat.html
+

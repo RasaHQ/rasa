@@ -102,6 +102,5 @@ The Rasa Core dialogue engine
    support
 
 
-.. raw:: html
-   :file: livechat.html 
+
    
