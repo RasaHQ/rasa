@@ -40,6 +40,14 @@ Fixed
 - properly handle non ascii categorical slot values, e.g. ``大于100亿元``
 - fixed HTTP server attempting to authenticate based on incorrect path to the correct JWT data field
 
+[0.11.12] - 2018-10-11
+^^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-----
+- Remove livechat widget from docs
+
+
 [0.11.11] - 2018-10-05
 ^^^^^^^^^^^^^^^^^^^^^^
 
