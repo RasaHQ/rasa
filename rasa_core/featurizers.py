@@ -430,7 +430,7 @@ class TrackerFeaturizer(object):
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
         utils.create_dir_for_file(featurizer_file)
-        with io.open(featurizer_file, 'w') as f:
+        with io.open(featurizer_file, 'w', encoding="utf-8") as f:
             # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
 
@@ -438,9 +438,7 @@ class TrackerFeaturizer(object):
     def load(path):
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            with io.open(featurizer_file, 'r') as f:
-                _json = f.read()
-            return jsonpickle.decode(_json)
+            return jsonpickle.decode(utils.read_file(featurizer_file))
         else:
             logger.error("Couldn't load featurizer for policy. "
                          "File '{}' doesn't exist.".format(featurizer_file))
@@ -487,11 +485,13 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_states = []
         trackers_as_actions = []
 
-        logger.info("Creating states and action examples from "
-                    "collected trackers (by {}({}))..."
-                    "".format(type(self).__name__,
-                              type(self.state_featurizer).__name__))
-        pbar = tqdm(trackers, desc="Processed trackers")
+        logger.debug("Creating states and action examples from "
+                     "collected trackers (by {}({}))..."
+                     "".format(type(self).__name__,
+                               type(self.state_featurizer).__name__))
+        pbar = tqdm(trackers,
+                    desc="Processed trackers",
+                    disable=(not logger.isEnabledFor(logging.DEBUG)))
         for tracker in pbar:
             states = self._create_states(tracker, domain,
                                          is_binary_training=True)
@@ -596,11 +596,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         # we only need to keep one.
         hashed_examples = set()
 
-        logger.info("Creating states and action examples from "
-                    "collected trackers (by {}({}))..."
-                    "".format(type(self).__name__,
-                              type(self.state_featurizer).__name__))
-        pbar = tqdm(trackers, desc="Processed trackers")
+        logger.debug("Creating states and action examples from "
+                     "collected trackers (by {}({}))..."
+                     "".format(type(self).__name__,
+                               type(self.state_featurizer).__name__))
+        pbar = tqdm(trackers, desc="Processed trackers",
+                    disable=(not logger.isEnabledFor(logging.DEBUG)))
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
 
@@ -631,8 +632,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                                 len(trackers_as_actions))})
                     idx += 1
 
-        logger.info("Created {} action examples."
-                    "".format(len(trackers_as_actions)))
+        logger.debug("Created {} action examples."
+                     "".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 

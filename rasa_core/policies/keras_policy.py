@@ -14,7 +14,7 @@ import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
-from rasa_core.policies import Policy
+from rasa_core.policies.policy import Policy
 from rasa_core.featurizers import TrackerFeaturizer
 
 if typing.TYPE_CHECKING:
@@ -228,8 +228,7 @@ class KerasPolicy(Policy):
             featurizer = TrackerFeaturizer.load(path)
             meta_path = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_path):
-                with io.open(meta_path) as f:
-                    meta = json.loads(f.read())
+                meta = json.loads(utils.read_file(meta_path))
 
                 model_file = os.path.join(path, meta["model"])
 

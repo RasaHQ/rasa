@@ -13,17 +13,143 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
-- JWT support: parameters to allow clients to authenticate requests to
-  the rasa_core.server using JWT's in addition to normal token based auth
+- openapi documentation of server API
+- NLU data learned through interactive learning will now be stored in a separate markdown-format file (any previous NLU
+  data is merged)
+- Command line interface for interactive learning now displays policy confidence alongside the action name
+- added action prediction confidence & policy to ``ActionExecuted`` event
+- both the date and the time at which a model was trained are now included in the policy's metadata when it is persisted
+
 
 Changed
 -------
+- improved response format for ``/predict`` endpoint
+- all error messages from the server are now in json format
+- ``agent.log_message`` now returns a tracker instead of the trackers state
 
 Removed
 -------
 
+
 Fixed
 -----
+- fixed an issue with boolean slots where False and None had the same value
+  (breaking model compatibility with models that use a boolean slot)
+- use utf8 everywhere when handling file IO
+- argument ``--connector`` on run script accepts custom channel module names
+- properly handle non ascii categorical slot values, e.g. ``大于100亿元``
+- fixed HTTP server attempting to authenticate based on incorrect path to the correct JWT data field
+
+[0.11.12] - 2018-10-11
+^^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-----
+- Remove livechat widget from docs
+
+
+[0.11.11] - 2018-10-05
+^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Add missing name() to facebook Messenger class
+
+
+[0.11.10] - 2018-10-05
+^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- backport fix to JWT schema
+
+
+[0.11.9] - 2018-10-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- pin tensorflow 1.10.0
+
+[0.11.8] - 2018-09-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- cancel reminders if there has been a restarted event after the reminder
+
+Changed
+-------
+- JWT authentication now checks user roles. The ``admin`` role may access all
+  endpoints. For endpoints which contain a ``sender_id`` parameter, users
+  with the ``user`` role may only call endpoints where the ``sender_id``
+  matches the user's ``username``.
+
+[0.11.7] - 2018-09-26
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- custom message method in rocketchat channel
+
+Fixed
+-----
+- don't fail if rasa and rest input channels are used together
+- wrong paramter name in rocketchat channel methods
+- Software 2.0 link on interactive learning documentation page went to
+  Tesla's homepage, now it links to Karpathy blogpost
+
+[0.11.6] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
+
+[0.11.5] - 2018-09-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- numpy version incompatibility between rasa core and tensorflow
+
+[0.11.4] - 2018-09-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- a flag ``--fail_on_prediction_errors`` to the ``evaluate.py`` script -
+  if used when running the evaluation, the script will fail with a non
+  0 exit code if there is at least one prediction error. This can be
+  used on CIs to validate models against test stories.
+- JWT support: parameters to allow clients to authenticate requests to
+  the rasa_core.server using JWT's in addition to normal token based auth
+- added socket.io input / output channel
+- ``UserMessage`` and ``UserUttered`` classes have a new attribute
+  ``input_channel`` that stores the name of the ``InputChannel``
+  through which the message was received
+
+Changed
+-------
+- dump failed stories after evaluation in the normal story format instead of
+  as a text file
+- do not run actions during evaluation. instead, action are only predicted
+  and validated against the gold story.
+- improved the online learning experience on the CLI
+- made finetuning during online learning optional (use ``--finetune`` if
+  you want to enable it)
+
+Removed
+-------
+- package pytest-services since it wasn't necessary
+
+Fixed
+-----
+- fixed an issue with the followup (there was a name confusion, sometimes
+  the followup action would be set to the non existent ``follow_up_action``
+  attribute instead of ``followup_action``)
 
 [0.11.3] - 2018-09-04
 ^^^^^^^^^^^^^^^^^^^^^

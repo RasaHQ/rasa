@@ -6,12 +6,13 @@ from __future__ import unicode_literals
 import hashlib
 import hmac
 import logging
+from typing import Text, List, Dict, Any, Callable
+
 import six
 from fbmessenger import (
     BaseMessenger, MessengerClient, attachments)
 from fbmessenger.elements import Text as FBText
 from flask import Blueprint, request, jsonify
-from typing import Text, List, Dict, Any, Callable
 
 from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -20,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 class Messenger(BaseMessenger):
     """Implement a fbmessenger to parse incoming webhooks and send msgs."""
+
+    @classmethod
+    def name(cls):
+        return "facebook"
 
     def __init__(self, page_access_token, on_new_message):
         # type: (Text, Callable[[UserMessage], None]) -> None
@@ -72,7 +77,8 @@ class Messenger(BaseMessenger):
         """Pass on the text to the dialogue engine for processing."""
 
         out_channel = MessengerBot(self.client)
-        user_msg = UserMessage(text, out_channel, sender_id)
+        user_msg = UserMessage(text, out_channel, sender_id,
+                               input_channel=self.name())
 
         # noinspection PyBroadException
         try:

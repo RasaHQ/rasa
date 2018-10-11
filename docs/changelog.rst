@@ -3,5 +3,3 @@
 .. include:: ../CHANGELOG.rst
 
 
-.. raw:: html
-   :file: livechat.html
