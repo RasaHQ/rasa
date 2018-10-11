@@ -398,10 +398,15 @@ class EmbeddingIntentClassifier(Component):
         else:
             return int(self.batch_size[0])
 
-    def _train_tf(self, X, Y, intents_for_X,
-                  loss, is_training, train_op):
-        # type: (tf.Tensor, tf.Tensor, np.ndarray,
-        #        tf.Tensor, tf.Tensor, tf.Tensor) -> None
+    def _train_tf(self,
+                  X,  # type: tf.Tensor
+                  Y,  # type: tf.Tensor
+                  intents_for_X,  # type: np.ndarray
+                  loss,  # type: tf.Tensor
+                  is_training,  # type: tf.Tensor
+                  train_op  # type: tf.Tensor
+                  ):
+        # type: (...) -> None
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
