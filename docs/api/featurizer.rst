@@ -104,5 +104,4 @@ If numeric target class labels are needed instead of one-hot vectors, use ``y.ar
 
 .. include:: ../feedback.inc
 
-.. raw:: html
-   :file: ../livechat.html
+

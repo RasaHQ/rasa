@@ -115,5 +115,4 @@ for example ``--nlu_data mydata.json``.
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

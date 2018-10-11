@@ -212,6 +212,5 @@ can learn from these how to handle the different situations:
    
 .. include:: feedback.inc  
 
-.. raw:: html
-   :file: livechat.html
+
    

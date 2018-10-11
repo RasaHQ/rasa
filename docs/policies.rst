@@ -253,6 +253,5 @@ It is recommended to use ``state_featurizer=LabelTokenizerSingleStateFeaturizer(
 
 .. include:: feedback.inc 
 
-.. raw:: html
-   :file: livechat.html		 
+ 
    

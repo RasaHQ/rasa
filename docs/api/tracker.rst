@@ -17,5 +17,4 @@ conversation are received and updated after actions have been executed
    
 .. include:: ../feedback.inc
 
-.. raw:: html
-   :file: ../livechat.html
+
