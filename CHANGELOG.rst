@@ -4,26 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-.. _master-release:
 
-[Unreleased 0.12.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. note:: This version is not yet released and is under active development.
-
-Added
------
-
+[0.11.12] - 2018-10-11
+^^^^^^^^^^^^^^^^^^^^^^
 
 Changed
--------
-
-
-Removed
--------
-
-Fixed
 -----
+- Remove livechat widget from docs
 
 [0.11.11] - 2018-10-05
 ^^^^^^^^^^^^^^^^^^^^^^
