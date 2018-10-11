@@ -107,7 +107,7 @@ class Action(object):
         Args:
             dispatcher (Dispatcher): the dispatcher which is used to send
                 messages back to the user. Use ``dipatcher.utter_message()``
-                or any other :class:`Dispatcher` method.
+                or any other :class:`rasa_core.dispatcher.Dispatcher` method.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using
                 ``tracker.get_slot(slot_name)`` and the most recent user
@@ -115,7 +115,7 @@ class Action(object):
             domain (Domain): the bot's domain
 
         Returns:
-            List[Event]: A list of :class:`Event` instances
+            List[Event]: A list of :class:`rasa_core.events.Event` instances
         """
 
         raise NotImplementedError
@@ -203,10 +203,9 @@ class RemoteAction(Action):
     def _action_call_format(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> Dict[Text, Any]
         """Create the request json send to the action server."""
+        from rasa_core.trackers import EventVerbosity
 
-        tracker_state = tracker.current_state(
-                should_include_events=True,
-                should_ignore_restarts=True)
+        tracker_state = tracker.current_state(EventVerbosity.ALL)
 
         return {
             "next_action": self._name,

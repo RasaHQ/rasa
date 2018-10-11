@@ -46,7 +46,8 @@ of the tracker has a couple steps:
             The vectors ``X, y`` indicate a presence of a certain intent,
             entity, previous action or slot e.g. ``[0 0 1 0 0 1 ...]``.
 
-        - ``LabelTokenizerSingleStateFeaturizer`` creates an vector based on the feature label:
+        - ``LabelTokenizerSingleStateFeaturizer`` creates an vector
+            based on the feature label:
             All active feature labels (e.g. ``prev_action_listen``) are split
             into tokens and represented as a bag-of-words. For example, actions
             ``utter_explain_details_hotel`` and
@@ -84,25 +85,32 @@ different tracker featurizers:
 1. Full Dialogue
 ----------------
 
-``FullDialogueTrackerFeaturizer`` creates numerical representation of stories to feed to a recurrent neural network
-where the whole dialogue is fed to a network and the gradient is backpropagated from all time steps.
-Therefore, ``X`` is an array of shape ``(num_stories, max_dialogue_length, num_input_features)`` and
-``y`` is an array of shape ``(num_stories, max_dialogue_length, num_bot_features)``.
-The smaller dialogues are padded with ``-1`` for all features, indicating no values for a policy.
+``FullDialogueTrackerFeaturizer`` creates numerical representation of
+stories to feed to a recurrent neural network where the whole dialogue
+is fed to a network and the gradient is backpropagated from all time steps.
+Therefore, ``X`` is an array of shape
+``(num_stories, max_dialogue_length, num_input_features)`` and
+``y`` is an array of shape
+``(num_stories, max_dialogue_length, num_bot_features)``.
+The smaller dialogues are padded with ``-1`` for all features, indicating
+no values for a policy.
 
 2. Max History
 --------------
 
-``MaxHistoryTrackerFeaturizer`` creates an array of previous tracker states for each bot action or utterance, with
-the parameter ``max_history`` defining how many states go into each row in ``X``.
-Deduplication is performed to filter out duplicated turns (bot actions or bot utterances) in terms of their previous states.
-Hence ``X`` has shape ``(num_unique_turns, max_history, num_input_features)`` and ``y`` is an array of shape ``(num_unique_turns, num_bot_features)``.
+``MaxHistoryTrackerFeaturizer`` creates an array of previous tracker
+states for each bot action or utterance, with the parameter
+``max_history`` defining how many states go into each row in ``X``.
+Deduplication is performed to filter out duplicated turns (bot actions
+or bot utterances) in terms of their previous states. Hence ``X``
+has shape ``(num_unique_turns, max_history, num_input_features)``
+and ``y`` is an array of shape ``(num_unique_turns, num_bot_features)``.
 
-For some algorithms a flat feature vector is needed, so ``X`` should be reshaped to ``(num_unique_turns, max_history * num_input_features)``.
-If numeric target class labels are needed instead of one-hot vectors, use ``y.argmax(axis=-1)``.
+For some algorithms a flat feature vector is needed, so ``X``
+should be reshaped to
+``(num_unique_turns, max_history * num_input_features)``. If numeric
+target class labels are needed instead of one-hot vectors, use
+``y.argmax(axis=-1)``.
 
 
 .. include:: ../feedback.inc
-
-.. raw:: html
-   :file: ../livechat.html

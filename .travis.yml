@@ -9,7 +9,6 @@ python:
 - '3.5'
 - '3.6'
 install:
-- sudo apt-get update
 - sudo apt-get install graphviz graphviz-dev
 - pip install -r dev-requirements.txt
 - pip install -e .
@@ -19,31 +18,66 @@ script:
 - travis_wait py.test tests --cov rasa_core --pep8 -v
  #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
-- openssl aes-256-cbc -K $encrypted_050c822e99ef_key -iv $encrypted_050c822e99ef_iv
-  -in docs/key.enc -out docs/key -d
 - coveralls
 jobs:
   include:
-  - stage: docs
-    if: fork = false AND branch = "master"
+  - stage: Test API specification
+    language: python
     install:
-    - sudo apt-get update
+    - npm install -g swagger-cli
+    script:
+    - swagger-cli validate docs/_static/spec/server.yml
+    after_success:
+    - coveralls
+  - stage: Test Docs
+    install:
     - pip install -r docs-requirements.txt
     - pip install -e .
     - pip list
     script:
-    - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
+      # be strict about warnings --> they will be treated as errors
+    - cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+  - stage: build docs
+    if: fork = false AND branch = "master"
+    install:
+    - pip install -r docs-requirements.txt
+    - pip install -e .
+    - pip list
+    script:
+    - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
     - openssl aes-256-cbc
-      -K $encrypted_050c822e99ef_key
-      -iv $encrypted_050c822e99ef_iv
-      -in docs/key.enc
-      -out docs/key
-      -d && ssh-add docs/key
+      -K $encrypted_15dbb0d66e34_key
+      -iv $encrypted_15dbb0d66e34_iv
+      -in secrets.tar.enc
+      -out secrets.tar
+      -d
+    - tar -xvf secrets.tar
+    - ssh-add docs_key
     - git config --global user.email "builds@travis-ci.com"
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml -A html_theme=rasabaster
+  - stage: trigger website rebuild
+    if: fork = false AND branch = "master" AND type != "pull_request"
+    script:
+    - eval "$(ssh-agent -s)";
+      touch core_docs_to_website_trigger_key;
+      chmod 0600 core_docs_to_website_trigger_key
+    - openssl aes-256-cbc
+      -K $encrypted_15dbb0d66e34_key
+      -iv $encrypted_15dbb0d66e34_iv
+      -in secrets.tar.enc
+      -out secrets.tar
+      -d
+    - tar xvf secrets.tar
+    - ssh-add core_docs_to_website_trigger_key
+    - git config --global user.email "builds@travis-ci.com"
+    - git config --global user.name "Travis CI"
+    - git clone -b master --single-branch git@github.com:RasaHQ/rasa-website.git
+    - cd rasa-website
+    - git commit --allow-empty -m "trigger core docs update"
+    - git push origin master
   - stage: deploy
     python: 3.6
     install: skip

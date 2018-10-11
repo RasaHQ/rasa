@@ -35,5 +35,4 @@ You may in addition run any Rasa Core command inside the container with
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

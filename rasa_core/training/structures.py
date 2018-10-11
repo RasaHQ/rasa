@@ -91,7 +91,9 @@ class StoryStep(object):
 
     @staticmethod
     def _is_action_listen(event):
-        return (isinstance(event, ActionExecuted) and
+        # this is not an isinstance because we don't want to allow subclasses
+        # here
+        return (type(event) == ActionExecuted and
                 event.action_name == ACTION_LISTEN_NAME)
 
     def add_event(self, event):
@@ -161,18 +163,19 @@ class StoryStep(object):
 
 
 class Story(object):
-    def __init__(self, story_steps=None):
-        # type: (List[StoryStep]) -> None
+    def __init__(self, story_steps=None, story_name=None):
+        # type: (List[StoryStep], Optional[Text]) -> None
         self.story_steps = story_steps if story_steps else []
+        self.story_name = story_name
 
     @staticmethod
-    def from_events(events):
+    def from_events(events, story_name=None):
         """Create a story from a list of events."""
 
         story_step = StoryStep()
         for event in events:
             story_step.add_event(event)
-        return Story([story_step])
+        return Story([story_step], story_name)
 
     def as_dialogue(self, sender_id, domain):
         events = []
@@ -190,13 +193,16 @@ class Story(object):
             story_content += step.as_story_string(flat)
 
         if flat:
-            return "## Generated Story {}\n{}".format(
-                    hash(story_content), story_content)
+            if self.story_name:
+                name = self.story_name
+            else:
+                name = "Generated Story {}".format(hash(story_content))
+            return "## {}\n{}".format(name, story_content)
         else:
             return story_content
 
     def dump_to_file(self, filename, flat=False):
-        with io.open(filename, "a") as f:
+        with io.open(filename, "a", encoding="utf-8") as f:
             f.write(self.as_story_string(flat))
 
 

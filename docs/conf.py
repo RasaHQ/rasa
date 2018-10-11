@@ -35,13 +35,15 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
+    'sphinx.ext.extlinks',
     'sphinxcontrib.httpdomain',
     'sphinxcontrib.programoutput',
     'rasabaster.button',
     'rasabaster.card',
     'rasabaster.chatbubble',
     'rasabaster.runnable',
-    'rasabaster.copyable'
+    'rasabaster.copyable',
+    'rasabaster.apidoc',
 #    'numpydoc',
 ]
 
@@ -58,6 +60,13 @@ source_suffix = ['.rst', '.ipynb']
 
 # The master toctree document.
 master_doc = 'index'
+
+nitpicky = True
+nitpick_ignore = [
+    ('py:class', 'List'),
+    # TODO: remove when https://github.com/sphinx-doc/sphinx/issues/5480 fixed
+    ('py:class', 'Domain'),
+]
 
 # General information about the project.
 project = u'Rasa Core'
@@ -341,14 +350,21 @@ from mock import Mock
 Agent.handle_channel = Mock('handle_channel')
 ''' % os.path.dirname(__file__)
 
+# extlinks configuration
+
+extlinks = {
+    'gh-code': (
+        'https://github.com/RasaHQ/rasa_core/tree/{}/%s'.format(release),
+        'github ')
+}
+
 # Sphinxcontrib configuration
 scv_priority = 'tags'
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ('semver',)
 scv_overflow = ("-A", "html_theme=rasabaster")
-scv_whitelist_branches = ('master', 'latest')
-#scv_whitelist_tags = ('None',)
+scv_whitelist_branches = (re.compile('^master$'),)
 scv_whitelist_tags = (re.compile(r'^[123456789]+\.\d+\.\d+$'),
                       re.compile(r'^0\.[23456789]\d+\.\d+$'),
                       re.compile(r'^0\.1[123456789]+\.\d+$'),
@@ -362,8 +378,11 @@ scv_greatest_tag = True
 
 
 def setup(sphinx):
+    sphinx.add_stylesheet('css/custom.css')
+
     try:
-        sys.path.insert(0, os.path.abspath('./util'))
+        utils_path = os.path.abspath(os.path.join(__file__, '..', 'util'))
+        sys.path.insert(0, utils_path)
         from StoryLexer import StoryLexer
         sphinx.add_lexer("story", StoryLexer())
     except ImportError:

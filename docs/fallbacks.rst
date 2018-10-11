@@ -43,7 +43,7 @@ If you want to run this from python, use:
    agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
 
 
-``action_fallback`` is a default action in Rasa Core, which will send the
+``action_default_fallback`` is a default action in Rasa Core, which will send the
 ``utter_default`` template message to the user. Make sure to specify
 this template in your domain file. It will also revert back to the
 state of the conversation before the user message that caused the
@@ -71,6 +71,5 @@ called ``out_of_scope``, then you should add this as a story:
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
-   
+
+

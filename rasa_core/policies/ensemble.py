@@ -8,20 +8,24 @@ import json
 import logging
 import os
 import sys
+import datetime
 from collections import defaultdict
 
 import numpy as np
 from builtins import str
 import typing
-from typing import Text, Optional, Any, List, Dict
+from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
-from rasa_core.events import SlotSet, ActionExecuted, UserUttered
+from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies.fallback import FallbackPolicy
-from rasa_core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import (MemoizationPolicy,
+                                            AugmentedMemoizationPolicy)
+
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +40,7 @@ class PolicyEnsemble(object):
         # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
         self.training_trackers = None
+        self.date_trained = None
 
         if action_fingerprints:
             self.action_fingerprints = action_fingerprints
@@ -62,12 +67,13 @@ class PolicyEnsemble(object):
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
             self.training_trackers = training_trackers
+            self.date_trained = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
 
     def probabilities_using_best_policy(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
+        # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
         raise NotImplementedError
 
     def _max_histories(self):
@@ -120,7 +126,8 @@ class PolicyEnsemble(object):
             "python": ".".join([str(s) for s in sys.version_info[:3]]),
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
-            "policy_names": policy_names
+            "policy_names": policy_names,
+            "trained_at": self.date_trained
         }
 
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
@@ -144,8 +151,7 @@ class PolicyEnsemble(object):
     @classmethod
     def load_metadata(cls, path):
         metadata_path = os.path.join(path, 'policy_metadata.json')
-        with io.open(os.path.abspath(metadata_path)) as f:
-            metadata = json.loads(f.read())
+        metadata = json.loads(utils.read_file(os.path.abspath(metadata_path)))
         return metadata
 
     @staticmethod
@@ -198,10 +204,11 @@ class PolicyEnsemble(object):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
 
-    def is_not_memo_policy(self, best_policy_name):
+    @staticmethod
+    def is_not_memo_policy(best_policy_name):
         return not (best_policy_name.endswith("_" + MemoizationPolicy.__name__)
                     or best_policy_name.endswith(
-                                    "_" + AugmentedMemoizationPolicy.__name__))
+                            "_" + AugmentedMemoizationPolicy.__name__))
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
@@ -216,27 +223,32 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
 
-        policy_names = [type(p).__name__ for p in self.policies]
+        if (result.index(max_confidence) ==
+                domain.index_for_action(ACTION_LISTEN_NAME) and
+                tracker.latest_action_name == ACTION_LISTEN_NAME and
+                self.is_not_memo_policy(best_policy_name)):
+            # Trigger the fallback policy when ActionListen is predicted after
+            # a user utterance. This is done on the condition that:
+            # - a fallback policy is present,
+            # - there was just a user message and the predicted
+            #   action is action_listen by a policy
+            #   other than the MemoizationPolicy
 
-        # Trigger the fallback policy when ActionListen is predicted after
-        # a user utterance. This is done on the condition that: a fallback
-        # policy is present, there was just a user message and the predicted
-        # action is action_listen by a policy other than the MemoizationPolicy
+            fallback_idx_policy = [(i, p) for i, p in enumerate(self.policies)
+                                   if isinstance(p, FallbackPolicy)]
 
-        if FallbackPolicy.__name__ in policy_names:
-            idx = policy_names.index(FallbackPolicy.__name__)
-            fallback_policy = self.policies[idx]
+            if fallback_idx_policy:
+                fallback_idx, fallback_policy = fallback_idx_policy[0]
 
-            if (result.index(max_confidence) == 0 and
-                    self.is_not_memo_policy(best_policy_name)
-                    and isinstance(tracker.events[-1], UserUttered)):
-                logger.debug("Action listen was predicted after a user message."
-                             " Predicting fallback action: {}"
-                             "".format(fallback_policy.fallback_action_name))
+                logger.debug("Action 'action_listen' was predicted after "
+                             "a user message using {}. "
+                             "Predicting fallback action: {}"
+                             "".format(best_policy_name,
+                                       fallback_policy.fallback_action_name))
+
                 result = fallback_policy.fallback_scores(domain)
-
                 best_policy_name = 'policy_{}_{}'.format(
-                                            idx,
+                                            fallback_idx,
                                             type(fallback_policy).__name__)
 
         # normalize probablilities

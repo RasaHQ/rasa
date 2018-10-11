@@ -6,9 +6,9 @@ from __future__ import unicode_literals
 import copy
 import io
 import logging
-from collections import deque
-
 import typing
+from collections import deque
+from enum import Enum
 from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
@@ -25,6 +25,25 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
+
+
+class EventVerbosity(Enum):
+    """Filter on which events to include in tracker dumps."""
+
+    # no events will be included
+    NONE = 1
+
+    # all events, that contribute to the trackers state are included
+    # these are all you need to reconstruct the tracker state
+    APPLIED = 2
+
+    # include even more events, in this case everything that comes
+    # after the most recent restart event. this will also include
+    # utterances that got reverted and actions that got undone.
+    AFTER_RESTART = 3
+
+    # include every logged event
+    ALL = 4
 
 
 class DialogueStateTracker(object):
@@ -44,6 +63,15 @@ class DialogueStateTracker(object):
         the tracker, these events will be replayed to recreate the state."""
 
         evts = events.deserialise_events(events_as_dict)
+        return cls.from_events(sender_id, evts, slots, max_event_history)
+
+    @classmethod
+    def from_events(cls,
+                    sender_id,  # type: Text
+                    evts,  # type: List[Event]
+                    slots,  # type: List[Slot]
+                    max_event_history=None  # type: Optional[int]
+                    ):
         tracker = cls(sender_id, slots, max_event_history)
         for e in evts:
             tracker.update(e)
@@ -74,7 +102,7 @@ class DialogueStateTracker(object):
         # if tracker is paused, no actions should be taken
         self._paused = None
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME   # type: Optional[Text]
+        self.followup_action = ACTION_LISTEN_NAME  # type: Optional[Text]
         self.latest_action_name = None
         self.latest_message = None
         # Stores the most recent message sent by the user
@@ -84,18 +112,16 @@ class DialogueStateTracker(object):
     ###
     # Public tracker interface
     ###
-    def current_state(self,
-                      should_include_events=False,
-                      should_ignore_restarts=False):
-        # type: (bool, bool) -> Dict[Text, Any]
+    def current_state(self, event_verbosity=EventVerbosity.NONE):
+        # type: (EventVerbosity) -> Dict[Text, Any]
         """Return the current tracker state as an object."""
 
-        if should_include_events:
-            if should_ignore_restarts:
-                es = self.events
-            else:
-                es = self.events_after_latest_restart()
-            evts = [e.as_dict() for e in es]
+        if event_verbosity == EventVerbosity.ALL:
+            evts = [e.as_dict() for e in self.events]
+        elif event_verbosity == EventVerbosity.AFTER_RESTART:
+            evts = [e.as_dict() for e in self.events_after_latest_restart()]
+        elif event_verbosity == EventVerbosity.APPLIED:
+            evts = [e.as_dict() for e in self.applied_events()]
         else:
             evts = None
 
@@ -108,9 +134,10 @@ class DialogueStateTracker(object):
             "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data,
             "latest_event_time": latest_event_time,
-            "followup_action": self.follow_up_action,
+            "followup_action": self.followup_action,
             "paused": self.is_paused(),
-            "events": evts
+            "events": evts,
+            "latest_input_channel": self.get_latest_input_channel()
         }
 
     def past_states(self, domain):
@@ -146,6 +173,14 @@ class DialogueStateTracker(object):
         return (x.get("value")
                 for x in self.latest_message.entities
                 if x.get("entity") == entity_type)
+
+    def get_latest_input_channel(self):
+        # type: () -> Optional[Text]
+        """Get the name of the input_channel of the latest UserUttered event"""
+
+        for e in reversed(self.events):
+            if isinstance(e, UserUttered):
+                return e.input_channel
 
     def is_paused(self):
         # type: () -> bool
@@ -296,14 +331,14 @@ class DialogueStateTracker(object):
         Returns the dumped tracker as a string."""
         from rasa_core.training.structures import Story
 
-        story = Story.from_events(self.applied_events())
+        story = Story.from_events(self.applied_events(), self.sender_id)
         return story.as_story_string(flat=True)
 
     def export_stories_to_file(self, export_path="debug.md"):
         # type: (Text) -> None
         """Dump the tracker as a story to a file."""
 
-        with io.open(export_path, 'a') as f:
+        with io.open(export_path, 'a', encoding="utf-8") as f:
             f.write(self.export_stories() + "\n")
 
     ###
@@ -320,7 +355,7 @@ class DialogueStateTracker(object):
         self.latest_action_name = None
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
-        self.follow_up_action = ACTION_LISTEN_NAME
+        self.followup_action = ACTION_LISTEN_NAME
 
     def _reset_slots(self):
         # type: () -> None
@@ -357,7 +392,7 @@ class DialogueStateTracker(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def trigger_follow_up_action(self, action):
+    def trigger_followup_action(self, action):
         # type: (Text) -> None
         """Triggers another action following the execution of the current."""
 

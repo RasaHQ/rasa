@@ -82,13 +82,13 @@ class TestBooleanSlot(SlotTestCollection):
     def invalid_value(self, request):
         return request.param
 
-    @pytest.fixture(params=[(None, [0]),
-                            (True, [1]),
-                            ("9", [1]),
-                            (12, [1]),
-                            (False, [0]),
-                            ("0", [0]),
-                            (0, [0])])
+    @pytest.fixture(params=[(None, [0, 0]),
+                            (True, [1, 1]),
+                            ("9", [1, 1]),
+                            (12, [1, 1]),
+                            (False, [1, 0]),
+                            ("0", [1, 0]),
+                            (0, [1, 0])])
     def value_feature_pair(self, request):
         return request.param
 
@@ -148,15 +148,16 @@ class TestUnfeaturizedSlot(SlotTestCollection):
 class TestCategoricalSlot(SlotTestCollection):
     def create_slot(self):
         return CategoricalSlot("test",
-                               values=[1, "two", {"three": 3}, None])
+                               values=[1, "two", "小于", {"three": 3}, None])
 
     @pytest.fixture(params=[{"a": "b"}, 2, True, "asd", "🌴"])
     def invalid_value(self, request):
         return request.param
 
-    @pytest.fixture(params=[(None, [0, 0, 0, 1]),
-                            (1, [1, 0, 0, 0]),
-                            ("two", [0, 1, 0, 0]),
-                            ({"three": 3}, [0, 0, 1, 0])])
+    @pytest.fixture(params=[(None, [0, 0, 0, 0, 1]),
+                            (1, [1, 0, 0, 0, 0]),
+                            ("two", [0, 1, 0, 0, 0]),
+                            ("小于", [0, 0, 1, 0, 0]),
+                            ({"three": 3}, [0, 0, 0, 1, 0])])
     def value_feature_pair(self, request):
         return request.param

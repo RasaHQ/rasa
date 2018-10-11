@@ -15,7 +15,7 @@ Currently, there is code for connecting to
 facebook, slack, telegram, mattermost and twilio. If the connection
 you want is missing, this is a great place to start contributing!
 
-If you're testing on your local machine (e.g. not a server), you 
+If you're testing on your local machine (e.g. not a server), you
 will need to use ngrok_. This gives your machine a domain name
 and so that facebook, slack, etc. know where to send messages.
 
@@ -356,7 +356,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
 .. code-block:: yaml
 
-   twillio:
+   twilio:
      account_sid: "ACbc2dxxxxxxxxxxxx19d54bdcd6e41186"
      auth_token: "e231c197493a7122d475b4xxxxxxxxxx"
      twilio_number: "+440123456789"
@@ -491,6 +491,51 @@ the port. The endpoint for receiving botframework channel messages
 is ``/webhooks/botframework/webhook``. This is the url you should
 add in your microsoft bot service configuration.
 
+.. _socketio_connector:
+
+SocketIO Setup
+--------------
+
+You can **either** attach the input channel running the provided
+``rasa_core.run`` script, or you can attach the channel in your
+own code.
+
+Using run script
+^^^^^^^^^^^^^^^^
+
+If you want to connect the socketio input channel using the run
+script, e.g. using:
+
+.. code-block:: bash
+
+  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+      --port 5002 --credentials credentials.yml
+
+you need to supply a ``credentials.yml`` with the following content:
+
+.. code-block:: yaml
+
+   socketio:
+     user_message_evt: user_uttered
+     bot_message_evt: bot_uttered
+
+These two configuration values define the event names used by Rasa Core
+when sending or receiving messages over socket.io.
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+Code to create a Socket.IO-compatible webserver looks like this:
+
+.. literalinclude:: ../tests/test_channels.py
+   :pyobject: test_socketio_channel
+   :lines: 2-
+   :end-before: END DOC INCLUDE
+
+The arguments for the ``handle_channels`` are the input channels and
+the port. Once started, you should be able to connect to
+``http://localhost:5005`` with your socket.io client.
+
 .. _ngrok:
 
 Using Ngrok For Local Testing
@@ -558,7 +603,7 @@ After connecting the ``rest`` input channel, you can post messages to
 
    {
      "sender": "Rasa",
-     "text": "Hi there!"
+     "message": "Hi there!"
    }
 
 The response to this request will include the bot responses, e.g.
@@ -674,6 +719,4 @@ posted this message to the channel:
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html   
-   
+
