@@ -44,7 +44,7 @@ Fixed
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Changed
------
+-------
 - Remove livechat widget from docs
 
 
