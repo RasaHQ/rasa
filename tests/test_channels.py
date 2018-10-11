@@ -61,8 +61,8 @@ def test_facebook_channel():
             # token for the page you subscribed to
     )
 
-    # set serve_forever=true if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=true)
+    # set serve_forever=True if you want to keep the server running
+    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
