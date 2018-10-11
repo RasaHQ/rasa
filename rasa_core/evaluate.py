@@ -7,9 +7,9 @@ import argparse
 import io
 import logging
 import warnings
-from builtins import str
 from typing import List, Tuple
 
+from builtins import str
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.utils import AvailableEndpoints, pad_list_to_size
+from rasa_core.utils import AvailableEndpoints, pad_list_to_length
 from rasa_nlu.evaluate import (
     plot_confusion_matrix,
     get_evaluation_metrics)
@@ -208,31 +208,31 @@ def _generate_trackers(resource_name, agent, max_stories=None, e2e=False):
 def _collect_user_uttered_predictions(event,
                                       partial_tracker,
                                       fail_on_prediction_errors):
-    evaluation_store = EvaluationStore()
+    user_uttered_eval_store = EvaluationStore()
 
     intent_gold = event.parse_data.get("true_intent")
     predicted_intent = event.parse_data.get("intent").get("name")
-    evaluation_store.add_to_store(intent_predictions=predicted_intent,
-                                  intent_targets=intent_gold)
+    user_uttered_eval_store.add_to_store(intent_predictions=predicted_intent,
+                                         intent_targets=intent_gold)
 
     entity_gold = event.parse_data.get("true_entities")
     predicted_entities = event.parse_data.get("entities")
     if entity_gold or predicted_entities:
-        padded_entities = pad_list_to_size(predicted_entities,
-                                           len(entity_gold),
-                                           "None")
-        evaluation_store.add_to_store(
+        padded_entities = pad_list_to_length(predicted_entities,
+                                             len(entity_gold),
+                                             "None")
+        user_uttered_eval_store.add_to_store(
                 entity_targets=entity_gold,
                 entity_predictions=padded_entities
         )
 
-    if evaluation_store.has_intent_mismatch() or \
-            evaluation_store.has_entity_mismatch():
+    if user_uttered_eval_store.has_intent_mismatch() or \
+            user_uttered_eval_store.has_entity_mismatch():
         partial_tracker.update(
                 WronglyClassifiedUserUtterance(
                         event.text, intent_gold, predicted_intent,
-                        evaluation_store.entity_targets,
-                        evaluation_store.entity_predictions)
+                        user_uttered_eval_store.entity_targets,
+                        user_uttered_eval_store.entity_predictions)
         )
         if fail_on_prediction_errors:
             raise ValueError(
@@ -241,22 +241,22 @@ def _collect_user_uttered_predictions(event,
     else:
         partial_tracker.update(event)
 
-    return evaluation_store
+    return user_uttered_eval_store
 
 
 def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
-    evaluation_store = EvaluationStore()
+    action_executed_eval_store = EvaluationStore()
 
     action, _, _ = processor.predict_next_action(partial_tracker)
 
     predicted = action.name()
     gold = event.action_name
 
-    evaluation_store.add_to_store(action_predictions=predicted,
-                                  action_targets=gold)
+    action_executed_eval_store.add_to_store(action_predictions=predicted,
+                                            action_targets=gold)
 
-    if evaluation_store.has_action_mismatch():
+    if action_executed_eval_store.has_action_mismatch():
         partial_tracker.update(WronglyPredictedAction(gold, predicted))
         if fail_on_prediction_errors:
             raise ValueError(
@@ -265,14 +265,14 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     else:
         partial_tracker.update(event)
 
-    return evaluation_store
+    return action_executed_eval_store
 
 
 def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
                              e2e=False):
     processor = agent.create_processor()
 
-    evaluation_store = EvaluationStore()
+    tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
 
@@ -287,17 +287,17 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
                         processor, partial_tracker, event,
                         fail_on_prediction_errors
                 )
-            evaluation_store.merge_store(action_executed_result)
+            tracker_eval_store.merge_store(action_executed_result)
         elif e2e and isinstance(event, UserUttered):
             user_uttered_result = \
                 _collect_user_uttered_predictions(
                         event, partial_tracker, fail_on_prediction_errors)
 
-            evaluation_store.merge_store(user_uttered_result)
+            tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
 
-    return evaluation_store, partial_tracker
+    return tracker_eval_store, partial_tracker
 
 
 def collect_story_predictions(
@@ -309,7 +309,7 @@ def collect_story_predictions(
     # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker]]
     """Test the stories from a file, running them through the stored model."""
 
-    evaluation_store = EvaluationStore()
+    story_eval_store = EvaluationStore()
     failed = []
     correct_dialogues = []
 
@@ -321,7 +321,7 @@ def collect_story_predictions(
             _predict_tracker_actions(tracker, agent,
                                      fail_on_prediction_errors, e2e)
 
-        evaluation_store.merge_store(tracker_results)
+        story_eval_store.merge_store(tracker_results)
 
         if tracker_results.has_prediction_target_mismatch():
             # there is at least one prediction that is wrong
@@ -339,7 +339,7 @@ def collect_story_predictions(
                          report, precision, f1, accuracy,
                          include_report=False)
 
-    return evaluation_store, failed
+    return story_eval_store, failed
 
 
 def log_failed_stories(failed, failed_output):
