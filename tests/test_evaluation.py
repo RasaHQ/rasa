@@ -23,7 +23,7 @@ def test_evaluation_image_creation(tmpdir, default_agent):
             out_file_plot=img_path,
             max_stories=None,
             out_file_stories=stories_path,
-            e2e=False
+            use_e2e=False
     )
 
     assert os.path.isfile(img_path)
@@ -34,10 +34,10 @@ def test_evaluation_image_creation(tmpdir, default_agent):
 
 def test_action_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-            DEFAULT_STORIES_FILE, default_agent)
+            DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
 
     evaluation_result, failed_stories = collect_story_predictions(
-            completed_trackers, default_agent, e2e=False)
+            completed_trackers, default_agent, use_e2e=False)
 
     assert not evaluation_result.has_prediction_target_mismatch()
     assert len(failed_stories) == 0
@@ -45,10 +45,10 @@ def test_action_evaluation_script(tmpdir, default_agent):
 
 def test_end_to_end_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-            END_TO_END_STORY_FILE, default_agent, e2e=True)
+            END_TO_END_STORY_FILE, default_agent, use_e2e=True)
 
     evaluation_result, failed_stories = collect_story_predictions(
-            completed_trackers, default_agent, e2e=True)
+            completed_trackers, default_agent, use_e2e=True)
 
     assert not evaluation_result.has_prediction_target_mismatch()
     assert len(failed_stories) == 0

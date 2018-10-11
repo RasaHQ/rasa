@@ -7,7 +7,7 @@ import argparse
 import io
 import logging
 import warnings
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Any, Text, Dict
 
 from builtins import str
 from sklearn.exceptions import UndefinedMetricWarning
@@ -20,10 +20,11 @@ from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.utils import AvailableEndpoints, pad_list_to_length
+from rasa_core.utils import AvailableEndpoints, pad_list_to_size
 from rasa_nlu.evaluate import (
     plot_confusion_matrix,
     get_evaluation_metrics)
+from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,16 @@ logger = logging.getLogger(__name__)
 class EvaluationStore(object):
     """Class storing action, intent and entity predictions and targets."""
 
-    def __init__(self,
-                 action_predictions=None, action_targets=None,
-                 intent_predictions=None, intent_targets=None,
-                 entity_predictions=None, entity_targets=None):
+    def __init__(
+            self,
+            action_predictions=None,  # type: Optional[List[str]]
+            action_targets=None,  # type: Optional[List[str]]
+            intent_predictions=None,  # type: Optional[List[str]]
+            intent_targets=None,  # type: Optional[List[str]]
+            entity_predictions=None,  # type: Optional[List[Dict[Text, Any]]]
+            entity_targets=None  # type: Optional[List[Dict[Text, Any]]]
+    ):
+        # type: (...) -> None
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
         self.intent_predictions = intent_predictions or []
@@ -42,18 +49,24 @@ class EvaluationStore(object):
         self.entity_predictions = entity_predictions or []
         self.entity_targets = entity_targets or []
 
-    def add_to_store(self,
-                     action_predictions=None, action_targets=None,
-                     intent_predictions=None, intent_targets=None,
-                     entity_predictions=None, entity_targets=None):
+    def add_to_store(
+            self,
+            action_predictions=None,  # type: Optional[List[str]]
+            action_targets=None,  # type: Optional[List[str]]
+            intent_predictions=None,  # type: Optional[List[str]]
+            intent_targets=None,  # type: Optional[List[str]]
+            entity_predictions=None,  # type: Optional[List[Dict[Text, Any]]]
+            entity_targets=None  # type: Optional[List[Dict[Text, Any]]]
+    ):
+        # type: (...) -> None
         """Add items or lists of items to the store"""
         for k, v in locals().items():
             if k != 'self' and v:
-                att = getattr(self, k)
+                attr = getattr(self, k)
                 if isinstance(v, list):
-                    att.extend(v)
+                    attr.extend(v)
                 else:
-                    att.append(v)
+                    attr.append(v)
 
     def merge_store(self, other):
         # type: (EvaluationStore) -> None
@@ -66,21 +79,14 @@ class EvaluationStore(object):
                           entity_targets=other.entity_targets)
 
     def has_prediction_target_mismatch(self):
-        return any((self.has_action_mismatch(),
-                    self.has_intent_mismatch(),
-                    self.has_entity_mismatch()))
-
-    def has_intent_mismatch(self):
-        return self.intent_predictions != self.intent_targets
-
-    def has_entity_mismatch(self):
-        return self.entity_predictions != self.entity_targets
-
-    def has_action_mismatch(self):
-        return self.action_predictions != self.action_targets
+        return self.intent_predictions != self.intent_targets or \
+               self.entity_predictions != self.entity_targets or \
+               self.action_predictions != self.action_targets
 
     def concatenate_predictions(self):
-        return self.action_predictions + self.intent_predictions + self.entity_predictions
+        return self.action_predictions + \
+               self.intent_predictions + \
+               self.entity_predictions
 
     def concatenate_targets(self):
         return self.action_targets + self.intent_targets + self.entity_targets
@@ -114,8 +120,8 @@ def create_argument_parser():
             type=str,
             nargs="?",
             const="story_confmat.pdf",
-            help="output path for the created evaluation plot. If set to None"
-                 "or an empty string, no plot will be generated.")
+            help="output path for the created evaluation plot. If not "
+                 "specified, no plot will be generated.")
     parser.add_argument(
             '--e2e', '--end-to-end',
             action='store_true',
@@ -176,6 +182,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
                  correct_entities=None,
                  predicted_entities=None,
                  timestamp=None):
+        self.text = text
         self.correct_intent = correct_intent
         self.predicted_intent = predicted_intent
         self.correct_entities = correct_entities
@@ -183,21 +190,27 @@ class WronglyClassifiedUserUtterance(UserUttered):
         super(WronglyClassifiedUserUtterance, self).__init__(
                 text, {"name": self.correct_intent}, timestamp=timestamp)
 
+    def _md_format_message(self, text, intent, entities):
+        message_from_md = MarkdownReader()._parse_training_example(text)
+        return MarkdownWriter()._generate_message_md(
+                {"text": message_from_md.text,
+                 "intent": intent,
+                 "entities": entities}
+        )
+
     def as_story_string(self):
-        s = self.correct_intent
-        if self.correct_intent != self.predicted_intent:
-            s += ("   <!-- predicted intent: {} -->"
-                  "").format(self.predicted_intent)
-        if self.correct_entities != self.predicted_entities:
-            s += ("   <!-- entities: {} - predicted entities: {} -->"
-                  "").format(self.correct_entities, self.predicted_entities)
-
-        return s
+        correct = self._md_format_message(self.text,
+                                          self.correct_intent,
+                                          self.correct_entities)
+        predicted = self._md_format_message(self.text,
+                                            self.predicted_intent,
+                                            self.predicted_entities)
+        return "{}   <!-- predicted: {} -->".format(correct, predicted)
 
 
-def _generate_trackers(resource_name, agent, max_stories=None, e2e=False):
+def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
     story_graph = training.extract_story_graph(resource_name, agent.domain,
-                                               agent.interpreter, e2e)
+                                               agent.interpreter, use_e2e)
     g = TrainingDataGenerator(story_graph, agent.domain,
                               use_story_concatenation=False,
                               augmentation_factor=0,
@@ -218,16 +231,20 @@ def _collect_user_uttered_predictions(event,
     entity_gold = event.parse_data.get("true_entities")
     predicted_entities = event.parse_data.get("entities")
     if entity_gold or predicted_entities:
-        padded_entities = pad_list_to_length(predicted_entities,
-                                             len(entity_gold),
-                                             "None")
+        if len(entity_gold) > len(predicted_entities):
+            predicted_entities = pad_list_to_size(predicted_entities,
+                                                  len(entity_gold),
+                                                  "None")
+        elif len(predicted_entities) > len(entity_gold):
+            entity_gold = pad_list_to_size(entity_gold,
+                                           len(predicted_entities),
+                                           "None")
         user_uttered_eval_store.add_to_store(
                 entity_targets=entity_gold,
-                entity_predictions=padded_entities
+                entity_predictions=predicted_entities
         )
 
-    if user_uttered_eval_store.has_intent_mismatch() or \
-            user_uttered_eval_store.has_entity_mismatch():
+    if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
                 WronglyClassifiedUserUtterance(
                         event.text, intent_gold, predicted_intent,
@@ -256,7 +273,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     action_executed_eval_store.add_to_store(action_predictions=predicted,
                                             action_targets=gold)
 
-    if action_executed_eval_store.has_action_mismatch():
+    if action_executed_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(WronglyPredictedAction(gold, predicted))
         if fail_on_prediction_errors:
             raise ValueError(
@@ -269,7 +286,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
 
 
 def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
-                             e2e=False):
+                             use_e2e=False):
     processor = agent.create_processor()
 
     tracker_eval_store = EvaluationStore()
@@ -288,7 +305,7 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
                         fail_on_prediction_errors
                 )
             tracker_eval_store.merge_store(action_executed_result)
-        elif e2e and isinstance(event, UserUttered):
+        elif use_e2e and isinstance(event, UserUttered):
             user_uttered_result = \
                 _collect_user_uttered_predictions(
                         event, partial_tracker, fail_on_prediction_errors)
@@ -304,7 +321,7 @@ def collect_story_predictions(
         completed_trackers,  # type: List[DialogueStateTracker]
         agent,  # type: Agent
         fail_on_prediction_errors=False,  # type: bool
-        e2e=False  # type: bool
+        use_e2e=False  # type: bool
 ):
     # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker]]
     """Test the stories from a file, running them through the stored model."""
@@ -319,12 +336,12 @@ def collect_story_predictions(
     for tracker in tqdm(completed_trackers):
         tracker_results, predicted_tracker = \
             _predict_tracker_actions(tracker, agent,
-                                     fail_on_prediction_errors, e2e)
+                                     fail_on_prediction_errors, use_e2e)
 
         story_eval_store.merge_store(tracker_results)
 
         if tracker_results.has_prediction_target_mismatch():
-            # there is at least one prediction that is wrong
+            # there is at least one wrong prediction
             failed.append(predicted_tracker)
             correct_dialogues.append(0)
         else:
@@ -335,7 +352,7 @@ def collect_story_predictions(
             [1] * len(completed_trackers), correct_dialogues)
 
     log_evaluation_table([1] * len(completed_trackers),
-                         "END-TO-END" if e2e else "CONVERSATION",
+                         "END-TO-END" if use_e2e else "CONVERSATION",
                          report, precision, f1, accuracy,
                          include_report=False)
 
@@ -362,14 +379,14 @@ def run_story_evaluation(resource_name, agent,
                          out_file_stories=None,
                          out_file_plot=None,
                          fail_on_prediction_errors=False,
-                         e2e=False):
+                         use_e2e=False):
     """Run the evaluation of the stories, optionally plots the results."""
 
     completed_trackers = _generate_trackers(resource_name, agent,
-                                            max_stories, e2e)
+                                            max_stories, use_e2e)
 
     story_results, failed = collect_story_predictions(
-            completed_trackers, agent, fail_on_prediction_errors, e2e)
+            completed_trackers, agent, fail_on_prediction_errors, use_e2e)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)

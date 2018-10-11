@@ -17,7 +17,7 @@ def extract_story_graph(
         resource_name,  # type: Text
         domain,  # type: Domain
         interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
-        e2e=False # type: bool
+        use_e2e=False # type: bool
 ):
     # type: (...) -> StoryGraph
     from rasa_core.interpreter import RegexInterpreter
@@ -28,7 +28,7 @@ def extract_story_graph(
         interpreter = RegexInterpreter()
     story_steps = StoryFileReader.read_from_folder(resource_name,
                                                    domain, interpreter,
-                                                   e2e=e2e)
+                                                   use_e2e=use_e2e)
     return StoryGraph(story_steps)
 
 

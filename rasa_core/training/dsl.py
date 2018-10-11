@@ -46,6 +46,9 @@ class EndToEndReader(MarkdownReader):
             example.data["true_intent"] = intent
             return example
 
+        raise ValueError("Encountered invalid end-to-end format for message "
+                         "`{}`".format(line))
+
 
 class StoryStepBuilder(object):
     def __init__(self, name):
@@ -145,36 +148,36 @@ class StoryStepBuilder(object):
 class StoryFileReader(object):
     """Helper class to read a story file."""
 
-    def __init__(self, domain, interpreter, template_vars=None, e2e=False):
+    def __init__(self, domain, interpreter, template_vars=None, use_e2e=False):
         self.story_steps = []
         self.current_step_builder = None  # type: Optional[StoryStepBuilder]
         self.domain = domain
         self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
-        self.e2e = e2e
+        self.use_e2e = use_e2e
 
     @staticmethod
     def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
-                         template_variables=None, e2e=False):
+                         template_variables=None, use_e2e=False):
         """Given a path reads all contained story files."""
 
         story_steps = []
         for f in nlu_utils.list_files(resource_name):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,
-                                                   template_variables, e2e)
+                                                   template_variables, use_e2e)
             story_steps.extend(steps)
         return story_steps
 
     @staticmethod
     def read_from_file(filename, domain, interpreter=RegexInterpreter(),
-                       template_variables=None, e2e=False):
+                       template_variables=None, use_e2e=False):
         """Given a md file reads the contained stories."""
 
         try:
             with io.open(filename, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter,
-                                     template_variables, e2e)
+                                     template_variables, use_e2e)
             return reader.process_lines(lines)
         except ValueError as err:
             file_info = ("Invalid story file format. Failed to parse "
@@ -249,7 +252,7 @@ class StoryFileReader(object):
                 elif line.startswith("*"):  # reached a user message
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
-                    if self.e2e:
+                    if self.use_e2e:
                         self.add_e2e_messages(user_messages, line_num)
                     else:
                         self.add_user_messages(user_messages, line_num)
