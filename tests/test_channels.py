@@ -62,7 +62,7 @@ def test_facebook_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -94,7 +94,7 @@ def test_slack_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -131,7 +131,7 @@ def test_mattermost_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -163,7 +163,7 @@ def test_botframework_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -197,7 +197,7 @@ def test_rocketchat_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -240,7 +240,7 @@ def test_telegram_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -275,7 +275,7 @@ def test_twilio_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -305,7 +305,7 @@ def test_callback_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -339,7 +339,7 @@ def test_socketio_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=True)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -588,5 +588,5 @@ def test_channel_inheritance():
 
     # set serve_forever=True if you want to keep the server running
     s = agent.handle_channels([RestInput(), rasa_input], 5004,
-                              serve_forever=True)
+                              serve_forever=False)
     assert s.started
