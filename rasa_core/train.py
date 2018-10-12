@@ -223,6 +223,9 @@ if __name__ == '__main__':
         if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
                              "--interactive flag.")
+        elif cmdline_args.finetune:
+            raise ValueError("--core can only be used together with the"
+                             "--interactive flag and without --finetune flag.")
         else:
             logger.info("loading a pre-trained model. ",
                         "all training-related parameters will be ignored")

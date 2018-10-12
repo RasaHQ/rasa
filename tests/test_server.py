@@ -89,7 +89,7 @@ def test_requesting_non_existent_tracker(app):
                                   "confidence": None,
                                   "name": "action_listen",
                                   "policy": None,
-                                  "policy_confidence": None,
+                                  "confidence": None,
                                   "timestamp": 1514764800}]
     assert content["latest_message"] == {"text": None,
                                          "intent": {},
@@ -214,21 +214,21 @@ def test_list_conversations_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
 
-    # {"username": "testadmin", "role": "admin"}
+    # {"user": {"user": "testadmin", "role": "admin"}}
     jwt_header = {
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
-                         "1c2VybmFtZSI6InRlc3RhZG1pbiIsInJvbGUiOiJhZG1pbi"
-                         "J9.3gp-0pEEUJpU_NoR76lVYMrW86Aedx_QULKUcw3ODbo"
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
+                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
     assert response.status_code == 200
 
-    # {"username": "testuser", "role": "user"}
+    # {"user": {"user": "testuser", "role": "user"}}
     jwt_header = {
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
-                         "1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InVzZXIifQ"
-                         ".X4wN0sLRW0Urd9E-ProsCK_IQHjuNZ5SJwm4RXiX6fQ"
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
+                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
@@ -239,11 +239,11 @@ def test_get_tracker_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
 
-    # {"username": "testadmin", "role": "admin"}
+    # {"user": {"user": "testadmin", "role": "admin"}}
     jwt_header = {
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
-                         "1c2VybmFtZSI6InRlc3RhZG1pbiIsInJvbGUiOiJhZG1pbi"
-                         "J9.3gp-0pEEUJpU_NoR76lVYMrW86Aedx_QULKUcw3ODbo"
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
+                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
@@ -253,11 +253,11 @@ def test_get_tracker_with_jwt(secured_app):
                                headers=jwt_header)
     assert response.status_code == 200
 
-    # {"username": "testuser", "role": "user"}
+    # {"user": {"user": "testuser", "role": "user"}}
     jwt_header = {
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ"
-                         "1c2VybmFtZSI6InRlc3R1c2VyIiwicm9sZSI6InVzZXIifQ"
-                         ".X4wN0sLRW0Urd9E-ProsCK_IQHjuNZ5SJwm4RXiX6fQ"
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
+                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)

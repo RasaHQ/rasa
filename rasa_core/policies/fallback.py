@@ -142,7 +142,6 @@ class FallbackPolicy(Policy):
         if os.path.exists(path):
             meta_path = os.path.join(path, "fallback_policy.json")
             if os.path.isfile(meta_path):
-                with io.open(meta_path) as f:
-                    meta = json.loads(f.read())
+                meta = json.loads(utils.read_file(meta_path))
 
         return cls(**meta)

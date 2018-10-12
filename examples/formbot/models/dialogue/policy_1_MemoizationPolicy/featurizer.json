@@ -1,1 +1,0 @@
-{"py/object": "rasa_core.featurizers.MaxHistoryTrackerFeaturizer", "max_history": 3, "remove_duplicates": true, "state_featurizer": {"py/object": "rasa_core.featurizers.SingleStateFeaturizer", "slot_feature_len": null, "user_feature_len": null}, "use_intent_probabilities": false}

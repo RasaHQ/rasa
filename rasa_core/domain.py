@@ -23,10 +23,16 @@ from rasa_core.actions import Action, action
 from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
+from rasa_core.constants import REQUESTED_SLOT
 
 logger = logging.getLogger(__name__)
 
 PREV_PREFIX = 'prev_'
+
+
+class InvalidDomain(Exception):
+    """Exception that can be raised when domain is not valid."""
+    pass
 
 
 def check_domain_sanity(domain):
@@ -67,11 +73,11 @@ def check_domain_sanity(domain):
             duplicate_intents or \
             duplicate_slots or \
             duplicate_entities:
-        raise Exception(get_exception_message([
-            (duplicate_actions, "actions"),
-            (duplicate_intents, "intents"),
-            (duplicate_slots, "slots"),
-            (duplicate_entities, "entities")]))
+        raise InvalidDomain(get_exception_message([
+                (duplicate_actions, "actions"),
+                (duplicate_intents, "intents"),
+                (duplicate_slots, "slots"),
+                (duplicate_entities, "entities")]))
 
 
 class Domain(object):
@@ -101,13 +107,12 @@ class Domain(object):
         additional_arguments = data.get("config", {})
         intent_properties = cls.collect_intent_properties(data.get("intents",
                                                                    {}))
-        actions = data.get("actions", []) + data.get("forms", [])
         return cls(
                 intent_properties,
                 data.get("entities", []),
                 slots,
                 utter_templates,
-                actions,
+                data.get("actions", []),
                 data.get("forms", []),
                 **additional_arguments
         )
@@ -128,10 +133,10 @@ class Domain(object):
         try:
             c.validate(raise_exception=True)
         except SchemaError:
-            raise ValueError("Failed to validate your domain yaml. "
-                             "Make sure the file is correct, to do so"
-                             "take a look at the errors logged during "
-                             "validation previous to this exception. ")
+            raise InvalidDomain("Failed to validate your domain yaml. "
+                                "Make sure the file is correct, to do so"
+                                "take a look at the errors logged during "
+                                "validation previous to this exception. ")
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -170,9 +175,9 @@ class Domain(object):
                 if isinstance(t, string_types):
                     validated_variations.append({"text": t})
                 elif "text" not in t:
-                    raise Exception("Utter template '{}' needs to contain"
-                                    "'- text: ' attribute to be a proper"
-                                    "template".format(template_key))
+                    raise InvalidDomain("Utter template '{}' needs to contain"
+                                        "'- text: ' attribute to be a proper"
+                                        "template".format(template_key))
                 else:
                     validated_variations.append(t)
             templates[template_key] = validated_variations
@@ -193,21 +198,24 @@ class Domain(object):
         self.intent_properties = intent_properties
         self.entities = entities
         self.form_names = form_names
-        if self.form_names and 'requested_slot' not in [s.name for s in slots]:
-            slots.append(UnfeaturizedSlot('requested_slot'))
-
         self.slots = slots
         self.templates = templates
 
         # only includes custom actions and utterance actions
         self.user_actions = action_names
-        # includes all actions (custom, utterance, and default actions)
+        # includes all actions (custom, utterance, default actions and forms)
         self.action_names = action.combine_user_with_default_actions(
-                action_names)
+                action_names) + self.form_names
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
         action.ensure_action_name_uniqueness(self.action_names)
+
+    @utils.lazyproperty
+    def user_actions_and_forms(self):
+        """Returns combination of user actions and forms"""
+
+        return self.user_actions + self.form_names
 
     @utils.lazyproperty
     def num_actions(self):
@@ -222,6 +230,11 @@ class Domain(object):
 
         return len(self.input_states)
 
+    def add_requested_slot(self):
+        if self.form_names and REQUESTED_SLOT not in [s.name for
+                                                      s in self.slots]:
+            self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
+
     def action_for_name(self, action_name, action_endpoint):
         # type: (Text, Optional[EndpointConfig]) -> Optional[Action]
         """Looks up which action corresponds to this action name."""
@@ -231,7 +244,7 @@ class Domain(object):
 
         return action.action_from_name(action_name,
                                        action_endpoint,
-                                       self.user_actions)
+                                       self.user_actions_and_forms)
 
     def action_for_index(self, index, action_endpoint):
         # type: (int, Optional[EndpointConfig]) -> Optional[Action]
@@ -240,10 +253,11 @@ class Domain(object):
         This method resolves the index to the actions name."""
 
         if self.num_actions <= index or index < 0:
-            raise Exception(
+            raise IndexError(
                     "Can not access action at index {}. "
                     "Domain has {} actions.".format(index, self.num_actions))
-        return self.action_for_name(self.action_names[index], action_endpoint)
+        return self.action_for_name(self.action_names[index],
+                                    action_endpoint)
 
     def actions(self, action_endpoint):
         return [self.action_for_name(name, action_endpoint)
@@ -261,7 +275,7 @@ class Domain(object):
     def _raise_action_not_found_exception(self, action_name):
         action_names = "\n".join(["\t - {}".format(a)
                                   for a in self.action_names])
-        raise Exception(
+        raise NameError(
                 "Can not access action '{}', "
                 "as that name is not a registered action for this domain. "
                 "Available actions are: \n{}".format(action_name, action_names))
@@ -455,9 +469,8 @@ class Domain(object):
         # type: (Text) -> Dict[Text, Any]
         """Load a domains specification from a dumped model directory."""
 
-        matadata_path = os.path.join(path, 'domain.json')
-        with io.open(matadata_path) as f:
-            specification = json.loads(f.read())
+        metadata_path = os.path.join(path, 'domain.json')
+        specification = json.loads(utils.read_file(metadata_path))
         return specification
 
     def compare_with_specification(self, path):
@@ -472,7 +485,7 @@ class Domain(object):
         if states != self.input_states:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
-            raise Exception(
+            raise InvalidDomain(
                     "Domain specification has changed. "
                     "You MUST retrain the policy. " +
                     "Detected mismatch in domain specification. " +
@@ -495,10 +508,7 @@ class Domain(object):
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
-            # don't save forms to the actions in the domain yml to avoid action
-            # duplication
-            "actions": [a for a in self.user_actions if a not in
-                        self.form_names],  # class names of the actions
+            "actions": self.user_actions,  # class names of the actions
             "forms": self.form_names
         }
 

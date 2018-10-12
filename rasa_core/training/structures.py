@@ -32,16 +32,22 @@ STORY_END = None
 GENERATED_CHECKPOINT_PREFIX = "GENR_"
 CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 
-FORM_PREFIX = "form: "
-
 GENERATED_HASH_LENGTH = 5
 
+FORM_PREFIX = "form: "
 
-class AsStoryStringHelper:
-    active_form = None
-    form_failed = False
-    form_string = ''
-    no_form_string = ''
+
+class AsStoryStringHelper(object):
+    def __init__(self,
+                 active_form=None,
+                 form_failed=False,
+                 form_string='',
+                 no_form_string=''):
+
+        self.active_form = active_form
+        self.form_failed = form_failed
+        self.form_string = form_string
+        self.no_form_string = no_form_string
 
 
 class Checkpoint(object):
@@ -328,7 +334,7 @@ class Story(object):
             return story_content
 
     def dump_to_file(self, filename, flat=False):
-        with io.open(filename, "a") as f:
+        with io.open(filename, "a", encoding="utf-8") as f:
             f.write(self.as_story_string(flat))
 
 

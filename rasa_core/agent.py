@@ -24,7 +24,7 @@ from rasa_core import training, constants
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
-from rasa_core.domain import Domain, check_domain_sanity
+from rasa_core.domain import Domain, check_domain_sanity, InvalidDomain
 from rasa_core.exceptions import AgentNotReady
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
@@ -196,14 +196,15 @@ class Agent(object):
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
+        if self.domain:
+            self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
         if (self.domain and self.domain.form_names and not
                 any(isinstance(p, FormPolicy) for p
                     in self.policy_ensemble.policies)):
-            logger.warning(
+            raise InvalidDomain(
                     "You have defined a form action, but haven't added the "
-                    "FormPolicy to your policy ensemble. The form won't "
-                    "behave as expected"
+                    "FormPolicy to your policy ensemble."
             )
 
         if not isinstance(interpreter, NaturalLanguageInterpreter):
@@ -343,7 +344,7 @@ class Agent(object):
             action,  # type: Text
             output_channel,  # type: OutputChannel
             policy,  # type: Text
-            policy_confidence  # type: float
+            confidence  # type: float
     ):
         # type: (...) -> DialogueStateTracker
         """Handle a single message."""
@@ -353,7 +354,7 @@ class Agent(object):
                                 output_channel,
                                 self.nlg)
         return processor.execute_action(sender_id, action, dispatcher, policy,
-                                        policy_confidence)
+                                        confidence)
 
     def handle_text(
             self,

@@ -59,7 +59,7 @@ def first_key(d, default_key):
 # noinspection PyProtectedMember
 class Event(object):
     """Events describe everything that occurs in
-    a conversation and tell the :class:`DialogueStateTracker`
+    a conversation and tell the :class:`rasa_core.trackers.DialogueStateTracker`
     how to update its state."""
 
     type_name = "event"
@@ -709,6 +709,7 @@ class ActionExecuted(Event):
         return ("ActionExecuted(action: {}, policy: {}, confidence: {})"
                 "".format(self.action_name, self.policy, self.confidence))
 
+
     def __hash__(self):
         return hash(self.action_name)
 
@@ -817,7 +818,7 @@ class Form(Event):
         super(Form, self).__init__(timestamp)
 
     def __str__(self):
-        return ("Form({})".format(self.name))
+        return "Form({})".format(self.name)
 
     def __hash__(self):
         return hash(self.name)
@@ -848,46 +849,50 @@ class Form(Event):
         tracker.change_form_to(self.name)
 
 
-class ActionExecutionFailed(Event):
+class ActionExecutionRejected(Event):
     """Notify Core that the execution of an action has failed"""
 
-    type_name = 'action_execution_failed'
+    type_name = 'action_execution_rejected'
 
-    def __init__(self, action_name, policy, policy_confidence, timestamp=None):
+    def __init__(self,
+                 action_name,
+                 policy=None,
+                 confidence=None,
+                 timestamp=None):
         self.action_name = action_name
         self.policy = policy
-        self.policy_confidence = policy_confidence
-        super(ActionExecutionFailed, self).__init__(timestamp)
+        self.confidence = confidence
+        super(ActionExecutionRejected, self).__init__(timestamp)
 
     def __str__(self):
-        return ("ActionExecutionFailed(action: {}, policy: {}, "
-                "policy_confidence)".format(self.action_name, self.policy,
-                                            self.policy_confidence))
+        return ("ActionExecutionRejected("
+                "action: {}, policy: {}, confidence: {})"
+                "".format(self.action_name, self.policy, self.confidence))
 
     def __hash__(self):
         return hash(self.action_name)
 
     def __eq__(self, other):
-        if not isinstance(other, ActionExecutionFailed):
+        if not isinstance(other, ActionExecutionRejected):
             return False
         else:
             return self.action_name == other.action_name
 
     @classmethod
     def _from_parameters(cls, parameters):
-        return ActionExecutionFailed(parameters.get("action_name"),
-                                     parameters.get("policy"),
-                                     parameters.get("policy_confidence"),
-                                     parameters.get("timestamp"))
+        return ActionExecutionRejected(parameters.get("name"),
+                                       parameters.get("policy"),
+                                       parameters.get("confidence"),
+                                       parameters.get("timestamp"))
 
     def as_story_string(self):
         return None
 
     def as_dict(self):
-        d = super(ActionExecutionFailed, self).as_dict()
+        d = super(ActionExecutionRejected, self).as_dict()
         d.update({"name": self.action_name,
                   "policy": self.policy,
-                  "policy_confidence": self.policy_confidence})
+                  "confidence": self.confidence})
         return d
 
     def apply_to(self, tracker):

@@ -7,11 +7,11 @@ Using Slots
 
 **Slots are your bot's memory.** They act as a key-value store
 which can be used to store information the user provided (e.g their home city)
-as well as information gathered about the outside world (e.g. the result of a 
+as well as information gathered about the outside world (e.g. the result of a
 database query).
 
-Most of the time, you want slots to influence how the dialogue progresses. 
-There are different slot types for different behaviors. 
+Most of the time, you want slots to influence how the dialogue progresses.
+There are different slot types for different behaviors.
 
 For example, if your user has provided their home city, you might
 have a ``text`` slot called ``home_city``. If the user asks for the
@@ -21,9 +21,9 @@ has a value. The specific value of a ``text`` slot (e.g. Bangalore
 or New York or Hong Kong) doesn't make any difference.
 
 If the value itself is important, use a ``categorical`` slot. There are
-also ``boolean``, ``float``, and ``list`` slots. 
+also ``boolean``, ``float``, and ``list`` slots.
 If you just want to store some data, but don't want it to affect the flow
-of the conversation, use an ``unfeaturized`` slot. 
+of the conversation, use an ``unfeaturized`` slot.
 
 
 How Rasa Uses Slots
@@ -31,8 +31,8 @@ How Rasa Uses Slots
 
 The :class:`rasa_core.policies.Policy` doesn't have access to the
 value of your slots. It receives a ``featurized`` representation.
-As mentioned above, for a ``text`` slot the value is irrelevant. 
-The policy just sees a ``1`` or ``0`` depending on whether it is set. 
+As mentioned above, for a ``text`` slot the value is irrelevant.
+The policy just sees a ``1`` or ``0`` depending on whether it is set.
 
 **You should choose your slot types carefully!**
 
@@ -56,7 +56,7 @@ Slots Set from NLU
 
 If your NLU model picks up an entity, and your domain contains a
 slot with the same name, the slot will be set automatically. For example:
-       
+
 .. code-block:: story
 
    # story_01
@@ -73,7 +73,7 @@ Slots Set By Clicking Buttons
 
 You can use buttons as a shortcut.
 Rasa Core will send messages starting with a ``/`` to the
-:class:`RegexInterpreter`, which expects NLU input in the same format
+``RegexInterpreter``, which expects NLU input in the same format
 as in story files, e.g. ``/intent{entities}``. For example, if you let
 users choose a color by clicking a button, the button payloads might
 be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``.
@@ -97,8 +97,8 @@ Slots Set by Actions
 
 The second option is to set slots by returning events in :ref:`customactions`.
 In this case, your stories need to include the slots.
-For example, you have a custom action to fetch a user's profile, and 
-you have a ``categorical`` slot called ``account_type``. 
+For example, you have a custom action to fetch a user's profile, and
+you have a ``categorical`` slot called ``account_type``.
 When the ``fetch_profile`` action is run, it returns a
 :class:`rasa_core.events.SlotSet` event:
 
@@ -143,7 +143,7 @@ When the ``fetch_profile`` action is run, it returns a
 
 
 In this case you **do** have to include the ``- slot{}`` part in your stories.
-Rasa Core will learn to use this information to decide on the correct action to 
+Rasa Core will learn to use this information to decide on the correct action to
 take (in this case, ``utter_welcome_premuim`` or ``utter_welcome_basic``).
 
 .. note::
@@ -179,12 +179,12 @@ a vector of length ``2``.
 .. testcode::
 
    from rasa_core.slots import Slot
-   
+
    class NumberOfPeopleSlot(Slot):
-     
+
        def feature_dimensionality(self):
            return 2
-    
+
        def as_feature(self):
            r = [0.0] * self.feature_dimensionality()
            if self.value:
@@ -209,9 +209,7 @@ can learn from these how to handle the different situations:
    * inform{"people": "9"}
    - action_explain_table_limit
 
-   
-.. include:: feedback.inc  
 
-.. raw:: html
-   :file: livechat.html
-   
+.. include:: feedback.inc
+
+

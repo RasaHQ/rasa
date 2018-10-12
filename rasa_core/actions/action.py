@@ -10,7 +10,9 @@ import typing
 from typing import List, Text, Optional, Dict, Any
 
 from rasa_core import events
-from rasa_core.constants import DOCS_BASE_URL, DEFAULT_REQUEST_TIMEOUT
+from rasa_core.constants import (DOCS_BASE_URL,
+                                 DEFAULT_REQUEST_TIMEOUT,
+                                 REQUESTED_SLOT)
 from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -27,11 +29,14 @@ ACTION_RESTART_NAME = "action_restart"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
+ACTION_DEACTIVATE_FORM = "action_deactivate_form"
+
 
 def default_actions():
     # type: () -> List[Action]
     """List default actions."""
-    return [ActionListen(), ActionRestart(), ActionDefaultFallback()]
+    return [ActionListen(), ActionRestart(),
+            ActionDefaultFallback(), ActionDeactivateForm()]
 
 
 def default_action_names():
@@ -107,7 +112,7 @@ class Action(object):
         Args:
             dispatcher (Dispatcher): the dispatcher which is used to send
                 messages back to the user. Use ``dipatcher.utter_message()``
-                or any other :class:`Dispatcher` method.
+                or any other :class:`rasa_core.dispatcher.Dispatcher` method.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using
                 ``tracker.get_slot(slot_name)`` and the most recent user
@@ -115,7 +120,7 @@ class Action(object):
             domain (Domain): the bot's domain
 
         Returns:
-            List[Event]: A list of :class:`Event` instances
+            List[Event]: A list of :class:`rasa_core.events.Event` instances
         """
 
         raise NotImplementedError
@@ -191,6 +196,17 @@ class ActionDefaultFallback(Action):
                                   silent_fail=True)
 
         return [UserUtteranceReverted()]
+
+
+class ActionDeactivateForm(Action):
+    """Deactivates a form"""
+
+    def name(self):
+        return ACTION_DEACTIVATE_FORM
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import Form, SlotSet
+        return [Form(None), SlotSet(REQUESTED_SLOT, None)]
 
 
 class RemoteAction(Action):
@@ -313,8 +329,8 @@ class RemoteAction(Action):
             if response.status_code == 400:
                 response_data = response.json()
                 logger.debug(response_data["error"])
-                raise ActionExecutionError(response_data["error"],
-                                           response_data["action_name"])
+                raise ActionExecutionRejection(response_data["action_name"],
+                                               response_data["error"])
             response.raise_for_status()
             response_data = response.json()
             self._validate_action_result(response_data)
@@ -350,11 +366,13 @@ class RemoteAction(Action):
         return self._name
 
 
-class ActionExecutionError(Exception):
+class ActionExecutionRejection(Exception):
 
-    def __init__(self, message, action_name):
-        self.message = message
+    def __init__(self, action_name, message=None):
         self.action_name = action_name
+        self.message = (message or
+                        "Custom action '{}' rejected to run"
+                        "".format(action_name))
 
     def __str__(self):
         return self.message

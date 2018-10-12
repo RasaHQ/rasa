@@ -18,7 +18,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered, ActionExecutionFailed, Form)
+    BotUttered, ActionExecutionRejected, Form)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -244,7 +244,7 @@ class DialogueStateTracker(object):
                 # tracker's latest message
                 tracker.latest_message = latest_message
 
-            elif isinstance(event, ActionExecutionFailed):
+            elif isinstance(event, ActionExecutionRejected):
                 failed = True
 
             elif isinstance(event, ActionExecuted):
@@ -392,7 +392,7 @@ class DialogueStateTracker(object):
         # type: (Text) -> None
         """Dump the tracker as a story to a file."""
 
-        with io.open(export_path, 'a') as f:
+        with io.open(export_path, 'a', encoding="utf-8") as f:
             f.write(self.export_stories() + "\n")
 
     ###
