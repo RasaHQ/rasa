@@ -7,6 +7,9 @@ from builtins import str
 
 import argparse
 import logging
+import io
+import os
+import pickle
 
 from rasa_core import utils
 from rasa_core.agent import Agent
@@ -14,13 +17,16 @@ from rasa_core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.featurizers import (
-    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer,
+    FullDialogueTrackerFeaturizer, LabelTokenizerSingleStateFeaturizer)
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
+from rasa_core.training.dsl import StoryFileReader
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +142,34 @@ def create_argument_parser():
             help="When a fallback is triggered (e.g. because the ML prediction "
                  "is of low confidence) this is the name of tje action that "
                  "will get triggered instead.")
+    parser.add_argument(
+            '--mode',
+            type=str,
+            default="default",
+            help="default|compare (train a model, or train multiple models to "
+                 "compare policies)")
+    # the arguments below are for the compare mode of the script
+    parser.add_argument(
+            '--epochs_embed',
+            type=int,
+            default=1000,
+            help="number of epochs for the embedding policy")
+    parser.add_argument(
+            '--epochs_keras',
+            type=int,
+            default=400,
+            help="number of epochs for the keras policy")
+    parser.add_argument(
+            '--percentages',
+            nargs="*",
+            type=int,
+            default=[0, 5, 25, 50, 70, 90, 95],
+            help="Range of exclusion percentages")
+    parser.add_argument(
+            '--runs',
+            type=int,
+            default=3,
+            help="Number of runs for experiments")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -189,6 +223,56 @@ def train_dialogue_model(domain_file, stories_file, output_path,
     return agent
 
 
+def train_comparison_models(story_filename,
+                            domain,
+                            epochs,
+                            output_path=None,
+                            exclusion_file=None,
+                            exclusion_percentage=None,
+                            starspace=True,
+                            max_history=None):
+
+    """Trains either a KerasPolicy model or an EmbeddingPolicy, excluding a
+    certain percentage of a story file"""
+
+    if starspace:
+        featurizer = FullDialogueTrackerFeaturizer(
+                        LabelTokenizerSingleStateFeaturizer())
+        policies = [EmbeddingPolicy()]
+    else:
+        featurizer = MaxHistoryTrackerFeaturizer(
+                        BinarySingleStateFeaturizer(),
+                        max_history=max_history)
+        policies = [KerasPolicy(featurizer)]
+
+    agent = Agent(domain,
+                  policies=policies)
+
+    data = agent.load_data(story_filename,
+                           remove_duplicates=True,
+                           augmentation_factor=0,
+                           exclusion_file=exclusion_file,
+                           exclusion_percentage=exclusion_percentage)
+
+    agent.train(data,
+                rnn_size=64,
+                epochs=epochs,
+                embed_dim=20,
+                attn_shift_range=5)
+
+    agent.persist(model_path=output_path)
+
+
+def get_no_of_stories(file_name, domain):
+
+    """gets number of stories in a file"""
+
+    no_stories = len(StoryFileReader.read_from_file(file_name,
+                                                    TemplateDomain.load(
+                                                        domain)))
+    return no_stories
+
+
 if __name__ == '__main__':
 
     # Running as standalone python application
@@ -217,7 +301,7 @@ if __name__ == '__main__':
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
 
-    if cmdline_args.core:
+    if cmdline_args.core and cmdline_args.mode == 'default':
         if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
                              "--interactive flag.")
@@ -231,7 +315,7 @@ if __name__ == '__main__':
                             interpreter=_interpreter,
                             generator=_endpoints.nlg,
                             action_endpoint=_endpoints.action)
-    else:
+    elif cmdline_args.mode == 'default':
         if not cmdline_args.out:
             raise ValueError("you must provide a path where the model "
                              "will be saved using -o / --out")
@@ -243,6 +327,64 @@ if __name__ == '__main__':
                                       cmdline_args.history,
                                       cmdline_args.dump_stories,
                                       additional_arguments)
+
+    elif cmdline_args.mode == 'compare':
+        for r in range(cmdline_args.runs):
+            logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
+            for i in cmdline_args.percentages:
+
+                current_round = cmdline_args.percentages.index(i) + 1
+
+                output_path_keras = (os.path.join(cmdline_args.out, 'run_' +
+                                     str(r + 1), 'keras' + str(current_round)))
+
+                output_path_embed = (os.path.join(cmdline_args.out, 'run_' +
+                                     str(r + 1), 'embed' + str(current_round)))
+
+                logging.info("Starting to train embed round {}/{}".format(
+                                                    current_round,
+                                                    len(cmdline_args.percentages)))
+
+                train_comparison_models(story_filename=cmdline_args.stories,
+                                        domain=cmdline_args.domain,
+                                        epochs=cmdline_args.epochs_embed,
+                                        output_path=output_path_embed,
+                                        exclusion_file=cmdline_args.exclude,
+                                        exclusion_percentage=i,
+                                        starspace=True)
+
+                logger.info("Finished training embed round {}/{}".format(
+                                                    current_round,
+                                                    len(cmdline_args.percentages)))
+
+                logging.info("Starting to train keras round {}/{}".format(
+                                                    current_round,
+                                                    len(cmdline_args.percentages)))
+
+                train_comparison_models(story_filename=cmdline_args.stories,
+                                        domain=cmdline_args.domain,
+                                        epochs=cmdline_args.epochs_keras,
+                                        output_path=output_path_keras,
+                                        exclusion_file=cmdline_args.exclude,
+                                        exclusion_percentage=i,
+                                        starspace=False)
+
+                logger.info("Finished training keras round {}/{}".format(
+                                                    current_round,
+                                                    len(cmdline_args.percentages)))
+
+        no_stories = get_no_of_stories(cmdline_args.exclude, cmdline_args.domain)
+
+        # store the list of the number of stories present at each exclusion
+        # percentage
+        story_range = [no_stories - round((x/100.0) * no_stories) for x in
+                       cmdline_args.percentages]
+
+        pickle.dump(story_range,
+                    io.open(os.path.join(cmdline_args.out, 'num_stories.p'), 'wb'))
+
+    else:
+        raise ValueError("--mode can take the values default or compare")
 
     if cmdline_args.interactive:
         interactive.run_interactive_learning(_agent, finetune=cmdline_args.finetune)
