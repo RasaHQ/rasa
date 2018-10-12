@@ -399,8 +399,8 @@ class EmbeddingIntentClassifier(Component):
             return int(self.batch_size[0])
 
     def _train_tf(self,
-                  X,  # type: tf.Tensor
-                  Y,  # type: tf.Tensor
+                  X,  # type: np.ndarray
+                  Y,  # type: np.ndarray
                   intents_for_X,  # type: np.ndarray
                   loss,  # type: tf.Tensor
                   is_training,  # type: tf.Tensor
