@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from builtins import str
 from collections import namedtuple
-
+import os
 import argparse
 import logging
 from flask import Flask
@@ -23,8 +23,9 @@ from rasa_core.channels import (
     BUILTIN_CHANNELS)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
+from rasa_core.tracker_store import TrackerStore
 from rasa_core.utils import read_yaml_file, AvailableEndpoints
-
+from rasa_core.domain import TemplateDomain
 logger = logging.getLogger()  # get the root logger
 
 
@@ -224,7 +225,7 @@ def load_agent(core_model, interpreter, endpoints,
         return Agent.load(core_model,
                           interpreter=interpreter,
                           generator=endpoints.nlg,
-                          tracker_store=endpoints.tracker_store,
+                          tracker_store=tracker_store,
                           action_endpoint=endpoints.action)
 
 
@@ -245,10 +246,12 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
+    domain = TemplateDomain.load(os.path.join(cmdline_args.core, "domain.yml"))
+    _tracker_store = TrackerStore(domain).find_tracker_store(_endpoints.tracker_store)                                   
     _agent = load_agent(cmdline_args.core,
                         interpreter=_interpreter,
+                        tracker_store=_tracker_store,
                         endpoints=_endpoints)
-
     serve_application(_agent,
                       cmdline_args.connector,
                       cmdline_args.port,

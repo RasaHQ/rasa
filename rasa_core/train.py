@@ -21,7 +21,8 @@ from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
-
+from rasa_core.tracker_store import TrackerStore
+from rasa_core.domain import TemplateDomain
 logger = logging.getLogger(__name__)
 
 
@@ -216,7 +217,8 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
-
+    domain = TemplateDomain.load(cmdline_args.domain)                                                
+    _tracker_store = TrackerStore(domain).find_tracker_store(_endpoints.tracker_store)
     if cmdline_args.core:
         if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
@@ -230,6 +232,7 @@ if __name__ == '__main__':
         _agent = Agent.load(cmdline_args.core,
                             interpreter=_interpreter,
                             generator=_endpoints.nlg,
+                            tracker_store=_tracker_store,
                             action_endpoint=_endpoints.action)
     else:
         if not cmdline_args.out:
