@@ -27,7 +27,7 @@ def test_send_message(mock_endpoint):
     b = httpretty.latest_requests[-1].body.decode("utf-8")
     assert json.loads(b) == {
         "sender": "user",
-        "text": "Hello",
+        "message": "Hello",
         "parse_data": None
     }
 
