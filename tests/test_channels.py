@@ -573,3 +573,20 @@ def test_slackbot_send_text():
     assert r.parsed_body == {'as_user': ['True'],
                              'channel': ['General'],
                              'text': ['my message']}
+
+
+def test_channel_inheritance():
+    from rasa_core.channels import RestInput
+    from rasa_core.channels import RasaChatInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+    rasa_input = RasaChatInput("https://example.com")
+
+    # set serve_forever=False if you want to keep the server running
+    s = agent.handle_channels([RestInput(), rasa_input], 5004,
+                              serve_forever=False)
+    assert s.started

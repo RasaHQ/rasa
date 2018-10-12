@@ -38,7 +38,7 @@ install_requires = [
     "requests~=2.15",
     "graphviz~=0.9.0",
     "keras~=2.0",
-    "tensorflow~=1.10",
+    "tensorflow==1.10.0",
     "h5py~=2.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
@@ -119,4 +119,4 @@ setup(
 
 print("\nWelcome to Rasa Core!")
 print("If any questions please visit documentation page https://rasa.com/docs/core")
-print("or join community chat on https://gitter.im/RasaHQ/rasa_core")
+print("or join the community discussions on https://forum.rasa.com")

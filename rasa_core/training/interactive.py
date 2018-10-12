@@ -31,12 +31,17 @@ from rasa_core.trackers import EventVerbosity
 from rasa_core.training.structures import Story
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+from rasa_nlu.training_data.loading import load_data, _guess_format
+from rasa_nlu.training_data.message import Message
+from rasa_nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-DEFAULT_FILE_EXPORT_PATH = "stories.md"
+PATHS = {"stories": "data/stories.md",
+         "nlu": "data/nlu.md",
+         "backup": "data/nlu_interactive.md"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
@@ -77,7 +82,7 @@ def send_message(endpoint,  # type: EndpointConfig
 
     payload = {
         "sender": "user",
-        "text": message,
+        "message": message,
         "parse_data": parse_data
     }
 
@@ -138,7 +143,7 @@ def send_action(endpoint, sender_id, action_name):
 
 def send_event(endpoint, sender_id, evt):
     # type: (EndpointConfig, Text, Dict[Text, Any]) -> Dict[Text, Any]
-    """Log an event to a concersation."""
+    """Log an event to a conversation."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
@@ -151,7 +156,7 @@ def send_event(endpoint, sender_id, evt):
 
 def replace_events(endpoint, sender_id, evts):
     # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
-    """Replace all the events of a concersation with the provided ones."""
+    """Replace all the events of a conversation with the provided ones."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
@@ -394,6 +399,8 @@ def _chat_history_table(evts):
     for idx, evt in enumerate(evts):
         if evt.get("event") == "action":
             bot_column.append(colored(evt['name'], 'autocyan'))
+            if evt['confidence'] is not None:
+                bot_column[-1] += (colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
 
         elif evt.get("event") == 'user':
             if bot_column:
@@ -470,10 +477,15 @@ def _ask_if_quit(sender_id, endpoint):
 
     if not answers or answers["abort"] == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        export_file_path = _request_export_stories_info()
-        _write_stories_to_file(export_file_path, sender_id, endpoint)
-        logger.info("Successfully wrote stories to "
-                    "{}.".format(export_file_path))
+        story_path, nlu_path = _request_export_info()
+
+        tracker = retrieve_tracker(endpoint, sender_id)
+        evts = tracker.get("events", [])
+
+        _write_stories_to_file(story_path, evts)
+        _write_nlu_to_file(nlu_path, evts)
+
+        logger.info("Successfully wrote stories and NLU data")
         sys.exit()
     elif answers["abort"] == "continue":
         # in this case we will just return, and the original
@@ -511,37 +523,42 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     return action_name
 
 
-def _request_export_stories_info():
-    # type: () -> Text
-    """Request file path and export stories to that path"""
+def _request_export_info():
+    # type: () -> (Text, Text)
+    """Request file path and export stories & nlu data to that path"""
 
     def validate_path(path):
         try:
-            with io.open(path, "a"):
+            with io.open(path, "a", encoding="utf-8"):
                 return True
         except Exception as e:
             return "Failed to open file. {}".format(e)
 
-    # export current stories and quit
+    # export training data and quit
     questions = [{
-        "name": "export",
+        "name": "export stories",
         "type": "input",
         "message": "Export stories to (if file exists, this "
                    "will append the stories)",
-        "default": DEFAULT_FILE_EXPORT_PATH,
+        "default": PATHS["stories"],
         "validate": validate_path
-    }]
+    }, {"name": "export nlu",
+        "type": "input",
+        "message": "Export NLU data to (if file exists, this "
+                   "will merge learned data with previous training examples)",
+        "default": PATHS["nlu"],
+        "validate": validate_path}]
 
     answers = prompt(questions)
     if not answers:
         sys.exit()
 
-    return answers["export"]
+    return answers["export stories"], answers["export nlu"]
 
 
 def _split_conversation_at_restarts(evts):
     # type: (List[Dict[Text, Any]]) -> List[List[Dict[Text, Any]]]
-    """"Split a conversation at restart events.
+    """Split a conversation at restart events.
 
     Returns an array of event lists, without the restart events."""
 
@@ -561,20 +578,61 @@ def _split_conversation_at_restarts(evts):
     return sub_conversations
 
 
-def _write_stories_to_file(export_file_path, sender_id, endpoint):
-    # type: (Text, Text, EndpointConfig) -> None
-    """Write the conversation of the sender_id to the file path."""
+def _collect_messages(evts):
+    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+    """Collect the message text and parsed data from the UserMessage events into a list"""
 
-    tracker = retrieve_tracker(endpoint, sender_id)
-    evts = tracker.get("events", [])
+    msgs = []
+
+    for evt in evts:
+        if evt.get("event") == "user":
+            data = evt.get("parse_data")
+            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
+            msgs.append(msg)
+
+    return msgs
+
+
+def _write_stories_to_file(export_story_path, evts):
+    # type: (Text, List[Dict[Text, Any]]) -> None
+    """Write the conversation of the sender_id to the file paths."""
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
-    with io.open(export_file_path, 'a') as f:
+    with io.open(export_story_path, 'a', encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
             f.write(s.as_story_string(flat=True) + "\n")
+
+
+def _write_nlu_to_file(export_nlu_path, evts):
+    # type: (Text, List[Dict[Text, Any]]) -> None
+    """Write the nlu data of the sender_id to the file paths."""
+
+    msgs = _collect_messages(evts)
+
+    try:
+        previous_examples = load_data(export_nlu_path)
+
+    except:
+        questions = [{"name": "export nlu",
+                     "type": "input",
+                     "message": "Could not load existing NLU data, please specify where to store NLU data "
+                                "learned in this session (this will overwrite any existing file)",
+                     "default": PATHS["backup"]}]
+
+        answers = prompt(questions)
+        export_nlu_path = answers["export nlu"]
+        previous_examples = TrainingData()
+
+    nlu_data = previous_examples.merge(TrainingData(msgs))
+
+    with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
+        if _guess_format(export_nlu_path) in ["md", "unk"]:
+            f.write(nlu_data.as_markdown())
+        else:
+            f.write(nlu_data.as_json())
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
@@ -784,8 +842,8 @@ def _enter_user_message(sender_id, endpoint, exit_text):
     }]
 
     answers = _ask_questions(
-            questions, sender_id, endpoint,
-            is_abort=lambda a: a["message"] == exit_text)
+        questions, sender_id, endpoint,
+        is_abort=lambda a: a["message"] == exit_text)
 
     send_message(endpoint, sender_id, answers["message"])
 
@@ -877,9 +935,9 @@ def record_messages(endpoint,  # type: EndpointConfig
             on_finish()
 
 
-def _start_online_learning_io(endpoint, on_finish, finetune=False):
+def _start_interactive_learning_io(endpoint, on_finish, finetune=False):
     # type: (EndpointConfig, Callable[[], None], bool) -> None
-    """Start the online learning message recording in a separate thread."""
+    """Start the interactive learning message recording in a separate thread."""
 
     p = Thread(target=record_messages,
                kwargs={
@@ -892,7 +950,7 @@ def _start_online_learning_io(endpoint, on_finish, finetune=False):
 
 def _serve_application(app, finetune=False, serve_forever=True):
     # type: (Flask, bool, bool) -> WSGIServer
-    """Start a core server and attach the online learning IO."""
+    """Start a core server and attach the interactive learning IO."""
 
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
     logger.info("Rasa Core server is up and running on "
@@ -900,7 +958,7 @@ def _serve_application(app, finetune=False, serve_forever=True):
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    _start_online_learning_io(endpoint, http_server.stop, finetune=finetune)
+    _start_interactive_learning_io(endpoint, http_server.stop, finetune=finetune)
 
     if serve_forever:
         try:
@@ -911,9 +969,9 @@ def _serve_application(app, finetune=False, serve_forever=True):
     return http_server
 
 
-def run_online_learning(agent, finetune=False, serve_forever=True):
+def run_interactive_learning(agent, finetune=False, serve_forever=True):
     # type: (Agent, bool, bool) -> WSGIServer
-    """Start the online learning with the model of the agent."""
+    """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)
 

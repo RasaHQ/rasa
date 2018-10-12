@@ -9,12 +9,12 @@ responds to a message:
 
 .. image:: _static/images/rasa_arch_colour.png
 
-The steps are: 
+The steps are:
 
 1. The message is received and passed to an ``Interpreter``, which
    converts it into a dictionary including the original text, the intent,
    and any entities that were found.
-2. The ``Tracker`` is the object which keeps track of conversation state. 
+2. The ``Tracker`` is the object which keeps track of conversation state.
    It receives the info that a new message has come in.
 3. The policy receives the current state of the tracker.
 4. The policy chooses which action to take next.
@@ -33,5 +33,3 @@ The process is handled by the :class:`rasa_core.agent.Agent` class.
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html

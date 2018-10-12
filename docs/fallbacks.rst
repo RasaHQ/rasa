@@ -71,6 +71,5 @@ called ``out_of_scope``, then you should add this as a story:
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
-   
+
+

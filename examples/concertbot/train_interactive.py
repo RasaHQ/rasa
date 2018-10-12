@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import logging
 
 from rasa_core import utils, train, run
-from rasa_core.training import online
+from rasa_core.training import interactive
 
 logger = logging.getLogger(__name__)
 
@@ -25,4 +25,4 @@ def train_agent():
 if __name__ == '__main__':
     utils.configure_colored_logging(loglevel="INFO")
     agent = train_agent()
-    online.run_online_learning(agent)
+    interactive.run_interactive_learning(agent)

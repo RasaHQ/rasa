@@ -9,7 +9,7 @@ import sys
 
 from rasa_core import training
 from rasa_core.agent import Agent
-from rasa_core.training import online
+from rasa_core.training import interactive
 from rasa_core.events import ActionExecuted
 from tests import utilities
 
