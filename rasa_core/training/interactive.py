@@ -82,7 +82,7 @@ def send_message(endpoint,  # type: EndpointConfig
 
     payload = {
         "sender": "user",
-        "text": message,
+        "message": message,
         "parse_data": parse_data
     }
 
