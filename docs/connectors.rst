@@ -15,7 +15,7 @@ Currently, there is code for connecting to
 facebook, slack, telegram, mattermost and twilio. If the connection
 you want is missing, this is a great place to start contributing!
 
-If you're testing on your local machine (e.g. not a server), you 
+If you're testing on your local machine (e.g. not a server), you
 will need to use ngrok_. This gives your machine a domain name
 and so that facebook, slack, etc. know where to send messages.
 
@@ -646,7 +646,7 @@ After connecting the ``callback`` input channel, you can post messages to
 
    {
      "sender": "Rasa",
-     "text": "Hi there!"
+     "message": "Hi there!"
    }
 
 The response will simply be ``success``. Once Core wants to send a
@@ -719,5 +719,4 @@ posted this message to the channel:
 
 .. include:: feedback.inc
 
- 
-   
+

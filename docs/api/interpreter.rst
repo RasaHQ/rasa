@@ -3,7 +3,7 @@
 Interpreters
 ============
 
-Rasa Core itself does not interpret text. You can use `Rasa NLU <https://rasa.com/docs/nlu/>`_ for this. 
+Rasa Core itself does not interpret text. You can use `Rasa NLU <https://rasa.com/docs/nlu/>`_ for this.
 
 
 .. autoclass:: rasa_core.interpreter.RasaNLUHttpInterpreter
@@ -87,6 +87,3 @@ and entities:
 
 	
 .. include:: ../feedback.inc
-
-.. raw:: html
-   :file: ../livechat.html
