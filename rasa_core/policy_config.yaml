@@ -1,6 +1,0 @@
-# TODO specify policy config file in cmd args
-policies:
-  - name: KerasPolicy
-  - name: MemoizationPolicy
-  - name: FallbackPolicy
-    nlu_threshold: 0.8
