@@ -4,7 +4,7 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased 0.13.0.aX] - `master`_
+[Unreleased 0.14.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
@@ -14,9 +14,18 @@ Added
 
 Changed
 -------
+- ``EmbeddingIntentClassifier`` has been refactored, including changes to the
+  config parameters as well as comments and types for all class functions.
 
 Removed
 -------
+
+Fixed
+-----
+
+
+[0.13.7] - 2018-10-11
+^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
@@ -24,6 +33,7 @@ Fixed
   to be trained if they belong to different projects.
   ``max_training_processes`` is now a global parameter, regardless of what
   project the training process belongs to.
+
 
 [0.13.6] - 2018-10-04
 ^^^^^^^^^^^^^^^^^^^^^

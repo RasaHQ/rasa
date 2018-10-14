@@ -58,6 +58,9 @@ class SklearnIntentClassifier(Component):
         # C parameter of the svm - cross validation will select the best value
         "C": [1, 2, 5, 10, 20, 100],
 
+        # gamma parameter of the svm
+        "gamma": [0.1],
+
         # the kernels to use for the svm training - cross validation will
         # decide which one of them performs best
         "kernels": ["linear"],
@@ -143,9 +146,11 @@ class SklearnIntentClassifier(Component):
 
         C = self.component_config["C"]
         kernels = self.component_config["kernels"]
+        gamma = self.component_config["gamma"]
         # dirty str fix because sklearn is expecting
         # str not instance of basestr...
         tuned_parameters = [{"C": C,
+                             "gamma": gamma,
                              "kernel": [str(k) for k in kernels]}]
 
         # aim for 5 examples in each fold
