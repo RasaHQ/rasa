@@ -17,6 +17,7 @@ from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import FallbackPolicy
+from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.run import AvailableEndpoints
@@ -155,19 +156,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                 "core_threshold",
                                                 "fallback_action_name"})
 
-    policies = [
-        FallbackPolicy(
-                fallback_args.get("nlu_threshold",
-                                  DEFAULT_NLU_FALLBACK_THRESHOLD),
-                fallback_args.get("core_threshold",
-                                  DEFAULT_CORE_FALLBACK_THRESHOLD),
-                fallback_args.get("fallback_action_name",
-                                  DEFAULT_FALLBACK_ACTION)),
-        MemoizationPolicy(
-                max_history=max_history),
-        KerasPolicy(
-                MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                            max_history=max_history))]
+    policies = PolicyEnsemble.load_from_yaml(policiy_config)
 
     agent = Agent(domain_file,
                   generator=endpoints.nlg,

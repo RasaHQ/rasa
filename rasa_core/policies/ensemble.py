@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import importlib
 import io
 import json
 import logging
@@ -18,6 +19,10 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
+import rasa_core.utils
+from rasa_core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
@@ -193,6 +198,49 @@ class PolicyEnsemble(object):
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
+
+     @classmethod
+    def load_from_yaml(cls, path):
+        # type: (Text) -> List[Policy]
+
+        config_data = utils.read_yaml_file(path)
+
+        if config_data is None:
+
+            return [
+                FallbackPolicy(
+                        fallback_args.get("nlu_threshold",
+                                          DEFAULT_NLU_FALLBACK_THRESHOLD),
+                        fallback_args.get("core_threshold",
+                                          DEFAULT_CORE_FALLBACK_THRESHOLD),
+                        fallback_args.get("fallback_action_name",
+                                          DEFAULT_FALLBACK_ACTION)),
+                MemoizationPolicy(
+                        max_history=max_history),
+                KerasPolicy(
+                        MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                                    max_history=max_history))
+                ]
+
+        else:
+
+            policies = []
+
+            for policy in config_data.get('policies'):
+
+                module_name, _ , class_name = policy.get('name').rpartition('.')
+
+                if module_name == "":
+                    constr_func = globals()[policy.get('name')]
+                else:
+                    module = importlib.import_module(module_name)
+                    constr_func = getattr(module, class_name)
+
+                policy.pop('name')
+
+                policies.append(constr_func(**policy))
+
+            return policies
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
