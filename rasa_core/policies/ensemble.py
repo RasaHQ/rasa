@@ -19,13 +19,10 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
-import rasa_core.utils
-from rasa_core.constants import (
-    DEFAULT_NLU_FALLBACK_THRESHOLD,
-    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.memoization import (MemoizationPolicy,
                                             AugmentedMemoizationPolicy)

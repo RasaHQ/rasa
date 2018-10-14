@@ -153,7 +153,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                          endpoints=AvailableEndpoints(),
                          max_history=None,
                          dump_flattened_stories=False,
-                         policy_config=None
+                         policy_config=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
