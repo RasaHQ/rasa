@@ -219,8 +219,7 @@ class PolicyEnsemble(object):
                         max_history=max_history),
                 KerasPolicy(
                         MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                                    max_history=max_history))
-                ]
+                                                    max_history=max_history))]
 
         else:
 
