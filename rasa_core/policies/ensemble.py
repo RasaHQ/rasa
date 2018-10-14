@@ -199,47 +199,29 @@ class PolicyEnsemble(object):
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
 
-     @classmethod
+    @classmethod
     def load_from_yaml(cls, path):
         # type: (Text) -> List[Policy]
 
         config_data = utils.read_yaml_file(path)
 
-        if config_data is None:
+        policies = []
 
-            return [
-                FallbackPolicy(
-                        fallback_args.get("nlu_threshold",
-                                          DEFAULT_NLU_FALLBACK_THRESHOLD),
-                        fallback_args.get("core_threshold",
-                                          DEFAULT_CORE_FALLBACK_THRESHOLD),
-                        fallback_args.get("fallback_action_name",
-                                          DEFAULT_FALLBACK_ACTION)),
-                MemoizationPolicy(
-                        max_history=max_history),
-                KerasPolicy(
-                        MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                                    max_history=max_history))]
+        for policy in config_data.get('policies'):
 
-        else:
+            module_name, _ , class_name = policy.get('name').rpartition('.')
 
-            policies = []
+            if module_name == "":
+                constr_func = globals()[policy.get('name')]
+            else:
+                module = importlib.import_module(module_name)
+                constr_func = getattr(module, class_name)
 
-            for policy in config_data.get('policies'):
+            policy.pop('name')
+            policy_object = constr_func(**policy)
+            policies.append(policy_object)
 
-                module_name, _ , class_name = policy.get('name').rpartition('.')
-
-                if module_name == "":
-                    constr_func = globals()[policy.get('name')]
-                else:
-                    module = importlib.import_module(module_name)
-                    constr_func = getattr(module, class_name)
-
-                policy.pop('name')
-
-                policies.append(constr_func(**policy))
-
-            return policies
+        return policies
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
