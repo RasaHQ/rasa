@@ -138,7 +138,7 @@ def create_argument_parser():
                  "is of low confidence) this is the name of tje action that "
                  "will get triggered instead.")
     parser.add_argument(
-            '--policy_config',
+            '-p', '--policy_config',
             type=str,
             required=False,
             help="Policy specification yaml file."
@@ -177,7 +177,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
             KerasPolicy(
                     MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                                 max_history=max_history))]
-                                                
+
     else:
         policies = PolicyEnsemble.load_from_yaml(policy_config)
 
