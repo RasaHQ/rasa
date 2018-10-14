@@ -9,6 +9,7 @@ import logging
 import shutil
 from collections import defaultdict
 from collections import namedtuple
+from typing import List, Optional, Text
 
 import numpy as np
 
@@ -121,7 +122,9 @@ def plot_confusion_matrix(cm, classes,
         fig.savefig(out, bbox_inches='tight')
 
 
-def plot_histogram(hist_data, out=None):  # pragma: no cover
+def plot_histogram(hist_data,  # type: List[List[float]]
+                   out=None  # type: Optional[Text]
+                   ):  # pragma: no cover
     """Plot a histogram of the confidence distribution of the predictions in
     two columns.
     Wine-ish colour for the confidences of hits.
@@ -146,7 +149,11 @@ def plot_histogram(hist_data, out=None):  # pragma: no cover
         fig.savefig(out, bbox_inches='tight')
 
 
-def log_evaluation_table(report, precision, f1, accuracy):  # pragma: no cover
+def log_evaluation_table(report,  # type: Text
+                         precision,  # type: float
+                         f1,  # type: float
+                         accuracy  # type: float
+                         ):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
 
     logger.info("F1-Score:  {}".format(f1))
@@ -263,7 +270,8 @@ def evaluate_intents(intent_results,
     Wrong and correct prediction confidences will be
     plotted in separate bars of the same histogram plot.
     Only considers those examples with a set intent.
-    Others are filtered out."""
+    Others are filtered out. Returns a dictionary of containing the
+    evaluation result."""
 
     # remove empty intent targets
     num_examples = len(intent_results)
@@ -303,7 +311,22 @@ def evaluate_intents(intent_results,
 
         plt.show()
 
-    return report, precision, f1, accuracy
+    predictions = [
+        {
+            "text": res.message,
+            "intent": res.target,
+            "predicted": res.prediction,
+            "confidence": res.confidence
+        } for res in intent_results
+    ]
+
+    return {
+        "predictions": predictions,
+        "report": report,
+        "precision": precision,
+        "f1_score": f1,
+        "accuracy": accuracy
+    }
 
 
 def merge_labels(aligned_predictions, extractor=None):
@@ -670,29 +693,12 @@ def run_evaluation(data_path, model,
         intent_targets = get_intent_targets(test_data)
         intent_results = get_intent_predictions(
                 intent_targets, interpreter, test_data)
+
         logger.info("Intent evaluation results:")
-
-        report, precision, f1, accuracy = evaluate_intents(intent_results,
-                                                           errors_filename,
-                                                           confmat_filename,
-                                                           intent_hist_filename)
-
-        predictions = [
-            {
-                "text": res.message,
-                "intent": res.target,
-                "predicted": res.prediction,
-                "confidence": res.confidence
-            } for res in intent_results
-        ]
-
-        result['intent_evaluation'] = {
-            "predictions": predictions,
-            "report": report,
-            "precision": precision,
-            "f1_score": f1,
-            "accuracy": accuracy
-        }
+        result['intent_evaluation'] = evaluate_intents(intent_results,
+                                                       errors_filename,
+                                                       confmat_filename,
+                                                       intent_hist_filename)
 
     if extractors:
         entity_targets = get_entity_targets(test_data)
@@ -702,6 +708,7 @@ def run_evaluation(data_path, model,
                                                         entity_predictions,
                                                         tokens,
                                                         extractors)
+
     return result
 
 
