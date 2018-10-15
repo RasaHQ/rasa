@@ -350,7 +350,6 @@ class StoryFileReader(object):
         parsed_messages = []
         for m in e2e_messages:
             message = e2e_reader._parse_item(m)
-            print("have ent message", message.as_dict())
             parsed = self._parse_message(message.text, line_num)
 
             parsed.parse_data["true_intent"] = message.data["true_intent"]
