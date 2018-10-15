@@ -150,7 +150,7 @@ you need to supply a ``credentials.yml`` with the following content:
      slack_channel: "@my_channel"
 
 
-The endpoint for receiving facebook messenger messages is
+The endpoint for receiving slack messages is
 ``http://localhost:5005/webhooks/slack/webhook``, replacing
 the host and port with the appropriate values. This is the URL
 you should add in the OAuth & Permissions section.
@@ -718,5 +718,3 @@ posted this message to the channel:
 
 
 .. include:: feedback.inc
-
-
