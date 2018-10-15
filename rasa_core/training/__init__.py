@@ -17,7 +17,6 @@ def extract_story_graph(
         resource_name,  # type: Text
         domain,  # type: Domain
         interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
-        exclusion_file=None,  # type: Text
         exclusion_percentage=None  # type: int
 ):
     # type: (...) -> StoryGraph
@@ -29,7 +28,6 @@ def extract_story_graph(
         interpreter = RegexInterpreter()
     story_steps = StoryFileReader.read_from_folder(resource_name,
                                                    domain, interpreter,
-                                                   exclusion_file=exclusion_file,
                                                    exclusion_percentage=exclusion_percentage)
     return StoryGraph(story_steps)
 
@@ -42,8 +40,7 @@ def load_data(
         augmentation_factor=20,  # type: int
         tracker_limit=None,  # type: Optional[int]
         use_story_concatenation=True,  # type: bool
-        debug_plots=False,  # type: bool
-        exclusion_file=None,  # type: Text
+        debug_plots=False,
         exclusion_percentage=None  # type: int
 ):
     # type: (...) -> List[DialogueStateTracker]
@@ -52,7 +49,6 @@ def load_data(
 
     if resource_name:
         graph = extract_story_graph(resource_name, domain,
-                                    exclusion_file=exclusion_file,
                                     exclusion_percentage=exclusion_percentage)
 
         g = TrainingDataGenerator(graph, domain,

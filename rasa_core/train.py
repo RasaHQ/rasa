@@ -16,6 +16,7 @@ from rasa_core.agent import Agent
 from rasa_core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
+from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer,
     FullDialogueTrackerFeaturizer, LabelTokenizerSingleStateFeaturizer)
@@ -227,7 +228,6 @@ def train_comparison_models(story_filename,
                             domain,
                             epochs,
                             output_path=None,
-                            exclusion_file=None,
                             exclusion_percentage=None,
                             starspace=True,
                             max_history=None):
@@ -251,7 +251,6 @@ def train_comparison_models(story_filename,
     data = agent.load_data(story_filename,
                            remove_duplicates=True,
                            augmentation_factor=0,
-                           exclusion_file=exclusion_file,
                            exclusion_percentage=exclusion_percentage)
 
     agent.train(data,
@@ -263,13 +262,13 @@ def train_comparison_models(story_filename,
     agent.persist(model_path=output_path)
 
 
-def get_no_of_stories(file_name, domain):
+def get_no_of_stories(stories, domain):
 
     """gets number of stories in a file"""
 
-    no_stories = len(StoryFileReader.read_from_file(file_name,
-                                                    TemplateDomain.load(
-                                                        domain)))
+    no_stories = len(StoryFileReader.read_from_folder(stories,
+                                                      TemplateDomain.load(
+                                                            domain)))
     return no_stories
 
 
@@ -349,7 +348,6 @@ if __name__ == '__main__':
                                         domain=cmdline_args.domain,
                                         epochs=cmdline_args.epochs_embed,
                                         output_path=output_path_embed,
-                                        exclusion_file=cmdline_args.exclude,
                                         exclusion_percentage=i,
                                         starspace=True)
 
@@ -365,7 +363,6 @@ if __name__ == '__main__':
                                         domain=cmdline_args.domain,
                                         epochs=cmdline_args.epochs_keras,
                                         output_path=output_path_keras,
-                                        exclusion_file=cmdline_args.exclude,
                                         exclusion_percentage=i,
                                         starspace=False)
 
@@ -373,7 +370,7 @@ if __name__ == '__main__':
                                                     current_round,
                                                     len(cmdline_args.percentages)))
 
-        no_stories = get_no_of_stories(cmdline_args.exclude, cmdline_args.domain)
+        no_stories = get_no_of_stories(cmdline_args.stories, cmdline_args.domain)
 
         # store the list of the number of stories present at each exclusion
         # percentage

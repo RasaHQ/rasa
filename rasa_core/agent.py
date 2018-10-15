@@ -432,7 +432,6 @@ class Agent(object):
                   tracker_limit=None,  # type: Optional[int]
                   use_story_concatenation=True,  # type: bool
                   debug_plots=False,  # type: bool
-                  exclusion_file=None,  # type: Text
                   exclusion_percentage=None  # type: int
                   ):
         # type: (...) -> List[DialogueStateTracker]
@@ -471,7 +470,6 @@ class Agent(object):
                                   augmentation_factor,
                                   tracker_limit, use_story_concatenation,
                                   debug_plots,
-                                  exclusion_file=exclusion_file,
                                   exclusion_percentage=exclusion_percentage)
 
     def train(self,
