@@ -46,7 +46,7 @@ evaluate script. The format for the intent message is
 
 Here's an example of what an end-to-end story may look like:
 
-.. code-block:: markdown
+.. code-block:: story
 
   ## end-to-end story 1
   * greet: hello
