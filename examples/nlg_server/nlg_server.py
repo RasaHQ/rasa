@@ -29,7 +29,7 @@ def create_argument_parser():
             type=int,
             help="port to run the server at")
     parser.add_argument(
-            'domain',
+            '-d', '--domain',
             type=str,
             default=None,
             help="path of the domain file to load utterances from"
