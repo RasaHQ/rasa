@@ -4,6 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa_nlu.model import Metadata
+import pytest
 
 
 def test_entity_synonyms():
@@ -29,3 +31,15 @@ def test_entity_synonyms():
     assert entities[0]["value"] == "chinese"
     assert entities[1]["value"] == "chinese"
     assert entities[2]["value"] == "china"
+
+def test_loading_no_warning():
+    syn = EntitySynonymMapper(synonyms=None)
+    syn.persist("test")
+    meta = Metadata({"test":1}, "test")
+    with pytest.warns(None) as warn:
+        syn.load("test", meta)
+    assert len(warn) == 0
+
+
+
+
