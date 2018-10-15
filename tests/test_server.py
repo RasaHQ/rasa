@@ -217,8 +217,9 @@ def test_list_conversations_with_jwt(secured_app):
     # {"user": {"username": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZSI6"
-                         "ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2uQRre7IWTuIDrCn5AIw"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwic"
+                         "m9sZSI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2u"
+                         "QRre7IWTuIDrCn5AIw"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
@@ -227,13 +228,13 @@ def test_list_conversations_with_jwt(secured_app):
     # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb2xlIjoi"
-                         "YWRtaW4ifX0.yMT4Kmldi4LmBMJ_aup_B-W4P1qbzwK-K2-r-j-B"
-                         "WRgeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb"
+                         "2xlIjoidXNlciJ9fQ.JnMTLYd56qut2w9h7hRQlDm1n3l"
+                         "HJHOxxC_w7TtwCrs"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
-    assert response.status_code == 422
+    assert response.status_code == 403
 
 
 def test_get_tracker_with_jwt(secured_app):
@@ -243,8 +244,9 @@ def test_get_tracker_with_jwt(secured_app):
     # {"user": {"username": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwicm9sZSI6"
-                         "ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2uQRre7IWTuIDrCn5AIw"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwic"
+                         "m9sZSI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2u"
+                         "QRre7IWTuIDrCn5AIw"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
@@ -257,13 +259,14 @@ def test_get_tracker_with_jwt(secured_app):
     # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb2xlIjoi"
-                         "YWRtaW4ifX0.yMT4Kmldi4LmBMJ_aup_B-W4P1qbzwK-K2-r-j-B"
-                         "WRgeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb"
+                         "2xlIjoidXNlciJ9fQ.JnMTLYd56qut2w9h7hRQlDm1n3l"
+                         "HJHOxxC_w7TtwCrs"
     }
+    print(json.dumps(jwt_header))
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
-    assert response.status_code == 422
+    assert response.status_code == 403
 
     response = secured_app.get("/conversations/testuser/tracker",
                                headers=jwt_header)
