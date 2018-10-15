@@ -26,11 +26,36 @@ In addition, this will save a confusion matrix to a file called
 domain, how often that action was predicted, and how often an
 incorrect action was predicted instead.
 
-
-
 The full list of options for the script is:
 
 .. program-output:: python -m rasa_core.evaluate -h
+
+
+End-to-end evaluation of Rasa NLU and Core
+------------------------------------------
+
+The evaluate lets you evaluate stories combining Rasa NLU and Core predictions
+by specifying the ``--e2e`` option in the evaluate script.
+
+Stories used for end-to-end evaluation have to specify a message in natural
+language that will be evaluated by the Rasa NLU model loaded in the
+evaluate script. The format for the intent message is
+``* <intent>: <Rasa NLU example>``. The NLU part follows the
+`markdown syntax for Rasa NLU training data
+<https://rasa.com/docs/nlu/dataformat/#markdown-format>`_.
+
+Here's an example of what an end-to-end story may look like:
+
+.. code-block:: markdown
+
+  ## end-to-end story 1
+  * greet: hello
+     - utter_ask_howcanhelp
+  * inform: show me [chinese](cuisine) restaurants
+     - utter_ask_location
+  * inform: in [Paris](location)
+     - utter_ask_price
+  (...)
 
 
 Comparing Policies
