@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import argparse
 import io
+import json
 import logging
 import warnings
 from typing import List, Tuple, Optional, Any, Text, Dict
@@ -83,13 +84,19 @@ class EvaluationStore(object):
                self.entity_predictions != self.entity_targets or \
                self.action_predictions != self.action_targets
 
-    def concatenate_predictions(self):
-        return self.action_predictions + \
-               self.intent_predictions + \
-               self.entity_predictions
+    def serialise_targets(self):
+        targets = self.action_targets + \
+                  self.intent_targets + \
+                  self.entity_targets
+        return [json.dumps(t) if isinstance(t, dict) else t for t in targets]
 
-    def concatenate_targets(self):
-        return self.action_targets + self.intent_targets + self.entity_targets
+    def serialise_predictions(self):
+        predictions = self.action_predictions + \
+                      self.intent_predictions + \
+                      self.entity_predictions
+
+        return [json.dumps(p) if isinstance(p, dict) else p
+                for p in predictions]
 
 
 def create_argument_parser():
@@ -190,22 +197,32 @@ class WronglyClassifiedUserUtterance(UserUttered):
         super(WronglyClassifiedUserUtterance, self).__init__(
                 text, {"name": self.correct_intent}, timestamp=timestamp)
 
+    def _deserialise_entities(self, entities):
+        if isinstance(entities, str):
+            entities = json.loads(entities)
+
+        return [e for e in entities if isinstance(e, dict)]
+
     def _md_format_message(self, text, intent, entities):
         message_from_md = MarkdownReader()._parse_training_example(text)
+        deserialised_entities = self._deserialise_entities(entities)
         return MarkdownWriter()._generate_message_md(
                 {"text": message_from_md.text,
                  "intent": intent,
-                 "entities": entities}
+                 "entities": deserialised_entities}
         )
 
     def as_story_string(self):
-        correct = self._md_format_message(self.text,
-                                          self.correct_intent,
-                                          self.correct_entities)
-        predicted = self._md_format_message(self.text,
-                                            self.predicted_intent,
-                                            self.predicted_entities)
-        return "{}   <!-- predicted: {} -->".format(correct, predicted)
+        correct_message = self._md_format_message(self.text,
+                                                  self.correct_intent,
+                                                  self.correct_entities)
+        predicted_message = self._md_format_message(self.text,
+                                                    self.predicted_intent,
+                                                    self.predicted_entities)
+        return "{}:{}   <!-- predicted: {}:{} -->".format(self.correct_intent,
+                                                          correct_message,
+                                                          self.predicted_intent,
+                                                          predicted_message)
 
 
 def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
@@ -225,6 +242,8 @@ def _collect_user_uttered_predictions(event,
 
     intent_gold = event.parse_data.get("true_intent")
     predicted_intent = event.parse_data.get("intent").get("name")
+    if predicted_intent is None:
+        predicted_intent = "None"
     user_uttered_eval_store.add_to_store(intent_predictions=predicted_intent,
                                          intent_targets=intent_gold)
 
@@ -239,6 +258,7 @@ def _collect_user_uttered_predictions(event,
             entity_gold = pad_list_to_size(entity_gold,
                                            len(predicted_entities),
                                            "None")
+
         user_uttered_eval_store.add_to_store(
                 entity_targets=entity_gold,
                 entity_predictions=predicted_entities
@@ -391,8 +411,8 @@ def run_story_evaluation(resource_name, agent,
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)
         report, precision, f1, accuracy = get_evaluation_metrics(
-                story_results.concatenate_targets(),
-                story_results.concatenate_predictions()
+                story_results.serialise_targets(),
+                story_results.serialise_predictions()
         )
 
     if out_file_plot:
