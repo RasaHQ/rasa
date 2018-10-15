@@ -19,7 +19,7 @@ Added
 - Command line interface for interactive learning now displays policy confidence alongside the action name
 - added action prediction confidence & policy to ``ActionExecuted`` event
 - both the date and the time at which a model was trained are now included in the policy's metadata when it is persisted
-- option for on end-to-end evaluation of Rasa Core and NLU examples in
+- option for end-to-end evaluation of Rasa Core and NLU examples in
   ``evaluate.py`` script
 
 

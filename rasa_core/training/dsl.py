@@ -47,7 +47,10 @@ class EndToEndReader(MarkdownReader):
             return example
 
         raise ValueError("Encountered invalid end-to-end format for message "
-                         "`{}`".format(line))
+                         "`{}`. Please visit the documentation page on "
+                         "end-to-end evaluation at https://rasa.com/docs/core/"
+                         "evaluation#end-to-end-evaluation-of-rasa-nlu-and-"
+                         "core".format(line))
 
 
 class StoryStepBuilder(object):
