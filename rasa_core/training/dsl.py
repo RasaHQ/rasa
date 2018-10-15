@@ -336,9 +336,7 @@ class StoryFileReader(object):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
-        parsed_messages = []
-        for m in messages:
-            parsed_messages.append(self._parse_message(m, line_num))
+        parsed_messages = [self._parse_message(m, line_num) for m in messages]
         self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_e2e_messages(self, e2e_messages, line_num):
