@@ -233,7 +233,7 @@ def test_list_conversations_with_jwt(secured_app):
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
-    assert response.status_code == 403
+    assert response.status_code == 422
 
 
 def test_get_tracker_with_jwt(secured_app):
@@ -263,7 +263,7 @@ def test_get_tracker_with_jwt(secured_app):
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
-    assert response.status_code == 403
+    assert response.status_code == 422
 
     response = secured_app.get("/conversations/testuser/tracker",
                                headers=jwt_header)
