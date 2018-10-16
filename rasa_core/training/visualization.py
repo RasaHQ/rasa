@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import typing
 from collections import defaultdict, deque
 
 import random
@@ -15,6 +16,9 @@ from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.training.structures import StoryGraph, StoryStep
 from rasa_nlu.training_data import TrainingData, Message
+
+if typing.TYPE_CHECKING:
+    import networkx
 
 EDGE_NONE_LABEL = "NONE"
 
@@ -262,6 +266,9 @@ def persist_graph(graph, output_file):
 
 
 def _length_of_common_prefix(this, other):
+    # type: (List[Event], List[Event]) -> int
+    """Calculates the number of events that two conversations have in common."""
+
     num_common_events = 0
     t_cleaned = [e for e in this if e.type_name in {"user", "action"}]
     o_cleaned = [e for e in other if e.type_name in {"user", "action"}]
@@ -281,7 +288,9 @@ def _length_of_common_prefix(this, other):
 
 
 def _add_default_nodes(graph, fontsize=12):
+    # type: (networkx.MultiDiGraph, int) -> None
     """Add the standard nodes we need."""
+
     graph.add_node(START_NODE_ID,
                    label="START",
                    fillcolor="green", style="filled", fontsize=fontsize,
@@ -297,13 +306,21 @@ def _add_default_nodes(graph, fontsize=12):
 
 
 def _create_graph(fontsize=12):
+    # type: (int) -> networkx.MultiDiGraph
     import networkx as nx
     graph = nx.MultiDiGraph()
     _add_default_nodes(graph, fontsize)
     return graph
 
 
-def _add_message_edge(graph, message, current_node, next_node_idx, is_current):
+def _add_message_edge(graph,  # type: networkx.MultiDiGraph
+                      message,  # type: Dict[Text, Any]
+                      current_node,  # type: int
+                      next_node_idx,  # type: int
+                      is_current  # type: bool
+                      ):
+    """Create an edge based on the user message."""
+
     if message:
         message_key = message.get("intent", {}).get("name", None)
         message_label = message.get("text", None)
@@ -327,6 +344,8 @@ def visualize_neighborhood(
         max_distance=1,  # type: int
         fontsize=12  # type: int
 ):
+    """Given a set of event lists, visualizing the flows."""
+
     graph = _create_graph(fontsize)
     _add_default_nodes(graph)
 
@@ -412,6 +431,9 @@ def visualize_neighborhood(
 
 
 def _remove_auxiliary_nodes(graph, special_node_idx):
+    # type: (networkx.MultiDiGraph, int) -> None
+    """Remove any temporary or unused nodes."""
+
     graph.remove_node(TMP_NODE_ID)
 
     if not len(list(graph.predecessors(END_NODE_ID))):
@@ -425,7 +447,6 @@ def _remove_auxiliary_nodes(graph, special_node_idx):
                 graph.remove_node(i)
             else:
                 ps.add(pred)
-    return graph
 
 
 def visualize_stories(

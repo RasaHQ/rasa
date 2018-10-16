@@ -1083,7 +1083,7 @@ def _serve_application(app, stories,
 
 def _add_visualization_routes(app, image_path=None):
     # type: (Flask, Text) -> None
-    """Start a flask server and serve the visualisation."""
+    """Add routes to serve the conversation visualization files."""
 
     @app.route("/visualization.html", methods=["GET"])
     def visualisation_html():
