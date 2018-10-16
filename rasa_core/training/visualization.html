@@ -9,6 +9,7 @@
     <script src="https://dagrejs.github.io/project/graphlib-dot/v0.6.3/graphlib-dot.js"></script>
 </head>
 <body>
+<div id="errormsg" style="color: #b00"></div>
 <svg>
     <style>
         .node.invisible > rect {
@@ -67,7 +68,7 @@
 
         svg {
             position: fixed;
-            top: 0;
+            top: 10px;
             left: 0;
             height: 100%;
             width: 100%
@@ -76,42 +77,46 @@
     <g></g>
 </svg>
 <script>
-    // Set up zoom support
-    const svg = d3.select("svg"),
-        inner = d3.select("svg g"),
-        zoom = d3.zoom().on("zoom", function () {
-            inner.attr("transform", d3.event.transform);
-        });
-    svg.call(zoom);
+  // Set up zoom support
+  const svg = d3.select("svg"),
+    inner = d3.select("svg g"),
+    zoom = d3.zoom().on("zoom", function () {
+      inner.attr("transform", d3.event.transform);
+    });
+  svg.call(zoom);
 
-    // Create and configure the renderer
-    const render = dagreD3.render();
-    let g;
-    let oldInputGraphValue;
+  // Create and configure the renderer
+  const render = dagreD3.render();
+  let g;
+  let oldInputGraphValue;
 
-    const url = 'visualization.dot';
-    const refreshInterval = 500;
+  const url = 'visualization.dot';
+  const refreshInterval = 500;
 
-    // trigger a refresh by fetching an updated graph
-    setInterval(function () {
-      fetch(url).then(r => r.text()).then(dot => {
-        if (oldInputGraphValue === dot) return;
+  // trigger a refresh by fetching an updated graph
+  setInterval(function () {
+    fetch(url).then(r => r.text()).then(dot => {
+      document.getElementById('errormsg').innerHTML = '';
+      if (oldInputGraphValue === dot) return;
 
-        oldInputGraphValue = dot;
-        g = graphlibDot.read(dot);
-        // Set margins, if not present
-        if (!g.graph().hasOwnProperty("marginx") &&
-            !g.graph().hasOwnProperty("marginy")) {
-            g.graph().marginx = 20;
-            g.graph().marginy = 20;
-        }
-        g.graph().transition = function (selection) {
-            return selection.transition().duration(300);
-        };
-        // Render the graph into svg g
-        d3.select("svg g").call(render, g);
-      });
-    }, refreshInterval);
+      oldInputGraphValue = dot;
+      g = graphlibDot.read(dot);
+      // Set margins, if not present
+      if (!g.graph().hasOwnProperty("marginx") &&
+        !g.graph().hasOwnProperty("marginy")) {
+        g.graph().marginx = 20;
+        g.graph().marginy = 20;
+      }
+      g.graph().transition = function (selection) {
+        return selection.transition().duration(300);
+      };
+      // Render the graph into svg g
+      d3.select("svg g").call(render, g);
+    }).catch(err => {
+      document.getElementById('errormsg').innerHTML =
+        'Failed to update plot. (' + err.message + ')';
+    });
+  }, refreshInterval);
 </script>
 </body>
 </html>
