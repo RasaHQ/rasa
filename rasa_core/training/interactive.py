@@ -637,8 +637,8 @@ def _write_stories_to_file(export_file_path, sender_id, endpoint):
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                               sender_id,  # type: Text
                               finetune,  # type: bool
-                              sender_ids,
-                              plot_file,
+                              sender_ids,  # type: List[Text]
+                              plot_file   # type: Optional[Text]
                               ):
     # type: (...) -> None
     """Predict and validate actions until we need to wait for a user msg."""
@@ -647,16 +647,16 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
     while not listen:
         response = request_prediction(endpoint, sender_id)
         predictions = response.get("scores")
-
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
-
         action_name = predictions[pred_out].get("action")
 
         _print_history(sender_id, endpoint)
         _plot_trackers(sender_ids, plot_file, endpoint, action_name)
+
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
+
         _plot_trackers(sender_ids, plot_file, endpoint)
 
 
@@ -888,6 +888,10 @@ def _undo_latest(sender_id, endpoint):
 
 
 def _plot_trackers(sender_ids, output_file, endpoint, unconfirmed=None):
+    if not output_file:
+        # if there is no output file set, we are going to skip plotting
+        return None
+
     temp_story_file = tempfile.NamedTemporaryFile(delete=False,
                                                   suffix=".md")
     temp_story_file.close()
@@ -922,7 +926,8 @@ def record_messages(endpoint,  # type: EndpointConfig
                     max_message_limit=None,  # type: Optional[int]
                     on_finish=None,  # type: Optional[Callable[[], None]]
                     finetune=False,  # type: bool
-                    stories=None,
+                    stories=None,  # type: Optional[Text]
+                    skip_visualization=False  # type: bool
                     ):
     """Read messages from the command line and print bot responses."""
 
@@ -955,8 +960,11 @@ def record_messages(endpoint,  # type: EndpointConfig
         num_messages = 0
         sender_ids = [t.events for t in trackers] + [sender_id]
 
-        plot_file = "story_graph.dot"
-        _plot_trackers(sender_ids, plot_file, endpoint)
+        if skip_visualization:
+            plot_file = "story_graph.dot"
+            _plot_trackers(sender_ids, plot_file, endpoint)
+        else:
+            plot_file = None
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
@@ -964,8 +972,7 @@ def record_messages(endpoint,  # type: EndpointConfig
                     _enter_user_message(sender_id, endpoint, exit_text)
                     _validate_nlu(intents, endpoint, sender_id)
                 _predict_till_next_listen(endpoint, sender_id,
-                                          finetune,
-                                          sender_ids, plot_file)
+                                          finetune, sender_ids, plot_file)
 
                 num_messages += 1
             except RestartConversation:
@@ -998,8 +1005,9 @@ def record_messages(endpoint,  # type: EndpointConfig
 
 
 def _start_interactive_learning_io(endpoint, stories, on_finish,
-                                   finetune=False):
-    # type: (EndpointConfig, Callable[[], None], bool) -> None
+                                   finetune=False,
+                                   skip_visualization=False):
+    # type: (EndpointConfig, Text, Callable[[], None], bool, bool) -> None
     """Start the interactive learning message recording in a separate thread."""
 
     p = Thread(target=record_messages,
@@ -1007,16 +1015,21 @@ def _start_interactive_learning_io(endpoint, stories, on_finish,
                    "endpoint": endpoint,
                    "on_finish": on_finish,
                    "stories": stories,
-                   "finetune": finetune})
+                   "finetune": finetune,
+                   "skip_visualization": skip_visualization})
     p.setDaemon(True)
     p.start()
 
 
-def _serve_application(app, stories, finetune=False, serve_forever=True):
-    # type: (Flask, bool, bool) -> WSGIServer
+def _serve_application(app, stories,
+                       finetune=False,
+                       serve_forever=True,
+                       skip_visualization=False):
+    # type: (Flask, Text, bool, bool, bool) -> WSGIServer
     """Start a core server and attach the interactive learning IO."""
 
-    _add_visualization_routes(app, "story_graph.dot")
+    if not skip_visualization:
+        _add_visualization_routes(app, "story_graph.dot")
 
     http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app, log=None)
     logger.info("Rasa Core server is up and running on "
@@ -1024,8 +1037,10 @@ def _serve_application(app, stories, finetune=False, serve_forever=True):
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    _start_interactive_learning_io(endpoint, stories, http_server.stop,
-                                   finetune=finetune)
+    _start_interactive_learning_io(endpoint, stories,
+                                   http_server.stop,
+                                   finetune=finetune,
+                                   skip_visualization=skip_visualization)
 
     if serve_forever:
         try:
@@ -1057,10 +1072,12 @@ def _add_visualization_routes(app, image_path=None):
 
 def run_interactive_learning(agent, stories,
                              finetune=False,
-                             serve_forever=True):
-    # type: (Agent, bool, bool) -> WSGIServer
+                             serve_forever=True,
+                             skip_visualization=False):
+    # type: (Agent, Text, bool, bool, bool) -> WSGIServer
     """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)
 
-    return _serve_application(app, stories, finetune, serve_forever)
+    return _serve_application(app, stories, finetune,
+                              serve_forever, skip_visualization)
