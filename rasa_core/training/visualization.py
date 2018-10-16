@@ -164,6 +164,10 @@ def _add_edge(graph, u, v, key, label=None, **kwargs):
 
 
 def _transfer_style(source, target):
+    """Copy over class names from source to target for all special classes.
+
+    Used if a node is highlighted and merged with another node."""
+
     clazzes = source.get("class", "")
 
     special_classes = {"dashed", "active"}
