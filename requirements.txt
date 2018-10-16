@@ -43,4 +43,3 @@ terminaltables==3.1.0
 PyInquirer==1.0.2
 flask-jwt-simple==0.0.3
 python-socketio==2.0.0
-pillow==5.2.0
