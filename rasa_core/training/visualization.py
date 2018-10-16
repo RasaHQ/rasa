@@ -222,6 +222,7 @@ def _merge_equivalent_nodes(graph, max_history):
 
 
 def _replace_edge_labels_with_nodes(graph,
+                                    next_id,
                                     interpreter,
                                     nlu_training_data):
     """User messages are created as edge labels. This removes the labels and
@@ -238,7 +239,6 @@ def _replace_edge_labels_with_nodes(graph,
         message_generator = None
 
     edges = list(graph.edges(keys=True, data=True))
-    next_id = graph.number_of_nodes()
     for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
@@ -427,7 +427,8 @@ def visualize_neighborhood(
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
-    _replace_edge_labels_with_nodes(graph, interpreter, nlu_training_data)
+    _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
+                                    nlu_training_data)
 
     _remove_auxiliary_nodes(graph, special_node_idx)
 
