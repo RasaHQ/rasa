@@ -22,7 +22,7 @@ from terminaltables import SingleTable, AsciiTable
 from threading import Thread
 from typing import Any, Text, Dict, List, Optional, Callable, Union
 
-from rasa_core import utils, server, events
+from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
@@ -849,7 +849,7 @@ def _enter_user_message(sender_id, endpoint):
 
     answers = _ask_questions(questions, sender_id, endpoint)
 
-    if answers["message"] == "/restart":
+    if answers["message"] == constants.USER_INTENT_RESTART:
         raise RestartConversation()
 
     send_message(endpoint, sender_id, answers["message"])

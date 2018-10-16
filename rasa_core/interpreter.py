@@ -14,10 +14,9 @@ from typing import Text, List, Dict, Any
 
 from rasa_core import constants
 from rasa_core.utils import EndpointConfig
+from rasa_core.constants import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
-
-INTENT_MESSAGE_PREFIX = "/"
 
 
 class NaturalLanguageInterpreter(object):
