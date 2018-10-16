@@ -89,36 +89,29 @@
     let g;
     let oldInputGraphValue;
 
+    const url = 'visualization.dot';
+    const refreshInterval = 500;
+
     // trigger a refresh by fetching an updated graph
     setInterval(function () {
-        const Http = new XMLHttpRequest();
-        const url = 'visualization.dot';
-        Http.open("GET", url);
-        Http.send();
-        Http.onreadystatechange = (e) => {
-            if (Http.readyState === 4) {
-                var dot = Http.responseText;
-                if (oldInputGraphValue !== dot) {
-                    oldInputGraphValue = dot;
-                    g = graphlibDot.read(dot);
+      fetch(url).then(r => r.text()).then(dot => {
+        if (oldInputGraphValue === dot) return;
 
-                    // Set margins, if not present
-                    if (!g.graph().hasOwnProperty("marginx") &&
-                        !g.graph().hasOwnProperty("marginy")) {
-                        g.graph().marginx = 20;
-                        g.graph().marginy = 20;
-                    }
-
-                    g.graph().transition = function (selection) {
-                        return selection.transition().duration(300);
-                    };
-
-                    // Render the graph into svg g
-                    d3.select("svg g").call(render, g);
-                }
-            }
+        oldInputGraphValue = dot;
+        g = graphlibDot.read(dot);
+        // Set margins, if not present
+        if (!g.graph().hasOwnProperty("marginx") &&
+            !g.graph().hasOwnProperty("marginy")) {
+            g.graph().marginx = 20;
+            g.graph().marginy = 20;
         }
-    }, 500);
+        g.graph().transition = function (selection) {
+            return selection.transition().duration(300);
+        };
+        // Render the graph into svg g
+        d3.select("svg g").call(render, g);
+      });
+    }, refreshInterval);
 </script>
 </body>
 </html>
