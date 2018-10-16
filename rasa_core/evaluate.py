@@ -30,6 +30,62 @@ from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 logger = logging.getLogger(__name__)
 
 
+def create_argument_parser():
+    """Create argument parser for the evaluate script."""
+
+    parser = argparse.ArgumentParser(
+            description='evaluates a dialogue model')
+    parser.add_argument(
+            '-s', '--stories',
+            type=str,
+            required=True,
+            help="file or folder containing stories to evaluate on")
+    parser.add_argument(
+            '-m', '--max_stories',
+            type=int,
+            help="maximum number of stories to test on")
+    parser.add_argument(
+            '-d', '--core',
+            required=True,
+            type=str,
+            help="core model to run with the server")
+    parser.add_argument(
+            '-u', '--nlu',
+            type=str,
+            help="nlu model to run with the server. None for regex interpreter")
+    parser.add_argument(
+            '-o', '--output',
+            type=str,
+            nargs="?",
+            const="story_confmat.pdf",
+            help="output path for the created evaluation plot. If not "
+                 "specified, no plot will be generated.")
+    parser.add_argument(
+            '--e2e', '--end-to-end',
+            action='store_true',
+            help="Run an end-to-end evaluation for combined action and "
+                 "intent prediction. Requires a story file in end-to-end "
+                 "format.")
+    parser.add_argument(
+            '--failed',
+            type=str,
+            default="failed_stories.md",
+            help="output path for the failed stories")
+    parser.add_argument(
+            '--endpoints',
+            default=None,
+            help="Configuration file for the connectors as a yml file")
+    parser.add_argument(
+            '--fail_on_prediction_errors',
+            action='store_true',
+            help="If a prediction error is encountered, an exception "
+                 "is thrown. This can be used to validate stories during "
+                 "tests, e.g. on travis.")
+
+    utils.add_logging_option_arguments(parser)
+    return parser
+
+
 class EvaluationStore(object):
     """Class storing action, intent and entity predictions and targets."""
 
@@ -97,62 +153,6 @@ class EvaluationStore(object):
 
         return [json.dumps(p) if isinstance(p, dict) else p
                 for p in predictions]
-
-
-def create_argument_parser():
-    """Create argument parser for the evaluate script."""
-
-    parser = argparse.ArgumentParser(
-            description='evaluates a dialogue model')
-    parser.add_argument(
-            '-s', '--stories',
-            type=str,
-            required=True,
-            help="file or folder containing stories to evaluate on")
-    parser.add_argument(
-            '-m', '--max_stories',
-            type=int,
-            help="maximum number of stories to test on")
-    parser.add_argument(
-            '-d', '--core',
-            required=True,
-            type=str,
-            help="core model to run with the server")
-    parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            help="nlu model to run with the server. None for regex interpreter")
-    parser.add_argument(
-            '-o', '--output',
-            type=str,
-            nargs="?",
-            const="story_confmat.pdf",
-            help="output path for the created evaluation plot. If not "
-                 "specified, no plot will be generated.")
-    parser.add_argument(
-            '--e2e', '--end-to-end',
-            action='store_true',
-            help="Run an end-to-end evaluation for combined action and "
-                 "intent prediction. Requires a story file in end-to-end "
-                 "format.")
-    parser.add_argument(
-            '--failed',
-            type=str,
-            default="failed_stories.md",
-            help="output path for the failed stories")
-    parser.add_argument(
-            '--endpoints',
-            default=None,
-            help="Configuration file for the connectors as a yml file")
-    parser.add_argument(
-            '--fail_on_prediction_errors',
-            action='store_true',
-            help="If a prediction error is encountered, an exception "
-                 "is thrown. This can be used to validate stories during "
-                 "tests, e.g. on travis.")
-
-    utils.add_logging_option_arguments(parser)
-    return parser
 
 
 class WronglyPredictedAction(ActionExecuted):

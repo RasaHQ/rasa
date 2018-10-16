@@ -19,7 +19,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    python -m rasa_core.evaluate -d models/dialogue \
+    $ python -m rasa_core.evaluate -d models/dialogue \
       -s test_stories.md -o matrix.pdf --failed failed_stories.md
 
 
@@ -56,23 +56,34 @@ user messages is ``* <intent>:<Rasa NLU example>``. The NLU part follows the
 `markdown syntax for Rasa NLU training data
 <https://rasa.com/docs/nlu/dataformat/#markdown-format>`_.
 
-Here's an example of what an end-to-end story may look like:
+Here's an example of what an end-to-end story file may look like:
 
 .. code-block:: story
 
   ## end-to-end story 1
-  * greet:hello
+  * greet: hello
      - utter_ask_howcanhelp
-  * inform:show me [chinese](cuisine) restaurants
+  * inform: show me [chinese](cuisine) restaurants
      - utter_ask_location
-  * inform:in [Paris](location)
+  * inform: in [Paris](location)
      - utter_ask_price
+
+  ## end-to-end story 2
   ...
+
+
+If you've saved these stories under ``e2e_storied.md``,
+the full end-to-end evaluation command is this:
+
+.. code-block:: bash
+
+  $ python -m rasa_core.evaluate -d models/dialogue --nlu models/nlu/current \
+    -s e2e_stories.md --e2e
 
 .. note::
 
-  Make sure you specify an NLU model to load using the dialogue model with the
-  ``--nlu`` option in ``rasa_core.evaluate``. If you do not specify an NLU
+  Make sure you specify an NLU model to load with the dialogue model using the
+  ``--nlu`` option of ``rasa_core.evaluate``. If you do not specify an NLU
   model, Rasa Core will load the default ``RegexInterpreter``.
 
 
