@@ -52,7 +52,7 @@ You can activate this feature with the ``--e2e`` option in the
 The story format used for end-to-end evaluation is slightly different to
 the standard Rasa Core stories, as you'll have to include the user
 messages in natural language instead of just their intent. The format for the
-user messages is ``* <intent>: <Rasa NLU example>``. The NLU part follows the
+user messages is ``* <intent>:<Rasa NLU example>``. The NLU part follows the
 `markdown syntax for Rasa NLU training data
 <https://rasa.com/docs/nlu/dataformat/#markdown-format>`_.
 
@@ -61,11 +61,11 @@ Here's an example of what an end-to-end story may look like:
 .. code-block:: story
 
   ## end-to-end story 1
-  * greet: hello
+  * greet:hello
      - utter_ask_howcanhelp
-  * inform: show me [chinese](cuisine) restaurants
+  * inform:show me [chinese](cuisine) restaurants
      - utter_ask_location
-  * inform: in [Paris](location)
+  * inform:in [Paris](location)
      - utter_ask_price
   ...
 

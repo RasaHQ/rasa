@@ -219,10 +219,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
         predicted_message = self._md_format_message(self.text,
                                                     self.predicted_intent,
                                                     self.predicted_entities)
-        return "{}:{}   <!-- predicted: {}:{} -->".format(self.correct_intent,
-                                                          correct_message,
-                                                          self.predicted_intent,
-                                                          predicted_message)
+        return ("{}: {}   <!-- predicted: {}: {} -->"
+                "").format(self.correct_intent,
+                           correct_message,
+                           self.predicted_intent,
+                           predicted_message)
 
 
 def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
