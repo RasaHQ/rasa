@@ -474,10 +474,10 @@ paths:
                     - user
                 parse_data:
                   $ref: '#/components/schemas/ParseData'
-              required: ["text", "sender"]
+              required: ["message", "sender"]
             example:
               sender: user
-              text: hello
+              message: hello
               parse_data:
                 text: hello
                 entities: []
