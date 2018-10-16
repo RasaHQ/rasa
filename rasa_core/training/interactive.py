@@ -315,9 +315,10 @@ def _request_fork_from_user(sender_id,
                             endpoint
                             ):
     # type: (...) -> Optional[List[Dict[Text, Any]]]
-    """Take in latest message and ask which intent it should have been.
+    """Take in a conversation and ask at which point to fork the conversation.
 
-    Returns the intent dict that has been selected by the user."""
+    Returns the list of events that should be kept. Forking means, the
+    conversation will be reset and continued from this previous point."""
 
     tracker = retrieve_tracker(endpoint, sender_id,
                                EventVerbosity.AFTER_RESTART)
