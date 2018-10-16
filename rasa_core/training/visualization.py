@@ -18,6 +18,10 @@ from rasa_nlu.training_data import TrainingData, Message
 
 EDGE_NONE_LABEL = "NONE"
 
+START_NODE_ID = 0
+END_NODE_ID = -1
+TMP_NODE_ID = -2
+
 
 class UserMessageGenerator(object):
     def __init__(self, nlu_training_data):
@@ -210,7 +214,6 @@ def _merge_equivalent_nodes(graph, max_history):
 
 
 def _replace_edge_labels_with_nodes(graph,
-                                    next_id,
                                     interpreter,
                                     nlu_training_data):
     """User messages are created as edge labels. This removes the labels and
@@ -227,6 +230,7 @@ def _replace_edge_labels_with_nodes(graph,
         message_generator = None
 
     edges = list(graph.edges(keys=True, data=True))
+    next_id = graph.number_of_nodes()
     for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
@@ -239,6 +243,8 @@ def _replace_edge_labels_with_nodes(graph,
             graph.add_node(next_id,
                            label=label,
                            shape="rect",
+                           style="filled",
+                           fillcolor="lightblue",
                            **_transfer_style(d, {"class": "intent"}))
             graph.add_edge(s, next_id, **{"class": d.get("class", "")})
             graph.add_edge(next_id, e, **{"class": d.get("class", "")})
@@ -274,24 +280,57 @@ def _length_of_common_prefix(this, other):
     return num_common_events
 
 
+def _add_default_nodes(graph, fontsize=12):
+    """Add the standard nodes we need."""
+    graph.add_node(START_NODE_ID,
+                   label="START",
+                   fillcolor="green", style="filled", fontsize=fontsize,
+                   **{"class": "start active"})
+    graph.add_node(END_NODE_ID,
+                   label="END",
+                   fillcolor="red", style="filled", fontsize=fontsize,
+                   **{"class": "end"})
+    graph.add_node(TMP_NODE_ID,
+                   label="TMP",
+                   style="invis",
+                   **{"class": "invisible"})
+
+
+def _create_graph(fontsize=12):
+    import networkx as nx
+    graph = nx.MultiDiGraph()
+    _add_default_nodes(graph, fontsize)
+    return graph
+
+
+def _add_message_edge(graph, message, current_node, next_node_idx, is_current):
+    if message:
+        message_key = message.get("intent", {}).get("name", None)
+        message_label = message.get("text", None)
+    else:
+        message_key = None
+        message_label = None
+
+    _add_edge(graph, current_node, next_node_idx, message_key,
+              message_label,
+              **{"class": "active" if is_current else ""})
+
+
 def visualize_neighborhood(
-        current,  # type: List[Event]
+        current,  # type: Optional[List[Event]]
         event_sequences,  # type: List[List[Event]]
         output_file=None,  # type: Optional[Text]
         max_history=2,  # type: int
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
         nlu_training_data=None,  # type: Optional[TrainingData]
         should_merge_nodes=True,  # type: bool
-        fontsize=12,  # type: int
-        max_distance=1
+        max_distance=1,  # type: int
+        fontsize=12  # type: int
 ):
-    import networkx as nx
+    graph = _create_graph(fontsize)
+    _add_default_nodes(graph)
 
-    graph = nx.MultiDiGraph()
-    next_node_idx = 0
-    graph.add_node(0, label="START", **{"class": "start active"})
-    graph.add_node(-1, label="END", **{"class": "end"})
-    graph.add_node(-2, label="TMP", **{"class": "invisible"})
+    next_node_idx = START_NODE_ID
     special_node_idx = -3
     path_ellipsis_ends = set()
 
@@ -302,7 +341,7 @@ def visualize_neighborhood(
             prefix = len(events)
 
         message = None
-        current_node = 0
+        current_node = START_NODE_ID
         idx = 0
         is_current = events == current
 
@@ -318,27 +357,22 @@ def visualize_neighborhood(
             elif (isinstance(el, ActionExecuted) and
                   el.action_name != ACTION_LISTEN_NAME):
                 next_node_idx += 1
-                graph.add_node(next_node_idx, label=el.action_name,
+                graph.add_node(next_node_idx,
+                               label=el.action_name,
+                               fontsize=fontsize,
                                **{"class": "active" if is_current else ""})
 
-                if message:
-                    message_key = message.get("intent", {}).get("name", None)
-                    message_label = message.get("text", None)
-                else:
-                    message_key = None
-                    message_label = None
-
-                _add_edge(graph, current_node, next_node_idx, message_key,
-                          message_label,
-                          **{"class": "active" if is_current else ""})
+                _add_message_edge(graph, message, current_node, next_node_idx,
+                                  is_current)
                 current_node = next_node_idx
 
                 message = None
                 prefix -= 1
 
+        # determine what the end node of the conversation is going to be
+        # this can either be an ellipsis "...", the conversation end node
+        # "END" or a "TMP" node if this is the active conversation
         if is_current:
-            if message:
-                target = -2
             if (isinstance(events[idx], ActionExecuted)
                     and events[idx].action_name == ACTION_LISTEN_NAME):
                 next_node_idx += 1
@@ -350,9 +384,11 @@ def visualize_neighborhood(
             elif current_node:
                 d = graph.nodes(data=True)[current_node]
                 d["class"] = "dashed active"
-                target = -2
-        elif idx == len(events):
-            target = -1
+                target = TMP_NODE_ID
+            else:
+                target = TMP_NODE_ID
+        elif idx == len(events) - 1:
+            target = END_NODE_ID
         elif current_node and current_node not in path_ellipsis_ends:
             graph.add_node(special_node_idx, label="...",
                            **{"class": "ellipsis"})
@@ -360,38 +396,35 @@ def visualize_neighborhood(
             path_ellipsis_ends.add(current_node)
             special_node_idx -= 1
         else:
-            target = -1
+            target = END_NODE_ID
 
-        if message:
-            message_key = message.get("intent", {}).get("name", None)
-            message_label = message.get("text", None)
-            graph.add_edge(current_node, target,
-                           key=message_key, label=message_label,
-                           **{"class": "active" if is_current else ""})
-        else:
-            graph.add_edge(current_node, target, key=EDGE_NONE_LABEL,
-                           **{"class": "active" if is_current else ""})
+        _add_message_edge(graph, message, current_node, target, is_current)
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
-    _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
-                                    nlu_training_data)
-    graph.remove_node(-2)
-    if not len(list(graph.predecessors(-1))):
-        graph.remove_node(-1)
+    _replace_edge_labels_with_nodes(graph, interpreter, nlu_training_data)
 
-    # remove duplicated ... nodes after merging
-    ps = set()
-    for i in range(special_node_idx + 1, -2):
-        preds = list(graph.predecessors(i))
-        if preds:
-            if preds[0] in ps:
-                graph.remove_node(i)
-            else:
-                ps.add(preds[0])
+    _remove_auxiliary_nodes(graph, special_node_idx)
 
     if output_file:
         persist_graph(graph, output_file)
+    return graph
+
+
+def _remove_auxiliary_nodes(graph, special_node_idx):
+    graph.remove_node(TMP_NODE_ID)
+
+    if not len(list(graph.predecessors(END_NODE_ID))):
+        graph.remove_node(END_NODE_ID)
+
+    # remove duplicated "..." nodes after merging
+    ps = set()
+    for i in range(special_node_idx + 1, TMP_NODE_ID):
+        for pred in list(graph.predecessors(i)):
+            if pred in ps:
+                graph.remove_node(i)
+            else:
+                ps.add(pred)
     return graph
 
 
@@ -433,57 +466,23 @@ def visualize_stories(
     data instance. It will
     be used to replace the user messages from the story file with actual
     messages from the training data."""
-    import networkx as nx
 
     story_graph = StoryGraph(story_steps)
-    graph = nx.MultiDiGraph()
-    next_node_idx = 0
-    graph.add_node(0, label="START", fillcolor="green", style="filled",
-                   fontsize=fontsize)
-    graph.add_node(-1, label="END", fillcolor="red", style="filled",
-                   fontsize=fontsize)
 
     g = TrainingDataGenerator(story_graph, domain,
                               use_story_concatenation=False,
                               tracker_limit=100,
                               augmentation_factor=0)
     completed_trackers = g.generate(silent)
+    event_sequences = [t.events for t in completed_trackers]
 
-    for tracker in completed_trackers:
-        message = None
-        current_node = 0
-        for el in tracker.events:
-            if isinstance(el, UserUttered):
-                message = interpreter.parse(el.text)
-            elif (isinstance(el, ActionExecuted) and
-                  el.action_name != ACTION_LISTEN_NAME):
-                next_node_idx += 1
-                graph.add_node(next_node_idx, label=el.action_name,
-                               fontsize=fontsize)
-
-                if message:
-                    message_key = message.get("intent", {}).get("name", None)
-                    message_label = message.get("text", None)
-                else:
-                    message_key = None
-                    message_label = None
-
-                _add_edge(graph, current_node, next_node_idx, message_key,
-                          message_label)
-                current_node = next_node_idx
-
-                message = None
-        if message:
-            graph.add_edge(current_node, -1,
-                           key=EDGE_NONE_LABEL, label=message)
-        else:
-            graph.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
-
-    if should_merge_nodes:
-        _merge_equivalent_nodes(graph, max_history)
-    _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
-                                    nlu_training_data)
-
-    if output_file:
-        persist_graph(graph, output_file)
+    graph = visualize_neighborhood(None,
+                                   event_sequences,
+                                   output_file,
+                                   max_history,
+                                   interpreter,
+                                   nlu_training_data,
+                                   should_merge_nodes,
+                                   max_distance=1,
+                                   fontsize=fontsize)
     return graph
