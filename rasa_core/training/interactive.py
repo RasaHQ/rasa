@@ -20,7 +20,7 @@ from flask import Flask, send_from_directory, send_file, abort
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable
+from typing import Any, Text, Dict, List, Optional, Callable, Union
 
 from rasa_core import utils, server, events
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -55,7 +55,10 @@ class RestartConversation(Exception):
 
 
 class ForkTracker(Exception):
-    """Exception used to break out the flow and restart the conversation."""
+    """Exception used to break out the flow and fork at a previous step.
+
+    The tracker will be reset to the selected point in the past and the
+    conversation will continue from there."""
     pass
 
 
@@ -233,7 +236,6 @@ def _ask_questions(
         questions,  # type: List[Dict[Text, Any]]
         sender_id,  # type: Text
         endpoint,  # type: EndpointConfig
-        is_abort=None  # type: Optional[Callable[[Dict[Text, Text]], bool]]
 ):
     # type: (...) -> Dict[Text, Any]
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
@@ -243,7 +245,7 @@ def _ask_questions(
 
     while should_retry:
         answers = prompt(questions)
-        if not answers or (is_abort and is_abort(answers)):
+        if not answers:
             should_retry = _ask_if_quit(sender_id, endpoint)
         else:
             should_retry = False
@@ -652,7 +654,8 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         action_name = predictions[pred_out].get("action")
 
         _print_history(sender_id, endpoint)
-        _plot_trackers(sender_ids, plot_file, endpoint, action_name)
+        _plot_trackers(sender_ids, plot_file, endpoint,
+                       unconfirmed=[ActionExecuted(action_name)])
 
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
@@ -834,19 +837,20 @@ def _correct_entities(latest_message, endpoint, sender_id):
     return parsed.get("entities", [])
 
 
-def _enter_user_message(sender_id, endpoint, exit_text):
-    # type: (Text, EndpointConfig, Text) -> None
+def _enter_user_message(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> None
     """Request a new message from the user."""
 
     questions = [{
         "name": "message",
         "type": "input",
-        "message": "Next user input:"
+        "message": "Next user input (Ctr-c to abort):"
     }]
 
-    answers = _ask_questions(
-            questions, sender_id, endpoint,
-            is_abort=lambda a: a["message"] == exit_text)
+    answers = _ask_questions(questions, sender_id, endpoint)
+
+    if answers["message"] == "/restart":
+        raise RestartConversation()
 
     send_message(endpoint, sender_id, answers["message"])
 
@@ -887,30 +891,47 @@ def _undo_latest(sender_id, endpoint):
         replace_events(endpoint, sender_id, events_to_keep)
 
 
-def _plot_trackers(sender_ids, output_file, endpoint, unconfirmed=None):
-    if not output_file:
-        # if there is no output file set, we are going to skip plotting
-        return None
-
-    temp_story_file = tempfile.NamedTemporaryFile(delete=False,
-                                                  suffix=".md")
-    temp_story_file.close()
+def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
+                  endpoint  # type: EndpointConfig
+                  ):
+    # type: (...) -> List[List[Event]]
+    """Retrieve all event trackers from the endpoint for all sender ids."""
 
     event_sequences = []
     for sender_id in sender_ids:
         if isinstance(sender_id, six.string_types):
             tracker = retrieve_tracker(endpoint, sender_id)
             evts = tracker.get("events", [])
-            sub_conversations = _split_conversation_at_restarts(evts)
 
-            for conversation in sub_conversations:
+            for conversation in _split_conversation_at_restarts(evts):
                 parsed_events = events.deserialise_events(conversation)
                 event_sequences.append(parsed_events)
         else:
             event_sequences.append(sender_id)
+    return event_sequences
+
+
+def _plot_trackers(sender_ids,   # type: List[Union[Text, List[Event]]]
+                   output_file,   # type: Optional[Text]
+                   endpoint,  # type: EndpointConfig
+                   unconfirmed=None  # type: Optional[List[Event]]
+                   ):
+    """Create a plot of the trackers of the passed sender ids.
+
+    This assumes that the last sender id is the conversation we are currently
+    working on. If there are events that are not part of this active tracker
+    yet, they can be passed as part of `unconfirmed`. They will be appended
+    to the currently active conversation."""
+
+    if not output_file or not sender_ids:
+        # if there is no output file provided, we are going to skip plotting
+        # same happens if there are no sender ids
+        return None
+
+    event_sequences = _fetch_events(sender_ids, endpoint)
 
     if unconfirmed:
-        event_sequences[-1].append(ActionExecuted(unconfirmed))
+        event_sequences[-1].extend(unconfirmed)
 
     graph = visualize_neighborhood(event_sequences[-1],
                                    event_sequences,
@@ -919,6 +940,22 @@ def _plot_trackers(sender_ids, output_file, endpoint, unconfirmed=None):
 
     from networkx.drawing.nx_agraph import write_dot
     write_dot(graph, output_file)
+
+
+def _print_help(skip_visualization):
+    # type: (bool) -> None
+    """Print some initial help message for the user."""
+
+    if not skip_visualization:
+        visualization_help = "Visualisation at {}/visualization.html." \
+                             "".format(DEFAULT_SERVER_URL)
+    else:
+        visualization_help = ""
+
+    utils.print_color("Bot loaded. {}\n"
+                      "Type a message and press enter "
+                      "(press 'Ctr-c' to exit). "
+                      "".format(visualization_help), utils.bcolors.OKGREEN)
 
 
 def record_messages(endpoint,  # type: EndpointConfig
@@ -934,14 +971,7 @@ def record_messages(endpoint,  # type: EndpointConfig
     from rasa_core import training
 
     try:
-        exit_text = INTENT_MESSAGE_PREFIX + 'stop'
-
-        utils.print_color("Bot loaded. Visualisation at "
-                          "{}/visualization.html.\n"
-                          "Type a message and press enter "
-                          "(use '{}' to exit). ".format(DEFAULT_SERVER_URL,
-                                                        exit_text),
-                          utils.bcolors.OKGREEN)
+        _print_help(skip_visualization)
 
         try:
             domain = retrieve_domain(endpoint)
@@ -960,7 +990,7 @@ def record_messages(endpoint,  # type: EndpointConfig
         num_messages = 0
         sender_ids = [t.events for t in trackers] + [sender_id]
 
-        if skip_visualization:
+        if not skip_visualization:
             plot_file = "story_graph.dot"
             _plot_trackers(sender_ids, plot_file, endpoint)
         else:
@@ -969,7 +999,7 @@ def record_messages(endpoint,  # type: EndpointConfig
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
                 if is_listening_for_message(sender_id, endpoint):
-                    _enter_user_message(sender_id, endpoint, exit_text)
+                    _enter_user_message(sender_id, endpoint)
                     _validate_nlu(intents, endpoint, sender_id)
                 _predict_till_next_listen(endpoint, sender_id,
                                           finetune, sender_ids, plot_file)
