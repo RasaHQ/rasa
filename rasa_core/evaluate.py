@@ -8,9 +8,9 @@ import io
 import json
 import logging
 import warnings
+from builtins import str
 from typing import List, Tuple, Optional, Any, Text, Dict
 
-from builtins import str
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 
@@ -236,6 +236,11 @@ def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
     return g.generate()
 
 
+def _clean_entity_results(entity_results):
+    return [{k: r[k] for k in ("start", "end", "entity", "value") if k in r}
+            for r in entity_results]
+
+
 def _collect_user_uttered_predictions(event,
                                       partial_tracker,
                                       fail_on_prediction_errors):
@@ -250,6 +255,7 @@ def _collect_user_uttered_predictions(event,
 
     entity_gold = event.parse_data.get("true_entities")
     predicted_entities = event.parse_data.get("entities")
+
     if entity_gold or predicted_entities:
         if len(entity_gold) > len(predicted_entities):
             predicted_entities = pad_list_to_size(predicted_entities,
@@ -261,8 +267,8 @@ def _collect_user_uttered_predictions(event,
                                            "None")
 
         user_uttered_eval_store.add_to_store(
-                entity_targets=entity_gold,
-                entity_predictions=predicted_entities
+                entity_targets=_clean_entity_results(entity_gold),
+                entity_predictions=_clean_entity_results(predicted_entities)
         )
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
