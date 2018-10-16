@@ -311,6 +311,8 @@ def _add_default_nodes(graph, fontsize=12):
 
 def _create_graph(fontsize=12):
     # type: (int) -> networkx.MultiDiGraph
+    """Create a graph and adds the default nodes."""
+
     import networkx as nx
     graph = nx.MultiDiGraph()
     _add_default_nodes(graph, fontsize)
