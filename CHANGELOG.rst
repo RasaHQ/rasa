@@ -16,6 +16,8 @@ Changed
 -------
 - ``EmbeddingIntentClassifier`` has been refactored, including changes to the
   config parameters as well as comments and types for all class functions.
+- the http server's ``POST /evaluate`` endpoint returns evaluation results
+  for both entities and intents
 
 Removed
 -------
