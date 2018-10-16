@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import sys
+import typing
 
 import io
 import logging
@@ -240,6 +241,7 @@ def _ask_questions(
         questions,  # type: List[Dict[Text, Any]]
         sender_id,  # type: Text
         endpoint,  # type: EndpointConfig
+        is_abort=lambda x: False # type: Callable[[Dict[Text, Any]], bool]
 ):
     # type: (...) -> Dict[Text, Any]
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
@@ -249,7 +251,7 @@ def _ask_questions(
 
     while should_retry:
         answers = prompt(questions)
-        if not answers:
+        if not answers or is_abort(answers):
             should_retry = _ask_if_quit(sender_id, endpoint)
         else:
             should_retry = False
@@ -911,7 +913,8 @@ def _enter_user_message(sender_id, endpoint):
         "message": "Next user input (Ctr-c to abort):"
     }]
 
-    answers = _ask_questions(questions, sender_id, endpoint)
+    answers = _ask_questions(questions, sender_id, endpoint,
+                             lambda a: not a["message"])
 
     if answers["message"] == constants.USER_INTENT_RESTART:
         raise RestartConversation()
