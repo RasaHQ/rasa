@@ -90,7 +90,7 @@ def requires_auth(app, token=None):
             jwt_data = view_decorators._decode_jwt_from_headers()
             user = jwt_data.get("user", {})
 
-            username = user.get("user", None)
+            username = user.get("username", None)
             role = user.get("role", None)
 
             if role == "admin":
@@ -385,7 +385,11 @@ def create_app(agent,
     @ensure_loaded_agent(agent)
     def log_message(sender_id):
         request_params = request.get_json(force=True)
-        message = request_params.get("text")
+        try:
+            message = request_params["message"]
+        except KeyError:
+            message = request_params.get("text")
+            
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
@@ -467,7 +471,7 @@ def create_app(agent,
                          """Invalid accept header. Domain can be provided
                             as json ("Accept: application/json")
                             or yml ("Accept: application/x-yml").
-                            Make sure you've set the appropriate Accept 
+                            Make sure you've set the appropriate Accept
                             header.""")
 
     @app.route("/finetune",

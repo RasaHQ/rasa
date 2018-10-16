@@ -41,11 +41,9 @@ tmp/
 tokens.dat
 graph.png
 debug.md
-examples/moodbot/models
-examples/restaurantbot/models
-examples/concertbot/models
-examples/moodbot/*.png
-examples/moodbot/errors.json
+examples/concertbot/data*
+examples/concertbot/models*
+examples/moodbot/models*
 docs/key 
 docs/key.pub
 secrets.tar

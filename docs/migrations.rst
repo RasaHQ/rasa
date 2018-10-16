@@ -278,8 +278,7 @@ There have been some API changes to classes and methods:
          - action_ask_cuisine
 
 
-.. include:: feedback.inc 
+.. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+
 

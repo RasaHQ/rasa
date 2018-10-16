@@ -34,7 +34,7 @@ defined like this:
                - low
                - medium
                - high
-   
+
 
 :ref:`Here <slot_types>` is the full list of slot types defined by
 Rasa Core, along with syntax for including them in your domain file.
@@ -233,6 +233,5 @@ featurized as normal.
 
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html	
+
 	

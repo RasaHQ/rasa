@@ -17,7 +17,7 @@ by using the evaluate script:
       -s test_stories.md -o matrix.pdf --failed failed_stories.md
 
 
-This will print the failed stories to ``failed_stories.md``. 
+This will print the failed stories to ``failed_stories.md``.
 We count any story as `failed` if at least one of the actions
 was predicted incorrectly.
 
@@ -40,7 +40,7 @@ To choose a specific policy, or to choose hyperparameters for a
 specific policy, you want to measure how well Rasa Core will `generalise`
 to conversations which it hasn't seen before. Especially in the beginning
 of a project, you do not have a lot of real conversations to use to train
-your bot, so you don't just want to throw some away to use as a test set. 
+your bot, so you don't just want to throw some away to use as a test set.
 
 Rasa Core has some scripts to help you choose and fine-tune your policy.
 Once you are happy with it, you can then train your final policy on your
@@ -54,17 +54,6 @@ on the full set of stories, you can measure how well Rasa Core is
 predicting the held-out stories.
 
 
-The full list of options for the script is:
-
-.. program-output:: python -m rasa_core.train_paper -h
-
-
-The full list of options for the evaluation script is:
-
-.. program-output:: python -m rasa_core.evaluate_paper -h
-
-
 .. include:: feedback.inc
 
-.. raw:: html
-   :file: livechat.html
+

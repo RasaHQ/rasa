@@ -15,7 +15,7 @@ Currently, there is code for connecting to
 facebook, slack, telegram, mattermost and twilio. If the connection
 you want is missing, this is a great place to start contributing!
 
-If you're testing on your local machine (e.g. not a server), you 
+If you're testing on your local machine (e.g. not a server), you
 will need to use ngrok_. This gives your machine a domain name
 and so that facebook, slack, etc. know where to send messages.
 
@@ -150,7 +150,7 @@ you need to supply a ``credentials.yml`` with the following content:
      slack_channel: "@my_channel"
 
 
-The endpoint for receiving facebook messenger messages is
+The endpoint for receiving slack messages is
 ``http://localhost:5005/webhooks/slack/webhook``, replacing
 the host and port with the appropriate values. This is the URL
 you should add in the OAuth & Permissions section.
@@ -646,7 +646,7 @@ After connecting the ``callback`` input channel, you can post messages to
 
    {
      "sender": "Rasa",
-     "text": "Hi there!"
+     "message": "Hi there!"
    }
 
 The response will simply be ``success``. Once Core wants to send a
@@ -718,7 +718,3 @@ posted this message to the channel:
 
 
 .. include:: feedback.inc
-
-.. raw:: html
-   :file: livechat.html   
-   

@@ -15,7 +15,7 @@ The Rasa Core dialogue engine
 .. chat-bubble::
    :text: Rasa is a framework for building conversational software:
       Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a <strong>bot</strong>
-      in this documentation. 
+      in this documentation.
    :sender: bot
 
 .. chat-bubble::
@@ -42,7 +42,7 @@ The Rasa Core dialogue engine
 .. chat-bubble::
    :text: Can I see it in action?
    :sender: user
-    
+
 .. chat-bubble::
    :text: We thought you'd never ask!
       You can build a full example without installing anything, just go to the quickstart!
@@ -89,6 +89,7 @@ The Rasa Core dialogue engine
    api/interpreter
    api/policy
    api/featurizer
+   api/dispatcher
 
 .. toctree::
    :maxdepth: 1
@@ -102,6 +103,3 @@ The Rasa Core dialogue engine
    support
 
 
-.. raw:: html
-   :file: livechat.html 
-   
