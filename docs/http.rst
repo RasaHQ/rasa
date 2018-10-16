@@ -119,8 +119,8 @@ a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
                 "precision": 0.7606987393295268,
                 "f1_score": 0.812633994625117,
                 "accuracy": 0.8721804511278195
-              }
-          }
+            }
+        }
     }
 
 
