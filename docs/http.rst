@@ -91,26 +91,36 @@ sklearn  evaluation metrics (`accuracy <http://scikit-learn
 .org/stable/modules/generated/sklearn.metrics.f1_score.html>`_,
 `precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`_, as well as
 a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
-.metrics.classification_report.html>`_).
+.metrics.classification_report.html>`_) for both intents and entities.
 
 .. code-block:: bash
 
     $ curl -XPOST localhost:5000/evaluate?project=my_project&model=model_XXXXXX -d @data/examples/rasa/demo-rasa.json | python -mjson.tool
 
     {
-        "accuracy": 0.19047619047619047,
-        "f1_score": 0.06095238095238095,
-        "precision": 0.036281179138321996,
-        "predictions": [
-            {
-                "intent": "greet",
-                "predicted": "greet",
-                "text": "hey",
-                "confidence": 1.0
-            },
-            ...,
-        ]
-        "report": ...
+        "intent_evaluation": {
+            "accuracy": 0.19047619047619047,
+            "f1_score": 0.06095238095238095,
+            "precision": 0.036281179138321996,
+            "predictions": [
+                {
+                    "intent": "greet",
+                    "predicted": "greet",
+                    "text": "hey",
+                    "confidence": 1.0
+                },
+                ...,
+            ]
+            "report": ...
+        },
+        "entity_evaluation": {
+            "ner_crf": {
+                "report": ...,
+                "precision": 0.7606987393295268,
+                "f1_score": 0.812633994625117,
+                "accuracy": 0.8721804511278195
+              }
+          }
     }
 
 
