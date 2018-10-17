@@ -31,10 +31,10 @@ ADD . .
 
 RUN pip install -e . --no-cache-dir
 
-VOLUME ["/app/dialogue", "/app/nlu", "/app/out"]
+VOLUME ["/app/dialogue", "/app/out"]
 
 EXPOSE 5005
 
 ENTRYPOINT ["./entrypoint.sh"]
 
-CMD ["start", "-d", "./dialogue", "-u", "./nlu"]
+CMD ["start", "-d", "./dialogue"]

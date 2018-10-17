@@ -1,0 +1,40 @@
+version: '3.0'
+
+services:
+  rasacore:
+      image: rasa/rasa_core:latest
+      networks: ['rasa-network']
+      ports:
+      - "5005:5005"
+      volumes:
+      - "./rasa-app-data/dialogue:/app/dialogue"
+      environment:
+        - RASA_ACTION_URL=http://action_server:5055/webhook
+        - RASA_NLU_HOST=http://rasanlu:5000
+      command: 
+        - start
+        - -d
+        - ./dialogue
+        - -c 
+        - rest
+        - -u
+        - current/nlu
+        - --endpoints
+        - endpoints.yml
+  action_server:
+      image: rasa/rasa_core_sdk:latest
+      networks: ['rasa-network']
+      ports:
+      - "5055:5055"
+      volumes:
+      - "./rasa-app-data/actions:/app/actions"
+  rasanlu:
+    image: rasa/rasa_nlu:latest-full
+    networks: ['rasa-network']
+    ports:
+    - "5000:5000"
+    volumes:
+    - "./rasa-app-data/projects/:/app/projects"
+    - "./rasa-app-data/logs:/app/logs"
+
+networks: {rasa-network: {}}
