@@ -1,0 +1,5 @@
+policies:
+  - name: MemoizationPolicy
+    max_history: 5
+  - name: rasa_core.data.test_config.example_policy.ExamplePolicy
+    example_arg: 10
