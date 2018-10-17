@@ -611,19 +611,15 @@ class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
     def __init__(self, url, params=None, headers=None, basic_auth=None,
-                 token=None, token_name="token",store_type=None,db=None,user=None,password=None,timeout=None):
+                 token=None, token_name="token",**kwargs):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
-        self.store_type = store_type
-        self.db = db
-        self.user = user
-        self.password= password
-        self.timeout = timeout
-
+        for k, v in kwargs.items():
+            setattr(self, k, v)
     def request(self,
                 method="post",  # type: Text
                 subpath=None,  # type: Optional[Text]
