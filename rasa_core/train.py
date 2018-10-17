@@ -65,7 +65,7 @@ def create_argument_parser():
     parser.add_argument(
             '-d', '--domain',
             type=str,
-            required=False,
+            required=True,
             help="domain specification yaml file")
     parser.add_argument(
             '-u', '--nlu',
@@ -328,6 +328,9 @@ if __name__ == '__main__':
                                       additional_arguments)
 
     elif cmdline_args.mode == 'compare':
+        if not cmdline_args.out:
+            raise ValueError("you must provide a path where the model "
+                             "will be saved using -o / --out")
         for r in range(cmdline_args.runs):
             logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
             for i in cmdline_args.percentages:
@@ -340,9 +343,11 @@ if __name__ == '__main__':
                 output_path_embed = (os.path.join(cmdline_args.out, 'run_' +
                                      str(r + 1), 'embed' + str(current_round)))
 
-                logging.info("Starting to train embed round {}/{}".format(
-                                                    current_round,
-                                                    len(cmdline_args.percentages)))
+                logging.info("Starting to train embedding policy round {}/{}"
+                             " with {}% exclusion".format(
+                                                current_round,
+                                                len(cmdline_args.percentages),
+                                                i))
 
                 train_comparison_models(story_filename=cmdline_args.stories,
                                         domain=cmdline_args.domain,
@@ -351,13 +356,11 @@ if __name__ == '__main__':
                                         exclusion_percentage=i,
                                         starspace=True)
 
-                logger.info("Finished training embed round {}/{}".format(
-                                                    current_round,
-                                                    len(cmdline_args.percentages)))
-
-                logging.info("Starting to train keras round {}/{}".format(
-                                                    current_round,
-                                                    len(cmdline_args.percentages)))
+                logging.info("Starting to train keras policy round {}/{}"
+                             " with {}% exclusion".format(
+                                                current_round,
+                                                len(cmdline_args.percentages),
+                                                i))
 
                 train_comparison_models(story_filename=cmdline_args.stories,
                                         domain=cmdline_args.domain,
@@ -366,11 +369,8 @@ if __name__ == '__main__':
                                         exclusion_percentage=i,
                                         starspace=False)
 
-                logger.info("Finished training keras round {}/{}".format(
-                                                    current_round,
-                                                    len(cmdline_args.percentages)))
-
-        no_stories = get_no_of_stories(cmdline_args.stories, cmdline_args.domain)
+        no_stories = get_no_of_stories(cmdline_args.stories,
+                                       cmdline_args.domain)
 
         # store the list of the number of stories present at each exclusion
         # percentage
@@ -378,10 +378,12 @@ if __name__ == '__main__':
                        cmdline_args.percentages]
 
         pickle.dump(story_range,
-                    io.open(os.path.join(cmdline_args.out, 'num_stories.p'), 'wb'))
+                    io.open(os.path.join(cmdline_args.out, 'num_stories.p'),
+                            'wb'))
 
     else:
         raise ValueError("--mode can take the values default or compare")
 
     if cmdline_args.interactive:
-        interactive.run_interactive_learning(_agent, finetune=cmdline_args.finetune)
+        interactive.run_interactive_learning(_agent,
+                                             finetune=cmdline_args.finetune)
