@@ -129,13 +129,16 @@ class NestedEntityExtractor(EntityExtractor):
       entity = each_entity["entity"]
       broad_value = each_entity["value"].lower()
       broken_entity = {}
-      for composite_entry in self.nested_entities['composite_entries']: # Checking through our list of composite entries
-        if(composite_entry['value'] == entity): # if this current entity a composite
-
-          composite_children = composite_entry['synonyms'] # get the entities that make up this composite entity
-          for composite_child in composite_children: # looping thru each child trying to break our broad entity
+      for composite_entry in self.nested_entities['composite_entries']: 
+        # if this current entity a composite
+        if(composite_entry['value'] == entity): 
+          # get the entities that make up this composite entity
+          composite_children = composite_entry['synonyms'] 
+          # looping thru each child trying to break our broad entity
+          for composite_child in composite_children: 
             if(composite_child[0] == '@'):
-              composite_child_name = composite_child.split(':')[0][1:] # @model:model => model
+              # @model:model => model
+              composite_child_name = composite_child.split(':')[0][1:] 
 
               broken_entity = self.merge_two_dicts(broken_entity, self.split_one_level(composite_child, broad_value))
 
@@ -146,8 +149,9 @@ class NestedEntityExtractor(EntityExtractor):
                   correct_nested_composite = ""
                   highest_relevance_score = 0
                   correct_nested_composite_examples = []
-                  for nested_composite in nested_composites: # Try to find the most related nested entity
-                    nested_composite_value = nested_composite.split(':')[0] # doors
+                  # Try to find the most related nested entity
+                  for nested_composite in nested_composites: 
+                    nested_composite_value = nested_composite.split(':')[0]
                     child_of_nested_composite = filter(lambda x: x['value'] == nested_composite_value , self.nested_entities['composite_entries'])
                     if(len(child_of_nested_composite) == 0):
                       break;
@@ -172,7 +176,8 @@ class NestedEntityExtractor(EntityExtractor):
     composite_entities = []
     for synonym, value in list(entity_synonyms):
       if(value[0] == '@' and synonym.startswith(value)):
-        synonym = synonym.replace(value + "_", "") # unpacking the smuggled entities here
+        # unpacking the smuggled entities here
+        synonym = synonym.replace(value + "_", "") 
         value = value[1:]
 
         is_present = False
@@ -190,5 +195,6 @@ class NestedEntityExtractor(EntityExtractor):
 
   def add_lookup_tables(self, lookup_tables):
     for lookup in lookup_tables:
-      lookup['entries'].sort(key = len, reverse=True) # need to sort so that things like niro dont come before niro plugin i.e we want the broadest example
+      # need to sort by length so that we get the broadest entry first
+      lookup['entries'].sort(key = len, reverse=True) 
       self.nested_entities['lookup_tables'].append(lookup)

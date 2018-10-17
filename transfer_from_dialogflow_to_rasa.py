@@ -86,9 +86,11 @@ def harvest_composite_entries(value, entity):
     splitValue = value.split(" ")
     
     for each in splitValue:
-      # if each and each[0] == '@':
       if each:
-        composite_entries.append("@" + entity + "_" + each) # Because RASA removes duplicates entries so we prefix with the current entity so they get to be unique and we remove it while training
+        # Because RASA removes duplicates entries so we prefix 
+        # with the current entity so they get to be unique 
+        # and we remove it while training
+        composite_entries.append("@" + entity + "_" + each) 
 
     return composite_entries
 
@@ -153,22 +155,18 @@ def process_entities(entities_dir):
 def main():
     path_arg = sys.argv[1]
     directory = path_arg if path_arg.endswith('/') else path_arg + '/'
-    intents_dir = directory + "intents"
-    common_examples = get_common_examples(intents_dir)
-    entities_dir = directory + "entities"
-    entities_data = process_entities(entities_dir)
+    common_examples = get_common_examples(directory + "intents")
+    entities_data = process_entities(directory + "entities")
 
     entity_synonyms = entities_data.get("entity_synonyms")
     lookup_tables = entities_data.get("lookup_tables")
-
-    regex_features = []
 
     training_data = {
         "rasa_nlu_data": {
             "common_examples": common_examples,
             "entity_synonyms": entity_synonyms,
             "lookup_tables": lookup_tables,
-            "regex_features": regex_features,
+            "regex_features": [],
         }
     }
 
