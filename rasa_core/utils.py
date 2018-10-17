@@ -5,25 +5,25 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
-import sys
-from builtins import input, range, str
-
 import inspect
 import io
 import json
 import logging
 import os
 import re
-import requests
-import six
+import sys
 import tempfile
 from hashlib import sha1
-from numpy import all, array
 from random import Random
-from requests.auth import HTTPBasicAuth
-from requests.exceptions import InvalidURL
 from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
+
+import requests
+import six
+from builtins import input, range, str
+from numpy import all, array
+from requests.auth import HTTPBasicAuth
+from requests.exceptions import InvalidURL
 
 from rasa_nlu import utils as nlu_utils
 
@@ -112,7 +112,8 @@ def dump_obj_as_str_to_file(filename, text):
         f.write(str(text))
 
 
-def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
+def subsample_array(arr, max_values, can_modify_incoming_array=True,
+                    rand=None):
     # type: (List[Any], int, bool, Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
@@ -580,6 +581,11 @@ def download_file_from_url(url):
 def remove_none_values(obj):
     """Remove all keys that store a `None` value."""
     return {k: v for k, v in obj.items() if v is not None}
+
+
+def pad_list_to_size(_list, size, padding_value=None):
+    """Pads _list with padding_value up to size"""
+    return _list + [padding_value] * (size - len(_list))
 
 
 class AvailableEndpoints(object):
