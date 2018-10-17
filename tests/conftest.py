@@ -80,4 +80,3 @@ def zipped_nlu_model():
     zip_path = zip_folder(model_path)
 
     return zip_path
-
