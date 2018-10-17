@@ -31,7 +31,7 @@ from rasa_nlu.evaluate import (
     plot_confusion_matrix,
     get_evaluation_metrics)
 
-from rasa_nlu.utils import list_subdirectories
+from rasa_nlu import utils as nlu_utils
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 
@@ -63,21 +63,14 @@ def create_argument_parser():
     parser.add_argument(
             '-o', '--output',
             type=str,
-            nargs="?",
-            const="story_confmat.pdf",
-            help="output path for the created evaluation plot. If not "
-                 "specified, no plot will be generated.")
+            default="results",
+            help="output path for the any files created from the evaluation")
     parser.add_argument(
             '--e2e', '--end-to-end',
             action='store_true',
             help="Run an end-to-end evaluation for combined action and "
                  "intent prediction. Requires a story file in end-to-end "
                  "format.")
-    parser.add_argument(
-            '--failed',
-            type=str,
-            default="failed_stories.md",
-            help="output path for the failed stories")
     parser.add_argument(
             '--endpoints',
             default=None,
@@ -404,13 +397,11 @@ def collect_story_predictions(
     return story_eval_store, failed, num_stories
 
 
-def log_failed_stories(failed, failed_output):
+def log_failed_stories(failed, out_directory):
     """Takes stories as a list of dicts"""
 
-    if not failed_output:
-        return
-
-    with io.open(failed_output, 'w', encoding="utf-8") as f:
+    with io.open(os.path.join(out_directory, 'failed_stories.md'), 'w',
+                 encoding="utf-8") as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
         else:
@@ -421,8 +412,7 @@ def log_failed_stories(failed, failed_output):
 
 def run_story_evaluation(resource_name, agent,
                          max_stories=None,
-                         out_file_stories=None,
-                         out_file_plot=None,
+                         out_directory=None,
                          fail_on_prediction_errors=False,
                          use_e2e=False):
     """Run the evaluation of the stories, optionally plots the results."""
@@ -440,12 +430,12 @@ def run_story_evaluation(resource_name, agent,
                 story_results.serialise_predictions()
         )
 
-    if out_file_plot:
+    if out_directory:
         plot_story_evaluation(story_results.action_targets,
                               story_results.action_predictions,
-                              report, precision, f1, accuracy, out_file_plot)
+                              report, precision, f1, accuracy, out_directory)
 
-    log_failed_stories(failed, out_file_stories)
+        log_failed_stories(failed, out_directory)
 
     return {
         "story_evaluation": {
@@ -474,7 +464,7 @@ def log_evaluation_table(golds, name,
 
 def plot_story_evaluation(test_y, predictions,
                           report, precision, f1, accuracy,
-                          out_file):
+                          out_directory):
     """Plot the results of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
@@ -492,7 +482,8 @@ def plot_story_evaluation(test_y, predictions,
 
     fig = plt.gcf()
     fig.set_size_inches(int(20), int(20))
-    fig.savefig(out_file, bbox_inches='tight')
+    fig.savefig(os.path.join(out_directory, "story_confmat.pdf"),
+                bbox_inches='tight')
 
 
 def run_comparison_evaluation(models, stories, output):
@@ -501,18 +492,18 @@ def run_comparison_evaluation(models, stories, output):
 
     num_correct = defaultdict(list)
 
-    for run in list_subdirectories(models):
+    for run in nlu_utils.list_subdirectories(models):
         correct_embed = []
         correct_keras = []
 
-        for model in sorted(list_subdirectories(run)):
+        for model in sorted(nlu_utils.list_subdirectories(run)):
             logger.info("Evaluating model {}".format(model))
 
             agent = Agent.load(model)
 
             completed_trackers = _generate_trackers(stories, agent)
 
-            actual, preds, failed_stories, no_of_stories = \
+            story_eval_store, failed_stories, no_of_stories = \
                 collect_story_predictions(completed_trackers,
                                           agent)
             if 'keras' in model:
@@ -522,8 +513,6 @@ def run_comparison_evaluation(models, stories, output):
 
         num_correct['keras'].append(correct_keras)
         num_correct['embed'].append(correct_embed)
-
-    utils.create_dir_for_file(os.path.join(output, 'results.json'))
 
     with io.open(os.path.join(output, 'results.json'), 'w') as f:
         json.dump(num_correct, f)
@@ -555,7 +544,7 @@ def plot_curve(output, no_stories, ax=None, **kwargs):
     ax.legend(loc=4)
     ax.set_xlabel("Number of stories present during training")
     ax.set_ylabel("Number of correct test stories")
-    plt.savefig(os.path.join(output, 'graph.pdf'), format='pdf')
+    plt.savefig(os.path.join(output, 'comparison_graph.pdf'), format='pdf')
     plt.show()
 
 
@@ -567,7 +556,13 @@ if __name__ == '__main__':
     logging.basicConfig(level=cmdline_args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
+    if cmdline_args.output:
+        nlu_utils.create_dir(cmdline_args.output)
+
     if cmdline_args.mode == 'default':
+        if not cmdline_args.core:
+            raise ValueError("you must provide a core model to evaluate "
+                             "using -d / --core")
         _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                          _endpoints.nlu)
 
@@ -576,12 +571,14 @@ if __name__ == '__main__':
         run_story_evaluation(cmdline_args.stories,
                              _agent,
                              cmdline_args.max_stories,
-                             cmdline_args.failed,
                              cmdline_args.output,
                              cmdline_args.fail_on_prediction_errors,
                              cmdline_args.e2e)
 
     elif cmdline_args.mode == 'compare':
+        if not cmdline_args.models:
+            raise ValueError("you must provide the directory of the models "
+                             "you'd like to compare with --models")
         run_comparison_evaluation(cmdline_args.models, cmdline_args.stories,
                                   cmdline_args.output)
 
