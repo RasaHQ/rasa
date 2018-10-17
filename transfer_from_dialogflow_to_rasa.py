@@ -70,7 +70,7 @@ def harvest_synonymn(value, synonyms):
     }
 
 def harvest_lookup_table(value, synonyms):
-    if'@' in value:
+    if '@' in value:
         return False
 
     synonyms.append(value)
