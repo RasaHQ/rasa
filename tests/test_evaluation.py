@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import imghdr
 import os
 
 from rasa_core import evaluate
@@ -15,20 +14,17 @@ from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 def test_evaluation_image_creation(tmpdir, default_agent):
     stories_path = tmpdir.join("failed_stories.md").strpath
-    img_path = tmpdir.join("evaluation.png").strpath
+    img_path = tmpdir.join("story_confmat.pdf").strpath
 
     run_story_evaluation(
             resource_name=DEFAULT_STORIES_FILE,
             agent=default_agent,
-            out_file_plot=img_path,
+            out_directory=tmpdir,
             max_stories=None,
-            out_file_stories=stories_path,
             use_e2e=False
     )
 
     assert os.path.isfile(img_path)
-    assert imghdr.what(img_path) == "png"
-
     assert os.path.isfile(stories_path)
 
 
@@ -52,4 +48,4 @@ def test_end_to_end_evaluation_script(tmpdir, default_agent):
 
     assert not evaluation_result.has_prediction_target_mismatch()
     assert len(failed_stories) == 0
-    assert num_stories == 3
+    assert num_stories == 2
