@@ -21,8 +21,36 @@ from rasa_core.training.structures import (
     Checkpoint, STORY_START, StoryStep,
     GENERATED_CHECKPOINT_PREFIX, GENERATED_HASH_LENGTH)
 from rasa_nlu import utils as nlu_utils
+from rasa_nlu.training_data import Message
+from rasa_nlu.training_data.formats import MarkdownReader
 
 logger = logging.getLogger(__name__)
+
+
+class EndToEndReader(MarkdownReader):
+    def _parse_item(self, line):
+        # type: (Text) -> Optional[Message]
+        """Parses an md list item line based on the current section type.
+
+        Matches expressions of the form `<intent>:<example>. For the
+        syntax of <example> see the Rasa NLU docs on training data:
+        https://rasa.com/docs/nlu/dataformat/#markdown-format"""
+
+        item_regex = re.compile(r'\s*(.+?):\s*(.*)')
+        match = re.match(item_regex, line)
+        if match:
+            intent = match.group(1)
+            self.current_title = intent
+            message = match.group(2)
+            example = self._parse_training_example(message)
+            example.data["true_intent"] = intent
+            return example
+
+        raise ValueError("Encountered invalid end-to-end format for message "
+                         "`{}`. Please visit the documentation page on "
+                         "end-to-end evaluation at https://rasa.com/docs/core/"
+                         "evaluation#end-to-end-evaluation-of-rasa-nlu-and-"
+                         "core".format(line))
 
 
 class StoryStepBuilder(object):
@@ -123,34 +151,36 @@ class StoryStepBuilder(object):
 class StoryFileReader(object):
     """Helper class to read a story file."""
 
-    def __init__(self, domain, interpreter, template_vars=None):
+    def __init__(self, domain, interpreter, template_vars=None, use_e2e=False):
         self.story_steps = []
         self.current_step_builder = None  # type: Optional[StoryStepBuilder]
         self.domain = domain
         self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
+        self.use_e2e = use_e2e
 
     @staticmethod
     def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
-                         template_variables=None):
+                         template_variables=None, use_e2e=False):
         """Given a path reads all contained story files."""
 
         story_steps = []
         for f in nlu_utils.list_files(resource_name):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,
-                                                   template_variables)
+                                                   template_variables, use_e2e)
             story_steps.extend(steps)
         return story_steps
 
     @staticmethod
     def read_from_file(filename, domain, interpreter=RegexInterpreter(),
-                       template_variables=None):
+                       template_variables=None, use_e2e=False):
         """Given a md file reads the contained stories."""
 
         try:
             with io.open(filename, "r", encoding="utf-8") as f:
                 lines = f.readlines()
-            reader = StoryFileReader(domain, interpreter, template_variables)
+            reader = StoryFileReader(domain, interpreter,
+                                     template_variables, use_e2e)
             return reader.process_lines(lines)
         except ValueError as err:
             file_info = ("Invalid story file format. Failed to parse "
@@ -194,8 +224,8 @@ class StoryFileReader(object):
         if m is not None:
             event_name = m.group(1).strip()
             slots_str = m.group(2)
-            parameters = StoryFileReader._parameters_from_json_string(slots_str,
-                                                                      line)
+            parameters = StoryFileReader._parameters_from_json_string(
+                    slots_str, line)
             return event_name, parameters
         else:
             warnings.warn("Failed to parse action line '{}'. "
@@ -225,7 +255,10 @@ class StoryFileReader(object):
                 elif line.startswith("*"):  # reached a user message
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
-                    self.add_user_messages(user_messages, line_num)
+                    if self.use_e2e:
+                        self.add_e2e_messages(user_messages, line_num)
+                    else:
+                        self.add_user_messages(user_messages, line_num)
                 else:  # reached an unknown type of line
                     logger.warning("Skipping line {}. "
                                    "No valid command found. "
@@ -245,8 +278,8 @@ class StoryFileReader(object):
                 return self.template_variables[varname]
             else:
                 raise ValueError("Unknown variable `{var}` "
-                                 "in template line '{line}'".format(var=varname,
-                                                                    line=line))
+                                 "in template line '{line}'"
+                                 "".format(var=varname, line=line))
 
         template_rx = re.compile(r"`([^`]+)`")
         return template_rx.sub(process_match, line)
@@ -277,32 +310,50 @@ class StoryFileReader(object):
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
+    def _parse_message(self, message, line_num):
+        parse_data = self.interpreter.parse(message)
+        utterance = UserUttered(message,
+                                parse_data.get("intent"),
+                                parse_data.get("entities"),
+                                parse_data)
+
+        if message.startswith("_"):
+            c = utterance.as_story_string()
+            logger.warning("Stating user intents with a leading '_' is "
+                           "deprecated. The new format is "
+                           "'* {}'. Please update "
+                           "your example '{}' to the new format."
+                           "".format(c, message))
+        intent_name = utterance.intent.get("name")
+        if intent_name not in self.domain.intents:
+            logger.warning("Found unknown intent '{}' on line {}. "
+                           "Please, make sure that all intents are "
+                           "listed in your domain yaml."
+                           "".format(intent_name, line_num))
+        return utterance
+
     def add_user_messages(self, messages, line_num):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
-        parsed_messages = []
-        for m in messages:
-            parse_data = self.interpreter.parse(m)
-            utterance = UserUttered(m,
-                                    parse_data.get("intent"),
-                                    parse_data.get("entities"),
-                                    parse_data)
+        parsed_messages = [self._parse_message(m, line_num) for m in messages]
+        self.current_step_builder.add_user_messages(parsed_messages)
 
-            if m.startswith("_"):
-                c = utterance.as_story_string()
-                logger.warning("Stating user intents with a leading '_' is "
-                               "deprecated. The new format is "
-                               "'* {}'. Please update "
-                               "your example '{}' to the new format."
-                               "".format(c, m))
-            intent_name = utterance.intent.get("name")
-            if intent_name not in self.domain.intents:
-                logger.warning("Found unknown intent '{}' on line {}. "
-                               "Please, make sure that all intents are "
-                               "listed in your domain yaml."
-                               "".format(intent_name, line_num))
-            parsed_messages.append(utterance)
+    def add_e2e_messages(self, e2e_messages, line_num):
+        if not self.current_step_builder:
+            raise StoryParseError("End-to-end message '{}' at invalid "
+                                  "location. Expected story start."
+                                  "".format(e2e_messages))
+        e2e_reader = EndToEndReader()
+        parsed_messages = []
+        for m in e2e_messages:
+            message = e2e_reader._parse_item(m)
+            parsed = self._parse_message(message.text, line_num)
+
+            parsed.parse_data["true_intent"] = message.data["true_intent"]
+            parsed.parse_data["true_entities"] = \
+                message.data.get("entities") or []
+            parsed_messages.append(parsed)
         self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_event(self, event_name, parameters):

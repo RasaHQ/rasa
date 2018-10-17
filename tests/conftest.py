@@ -35,6 +35,8 @@ DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
+END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
+
 MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
 DEFAULT_ENDPOINTS_FILE = "data/example_endpoints.yml"
