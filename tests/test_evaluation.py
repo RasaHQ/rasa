@@ -19,7 +19,7 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     run_story_evaluation(
             resource_name=DEFAULT_STORIES_FILE,
             agent=default_agent,
-            out_directory=tmpdir,
+            out_directory=tmpdir.strpath,
             max_stories=None,
             use_e2e=False
     )
