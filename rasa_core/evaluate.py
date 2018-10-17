@@ -11,6 +11,11 @@ import logging
 import warnings
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
+import os
+import json
+import numpy as np
+import pickle
+from collections import defaultdict
 
 from rasa_core import training
 from rasa_core import utils
@@ -23,6 +28,7 @@ from rasa_core.utils import AvailableEndpoints
 from rasa_nlu.evaluate import (
     plot_confusion_matrix,
     get_evaluation_metrics)
+from rasa_nlu.utils import list_subdirectories
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +49,6 @@ def create_argument_parser():
             help="maximum number of stories to test on")
     parser.add_argument(
             '-d', '--core',
-            required=True,
             type=str,
             help="core model to run with the server")
     parser.add_argument(
@@ -71,6 +76,16 @@ def create_argument_parser():
             help="If a prediction error is encountered, an exception "
                  "is thrown. This can be used to validate stories during "
                  "tests, e.g. on travis.")
+    parser.add_argument(
+            '--mode',
+            type=str,
+            default='default',
+            help="default|compare (evaluate a model, or evaluate multiple "
+                 "models and compare them)")
+    parser.add_argument(
+            '--models',
+            type=str,
+            help="folder containing trained models for comparison")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -247,6 +262,70 @@ def plot_story_evaluation(test_y, predictions, out_file):
     fig.savefig(out_file, bbox_inches='tight')
 
 
+def run_comparison_evaluation(models, stories, output):
+
+    """Evaluates multiple trained models on a test set"""
+
+    num_correct = defaultdict(list)
+
+    for run in list_subdirectories(models):
+        correct_embed = []
+        correct_keras = []
+
+        for model in sorted(list_subdirectories(run)):
+            logger.info("Evaluating model {}".format(model))
+
+            agent = Agent.load(model)
+
+            completed_trackers = _generate_trackers(stories, agent)
+
+            actual, preds, failed_stories, no_of_stories = \
+                collect_story_predictions(completed_trackers,
+                                          agent)
+            if 'keras' in model:
+                correct_keras.append(no_of_stories - len(failed_stories))
+            elif 'embed' in model:
+                correct_embed.append(no_of_stories - len(failed_stories))
+
+        num_correct['keras'].append(correct_keras)
+        num_correct['embed'].append(correct_embed)
+
+    utils.create_dir_for_file(os.path.join(output, 'results.json'))
+
+    with io.open(os.path.join(output, 'results.json'), 'w') as f:
+        json.dump(num_correct, f)
+
+
+def plot_curve(output, no_stories, ax=None, **kwargs):
+    """ plots the results from run_comparison_evaluation"""
+    import matplotlib.pyplot as plt
+
+    ax = ax or plt.gca()
+
+    # load results from file
+    with io.open(os.path.join(output, 'results.json')) as f:
+        data = json.load(f)
+    x = no_stories
+
+    # compute mean of all the runs for keras/embed policies
+    for label in ['keras', 'embed']:
+        if len(data[label]) == 0:
+            continue
+        mean = np.mean(data[label], axis=0)
+        std = np.std(data[label], axis=0)
+        ax.plot(x, mean, label=label, marker='.')
+        ax.fill_between(x,
+                        [m-s for m, s in zip(mean, std)],
+                        [m+s for m, s in zip(mean, std)],
+                        color='#6b2def',
+                        alpha=0.2)
+    ax.legend(loc=4)
+    ax.set_xlabel("Number of stories present during training")
+    ax.set_ylabel("Number of correct test stories")
+    plt.savefig(os.path.join(output, 'graph.pdf'), format='pdf')
+    plt.show()
+
+
 if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
@@ -255,17 +334,28 @@ if __name__ == '__main__':
     logging.basicConfig(level=cmdline_args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
+    if cmdline_args.mode == 'default':
+        _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                         _endpoints.nlu)
 
-    _agent = Agent.load(cmdline_args.core,
-                        interpreter=_interpreter)
+        _agent = Agent.load(cmdline_args.core,
+                            interpreter=_interpreter)
+        run_story_evaluation(cmdline_args.stories,
+                             _agent,
+                             cmdline_args.max_stories,
+                             cmdline_args.failed,
+                             cmdline_args.output,
+                             cmdline_args.fail_on_prediction_errors)
 
-    run_story_evaluation(cmdline_args.stories,
-                         _agent,
-                         cmdline_args.max_stories,
-                         cmdline_args.failed,
-                         cmdline_args.output,
-                         cmdline_args.fail_on_prediction_errors)
+    elif cmdline_args.mode == 'compare':
+        run_comparison_evaluation(cmdline_args.models, cmdline_args.stories,
+                                  cmdline_args.output)
+
+        no_stories = pickle.load(io.open(os.path.join(cmdline_args.models,
+                                                      'num_stories.p'), 'rb'))
+
+        plot_curve(cmdline_args.output, no_stories)
+    else:
+        raise ValueError("--mode can take the values default or compare")
 
     logger.info("Finished evaluation")
