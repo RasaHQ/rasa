@@ -197,28 +197,44 @@ class PolicyEnsemble(object):
         return ensemble
 
     @classmethod
-    def load_from_yaml(cls, path):
-        # type: (Text) -> List[Policy]
-
-        config_data = utils.read_yaml_file(path)
+    def from_dict(cls, dict):
+        # type: Dict -> List[Policy]
 
         policies = []
 
-        for policy in config_data.get('policies'):
+        for policy in dict.get('policies', []):
 
-            module_name, _ , class_name = policy.get('name').rpartition('.')
+            policy_name = policy.pop('name')
 
-            if module_name == "":
-                constr_func = globals()[policy.get('name')]
+            if not '.' in policy_name:
+                constr_func = globals().get(policy_name)
             else:
-                module = importlib.import_module(module_name)
-                constr_func = getattr(module, class_name)
+                constr_func = utils.class_from_module_path(policy_name)
 
-            policy.pop('name')
             policy_object = constr_func(**policy)
             policies.append(policy_object)
 
         return policies
+
+    @classmethod
+    def default_policies(cls, fallback_args, max_history):
+        # type: None -> List[Policy]
+        """Load the default policy setup consisting of
+        FallbackPolicy, MemoizationPolicy and KerasPolicy."""
+
+        return [
+            FallbackPolicy(
+                    fallback_args.get("nlu_threshold",
+                                      DEFAULT_NLU_FALLBACK_THRESHOLD),
+                    fallback_args.get("core_threshold",
+                                      DEFAULT_CORE_FALLBACK_THRESHOLD),
+                    fallback_args.get("fallback_action_name",
+                                      DEFAULT_FALLBACK_ACTION)),
+            MemoizationPolicy(
+                    max_history=max_history),
+            KerasPolicy(
+                    MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                                max_history=max_history))]
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None

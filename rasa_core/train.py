@@ -138,7 +138,7 @@ def create_argument_parser():
                  "is of low confidence) this is the name of tje action that "
                  "will get triggered instead.")
     parser.add_argument(
-            '-p', '--policy_config',
+            '-c', '--config',
             type=str,
             required=False,
             help="Policy specification yaml file."
@@ -153,7 +153,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                          endpoints=AvailableEndpoints(),
                          max_history=None,
                          dump_flattened_stories=False,
-                         policy_config=None,
+                         config=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
@@ -163,23 +163,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                 "core_threshold",
                                                 "fallback_action_name"})
 
-    if policy_config is None:
-        policies = [
-            FallbackPolicy(
-                    fallback_args.get("nlu_threshold",
-                                      DEFAULT_NLU_FALLBACK_THRESHOLD),
-                    fallback_args.get("core_threshold",
-                                      DEFAULT_CORE_FALLBACK_THRESHOLD),
-                    fallback_args.get("fallback_action_name",
-                                      DEFAULT_FALLBACK_ACTION)),
-            MemoizationPolicy(
-                    max_history=max_history),
-            KerasPolicy(
-                    MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                                max_history=max_history))]
-
-    else:
-        policies = PolicyEnsemble.load_from_yaml(policy_config)
+    policies = config.load(config, fallback_args, max_history)
 
     agent = Agent(domain_file,
                   generator=endpoints.nlg,
@@ -254,7 +238,7 @@ if __name__ == '__main__':
                                       _endpoints,
                                       cmdline_args.history,
                                       cmdline_args.dump_stories,
-                                      cmdline_args.policy_config,
+                                      cmdline_args.config,
                                       additional_arguments)
 
     if cmdline_args.interactive:
