@@ -16,7 +16,8 @@ def load(config_file, fallback_args, max_history):
         return PolicyEnsemble.default_policies(fallback_args, max_history)
 
     config_data = utils.read_yaml_file(config_file)
-    config_data = handle_precedence_and_defaults(config_data, fallback_args, max_history)
+    config_data = handle_precedence_and_defaults(
+                            config_data, fallback_args, max_history)
 
     return PolicyEnsemble.from_dict(config_data)
 
@@ -25,17 +26,8 @@ def handle_precedence_and_defaults(config_data, fallback_args, max_history):
 
     for policy in config_data.get('policies'):
 
-        if policy.get('name') == 'FallbackPolicy':
-            if fallback_args is not None:
-                set_arg(policy, "nlu_threshold",
-                        fallback_args.get("nlu_threshold"),
-                        DEFAULT_NLU_FALLBACK_THRESHOLD)
-                set_arg(policy, "core_threshold",
-                        fallback_args.get("core_threshold"),
-                        DEFAULT_CORE_FALLBACK_THRESHOLD)
-                set_arg(policy, "fallback_action_name",
-                        fallback_args.get("fallback_action_name"),
-                        DEFAULT_FALLBACK_ACTION)
+        if policy.get('name') == 'FallbackPolicy' and fallback_args is not None:
+            set_fallback_args(policy, fallback_args)
 
         elif policy.get('name') in {'KerasPolicy', 'MemoizationPolicy'}:
             set_arg(policy, "max_history", max_history, 3)
@@ -50,3 +42,15 @@ def set_arg(data_dict, argument, value, default):
         data_dict[argument] = default
 
     return data_dict
+
+def set_fallback_args(policy, fallback_args):
+
+    set_arg(policy, "nlu_threshold",
+            fallback_args.get("nlu_threshold"),
+            DEFAULT_NLU_FALLBACK_THRESHOLD)
+    set_arg(policy, "core_threshold",
+            fallback_args.get("core_threshold"),
+            DEFAULT_CORE_FALLBACK_THRESHOLD)
+    set_arg(policy, "fallback_action_name",
+            fallback_args.get("fallback_action_name"),
+            DEFAULT_FALLBACK_ACTION)
