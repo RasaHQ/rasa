@@ -8,6 +8,7 @@ from builtins import str
 import argparse
 import logging
 
+from rasa_core import config
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.featurizers import (
@@ -119,18 +120,21 @@ def create_argument_parser():
             '--nlu_threshold',
             type=float,
             default=None,
+            required=False,
             help="If NLU prediction confidence is below threshold, fallback "
                  "will get triggered.")
     parser.add_argument(
             '--core_threshold',
             type=float,
             default=None,
+            required=False,
             help="If Core action prediction confidence is below the threshold "
                  "a fallback action will get triggered")
     parser.add_argument(
             '--fallback_action_name',
             type=str,
             default=None,
+            required=False,
             help="When a fallback is triggered (e.g. because the ML prediction "
                  "is of low confidence) this is the name of tje action that "
                  "will get triggered instead.")
