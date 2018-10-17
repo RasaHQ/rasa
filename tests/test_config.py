@@ -5,7 +5,7 @@ from rasa_core.config import load, handle_precedence_and_defaults
 from rasa_core.policies.memoization import MemoizationPolicy
 
 
-def test_handle_precedence_and_defaults():
+def test_handle_precedence_and_defaults_for_config():
 
     config_data = {'policies':[
         {'name':'FallbackPolicy', 'nlu_threshold':0.5},
@@ -22,11 +22,12 @@ def test_handle_precedence_and_defaults():
         {'name': 'KerasPolicy', 'max_history': 3}
     ]}
     new_config_data = handle_precedence_and_defaults(
-                            config_data, fallback_args, max_history)
+                            config_data, fallback_args, None)
     assert new_config_data == expected_config_data
 
-def test_load():
+def test_load_config():
 
     loaded = load("data/test_config/example_config.yaml", None, None)
-    assert loaded == [MemoizationPolicy(max_history=5),
-                      ExamplePolicy(example_arg=10)]
+    assert len(loaded) == 2
+    assert isinstance(loaded[0], MemoizationPolicy)
+    assert isinstance(loaded[1], ExamplePolicy)

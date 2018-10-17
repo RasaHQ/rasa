@@ -154,7 +154,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                          endpoints=AvailableEndpoints(),
                          max_history=None,
                          dump_flattened_stories=False,
-                         config=None,
+                         policy_config=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
@@ -164,7 +164,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                 "core_threshold",
                                                 "fallback_action_name"})
 
-    policies = config.load(config, fallback_args, max_history)
+    policies = config.load(policy_config, fallback_args, max_history)
 
     agent = Agent(domain_file,
                   generator=endpoints.nlg,

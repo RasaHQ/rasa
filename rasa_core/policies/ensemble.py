@@ -24,7 +24,8 @@ from rasa_core.constants import (
     DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.exceptions import UnsupportedDialogueModelError
-from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.featurizers import (MaxHistoryTrackerFeaturizer,
+                                   BinarySingleStateFeaturizer)
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.memoization import (MemoizationPolicy,
@@ -209,7 +210,11 @@ class PolicyEnsemble(object):
 
             policy_name = policy.pop('name')
 
-            if not '.' in policy_name:
+            if policy_name == 'KerasPolicy':
+                policy_object = KerasPolicy(MaxHistoryTrackerFeaturizer(
+                                BinarySingleStateFeaturizer(),
+                                max_history=policy.get('max_history', 3)))
+            elif not '.' in policy_name:
                 constr_func = globals().get(policy_name)
             else:
                 constr_func = utils.class_from_module_path(policy_name)
