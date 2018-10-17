@@ -3,7 +3,6 @@ import pytest
 from data.test_config.example_policy import ExamplePolicy
 from rasa_core.config import load, handle_precedence_and_defaults
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.ensemble import PolicyEnsemble
 
 
 def test_handle_precedence_and_defaults():
