@@ -17,6 +17,7 @@ def extract_story_graph(
         resource_name,  # type: Text
         domain,  # type: Domain
         interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
+        use_e2e=False,  # type: bool
         exclusion_percentage=None  # type: int
 ):
     # type: (...) -> StoryGraph
@@ -28,6 +29,7 @@ def extract_story_graph(
         interpreter = RegexInterpreter()
     story_steps = StoryFileReader.read_from_folder(resource_name,
                                                    domain, interpreter,
+                                                   use_e2e=use_e2e,
                                                    exclusion_percentage=exclusion_percentage)
     return StoryGraph(story_steps)
 
