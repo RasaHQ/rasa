@@ -13,8 +13,8 @@ from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 
 def test_evaluation_image_creation(tmpdir, default_agent):
-    stories_path = tmpdir.join("failed_stories.md").strpath
-    img_path = tmpdir.join("story_confmat.pdf").strpath
+    stories_path = os.path.join(tmpdir, "failed_stories.md")
+    img_path = os.path.join(tmpdir, "story_confmat.pdf")
 
     run_story_evaluation(
             resource_name=DEFAULT_STORIES_FILE,
