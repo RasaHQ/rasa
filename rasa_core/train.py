@@ -10,9 +10,6 @@ import logging
 
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.constants import (
-    DEFAULT_NLU_FALLBACK_THRESHOLD,
-    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -69,7 +66,7 @@ def create_argument_parser():
     parser.add_argument(
             '--history',
             type=int,
-            default=3,
+            default=None,
             help="max history to use of a story")
     parser.add_argument(
             '--epochs',
@@ -121,19 +118,19 @@ def create_argument_parser():
     parser.add_argument(
             '--nlu_threshold',
             type=float,
-            default=DEFAULT_NLU_FALLBACK_THRESHOLD,
+            default=None,
             help="If NLU prediction confidence is below threshold, fallback "
                  "will get triggered.")
     parser.add_argument(
             '--core_threshold',
             type=float,
-            default=DEFAULT_CORE_FALLBACK_THRESHOLD,
+            default=None,
             help="If Core action prediction confidence is below the threshold "
                  "a fallback action will get triggered")
     parser.add_argument(
             '--fallback_action_name',
             type=str,
-            default=DEFAULT_FALLBACK_ACTION,
+            default=None,
             help="When a fallback is triggered (e.g. because the ML prediction "
                  "is of low confidence) this is the name of tje action that "
                  "will get triggered instead.")
