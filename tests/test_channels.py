@@ -266,7 +266,8 @@ def test_handling_of_telegram_user_id():
     httpretty.register_uri(
         httpretty.GET,
         'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/getMe',
-        body='{"result": {"id": 0, "first_name": "Test", "is_bot": true, "username": "YOUR_TELEGRAM_BOT"}}')
+        body='{"result": {"id": 0, "first_name": "Test", "is_bot": true, '
+             '"username": "YOUR_TELEGRAM_BOT"}}')
 
     httpretty.enable()
 
@@ -296,10 +297,10 @@ def test_handling_of_telegram_user_id():
 
     data = {"message": {"chat": {"id": 1234, "type": "private"},
                         "text": "Hello", "message_id": 0, "date": 0},
-            "update_id": 0,
-}
+            "update_id": 0}
     test_client = app.test_client()
-    test_client.post("http://localhost:5004/webhooks/telegram/webhook", data=json.dumps(data),
+    test_client.post("http://localhost:5004/webhooks/telegram/webhook",
+                     data=json.dumps(data),
                      content_type='application/json')
 
     assert agent.tracker_store.retrieve("1234") is not None
