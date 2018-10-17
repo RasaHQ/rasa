@@ -269,6 +269,12 @@ def test_handling_of_telegram_user_id():
         body='{"result": {"id": 0, "first_name": "Test", "is_bot": true, '
              '"username": "YOUR_TELEGRAM_BOT"}}')
 
+    # The channel will try to send a message back to telegram, so mock it.
+    httpretty.register_uri(
+        httpretty.POST,
+        'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/sendMessage',
+        body='{"ok": true, "result": {}}')
+
     httpretty.enable()
 
     from rasa_core.channels.telegram import TelegramInput
