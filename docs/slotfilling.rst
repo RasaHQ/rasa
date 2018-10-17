@@ -92,7 +92,7 @@ We then define stories for each of these cases:
 Now we've given Rasa Core a few examples of how to handle the different values
 that the ``location_match`` slot can take.
 Right now, we still only have four stories, which is not a lot of training data.
-:ref:`interactive_learning` is agreat way to explore more conversations
+:ref:`interactive_learning` is a great way to explore more conversations
 that aren't in your stories already.
 The best way to improve your model is to test it yourself, have other people test it,
 and correct the mistakes it makes.
@@ -109,7 +109,7 @@ behind Rasa Core is:
 
 .. pull-quote:: Learning from real conversations is more important than designing hypothetical ones
 
-So don't try to cover every possiblity in your hand-written stories before giving it to testers.
+So don't try to cover every possibility in your hand-written stories before giving it to testers.
 Real user behavior will always surprise you!
 
 
@@ -214,5 +214,3 @@ like ``MyCustomFormField`` and overriding the ``validate()`` method.
 
 
 .. include:: feedback.inc
-
-
