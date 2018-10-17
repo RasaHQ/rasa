@@ -20,22 +20,42 @@ Then to generate your model:
         --data data/df-agent/training_data.json -o models \
         --fixed_model_name df-agent --project current --verbose
 
-Then you may have to move the model from ``models/current/df-agent`` to ``models/current``
-
-Then start the server with ``python -m rasa_nlu.server --debug --path models/current``
+Then start the server with ``python -m rasa_nlu.server --debug --path models/``
 
 Then running
 
 .. code-block:: bash
-    curl 'http://localhost:5000/parse?q=show%20me%20details%20of%20the%202017%20kia%20rio'
+    curl 'http://localhost:5000/parse?project=current&model=df-agent&q=show%20me%20details%20of%20the%202017%20kia%20rio'
     
     {
-    "intent": {
-        "name": null,
-        "confidence": 1.0
-    },
-    "entities": [],
-    "text": "show me details of the 2017 kia rio",
-    "project": "default",
-    "model": "fallback"
-    }%
+        "project": "current",
+        "entities": [{
+            "extractor": "ner_crf",
+            "confidence": 0.9911352796662645,
+            "end": 35,
+            "processors": [
+                "nested_entity_extractor"
+            ],
+            "value": {
+                "car": {
+                    "make": "kia",
+                    "model": "rio",
+                    "year": "2017"
+                }
+            },
+            "entity": "car",
+            "start": 23
+        }],
+        "intent": {
+            "confidence": 0.966084897518158,
+            "name": "request.details"
+        },
+        "text": "show me details of the 2017 kia rio",
+        "model": "df-agent",
+        "intent_ranking": [{
+                "confidence": 0.966084897518158,
+                "name": "request.details"
+            },
+            ...
+        ]
+    }
