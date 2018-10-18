@@ -91,7 +91,7 @@ def class_from_module_path(module_path):
         # get the class, will raise AttributeError if class cannot be found
         return getattr(m, class_name)
     else:
-        return globals()[module_path]
+        return globals().get(module_path, locals().get(module_path))
 
 
 def module_path_from_instance(inst):
