@@ -1,0 +1,91 @@
+[
+  {
+    "id": "b5a2400b-cb22-4ed4-90bd-f8f4847df1f9",
+    "data": [
+      {
+        "text": "¿",
+        "userDefined": false
+      },
+      {
+        "text": "Hay",
+        "meta": "@sys.ignore",
+        "userDefined": false
+      },
+      {
+        "text": " ",
+        "userDefined": false
+      },
+      {
+        "text": "fideos y pollo",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": false
+      },
+      {
+        "text": " en el menú?",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "updated": 1539860946
+  },
+  {
+    "id": "945443d8-5dba-4257-9d8b-0d5e958dc82a",
+    "data": [
+      {
+        "text": "Tienes ",
+        "userDefined": false
+      },
+      {
+        "text": "puerco",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "updated": 1539860946
+  },
+  {
+    "id": "e156aa61-3ede-43a7-a70b-e4946a66f1f3",
+    "data": [
+      {
+        "text": "Puedo conseguir ",
+        "userDefined": false
+      },
+      {
+        "text": "el ñame y el huevo",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": true
+      }
+    ],
+    "isTemplate": false,
+    "count": 1,
+    "updated": 1539860946
+  },
+  {
+    "id": "2ab0bdcd-d467-45b6-82bd-e4bb2ae366fa",
+    "data": [
+      {
+        "text": "Me gustaría pedir ",
+        "userDefined": false
+      },
+      {
+        "text": "arroz y pollo",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": false
+      },
+      {
+        "text": ".",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "updated": 1539860946
+  }
+]

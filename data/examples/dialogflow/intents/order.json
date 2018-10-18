@@ -1,0 +1,37 @@
+{
+  "id": "fe774f60-2888-48b0-b8ec-5dcfd37fe806",
+  "name": "order",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "order",
+      "affectedContexts": [],
+      "parameters": [
+        {
+          "id": "629d617e-28a6-4d1a-92a9-a8a77bc4bfd1",
+          "dataType": "@meal",
+          "name": "meal",
+          "value": "$meal",
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "type": 0,
+          "lang": "en",
+          "speech": []
+        }
+      ],
+      "defaultResponsePlatforms": {},
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "lastUpdate": 1539860946,
+  "fallbackIntent": false,
+  "events": []
+}

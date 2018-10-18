@@ -1,0 +1,22 @@
+[
+  {
+    "value": "huevos",
+    "synonyms": [
+      "huevos",
+      "huevo"
+    ]
+  },
+  {
+    "value": "cerdo",
+    "synonyms": [
+      "cerdo",
+      "puerco"
+    ]
+  },
+  {
+    "value": "pollo",
+    "synonyms": [
+      "pollo"
+    ]
+  }
+]

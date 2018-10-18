@@ -1,0 +1,50 @@
+[
+  {
+    "value": "@protein:protein ",
+    "synonyms": [
+      "@protein:protein "
+    ]
+  },
+  {
+    "value": "@carbohydrates:carbohydrates ",
+    "synonyms": [
+      "@carbohydrates:carbohydrates "
+    ]
+  },
+  {
+    "value": "@protein:protein @carbohydrates:carbohydrates ",
+    "synonyms": [
+      "@protein:protein @carbohydrates:carbohydrates "
+    ]
+  },
+  {
+    "value": "@carbohydrates:carbohydrates @protein:protein ",
+    "synonyms": [
+      "@carbohydrates:carbohydrates @protein:protein "
+    ]
+  },
+  {
+    "value": "@carbohydrates:carbohydrates y @protein:protein ",
+    "synonyms": [
+      "@carbohydrates:carbohydrates y @protein:protein "
+    ]
+  },
+  {
+    "value": "@protein:protein y @carbohydrates:carbohydrates ",
+    "synonyms": [
+      "@protein:protein y @carbohydrates:carbohydrates "
+    ]
+  },
+  {
+    "value": "el @protein:protein y el @carbohydrates:carbohydrates",
+    "synonyms": [
+      "el @protein:protein y el @carbohydrates:carbohydrates"
+    ]
+  },
+  {
+    "value": "el ñame y el huevo",
+    "synonyms": [
+      "el ñame y el huevo"
+    ]
+  }
+]

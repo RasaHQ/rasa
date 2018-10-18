@@ -1,0 +1,21 @@
+[
+  {
+    "value": "eggs",
+    "synonyms": [
+      "eggs",
+      "egg"
+    ]
+  },
+  {
+    "value": "pork",
+    "synonyms": [
+      "pork"
+    ]
+  },
+  {
+    "value": "chicken",
+    "synonyms": [
+      "chicken"
+    ]
+  }
+]
