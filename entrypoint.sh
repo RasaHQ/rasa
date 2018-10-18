@@ -11,16 +11,6 @@ function print_help {
     echo " run                                          - Run an arbitrary command inside the container"
 }
 
-if [[ -v RASA_ACTION_URL ]]; then
-    echo "action_endpoint:" > endpoints.yml
-    echo "  url: '${RASA_ACTION_URL}'" >> endpoints.yml
-fi
-
-if [[ -v RASA_NLU_HOST ]]; then
-    echo "nlu:" >> endpoints.yml
-    echo "  url: '${RASA_NLU_HOST}'" >> endpoints.yml
-fi
-
 case ${1} in
     start)
         exec python -m rasa_core.run --enable_api "${@:2}"

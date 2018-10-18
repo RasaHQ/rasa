@@ -8,9 +8,7 @@ services:
       - "5005:5005"
       volumes:
       - "./rasa-app-data/dialogue:/app/dialogue"
-      environment:
-        - RASA_ACTION_URL=http://action_server:5055/webhook
-        - RASA_NLU_HOST=http://rasanlu:5000
+      - "./rasa-app-data/endpoints:/app/endpoints"
       command: 
         - start
         - -d
@@ -20,7 +18,7 @@ services:
         - -u
         - current/nlu
         - --endpoints
-        - endpoints.yml
+        - endpoints/endpoints.yml
   action_server:
       image: rasa/rasa_core_sdk:latest
       networks: ['rasa-network']

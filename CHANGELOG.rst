@@ -24,12 +24,16 @@ Added
 - show visualization of conversation while doing interactive learning
 - option for end-to-end evaluation of Rasa Core and NLU examples in
   ``evaluate.py`` script
+- docker-compose file to start a rasa core server together with nlu, an action server, and duckling
 
 Changed
 -------
 - improved response format for ``/predict`` endpoint
 - all error messages from the server are now in json format
 - ``agent.log_message`` now returns a tracker instead of the trackers state
+- the core container does not load the nlu model by default anymore.
+  Instead it can be connected to a nlu server.
+
 
 Removed
 -------
