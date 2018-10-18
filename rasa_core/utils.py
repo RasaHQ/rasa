@@ -81,6 +81,8 @@ def class_from_module_path(module_path):
     import importlib
 
     # load the module, will raise ImportError if module cannot be loaded
+    from rasa_core.policies import *
+    
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition('.')
         m = importlib.import_module(module_name)

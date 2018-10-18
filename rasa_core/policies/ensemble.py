@@ -214,10 +214,7 @@ class PolicyEnsemble(object):
                 policy_object = KerasPolicy(MaxHistoryTrackerFeaturizer(
                                 BinarySingleStateFeaturizer(),
                                 max_history=policy.get('max_history', 3)))
-            elif not '.' in policy_name:
-                constr_func = globals().get(policy_name)
-            else:
-                constr_func = utils.class_from_module_path(policy_name)
+            constr_func = utils.class_from_module_path(policy_name)
 
             policy_object = constr_func(**policy)
             policies.append(policy_object)
