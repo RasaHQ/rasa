@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import json
 
 from httpretty import httpretty
-from threading import Thread
 
 from rasa_core import utils
 from rasa_core.utils import EndpointConfig
@@ -647,3 +646,11 @@ def test_channel_inheritance():
     s = agent.handle_channels([RestInput(), rasa_input], 5004,
                               serve_forever=False)
     assert s.started
+
+
+def test_int_sender_id_in_user_message():
+    from rasa_core.channels import UserMessage
+
+    message = UserMessage("A text", sender_id=1234567890)
+
+    assert message.sender_id == "1234567890"
