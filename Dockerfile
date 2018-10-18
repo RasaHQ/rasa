@@ -1,4 +1,4 @@
-FROM python:2.7-slim
+FROM python:3.6-slim
 
 SHELL ["/bin/bash", "-c"]
 
@@ -23,11 +23,11 @@ RUN apt-get update -qq && \
 WORKDIR /app
 
 # Copy as early as possible so we can cache ...
-ADD requirements.txt .
+COPY requirements.txt .
 
 RUN pip install -r requirements.txt --no-cache-dir
 
-ADD . .
+COPY . .
 
 RUN pip install -e . --no-cache-dir
 

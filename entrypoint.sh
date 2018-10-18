@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -Eeuo pipefail
 
 function print_help {
     echo "Available options:"
