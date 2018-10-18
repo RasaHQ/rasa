@@ -1,0 +1,22 @@
+[
+  {
+    "value": "arroz",
+    "synonyms": [
+      "arroz"
+    ]
+  },
+  {
+    "value": "batata",
+    "synonyms": [
+      "batata",
+      "ñame"
+    ]
+  },
+  {
+    "value": "tallarines",
+    "synonyms": [
+      "tallarines",
+      "fideos"
+    ]
+  }
+]

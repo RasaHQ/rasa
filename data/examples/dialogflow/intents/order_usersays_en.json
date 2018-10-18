@@ -1,0 +1,78 @@
+[
+  {
+    "id": "9b55f5f9-b9c5-44b0-919b-3a6e1a022b60",
+    "data": [
+      {
+        "text": "Is there ",
+        "userDefined": false
+      },
+      {
+        "text": "noodles and chicken",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": true
+      },
+      {
+        "text": " on the menu",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "updated": 1539859765
+  },
+  {
+    "id": "f7b395ab-8a93-4a21-9e0c-5308c8f866e0",
+    "data": [
+      {
+        "text": "Do you have ",
+        "userDefined": false
+      },
+      {
+        "text": "pork",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "updated": 1539859765
+  },
+  {
+    "id": "ac4b9d6d-2447-4a52-b122-856b9fe8b5e5",
+    "data": [
+      {
+        "text": "Can I get ",
+        "userDefined": false
+      },
+      {
+        "text": "yam and egg",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "updated": 1539859765
+  },
+  {
+    "id": "fbffe179-fe2b-44ee-912c-e7c14de396f0",
+    "data": [
+      {
+        "text": "I will like to order for ",
+        "userDefined": false
+      },
+      {
+        "text": "rice and chicken",
+        "alias": "meal",
+        "meta": "@meal",
+        "userDefined": false
+      }
+    ],
+    "isTemplate": false,
+    "count": 0,
+    "updated": 1539859564
+  }
+]

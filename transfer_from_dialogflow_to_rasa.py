@@ -38,7 +38,9 @@ def harvest_examples(dialogflow_examples, intent):
 def get_current_action(file):
     action_file = file.replace("_usersays_en", "")
     data_in_file = load_file_to_json(action_file)
-    return data_in_file['responses'][0]['action']
+    if 'action' in data_in_file['responses'][0]:
+        return data_in_file['responses'][0]['action']
+    return data_in_file['name']
 
 def get_common_examples(intents_dir):
     files = os.listdir(intents_dir)

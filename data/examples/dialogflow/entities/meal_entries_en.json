@@ -1,0 +1,38 @@
+[
+  {
+    "value": "@protein:protein ",
+    "synonyms": [
+      "@protein:protein "
+    ]
+  },
+  {
+    "value": "@carbohydrates:carbohydrates ",
+    "synonyms": [
+      "@carbohydrates:carbohydrates "
+    ]
+  },
+  {
+    "value": "@protein:protein @carbohydrates:carbohydrates ",
+    "synonyms": [
+      "@protein:protein @carbohydrates:carbohydrates "
+    ]
+  },
+  {
+    "value": "@carbohydrates:carbohydrates @protein:protein ",
+    "synonyms": [
+      "@carbohydrates:carbohydrates @protein:protein "
+    ]
+  },
+  {
+    "value": "@carbohydrates:carbohydrates and @protein:protein ",
+    "synonyms": [
+      "@carbohydrates:carbohydrates and @protein:protein "
+    ]
+  },
+  {
+    "value": "@protein:protein and @carbohydrates:carbohydrates ",
+    "synonyms": [
+      "@protein:protein and @carbohydrates:carbohydrates "
+    ]
+  }
+]
