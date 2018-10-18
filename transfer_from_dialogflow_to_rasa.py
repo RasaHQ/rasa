@@ -2,9 +2,11 @@ import os
 import json
 import sys
 
+
 def load_file_to_json(full_path):
     with open(full_path) as f:
         return json.load(f)
+
 
 def harvest_examples(dialogflow_examples, intent):
     harvested_examples = list()
@@ -35,12 +37,14 @@ def harvest_examples(dialogflow_examples, intent):
 
     return harvested_examples
 
+
 def get_current_action(file):
     action_file = file.replace("_usersays_en", "")
     data_in_file = load_file_to_json(action_file)
     if 'action' in data_in_file['responses'][0]:
         return data_in_file['responses'][0]['action']
     return data_in_file['name']
+
 
 def get_common_examples(intents_dir):
     files = os.listdir(intents_dir)
@@ -52,10 +56,12 @@ def get_common_examples(intents_dir):
             common_examples += harvest_examples(data_in_file, current_intent_action)
     return common_examples
 
+
 def get_current_entity_name(file):
     entity_file = file.replace("_entries_en", "")
     data_in_file = load_file_to_json(entity_file)
     return data_in_file['name']
+
 
 def harvest_synonymn(value, synonyms):
     # RASA doesn't want entries with mirror synonymns
@@ -71,12 +77,14 @@ def harvest_synonymn(value, synonyms):
         "synonyms": synonyms
     }
 
+
 def harvest_lookup_table(value, synonyms):
     if '@' in value:
         return False
 
     synonyms.append(value)
     return synonyms
+
 
 def harvest_composite_entries(value, entity):
     composite_entries = list()
@@ -86,15 +94,16 @@ def harvest_composite_entries(value, entity):
         return False
 
     splitValue = value.split(" ")
-    
+
     for each in splitValue:
-      if each:
-        # Because RASA removes duplicates entries so we prefix 
-        # with the current entity so they get to be unique 
-        # and we remove it while training
-        composite_entries.append("@" + entity + "_" + each) 
+        if each:
+            # Because RASA removes duplicates entries so we prefix
+            # with the current entity so they get to be unique
+            # and we remove it while training
+            composite_entries.append("@" + entity + "_" + each)
 
     return composite_entries
+
 
 def process_data_entities(dialogflow_entities, current_entity_name):
     entity_synonyms = list()
@@ -123,8 +132,6 @@ def process_data_entities(dialogflow_entities, current_entity_name):
             "entries": lookup_table_entries
         }]
 
-    composite_entries = []
-
     if(len(composite_entities) > 0):
         entity_synonyms.append({
             "value": "@" + current_entity_name,
@@ -132,15 +139,15 @@ def process_data_entities(dialogflow_entities, current_entity_name):
         })
 
     return {
-        "entity_synonyms": entity_synonyms, 
+        "entity_synonyms": entity_synonyms,
         "lookup_tables": lookup_tables
     }
+
 
 def process_entities(entities_dir):
     files = os.listdir(entities_dir)
     entity_synonyms = list()
     lookup_tables = list()
-    composite_entries = list()
     for file in files:
         data_in_file = load_file_to_json(entities_dir + "/" + file)
         if file.endswith("_entries_en.json"):
@@ -150,9 +157,10 @@ def process_entities(entities_dir):
             lookup_tables += data.get("lookup_tables")
 
     return {
-        "entity_synonyms": entity_synonyms, 
-        "lookup_tables": lookup_tables, 
+        "entity_synonyms": entity_synonyms,
+        "lookup_tables": lookup_tables,
     }
+
 
 def main():
     path_arg = sys.argv[1]
