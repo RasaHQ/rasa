@@ -81,8 +81,10 @@ def class_from_module_path(module_path):
     import importlib
 
     # load the module, will raise ImportError if module cannot be loaded
-    from rasa_core.policies import *
-    
+    from rasa_core.policies.keras_policy import KerasPolicy
+    from rasa_core.policies.fallback import FallbackPolicy
+    from rasa_core.policies.memoization import MemoizationPolicy
+
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition('.')
         m = importlib.import_module(module_name)

@@ -2,10 +2,10 @@
   "action_fingerprints": {
     "action_listen": {
       "slots": [
-        "people",
         "location",
-        "cuisine",
-        "price"
+        "people",
+        "price",
+        "cuisine"
       ]
     },
     "utter_goodbye": {
@@ -23,5 +23,5 @@
     "rasa_core.policies.memoization.MemoizationPolicy",
     "policy.RestaurantPolicy"
   ],
-  "trained_at": "20181017-232240"
+  "trained_at": "20181018-095617"
 }
