@@ -61,8 +61,9 @@ class EntitySynonymMapper(EntityExtractor):
                                                 ENTITY_SYNONYMS_FILE_NAME)
             write_json_to_file(entity_synonyms_file, self.synonyms,
                                separators=(',', ': '))
-
-        return {"synonyms_file": ENTITY_SYNONYMS_FILE_NAME}
+            return {"synonyms_file": ENTITY_SYNONYMS_FILE_NAME}
+        else:
+            return {"synonyms_file": None}
 
     @classmethod
     def load(cls,
@@ -74,16 +75,18 @@ class EntitySynonymMapper(EntityExtractor):
         # type: (...) -> EntitySynonymMapper
 
         meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("synonyms_file", ENTITY_SYNONYMS_FILE_NAME)
-        entity_synonyms_file = os.path.join(model_dir, file_name)
+        file_name = meta.get("synonyms_file")
+        if not file_name:
+            synonyms = None
+            return cls(meta, synonyms)
 
+        entity_synonyms_file = os.path.join(model_dir, file_name)
         if os.path.isfile(entity_synonyms_file):
             synonyms = utils.read_json_file(entity_synonyms_file)
         else:
             synonyms = None
             warnings.warn("Failed to load synonyms file from '{}'"
                           "".format(entity_synonyms_file))
-
         return cls(meta, synonyms)
 
     def replace_synonyms(self, entities):
