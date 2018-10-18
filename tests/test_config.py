@@ -8,7 +8,7 @@ from rasa_core.policies.memoization import MemoizationPolicy
 def test_handle_precedence_and_defaults_for_config():
 
     config_data = {'policies': [
-        {'name': 'FallbackPolicy', 'nlu_threshold' :0.5},
+        {'name': 'FallbackPolicy', 'nlu_threshold': 0.5},
         {'name': 'KerasPolicy'}
     ]}
     fallback_args = {
