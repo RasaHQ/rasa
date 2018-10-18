@@ -5,11 +5,11 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
-from builtins import str
 from functools import wraps
 
 import simplejson
 import six
+from builtins import str
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
