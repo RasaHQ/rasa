@@ -16,7 +16,7 @@ to generate the training data as Rasa needs it inside the df-agent folder.
 Then to generate your model:
 
 .. code-block:: bash
-    python -m rasa_nlu.train -c config.yml \
+    python -m rasa_nlu.train -c sample_configs/config_composite_entities.yml \
         --data data/df-agent/training_data.json -o models \
         --fixed_model_name df-agent --project current --verbose
 
