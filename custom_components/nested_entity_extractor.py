@@ -39,7 +39,8 @@ class NestedEntityExtractor(EntityExtractor):
         # type: (TrainingData) -> None
         self.add_lookup_tables(training_data.lookup_tables)
         self.add_composite_entities_from_entities_synonyms(
-            training_data.entity_synonyms.items())
+            training_data.entity_synonyms.items()
+        )
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -73,7 +74,10 @@ class NestedEntityExtractor(EntityExtractor):
         if os.path.isfile(nested_entities_file):
             nested_entities = utils.read_json_file(nested_entities_file)
         else:
-            nested_entities = None
+            nested_entities = {
+                'lookup_tables': [],
+                'composite_entries': []
+            }
             warnings.warn("Failed to load nested entities file from '{}'"
                           "".format(nested_entities_file))
 
@@ -102,17 +106,19 @@ class NestedEntityExtractor(EntityExtractor):
                 return {
                     child_name: lookup_entry
                 }
+        return {}
 
     def split_by_lookup_tables(self, composite_child, broad_value):
         broken_entity = {}
         child_name = composite_child.split(':')[0][1:]
         for each_lookup in self.nested_entities['lookup_tables']:
             if(each_lookup['name'] == child_name):
-                return self.merge_two_dicts(
+                broken_entity = self.merge_two_dicts(
                     broken_entity,
                     self.break_on_lookup_tables(each_lookup,
                                                 child_name,
                                                 broad_value))
+        return broken_entity
 
     def split_by_sys(self, composite_child, broad_value):
         broken_entity = {}
@@ -146,39 +152,60 @@ class NestedEntityExtractor(EntityExtractor):
         )
         return broken_entity
 
+    def get_most_relevant_composite(self,
+                                    nested_composites,
+                                    broad_value):
+        highest_relevance_score = 0
+        composite_examples = []
+        for nested_composite in nested_composites:
+            nested_composite_value = nested_composite.split(':')[0]
+            child_of_nested_composite = filter(
+                lambda x: x['value'] == nested_composite_value,
+                self.nested_entities['composite_entries'])
+            if(len(child_of_nested_composite) > 0):
+                child_synonymns = child_of_nested_composite[0]['synonyms']
+                relevance_score = self.get_relevance(
+                    broad_value, child_synonymns)
+                if(relevance_score > highest_relevance_score):
+                    highest_relevance_score = relevance_score
+                    composite_examples = child_synonymns
+        return {
+            "highest_relevance_score": highest_relevance_score,
+            "composite_examples": composite_examples
+        }
+
+    def add_most_relevant_composite(self,
+                                    most_relevant_composite,
+                                    broken_entity,
+                                    child_name,
+                                    broad_value
+                                    ):
+        if(most_relevant_composite['highest_relevance_score'] > 0):
+            broken_entity[child_name] = {}
+            for nested_child in most_relevant_composite['composite_examples']:
+                if(nested_child[0] == '@'):
+                    broken_entity[child_name] = self.merge_two_dicts(
+                        broken_entity[child_name],
+                        self.split_one_level(
+                            nested_child,
+                            broad_value)
+                    )
+        return broken_entity
+
     def split_two_levels(self, composite_child, broad_value):
         broken_entity = {}
         child_name = composite_child.split(':')[0][1:]
         for each_nested in self.nested_entities['composite_entries']:
             if(each_nested['value'] == child_name):
                 nested_composites = each_nested['synonyms']
-                highest_relevance_score = 0
-                correct_nested_composite_examples = []
-                for nested_composite in nested_composites:
-                    nested_composite_value = nested_composite.split(':')[
-                        0]
-                    child_of_nested_composite = filter(
-                        lambda x: x['value'] == nested_composite_value,
-                        self.nested_entities['composite_entries'])
-                    if(len(child_of_nested_composite) == 0):
-                        break
-                    child_synonymns = child_of_nested_composite[0]['synonyms']
-                    relevance_score = self.get_relevance(
-                        broad_value, child_synonymns)
-                    if(relevance_score > highest_relevance_score):
-                        highest_relevance_score = relevance_score
-                        correct_nested_composite_examples = child_synonymns
-
-                if(highest_relevance_score > 0):
-                    broken_entity[child_name] = {}
-                    for nested_child in correct_nested_composite_examples:
-                        if(nested_child[0] == '@'):
-                            broken_entity[child_name] = self.merge_two_dicts(
-                                broken_entity[child_name],
-                                self.split_one_level(
-                                    nested_child,
-                                    broad_value)
-                            )
+                most_relevant_composite = self.get_most_relevant_composite(
+                    nested_composites, broad_value)
+                broken_entity = self.add_most_relevant_composite(
+                    most_relevant_composite,
+                    broken_entity,
+                    child_name,
+                    broad_value
+                )
         return broken_entity
 
     def split_composite_entity(self, composite_entry, entity):
@@ -220,8 +247,7 @@ class NestedEntityExtractor(EntityExtractor):
             self.nested_entities['composite_entries'])
         for index, element in composite_entries:
             if element['value'] == value:
-                self.nested_entities['composite_entries'][index]
-                ['synonyms'].append(synonym)
+                self.nested_entities['composite_entries'][index]['synonyms'].append(synonym)
                 element_present = True
         if not element_present:
             self.nested_entities['composite_entries'].append({
