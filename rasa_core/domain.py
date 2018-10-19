@@ -476,6 +476,20 @@ class Domain(object):
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
+    def persist_clean(self, filename):
+        data = self.as_dict()
+
+        for idx, intent_info in enumerate(data["intents"]):
+            for name, intent in intent_info.items():
+                if intent.get("use_entities") == True:
+                    data["intents"][idx] = name
+
+        for name, slot in data["slots"].items():
+            if slot["initial_value"] is None:
+                del slot["initial_value"]
+
+        utils.dump_obj_as_yaml_to_file(filename, data)
+
     def as_yaml(self):
         domain_data = self.as_dict()
         return utils.dump_obj_as_yaml_to_string(domain_data)
