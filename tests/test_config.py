@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import pytest
 
-from data.test_config.example_policy import ExamplePolicy
 from rasa_core.config import load, handle_precedence_and_defaults
 from rasa_core.policies.memoization import MemoizationPolicy
 
@@ -30,10 +29,9 @@ def test_handle_precedence_and_defaults_for_config():
                             config_data, fallback_args, None)
     assert new_config_data == expected_config_data
 
-
-def test_load_config():
-
-    loaded = load("data/test_config/example_config.yaml", None, None)
+@pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))
+def test_load_config(filename):
+    loaded = load(filename, None, None)
     assert len(loaded) == 2
     assert isinstance(loaded[0], MemoizationPolicy)
     assert isinstance(loaded[1], ExamplePolicy)
