@@ -752,7 +752,7 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     spec["actions"] = list(set(found_actions + spec["actions"]))
 
     domain = Domain.from_dict(spec)
-    domain.persist(domain_path)
+    domain.persist_clean(domain_path)
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
