@@ -22,3 +22,9 @@ DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
 FALLBACK_SCORE = 1.1
+
+# start of special user message section
+INTENT_MESSAGE_PREFIX = "/"
+
+USER_INTENT_RESTART = INTENT_MESSAGE_PREFIX + "restart"
+
