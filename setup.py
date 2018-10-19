@@ -69,6 +69,7 @@ install_requires = [
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "PyInquirer~=1.0",
+    "prompt_toolkit==1.0.14",
     "flask-jwt-simple~=0.0.3",
     "python-socketio~=2.0",
 ]
