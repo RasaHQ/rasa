@@ -269,11 +269,11 @@ def persist_graph(graph, output_file):
     expg.draw(output_file)
 
 
-def _length_of_common_prefix(this, other):
+def _length_of_common_action_prefix(this, other):
     # type: (List[Event], List[Event]) -> int
-    """Calculates the number of events that two conversations have in common."""
+    """Calculate number of actions that two conversations have in common."""
 
-    num_common_events = 0
+    num_common_actions = 0
     t_cleaned = [e for e in this if e.type_name in {"user", "action"}]
     o_cleaned = [e for e in other if e.type_name in {"user", "action"}]
 
@@ -285,10 +285,10 @@ def _length_of_common_prefix(this, other):
         elif (e.type_name == "action"
               and o_cleaned[i].type_name == "action"
               and o_cleaned[i].action_name == e.action_name):
-            num_common_events += 1
+            num_common_actions += 1
         else:
             break
-    return num_common_events
+    return num_common_actions
 
 
 def _add_default_nodes(graph, fontsize=12):
@@ -361,7 +361,7 @@ def visualize_neighborhood(
 
     for events in event_sequences:
         if current and max_distance:
-            prefix = _length_of_common_prefix(current, events)
+            prefix = _length_of_common_action_prefix(current, events)
         else:
             prefix = len(events)
 

@@ -42,6 +42,12 @@ from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 
+# WARNING: This command line UI is using an external library
+# communicating with the shell - these functions are hard to test
+# automatically. If you change anything in here, please make sure to
+# run the interactive learning and check if your part of the "ui"
+# still works.
+
 logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
@@ -241,7 +247,7 @@ def _ask_questions(
         questions,  # type: List[Dict[Text, Any]]
         sender_id,  # type: Text
         endpoint,  # type: EndpointConfig
-        is_abort=lambda x: False # type: Callable[[Dict[Text, Any]], bool]
+        is_abort=lambda x: False  # type: Callable[[Dict[Text, Any]], bool]
 ):
     # type: (...) -> Dict[Text, Any]
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
