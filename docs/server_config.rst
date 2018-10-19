@@ -19,7 +19,7 @@ Server Configuration
     i.e. the pipeline and components. 
 
 
-Running the server
+Running the Server
 ------------------
 
 You can run a simple http server that handles requests using your projects with :
@@ -33,6 +33,27 @@ the ``path`` parameter. By default a project will load the latest
 trained model.
 
 .. _section_http_config:
+
+Connecting the server to Rasa Core
+----------------------------------
+
+To connect Rasa Core with the NLU server, you have to add the connection details
+into your endpoint configuration file:
+
+.. code-block:: yaml
+
+    nlu:
+        url: "http://<your nlu host>:5000"
+
+Then run Rasa Core with the ``--endpoints <path_to_your_endpoint_config>.yml``
+and specify the nlu model to use with the `-u` flag.
+For example:
+
+.. code-block:: bash
+
+    python -m rasa_core.run -d models/current/dialogue \
+        -u <project_name>/<model_name> \
+        --endpoints endpoints.yml
 
 Serving Multiple Apps
 ---------------------

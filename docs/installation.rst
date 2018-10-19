@@ -12,7 +12,7 @@ Prerequisites
 For windows
 -----------
 Make sure the Microsoft VC++ Compiler is installed, so python can compile any dependencies. You can get the compiler from: 
-https://visualstudio.microsoft.com/visual-cpp-build-tools/
+https://visualstudio.microsoft.com/visual-cpp-build-tools/ .
 Download the installer and select VC++ Build tools in the list. 
 
 Setting up Rasa NLU
