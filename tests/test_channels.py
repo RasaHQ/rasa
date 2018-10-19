@@ -3,12 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import requests
-
 import json
 
 from httpretty import httpretty
-from threading import Thread
 
 from rasa_core import utils
 from rasa_core.utils import EndpointConfig
@@ -254,6 +251,65 @@ def test_telegram_channel():
     finally:
         s.stop()
         httpretty.disable()
+
+
+def test_handling_of_telegram_user_id():
+    # telegram channel will try to set a webhook, so we need to mock the api
+
+    httpretty.register_uri(
+        httpretty.POST,
+        'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
+        body='{"ok": true, "result": {}}')
+
+    # telegram will try to verify the user, so we need to mock the api
+    httpretty.register_uri(
+        httpretty.GET,
+        'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/getMe',
+        body='{"result": {"id": 0, "first_name": "Test", "is_bot": true, '
+             '"username": "YOUR_TELEGRAM_BOT"}}')
+
+    # The channel will try to send a message back to telegram, so mock it.
+    httpretty.register_uri(
+        httpretty.POST,
+        'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/sendMessage',
+        body='{"ok": true, "result": {}}')
+
+    httpretty.enable()
+
+    from rasa_core.channels.telegram import TelegramInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+    input_channel = TelegramInput(
+        # you get this when setting up a bot
+        access_token="123:YOUR_ACCESS_TOKEN",
+        # this is your bots username
+        verify="YOUR_TELEGRAM_BOT",
+        # the url your bot should listen for messages
+        webhook_url="YOUR_WEBHOOK_URL"
+    )
+
+    from flask import Flask
+    import rasa_core
+    app = Flask(__name__)
+    rasa_core.channels.channel.register([input_channel],
+                                        app,
+                                        agent.handle_message,
+                                        route="/webhooks/")
+
+    data = {"message": {"chat": {"id": 1234, "type": "private"},
+                        "text": "Hello", "message_id": 0, "date": 0},
+            "update_id": 0}
+    test_client = app.test_client()
+    test_client.post("http://localhost:5004/webhooks/telegram/webhook",
+                     data=json.dumps(data),
+                     content_type='application/json')
+
+    assert agent.tracker_store.retrieve("1234") is not None
+    httpretty.disable()
 
 
 # USED FOR DOCS - don't rename without changing in the docs
@@ -590,3 +646,11 @@ def test_channel_inheritance():
     s = agent.handle_channels([RestInput(), rasa_input], 5004,
                               serve_forever=False)
     assert s.started
+
+
+def test_int_sender_id_in_user_message():
+    from rasa_core.channels import UserMessage
+
+    message = UserMessage("A text", sender_id=1234567890)
+
+    assert message.sender_id == "1234567890"
