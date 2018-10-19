@@ -682,11 +682,7 @@ class EndpointConfig(object):
                 data.get("basic_auth"),
                 data.get("token"),
                 data.get("token_name"),
-                data.get("store_type"),
-                data.get("db"),
-                data.get("user"),
-                data.get("password"),
-                data.get("timeout"))
+                **data)
 
     def __eq__(self, other):
         if isinstance(self, type(other)):

@@ -30,13 +30,23 @@ class TrackerStore(object):
         # type: (Optional[Domain], Optional[EventChannel]) -> None
         self.domain = domain
         self.event_broker = event_broker
+
     def find_tracker_store(self, store=None):
         if store is None:
             return InMemoryTrackerStore(self.domain)
         elif store.store_type == 'redis':
-            return RedisTrackerStore(domain=self.domain,host=store.url,db=store.db,password=store.password,record_exp=store.timeout)
+            return RedisTrackerStore(domain=self.domain,
+                                     host=store.url,
+                                     port=store.port,
+                                     db=store.db,
+                                     password=store.password,
+                                     record_exp=store.timeout)
         elif store.store_type == 'mongod':
-            return MongoTrackerStore(domain=self.domain,host=store.url,db=store.db,username=store.user,password=store.password)
+            return MongoTrackerStore(domain=self.domain,
+                                     host=store.url,
+                                     db=store.db,
+                                     username=store.user,
+                                     password=store.password)
      
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
@@ -131,7 +141,6 @@ class RedisTrackerStore(TrackerStore):
                  port=6379, db=0, password=None, event_broker=None,
                  record_exp=None):
 
-        
         import redis
         self.red = redis.StrictRedis(host=host, port=port, db=db,
                                      password=password)
