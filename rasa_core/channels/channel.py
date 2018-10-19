@@ -44,7 +44,7 @@ class UserMessage(object):
             self.output_channel = CollectingOutputChannel()
 
         if sender_id is not None:
-            self.sender_id = sender_id
+            self.sender_id = str(sender_id)
         else:
             self.sender_id = self.DEFAULT_SENDER_ID
 
