@@ -68,7 +68,7 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
 
    dataformat
    components
-   config
+   server_config
    http
    python
    persist
