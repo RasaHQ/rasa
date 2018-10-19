@@ -9,6 +9,7 @@ services:
       volumes:
       - "./rasa-app-data/dialogue:/app/dialogue"
       - "./rasa-app-data/endpoints:/app/endpoints"
+      - "./rasa-app-data/credentials:/app/credentials"
       command: 
         - start
         - -d

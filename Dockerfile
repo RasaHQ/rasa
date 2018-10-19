@@ -31,7 +31,7 @@ COPY . .
 
 RUN pip install -e . --no-cache-dir
 
-VOLUME ["/app/dialogue", "/app/endpoints", "/app/out"]
+VOLUME ["/app/dialogue", "/app/endpoints", "/app/credentials", "/app/out"]
 
 EXPOSE 5005
 
