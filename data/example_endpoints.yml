@@ -10,7 +10,8 @@ nlg:
 # example of redis external tracker store config
 tracker_store:
   store_type: redis
-  url: http://localhost
+  url: localhost
+  port: 6379
   db: 0
   password: password
   timeout: 30000
@@ -21,3 +22,4 @@ tracker_store:
   #db: rasa
   #user: username
   #password: password
+  
