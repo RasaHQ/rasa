@@ -152,14 +152,37 @@ def send_action(endpoint, sender_id, action_name):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
-    payload = {"action": action_name}
+    payload = {"action": action_name, "policy": policy,
+               "confidence": confidence}
     subpath = "/conversations/{}/execute".format(sender_id)
 
-    r = endpoint.request(json=payload,
-                         method="post",
-                         subpath=subpath)
-
-    return _response_as_json(r)
+    try:
+        r = endpoint.request(json=payload,
+                             method="post",
+                             subpath=subpath)
+        return _response_as_json(r)
+    except requests.exceptions.HTTPError as e:
+        if is_new:
+            logger.warning("You have created a new action: {} "
+                           "which was not successfully executed. \n"
+                           "If this action does not return any events, "
+                           "you do not need to do anything. \n"
+                           "If this is a custom action which returns events, "
+                           "you are recommended to implement this action in your "
+                           "action server and try again.".format(action_name))
+            payload = {"event": "action",
+                       "name": action_name,
+                       "policy": policy,
+                       "confidence": confidence,
+                       "timestamp": None}
+            subpath = "/conversations/{}/tracker/events".format(sender_id)
+            r = endpoint.request(json=payload,
+                             method="post",
+                             subpath=subpath)
+            return _response_as_json(r)
+        else:
+            logger.error("failed to execute action!")
+            raise
 
 
 def send_event(endpoint, sender_id, evt):
@@ -550,6 +573,7 @@ def _ask_if_quit(sender_id, endpoint):
 
         _write_stories_to_file(story_path, evts)
         _write_nlu_to_file(nlu_path, evts)
+        _write_domain_to_file(domain_path, evts, endpoint)
 
         logger.info("Successfully wrote stories and NLU data")
         sys.exit()
@@ -706,6 +730,29 @@ def _write_nlu_to_file(export_nlu_path, evts):
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
+
+def _write_domain_to_file(domain_path, evts, endpoint):
+    # type: (Text, List[Dict[Text, Any]], EndpointConfig) -> None
+    """Write an updated domain file to the file path."""
+
+    spec = retrieve_domain(endpoint)
+    msgs = _collect_messages(evts)
+    acts = _collect_actions(evts)
+
+    found_intents = set(m.data["intent"] for m in msgs)
+    spec_intents = [list(i.keys())[0] for i in spec["intents"]]
+    for name in found_intents:
+        if not name in spec_intents:
+            spec["intents"].append({name: {"use_entities": True}})
+
+    found_entities = [e["entity"] for m in msgs for e in m.data.get("entities", []) ]
+    spec["entities"] = list(set(found_entities + spec["entities"]))
+
+    found_actions = [e["name"] for e in acts]
+    spec["actions"] = list(set(found_actions + spec["actions"]))
+
+    domain = Domain.from_dict(spec)
+    domain.persist(domain_path)
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
