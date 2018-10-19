@@ -624,8 +624,8 @@ class EndpointConfig(object):
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        [setattr(self, k, v) for k, v in kwargs.items() if not hasattr(self, k)]
+        
     def request(self,
                 method="post",  # type: Text
                 subpath=None,  # type: Optional[Text]
@@ -675,14 +675,7 @@ class EndpointConfig(object):
 
     @classmethod
     def from_dict(cls, data):
-        return EndpointConfig(
-                data.get("url"),
-                data.get("params"),
-                data.get("headers"),
-                data.get("basic_auth"),
-                data.get("token"),
-                data.get("token_name"),
-                **data)
+        return EndpointConfig(**data)
 
     def __eq__(self, other):
         if isinstance(self, type(other)):
