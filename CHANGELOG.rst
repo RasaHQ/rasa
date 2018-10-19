@@ -22,6 +22,8 @@ Added
 - both the date and the time at which a model was trained are now
   included in the policy's metadata when it is persisted
 - show visualization of conversation while doing interactive learning
+- option for end-to-end evaluation of Rasa Core and NLU examples in
+  ``evaluate.py`` script
 
 Changed
 -------
@@ -40,7 +42,11 @@ Fixed
 - use utf8 everywhere when handling file IO
 - argument ``--connector`` on run script accepts custom channel module names
 - properly handle non ascii categorical slot values, e.g. ``大于100亿元``
-- fixed HTTP server attempting to authenticate based on incorrect path to the correct JWT data field
+- fixed HTTP server attempting to authenticate based on incorrect path to
+  the correct JWT data field
+- all sender ids from channels are now handled as `str`.
+  Sender ids from old messages with an `int` id are converted to `str`.
+
 
 [0.11.12] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^^

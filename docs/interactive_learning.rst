@@ -29,7 +29,9 @@ Run the following to start interactive learning:
    python -m rasa_core.train \
      --interactive -o models/dialogue \
      -d domain.yml -s stories.md \
-     --endpoints endpoints.yml
+     --endpoints endpoints.yml 
+     
+To include an existing model to identify intents use --nlu models/current/nlu in the above command. Else interactive learning will use a default REGEX to intentify default intents from the user input text. 
 
 The first command starts the action server (see :ref:`customactions`).
 
