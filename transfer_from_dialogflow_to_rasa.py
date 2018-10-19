@@ -8,37 +8,40 @@ def load_file_to_json(full_path):
         return json.load(f)
 
 
+def get_text_and_entities_from_example(example):
+    text = ""
+    entities = list()
+    for block in example['data']:
+        blockText = block['text']
+        if "alias" in block:
+            text_length = len(text)
+            entities.append({
+                "start": text_length,
+                "end": text_length + len(blockText),
+                "value": blockText,
+                "entity": block['alias']
+            })
+        text += blockText
+    return {
+        "text": text,
+        "entities": entities
+    }
+
+
 def harvest_examples(dialogflow_examples, intent):
     harvested_examples = list()
     for example in dialogflow_examples:
-        text = ""
-        entities = list()
-        for block in example['data']:
-            blockText = block['text']
-            if "alias" in block:
-                text_length = len(text)
-                entities.append({
-                    "start": text_length,
-                    "end": text_length + len(blockText),
-                    "value": blockText,
-                    "entity": block['alias']
-                })
-            text += blockText
-
-        harvested_example = {
+        text_and_entities = get_text_and_entities_from_example(example)
+        harvested_examples.append({
             "intent": intent,
-            "text": text
-        }
-
-        if(len(entities) > 0):
-            harvested_example['entities'] = entities
-
-        harvested_examples.append(harvested_example)
+            "text": text_and_entities['text'],
+            "entities": text_and_entities['entities']
+        })
 
     return harvested_examples
 
 
-def get_current_action(file):
+def get_action(file):
     action_file = file.replace("_usersays_en", "")
     data_in_file = load_file_to_json(action_file)
     if 'action' in data_in_file['responses'][0]:
@@ -52,12 +55,12 @@ def get_common_examples(intents_dir):
     for file in files:
         data_in_file = load_file_to_json(intents_dir + "/" + file)
         if file.endswith("_usersays_en.json"):
-            current_intent_action = get_current_action(intents_dir + "/" + file)
-            common_examples += harvest_examples(data_in_file, current_intent_action)
+            action = get_action(intents_dir + "/" + file)
+            common_examples += harvest_examples(data_in_file, action)
     return common_examples
 
 
-def get_current_entity_name(file):
+def get_entity_name(file):
     entity_file = file.replace("_entries_en", "")
     data_in_file = load_file_to_json(entity_file)
     return data_in_file['name']
@@ -121,7 +124,9 @@ def process_data_entities(dialogflow_entities, current_entity_name):
         if(harvested_lookup_table):
             lookup_table_entries += harvested_lookup_table
 
-        harvested_composite_entries = harvest_composite_entries(value, current_entity_name)
+        harvested_composite_entries = harvest_composite_entries(
+            value, current_entity_name)
+
         if(harvested_composite_entries):
             composite_entities += harvested_composite_entries
 
@@ -151,7 +156,7 @@ def process_entities(entities_dir):
     for file in files:
         data_in_file = load_file_to_json(entities_dir + "/" + file)
         if file.endswith("_entries_en.json"):
-            current_entity_name = get_current_entity_name(entities_dir + "/" + file)
+            current_entity_name = get_entity_name(entities_dir + "/" + file)
             data = process_data_entities(data_in_file, current_entity_name)
             entity_synonyms += data.get("entity_synonyms")
             lookup_tables += data.get("lookup_tables")
@@ -182,6 +187,7 @@ def main():
 
     with open(directory + "training_data.json", "w") as training_data_file:
         json.dump(training_data, training_data_file, indent=2, sort_keys=True)
+
 
 if __name__ == '__main__':
     main()

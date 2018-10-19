@@ -58,19 +58,13 @@ def test_composite_entities():
         nested_entities=nested_entities).split_nested_entities(entities)
     assert len(entities) == 3
     assert entities[0]["value"] == {
-        "meal": {
-            "protein": "chicken",
-            "carbohydrates": "rice"
-        }
+        "protein": "chicken",
+        "carbohydrates": "rice"
     }
     assert entities[1]["value"] == {
-        "meal": {
-            "protein": "egg",
-            "carbohydrates": "yam"
-        }
+        "protein": "egg",
+        "carbohydrates": "yam"
     }
     assert entities[2]["value"] == {
-        "meal": {
-            "carbohydrates": "noodles"
-        }
+        "carbohydrates": "noodles"
     }

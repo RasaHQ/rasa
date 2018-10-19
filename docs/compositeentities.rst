@@ -37,10 +37,8 @@ Then running
 			"nested_entity_extractor"
 		],
 		"value": {
-			"meal": {
-				"protein": "chicken",
-				"carbohydrates": "rice"
-			}
+			"protein": "chicken",
+			"carbohydrates": "rice"
 		},
 		"entity": "meal",
 		"start": 17
