@@ -870,8 +870,8 @@ components:
         in_training_data_fraction: 1.0
         precision: 1.0
         report: >-
-                         precision    recall  f1-score   support
-
+          # classification report
+                         precision recall  f1-score   support
           action_listen       1.00      1.00      1.00         5
                 default       1.00      1.00      1.00         2
                 goodbye       1.00      1.00      1.00         1
