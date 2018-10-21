@@ -218,9 +218,11 @@ def test_evaluate(app):
     response = app.post('/evaluate',
                         data=stories)
     assert response.status_code == 200
-    assert set(response.get_json().keys()) == \
-           {"report", "precision", "f1",
-            "accuracy", "in_training_data_fraction"}
+    assert set(response.get_json().keys()) == {"report",
+                                               "precision",
+                                               "f1",
+                                               "accuracy",
+                                               "in_training_data_fraction"}
 
 
 def test_end_to_end_evaluation(app):
