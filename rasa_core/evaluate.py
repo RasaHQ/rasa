@@ -443,8 +443,8 @@ def run_story_evaluation(resource_name, agent,
     if out_file_plot:
         plot_story_evaluation(story_results.action_targets,
                               story_results.action_predictions,
-                              in_training_data,
-                              report, precision, f1, accuracy, out_file_plot)
+                              report, precision, f1, accuracy,
+                              in_training_data, out_file_plot)
 
     log_failed_stories(failed, out_file_stories)
 
@@ -459,17 +459,17 @@ def run_story_evaluation(resource_name, agent,
 
 def log_evaluation_table(golds, name,
                          report, precision, f1, accuracy,
-                         in_training_data,
+                         in_training_data_fraction,
                          include_report=True):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
     logger.info("Evaluation Results on {} level:".format(name))
-    logger.info("\tCorrect:\t\t\t{} / {}".format(int(len(golds) * accuracy),
-                                              len(golds)))
+    logger.info("\tCorrect:          {} / {}"
+                "".format(int(len(golds) * accuracy), len(golds)))
     logger.info("\tF1-Score:         {:.3f}".format(f1))
     logger.info("\tPrecision:        {:.3f}".format(precision))
     logger.info("\tAccuracy:         {:.3f}".format(accuracy))
-    logger.info("\tIn-data fraction: {}"
-                "".format(in_training_data))
+    logger.info("\tIn-data fraction: {:.3g}"
+                "".format(in_training_data_fraction))
 
     if include_report:
         logger.info("\tClassification report: \n{}".format(report))
@@ -477,7 +477,7 @@ def log_evaluation_table(golds, name,
 
 def plot_story_evaluation(test_y, predictions,
                           report, precision, f1, accuracy,
-                          in_training_data,
+                          in_training_data_fraction,
                           out_file):
     """Plot the results of story evaluation"""
     from sklearn.metrics import confusion_matrix
@@ -486,7 +486,7 @@ def plot_story_evaluation(test_y, predictions,
 
     log_evaluation_table(test_y, "ACTION",
                          report, precision, f1, accuracy,
-                         in_training_data,
+                         in_training_data_fraction,
                          include_report=True)
 
     cnf_matrix = confusion_matrix(test_y, predictions)
