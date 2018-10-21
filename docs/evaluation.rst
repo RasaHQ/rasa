@@ -108,6 +108,25 @@ on the full set of stories, you can measure how well Rasa Core is
 predicting the held-out stories.
 
 
+Evaluating stories over http
+----------------------------
+
+Rasa Core's server lets you to retrieve evaluations for the currently
+loaded model. Say your Rasa Core server is running locally on port 5005,
+and your story evaluation file is saved at ``eval_stories.md``. The command
+to post stories to the server for evaluation is this:
+
+.. code-block:: bash
+
+  $ curl --data-binary @eval_stories.md "localhost:5005/evaluate" | python -m json.tool
+
+If you would like to evaluate end-to-end stories, you may do so by adding the
+``e2e=true`` query parameter:
+
+.. code-block:: bash
+
+  $ curl --data-binary @eval_stories.md "localhost:5005/evaluate?e2e=true" | python -m json.tool
+
 .. include:: feedback.inc
 
 

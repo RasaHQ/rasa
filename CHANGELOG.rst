@@ -24,6 +24,7 @@ Added
 - show visualization of conversation while doing interactive learning
 - option for end-to-end evaluation of Rasa Core and NLU examples in
   ``evaluate.py`` script
+- http server (``rasa_core.run --enable-api``) evaluation endpoint
 
 Changed
 -------

@@ -292,7 +292,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
     action_executed_eval_store = EvaluationStore()
 
-    action, _, _ = processor.predict_next_action(partial_tracker)
+    action, policy, _ = processor.predict_next_action(partial_tracker)
 
     predicted = action.name()
     gold = event.action_name
@@ -309,7 +309,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     else:
         partial_tracker.update(event)
 
-    return action_executed_eval_store
+    return action_executed_eval_store, policy
 
 
 def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
@@ -324,13 +324,21 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
                                                        events[:1],
                                                        agent.domain.slots)
 
+    in_training_data = True
+    test_in_training_data = True
+
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action_executed_result = \
+            action_executed_result, policy = \
                 _collect_action_executed_predictions(
                         processor, partial_tracker, event,
                         fail_on_prediction_errors
                 )
+            if (test_in_training_data and
+                    policy is not None and
+                    "Memoization" not in policy):
+                in_training_data = False
+                test_in_training_data = False
             tracker_eval_store.merge_store(action_executed_result)
         elif use_e2e and isinstance(event, UserUttered):
             user_uttered_result = \
@@ -341,7 +349,7 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
         else:
             partial_tracker.update(event)
 
-    return tracker_eval_store, partial_tracker
+    return tracker_eval_store, partial_tracker, in_training_data
 
 
 def collect_story_predictions(
@@ -350,7 +358,7 @@ def collect_story_predictions(
         fail_on_prediction_errors=False,  # type: bool
         use_e2e=False  # type: bool
 ):
-    # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker]]
+    # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker], float]
     """Test the stories from a file, running them through the stored model."""
 
     story_eval_store = EvaluationStore()
@@ -360,11 +368,14 @@ def collect_story_predictions(
     logger.info("Evaluating {} stories\n"
                 "Progress:".format(len(completed_trackers)))
 
+    story_in_training_data = []
+
     for tracker in tqdm(completed_trackers):
-        tracker_results, predicted_tracker = \
+        tracker_results, predicted_tracker, in_training_data = \
             _predict_tracker_actions(tracker, agent,
                                      fail_on_prediction_errors, use_e2e)
 
+        story_in_training_data.append(int(in_training_data))
         story_eval_store.merge_store(tracker_results)
 
         if tracker_results.has_prediction_target_mismatch():
@@ -378,12 +389,19 @@ def collect_story_predictions(
     report, precision, f1, accuracy = get_evaluation_metrics(
             [1] * len(completed_trackers), correct_dialogues)
 
+    try:
+        fraction_of_stories_in_training_data = \
+            sum(story_in_training_data) / len(story_in_training_data)
+    except ZeroDivisionError:
+        fraction_of_stories_in_training_data = 0.
+
     log_evaluation_table([1] * len(completed_trackers),
                          "END-TO-END" if use_e2e else "CONVERSATION",
                          report, precision, f1, accuracy,
+                         fraction_of_stories_in_training_data,
                          include_report=False)
 
-    return story_eval_store, failed
+    return story_eval_store, failed, fraction_of_stories_in_training_data
 
 
 def log_failed_stories(failed, failed_output):
@@ -412,7 +430,7 @@ def run_story_evaluation(resource_name, agent,
     completed_trackers = _generate_trackers(resource_name, agent,
                                             max_stories, use_e2e)
 
-    story_results, failed = collect_story_predictions(
+    story_results, failed, in_training_data = collect_story_predictions(
             completed_trackers, agent, fail_on_prediction_errors, use_e2e)
 
     with warnings.catch_warnings():
@@ -425,30 +443,33 @@ def run_story_evaluation(resource_name, agent,
     if out_file_plot:
         plot_story_evaluation(story_results.action_targets,
                               story_results.action_predictions,
+                              in_training_data,
                               report, precision, f1, accuracy, out_file_plot)
 
     log_failed_stories(failed, out_file_stories)
 
     return {
-        "story_evaluation": {
-            "report": report,
-            "precision": precision,
-            "f1": f1,
-            "accuracy": accuracy
-        }
+        "report": report,
+        "precision": precision,
+        "f1": f1,
+        "accuracy": accuracy,
+        "in_training_data_fraction": in_training_data
     }
 
 
 def log_evaluation_table(golds, name,
                          report, precision, f1, accuracy,
+                         in_training_data,
                          include_report=True):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
     logger.info("Evaluation Results on {} level:".format(name))
-    logger.info("\tCorrect:   {} / {}".format(int(len(golds) * accuracy),
+    logger.info("\tCorrect:\t\t\t{} / {}".format(int(len(golds) * accuracy),
                                               len(golds)))
-    logger.info("\tF1-Score:  {:.3f}".format(f1))
-    logger.info("\tPrecision: {:.3f}".format(precision))
-    logger.info("\tAccuracy:  {:.3f}".format(accuracy))
+    logger.info("\tF1-Score:         {:.3f}".format(f1))
+    logger.info("\tPrecision:        {:.3f}".format(precision))
+    logger.info("\tAccuracy:         {:.3f}".format(accuracy))
+    logger.info("\tIn-data fraction: {}"
+                "".format(in_training_data))
 
     if include_report:
         logger.info("\tClassification report: \n{}".format(report))
@@ -456,6 +477,7 @@ def log_evaluation_table(golds, name,
 
 def plot_story_evaluation(test_y, predictions,
                           report, precision, f1, accuracy,
+                          in_training_data,
                           out_file):
     """Plot the results of story evaluation"""
     from sklearn.metrics import confusion_matrix
@@ -464,6 +486,7 @@ def plot_story_evaluation(test_y, predictions,
 
     log_evaluation_table(test_y, "ACTION",
                          report, precision, f1, accuracy,
+                         in_training_data,
                          include_report=True)
 
     cnf_matrix = confusion_matrix(test_y, predictions)

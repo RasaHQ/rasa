@@ -4,11 +4,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
+import json
+import uuid
 from builtins import str
 
-import json
 import pytest
-import uuid
 from freezegun import freeze_time
 
 import rasa_core
@@ -19,6 +20,7 @@ from rasa_core.events import (
     UserUttered, BotUttered, SlotSet, Event, ActionExecuted)
 from rasa_core.remote import RasaCoreClient
 from rasa_core.utils import EndpointConfig
+from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 # a couple of event instances that we can use for testing
 test_events = [
@@ -208,6 +210,28 @@ def test_predict(http_app, app):
     response = app.post('/predict',
                         json=event_dicts)
     assert response.status_code == 200
+
+
+def test_evaluate(app):
+    with io.open(DEFAULT_STORIES_FILE, 'r') as f:
+        stories = f.read()
+    response = app.post('/evaluate',
+                        data=stories)
+    assert response.status_code == 200
+    assert set(response.get_json().keys()) == \
+           {"report", "precision", "f1",
+            "accuracy", "in_training_data_fraction"}
+
+
+def test_end_to_end_evaluation(app):
+    with io.open(END_TO_END_STORY_FILE, 'r') as f:
+        stories = f.read()
+    response = app.post('/evaluate?e2e=true',
+                        data=stories)
+    assert response.status_code == 200
+    assert set(response.get_json().keys()) == \
+           {"report", "precision", "f1",
+            "accuracy", "in_training_data_fraction"}
 
 
 def test_list_conversations_with_jwt(secured_app):

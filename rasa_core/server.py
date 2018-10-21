@@ -3,28 +3,31 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from flask import json
+import io
 import logging
 import os
 import tempfile
 import zipfile
-from flask import Flask, request, abort, Response, jsonify
-from flask_cors import CORS, cross_origin
-from flask_jwt_simple import JWTManager, view_decorators
 from functools import wraps
 from typing import List
 from typing import Text, Optional
 from typing import Union
 
+from flask import Flask, request, abort, Response, jsonify
+from flask import json
+from flask_cors import CORS, cross_origin
+from flask_jwt_simple import JWTManager, view_decorators
+
 from rasa_core import utils, constants
 from rasa_core.channels import (
     CollectingOutputChannel)
 from rasa_core.channels import UserMessage
+from rasa_core.evaluate import run_story_evaluation
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import AvailableEndpoints
+from rasa_core.utils import AvailableEndpoints, convert_bytes_to_string
 from rasa_core.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -78,7 +81,7 @@ def requires_auth(app, token=None):
             argnames = utils.arguments_of(f)
             try:
                 sender_id_arg_idx = argnames.index("sender_id")
-                if "sender_id" in kwargs:   # try to fetch from kwargs first
+                if "sender_id" in kwargs:  # try to fetch from kwargs first
                     return kwargs["sender_id"]
                 if sender_id_arg_idx < len(args):
                     return args[sender_id_arg_idx]
@@ -111,8 +114,10 @@ def requires_auth(app, token=None):
                 if sufficient_scope(*args, **kwargs):
                     return f(*args, **kwargs)
                 abort(error(
-                    403, "NotAuthorized", "User has insufficient permissions.",
-                    help_url=_docs("/server.html#security-considerations")))
+                        403, "NotAuthorized",
+                        "User has insufficient permissions.",
+                        help_url=_docs(
+                                "/server.html#security-considerations")))
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
@@ -389,7 +394,7 @@ def create_app(agent,
             message = request_params["message"]
         except KeyError:
             message = request_params.get("text")
-            
+
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
@@ -447,6 +452,27 @@ def create_app(agent,
         agent.policy_ensemble = ensemble
         logger.debug("Finished loading new agent.")
         return '', 204
+
+    @app.route("/evaluate",
+               methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
+    @cross_origin(origins=cors_origins)
+    def evaluate_stories():
+        """Evaluate stories against the currently loaded model."""
+
+        data = convert_bytes_to_string(request.get_data())
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        with io.open(tmp.name, 'w') as f:
+            f.write(data)
+
+        use_e2e = utils.bool_arg('e2e', default=False)
+        try:
+            evaluation = run_story_evaluation(tmp.name, agent, use_e2e=use_e2e)
+            return jsonify(evaluation)
+        except ValueError as e:
+            return error(400, "FailedEvaluation",
+                         "Evaluation could not be created. Error: {}"
+                         "".format(e))
 
     @app.route("/domain",
                methods=['GET', 'OPTIONS'])
@@ -539,8 +565,9 @@ def create_app(agent,
                          {"parameter": "", "in": "body"})
 
         policy_ensemble = agent.policy_ensemble
-        probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, agent.domain)
+        probabilities, policy = \
+            policy_ensemble.probabilities_using_best_policy(tracker,
+                                                            agent.domain)
 
         scores = [{"action": a, "score": p}
                   for a, p in zip(agent.domain.action_names, probabilities)]

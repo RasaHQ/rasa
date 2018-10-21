@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import tempfile
+from builtins import input, range, str
 from hashlib import sha1
 from random import Random
 from threading import Thread
@@ -20,7 +21,6 @@ from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 import requests
 import six
-from builtins import input, range, str
 from numpy import all, array
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import InvalidURL
@@ -586,6 +586,13 @@ def remove_none_values(obj):
 def pad_list_to_size(_list, size, padding_value=None):
     """Pads _list with padding_value up to size"""
     return _list + [padding_value] * (size - len(_list))
+
+
+def convert_bytes_to_string(data):
+    """Convert data to string if data is bytes-like object"""
+    if isinstance(data, (bytes, bytearray)):
+        return data.decode("utf-8")
+    return data
 
 
 class AvailableEndpoints(object):
