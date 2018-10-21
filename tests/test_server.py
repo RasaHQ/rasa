@@ -231,9 +231,11 @@ def test_end_to_end_evaluation(app):
     response = app.post('/evaluate?e2e=true',
                         data=stories)
     assert response.status_code == 200
-    assert set(response.get_json().keys()) == \
-           {"report", "precision", "f1",
-            "accuracy", "in_training_data_fraction"}
+    assert set(response.get_json().keys()) == {"report",
+                                               "precision",
+                                               "f1",
+                                               "accuracy",
+                                               "in_training_data_fraction"}
 
 
 def test_list_conversations_with_jwt(secured_app):
