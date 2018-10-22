@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import glob
 import pytest
 
 from rasa_core.config import load, handle_precedence_and_defaults
