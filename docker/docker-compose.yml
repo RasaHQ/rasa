@@ -7,19 +7,19 @@ services:
       ports:
       - "5005:5005"
       volumes:
-      - "./rasa-app-data/dialogue:/app/dialogue"
-      - "./rasa-app-data/endpoints:/app/endpoints"
-      - "./rasa-app-data/credentials:/app/credentials"
+      - "./rasa-app-data/core-model:/app/model"
+      - "./rasa-app-data/config:/app/config"
+      - "./rasa-app-data/project:/app/project"
       command: 
         - start
         - -d
-        - ./dialogue
+        - ./model
         - -c 
         - rest
         - -u
         - current/nlu
         - --endpoints
-        - endpoints/endpoints.yml
+        - config/endpoints.yml
   action_server:
       image: rasa/rasa_core_sdk:latest
       networks: ['rasa-network']
@@ -33,7 +33,7 @@ services:
     ports:
     - "5000:5000"
     volumes:
-    - "./rasa-app-data/projects/:/app/projects"
+    - "./rasa-app-data/nlu-models/:/app/projects"
     - "./rasa-app-data/logs:/app/logs"
   duckling:
     image: rasa/duckling:latest
