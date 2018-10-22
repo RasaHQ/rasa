@@ -46,6 +46,7 @@ Fixed
   the correct JWT data field
 - all sender ids from channels are now handled as `str`.
   Sender ids from old messages with an `int` id are converted to `str`.
+- legacy pep8 errors
 
 
 [0.11.12] - 2018-10-11
