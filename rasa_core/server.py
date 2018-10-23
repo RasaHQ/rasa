@@ -389,7 +389,7 @@ def create_app(agent,
             message = request_params["message"]
         except KeyError:
             message = request_params.get("text")
-            
+
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)

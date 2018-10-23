@@ -14,8 +14,8 @@ your bot doesn't know how to do something yet, you can just teach it!
 Some people are calling this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
 
 
-1. Load up an existing bot
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Load up an existing bot
+^^^^^^^^^^^^^^^^^^^^^^^
 
 We have a basic working bot, and want to teach it by providing
 feedback on mistakes it makes.
@@ -69,7 +69,8 @@ Then we type ``y`` again, because 'action_listen' is the correct
 action after greeting. We continue this loop until the bot chooses
 the wrong action.
 
-**Providing feedback on errors**
+Providing feedback on errors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For this example we are going to use the ``concertbot`` example,
 so make sure you have the domain & data for it. You can download
@@ -138,6 +139,21 @@ provide you with exit options, e.g. writing the created conversations as
 stories to a file. Make sure to combine the dumped story with your original
 training data for the next training.
 
+
+Visualization of conversations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+During the interactive learning, Core will plot the current conversation
+and close surrounding conversations from the training data to help you
+keep track of where you are.
+
+You can view the visualization at http://localhost:5005/visualization.html
+as soon as you have started the interactive learning.
+
+To skip the visualization, pass ``--skip_visualization`` to the training
+script.
+
+.. image:: _static/images/interactive_learning_graph.gif
 
 .. include:: feedback.inc
 

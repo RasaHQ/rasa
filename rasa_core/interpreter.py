@@ -14,10 +14,9 @@ from typing import Text, List, Dict, Any
 
 from rasa_core import constants
 from rasa_core.utils import EndpointConfig
+from rasa_core.constants import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
-
-INTENT_MESSAGE_PREFIX = "/"
 
 
 class NaturalLanguageInterpreter(object):
@@ -119,6 +118,12 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                            "Error: {}".format(confidence_str, e))
             return 0.0
 
+    def _starts_with_intent_prefix(self, text):
+        for c in self.allowed_prefixes():
+            if text.startswith(c):
+                return True
+        return False
+
     @staticmethod
     def extract_intent_and_entities(user_input):
         # type: (Text) -> object
@@ -178,9 +183,8 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         In the deprecated format entities where annotated using `[name=Rasa]`
         which has been replaced with `{"name": "Rasa"}`."""
 
-        return (text.find("[") != -1
-                and (text.find("{") == -1 or
-                     text.find("[") < text.find("{")))
+        return (text.find("[") != -1 and
+                (text.find("{") == -1 or text.find("[") < text.find("{")))
 
     def parse(self, text):
         """Parse a text message."""
@@ -192,8 +196,13 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             intent, confidence, entities = \
                 self.extract_intent_and_entities(text)
 
+        if self._starts_with_intent_prefix(text):
+            message_text = text
+        else:
+            message_text = INTENT_MESSAGE_PREFIX + text
+
         return {
-            'text': text,
+            'text': message_text,
             'intent': {
                 'name': intent,
                 'confidence': confidence,
