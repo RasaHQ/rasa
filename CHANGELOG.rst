@@ -19,7 +19,7 @@ Added
 - Command line interface for interactive learning now displays policy confidence alongside the action name
 - added action prediction confidence & policy to ``ActionExecuted`` event
 - both the date and the time at which a model was trained are now included in the policy's metadata when it is persisted
-
+- the Core policy configuration can now be set in a config.yaml file. This makes training custom policies possible.
 
 Changed
 -------
