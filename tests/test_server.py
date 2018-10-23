@@ -327,6 +327,7 @@ def test_list_conversations_with_wrong_jwt(secured_app):
                                headers=jwt_header)
     assert response.status_code == 422
 
+
 def test_story_export(app):
     data = json.dumps({"query": "/greet"})
     response = app.post("http://dummy/conversations/mynewid/respond",
@@ -336,5 +337,5 @@ def test_story_export(app):
     assert response.status_code == 200
     story_lines = response.get_data(as_text=True).strip().split('\n')
     assert story_lines == ["## mynewid",
-                          "* greet:/greet",
-                          "    - utter_greet"]
+                           "* greet:/greet",
+                           "    - utter_greet"]
