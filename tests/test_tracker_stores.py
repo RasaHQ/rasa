@@ -3,10 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain
 from rasa_core.events import SlotSet, ActionExecuted, Restarted
-from rasa_core.tracker_store import InMemoryTrackerStore
+from rasa_core.tracker_store import TrackerStore, InMemoryTrackerStore, RedisTrackerStore
+from rasa_core.utils import EndpointConfig
+from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")
 
@@ -42,3 +45,23 @@ def test_restart_after_retrieval_from_tracker_store(default_domain):
     tr2 = store.retrieve("myuser")
     latest_restart_after_loading = tr2.idx_after_latest_restart()
     assert latest_restart == latest_restart_after_loading
+
+
+def test_tracker_store_endpoint_config_loading():
+    cfg = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+
+    assert cfg == EndpointConfig.from_dict({
+        "store_type": "redis",
+        "url": "localhost",
+        "port": 6379,
+        "db": 0,
+        "password": "password",
+        "timeout": 30000
+    })
+
+
+def test_find_tracker_store(default_domain):
+    store = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+    tracker_store = RedisTrackerStore(domain=default_domain, host="localhost", port=6379, db=0, password="password", record_exp=3000)
+
+    assert isinstance(tracker_store, type(TrackerStore(default_domain).find_tracker_store(store)))

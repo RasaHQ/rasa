@@ -605,7 +605,7 @@ class AvailableEndpoints(object):
 
         return cls(nlg, nlu, action, model, tracker_store)
 
-    def __init__(self, nlg=None, nlu=None, action=None, model=None,tracker_store=None):
+    def __init__(self, nlg=None, nlu=None, action=None, model=None, tracker_store=None):
         self.model = model
         self.action = action
         self.nlu = nlu
@@ -617,7 +617,7 @@ class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
     def __init__(self, url, params=None, headers=None, basic_auth=None,
-                 token=None, token_name="token",**kwargs):
+                 token=None, token_name="token", **kwargs):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
@@ -625,7 +625,7 @@ class EndpointConfig(object):
         self.token = token
         self.token_name = token_name
         [setattr(self, k, v) for k, v in kwargs.items() if not hasattr(self, k)]
-        
+
     def request(self,
                 method="post",  # type: Text
                 subpath=None,  # type: Optional[Text]

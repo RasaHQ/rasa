@@ -89,7 +89,13 @@ def test_endpoint_config():
             basic_auth={"username": "user",
                         "password": "pass"},
             token="mytoken",
-            token_name="letoken"
+            token_name="letoken",
+            store_type="redis",
+            url="localhost",
+            port=6379,
+            db=0,
+            password="password",
+            timeout=30000
     )
 
     httpretty.register_uri(

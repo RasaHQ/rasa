@@ -648,7 +648,8 @@ class Agent(object):
             store.domain = domain
             return store
         else:
-            return InMemoryTrackerStore(domain)        
+            return InMemoryTrackerStore(domain)
+
     @staticmethod
     def _create_ensemble(
             policies  # type: Union[List[Policy], PolicyEnsemble, None]

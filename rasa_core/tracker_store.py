@@ -47,7 +47,7 @@ class TrackerStore(object):
                                      db=store.db,
                                      username=store.user,
                                      password=store.password)
-     
+
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
         if tracker is None:

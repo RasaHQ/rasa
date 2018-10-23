@@ -223,8 +223,8 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
-    
-    domain = TemplateDomain.load(cmdline_args.domain)                                                
+
+    domain = TemplateDomain.load(cmdline_args.domain)
     _tracker_store = TrackerStore(domain).find_tracker_store(_endpoints.tracker_store)
     if cmdline_args.core:
         if not cmdline_args.interactive:
