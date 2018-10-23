@@ -326,3 +326,15 @@ def test_list_conversations_with_wrong_jwt(secured_app):
     response = secured_app.get("/conversations",
                                headers=jwt_header)
     assert response.status_code == 422
+
+def test_story_export(app):
+    data = json.dumps({"query": "/greet"})
+    response = app.post("http://dummy/conversations/mynewid/respond",
+                        data=data, content_type='application/json')
+    assert response.status_code == 200
+    response = app.get("http://dummy/conversations/mynewid/story")
+    assert response.status_code == 200
+    story_lines = response.get_data(as_text=True).strip().split('\n')
+    assert story_lines == ["## mynewid",
+                          "* greet:/greet",
+                          "    - utter_greet"]
