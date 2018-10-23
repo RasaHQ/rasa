@@ -201,12 +201,12 @@ class PolicyEnsemble(object):
         return ensemble
 
     @classmethod
-    def from_dict(cls, dict):
-        # type: Dict -> List[Policy]
+    def from_dict(cls, dictionary):
+        # type: Dict[Text, Any] -> List[Policy]
 
         policies = []
 
-        for policy in dict.get('policies', []):
+        for policy in dictionary.get('policies', []):
 
             policy_name = policy.pop('name')
 
