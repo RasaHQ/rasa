@@ -10,6 +10,7 @@ from telegram import (
     Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
     KeyboardButton, ReplyKeyboardMarkup)
 
+from rasa_core import constants
 from rasa_core.channels import InputChannel
 from rasa_core.channels.channel import UserMessage, OutputChannel
 
@@ -154,7 +155,9 @@ class TelegramInput(InputChannel):
                         return "success"
                 sender_id = msg.chat.id
                 try:
-                    if text == '_restart' or text == '/restart':
+                    if(text == '_restart' or
+                            text == constants.USER_INTENT_RESTART):
+
                         on_new_message(UserMessage(
                                 text, out_channel, sender_id,
                                 input_channel=self.name()))
