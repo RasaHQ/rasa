@@ -119,7 +119,7 @@ Compose File Example
 Running it
 ~~~~~~~~~~
 To run all components locally, execute :code:`docker-compose up`.
-You can then interact with your chat bot using the `Rasa Core HTTP API <https://rasa.com/docs/core/server/>`_.
+You can then interact with your chat bot using the :ref:`section_http`.
 For example:
 
     .. code-block:: bash
@@ -134,14 +134,14 @@ For example to train the core model:
 
     .. code-block:: bash
 
-         docker-compose run rasacore train
+         docker-compose run rasa_core train
 
 Volume Explanation
 ~~~~~~~~~~~~~~~~~~
-- **./rasa-app-data/core-model**: This directory contains the trained Rasa Core models.
+- **./rasa-app-data/models/current/dialogue**: This directory contains the trained Rasa Core models.
   You can also move previously trained models to this directory to load them within the Docker container.
 - **./rasa-app-data/config**: This directory is for the configuration of the endpoints and of the
-  different `chat & voice platforms <https://rasa.com/docs/core/connectors/>`_ you can use Rasa Core with.
+  different :ref:`connectors` you can use Rasa Core with.
     - To connect other components with Rasa Core this directory should contain a file ``endpoints.yml``,
       which specifies how to reach these components.
       For the shown docker-compose example the file should look like this:
@@ -151,15 +151,15 @@ Volume Explanation
             action_endpoint:
                 url: 'http://action_server:5055/webhook'
             nlu:
-                url: 'http://rasanlu:5000'
+                url: 'http://rasa_nlu:5000'
 
-    - If you use a connector to a `chat & voice platforms <https://rasa.com/docs/core/connectors/>`_
+    - If you use connectors to :ref:`connectors`
       you have to configure the required credentials for these in a file `credentials.yml`.
       Use the provided credentials by adding :code:`--credentials <path to your credentials file>``
       to the run command of Rasa Core.
 
 - **./rasa-app-data/project**: This directory contains your Rasa project and may be used to train a model.
-- **./rasa-app-data/nlu-models/**: This directory contains the trained Rasa NLU models.
+- **./rasa-app-data/models/**: This directory contains the nlu project and its trained models.
   You can also move previously trained models to this directory to load them within the Docker container.
 
 .. note::
