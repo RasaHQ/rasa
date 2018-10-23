@@ -7,7 +7,10 @@ from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain
 from rasa_core.events import SlotSet, ActionExecuted, Restarted
-from rasa_core.tracker_store import TrackerStore, InMemoryTrackerStore, RedisTrackerStore
+from rasa_core.tracker_store import (
+    TrackerStore,
+    InMemoryTrackerStore,
+    RedisTrackerStore)
 from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -62,6 +65,14 @@ def test_tracker_store_endpoint_config_loading():
 
 def test_find_tracker_store(default_domain):
     store = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
-    tracker_store = RedisTrackerStore(domain=default_domain, host="localhost", port=6379, db=0, password="password", record_exp=3000)
+    tracker_store = RedisTrackerStore(domain=default_domain,
+                                      host="localhost",
+                                      port=6379,
+                                      db=0,
+                                      password="password",
+                                      record_exp=3000)
 
-    assert isinstance(tracker_store, type(TrackerStore(default_domain).find_tracker_store(store)))
+    assert isinstance(tracker_store,
+                      type(
+                        TrackerStore(default_domain).find_tracker_store(store)
+                          ))

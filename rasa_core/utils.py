@@ -486,7 +486,7 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
 
 
 def arguments_of(func):
-    """Return the parameters of the function `func` as a list of their names."""
+    """Return the parameters of the function `func` as a list of their names"""
 
     try:
         # python 3.x is used
@@ -527,7 +527,7 @@ def all_subclasses(cls):
 
 def read_endpoint_config(filename, endpoint_type):
     # type: (Text, Text) -> Optional[EndpointConfig]
-    """Read an endpoint configuration file from disk and extract one config. """
+    """Read an endpoint configuration file from disk and extract one config."""
 
     if not filename:
         return None
@@ -601,11 +601,17 @@ class AvailableEndpoints(object):
                 endpoint_file, endpoint_type="action_endpoint")
         model = read_endpoint_config(
                 endpoint_file, endpoint_type="models")
-        tracker_store = read_endpoint_config(endpoint_file, endpoint_type="tracker_store")
+        tracker_store = read_endpoint_config(
+                endpoint_file, endpoint_type="tracker_store")
 
         return cls(nlg, nlu, action, model, tracker_store)
 
-    def __init__(self, nlg=None, nlu=None, action=None, model=None, tracker_store=None):
+    def __init__(self,
+                 nlg=None,
+                 nlu=None,
+                 action=None,
+                 model=None,
+                 tracker_store=None):
         self.model = model
         self.action = action
         self.nlu = nlu
@@ -624,7 +630,8 @@ class EndpointConfig(object):
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
-        [setattr(self, k, v) for k, v in kwargs.items() if not hasattr(self, k)]
+        [setattr(
+            self, k, v) for k, v in kwargs.items() if not hasattr(self, k)]
 
     def request(self,
                 method="post",  # type: Text

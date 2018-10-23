@@ -91,7 +91,6 @@ def test_endpoint_config():
             token="mytoken",
             token_name="letoken",
             store_type="redis",
-            url="localhost",
             port=6379,
             db=0,
             password="password",
