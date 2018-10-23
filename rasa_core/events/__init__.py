@@ -230,7 +230,7 @@ class UserUttered(Event):
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
-    def as_story_string(self):
+    def as_story_string(self, e2e=False):
         if self.intent:
             if self.entities:
                 ent_string = json.dumps({ent['entity']: ent['value']
@@ -238,9 +238,13 @@ class UserUttered(Event):
             else:
                 ent_string = ""
 
-            return "{intent}{entities}".format(
-                    intent=self.intent.get("name", ""),
-                    entities=ent_string)
+            parse_string = "{intent}{entities}".format(
+                           intent=self.intent.get("name", ""),
+                           entities=ent_string)
+            if e2e:
+                return "{}:{}".format(parse_string, self.text)
+            else:
+                return parse_string
         else:
             return self.text
 
