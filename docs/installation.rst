@@ -142,9 +142,10 @@ Volume Explanation
   You can also move previously trained models to this directory to load them within the Docker container.
 - **./rasa-app-data/config**: This directory is for the configuration of the endpoints and of the
   different :ref:`connectors` you can use Rasa Core with.
-    - To connect other components with Rasa Core this directory should contain a file ``endpoints.yml``,
-      which specifies how to reach these components.
-      For the shown docker-compose example the file should look like this:
+
+  - To connect other components with Rasa Core this directory should contain a file ``endpoints.yml``,
+    which specifies how to reach these components.
+    For the shown docker-compose example the file should look like this:
 
         .. code-block:: yaml
 
@@ -153,10 +154,10 @@ Volume Explanation
             nlu:
                 url: 'http://rasa_nlu:5000'
 
-    - If you use connectors to :ref:`connectors`
-      you have to configure the required credentials for these in a file `credentials.yml`.
-      Use the provided credentials by adding :code:`--credentials <path to your credentials file>``
-      to the run command of Rasa Core.
+  - If you use connectors to :ref:`connectors`
+    you have to configure the required credentials for these in a file `credentials.yml`.
+    Use the provided credentials by adding :code:`--credentials <path to your credentials file>``
+    to the run command of Rasa Core.
 
 - **./rasa-app-data/project**: This directory contains your Rasa project and may be used to train a model.
 - **./rasa-app-data/models/**: This directory contains the nlu project and its trained models.
