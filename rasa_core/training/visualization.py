@@ -282,9 +282,9 @@ def _length_of_common_action_prefix(this, other):
             break
         elif e.type_name == "user" and o_cleaned[i].type_name == "user":
             continue
-        elif (e.type_name == "action"
-              and o_cleaned[i].type_name == "action"
-              and o_cleaned[i].action_name == e.action_name):
+        elif (e.type_name == "action" and
+              o_cleaned[i].type_name == "action" and
+              o_cleaned[i].action_name == e.action_name):
             num_common_actions += 1
         else:
             break
@@ -398,8 +398,8 @@ def visualize_neighborhood(
         # this can either be an ellipsis "...", the conversation end node
         # "END" or a "TMP" node if this is the active conversation
         if is_current:
-            if (isinstance(events[idx], ActionExecuted)
-                    and events[idx].action_name == ACTION_LISTEN_NAME):
+            if (isinstance(events[idx], ActionExecuted) and
+                    events[idx].action_name == ACTION_LISTEN_NAME):
                 next_node_idx += 1
                 graph.add_node(next_node_idx,
                                label=message or "  ?  ",

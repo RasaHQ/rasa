@@ -119,5 +119,6 @@ setup(
 )
 
 print("\nWelcome to Rasa Core!")
-print("If any questions please visit documentation page https://rasa.com/docs/core")
+print("If any questions please visit documentation "
+      "page https://rasa.com/docs/core")
 print("or join the community discussions on https://forum.rasa.com")
