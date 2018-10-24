@@ -17,16 +17,16 @@ from rasa_core.channels.socketio import SocketIOInput
 
 pass
 
-from rasa_core.channels.botframework import BotFrameworkInput
-from rasa_core.channels.callback import CallbackInput
-from rasa_core.channels.console import CmdlineInput
-from rasa_core.channels.facebook import FacebookInput
-from rasa_core.channels.mattermost import MattermostInput
-from rasa_core.channels.rasa_chat import RasaChatInput
-from rasa_core.channels.rocketchat import RocketChatInput
-from rasa_core.channels.slack import SlackInput
-from rasa_core.channels.telegram import TelegramInput
-from rasa_core.channels.twilio import TwilioInput
+from rasa_core.channels.botframework import BotFrameworkInput  # nopep8
+from rasa_core.channels.callback import CallbackInput  # nopep8
+from rasa_core.channels.console import CmdlineInput  # nopep8
+from rasa_core.channels.facebook import FacebookInput  # nopep8
+from rasa_core.channels.mattermost import MattermostInput  # nopep8
+from rasa_core.channels.rasa_chat import RasaChatInput  # nopep8
+from rasa_core.channels.rocketchat import RocketChatInput  # nopep8
+from rasa_core.channels.slack import SlackInput  # nopep8
+from rasa_core.channels.telegram import TelegramInput  # nopep8
+from rasa_core.channels.twilio import TwilioInput  # nopep8
 
 input_channel_classes = [
     CmdlineInput, FacebookInput, SlackInput, TelegramInput, MattermostInput,
