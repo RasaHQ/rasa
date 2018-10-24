@@ -175,7 +175,36 @@ class WronglyPredictedAction(ActionExecuted):
                                                     self.predicted_action)
 
 
-class WronglyClassifiedUserUtterance(UserUttered):
+class EndToEndEvent(UserUttered):
+    def _deserialise_entities(self, entities):
+        if isinstance(entities, str):
+            entities = json.loads(entities)
+
+        return [e for e in entities if isinstance(e, dict)]
+
+    def _md_format_message(self, text, intent, entities):
+        message_from_md = MarkdownReader()._parse_training_example(text)
+        deserialised_entities = self._deserialise_entities(entities)
+        return MarkdownWriter()._generate_message_md(
+                {"text": message_from_md.text,
+                 "intent": intent,
+                 "entities": deserialised_entities}
+        )
+
+
+class EndToEndUserUtterance(EndToEndEvent):
+    """End-to-end user utterance.
+
+    Mostly used to print the full end-to-end user message in the
+    `failed_stories.md` output file."""
+
+    def as_story_string(self):
+        message = self._md_format_message(self.text, self.intent,
+                                          self.entities)
+        return "{}: {}".format(self.intent.get("name"), message)
+
+
+class WronglyClassifiedUserUtterance(EndToEndEvent):
     """The NLU model predicted the wrong user utterance.
 
     Mostly used to mark wrong predictions and be able to
@@ -197,21 +226,6 @@ class WronglyClassifiedUserUtterance(UserUttered):
         self.predicted_entities = predicted_entities
         super(WronglyClassifiedUserUtterance, self).__init__(
                 text, {"name": self.correct_intent}, timestamp=timestamp)
-
-    def _deserialise_entities(self, entities):
-        if isinstance(entities, str):
-            entities = json.loads(entities)
-
-        return [e for e in entities if isinstance(e, dict)]
-
-    def _md_format_message(self, text, intent, entities):
-        message_from_md = MarkdownReader()._parse_training_example(text)
-        deserialised_entities = self._deserialise_entities(entities)
-        return MarkdownWriter()._generate_message_md(
-                {"text": message_from_md.text,
-                 "intent": intent,
-                 "entities": deserialised_entities}
-        )
 
     def as_story_string(self):
         correct_message = self._md_format_message(self.text,
@@ -284,7 +298,11 @@ def _collect_user_uttered_predictions(event,
                     "NLU model predicted a wrong intent. Failed Story:"
                     " \n\n{}".format(partial_tracker.export_stories()))
     else:
-        partial_tracker.update(event)
+        print("had before", event.as_story_string())
+        end_to_end_user_utterance = EndToEndUserUtterance(
+                event.text, event.intent, event.entities)
+        print("have this", end_to_end_user_utterance.as_story_string())
+        partial_tracker.update(end_to_end_user_utterance)
 
     return user_uttered_eval_store
 
