@@ -54,11 +54,12 @@ MAX_VISUAL_HISTORY = 3
 
 PATHS = {"stories": "data/stories.md",
          "nlu": "data/nlu.md",
-         "backup": "data/nlu_interactive.md"}
+         "backup": "data/nlu_interactive.md",
+          "domain": "domain.yml"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
-
+OTHER_ACTION = uuid.uuid4().hex
 
 class RestartConversation(Exception):
     """Exception used to break out the flow and restart the conversation."""
@@ -402,8 +403,8 @@ def _request_intent_from_user(latest_message,
             predictions.append({"name": i, "confidence": 0.0})
 
     # convert intents to ui list and add <other> as a free text alternative
-    choices = (_selection_choices_from_intent_prediction(predictions) +
-               [{"name": "     <other>", "value": OTHER_INTENT}])
+    choices = ([{"name": "<create_new_intent>", "value": OTHER_INTENT}] + 
+                _selection_choices_from_intent_prediction(predictions))
 
     intent_name = _request_selection_from_intent_list(choices,
                                                       sender_id,
@@ -411,7 +412,7 @@ def _request_intent_from_user(latest_message,
 
     if intent_name == OTHER_INTENT:
         intent_name = _request_free_text_intent(sender_id, endpoint)
-
+        predictions.append({"name": intent_name, "confidence": 1.0})
     # returns the selected intent with the original probability value
     return next((x for x in predictions if x["name"] == intent_name), None)
 
@@ -576,7 +577,7 @@ def _ask_if_quit(sender_id, endpoint):
 
     if not answers or answers["abort"] == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        story_path, nlu_path = _request_export_info()
+        story_path, nlu_path, domain_path = _request_export_info()
 
         tracker = retrieve_tracker(endpoint, sender_id)
         evts = tracker.get("events", [])
@@ -653,13 +654,19 @@ def _request_export_info():
         "message": "Export NLU data to (if file exists, this "
                    "will merge learned data with previous training examples)",
         "default": PATHS["nlu"],
+        "validate": validate_path
+    }, {"name": "export domain",
+        "type": "input",
+        "message": "Export domain file to (if file exists, this "
+                   "will be overwritten)",
+        "default": PATHS["domain"],
         "validate": validate_path}]
 
     answers = prompt(questions)
     if not answers:
         sys.exit()
 
-    return answers["export stories"], answers["export nlu"]
+    return answers["export stories"], answers["export nlu"], answers["export domain"]
 
 
 def _split_conversation_at_restarts(evts):
@@ -699,6 +706,18 @@ def _collect_messages(evts):
             msgs.append(msg)
 
     return msgs
+
+def _collect_actions(evts):
+    # type: (List[Dict[Text, Any]]) -> List[Doct[Text, Any]]
+    """Collect all the actionexecuted events into a list"""
+
+    acts = []
+
+    for evt in evts:
+        if evt.get("event") == "action":
+            acts.append(evt)
+
+    return acts
 
 
 def _write_stories_to_file(export_story_path, evts):
