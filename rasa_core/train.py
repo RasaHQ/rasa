@@ -33,21 +33,15 @@ def create_argument_parser():
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-            '-s', '--stories',
-            type=str,
-            help="file or folder containing the training stories")
-    group.add_argument(
-            '--url',
-            type=str,
-            help="If supplied, downloads a story file from a URL and "
-                 "trains on it. Fetches the data by sending a GET request "
-                 "to the supplied URL.")
-    group.add_argument(
-            '--core',
-            default=None,
-            help="path to load a pre-trained model instead of training (for "
-                 "interactive mode only)")
+    
+    group = add_args_to_group(group)
+    parser = add_args_to_parser(parser)
+
+    utils.add_logging_option_arguments(parser)
+    return parser
+
+
+def add_args_to_parser(parser):
 
     parser.add_argument(
             '-o', '--out',
@@ -150,9 +144,27 @@ def create_argument_parser():
             required=False,
             help="Policy specification yaml file."
     )
-
-    utils.add_logging_option_arguments(parser)
     return parser
+
+
+def add_args_to_group(group):
+
+    group.add_argument(
+            '-s', '--stories',
+            type=str,
+            help="file or folder containing the training stories")
+    group.add_argument(
+            '--url',
+            type=str,
+            help="If supplied, downloads a story file from a URL and "
+                 "trains on it. Fetches the data by sending a GET request "
+                 "to the supplied URL.")
+    group.add_argument(
+            '--core',
+            default=None,
+            help="path to load a pre-trained model instead of training (for "
+                 "interactive mode only)")
+    return group
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
