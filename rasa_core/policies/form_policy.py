@@ -40,6 +40,15 @@ class FormPolicy(MemoizationPolicy):
                                          max_history=1,
                                          lookup=lookup)
 
+    @staticmethod
+    def _active_form_in(state):
+        return any(ACTIVE_FORM_PREFIX in k and v > 0 for k, v in state.items())
+
+    @staticmethod
+    def _prev_action_listen_in(state):
+        return any(PREV_PREFIX + ACTION_LISTEN_NAME in k and v > 0
+                   for k, v in state.items())
+
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
@@ -56,9 +65,8 @@ class FormPolicy(MemoizationPolicy):
 
         for states in trackers_as_states:
             state = states[0]
-            if (any(ACTIVE_FORM_PREFIX in k and v > 0 for k, v in state.items()) and
-                    any(PREV_PREFIX + ACTION_LISTEN_NAME in k and v > 0
-                        for k, v in state.items())):
+            if (self._active_form_in(state) and
+                    self._prev_action_listen_in(state)):
                 # by construction there is only one active form
                 form = [k[len(ACTIVE_FORM_PREFIX):]
                         for k, v in state.items()
