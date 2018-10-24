@@ -23,9 +23,7 @@ from rasa_core.policies import SimplePolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.utils import AvailableEndpoints, pad_list_to_size
-from rasa_nlu.evaluate import (
-    plot_confusion_matrix,
-    get_evaluation_metrics)
+from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 logger = logging.getLogger(__name__)
@@ -141,19 +139,35 @@ class EvaluationStore(object):
                self.entity_predictions != self.entity_targets or \
                self.action_predictions != self.action_targets
 
-    def serialise_targets(self):
-        targets = self.action_targets + \
-                  self.intent_targets + \
-                  self.entity_targets
+    def serialise_targets(self,
+                          include_actions=True,
+                          include_intents=True,
+                          include_entities=False):
+        targets = []
+        if include_actions:
+            targets += self.action_targets
+        if include_intents:
+            targets += self.intent_targets
+        if include_entities:
+            targets += self.entity_targets
+
         return [json.dumps(t) if isinstance(t, dict) else t for t in targets]
 
-    def serialise_predictions(self):
-        predictions = self.action_predictions + \
-                      self.intent_predictions + \
-                      self.entity_predictions
+    def serialise_predictions(self,
+                              include_actions=True,
+                              include_intents=True,
+                              include_entities=False):
+        predictions = []
 
-        return [json.dumps(p) if isinstance(p, dict) else p
-                for p in predictions]
+        if include_actions:
+            predictions += self.action_predictions
+        if include_intents:
+            predictions += self.intent_predictions
+        if include_entities:
+            predictions += self.entity_predictions
+
+        return [json.dumps(t) if isinstance(t, dict) else t
+                for t in predictions]
 
 
 class WronglyPredictedAction(ActionExecuted):
@@ -164,47 +178,45 @@ class WronglyPredictedAction(ActionExecuted):
 
     type_name = "wrong_action"
 
-    def __init__(self, correct_action, predicted_action, timestamp=None):
-        self.correct_action = correct_action
+    def __init__(self, correct_action, predicted_action):
         self.predicted_action = predicted_action
-        super(WronglyPredictedAction, self).__init__(correct_action,
-                                                     timestamp=timestamp)
+        super(WronglyPredictedAction, self).__init__(correct_action)
 
     def as_story_string(self):
-        return "{}   <!-- predicted: {} -->".format(self.correct_action,
+        return "{}   <!-- predicted: {} -->".format(self.action_name,
                                                     self.predicted_action)
 
 
-class EndToEndEvent(UserUttered):
-    def _deserialise_entities(self, entities):
-        if isinstance(entities, str):
-            entities = json.loads(entities)
+def _deserialise_entities(entities):
+    if isinstance(entities, str):
+        entities = json.loads(entities)
 
-        return [e for e in entities if isinstance(e, dict)]
-
-    def _md_format_message(self, text, intent, entities):
-        message_from_md = MarkdownReader()._parse_training_example(text)
-        deserialised_entities = self._deserialise_entities(entities)
-        return MarkdownWriter()._generate_message_md(
-                {"text": message_from_md.text,
-                 "intent": intent,
-                 "entities": deserialised_entities}
-        )
+    return [e for e in entities if isinstance(e, dict)]
 
 
-class EndToEndUserUtterance(EndToEndEvent):
+def _md_format_message(text, intent, entities):
+    message_from_md = MarkdownReader()._parse_training_example(text)
+    deserialised_entities = _deserialise_entities(entities)
+    return MarkdownWriter()._generate_message_md(
+            {"text": message_from_md.text,
+             "intent": intent,
+             "entities": deserialised_entities}
+    )
+
+
+class EndToEndUserUtterance(UserUttered):
     """End-to-end user utterance.
 
     Mostly used to print the full end-to-end user message in the
     `failed_stories.md` output file."""
 
     def as_story_string(self):
-        message = self._md_format_message(self.text, self.intent,
-                                          self.entities)
+        message = _md_format_message(self.text, self.intent,
+                                     self.entities)
         return "{}: {}".format(self.intent.get("name"), message)
 
 
-class WronglyClassifiedUserUtterance(EndToEndEvent):
+class WronglyClassifiedUserUtterance(UserUttered):
     """The NLU model predicted the wrong user utterance.
 
     Mostly used to mark wrong predictions and be able to
@@ -215,27 +227,26 @@ class WronglyClassifiedUserUtterance(EndToEndEvent):
     def __init__(self,
                  text,
                  correct_intent,
-                 predicted_intent,
-                 correct_entities=None,
-                 predicted_entities=None,
-                 timestamp=None):
-        self.text = text
-        self.correct_intent = correct_intent
+                 correct_entities,
+                 predicted_intent=None,
+                 predicted_entities=None):
         self.predicted_intent = predicted_intent
-        self.correct_entities = correct_entities
         self.predicted_entities = predicted_entities
+
+        intent = {"name": correct_intent}
+
         super(WronglyClassifiedUserUtterance, self).__init__(
-                text, {"name": self.correct_intent}, timestamp=timestamp)
+                text, intent, correct_entities)
 
     def as_story_string(self):
-        correct_message = self._md_format_message(self.text,
-                                                  self.correct_intent,
-                                                  self.correct_entities)
-        predicted_message = self._md_format_message(self.text,
-                                                    self.predicted_intent,
-                                                    self.predicted_entities)
+        correct_message = _md_format_message(self.text,
+                                             self.intent,
+                                             self.entities)
+        predicted_message = _md_format_message(self.text,
+                                               self.predicted_intent,
+                                               self.predicted_entities)
         return ("{}: {}   <!-- predicted: {}: {} -->"
-                "").format(self.correct_intent,
+                "").format(self.intent.get("name"),
                            correct_message,
                            self.predicted_intent,
                            predicted_message)
@@ -289,19 +300,18 @@ def _collect_user_uttered_predictions(event,
     if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
                 WronglyClassifiedUserUtterance(
-                        event.text, intent_gold, predicted_intent,
-                        user_uttered_eval_store.entity_targets,
-                        user_uttered_eval_store.entity_predictions)
+                        event.text, intent_gold,
+                        user_uttered_eval_store.entity_predictions,
+                        predicted_intent,
+                        user_uttered_eval_store.entity_targets)
         )
         if fail_on_prediction_errors:
             raise ValueError(
                     "NLU model predicted a wrong intent. Failed Story:"
                     " \n\n{}".format(partial_tracker.export_stories()))
     else:
-        print("had before", event.as_story_string())
         end_to_end_user_utterance = EndToEndUserUtterance(
                 event.text, event.intent, event.entities)
-        print("have this", end_to_end_user_utterance.as_story_string())
         partial_tracker.update(end_to_end_user_utterance)
 
     return user_uttered_eval_store
