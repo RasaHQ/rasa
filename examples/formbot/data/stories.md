@@ -106,7 +106,7 @@
 * thank
     - utter_noworries
 
-## stop and really stop path
+## chitchat, stop and really stop path
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
