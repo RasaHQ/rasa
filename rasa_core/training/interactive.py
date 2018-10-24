@@ -152,8 +152,7 @@ def send_action(endpoint, sender_id, action_name):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
-    payload = {"action": action_name, "policy": policy,
-               "confidence": confidence}
+    payload = {"action": action_name}
     subpath = "/conversations/{}/execute".format(sender_id)
 
     try:
