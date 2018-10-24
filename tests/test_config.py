@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import glob
 import pytest
 
+from data.test_config.example_policy import ExamplePolicy
 from rasa_core.config import load, handle_precedence_and_defaults
 from rasa_core.policies.memoization import MemoizationPolicy
 
