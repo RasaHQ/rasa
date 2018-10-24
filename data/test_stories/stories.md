@@ -19,7 +19,7 @@
     - utter_default
 * goodbye
     - utter_goodbye
-> check_goodbye        
+> check_goodbye
 
 ## why does the user want to leave?
 > check_goodbye

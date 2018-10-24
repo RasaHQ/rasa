@@ -90,7 +90,7 @@ def requires_auth(app, token=None):
             jwt_data = view_decorators._decode_jwt_from_headers()
             user = jwt_data.get("user", {})
 
-            username = user.get("user", None)
+            username = user.get("username", None)
             role = user.get("role", None)
 
             if role == "admin":
@@ -389,7 +389,7 @@ def create_app(agent,
             message = request_params["message"]
         except KeyError:
             message = request_params.get("text")
-            
+
         sender = request_params.get("sender")
         parse_data = request_params.get("parse_data")
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)

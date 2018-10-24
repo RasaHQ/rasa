@@ -63,3 +63,10 @@ def test_regex_interpreter():
     assert len(result['entities']) == 1
     assert result["entities"][0]["entity"] == "foo"
     assert result["entities"][0]["value"] == "bar"
+
+
+def test_regex_interpreter_adds_intent_prefix():
+    interpreter = RegexInterpreter()
+    r = interpreter.parse('mood_greet{"name": "rasa"}')
+
+    assert r.get("text") == '/mood_greet{"name": "rasa"}'
