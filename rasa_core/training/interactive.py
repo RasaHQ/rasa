@@ -169,10 +169,9 @@ def send_action(endpoint, sender_id, action_name):
                            "If this is a custom action which returns events, "
                            "you are recommended to implement this action in your "
                            "action server and try again.".format(action_name))
+            #  TODO add policy and confidence back in once #1013 merged
             payload = {"event": "action",
                        "name": action_name,
-                       "policy": policy,
-                       "confidence": confidence,
                        "timestamp": None}
             subpath = "/conversations/{}/tracker/events".format(sender_id)
             r = endpoint.request(json=payload,
