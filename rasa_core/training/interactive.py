@@ -148,7 +148,7 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint, sender_id, action_name):
+def send_action(endpoint, sender_id, action_name, is_new=False):
     # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
@@ -316,6 +316,18 @@ def _request_free_text_intent(sender_id, endpoint):
     ]
     answers = _ask_questions(questions, sender_id, endpoint)
     return answers["intent"]
+
+def _request_free_text_action(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> Text
+    questions = [
+        {
+            "type": "input",
+            "name": "action",
+            "message": "Please type the action name",
+        }
+    ]
+    answers = _ask_questions(questions, sender_id, endpoint)
+    return answers["action"]
 
 
 def _request_selection_from_intent_list(intent_list, sender_id, endpoint):
@@ -600,7 +612,7 @@ def _request_action_from_user(predictions, sender_id, endpoint):
                                                 a.get("action")),
                 "value": a.get("action")}
                for a in sorted_actions]
-
+    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
     questions = [{
         "name": "action",
         "type": "list",
@@ -609,8 +621,12 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     }]
     answers = _ask_questions(questions, sender_id, endpoint)
     action_name = answers["action"]
+    is_new = False
+    if action_name == OTHER_ACTION:
+        is_new = True
+        action_name = _request_free_text_action(sender_id, endpoint)
     print("Thanks! The bot will now run {}.\n".format(action_name))
-    return action_name
+    return action_name, is_new
 
 
 def _request_export_info():
@@ -802,14 +818,16 @@ def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
 def _correct_wrong_action(corrected_action,  # type: Text
                           endpoint,  # type: EndpointConfig
                           sender_id,  # type: Text
-                          finetune=False  # type: bool
+                          finetune=False,  # type: bool
+                          is_new=False  # type: bool
                           ):
     # type: (...) -> None
     """A wrong action prediction got corrected, update core's tracker."""
 
     response = send_action(endpoint,
                            sender_id,
-                           corrected_action)
+                           corrected_action,
+                           is_new=is_new)
 
     if finetune:
         send_finetune(endpoint,
@@ -837,10 +855,10 @@ def _validate_action(action_name,  # type: Text
     ]
     answers = _ask_questions(questions, sender_id, endpoint)
     if not answers["action"]:
-        corrected_action = _request_action_from_user(predictions, sender_id,
+        corrected_action, is_new = _request_action_from_user(predictions, sender_id,
                                                      endpoint)
         _correct_wrong_action(corrected_action, endpoint, sender_id,
-                              finetune=finetune)
+                              finetune=finetune, is_new=is_new)
         return corrected_action == ACTION_LISTEN_NAME
     else:
         send_action(endpoint, sender_id, action_name)
