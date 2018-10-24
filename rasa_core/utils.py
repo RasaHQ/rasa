@@ -357,7 +357,6 @@ def _dump_yaml(obj, output):
         yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
         yaml_writer.unicode_supplementary = True
         yaml_writer.default_flow_style = False
-        yaml_writer.indent(mapping=2, sequence=2, offset=2)
         yaml_writer.version = "1.1"
 
         yaml_writer.dump(obj, output)
