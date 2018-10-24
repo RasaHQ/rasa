@@ -17,7 +17,7 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     stories_path = tmpdir.join("failed_stories.md").strpath
     img_path = tmpdir.join("evaluation.png").strpath
 
-    _ = run_story_evaluation(
+    run_story_evaluation(
             resource_name=DEFAULT_STORIES_FILE,
             agent=default_agent,
             out_file_plot=img_path,

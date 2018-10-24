@@ -19,6 +19,7 @@ from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.policies import SimplePolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.utils import AvailableEndpoints, pad_list_to_size
@@ -312,11 +313,8 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     return action_executed_eval_store, policy
 
 
-def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
-                             use_e2e=False):
+def _is_in_training_data(tracker, agent, fail_on_prediction_errors=False):
     processor = agent.create_processor()
-
-    tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
 
@@ -329,16 +327,45 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action_executed_result, policy = \
+            _, policy = \
                 _collect_action_executed_predictions(
                         processor, partial_tracker, event,
                         fail_on_prediction_errors
                 )
             if (test_in_training_data and
                     policy is not None and
-                    "Memoization" not in policy):
+                    SimplePolicyEnsemble.is_not_memo_policy(policy)):
                 in_training_data = False
                 test_in_training_data = False
+
+    return in_training_data
+
+
+def _in_training_data_fraction(in_training_data_list):
+    try:
+        return sum(in_training_data_list) / len(in_training_data_list)
+    except ZeroDivisionError:
+        return 0
+
+
+def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
+                             use_e2e=False):
+    processor = agent.create_processor()
+    tracker_eval_store = EvaluationStore()
+
+    events = list(tracker.events)
+
+    partial_tracker = DialogueStateTracker.from_events(tracker.sender_id,
+                                                       events[:1],
+                                                       agent.domain.slots)
+
+    for event in events[1:]:
+        if isinstance(event, ActionExecuted):
+            action_executed_result, policy = \
+                _collect_action_executed_predictions(
+                        processor, partial_tracker, event,
+                        fail_on_prediction_errors
+                )
             tracker_eval_store.merge_store(action_executed_result)
         elif use_e2e and isinstance(event, UserUttered):
             user_uttered_result = \
@@ -349,7 +376,7 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
         else:
             partial_tracker.update(event)
 
-    return tracker_eval_store, partial_tracker, in_training_data
+    return tracker_eval_store, partial_tracker
 
 
 def collect_story_predictions(
@@ -368,14 +395,17 @@ def collect_story_predictions(
     logger.info("Evaluating {} stories\n"
                 "Progress:".format(len(completed_trackers)))
 
-    story_in_training_data = []
+    is_in_training_data_list = []
 
     for tracker in tqdm(completed_trackers):
-        tracker_results, predicted_tracker, in_training_data = \
+        tracker_results, predicted_tracker = \
             _predict_tracker_actions(tracker, agent,
                                      fail_on_prediction_errors, use_e2e)
 
-        story_in_training_data.append(int(in_training_data))
+        is_in_training_data = _is_in_training_data(tracker, agent,
+                                                   fail_on_prediction_errors)
+
+        is_in_training_data_list.append(int(is_in_training_data))
         story_eval_store.merge_store(tracker_results)
 
         if tracker_results.has_prediction_target_mismatch():
@@ -389,19 +419,16 @@ def collect_story_predictions(
     report, precision, f1, accuracy = get_evaluation_metrics(
             [1] * len(completed_trackers), correct_dialogues)
 
-    try:
-        fraction_of_stories_in_training_data = \
-            sum(story_in_training_data) / len(story_in_training_data)
-    except ZeroDivisionError:
-        fraction_of_stories_in_training_data = 0.
+    in_training_data_fraction = \
+        _in_training_data_fraction(is_in_training_data_list)
 
     log_evaluation_table([1] * len(completed_trackers),
                          "END-TO-END" if use_e2e else "CONVERSATION",
                          report, precision, f1, accuracy,
-                         fraction_of_stories_in_training_data,
+                         in_training_data_fraction,
                          include_report=False)
 
-    return story_eval_store, failed, fraction_of_stories_in_training_data
+    return story_eval_store, failed, in_training_data_fraction
 
 
 def log_failed_stories(failed, failed_output):
@@ -453,7 +480,8 @@ def run_story_evaluation(resource_name, agent,
         "precision": precision,
         "f1": f1,
         "accuracy": accuracy,
-        "in_training_data_fraction": in_training_data
+        "in_training_data_fraction": in_training_data,
+        "is_end_to_end_evaluation": use_e2e
     }
 
 

@@ -120,8 +120,9 @@ to post stories to the server for evaluation is this:
 
   $ curl --data-binary @eval_stories.md "localhost:5005/evaluate" | python -m json.tool
 
-If you would like to evaluate end-to-end stories, you may do so by adding the
-``e2e=true`` query parameter:
+If you would like to evaluate end-to-end stories
+(:ref:`docs <end_to_end_evaluation>`),
+you may do so by adding the ``e2e=true`` query parameter:
 
 .. code-block:: bash
 
