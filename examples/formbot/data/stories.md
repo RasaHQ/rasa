@@ -13,12 +13,15 @@
     - form{"name": "restaurant_form"}
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
@@ -54,6 +57,7 @@
     - form{"name": "restaurant_form"}
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
 * stop
     - utter_ask_continue
@@ -74,6 +78,7 @@
     - restaurant_form
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
@@ -86,6 +91,7 @@
     - form{"name": "restaurant_form"}
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
 * stop
     - utter_ask_continue
@@ -93,6 +99,7 @@
     - restaurant_form
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
@@ -105,6 +112,7 @@
     - form{"name": "restaurant_form"}
 * chitchat
     - utter_chitchat
+    - action_listen
     - restaurant_form
 * stop
     - utter_ask_continue
@@ -119,11 +127,10 @@
     - slot{"requested_slot": "cuisine"}
 * chitchat
     - utter_chitchat
-    - restaurant_form
-    - slot{"requested_slot": "cuisine"}
+    - action_listen
 * form: inform{"cuisine": "mexican"}
     - slot{"cuisine": "mexican"}
-    - form: restaurant_form
+    - restaurant_form
     - slot{"cuisine": "mexican"}
     - slot{"requested_slot": "num_people"}
 * form: inform{"number": "2"}
@@ -132,10 +139,9 @@
     - slot{"requested_slot": "outdoor_seating"}
 * chitchat
     - utter_chitchat
-    - restaurant_form
-    - slot{"requested_slot": "outdoor_seating"}
+    - action_listen
 * form: affirm
-    - form: restaurant_form
+    - restaurant_form
     - slot{"outdoor_seating": true}
     - slot{"requested_slot": "preferences"}
 * form: rubbish

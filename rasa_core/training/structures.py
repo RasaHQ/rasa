@@ -106,18 +106,8 @@ class StoryStep(object):
     def add_user_message(self, user_message):
         self.add_event(user_message)
 
-    @staticmethod
-    def _is_action_listen(event):
-        # this is not an isinstance because we don't want to allow subclasses
-        # here
-        return (type(event) == ActionExecuted and
-                event.action_name == ACTION_LISTEN_NAME)
-
     def add_event(self, event):
-        # stories never contain the action listen events they are implicit
-        # and added after a story is read and converted to a dialogue
-        if not self._is_action_listen(event):
-            self.events.append(event)
+        self.events.append(event)
 
     @staticmethod
     def _checkpoint_string(story_step_element):
@@ -251,6 +241,18 @@ class StoryStep(object):
                 result += "> {}\n".format(e.as_story_string())
         return result
 
+    @staticmethod
+    def _is_action_listen(event):
+        # this is not an `isinstance` because
+        # we don't want to allow subclasses here
+        return (type(event) == ActionExecuted and
+                event.action_name == ACTION_LISTEN_NAME)
+
+    def _add_action_listen_to(self, events):
+        if not events or not self._is_action_listen(events[-1]):
+            # do not add second action_listen
+            events.append(ActionExecuted(ACTION_LISTEN_NAME))
+
     def explicit_events(self, domain, should_append_final_listen=True):
         # type: (Domain, bool) -> List[Event]
         """Returns events contained in the story step including implicit events.
@@ -264,14 +266,15 @@ class StoryStep(object):
 
         for e in self.events:
             if isinstance(e, UserUttered):
-                events.append(ActionExecuted(ACTION_LISTEN_NAME))
+                self._add_action_listen_to(events)
                 events.append(e)
                 events.extend(domain.slots_for_entities(e.entities))
             else:
                 events.append(e)
 
         if not self.end_checkpoints and should_append_final_listen:
-            events.append(ActionExecuted(ACTION_LISTEN_NAME))
+            self._add_action_listen_to(events)
+
         return events
 
     def __repr__(self):

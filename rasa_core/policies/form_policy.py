@@ -10,11 +10,12 @@ from typing import Any, List, Optional, Dict
 
 from rasa_core.constants import FORM_SCORE
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.events import ActionExecuted, ActionExecutionRejected
+from rasa_core.events import (ActionExecuted,
+                              ActionExecutionRejected,
+                              NoFormValidation)
 
 from rasa_core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX
-from rasa_core.actions.action import (ACTION_LISTEN_NAME,
-                                      ACTION_NO_FORM_VALIDATION_NAME)
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -66,6 +67,7 @@ class FormPolicy(MemoizationPolicy):
                 feature_key = self._create_feature_key(states)
                 # even if there are two identical feature keys
                 # their form will be the same
+                # because of `active_form_...` feature
                 self.lookup[feature_key] = form
 
     @staticmethod
@@ -79,19 +81,6 @@ class FormPolicy(MemoizationPolicy):
             elif (isinstance(event, ActionExecutionRejected) and
                     event.action_name == tracker.active_form):
                 return True
-
-        return False
-
-    @staticmethod
-    def _predicted_no_validation(tracker):
-        # type: (DialogueStateTracker) -> bool
-        """Check whether previous call to the form was rejected"""
-        for event in reversed(tracker.events):
-            if isinstance(event, ActionExecuted):
-                if event.action_name == ACTION_NO_FORM_VALIDATION_NAME:
-                    return True
-
-                break
 
         return False
 
@@ -116,19 +105,14 @@ class FormPolicy(MemoizationPolicy):
                     memorized_form = self._recall_states(states)
 
                     if memorized_form == tracker.active_form:
-                        if not self._predicted_no_validation(tracker):
-                            # predict no form validation action to notify
-                            # the form that it should not validate user input
-                            logger.debug("There is a tracker state {}".format(states))
-                            idx = domain.index_for_action(
-                                    ACTION_NO_FORM_VALIDATION_NAME)
-                            result[idx] = FORM_SCORE
-                    else:
-                        idx = domain.index_for_action(tracker.active_form)
-                        result[idx] = FORM_SCORE
-                else:
-                    idx = domain.index_for_action(tracker.active_form)
-                    result[idx] = FORM_SCORE
+                        logger.debug("There is a memorized tracker state {}, "
+                                     "added `NoFormValidation` event"
+                                     "".format(states))
+                        tracker.update(NoFormValidation())
+                        return result
+
+                idx = domain.index_for_action(tracker.active_form)
+                result[idx] = FORM_SCORE
 
             elif tracker.latest_action_name == tracker.active_form:
                 # predict action_listen after form action
@@ -138,21 +122,3 @@ class FormPolicy(MemoizationPolicy):
             logger.debug("There is no active form")
 
         return result
-
-    # def persist(self, path):
-    #     # type: (Text) -> None
-    #     """Persists the policy to storage."""
-    #
-    #     self.featurizer.persist(path)
-    #
-    #     memorized_file = os.path.join(path, 'memorized_turns.json')
-    #     data = {
-    #         "lookup": self.lookup
-    #     }
-    #     utils.create_dir_for_file(memorized_file)
-    #     utils.dump_obj_as_json_to_file(memorized_file, data)
-    #
-    # @classmethod
-    # def load(cls, path):
-    #     # type: (Text) -> FormPolicy
-    #     return cls()
