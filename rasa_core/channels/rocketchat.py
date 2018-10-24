@@ -65,7 +65,9 @@ class RocketChatBot(OutputChannel):
                                              attachments=button_attachment)
 
     def send_custom_message(self, recipient_id, elements):
-        return self.rocket.chat_post_message(None, room_id=recipient_id, attachments=elements)
+        return self.rocket.chat_post_message(None,
+                                             room_id=recipient_id,
+                                             attachments=elements)
 
 
 class RocketChatInput(InputChannel):
@@ -114,12 +116,10 @@ class RocketChatInput(InputChannel):
                 output = request.json
 
                 if "visitor" not in output:
-                    sender_id = output.get("user_id", None)
                     sender_name = output.get("user_name", None)
                     text = output.get("text", None)
                     recipient_id = output.get("channel_id", None)
                 else:
-                    sender_id = output.get("visitor", None).get("_id", None)
                     messages_list = output.get("messages", None)
                     text = messages_list[0].get("msg", None)
                     sender_name = messages_list[0].get("username", None)
