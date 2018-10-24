@@ -455,7 +455,7 @@ def create_app(agent,
     def evaluate_stories():
         """Evaluate stories against the currently loaded model."""
         tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
-                                                   mode='w+b')
+                                                        mode='w+b')
         use_e2e = utils.bool_arg('e2e', default=False)
         try:
             evaluation = run_story_evaluation(tmp_file, agent, use_e2e=use_e2e)
