@@ -26,6 +26,7 @@ def load(config_file, fallback_args, max_history):
 
     return PolicyEnsemble.from_dict(config_data)
 
+
 def handle_precedence_and_defaults(config_data, fallback_args, max_history):
     # type: Dict[Text, Any] -> Dict[Text, Any]
 
@@ -39,6 +40,7 @@ def handle_precedence_and_defaults(config_data, fallback_args, max_history):
 
     return config_data
 
+
 def set_arg(data_dict, argument, value, default):
 
     if value is not None:
@@ -47,6 +49,7 @@ def set_arg(data_dict, argument, value, default):
         data_dict[argument] = default
 
     return data_dict
+
 
 def set_fallback_args(policy, fallback_args):
 

@@ -30,7 +30,9 @@ def test_handle_precedence_and_defaults_for_config():
                             config_data, fallback_args, None)
     assert new_config_data == expected_config_data
 
-@pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))
+
+@pytest.mark.parametrize("filename", glob.glob(
+            "data/test_config/example_config.yaml"))
 def test_load_config(filename):
     loaded = load(filename, None, None)
     assert len(loaded) == 2
