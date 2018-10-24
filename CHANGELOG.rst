@@ -21,6 +21,7 @@ Changed
 
 Removed
 -------
+- ``/config`` endpoint #1132
 
 Fixed
 -----
