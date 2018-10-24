@@ -255,7 +255,8 @@ class StoryStep(object):
 
     def explicit_events(self, domain, should_append_final_listen=True):
         # type: (Domain, bool) -> List[Event]
-        """Returns events contained in the story step including implicit events.
+        """Returns events contained in the story step
+            including implicit events.
 
         Not all events are always listed in the story dsl. This
         includes listen actions as well as implicitly
