@@ -231,7 +231,7 @@ if __name__ == '__main__':
             raise ValueError("--core can only be used together with the"
                              "--interactive flag and without --finetune flag.")
         else:
-            logger.info("loading a pre-trained model. ",
+            logger.info("loading a pre-trained model. "
                         "all training-related parameters will be ignored")
         _agent = Agent.load(cmdline_args.core,
                             interpreter=_interpreter,
