@@ -55,11 +55,12 @@ MAX_VISUAL_HISTORY = 3
 PATHS = {"stories": "data/stories.md",
          "nlu": "data/nlu.md",
          "backup": "data/nlu_interactive.md",
-          "domain": "domain.yml"}
+         "domain": "domain.yml"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
+
 
 class RestartConversation(Exception):
     """Exception used to break out the flow and restart the conversation."""
@@ -168,16 +169,17 @@ def send_action(endpoint, sender_id, action_name, is_new=False):
                            "If this action does not return any events, "
                            "you do not need to do anything. \n"
                            "If this is a custom action which returns events, "
-                           "you are recommended to implement this action in your "
-                           "action server and try again.".format(action_name))
+                           "you are recommended to implement this action "
+                           "in your action server and try again."
+                           "".format(action_name))
             #  TODO add policy and confidence back in once #1013 merged
             payload = {"event": "action",
                        "name": action_name,
                        "timestamp": None}
             subpath = "/conversations/{}/tracker/events".format(sender_id)
             r = endpoint.request(json=payload,
-                             method="post",
-                             subpath=subpath)
+                                 method="post",
+                                 subpath=subpath)
             return _response_as_json(r)
         else:
             logger.error("failed to execute action!")
@@ -318,6 +320,7 @@ def _request_free_text_intent(sender_id, endpoint):
     answers = _ask_questions(questions, sender_id, endpoint)
     return answers["intent"]
 
+
 def _request_free_text_action(sender_id, endpoint):
     # type: (Text, EndpointConfig) -> Text
     questions = [
@@ -403,8 +406,8 @@ def _request_intent_from_user(latest_message,
             predictions.append({"name": i, "confidence": 0.0})
 
     # convert intents to ui list and add <other> as a free text alternative
-    choices = ([{"name": "<create_new_intent>", "value": OTHER_INTENT}] + 
-                _selection_choices_from_intent_prediction(predictions))
+    choices = ([{"name": "<create_new_intent>", "value": OTHER_INTENT}] +
+               _selection_choices_from_intent_prediction(predictions))
 
     intent_name = _request_selection_from_intent_list(choices,
                                                       sender_id,
@@ -649,13 +652,15 @@ def _request_export_info():
                    "will append the stories)",
         "default": PATHS["stories"],
         "validate": validate_path
-    }, {"name": "export nlu",
+    }, {
+        "name": "export nlu",
         "type": "input",
         "message": "Export NLU data to (if file exists, this "
                    "will merge learned data with previous training examples)",
         "default": PATHS["nlu"],
         "validate": validate_path
-    }, {"name": "export domain",
+    }, {
+        "name": "export domain",
         "type": "input",
         "message": "Export domain file to (if file exists, this "
                    "will be overwritten)",
@@ -666,7 +671,9 @@ def _request_export_info():
     if not answers:
         sys.exit()
 
-    return answers["export stories"], answers["export nlu"], answers["export domain"]
+    return answers["export stories"], \
+        answers["export nlu"], \
+        answers["export domain"]
 
 
 def _split_conversation_at_restarts(evts):
@@ -706,6 +713,7 @@ def _collect_messages(evts):
             msgs.append(msg)
 
     return msgs
+
 
 def _collect_actions(evts):
     # type: (List[Dict[Text, Any]]) -> List[Doct[Text, Any]]
@@ -764,6 +772,7 @@ def _write_nlu_to_file(export_nlu_path, evts):
         else:
             f.write(nlu_data.as_json())
 
+
 def _write_domain_to_file(domain_path, evts, endpoint):
     # type: (Text, List[Dict[Text, Any]], EndpointConfig) -> None
     """Write an updated domain file to the file path."""
@@ -775,10 +784,12 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     found_intents = set(m.data["intent"] for m in msgs)
     spec_intents = [list(i.keys())[0] for i in spec["intents"]]
     for name in found_intents:
-        if not name in spec_intents:
+        if name not in spec_intents:
             spec["intents"].append({name: {"use_entities": True}})
 
-    found_entities = [e["entity"] for m in msgs for e in m.data.get("entities", []) ]
+    found_entities = [e["entity"]
+                      for m in msgs
+                      for e in m.data.get("entities", [])]
     spec["entities"] = list(set(found_entities + spec["entities"]))
 
     found_actions = [e["name"] for e in acts]
@@ -874,8 +885,10 @@ def _validate_action(action_name,  # type: Text
     ]
     answers = _ask_questions(questions, sender_id, endpoint)
     if not answers["action"]:
-        corrected_action, is_new = _request_action_from_user(predictions, sender_id,
-                                                     endpoint)
+        corrected_action, is_new = _request_action_from_user(
+            predictions,
+            sender_id,
+            endpoint)
         _correct_wrong_action(corrected_action, endpoint, sender_id,
                               finetune=finetune, is_new=is_new)
         return corrected_action == ACTION_LISTEN_NAME

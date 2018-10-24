@@ -481,7 +481,7 @@ class Domain(object):
 
         for idx, intent_info in enumerate(data["intents"]):
             for name, intent in intent_info.items():
-                if intent.get("use_entities") == True:
+                if intent.get("use_entities"):
                     data["intents"][idx] = name
 
         for name, slot in data["slots"].items():
