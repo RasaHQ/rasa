@@ -14,18 +14,28 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 Added
 -----
 - openapi documentation of server API
-- NLU data learned through interactive learning will now be stored in a separate markdown-format file (any previous NLU
-  data is merged)
-- Command line interface for interactive learning now displays policy confidence alongside the action name
+- NLU data learned through interactive learning will now be stored in a
+  separate markdown-format file (any previous NLU data is merged)
+- Command line interface for interactive learning now displays policy
+  confidence alongside the action name
 - added action prediction confidence & policy to ``ActionExecuted`` event
-- both the date and the time at which a model was trained are now included in the policy's metadata when it is persisted
-- the Core policy configuration can now be set in a config.yaml file. This makes training custom policies possible.
+- the Core policy configuration can now be set in a config.yaml file. 
+  This makes training custom policies possible.
+- both the date and the time at which a model was trained are now
+  included in the policy's metadata when it is persisted
+- show visualization of conversation while doing interactive learning
+- option for end-to-end evaluation of Rasa Core and NLU examples in
+  ``evaluate.py`` script
+- docker-compose file to start a rasa core server together with nlu, an action server, and duckling
 
 Changed
 -------
 - improved response format for ``/predict`` endpoint
 - all error messages from the server are now in json format
 - ``agent.log_message`` now returns a tracker instead of the trackers state
+- the core container does not load the nlu model by default anymore.
+  Instead it can be connected to a nlu server.
+
 
 Removed
 -------
@@ -38,7 +48,12 @@ Fixed
 - use utf8 everywhere when handling file IO
 - argument ``--connector`` on run script accepts custom channel module names
 - properly handle non ascii categorical slot values, e.g. ``大于100亿元``
-- fixed HTTP server attempting to authenticate based on incorrect path to the correct JWT data field
+- fixed HTTP server attempting to authenticate based on incorrect path to
+  the correct JWT data field
+- all sender ids from channels are now handled as `str`.
+  Sender ids from old messages with an `int` id are converted to `str`.
+- legacy pep8 errors
+
 
 [0.11.12] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^^

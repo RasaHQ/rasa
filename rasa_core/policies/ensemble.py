@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import sys
-import datetime
+from datetime import datetime
 from collections import defaultdict
 
 import numpy as np
@@ -73,7 +73,7 @@ class PolicyEnsemble(object):
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
             self.training_trackers = training_trackers
-            self.date_trained = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+            self.date_trained = datetime.now().strftime('%Y%m%d-%H%M%S')
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
@@ -253,9 +253,10 @@ class SimplePolicyEnsemble(PolicyEnsemble):
 
     @staticmethod
     def is_not_memo_policy(best_policy_name):
-        return not (best_policy_name.endswith("_" + MemoizationPolicy.__name__)
-                    or best_policy_name.endswith(
-                            "_" + AugmentedMemoizationPolicy.__name__))
+        return not (best_policy_name.endswith(
+            "_" + MemoizationPolicy.__name__) or
+                    best_policy_name.endswith(
+                    "_" + AugmentedMemoizationPolicy.__name__))
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
