@@ -150,7 +150,7 @@ class MemoizationPolicy(Policy):
          trackers_as_actions) = self.featurizer.training_states_and_actions(
                 training_trackers, domain)
         self._add(trackers_as_states, trackers_as_actions, domain)
-        logger.debug("Memorized {} unique action examples."
+        logger.debug("Memorized {} unique examples."
                      "".format(len(self.lookup)))
 
     def continue_training(self, training_trackers, domain, **kwargs):
