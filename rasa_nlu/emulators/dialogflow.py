@@ -39,7 +39,7 @@ class DialogflowEmulator(NoEmulator):
             "result": {
                 "source": "agent",
                 "resolvedQuery": data["text"],
-                "action": None,
+                "action": data["intent"]["name"],
                 "actionIncomplete": None,
                 "parameters": entities,
                 "contexts": [],
@@ -49,7 +49,7 @@ class DialogflowEmulator(NoEmulator):
                     "intentName": data["intent"]
                 },
                 "fulfillment": {},
-                "score": None,
+                "score": data["intent"]["confidence"],
             },
             "status": {
                 "code": 200,
