@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import tempfile
+from builtins import input, range, str
 from hashlib import sha1
 from random import Random
 from threading import Thread
@@ -20,7 +21,6 @@ from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 import requests
 import six
-from builtins import input, range, str
 from numpy import all, array
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import InvalidURL

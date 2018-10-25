@@ -27,6 +27,7 @@ Added
 - option for end-to-end evaluation of Rasa Core and NLU examples in
   ``evaluate.py`` script
 - docker-compose file to start a rasa core server together with nlu, an action server, and duckling
+- http server (``rasa_core.run --enable-api``) evaluation endpoint
 
 Changed
 -------
