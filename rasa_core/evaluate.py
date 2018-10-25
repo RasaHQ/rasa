@@ -334,7 +334,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
     action_executed_eval_store = EvaluationStore()
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
+    action, policy, _ = processor.predict_next_action(partial_tracker)
 
     predicted = action.name()
     gold = event.action_name
