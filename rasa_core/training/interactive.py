@@ -4,36 +4,49 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import sys
+import typing
 
 import io
 import logging
 import numpy as np
+import os
 import requests
+import six
 import textwrap
 import uuid
 from PyInquirer import prompt
 from colorclass import Color
-from flask import Flask
+from flask import Flask, send_from_directory, send_file, abort
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable
+from typing import Any, Text, Dict, List, Optional, Callable, Union
 
-from rasa_core import utils, server, events
+from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
-from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
-from rasa_core.events import Event
+from rasa_core.constants import (
+    DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL)
+from rasa_core.domain import Domain
+from rasa_core.events import Event, ActionExecuted
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
 from rasa_core.training.structures import Story
+from rasa_core.training.visualization import (
+    visualize_neighborhood)
 from rasa_core.utils import EndpointConfig
+from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
-from rasa_nlu.training_data import TrainingData
+
+# WARNING: This command line UI is using an external library
+# communicating with the shell - these functions are hard to test
+# automatically. If you change anything in here, please make sure to
+# run the interactive learning and check if your part of the "ui"
+# still works.
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +62,14 @@ OTHER_INTENT = uuid.uuid4().hex
 
 class RestartConversation(Exception):
     """Exception used to break out the flow and restart the conversation."""
+    pass
+
+
+class ForkTracker(Exception):
+    """Exception used to break out the flow and fork at a previous step.
+
+    The tracker will be reset to the selected point in the past and the
+    conversation will continue from there."""
     pass
 
 
@@ -82,7 +103,7 @@ def send_message(endpoint,  # type: EndpointConfig
 
     payload = {
         "sender": "user",
-        "text": message,
+        "message": message,
         "parse_data": parse_data
     }
 
@@ -226,7 +247,7 @@ def _ask_questions(
         questions,  # type: List[Dict[Text, Any]]
         sender_id,  # type: Text
         endpoint,  # type: EndpointConfig
-        is_abort=None  # type: Optional[Callable[[Dict[Text, Text]], bool]]
+        is_abort=lambda x: False  # type: Callable[[Dict[Text, Any]], bool]
 ):
     # type: (...) -> Dict[Text, Any]
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
@@ -236,7 +257,7 @@ def _ask_questions(
 
     while should_retry:
         answers = prompt(questions)
-        if not answers or (is_abort and is_abort(answers)):
+        if not answers or is_abort(answers):
             should_retry = _ask_if_quit(sender_id, endpoint)
         else:
             should_retry = False
@@ -287,6 +308,46 @@ def _request_selection_from_intent_list(intent_list, sender_id, endpoint):
         }
     ]
     return _ask_questions(questions, sender_id, endpoint)["intent"]
+
+
+def _request_fork_point_from_list(forks, sender_id, endpoint):
+    # type: (List[Dict[Text, Text]], Text, EndpointConfig) -> Text
+    questions = [
+        {
+            "type": "list",
+            "name": "fork",
+            "message": "Before which user message do you want to fork?",
+            "choices": forks
+        }
+    ]
+    return _ask_questions(questions, sender_id, endpoint)["fork"]
+
+
+def _request_fork_from_user(sender_id,
+                            endpoint
+                            ):
+    # type: (...) -> Optional[List[Dict[Text, Any]]]
+    """Take in a conversation and ask at which point to fork the conversation.
+
+    Returns the list of events that should be kept. Forking means, the
+    conversation will be reset and continued from this previous point."""
+
+    tracker = retrieve_tracker(endpoint, sender_id,
+                               EventVerbosity.AFTER_RESTART)
+
+    choices = []
+    for i, e in enumerate(tracker.get("events", [])):
+        if e.get("event") == "user":
+            choices.append({"name": e.get("text"), "value": i})
+
+    fork_idx = _request_fork_point_from_list(list(reversed(choices)),
+                                             sender_id,
+                                             endpoint)
+
+    if fork_idx is not None:
+        return tracker.get("events", [])[:int(fork_idx)]
+    else:
+        return None
 
 
 def _request_intent_from_user(latest_message,
@@ -400,7 +461,8 @@ def _chat_history_table(evts):
         if evt.get("event") == "action":
             bot_column.append(colored(evt['name'], 'autocyan'))
             if evt['confidence'] is not None:
-                bot_column[-1] += (colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
+                bot_column[-1] += (
+                    colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
 
         elif evt.get("event") == 'user':
             if bot_column:
@@ -464,6 +526,10 @@ def _ask_if_quit(sender_id, endpoint):
                 "value": "undo",
             },
             {
+                "name": "Fork",
+                "value": "fork",
+            },
+            {
                 "name": "Start Fresh",
                 "value": "restart",
             },
@@ -493,6 +559,8 @@ def _ask_if_quit(sender_id, endpoint):
         return True
     elif answers["abort"] == "undo":
         raise UndoLastStep()
+    elif answers["abort"] == "fork":
+        raise ForkTracker()
     elif answers["abort"] == "restart":
         raise RestartConversation()
 
@@ -579,15 +647,17 @@ def _split_conversation_at_restarts(evts):
 
 
 def _collect_messages(evts):
-    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
-    """Collect the message text and parsed data from the UserMessage events into a list"""
+    # type: (List[Dict[Text, Any]]) -> List[Message]
+    """Collect the message text and parsed data from the UserMessage events
+    into a list"""
 
     msgs = []
 
     for evt in evts:
         if evt.get("event") == "user":
             data = evt.get("parse_data")
-            msg = Message.build(data["text"], data["intent"]["name"], data["entities"])
+            msg = Message.build(data["text"], data["intent"]["name"],
+                                data["entities"])
             msgs.append(msg)
 
     return msgs
@@ -612,15 +682,18 @@ def _write_nlu_to_file(export_nlu_path, evts):
 
     msgs = _collect_messages(evts)
 
+    # noinspection PyBroadException
     try:
         previous_examples = load_data(export_nlu_path)
 
-    except:
+    except Exception:
         questions = [{"name": "export nlu",
-                     "type": "input",
-                     "message": "Could not load existing NLU data, please specify where to store NLU data "
-                                "learned in this session (this will overwrite any existing file)",
-                     "default": PATHS["backup"]}]
+                      "type": "input",
+                      "message": "Could not load existing NLU data, please "
+                                 "specify where to store NLU data learned in "
+                                 "this session (this will overwrite any "
+                                 "existing file)",
+                      "default": PATHS["backup"]}]
 
         answers = prompt(questions)
         export_nlu_path = answers["export nlu"]
@@ -637,7 +710,9 @@ def _write_nlu_to_file(export_nlu_path, evts):
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
                               sender_id,  # type: Text
-                              finetune  # type: bool
+                              finetune,  # type: bool
+                              sender_ids,  # type: List[Text]
+                              plot_file  # type: Optional[Text]
                               ):
     # type: (...) -> None
     """Predict and validate actions until we need to wait for a user msg."""
@@ -646,15 +721,18 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
     while not listen:
         response = request_prediction(endpoint, sender_id)
         predictions = response.get("scores")
-
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
-
         action_name = predictions[pred_out].get("action")
 
         _print_history(sender_id, endpoint)
+        _plot_trackers(sender_ids, plot_file, endpoint,
+                       unconfirmed=[ActionExecuted(action_name)])
+
         listen = _validate_action(action_name, predictions,
                                   endpoint, sender_id, finetune=finetune)
+
+        _plot_trackers(sender_ids, plot_file, endpoint)
 
 
 def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
@@ -831,19 +909,21 @@ def _correct_entities(latest_message, endpoint, sender_id):
     return parsed.get("entities", [])
 
 
-def _enter_user_message(sender_id, endpoint, exit_text):
-    # type: (Text, EndpointConfig, Text) -> None
+def _enter_user_message(sender_id, endpoint):
+    # type: (Text, EndpointConfig) -> None
     """Request a new message from the user."""
 
     questions = [{
         "name": "message",
         "type": "input",
-        "message": "Next user input:"
+        "message": "Next user input (Ctr-c to abort):"
     }]
 
-    answers = _ask_questions(
-        questions, sender_id, endpoint,
-        is_abort=lambda a: a["message"] == exit_text)
+    answers = _ask_questions(questions, sender_id, endpoint,
+                             lambda a: not a["message"])
+
+    if answers["message"] == constants.USER_INTENT_RESTART:
+        raise RestartConversation()
 
     send_message(endpoint, sender_id, answers["message"])
 
@@ -884,20 +964,87 @@ def _undo_latest(sender_id, endpoint):
         replace_events(endpoint, sender_id, events_to_keep)
 
 
+def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
+                  endpoint  # type: EndpointConfig
+                  ):
+    # type: (...) -> List[List[Event]]
+    """Retrieve all event trackers from the endpoint for all sender ids."""
+
+    event_sequences = []
+    for sender_id in sender_ids:
+        if isinstance(sender_id, six.string_types):
+            tracker = retrieve_tracker(endpoint, sender_id)
+            evts = tracker.get("events", [])
+
+            for conversation in _split_conversation_at_restarts(evts):
+                parsed_events = events.deserialise_events(conversation)
+                event_sequences.append(parsed_events)
+        else:
+            event_sequences.append(sender_id)
+    return event_sequences
+
+
+def _plot_trackers(sender_ids,  # type: List[Union[Text, List[Event]]]
+                   output_file,  # type: Optional[Text]
+                   endpoint,  # type: EndpointConfig
+                   unconfirmed=None  # type: Optional[List[Event]]
+                   ):
+    """Create a plot of the trackers of the passed sender ids.
+
+    This assumes that the last sender id is the conversation we are currently
+    working on. If there are events that are not part of this active tracker
+    yet, they can be passed as part of `unconfirmed`. They will be appended
+    to the currently active conversation."""
+
+    if not output_file or not sender_ids:
+        # if there is no output file provided, we are going to skip plotting
+        # same happens if there are no sender ids
+        return None
+
+    event_sequences = _fetch_events(sender_ids, endpoint)
+
+    if unconfirmed:
+        event_sequences[-1].extend(unconfirmed)
+
+    graph = visualize_neighborhood(event_sequences[-1],
+                                   event_sequences,
+                                   output_file=None,
+                                   max_history=2)
+
+    from networkx.drawing.nx_agraph import write_dot
+    write_dot(graph, output_file)
+
+
+def _print_help(skip_visualization):
+    # type: (bool) -> None
+    """Print some initial help message for the user."""
+
+    if not skip_visualization:
+        visualization_help = "Visualisation at {}/visualization.html." \
+                             "".format(DEFAULT_SERVER_URL)
+    else:
+        visualization_help = ""
+
+    utils.print_color("Bot loaded. {}\n"
+                      "Type a message and press enter "
+                      "(press 'Ctr-c' to exit). "
+                      "".format(visualization_help), utils.bcolors.OKGREEN)
+
+
 def record_messages(endpoint,  # type: EndpointConfig
                     sender_id=UserMessage.DEFAULT_SENDER_ID,  # type: Text
                     max_message_limit=None,  # type: Optional[int]
                     on_finish=None,  # type: Optional[Callable[[], None]]
-                    finetune=False  # type: bool
+                    finetune=False,  # type: bool
+                    stories=None,  # type: Optional[Text]
+                    skip_visualization=False  # type: bool
                     ):
     """Read messages from the command line and print bot responses."""
 
-    try:
-        exit_text = INTENT_MESSAGE_PREFIX + 'stop'
+    from rasa_core import training
 
-        utils.print_color("Bot loaded. Type a message and press enter "
-                          "(use '{}' to exit). ".format(exit_text),
-                          utils.bcolors.OKGREEN)
+    try:
+        _print_help(skip_visualization)
 
         try:
             domain = retrieve_domain(endpoint)
@@ -906,16 +1053,30 @@ def record_messages(endpoint,  # type: EndpointConfig
                              "Is the server running?".format(endpoint.url))
             return
 
+        trackers = training.load_data(stories, Domain.from_dict(domain),
+                                      augmentation_factor=0,
+                                      use_story_concatenation=False,
+                                      )
+
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
         num_messages = 0
+        sender_ids = [t.events for t in trackers] + [sender_id]
+
+        if not skip_visualization:
+            plot_file = "story_graph.dot"
+            _plot_trackers(sender_ids, plot_file, endpoint)
+        else:
+            plot_file = None
+
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
                 if is_listening_for_message(sender_id, endpoint):
-                    _enter_user_message(sender_id, endpoint, exit_text)
+                    _enter_user_message(sender_id, endpoint)
                     _validate_nlu(intents, endpoint, sender_id)
                 _predict_till_next_listen(endpoint, sender_id,
-                                          finetune=finetune)
+                                          finetune, sender_ids, plot_file)
+
                 num_messages += 1
             except RestartConversation:
                 send_event(endpoint, sender_id, {"event": "restart"})
@@ -926,6 +1087,17 @@ def record_messages(endpoint,  # type: EndpointConfig
             except UndoLastStep:
                 _undo_latest(sender_id, endpoint)
                 _print_history(sender_id, endpoint)
+            except ForkTracker:
+                _print_history(sender_id, endpoint)
+
+                evts = _request_fork_from_user(sender_id, endpoint)
+                sender_id = uuid.uuid4().hex
+
+                if evts is not None:
+                    replace_events(endpoint, sender_id, evts)
+                    sender_ids.append(sender_id)
+                    _print_history(sender_id, endpoint)
+                    _plot_trackers(sender_ids, plot_file, endpoint)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")
@@ -935,30 +1107,43 @@ def record_messages(endpoint,  # type: EndpointConfig
             on_finish()
 
 
-def _start_interactive_learning_io(endpoint, on_finish, finetune=False):
-    # type: (EndpointConfig, Callable[[], None], bool) -> None
+def _start_interactive_learning_io(endpoint, stories, on_finish,
+                                   finetune=False,
+                                   skip_visualization=False):
+    # type: (EndpointConfig, Text, Callable[[], None], bool, bool) -> None
     """Start the interactive learning message recording in a separate thread."""
 
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
                    "on_finish": on_finish,
-                   "finetune": finetune})
+                   "stories": stories,
+                   "finetune": finetune,
+                   "skip_visualization": skip_visualization})
     p.setDaemon(True)
     p.start()
 
 
-def _serve_application(app, finetune=False, serve_forever=True):
-    # type: (Flask, bool, bool) -> WSGIServer
+def _serve_application(app, stories,
+                       finetune=False,
+                       serve_forever=True,
+                       skip_visualization=False):
+    # type: (Flask, Text, bool, bool, bool) -> WSGIServer
     """Start a core server and attach the interactive learning IO."""
 
-    http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app)
+    if not skip_visualization:
+        _add_visualization_routes(app, "story_graph.dot")
+
+    http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app, log=None)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
     http_server.start()
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    _start_interactive_learning_io(endpoint, http_server.stop, finetune=finetune)
+    _start_interactive_learning_io(endpoint, stories,
+                                   http_server.stop,
+                                   finetune=finetune,
+                                   skip_visualization=skip_visualization)
 
     if serve_forever:
         try:
@@ -969,10 +1154,33 @@ def _serve_application(app, finetune=False, serve_forever=True):
     return http_server
 
 
-def run_interactive_learning(agent, finetune=False, serve_forever=True):
-    # type: (Agent, bool, bool) -> WSGIServer
+def _add_visualization_routes(app, image_path=None):
+    # type: (Flask, Text) -> None
+    """Add routes to serve the conversation visualization files."""
+
+    @app.route("/visualization.html", methods=["GET"])
+    def visualisation_html():
+        return send_from_directory(os.path.dirname(__file__),
+                                   'visualization.html')
+
+    @app.route("/visualization.dot", methods=["GET"])
+    def visualisation_png():
+        try:
+            response = send_file(os.path.abspath(image_path))
+            response.headers['Cache-Control'] = "no-cache"
+            return response
+        except FileNotFoundError:
+            abort(404)
+
+
+def run_interactive_learning(agent, stories,
+                             finetune=False,
+                             serve_forever=True,
+                             skip_visualization=False):
+    # type: (Agent, Text, bool, bool, bool) -> WSGIServer
     """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)
 
-    return _serve_application(app, finetune, serve_forever)
+    return _serve_application(app, stories, finetune,
+                              serve_forever, skip_visualization)

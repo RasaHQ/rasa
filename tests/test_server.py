@@ -4,11 +4,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
+import json
+import uuid
 from builtins import str
 
-import json
 import pytest
-import uuid
 from freezegun import freeze_time
 
 import rasa_core
@@ -19,6 +20,7 @@ from rasa_core.events import (
     UserUttered, BotUttered, SlotSet, Event, ActionExecuted)
 from rasa_core.remote import RasaCoreClient
 from rasa_core.utils import EndpointConfig
+from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 # a couple of event instances that we can use for testing
 test_events = [
@@ -210,25 +212,57 @@ def test_predict(http_app, app):
     assert response.status_code == 200
 
 
+def test_evaluate(app):
+    with io.open(DEFAULT_STORIES_FILE, 'r') as f:
+        stories = f.read()
+    response = app.post('/evaluate',
+                        data=stories)
+    assert response.status_code == 200
+    assert set(response.get_json().keys()) == {"report",
+                                               "precision",
+                                               "f1",
+                                               "accuracy",
+                                               "in_training_data_fraction",
+                                               "is_end_to_end_evaluation"}
+    assert not response.get_json()["is_end_to_end_evaluation"]
+
+
+def test_end_to_end_evaluation(app):
+    with io.open(END_TO_END_STORY_FILE, 'r') as f:
+        stories = f.read()
+    response = app.post('/evaluate?e2e=true',
+                        data=stories)
+    assert response.status_code == 200
+    assert set(response.get_json().keys()) == {"report",
+                                               "precision",
+                                               "f1",
+                                               "accuracy",
+                                               "in_training_data_fraction",
+                                               "is_end_to_end_evaluation"}
+    assert response.get_json()["is_end_to_end_evaluation"]
+
+
 def test_list_conversations_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
 
-    # {"user": {"user": "testadmin", "role": "admin"}}
+    # {"user": {"username": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
-                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwic"
+                         "m9sZSI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2u"
+                         "QRre7IWTuIDrCn5AIw"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
     assert response.status_code == 200
 
-    # {"user": {"user": "testuser", "role": "user"}}
+    # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
-                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb"
+                         "2xlIjoidXNlciJ9fQ.JnMTLYd56qut2w9h7hRQlDm1n3l"
+                         "HJHOxxC_w7TtwCrs"
     }
     response = secured_app.get("/conversations",
                                headers=jwt_header)
@@ -239,11 +273,12 @@ def test_get_tracker_with_jwt(secured_app):
     # token generated with secret "core" and algorithm HS256
     # on https://jwt.io/
 
-    # {"user": {"user": "testadmin", "role": "admin"}}
+    # {"user": {"username": "testadmin", "role": "admin"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0YWRtaW4iLCJyb2xlIjoiYWRt"
-                         "aW4ifX0.VUOiT2DL3LWoesfKm7wWv5Yp8mSnc5v2OXFSq6Tiis0"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdGFkbWluIiwic"
+                         "m9sZSI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2u"
+                         "QRre7IWTuIDrCn5AIw"
     }
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
@@ -253,12 +288,14 @@ def test_get_tracker_with_jwt(secured_app):
                                headers=jwt_header)
     assert response.status_code == 200
 
-    # {"user": {"user": "testuser", "role": "user"}}
+    # {"user": {"username": "testuser", "role": "user"}}
     jwt_header = {
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                         "eyJ1c2VyIjp7InVzZXIiOiJ0ZXN0dXNlciIsInJvbGUiOiJ1c2Vy"
-                         "In19._Gu7YX6euPvq9pfDFHzgH4qPNMbJH1XGXGCVRnXiP24"
+                         "eyJ1c2VyIjp7InVzZXJuYW1lIjoidGVzdHVzZXIiLCJyb"
+                         "2xlIjoidXNlciJ9fQ.JnMTLYd56qut2w9h7hRQlDm1n3l"
+                         "HJHOxxC_w7TtwCrs"
     }
+    print(json.dumps(jwt_header))
     response = secured_app.get("/conversations/testadmin/tracker",
                                headers=jwt_header)
     assert response.status_code == 403

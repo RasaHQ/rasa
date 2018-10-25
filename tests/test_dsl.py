@@ -35,7 +35,7 @@ def test_can_read_test_story(default_domain):
     assert tracker.events[1] == UserUttered(
             "simple",
             intent={"name": "simple", "confidence": 1.0},
-            parse_data={'text': 'simple',
+            parse_data={'text': '/simple',
                         'intent_ranking': [{'confidence': 1.0,
                                             'name': 'simple'}],
                         'intent': {'confidence': 1.0, 'name': 'simple'},

@@ -29,7 +29,7 @@ def create_argument_parser():
             type=int,
             help="port to run the server at")
     parser.add_argument(
-            'domain',
+            '-d', '--domain',
             type=str,
             default=None,
             help="path of the domain file to load utterances from"
@@ -43,7 +43,7 @@ def generate_response(nlg_call, domain):
     template = nlg_call.get("template")
     sender_id = nlg_call.get("tracker", {}).get("sender_id")
     events = nlg_call.get("tracker", {}).get("events")
-    tracker  = DialogueStateTracker.from_dict(
+    tracker = DialogueStateTracker.from_dict(
                     sender_id, events, domain.slots)
     channel_name = nlg_call.get("channel")
 

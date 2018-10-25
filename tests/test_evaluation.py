@@ -10,7 +10,7 @@ from rasa_core import evaluate
 from rasa_core.evaluate import (
     run_story_evaluation,
     collect_story_predictions)
-from tests.conftest import DEFAULT_STORIES_FILE
+from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 
 def test_evaluation_image_creation(tmpdir, default_agent):
@@ -22,7 +22,8 @@ def test_evaluation_image_creation(tmpdir, default_agent):
             agent=default_agent,
             out_file_plot=img_path,
             max_stories=None,
-            out_file_stories=stories_path
+            out_file_stories=stories_path,
+            use_e2e=False
     )
 
     assert os.path.isfile(img_path)
@@ -31,13 +32,23 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     assert os.path.isfile(stories_path)
 
 
-def test_evaluation_script(tmpdir, default_agent):
+def test_action_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-            DEFAULT_STORIES_FILE, default_agent)
+            DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
 
-    golds, predictions, failed_stories = collect_story_predictions(
-            completed_trackers, default_agent)
+    evaluation_result, failed_stories, _ = collect_story_predictions(
+            completed_trackers, default_agent, use_e2e=False)
 
-    assert len(golds) == 14
-    assert len(predictions) == 14
+    assert not evaluation_result.has_prediction_target_mismatch()
+    assert len(failed_stories) == 0
+
+
+def test_end_to_end_evaluation_script(tmpdir, default_agent):
+    completed_trackers = evaluate._generate_trackers(
+            END_TO_END_STORY_FILE, default_agent, use_e2e=True)
+
+    evaluation_result, failed_stories, _ = collect_story_predictions(
+            completed_trackers, default_agent, use_e2e=True)
+
+    assert not evaluation_result.has_prediction_target_mismatch()
     assert len(failed_stories) == 0
