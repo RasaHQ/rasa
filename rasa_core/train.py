@@ -93,6 +93,12 @@ def create_argument_parser():
             action='store_true',
             help="enable interactive training")
     parser.add_argument(
+            '--skip_visualization',
+            default=False,
+            action='store_true',
+            help="disables plotting the visualization during "
+                 "interactive learning")
+    parser.add_argument(
             '--finetune',
             default=False,
             action='store_true',
@@ -247,4 +253,7 @@ if __name__ == '__main__':
                                       additional_arguments)
 
     if cmdline_args.interactive:
-        interactive.run_interactive_learning(_agent, finetune=cmdline_args.finetune)
+        interactive.run_interactive_learning(
+                _agent, stories,
+                finetune=cmdline_args.finetune,
+                skip_visualization=cmdline_args.skip_visualization)

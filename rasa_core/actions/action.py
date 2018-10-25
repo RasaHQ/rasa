@@ -111,7 +111,7 @@ class Action(object):
 
         Args:
             dispatcher (Dispatcher): the dispatcher which is used to send
-                messages back to the user. Use ``dipatcher.utter_message()``
+                messages back to the user. Use ``dispatcher.utter_message()``
                 or any other :class:`rasa_core.dispatcher.Dispatcher` method.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using

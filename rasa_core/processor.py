@@ -208,9 +208,9 @@ class MessageProcessor(object):
                            "'{}'.".format(dispatcher.sender_id))
             return None
 
-        if (reminder_event.kill_on_user_message
-                and self._has_message_after_reminder(tracker, reminder_event)
-                or not self._is_reminder_still_valid(tracker, reminder_event)):
+        if (reminder_event.kill_on_user_message and
+                self._has_message_after_reminder(tracker, reminder_event) or not
+                self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -298,9 +298,9 @@ class MessageProcessor(object):
         self._log_slots(tracker)
 
         # action loop. predicts actions until we hit action listen
-        while (should_predict_another_action
-               and self._should_handle_message(tracker)
-               and num_predicted_actions < self.max_number_of_predictions):
+        while (should_predict_another_action and
+               self._should_handle_message(tracker) and
+               num_predicted_actions < self.max_number_of_predictions):
             # this actually just calls the policy's method by the same name
             action, policy, confidence = self.predict_next_action(tracker)
 

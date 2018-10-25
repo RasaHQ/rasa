@@ -29,7 +29,8 @@ class StoryLexer(RegexLexer):
             (r'\s*-\s*(pause)', Token.Operator, ("event", "event_rx")),
             (r'\s*-\s*(resume)', Token.Operator, ("event", "event_rx")),
             (r'\s*-\s*(utter_[^\s]*)', Token.Text, ("event", "event_rx")),
-            (r'(\s*-(?:\s*)(?:.*?))(\s*)(?:(?:(<!--)((?:.*?\n?)*)(-->))|(\n|$))',
+            (r'(\s*-(?:\s*)(?:.*?))(\s*)(?:(?:(<!--)'
+             r'((?:.*?\n?)*)(-->))|(\n|$))',
              bygroups(Text, Text, Keyword, Comment.MultiLine,
                       Keyword, Text)),
             (r'\s*\>\s*[^\s]*', Name.Constant),

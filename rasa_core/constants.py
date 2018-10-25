@@ -26,3 +26,8 @@ FALLBACK_SCORE = 1.1
 FORM_SCORE = 1.2
 
 REQUESTED_SLOT = 'requested_slot'
+
+# start of special user message section
+INTENT_MESSAGE_PREFIX = "/"
+
+USER_INTENT_RESTART = INTENT_MESSAGE_PREFIX + "restart"

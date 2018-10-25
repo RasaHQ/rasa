@@ -3,26 +3,28 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from builtins import str
-
 import argparse
 import io
+import json
 import logging
 import warnings
+from builtins import str
+from typing import List, Tuple, Optional, Any, Text, Dict
+
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 
 from rasa_core import training
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.events import ActionExecuted
+from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.policies import SimplePolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.utils import AvailableEndpoints
-from rasa_nlu.evaluate import (
-    plot_confusion_matrix,
-    get_evaluation_metrics)
+from rasa_core.utils import AvailableEndpoints, pad_list_to_size
+from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
+from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +55,16 @@ def create_argument_parser():
     parser.add_argument(
             '-o', '--output',
             type=str,
-            default="story_confmat.pdf",
-            help="output path for the created evaluation plot. If set to None"
-                 "or an empty string, no plot will be generated.")
+            nargs="?",
+            const="story_confmat.pdf",
+            help="output path for the created evaluation plot. If not "
+                 "specified, no plot will be generated.")
+    parser.add_argument(
+            '--e2e', '--end-to-end',
+            action='store_true',
+            help="Run an end-to-end evaluation for combined action and "
+                 "intent prediction. Requires a story file in end-to-end "
+                 "format.")
     parser.add_argument(
             '--failed',
             type=str,
@@ -76,6 +85,91 @@ def create_argument_parser():
     return parser
 
 
+class EvaluationStore(object):
+    """Class storing action, intent and entity predictions and targets."""
+
+    def __init__(
+            self,
+            action_predictions=None,  # type: Optional[List[str]]
+            action_targets=None,  # type: Optional[List[str]]
+            intent_predictions=None,  # type: Optional[List[str]]
+            intent_targets=None,  # type: Optional[List[str]]
+            entity_predictions=None,  # type: Optional[List[Dict[Text, Any]]]
+            entity_targets=None  # type: Optional[List[Dict[Text, Any]]]
+    ):
+        # type: (...) -> None
+        self.action_predictions = action_predictions or []
+        self.action_targets = action_targets or []
+        self.intent_predictions = intent_predictions or []
+        self.intent_targets = intent_targets or []
+        self.entity_predictions = entity_predictions or []
+        self.entity_targets = entity_targets or []
+
+    def add_to_store(
+            self,
+            action_predictions=None,  # type: Optional[List[str]]
+            action_targets=None,  # type: Optional[List[str]]
+            intent_predictions=None,  # type: Optional[List[str]]
+            intent_targets=None,  # type: Optional[List[str]]
+            entity_predictions=None,  # type: Optional[List[Dict[Text, Any]]]
+            entity_targets=None  # type: Optional[List[Dict[Text, Any]]]
+    ):
+        # type: (...) -> None
+        """Add items or lists of items to the store"""
+        for k, v in locals().items():
+            if k != 'self' and v:
+                attr = getattr(self, k)
+                if isinstance(v, list):
+                    attr.extend(v)
+                else:
+                    attr.append(v)
+
+    def merge_store(self, other):
+        # type: (EvaluationStore) -> None
+        """Add the contents of other to self"""
+        self.add_to_store(action_predictions=other.action_predictions,
+                          action_targets=other.action_targets,
+                          intent_predictions=other.intent_predictions,
+                          intent_targets=other.intent_targets,
+                          entity_predictions=other.entity_predictions,
+                          entity_targets=other.entity_targets)
+
+    def has_prediction_target_mismatch(self):
+        return self.intent_predictions != self.intent_targets or \
+               self.entity_predictions != self.entity_targets or \
+               self.action_predictions != self.action_targets
+
+    def serialise_targets(self,
+                          include_actions=True,
+                          include_intents=True,
+                          include_entities=False):
+        targets = []
+        if include_actions:
+            targets += self.action_targets
+        if include_intents:
+            targets += self.intent_targets
+        if include_entities:
+            targets += self.entity_targets
+
+        return [json.dumps(t) if isinstance(t, dict) else t for t in targets]
+
+    def serialise_predictions(self,
+                              include_actions=True,
+                              include_intents=True,
+                              include_entities=False):
+        predictions = []
+
+        if include_actions:
+            predictions += self.action_predictions
+        if include_intents:
+            predictions += self.intent_predictions
+        if include_entities:
+            predictions += self.entity_predictions
+
+        return [json.dumps(t) if isinstance(t, dict) else t
+                for t in predictions]
+
+
 class WronglyPredictedAction(ActionExecuted):
     """The model predicted the wrong action.
 
@@ -84,20 +178,93 @@ class WronglyPredictedAction(ActionExecuted):
 
     type_name = "wrong_action"
 
-    def __init__(self, correct_action, predicted_action, timestamp=None):
-        self.correct_action = correct_action
+    def __init__(self, correct_action, predicted_action,
+                 policy, confidence, timestamp=None):
         self.predicted_action = predicted_action
         super(WronglyPredictedAction, self).__init__(correct_action,
+                                                     policy,
+                                                     confidence,
                                                      timestamp=timestamp)
 
     def as_story_string(self):
-        return "{}   <!-- predicted: {} -->".format(self.correct_action,
+        return "{}   <!-- predicted: {} -->".format(self.action_name,
                                                     self.predicted_action)
 
 
-def _generate_trackers(resource_name, agent, max_stories=None):
+def _deserialise_entities(entities):
+    if isinstance(entities, str):
+        entities = json.loads(entities)
+
+    return [e for e in entities if isinstance(e, dict)]
+
+
+def _md_format_message(text, intent, entities):
+    message_from_md = MarkdownReader()._parse_training_example(text)
+    deserialised_entities = _deserialise_entities(entities)
+    return MarkdownWriter()._generate_message_md(
+            {"text": message_from_md.text,
+             "intent": intent,
+             "entities": deserialised_entities}
+    )
+
+
+class EndToEndUserUtterance(UserUttered):
+    """End-to-end user utterance.
+
+    Mostly used to print the full end-to-end user message in the
+    `failed_stories.md` output file."""
+
+    def as_story_string(self):
+        message = _md_format_message(self.text, self.intent, self.entities)
+        return "{}: {}".format(self.intent.get("name"), message)
+
+
+class WronglyClassifiedUserUtterance(UserUttered):
+    """The NLU model predicted the wrong user utterance.
+
+    Mostly used to mark wrong predictions and be able to
+    dump them as stories."""
+
+    type_name = "wrong_utterance"
+
+    def __init__(self,
+                 text,
+                 correct_intent,
+                 correct_entities,
+                 parse_data=None,
+                 timestamp=None,
+                 input_channel=None,
+                 predicted_intent=None,
+                 predicted_entities=None):
+        self.predicted_intent = predicted_intent
+        self.predicted_entities = predicted_entities
+
+        intent = {"name": correct_intent}
+
+        super(WronglyClassifiedUserUtterance, self).__init__(text,
+                                                             intent,
+                                                             correct_entities,
+                                                             parse_data,
+                                                             timestamp,
+                                                             input_channel)
+
+    def as_story_string(self):
+        correct_message = _md_format_message(self.text,
+                                             self.intent,
+                                             self.entities)
+        predicted_message = _md_format_message(self.text,
+                                               self.predicted_intent,
+                                               self.predicted_entities)
+        return ("{}: {}   <!-- predicted: {}: {} -->"
+                "").format(self.intent.get("name"),
+                           correct_message,
+                           self.predicted_intent,
+                           predicted_message)
+
+
+def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
     story_graph = training.extract_story_graph(resource_name, agent.domain,
-                                               agent.interpreter)
+                                               agent.interpreter, use_e2e)
     g = TrainingDataGenerator(story_graph, agent.domain,
                               use_story_concatenation=False,
                               augmentation_factor=0,
@@ -105,11 +272,130 @@ def _generate_trackers(resource_name, agent, max_stories=None):
     return g.generate()
 
 
-def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
+def _clean_entity_results(entity_results):
+    return [{k: r[k] for k in ("start", "end", "entity", "value") if k in r}
+            for r in entity_results]
+
+
+def _collect_user_uttered_predictions(event,
+                                      partial_tracker,
+                                      fail_on_prediction_errors):
+    user_uttered_eval_store = EvaluationStore()
+
+    intent_gold = event.parse_data.get("true_intent")
+    predicted_intent = event.parse_data.get("intent").get("name")
+    if predicted_intent is None:
+        predicted_intent = "None"
+    user_uttered_eval_store.add_to_store(intent_predictions=predicted_intent,
+                                         intent_targets=intent_gold)
+
+    entity_gold = event.parse_data.get("true_entities")
+    predicted_entities = event.parse_data.get("entities")
+
+    if entity_gold or predicted_entities:
+        if len(entity_gold) > len(predicted_entities):
+            predicted_entities = pad_list_to_size(predicted_entities,
+                                                  len(entity_gold),
+                                                  "None")
+        elif len(predicted_entities) > len(entity_gold):
+            entity_gold = pad_list_to_size(entity_gold,
+                                           len(predicted_entities),
+                                           "None")
+
+        user_uttered_eval_store.add_to_store(
+                entity_targets=_clean_entity_results(entity_gold),
+                entity_predictions=_clean_entity_results(predicted_entities)
+        )
+
+    if user_uttered_eval_store.has_prediction_target_mismatch():
+        partial_tracker.update(
+                WronglyClassifiedUserUtterance(
+                        event.text, intent_gold,
+                        user_uttered_eval_store.entity_predictions,
+                        event.parse_data,
+                        event.timestamp,
+                        event.input_channel,
+                        predicted_intent,
+                        user_uttered_eval_store.entity_targets)
+        )
+        if fail_on_prediction_errors:
+            raise ValueError(
+                    "NLU model predicted a wrong intent. Failed Story:"
+                    " \n\n{}".format(partial_tracker.export_stories()))
+    else:
+        end_to_end_user_utterance = EndToEndUserUtterance(
+                event.text, event.intent, event.entities)
+        partial_tracker.update(end_to_end_user_utterance)
+
+    return user_uttered_eval_store
+
+
+def _collect_action_executed_predictions(processor, partial_tracker, event,
+                                         fail_on_prediction_errors):
+    action_executed_eval_store = EvaluationStore()
+
+    action, policy, _ = processor.predict_next_action(partial_tracker)
+
+    predicted = action.name()
+    gold = event.action_name
+
+    action_executed_eval_store.add_to_store(action_predictions=predicted,
+                                            action_targets=gold)
+
+    if action_executed_eval_store.has_prediction_target_mismatch():
+        partial_tracker.update(WronglyPredictedAction(gold, predicted,
+                                                      event.policy,
+                                                      event.confidence,
+                                                      event.timestamp))
+        if fail_on_prediction_errors:
+            raise ValueError(
+                    "Model predicted a wrong action. Failed Story: "
+                    "\n\n{}".format(partial_tracker.export_stories()))
+    else:
+        partial_tracker.update(event)
+
+    return action_executed_eval_store, policy
+
+
+def _is_in_training_data(tracker, agent, fail_on_prediction_errors=False):
     processor = agent.create_processor()
 
-    golds = []
-    predictions = []
+    events = list(tracker.events)
+
+    partial_tracker = DialogueStateTracker.from_events(tracker.sender_id,
+                                                       events[:1],
+                                                       agent.domain.slots)
+
+    in_training_data = True
+    test_in_training_data = True
+
+    for event in events[1:]:
+        if isinstance(event, ActionExecuted):
+            _, policy = \
+                _collect_action_executed_predictions(
+                        processor, partial_tracker, event,
+                        fail_on_prediction_errors
+                )
+            if (test_in_training_data and
+                    policy is not None and
+                    SimplePolicyEnsemble.is_not_memo_policy(policy)):
+                in_training_data = False
+                test_in_training_data = False
+
+    return in_training_data
+
+
+def _in_training_data_fraction(in_training_data_list):
+    try:
+        return sum(in_training_data_list) / len(in_training_data_list)
+    except ZeroDivisionError:
+        return 0
+
+
+def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
+                             use_e2e=False):
+    processor = agent.create_processor()
+    tracker_eval_store = EvaluationStore()
 
     events = list(tracker.events)
 
@@ -119,62 +405,74 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False):
 
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action, _, _ = processor.predict_next_action(partial_tracker)
+            action_executed_result, policy = \
+                _collect_action_executed_predictions(
+                        processor, partial_tracker, event,
+                        fail_on_prediction_errors
+                )
+            tracker_eval_store.merge_store(action_executed_result)
+        elif use_e2e and isinstance(event, UserUttered):
+            user_uttered_result = \
+                _collect_user_uttered_predictions(
+                        event, partial_tracker, fail_on_prediction_errors)
 
-            predicted = action.name()
-            gold = event.action_name
-
-            predictions.append(predicted)
-            golds.append(gold)
-
-            if predicted != gold:
-                partial_tracker.update(WronglyPredictedAction(gold, predicted))
-                if fail_on_prediction_errors:
-                    raise ValueError(
-                            "Model predicted a wrong action. Failed Story: "
-                            "\n\n{}".format(partial_tracker.export_stories()))
-            else:
-                partial_tracker.update(event)
+            tracker_eval_store.merge_store(user_uttered_result)
         else:
             partial_tracker.update(event)
 
-    return golds, predictions, partial_tracker
+    return tracker_eval_store, partial_tracker
 
 
-def collect_story_predictions(completed_trackers,
-                              agent,
-                              fail_on_prediction_errors=False):
+def collect_story_predictions(
+        completed_trackers,  # type: List[DialogueStateTracker]
+        agent,  # type: Agent
+        fail_on_prediction_errors=False,  # type: bool
+        use_e2e=False  # type: bool
+):
+    # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker], float]
     """Test the stories from a file, running them through the stored model."""
 
-    predictions = []
-    golds = []
+    story_eval_store = EvaluationStore()
     failed = []
     correct_dialogues = []
 
     logger.info("Evaluating {} stories\n"
                 "Progress:".format(len(completed_trackers)))
 
+    is_in_training_data_list = []
+
     for tracker in tqdm(completed_trackers):
-        current_golds, current_predictions, predicted_tracker = \
-            _predict_tracker_actions(tracker, agent, fail_on_prediction_errors)
+        tracker_results, predicted_tracker = \
+            _predict_tracker_actions(tracker, agent,
+                                     fail_on_prediction_errors, use_e2e)
 
-        predictions.extend(current_predictions)
-        golds.extend(current_golds)
+        is_in_training_data = _is_in_training_data(tracker, agent,
+                                                   fail_on_prediction_errors)
 
-        if current_golds != current_predictions:
-            # there is at least one prediction that is wrong
+        is_in_training_data_list.append(int(is_in_training_data))
+        story_eval_store.merge_store(tracker_results)
+
+        if tracker_results.has_prediction_target_mismatch():
+            # there is at least one wrong prediction
             failed.append(predicted_tracker)
             correct_dialogues.append(0)
         else:
             correct_dialogues.append(1)
 
     logger.info("Finished collecting predictions.")
+    report, precision, f1, accuracy = get_evaluation_metrics(
+            [1] * len(completed_trackers), correct_dialogues)
+
+    in_training_data_fraction = \
+        _in_training_data_fraction(is_in_training_data_list)
+
     log_evaluation_table([1] * len(completed_trackers),
-                         correct_dialogues,
-                         "CONVERSATION",
+                         "END-TO-END" if use_e2e else "CONVERSATION",
+                         report, precision, f1, accuracy,
+                         in_training_data_fraction,
                          include_report=False)
 
-    return golds, predictions, failed
+    return story_eval_store, failed, in_training_data_fraction
 
 
 def log_failed_stories(failed, failed_output):
@@ -196,46 +494,75 @@ def run_story_evaluation(resource_name, agent,
                          max_stories=None,
                          out_file_stories=None,
                          out_file_plot=None,
-                         fail_on_prediction_errors=False):
+                         fail_on_prediction_errors=False,
+                         use_e2e=False):
     """Run the evaluation of the stories, optionally plots the results."""
 
-    completed_trackers = _generate_trackers(resource_name, agent, max_stories)
+    completed_trackers = _generate_trackers(resource_name, agent,
+                                            max_stories, use_e2e)
 
-    test_y, predictions, failed = collect_story_predictions(
-            completed_trackers, agent, fail_on_prediction_errors)
+    story_results, failed, in_training_data = collect_story_predictions(
+            completed_trackers, agent, fail_on_prediction_errors, use_e2e)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UndefinedMetricWarning)
+        report, precision, f1, accuracy = get_evaluation_metrics(
+                story_results.serialise_targets(),
+                story_results.serialise_predictions()
+        )
+
     if out_file_plot:
-        plot_story_evaluation(test_y, predictions, out_file_plot)
+        plot_story_evaluation(story_results.action_targets,
+                              story_results.action_predictions,
+                              report, precision, f1, accuracy,
+                              in_training_data, out_file_plot)
 
     log_failed_stories(failed, out_file_stories)
 
+    return {
+        "report": report,
+        "precision": precision,
+        "f1": f1,
+        "accuracy": accuracy,
+        "in_training_data_fraction": in_training_data,
+        "is_end_to_end_evaluation": use_e2e
+    }
 
-def log_evaluation_table(golds, predictions, name,
+
+def log_evaluation_table(golds, name,
+                         report, precision, f1, accuracy,
+                         in_training_data_fraction,
                          include_report=True):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UndefinedMetricWarning)
-        report, precision, f1, accuracy = get_evaluation_metrics(golds,
-                                                                 predictions)
-
     logger.info("Evaluation Results on {} level:".format(name))
-    logger.info("\tCorrect:   {} / {}".format(int(len(golds) * accuracy),
-                                              len(golds)))
-    logger.info("\tF1-Score:  {:.3f}".format(f1))
-    logger.info("\tPrecision: {:.3f}".format(precision))
-    logger.info("\tAccuracy:  {:.3f}".format(accuracy))
+    logger.info("\tCorrect:          {} / {}"
+                "".format(int(len(golds) * accuracy), len(golds)))
+    logger.info("\tF1-Score:         {:.3f}".format(f1))
+    logger.info("\tPrecision:        {:.3f}".format(precision))
+    logger.info("\tAccuracy:         {:.3f}".format(accuracy))
+    logger.info("\tIn-data fraction: {:.3g}"
+                "".format(in_training_data_fraction))
 
     if include_report:
         logger.info("\tClassification report: \n{}".format(report))
 
 
-def plot_story_evaluation(test_y, predictions, out_file):
-    """Plot the results. of story evaluation"""
+def plot_story_evaluation(test_y, predictions,
+                          report, precision, f1, accuracy,
+                          in_training_data_fraction,
+                          out_file):
+    """Plot the results of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     import matplotlib.pyplot as plt
 
-    log_evaluation_table(test_y, predictions, "ACTION", include_report=True)
+    log_evaluation_table(test_y, "ACTION",
+                         report, precision, f1, accuracy,
+                         in_training_data_fraction,
+                         include_report=True)
+
     cnf_matrix = confusion_matrix(test_y, predictions)
+
     plot_confusion_matrix(cnf_matrix,
                           classes=unique_labels(test_y, predictions),
                           title='Action Confusion matrix')
@@ -264,6 +591,7 @@ if __name__ == '__main__':
                          cmdline_args.max_stories,
                          cmdline_args.failed,
                          cmdline_args.output,
-                         cmdline_args.fail_on_prediction_errors)
+                         cmdline_args.fail_on_prediction_errors,
+                         cmdline_args.e2e)
 
     logger.info("Finished evaluation")
