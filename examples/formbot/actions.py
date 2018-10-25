@@ -33,7 +33,7 @@ class RestaurantForm(FormAction):
         return ["cuisine", "num_people", "outdoor_seating",
                 "preferences", "feedback"]
 
-    def slot_mapping(self):
+    def slots_mappings(self):
         # type: () -> Dict[Text: Union[Dict, List[Dict]]]
         """A dictionary to map required slots to
             - an extracted entity
