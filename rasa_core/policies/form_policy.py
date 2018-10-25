@@ -41,11 +41,11 @@ class FormPolicy(MemoizationPolicy):
                                          lookup=lookup)
 
     @staticmethod
-    def _active_form_in(state):
+    def _active_form_in_state(state):
         return any(ACTIVE_FORM_PREFIX in k and v > 0 for k, v in state.items())
 
     @staticmethod
-    def _prev_action_listen_in(state):
+    def _prev_action_listen_in_state(state):
         return any(PREV_PREFIX + ACTION_LISTEN_NAME in k and v > 0
                    for k, v in state.items())
 
@@ -65,8 +65,8 @@ class FormPolicy(MemoizationPolicy):
 
         for states in trackers_as_states:
             state = states[0]
-            if (self._active_form_in(state) and
-                    self._prev_action_listen_in(state)):
+            if (self._active_form_in_state(state) and
+                    self._prev_action_listen_in_state(state)):
                 # by construction there is only one active form
                 form = [k[len(ACTIVE_FORM_PREFIX):]
                         for k, v in state.items()

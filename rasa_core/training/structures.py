@@ -248,7 +248,7 @@ class StoryStep(object):
         return (type(event) == ActionExecuted and
                 event.action_name == ACTION_LISTEN_NAME)
 
-    def _add_action_listen_to(self, events):
+    def _add_action_listen(self, events):
         if not events or not self._is_action_listen(events[-1]):
             # do not add second action_listen
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
@@ -267,14 +267,14 @@ class StoryStep(object):
 
         for e in self.events:
             if isinstance(e, UserUttered):
-                self._add_action_listen_to(events)
+                self._add_action_listen(events)
                 events.append(e)
                 events.extend(domain.slots_for_entities(e.entities))
             else:
                 events.append(e)
 
         if not self.end_checkpoints and should_append_final_listen:
-            self._add_action_listen_to(events)
+            self._add_action_listen(events)
 
         return events
 

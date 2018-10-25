@@ -230,7 +230,7 @@ class DialogueStateTracker(object):
         tracker = self.init_copy()
 
         rejected = False
-        no_validation = False
+        no_form_validation = False
         ignored_trackers = []
         latest_message = tracker.latest_message
 
@@ -249,7 +249,7 @@ class DialogueStateTracker(object):
                 rejected = True
 
             elif isinstance(event, NoFormValidation):
-                no_validation = True
+                no_form_validation = True
 
             elif isinstance(event, ActionExecuted):
                 # yields the intermediate state
@@ -261,7 +261,7 @@ class DialogueStateTracker(object):
                         yield tr
                     ignored_trackers = []
 
-                    if (no_validation or
+                    if (no_form_validation or
                             event.action_name != tracker.active_form):
                         # persist latest user message
                         # that was rejected by the form
@@ -288,14 +288,14 @@ class DialogueStateTracker(object):
                     rejected = False
                     ignored_trackers = []
 
-                no_validation = False
+                no_form_validation = False
 
             tracker.update(event)
 
         # yields the final state
         if tracker.active_form is None:
             yield tracker
-        elif rejected or no_validation:
+        elif rejected or no_form_validation:
             for tr in ignored_trackers:
                 yield tr
             yield tracker

@@ -856,6 +856,12 @@ class NoFormValidation(Event):
     def __str__(self):
         return "NoFormValidation()"
 
+    def __hash__(self):
+        return hash(32143124320)
+
+    def __eq__(self, other):
+        return isinstance(other, NoFormValidation)
+
     def as_story_string(self):
         return None
 
