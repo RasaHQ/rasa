@@ -578,6 +578,8 @@ def _request_action_from_user(predictions, sender_id, endpoint):
 
     _print_history(sender_id, endpoint)
 
+    tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.AFTER_RESTART)
+
     sorted_actions = sorted(predictions,
                             key=lambda k: (-k['score'], k['action']))
 
@@ -594,6 +596,17 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     }]
     answers = _ask_questions(questions, sender_id, endpoint)
     action_name = answers["action"]
+    if tracker.get('active_form') and action_name == tracker.get('active_form'):
+        validation_questions = [{
+            "name": "validation",
+            "type": "confirm",
+            "message": "Would you like the form to validate your input?"
+        }]
+        form_answers = _ask_questions(validation_questions, sender_id,
+                                      endpoint)
+
+        if not form_answers["validation"]:
+            send_event(endpoint, sender_id, {"event": "no_form_validation"})
     print("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name
 
