@@ -486,7 +486,8 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
 
 
 def arguments_of(func):
-    """Return the parameters of the function `func` as a list of their names"""
+    """Return the parameters of the function `func` """
+    """as a list of their names."""
 
     try:
         # python 3.x is used

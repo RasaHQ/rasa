@@ -140,9 +140,10 @@ def create_argument_parser():
             '--fallback_action_name',
             type=str,
             default=DEFAULT_FALLBACK_ACTION,
-            help="When a fallback is triggered (e.g. because the ML prediction"
-                 "is of low confidence) this is the name of tje action that "
-                 "will get triggered instead.")
+            help="When a fallback is triggered (e.g. because the ML "
+                 "prediction is of low confidence) "
+                 "this is the name of the action "
+                 "that will get triggered instead.")
 
     utils.add_logging_option_arguments(parser)
     return parser
