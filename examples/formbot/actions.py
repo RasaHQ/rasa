@@ -80,7 +80,8 @@ class RestaurantForm(FormAction):
 
     def validate(self, dispatcher, tracker, domain):
         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-        """Validate extracted requested slot else raise an error"""
+        """Validate extracted requested slot
+            else reject to execute the form action"""
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
         # extract requested slot from a user input by using `slot_mappings()`

@@ -871,7 +871,7 @@ class NoFormValidation(Event):
 
 
 class ActionExecutionRejected(Event):
-    """Notify Core that the execution of an action has failed"""
+    """Notify Core that the execution of the action has been rejected"""
 
     type_name = 'action_execution_rejected'
 
