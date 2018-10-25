@@ -541,6 +541,46 @@ paths:
           $ref: '#/components/responses/400Events'
         500:
           $ref: '#/components/responses/500Action'
+
+  /evaluate:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Evaluate stories
+      description: >-
+        Evaluates one or multiple stories against the currently loaded model.
+      operationId: evaluateStories
+      parameters:
+      - $ref: '#/components/parameters/e2e'
+      requestBody:
+        required: true
+        content:
+          text/markdown:
+            schema:
+              type: string
+            example: >-
+              ## story_00055028
+              * greet
+               - utter_ask_howcanhelp
+              * inform{"cuisine": "indian", "people": "two", "price": "moderate"}
+               - utter_on_it
+               - utter_ask_location
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+              examples:
+                PredictResult:
+                  $ref: '#/components/examples/EvaluationResult'
+        400:
+          $ref: '#/components/responses/400Evaluation'
+
   /predict:
     post:
       security:
@@ -587,8 +627,10 @@ paths:
               examples:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
-        400:
-          $ref: '#/components/responses/400Events'
+        403:
+          $ref: '#/components/responses/403Permissions'
+        500:
+          $ref: '#/components/responses/500Action'
 
   /domain:
     get:
@@ -684,6 +726,14 @@ components:
           - APPLIED
           - AFTER_RESTART
           - NONE
+    e2e:
+      in: path
+      name: e2e
+      description: Perform an end-to-end evaluation on the posted stories
+      schema:
+        type: boolean
+        default: false
+      required: false
 
   requestBodies:
     Event:
@@ -813,6 +863,24 @@ components:
         policy: "policy_2_KerasPolicy"
         tracker:
           <<: *tracker-example
+    EvaluationResult:
+      value:
+        accuracy: 1.0
+        f1: 1.0
+        in_training_data_fraction: 1.0
+        precision: 1.0
+        report: >-
+          # classification report
+                         precision recall  f1-score   support
+          action_listen       1.00      1.00      1.00         5
+                default       1.00      1.00      1.00         2
+                goodbye       1.00      1.00      1.00         1
+                  greet       1.00      1.00      1.00         2
+          utter_default       1.00      1.00      1.00         2
+          utter_goodbye       1.00      1.00      1.00         1
+            utter_greet       1.00      1.00      1.00         2
+
+            avg / total       1.00      1.00      1.00        15
 
   responses:
     200Tracker:
@@ -851,6 +919,20 @@ components:
             message: >-
               Supplied events are not valid.
             reason: "InvalidParameter"
+            code: 400
+
+    400Evaluation:
+      description: Failed Evaluation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Evaluation could not be created.
+            reason: "FailedEvaluation"
             code: 400
 
     403Permissions:
@@ -1190,3 +1272,32 @@ components:
             Policy which predicted the most likely action
         tracker:
           $ref: '#/components/schemas/Tracker'
+
+    EvaluationResult:
+      type: object
+      properties:
+        report:
+          type: string
+          description: >-
+            Sklearn classifcation report, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+        precision:
+          type: number
+          description: >-
+            Precision of the classification, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+        f1:
+          type: number
+          description: >-
+            F1 score of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+        accuracy:
+          type: number
+          description: >-
+            Accuracy of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+        in_training_data_fraction:
+          type: number
+          description: >-
+            Fraction of stories that are present in the training data of the
+            model loaded at evaluation time.
