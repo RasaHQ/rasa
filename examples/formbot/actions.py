@@ -86,7 +86,8 @@ class RestaurantForm(FormAction):
         # extract requested slot from a user input by using `slot_mapping`
         extracted_value = self.extract(dispatcher, tracker, domain)
         if extracted_value is None:
-            # raise an error if nothing was extracted
+            # reject to execute the form action if nothing was extracted,
+            # it will allow other policies to predict another action
             raise ActionExecutionRejection(self.name(),
                                            "Failed to validate slot {0} "
                                            "with action {1}"
