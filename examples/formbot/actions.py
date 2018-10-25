@@ -26,15 +26,15 @@ class RestaurantForm(FormAction):
         return "restaurant_form"
 
     @staticmethod
-    def required_slots():
-        # type: () -> List[Text]
+    def required_slots(tracker):
+        # type: (Tracker) -> List[Text]
         """A list of required slots that the form has to fill"""
 
         return ["cuisine", "num_people", "outdoor_seating",
                 "preferences", "feedback"]
 
-    def slot_mapping(self):
-        # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
+    def slot_mappings(self):
+        # type: () -> Dict[Text: Union[Dict, List[Dict]]]
         """A dictionary to map required slots to
             - an extracted entity
             - intent: value pairs
@@ -128,10 +128,10 @@ class RestaurantForm(FormAction):
                     # slot already boolean
                     validated_events.append(SlotSet(slot_to_fill, slot))
                 elif 'out' in slot:
-                    # convert out... to True
+                    # convert "out..." to True
                     validated_events.append(SlotSet(slot_to_fill, True))
                 elif 'in' in slot:
-                    # convert in... to False
+                    # convert "in..." to False
                     validated_events.append(SlotSet(slot_to_fill, False))
                 else:
                     # set a slot to whatever it is

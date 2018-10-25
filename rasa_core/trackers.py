@@ -18,7 +18,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered, ActionExecutionRejected, Form)
+    BotUttered, ActionExecutionRejected, Form, NoFormValidation)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -229,7 +229,8 @@ class DialogueStateTracker(object):
 
         tracker = self.init_copy()
 
-        failed = False
+        rejected = False
+        no_form_validation = False
         ignored_trackers = []
         latest_message = tracker.latest_message
 
@@ -245,24 +246,38 @@ class DialogueStateTracker(object):
                 tracker.latest_message = latest_message
 
             elif isinstance(event, ActionExecutionRejected):
-                failed = True
+                rejected = True
+
+            elif isinstance(event, NoFormValidation):
+                no_form_validation = True
 
             elif isinstance(event, ActionExecuted):
                 # yields the intermediate state
                 if tracker.active_form is None:
                     yield tracker
-                elif failed:
+
+                elif rejected:
                     for tr in ignored_trackers:
                         yield tr
+                    ignored_trackers = []
+
+                    if (no_form_validation or
+                            event.action_name != tracker.active_form):
+                        # persist latest user message
+                        # that was rejected by the form
+                        latest_message = tracker.latest_message
+                    else:
+                        # form was called with validation, so
+                        # override tracker's latest message
+                        tracker.latest_message = latest_message
+
                     yield tracker
 
-                    ignored_trackers = []
-                    # persist latest user message that failed the form
-                    latest_message = tracker.latest_message
                 elif event.action_name != tracker.active_form:
                     # it is not known whether the form will be
                     # successfully executed, so store this tracker for later
                     tr = tracker.copy()
+                    # form was called with validation, so
                     # override tracker's latest message
                     tr.latest_message = latest_message
                     ignored_trackers.append(tr)
@@ -270,15 +285,17 @@ class DialogueStateTracker(object):
                 if event.action_name == tracker.active_form:
                     # the form was successfully executed, so
                     # remove all stored trackers
-                    failed = False
+                    rejected = False
                     ignored_trackers = []
+
+                no_form_validation = False
 
             tracker.update(event)
 
         # yields the final state
         if tracker.active_form is None:
             yield tracker
-        elif failed:
+        elif rejected or no_form_validation:
             for tr in ignored_trackers:
                 yield tr
             yield tracker

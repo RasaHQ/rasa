@@ -709,7 +709,6 @@ class ActionExecuted(Event):
         return ("ActionExecuted(action: {}, policy: {}, confidence: {})"
                 "".format(self.action_name, self.policy, self.confidence))
 
-
     def __hash__(self):
         return hash(self.action_name)
 
@@ -849,6 +848,28 @@ class Form(Event):
         tracker.change_form_to(self.name)
 
 
+class NoFormValidation(Event):
+    """Event added by FormPolicy to notify form action to skip validation"""
+
+    type_name = "no_form_validation"
+
+    def __str__(self):
+        return "NoFormValidation()"
+
+    def __hash__(self):
+        return hash(32143124320)
+
+    def __eq__(self, other):
+        return isinstance(other, NoFormValidation)
+
+    def as_story_string(self):
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        return NoFormValidation(parameters.get("timestamp"))
+
+
 class ActionExecutionRejected(Event):
     """Notify Core that the execution of an action has failed"""
 
@@ -894,7 +915,3 @@ class ActionExecutionRejected(Event):
                   "policy": self.policy,
                   "confidence": self.confidence})
         return d
-
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
-        pass
