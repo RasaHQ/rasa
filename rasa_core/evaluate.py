@@ -335,8 +335,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                     "Model predicted a wrong action. Failed Story: "
                     "\n\n{}".format(partial_tracker.export_stories()))
     else:
-        correct_action_executed_event = ActionExecuted(event.action_name)
-        partial_tracker.update(correct_action_executed_event)
+        partial_tracker.update(event)
 
     return action_executed_eval_store, policy
 
