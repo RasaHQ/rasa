@@ -144,9 +144,14 @@
     - restaurant_form
     - slot{"outdoor_seating": true}
     - slot{"requested_slot": "preferences"}
-* form: rubbish
+* form: inform
     - form: restaurant_form
-    - slot{"preferences": "rubbish"}
+    - slot{"preferences": "/inform"}
+    - slot{"requested_slot": "feedback"}
+* form: inform{"feedback": "great"}
+    - slot{"feedback": "great"}
+    - form: restaurant_form
+    - slot{"feedback": "great"}
     - form{"name": null}
     - slot{"requested_slot": null}
     - utter_slots_values
