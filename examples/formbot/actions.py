@@ -93,6 +93,8 @@ class RestaurantForm(FormAction):
                                            "".format(slot_to_fill,
                                                      self.name()))
 
+        # we'll check when validation failed in order
+        # to add appropriate utterances
         if slot_to_fill == 'cuisine':
             if extracted_value.lower() not in self.cuisine_db():
                 dispatcher.utter_template('utter_wrong_cuisine', tracker)
@@ -114,7 +116,13 @@ class RestaurantForm(FormAction):
                 elif 'in' in extracted_value:
                     # convert "in..." to False
                     return [SlotSet(slot_to_fill, False)]
+                else:
+                    dispatcher.utter_template('utter_wrong_outdoor_seating',
+                                              tracker)
+                    # validation failed, set this slot to None
+                    return [SlotSet(slot_to_fill, None)]
 
+        # validation succeed, set this slot to extracted value
         return [SlotSet(slot_to_fill, extracted_value)]
 
     def submit(self, dispatcher, tracker, domain):
