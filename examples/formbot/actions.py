@@ -84,8 +84,8 @@ class RestaurantForm(FormAction):
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
         # extract requested slot from a user input by using `slot_mapping`
-        events = self.extract(dispatcher, tracker, domain)
-        if events is None:
+        extracted_value = self.extract(dispatcher, tracker, domain)
+        if extracted_value is None:
             # raise an error if nothing was extracted
             raise ActionExecutionRejection(self.name(),
                                            "Failed to validate slot {0} "
@@ -93,55 +93,29 @@ class RestaurantForm(FormAction):
                                            "".format(slot_to_fill,
                                                      self.name()))
 
-        extracted_slots = []
-        validated_events = []
-        for e in events:
-            if e['event'] == 'slot':
-                # get values of extracted slots to validate them later
-                extracted_slots.append(e['value'])
-            else:
-                # add other events without validating them
-                validated_events.append(e)
+        if slot_to_fill == 'cuisine':
+            if extracted_value.lower() not in self.cuisine_db():
+                dispatcher.utter_template('utter_wrong_cuisine', tracker)
+                # validation failed, set this slot to None
+                return [SlotSet(slot_to_fill, None)]
 
-        for slot in extracted_slots:
-            if slot_to_fill == 'cuisine':
-                if slot.lower() not in self.cuisine_db():
-                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                    # validation failed, set this slot to None
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
+        elif slot_to_fill == 'num_people':
+            if not self.is_int(extracted_value) or int(extracted_value) <= 0:
+                dispatcher.utter_template('utter_wrong_num_people',
+                                          tracker)
+                # validation failed, set this slot to None
+                return [SlotSet(slot_to_fill, None)]
 
-            elif slot_to_fill == 'num_people':
-                if not self.is_int(slot) or int(slot) <= 0:
-                    dispatcher.utter_template('utter_wrong_num_people',
-                                              tracker)
-                    # validation failed, set this slot to None
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            elif slot_to_fill == 'outdoor_seating':
-                if isinstance(slot, bool):
-                    # slot already boolean
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-                elif 'out' in slot:
+        elif slot_to_fill == 'outdoor_seating':
+            if isinstance(extracted_value, str):
+                if 'out' in extracted_value:
                     # convert "out..." to True
-                    validated_events.append(SlotSet(slot_to_fill, True))
-                elif 'in' in slot:
+                    return [SlotSet(slot_to_fill, True)]
+                elif 'in' in extracted_value:
                     # convert "in..." to False
-                    validated_events.append(SlotSet(slot_to_fill, False))
-                else:
-                    # set a slot to whatever it is
-                    validated_events.append(SlotSet(slot_to_fill, slot))
+                    return [SlotSet(slot_to_fill, False)]
 
-            else:
-                # no validation needed
-                validated_events.append(SlotSet(slot_to_fill, slot))
-
-        return validated_events
+        return [SlotSet(slot_to_fill, extracted_value)]
 
     def submit(self, dispatcher, tracker, domain):
         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
