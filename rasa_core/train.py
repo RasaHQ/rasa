@@ -33,7 +33,7 @@ def create_argument_parser():
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
     group = parser.add_mutually_exclusive_group(required=True)
-    
+
     group = add_args_to_group(group)
     parser = add_args_to_parser(parser)
 
