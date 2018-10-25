@@ -80,10 +80,10 @@ class RestaurantForm(FormAction):
 
     def validate(self, dispatcher, tracker, domain):
         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-        """"Validate extracted requested slot else raise an error"""
+        """Validate extracted requested slot else raise an error"""
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
-        # extract requested slot from a user input by using `slot_mapping`
+        # extract requested slot from a user input by using `slot_mappings()`
         extracted_value = self.extract(dispatcher, tracker, domain)
         if extracted_value is None:
             # reject to execute the form action if nothing was extracted,
@@ -99,14 +99,14 @@ class RestaurantForm(FormAction):
         if slot_to_fill == 'cuisine':
             if extracted_value.lower() not in self.cuisine_db():
                 dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                # validation failed, set this slot to None
+                # validation failed, set requested slot to None
                 return [SlotSet(slot_to_fill, None)]
 
         elif slot_to_fill == 'num_people':
             if not self.is_int(extracted_value) or int(extracted_value) <= 0:
                 dispatcher.utter_template('utter_wrong_num_people',
                                           tracker)
-                # validation failed, set this slot to None
+                # validation failed, set requested slot to None
                 return [SlotSet(slot_to_fill, None)]
 
         elif slot_to_fill == 'outdoor_seating':
@@ -120,10 +120,10 @@ class RestaurantForm(FormAction):
                 else:
                     dispatcher.utter_template('utter_wrong_outdoor_seating',
                                               tracker)
-                    # validation failed, set this slot to None
+                    # validation failed, set requested slot to None
                     return [SlotSet(slot_to_fill, None)]
 
-        # validation succeed, set this slot to extracted value
+        # validation succeed, set requested slot to extracted value
         return [SlotSet(slot_to_fill, extracted_value)]
 
     def submit(self, dispatcher, tracker, domain):
