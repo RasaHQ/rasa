@@ -49,20 +49,8 @@ class FormPolicy(MemoizationPolicy):
         return any(PREV_PREFIX + ACTION_LISTEN_NAME in k and v > 0
                    for k, v in state.items())
 
-    def train(self,
-              training_trackers,  # type: List[DialogueStateTracker]
-              domain,  # type: Domain
-              **kwargs  # type: Any
-              ):
-        # type: (...) -> None
-        """Finds intents that shouldn't be validated.
-            Assumes that stories contain only unhappy paths"""
-
-        self.lookup = {}
-
-        trackers_as_states, _ = self.featurizer.training_states_and_actions(
-                training_trackers, domain)
-
+    def _add(self, trackers_as_states, trackers_as_actions,
+             domain, online=False):
         for states in trackers_as_states:
             state = states[0]
             if (self._active_form_in_state(state) and

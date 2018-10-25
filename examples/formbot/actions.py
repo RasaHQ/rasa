@@ -80,68 +80,52 @@ class RestaurantForm(FormAction):
 
     def validate(self, dispatcher, tracker, domain):
         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-        """"Validate extracted requested slot else raise an error"""
+        """Validate extracted requested slot
+            else reject to execute the form action"""
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
-        # extract requested slot from a user input by using `slot_mapping`
-        events = self.extract(dispatcher, tracker, domain)
-        if events is None:
-            # raise an error if nothing was extracted
+        # extract requested slot from a user input by using `slot_mappings()`
+        extracted_value = self.extract(dispatcher, tracker, domain)
+        if extracted_value is None:
+            # reject to execute the form action if nothing was extracted,
+            # it will allow other policies to predict another action
             raise ActionExecutionRejection(self.name(),
                                            "Failed to validate slot {0} "
                                            "with action {1}"
                                            "".format(slot_to_fill,
                                                      self.name()))
 
-        extracted_slots = []
-        validated_events = []
-        for e in events:
-            if e['event'] == 'slot':
-                # get values of extracted slots to validate them later
-                extracted_slots.append(e['value'])
-            else:
-                # add other events without validating them
-                validated_events.append(e)
+        # we'll check when validation failed in order
+        # to add appropriate utterances
+        if slot_to_fill == 'cuisine':
+            if extracted_value.lower() not in self.cuisine_db():
+                dispatcher.utter_template('utter_wrong_cuisine', tracker)
+                # validation failed, set requested slot to None
+                return [SlotSet(slot_to_fill, None)]
 
-        for slot in extracted_slots:
-            if slot_to_fill == 'cuisine':
-                if slot.lower() not in self.cuisine_db():
-                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                    # validation failed, set this slot to None
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
+        elif slot_to_fill == 'num_people':
+            if not self.is_int(extracted_value) or int(extracted_value) <= 0:
+                dispatcher.utter_template('utter_wrong_num_people',
+                                          tracker)
+                # validation failed, set requested slot to None
+                return [SlotSet(slot_to_fill, None)]
 
-            elif slot_to_fill == 'num_people':
-                if not self.is_int(slot) or int(slot) <= 0:
-                    dispatcher.utter_template('utter_wrong_num_people',
-                                              tracker)
-                    # validation failed, set this slot to None
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            elif slot_to_fill == 'outdoor_seating':
-                if isinstance(slot, bool):
-                    # slot already boolean
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-                elif 'out' in slot:
+        elif slot_to_fill == 'outdoor_seating':
+            if isinstance(extracted_value, str):
+                if 'out' in extracted_value:
                     # convert "out..." to True
-                    validated_events.append(SlotSet(slot_to_fill, True))
-                elif 'in' in slot:
+                    return [SlotSet(slot_to_fill, True)]
+                elif 'in' in extracted_value:
                     # convert "in..." to False
-                    validated_events.append(SlotSet(slot_to_fill, False))
+                    return [SlotSet(slot_to_fill, False)]
                 else:
-                    # set a slot to whatever it is
-                    validated_events.append(SlotSet(slot_to_fill, slot))
+                    dispatcher.utter_template('utter_wrong_outdoor_seating',
+                                              tracker)
+                    # validation failed, set requested slot to None
+                    return [SlotSet(slot_to_fill, None)]
 
-            else:
-                # no validation needed
-                validated_events.append(SlotSet(slot_to_fill, slot))
-
-        return validated_events
+        # validation succeed, set requested slot to extracted value
+        return [SlotSet(slot_to_fill, extracted_value)]
 
     def submit(self, dispatcher, tracker, domain):
         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]

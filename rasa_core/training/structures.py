@@ -184,6 +184,9 @@ class StoryStep(object):
                 result += self._bot_string(s)
 
             elif isinstance(s, ActionExecuted):
+                if self._is_action_listen(s):
+                    continue
+
                 if self.as_story_string_helper.active_form is None:
                     result += self._bot_string(s)
                 else:

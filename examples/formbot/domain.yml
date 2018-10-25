@@ -57,6 +57,8 @@ templates:
     - text: "cuisine type is not in the database, please try again"
   utter_wrong_num_people:
     - text: "number of people should be a positive integer, please try again"
+  utter_wrong_outdoor_seating:
+    - text: "could not convert input to boolean value, please try again"
   utter_default:
     - text: "sorry, I didn't understand you, please try input something else"
 
