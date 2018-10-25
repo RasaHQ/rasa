@@ -3,31 +3,26 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
 import logging
 import os
 import tempfile
 import zipfile
 from functools import wraps
-from typing import List
-from typing import Text, Optional
-from typing import Union
+from typing import List, Text, Optional, Union
 
-from flask import Flask, request, abort, Response, jsonify
-from flask import json
+from flask import Flask, request, abort, Response, jsonify, json
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 
+import rasa_nlu
 from rasa_core import utils, constants
-from rasa_core.channels import (
-    CollectingOutputChannel)
-from rasa_core.channels import UserMessage
+from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.evaluate import run_story_evaluation
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import AvailableEndpoints, convert_bytes_to_string
+from rasa_core.utils import AvailableEndpoints
 from rasa_core.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -488,15 +483,11 @@ def create_app(agent,
     @cross_origin(origins=cors_origins)
     def evaluate_stories():
         """Evaluate stories against the currently loaded model."""
-
-        data = convert_bytes_to_string(request.get_data())
-        tmp = tempfile.NamedTemporaryFile(delete=False)
-        with io.open(tmp.name, 'w') as f:
-            f.write(data)
-
+        tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
+                                                        mode='w+b')
         use_e2e = utils.bool_arg('e2e', default=False)
         try:
-            evaluation = run_story_evaluation(tmp.name, agent, use_e2e=use_e2e)
+            evaluation = run_story_evaluation(tmp_file, agent, use_e2e=use_e2e)
             return jsonify(evaluation)
         except ValueError as e:
             return error(400, "FailedEvaluation",

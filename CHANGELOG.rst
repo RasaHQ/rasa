@@ -24,6 +24,7 @@ Added
 - show visualization of conversation while doing interactive learning
 - option for end-to-end evaluation of Rasa Core and NLU examples in
   ``evaluate.py`` script
+- docker-compose file to start a rasa core server together with nlu, an action server, and duckling
 - http server (``rasa_core.run --enable-api``) evaluation endpoint
 
 Changed
@@ -31,6 +32,9 @@ Changed
 - improved response format for ``/predict`` endpoint
 - all error messages from the server are now in json format
 - ``agent.log_message`` now returns a tracker instead of the trackers state
+- the core container does not load the nlu model by default anymore.
+  Instead it can be connected to a nlu server.
+
 
 Removed
 -------
@@ -47,6 +51,7 @@ Fixed
   the correct JWT data field
 - all sender ids from channels are now handled as `str`.
   Sender ids from old messages with an `int` id are converted to `str`.
+- legacy pep8 errors
 
 
 [0.11.12] - 2018-10-11

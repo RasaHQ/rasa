@@ -222,7 +222,9 @@ def test_evaluate(app):
                                                "precision",
                                                "f1",
                                                "accuracy",
-                                               "in_training_data_fraction"}
+                                               "in_training_data_fraction",
+                                               "is_end_to_end_evaluation"}
+    assert not response.get_json()["is_end_to_end_evaluation"]
 
 
 def test_end_to_end_evaluation(app):
@@ -235,7 +237,9 @@ def test_end_to_end_evaluation(app):
                                                "precision",
                                                "f1",
                                                "accuracy",
-                                               "in_training_data_fraction"}
+                                               "in_training_data_fraction",
+                                               "is_end_to_end_evaluation"}
+    assert response.get_json()["is_end_to_end_evaluation"]
 
 
 def test_list_conversations_with_jwt(secured_app):

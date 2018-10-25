@@ -588,13 +588,6 @@ def pad_list_to_size(_list, size, padding_value=None):
     return _list + [padding_value] * (size - len(_list))
 
 
-def convert_bytes_to_string(data):
-    """Convert data to string if data is bytes-like object"""
-    if isinstance(data, (bytes, bytearray)):
-        return data.decode("utf-8")
-    return data
-
-
 class AvailableEndpoints(object):
     """Collection of configured endpoints."""
 

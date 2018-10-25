@@ -146,9 +146,10 @@ class KerasPolicy(Policy):
                                                          shuffled_y.shape[1:])
 
                 validation_split = kwargs.get("validation_split", 0.0)
-                logger.info("Fitting model with {} total samples and a validation "
-                            "split of {}".format(training_data.num_examples(),
-                                                 validation_split))
+                logger.info("Fitting model with {} total samples and a "
+                            "validation split of {}".format(
+                                training_data.num_examples(),
+                                validation_split))
                 # filter out kwargs that cannot be passed to fit
                 params = self._get_valid_params(self.model.fit, **kwargs)
 
