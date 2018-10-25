@@ -178,9 +178,13 @@ class WronglyPredictedAction(ActionExecuted):
 
     type_name = "wrong_action"
 
-    def __init__(self, correct_action, predicted_action):
+    def __init__(self, correct_action, predicted_action,
+                 policy, confidence, timestamp=None):
         self.predicted_action = predicted_action
-        super(WronglyPredictedAction, self).__init__(correct_action)
+        super(WronglyPredictedAction, self).__init__(correct_action,
+                                                     policy,
+                                                     confidence,
+                                                     timestamp=timestamp)
 
     def as_story_string(self):
         return "{}   <!-- predicted: {} -->".format(self.action_name,
@@ -227,6 +231,9 @@ class WronglyClassifiedUserUtterance(UserUttered):
                  text,
                  correct_intent,
                  correct_entities,
+                 parse_data=None,
+                 timestamp=None,
+                 input_channel=None,
                  predicted_intent=None,
                  predicted_entities=None):
         self.predicted_intent = predicted_intent
@@ -234,8 +241,12 @@ class WronglyClassifiedUserUtterance(UserUttered):
 
         intent = {"name": correct_intent}
 
-        super(WronglyClassifiedUserUtterance, self).__init__(
-                text, intent, correct_entities)
+        super(WronglyClassifiedUserUtterance, self).__init__(text,
+                                                             intent,
+                                                             correct_entities,
+                                                             parse_data,
+                                                             timestamp,
+                                                             input_channel)
 
     def as_story_string(self):
         correct_message = _md_format_message(self.text,
@@ -301,6 +312,9 @@ def _collect_user_uttered_predictions(event,
                 WronglyClassifiedUserUtterance(
                         event.text, intent_gold,
                         user_uttered_eval_store.entity_predictions,
+                        event.parse_data,
+                        event.timestamp,
+                        event.input_channel,
                         predicted_intent,
                         user_uttered_eval_store.entity_targets)
         )
@@ -320,7 +334,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
     action_executed_eval_store = EvaluationStore()
 
-    action, policy, _ = processor.predict_next_action(partial_tracker)
+    action, policy, confidence = processor.predict_next_action(partial_tracker)
 
     predicted = action.name()
     gold = event.action_name
@@ -329,7 +343,10 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                             action_targets=gold)
 
     if action_executed_eval_store.has_prediction_target_mismatch():
-        partial_tracker.update(WronglyPredictedAction(gold, predicted))
+        partial_tracker.update(WronglyPredictedAction(gold, predicted,
+                                                      event.policy,
+                                                      event.confidence,
+                                                      event.timestamp))
         if fail_on_prediction_errors:
             raise ValueError(
                     "Model predicted a wrong action. Failed Story: "
