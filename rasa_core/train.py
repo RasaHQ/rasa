@@ -40,6 +40,12 @@ def create_argument_parser():
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
     group = parser.add_mutually_exclusive_group(required=True)
+    subparsers = parser.add_subparsers(help='mode')
+    default_parser = subparsers.add_parser('default', help='default mode: train a dialogue model')
+    compare_parser = subparsers.add_parser('compare', help='compare mode: train multiple dialogue models to compare policies')
+
+    add_default_args(default_parser)
+    add_compare_args(compare_parser)
 
     group = add_args_to_group(group)
     parser = add_args_to_parser(parser)
@@ -48,65 +54,26 @@ def create_argument_parser():
     return parser
 
 
-def add_args_to_parser(parser):
+def add_compare_args(parser):
+    parser.add_argument(
+            '--percentages',
+            nargs="*",
+            type=int,
+            default=[0, 5, 25, 50, 70, 90, 95],
+            help="Range of exclusion percentages")
+    parser.add_argument(
+            '--runs',
+            type=int,
+            default=3,
+            help="Number of runs for experiments")
 
-    parser.add_argument(
-            '-o', '--out',
-            type=str,
-            required=False,
-            help="directory to persist the trained model in")
-    parser.add_argument(
-            '-d', '--domain',
-            type=str,
-            required=True,
-            help="domain specification yaml file")
+
+def add_default_args(parser):
     parser.add_argument(
             '-u', '--nlu',
             type=str,
             default=None,
             help="trained nlu model")
-    parser.add_argument(
-            '--history',
-            type=int,
-            default=None,
-            help="max history to use of a story")
-    parser.add_argument(
-            '--epochs',
-            type=int,
-            default=100,
-            help="number of epochs to train the model")
-    parser.add_argument(
-            '--validation_split',
-            type=float,
-            default=0.1,
-            help="Percentage of training samples used for validation, "
-                 "0.1 by default")
-    parser.add_argument(
-            '--batch_size',
-            type=int,
-            default=20,
-            help="number of training samples to put into one training batch")
-    parser.add_argument(
-            '--interactive',
-            default=False,
-            action='store_true',
-            help="enable interactive training")
-    parser.add_argument(
-            '--skip_visualization',
-            default=False,
-            action='store_true',
-            help="disables plotting the visualization during "
-                 "interactive learning")
-    parser.add_argument(
-            '--finetune',
-            default=False,
-            action='store_true',
-            help="retrain the model immediately based on feedback.")
-    parser.add_argument(
-            '--augmentation',
-            type=int,
-            default=50,
-            help="how much data augmentation to use during training")
     parser.add_argument(
             '--debug_plots',
             default=False,
@@ -123,6 +90,22 @@ def add_args_to_parser(parser):
             '--endpoints',
             default=None,
             help="Configuration file for the connectors as a yml file")
+    parser.add_argument(
+            '--interactive',
+            default=False,
+            action='store_true',
+            help="enable interactive training")
+    parser.add_argument(
+            '--skip_visualization',
+            default=False,
+            action='store_true',
+            help="disables plotting the visualization during "
+                 "interactive learning")
+    parser.add_argument(
+            '--finetune',
+            default=False,
+            action='store_true',
+            help="retrain the model immediately based on feedback.")
     parser.add_argument(
             '--nlu_threshold',
             type=float,
@@ -145,37 +128,56 @@ def add_args_to_parser(parser):
             help="When a fallback is triggered (e.g. because the ML prediction "
                  "is of low confidence) this is the name of tje action that "
                  "will get triggered instead.")
+
+
+def add_args_to_parser(parser):
+
+    parser.add_argument(
+            '-o', '--out',
+            type=str,
+            required=False,
+            help="directory to persist the trained model in")
+    parser.add_argument(
+            '-d', '--domain',
+            type=str,
+            required=True,
+            help="domain specification yaml file")
+    # parser.add_argument(
+    #         '--history',
+    #         type=int,
+    #         default=None,
+    #         help="max history to use of a story")
+    # parser.add_argument(
+            # '--epochs',
+            # type=int,
+            # default=100,
+            # help="number of epochs to train the model")
+    parser.add_argument(
+            '--validation_split',
+            type=float,
+            default=0.1,
+            help="Percentage of training samples used for validation, "
+                 "0.1 by default")
+    # parser.add_argument(
+    #         '--batch_size',
+    #         type=int,
+    #         default=20,
+    #         help="number of training samples to put into one training batch")
+    parser.add_argument(
+            '--augmentation',
+            type=int,
+            default=50,
+            help="how much data augmentation to use during training")
     parser.add_argument(
             '--mode',
-            type=str,
+            choices=['default', 'compare'],
             default="default",
             help="default|compare (train a model, or train multiple models to "
                  "compare policies)")
-    # the arguments below are for the compare mode of the script
-    parser.add_argument(
-            '--epochs_embed',
-            type=int,
-            default=1000,
-            help="number of epochs for the embedding policy")
-    parser.add_argument(
-            '--epochs_keras',
-            type=int,
-            default=400,
-            help="number of epochs for the keras policy")
-    parser.add_argument(
-            '--percentages',
-            nargs="*",
-            type=int,
-            default=[0, 5, 25, 50, 70, 90, 95],
-            help="Range of exclusion percentages")
-    parser.add_argument(
-            '--runs',
-            type=int,
-            default=3,
-            help="Number of runs for experiments")
     parser.add_argument(
             '-c', '--config',
             type=str,
+            nargs="*",
             required=False,
             help="Policy specification yaml file."
     )
@@ -397,9 +399,6 @@ if __name__ == '__main__':
         pickle.dump(story_range,
                     io.open(os.path.join(cmdline_args.out, 'num_stories.p'),
                             'wb'))
-
-    else:
-        raise ValueError("--mode can take the values default or compare")
 
     if cmdline_args.interactive:
         interactive.run_interactive_learning(
