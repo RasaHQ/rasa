@@ -46,7 +46,7 @@ class DialogflowEmulator(NoEmulator):
                 "metadata": {
                     "intentId": str(uuid.uuid1()),
                     "webhookUsed": "false",
-                    "intentName": data["intent"]
+                    "intentName": data["intent"]["name"]
                 },
                 "fulfillment": {},
                 "score": data["intent"]["confidence"],
