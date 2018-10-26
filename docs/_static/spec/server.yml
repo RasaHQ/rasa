@@ -1287,26 +1287,6 @@ components:
     EvaluationResult:
       type: object
       properties:
-        report:
-          type: string
-          description: >-
-            Sklearn classifcation report, see
-            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
-        precision:
-          type: number
-          description: >-
-            Precision of the classification, see
-            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
-        f1:
-          type: number
-          description: >-
-            F1 score of the classification,
-            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
-        accuracy:
-          type: number
-          description: >-
-            Accuracy of the classification,
-            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
         actions:
           type: array
           items:
@@ -1327,8 +1307,31 @@ components:
           description: >-
             Accuracy of the classification,
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+        is_end_to_end_evaluation:
+          type: bool
+          description: True if evaluation is end-to-end, false otherwise
+        precision:
+          type: number
+          description: >-
+            Precision of the classification, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+        f1:
+          type: number
+          description: >-
+            F1 score of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+        accuracy:
+          type: number
+          description: >-
+            Accuracy of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
         in_training_data_fraction:
           type: number
           description: >-
             Fraction of stories that are present in the training data of the
             model loaded at evaluation time.
+        report:
+          type: string
+          description: >-
+            Sklearn classifcation report, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
