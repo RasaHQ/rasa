@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class FormPolicy(MemoizationPolicy):
-    """Policy which handles deterministic prediction of Forms"""
+    """Policy which handles prediction of Forms"""
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
 
