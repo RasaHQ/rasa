@@ -24,7 +24,7 @@ from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.utils import AvailableEndpoints, pad_list_to_size
 from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
-from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+
 
 logger = logging.getLogger(__name__)
 
@@ -191,21 +191,6 @@ class WronglyPredictedAction(ActionExecuted):
                                                     self.predicted_action)
 
 
-def _deserialise_entities(entities):
-    if isinstance(entities, str):
-        entities = json.loads(entities)
-
-    return [e for e in entities if isinstance(e, dict)]
-
-
-def _md_format_message(text, intent, entities):
-    message_from_md = MarkdownReader()._parse_training_example(text)
-    deserialised_entities = _deserialise_entities(entities)
-    return MarkdownWriter()._generate_message_md(
-            {"text": message_from_md.text,
-             "intent": intent,
-             "entities": deserialised_entities}
-    )
 
 
 class EndToEndUserUtterance(UserUttered):
@@ -215,9 +200,7 @@ class EndToEndUserUtterance(UserUttered):
     `failed_stories.md` output file."""
 
     def as_story_string(self):
-        message = _md_format_message(self.text, self.intent, self.entities)
-        return "{}: {}".format(self.intent.get("name"), message)
-
+        return super(EndToEndUserUtterance, self).as_story_string(e2e=True)
 
 class WronglyClassifiedUserUtterance(UserUttered):
     """The NLU model predicted the wrong user utterance.

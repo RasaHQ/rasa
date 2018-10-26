@@ -15,6 +15,7 @@ import jsonpickle
 from dateutil import parser
 
 from rasa_core import utils
+from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -43,6 +44,22 @@ def deserialise_events(serialized_events):
 
     return deserialised
 
+
+def deserialise_entities(entities):
+    if isinstance(entities, str):
+        entities = json.loads(entities)
+
+    return [e for e in entities if isinstance(e, dict)]
+
+
+def md_format_message(text, intent, entities):
+    message_from_md = MarkdownReader()._parse_training_example(text)
+    deserialised_entities = _deserialise_entities(entities)
+    return MarkdownWriter()._generate_message_md(
+            {"text": message_from_md.text,
+             "intent": intent,
+             "entities": deserialised_entities}
+    )
 
 def first_key(d, default_key):
     if len(d) > 1:
@@ -242,7 +259,8 @@ class UserUttered(Event):
                            intent=self.intent.get("name", ""),
                            entities=ent_string)
             if e2e:
-                return "{}:{}".format(parse_string, self.text)
+                message = md_format_message(self,text, self.intent, self.entities)
+                return "{}: {}".format(self.intent.get("name"), message)
             else:
                 return parse_string
         else:
