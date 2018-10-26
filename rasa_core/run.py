@@ -128,9 +128,9 @@ def _create_single_channel(channel, credentials):
             raise Exception(
                     "Failed to find input channel class for '{}'. Unknown "
                     "input channel. Check your credentials configuration to "
-                    "make sure the mentioned channel is not misspelled. If you "
-                    "are creating your own channel, make sure it is a proper "
-                    "name of a class in a module.".format(channel))
+                    "make sure the mentioned channel is not misspelled. "
+                    "If you are creating your own channel, make sure it "
+                    "is a proper name of a class in a module.".format(channel))
 
 
 def start_cmdline_io(server_url, on_finish, **kwargs):

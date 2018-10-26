@@ -631,8 +631,8 @@ class EndpointConfig(object):
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
-        [setattr(
-            self, k, v) for k, v in kwargs.items() if not hasattr(self, k)]
+        self.store_type = kwargs.pop('store_type', None)
+        self.kwargs = kwargs
 
     def request(self,
                 method="post",  # type: Text

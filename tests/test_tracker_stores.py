@@ -74,5 +74,5 @@ def test_find_tracker_store(default_domain):
 
     assert isinstance(tracker_store,
                       type(
-                        TrackerStore(default_domain).find_tracker_store(store)
+                        TrackerStore.find_tracker_store(default_domain, store)
                           ))

@@ -31,37 +31,19 @@ class TrackerStore(object):
         self.domain = domain
         self.event_broker = event_broker
 
-    def check_attr(self, store):
-        if not hasattr(store, "port"):
-            store.port = None
-        if not hasattr(store, "db"):
-            store.db = None
-        if not hasattr(store, "username"):
-            store.port = None
-        if not hasattr(store, "password"):
-            store.password = None
-        if not hasattr(store, "timeout"):
-            store.timeout = None
-        return store
-
-    def find_tracker_store(self, store=None):
-        if store is None:
-            return InMemoryTrackerStore(self.domain)
+    @classmethod
+    def find_tracker_store(cls, domain, store=None):
+        if store is None or store.store_type is None:
+            return InMemoryTrackerStore(domain)
         else:
-            self.check_attr(store)
             if store.store_type == 'redis':
-                return RedisTrackerStore(domain=self.domain,
-                                         host=store.url,
-                                         port=store.port,
-                                         db=store.db,
-                                         password=store.password,
-                                         record_exp=store.timeout)
+                return cls(RedisTrackerStore(domain=domain,
+                                             host=store.url,
+                                             **store.kwargs))
             elif store.store_type == 'mongod':
-                return MongoTrackerStore(domain=self.domain,
-                                         host=store.url,
-                                         db=store.db,
-                                         username=store.user,
-                                         password=store.password)
+                return cls(MongoTrackerStore(domain=domain,
+                                             host=store.url,
+                                             **store.kwargs))
 
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
