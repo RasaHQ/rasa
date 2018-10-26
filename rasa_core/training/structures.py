@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from collections import deque, defaultdict, namedtuple
+from collections import deque, defaultdict
 
 import io
 import json
@@ -15,7 +15,10 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.conversation import Dialogue
-from rasa_core.events import UserUttered, ActionExecuted, Form, SlotSet, Event
+from rasa_core.events import (UserUttered, ActionExecuted,
+                              Form, FormValidation,
+                              SlotSet, Event,
+                              ActionExecutionRejected)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -40,12 +43,14 @@ FORM_PREFIX = "form: "
 class AsStoryStringHelper(object):
     def __init__(self,
                  active_form=None,
-                 form_failed=False,
+                 form_validation=True,
+                 form_rejected=False,
                  form_string='',
                  no_form_string=''):
 
         self.active_form = active_form
-        self.form_failed = form_failed
+        self.form_validation = form_validation
+        self.form_rejected = form_rejected
         self.form_string = form_string
         self.no_form_string = no_form_string
 
@@ -183,34 +188,47 @@ class StoryStep(object):
 
                 result += self._bot_string(s)
 
+            elif isinstance(s, FormValidation):
+                self.as_story_string_helper.form_validation = s.validate
+
+            elif isinstance(s, ActionExecutionRejected):
+                if (s.action_name ==
+                        self.as_story_string_helper.active_form):
+                    # form rejected
+                    self.as_story_string_helper.form_rejected = True
+
             elif isinstance(s, ActionExecuted):
                 if self._is_action_listen(s):
-                    continue
-
-                if self.as_story_string_helper.active_form is None:
+                    pass
+                elif self.as_story_string_helper.active_form is None:
                     result += self._bot_string(s)
                 else:
                     # form is active
-                    if (s.action_name !=
-                            self.as_story_string_helper.active_form):
-                        # form failed
-                        self.as_story_string_helper.form_failed = True
-
-                    if self.as_story_string_helper.form_failed:
-                        # form failed, so add story string without form prefix
-                        result += self.as_story_string_helper.no_form_string
+                    if self.as_story_string_helper.form_rejected:
+                        if (self.as_story_string_helper.form_validation and
+                                s.action_name ==
+                                self.as_story_string_helper.active_form):
+                            result += self._bot_string(
+                                    ActionExecuted(ACTION_LISTEN_NAME))
+                            result += self.as_story_string_helper.form_string
+                        else:
+                            result += self.as_story_string_helper.no_form_string
+                        # form rejected, so add story string without form prefix
                         result += self._bot_string(s)
                     else:
                         # form succeeded, so add story string with form prefix
                         result += self.as_story_string_helper.form_string
                         result += self._bot_string(s, FORM_PREFIX)
+
                     # remove all stored story strings
                     self._reset_stored_strings()
 
                     if (s.action_name ==
                             self.as_story_string_helper.active_form):
                         # form was successfully executed
-                        self.as_story_string_helper.form_failed = False
+                        self.as_story_string_helper.form_rejected = False
+
+                self.as_story_string_helper.form_validation = True
 
             elif isinstance(s, SlotSet):
                 if self.as_story_string_helper.active_form is None:

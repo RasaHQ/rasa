@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import sys
-import typing
 
 import io
 import logging
@@ -28,7 +27,7 @@ from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import (
-    DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL)
+    DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
 from rasa_core.domain import Domain
 from rasa_core.events import Event, ActionExecuted
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
@@ -109,7 +108,8 @@ def send_message(endpoint,  # type: EndpointConfig
 
     r = endpoint.request(json=payload,
                          method="post",
-                         subpath="/conversations/{}/messages".format(sender_id))
+                         subpath="/conversations/{}/messages"
+                                 "".format(sender_id))
 
     return _response_as_json(r)
 
@@ -366,7 +366,8 @@ def _request_intent_from_user(latest_message,
 
     Returns the intent dict that has been selected by the user."""
 
-    predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
+    predictions = latest_message.get("parse_data",
+                                     {}).get("intent_ranking", [])
 
     predicted_intents = {p["name"] for p in predictions}
 
@@ -578,8 +579,6 @@ def _request_action_from_user(predictions, sender_id, endpoint):
 
     _print_history(sender_id, endpoint)
 
-    tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.AFTER_RESTART)
-
     sorted_actions = sorted(predictions,
                             key=lambda k: (-k['score'], k['action']))
 
@@ -596,17 +595,6 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     }]
     answers = _ask_questions(questions, sender_id, endpoint)
     action_name = answers["action"]
-    if tracker.get('active_form') and action_name == tracker.get('active_form'):
-        validation_questions = [{
-            "name": "validation",
-            "type": "confirm",
-            "message": "Would you like the form to validate your input?"
-        }]
-        form_answers = _ask_questions(validation_questions, sender_id,
-                                      endpoint)
-
-        if not form_answers["validation"]:
-            send_event(endpoint, sender_id, {"event": "no_form_validation"})
     print("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name
 
@@ -817,14 +805,54 @@ def _validate_action(action_name,  # type: Text
     ]
     answers = _ask_questions(questions, sender_id, endpoint)
     if not answers["action"]:
-        corrected_action = _request_action_from_user(predictions, sender_id,
-                                                     endpoint)
-        _correct_wrong_action(corrected_action, endpoint, sender_id,
+        action_name = _request_action_from_user(predictions, sender_id,
+                                                endpoint)
+
+    tracker = retrieve_tracker(endpoint, sender_id,
+                               EventVerbosity.AFTER_RESTART)
+
+    if (tracker.get('active_form', {}).get('name') and
+            action_name not in {tracker['active_form']['name'],
+                                ACTION_LISTEN_NAME}):
+        send_event(endpoint, sender_id,
+                   {"event": "action_execution_rejected",
+                    "name": tracker['active_form']['name']})
+    elif (action_name == tracker.get('active_form', {}).get('name') and
+            tracker.get('active_form', {}).get('rejected')):
+        q = ("Should '{}' validate user input to fill the slot '{}'?"
+             "".format(action_name, tracker.get("slots",
+                                                {}).get(REQUESTED_SLOT)))
+        validation_questions = [{
+            "name": "validation",
+            "type": "confirm",
+            "message": q
+        }]
+        form_answers = _ask_questions(validation_questions, sender_id,
+                                      endpoint)
+        if not form_answers["validation"]:
+            send_event(endpoint, sender_id, {"event": "form_validation",
+                                             "validate": False})
+        elif not tracker.get('active_form', {}).get('validate'):
+            q = ("WARNING: FormPolicy predicted no form validation "
+                 "based on previous training stories. "
+                 "Make sure to remove contradictory stories "
+                 "from training data.")
+            warning_questions = [{
+                "name": "warning",
+                "type": "input",
+                "message": q
+            }]
+            _ask_questions(warning_questions, sender_id, endpoint)
+            send_event(endpoint, sender_id, {"event": "form_validation",
+                                             "validate": True})
+
+    if not answers["action"]:
+        _correct_wrong_action(action_name, endpoint, sender_id,
                               finetune=finetune)
-        return corrected_action == ACTION_LISTEN_NAME
     else:
         send_action(endpoint, sender_id, action_name, policy, confidence)
-        return action_name == ACTION_LISTEN_NAME
+
+    return action_name == ACTION_LISTEN_NAME
 
 
 def _as_md_message(parse_data):

@@ -743,7 +743,7 @@ class ActionExecuted(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        tracker.latest_action_name = self.action_name
+        tracker.set_latest_action_name(self.action_name)
         tracker.clear_followup_action()
 
 
@@ -848,26 +848,42 @@ class Form(Event):
         tracker.change_form_to(self.name)
 
 
-class NoFormValidation(Event):
+class FormValidation(Event):
     """Event added by FormPolicy to notify form action to skip validation"""
 
-    type_name = "no_form_validation"
+    type_name = "form_validation"
+
+    def __init__(self,
+                 validate,
+                 timestamp=None):
+        self.validate = validate
+        super(FormValidation, self).__init__(timestamp)
 
     def __str__(self):
-        return "NoFormValidation()"
+        return "FormValidation({})".format(self.validate)
 
     def __hash__(self):
-        return hash(32143124320)
+        return hash(self.validate)
 
     def __eq__(self, other):
-        return isinstance(other, NoFormValidation)
+        return isinstance(other, FormValidation)
 
     def as_story_string(self):
         return None
 
     @classmethod
     def _from_parameters(cls, parameters):
-        return NoFormValidation(parameters.get("timestamp"))
+        return FormValidation(parameters.get("validate"),
+                              parameters.get("timestamp"))
+
+    def as_dict(self):
+        d = super(FormValidation, self).as_dict()
+        d.update({"validate": self.validate})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.set_form_validation(self.validate)
 
 
 class ActionExecutionRejected(Event):
@@ -915,3 +931,7 @@ class ActionExecutionRejected(Event):
                   "policy": self.policy,
                   "confidence": self.confidence})
         return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.reject_action(self.action_name)
