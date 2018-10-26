@@ -8,15 +8,14 @@ from builtins import str
 import argparse
 import logging
 
+from rasa_core import config
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.constants import (
-    DEFAULT_NLU_FALLBACK_THRESHOLD,
-    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import FallbackPolicy
+from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.run import AvailableEndpoints
@@ -35,21 +34,15 @@ def create_argument_parser():
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-            '-s', '--stories',
-            type=str,
-            help="file or folder containing the training stories")
-    group.add_argument(
-            '--url',
-            type=str,
-            help="If supplied, downloads a story file from a URL and "
-                 "trains on it. Fetches the data by sending a GET request "
-                 "to the supplied URL.")
-    group.add_argument(
-            '--core',
-            default=None,
-            help="path to load a pre-trained model instead of training (for "
-                 "interactive mode only)")
+
+    group = add_args_to_group(group)
+    parser = add_args_to_parser(parser)
+
+    utils.add_logging_option_arguments(parser)
+    return parser
+
+
+def add_args_to_parser(parser):
 
     parser.add_argument(
             '-o', '--out',
@@ -69,7 +62,7 @@ def create_argument_parser():
     parser.add_argument(
             '--history',
             type=int,
-            default=3,
+            default=None,
             help="max history to use of a story")
     parser.add_argument(
             '--epochs',
@@ -127,26 +120,52 @@ def create_argument_parser():
     parser.add_argument(
             '--nlu_threshold',
             type=float,
-            default=DEFAULT_NLU_FALLBACK_THRESHOLD,
+            default=None,
+            required=False,
             help="If NLU prediction confidence is below threshold, fallback "
                  "will get triggered.")
     parser.add_argument(
             '--core_threshold',
             type=float,
-            default=DEFAULT_CORE_FALLBACK_THRESHOLD,
+            default=None,
+            required=False,
             help="If Core action prediction confidence is below the threshold "
                  "a fallback action will get triggered")
     parser.add_argument(
             '--fallback_action_name',
             type=str,
-            default=DEFAULT_FALLBACK_ACTION,
-            help="When a fallback is triggered (e.g. because the ML "
-                 "prediction is of low confidence) "
-                 "this is the name of the action "
-                 "that will get triggered instead.")
-
-    utils.add_logging_option_arguments(parser)
+            default=None,
+            required=False,
+            help="When a fallback is triggered (e.g. because the "
+                 "ML prediction is of low confidence) this is the name "
+                 "of the action that will get triggered instead.")
+    parser.add_argument(
+            '-c', '--config',
+            type=str,
+            required=False,
+            help="Policy specification yaml file."
+    )
     return parser
+
+
+def add_args_to_group(group):
+
+    group.add_argument(
+            '-s', '--stories',
+            type=str,
+            help="file or folder containing the training stories")
+    group.add_argument(
+            '--url',
+            type=str,
+            help="If supplied, downloads a story file from a URL and "
+                 "trains on it. Fetches the data by sending a GET request "
+                 "to the supplied URL.")
+    group.add_argument(
+            '--core',
+            default=None,
+            help="path to load a pre-trained model instead of training (for "
+                 "interactive mode only)")
+    return group
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
@@ -154,6 +173,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                          endpoints=AvailableEndpoints(),
                          max_history=None,
                          dump_flattened_stories=False,
+                         policy_config=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
@@ -163,19 +183,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                 "core_threshold",
                                                 "fallback_action_name"})
 
-    policies = [
-        FallbackPolicy(
-                fallback_args.get("nlu_threshold",
-                                  DEFAULT_NLU_FALLBACK_THRESHOLD),
-                fallback_args.get("core_threshold",
-                                  DEFAULT_CORE_FALLBACK_THRESHOLD),
-                fallback_args.get("fallback_action_name",
-                                  DEFAULT_FALLBACK_ACTION)),
-        MemoizationPolicy(
-                max_history=max_history),
-        KerasPolicy(
-                MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                            max_history=max_history))]
+    policies = config.load(policy_config, fallback_args, max_history)
 
     agent = Agent(domain_file,
                   generator=endpoints.nlg,
@@ -254,6 +262,7 @@ if __name__ == '__main__':
                                       _endpoints,
                                       cmdline_args.history,
                                       cmdline_args.dump_stories,
+                                      cmdline_args.config,
                                       additional_arguments)
 
     if cmdline_args.interactive:
