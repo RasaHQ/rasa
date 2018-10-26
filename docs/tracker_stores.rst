@@ -40,7 +40,7 @@ RedisTrackerStore
 
             tracker_store:
                 store_type: redis
-                url: <host of the redis instanc, e.g. localhoste>
+                url: <host of the redis instance, e.g. localhost>
                 port: <port of your redis instance, usually 6379>
                 db: <number of your database within redis, e.g. 0>
                 password: <password used for authentication>
@@ -51,6 +51,7 @@ RedisTrackerStore
         .. code-block:: bash
 
             python -m rasa_core.run --core models/dialogue --endpoints endpoints.yml
+
 
 MongoTrackerStore
 ~~~~~~~~~~~~~~~~~
