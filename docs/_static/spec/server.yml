@@ -865,22 +865,33 @@ components:
           <<: *tracker-example
     EvaluationResult:
       value:
-        accuracy: 1.0
-        f1: 1.0
-        in_training_data_fraction: 1.0
+        accuracy: 0.9
+        f1: 0.9333333333333333
+        in_training_data_fraction: 0.8571428571428571
         precision: 1.0
+        is_end_to_end_evaluation: true
+        actions:
+          - action: utter_ask_howcanhelp
+            confidence: 1.0
+            policy: policy_0_MemoizationPolicy
+            predicted": utter_ask_howcanhelp
+          - action: action_listen
+            confidence: 0.7885686478768559
+            policy: policy_1_RestaurantPolicy
+            predicted": utter_ask_numpeople
         report: >-
           # classification report
-                         precision recall  f1-score   support
-          action_listen       1.00      1.00      1.00         5
-                default       1.00      1.00      1.00         2
-                goodbye       1.00      1.00      1.00         1
-                  greet       1.00      1.00      1.00         2
-          utter_default       1.00      1.00      1.00         2
-          utter_goodbye       1.00      1.00      1.00         1
-            utter_greet       1.00      1.00      1.00         2
+                         precision    recall  f1-score   support
 
-            avg / total       1.00      1.00      1.00        15
+          action_listen       1.00      1.00      1.00         3
+                  greet       1.00      1.00      1.00         1
+                 inform       1.00      1.00      1.00         2
+   utter_ask_howcanhelp       1.00      1.00      1.00         1
+     utter_ask_location       1.00      1.00      1.00         1
+    utter_ask_numpeople       0.00      0.00      0.00         0
+            utter_on_it       1.00      0.50      0.67         2
+
+            avg / total       1.00      0.90      0.93        10
 
   responses:
     200Tracker:
@@ -1293,6 +1304,26 @@ components:
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
         accuracy:
           type: number
+          description: >-
+            Accuracy of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+                description: Name of the actual action
+              predicted:
+                type: string
+                description: Name of the predicted action
+              policy:
+                type: string
+                description: Machine-learning policy used in the prediction
+              confidence:
+                type: string
+                description: Confidence score of the prediction
           description: >-
             Accuracy of the classification,
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html

@@ -67,7 +67,7 @@ def test_version(app):
     assert response.status_code == 200
     assert content.get("version") == rasa_core.__version__
     assert (content.get(
-        "minimum_compatible_version") == constants.MINIMUM_COMPATIBLE_VERSION)
+            "minimum_compatible_version") == constants.MINIMUM_COMPATIBLE_VERSION)
 
 
 def test_status(app):
@@ -142,7 +142,8 @@ def test_put_tracker(app):
     assert len(content["events"]) == len(test_events)
     assert content["sender_id"] == "pushtracker"
 
-    tracker_response = app.get("http://dummy/conversations/pushtracker/tracker")
+    tracker_response = app.get(
+        "http://dummy/conversations/pushtracker/tracker")
     tracker = tracker_response.get_json()
     assert tracker is not None
     evts = tracker.get("events")
@@ -222,9 +223,14 @@ def test_evaluate(app):
                                                "precision",
                                                "f1",
                                                "accuracy",
+                                               "actions",
                                                "in_training_data_fraction",
                                                "is_end_to_end_evaluation"}
     assert not response.get_json()["is_end_to_end_evaluation"]
+    assert set(response.get_json()["action"].keys()) == {"action",
+                                                         "predicted",
+                                                         "confidence",
+                                                         "policy"}
 
 
 def test_end_to_end_evaluation(app):
@@ -237,9 +243,14 @@ def test_end_to_end_evaluation(app):
                                                "precision",
                                                "f1",
                                                "accuracy",
+                                               "actions",
                                                "in_training_data_fraction",
                                                "is_end_to_end_evaluation"}
     assert response.get_json()["is_end_to_end_evaluation"]
+    assert set(response.get_json()["action"].keys()) == {"action",
+                                                         "predicted",
+                                                         "confidence",
+                                                         "policy"}
 
 
 def test_list_conversations_with_jwt(secured_app):
