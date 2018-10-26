@@ -234,8 +234,8 @@ if __name__ == '__main__':
                                                      _endpoints.nlu)
 
     domain = TemplateDomain.load(cmdline_args.domain)
-    _tracker_store = TrackerStore(domain).find_tracker_store(
-                                        _endpoints.tracker_store)
+    _tracker_store = TrackerStore.find_tracker_store(domain,
+                                                     _endpoints.tracker_store)
     if cmdline_args.core:
         if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
