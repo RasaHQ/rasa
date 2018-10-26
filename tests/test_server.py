@@ -66,8 +66,8 @@ def test_version(app):
     content = response.get_json()
     assert response.status_code == 200
     assert content.get("version") == rasa_core.__version__
-    assert (content.get(
-            "minimum_compatible_version") == constants.MINIMUM_COMPATIBLE_VERSION)
+    assert (content.get("minimum_compatible_version") ==
+            constants.MINIMUM_COMPATIBLE_VERSION)
 
 
 def test_status(app):
@@ -227,10 +227,10 @@ def test_evaluate(app):
                                                "in_training_data_fraction",
                                                "is_end_to_end_evaluation"}
     assert not response.get_json()["is_end_to_end_evaluation"]
-    assert set(response.get_json()["action"].keys()) == {"action",
-                                                         "predicted",
-                                                         "confidence",
-                                                         "policy"}
+    assert set(response.get_json()["actions"].keys()) == {"action",
+                                                          "predicted",
+                                                          "confidence",
+                                                          "policy"}
 
 
 def test_end_to_end_evaluation(app):
@@ -247,10 +247,10 @@ def test_end_to_end_evaluation(app):
                                                "in_training_data_fraction",
                                                "is_end_to_end_evaluation"}
     assert response.get_json()["is_end_to_end_evaluation"]
-    assert set(response.get_json()["action"].keys()) == {"action",
-                                                         "predicted",
-                                                         "confidence",
-                                                         "policy"}
+    assert set(response.get_json()["actions"].keys()) == {"action",
+                                                          "predicted",
+                                                          "confidence",
+                                                          "policy"}
 
 
 def test_list_conversations_with_jwt(secured_app):
