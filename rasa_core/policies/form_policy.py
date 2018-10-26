@@ -62,6 +62,7 @@ class FormPolicy(MemoizationPolicy):
 
     def _add(self, trackers_as_states, trackers_as_actions,
              domain, online=False):
+        """Add states to lookup dict"""
         for states in trackers_as_states:
             if (self._active_form_in_state(states[-1]) and
                     self._prev_action_listen_in_state(states[-1])):

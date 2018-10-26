@@ -151,7 +151,8 @@ class DialogueStateTracker(object):
         return deque((frozenset(s.items()) for s in generated_states))
 
     def change_form_to(self, form_name):
-        # type: (Text) -> ()
+        # type: (Text) -> None
+        """Activate or deactivate a form"""
         if form_name is not None:
             self.active_form = {'name': form_name,
                                 'validate': True,
@@ -160,13 +161,21 @@ class DialogueStateTracker(object):
             self.active_form = {}
 
     def set_form_validation(self, validate):
+        # type: (bool) -> None
+        """Toggle form validation"""
         self.active_form['validate'] = validate
 
     def reject_action(self, action_name):
+        # type: (Text) -> None
+        """Notify active form that it was rejected"""
         if action_name == self.active_form.get('name'):
             self.active_form['rejected'] = True
 
     def set_latest_action_name(self, action_name):
+        # type: (Text) -> None
+        """Set latest action name
+            and reset form validation and rejection parameters
+        """
         self.latest_action_name = action_name
         self.active_form['validate'] = True
         if action_name == self.active_form.get('name'):

@@ -7,7 +7,6 @@ import zlib
 from builtins import bytes
 
 import base64
-import io
 import json
 import logging
 import os
@@ -85,7 +84,7 @@ class MemoizationPolicy(Policy):
 
     def _add(self, trackers_as_states, trackers_as_actions,
              domain, online=False):
-
+        """Add states to lookup dict"""
         if not trackers_as_states:
             return
 

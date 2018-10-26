@@ -814,11 +814,14 @@ def _validate_action(action_name,  # type: Text
     if (tracker.get('active_form', {}).get('name') and
             action_name not in {tracker['active_form']['name'],
                                 ACTION_LISTEN_NAME}):
+        # notify the tracker that form was rejected
         send_event(endpoint, sender_id,
                    {"event": "action_execution_rejected",
                     "name": tracker['active_form']['name']})
     elif (action_name == tracker.get('active_form', {}).get('name') and
             tracker.get('active_form', {}).get('rejected')):
+        # active form was chosen after it was rejected
+        # ask a user whether an input should be validated
         q = ("Should '{}' validate user input to fill the slot '{}'?"
              "".format(action_name, tracker.get("slots",
                                                 {}).get(REQUESTED_SLOT)))
@@ -830,9 +833,11 @@ def _validate_action(action_name,  # type: Text
         form_answers = _ask_questions(validation_questions, sender_id,
                                       endpoint)
         if not form_answers["validation"]:
+            # notify form action to skip validation
             send_event(endpoint, sender_id, {"event": "form_validation",
                                              "validate": False})
         elif not tracker.get('active_form', {}).get('validate'):
+            # handle contradiction with learned behaviour
             q = ("WARNING: FormPolicy predicted no form validation "
                  "based on previous training stories. "
                  "Make sure to remove contradictory stories "
@@ -843,6 +848,7 @@ def _validate_action(action_name,  # type: Text
                 "message": q
             }]
             _ask_questions(warning_questions, sender_id, endpoint)
+            # notify form action to validate an input
             send_event(endpoint, sender_id, {"event": "form_validation",
                                              "validate": True})
 
