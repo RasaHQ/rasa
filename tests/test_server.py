@@ -227,10 +227,10 @@ def test_evaluate(app):
                                                "in_training_data_fraction",
                                                "is_end_to_end_evaluation"}
     assert not response.get_json()["is_end_to_end_evaluation"]
-    assert set(response.get_json()["actions"].keys()) == {"action",
-                                                          "predicted",
-                                                          "confidence",
-                                                          "policy"}
+    assert set(response.get_json()["actions"][0].keys()) == {"action",
+                                                             "predicted",
+                                                             "confidence",
+                                                             "policy"}
 
 
 def test_end_to_end_evaluation(app):
@@ -247,10 +247,10 @@ def test_end_to_end_evaluation(app):
                                                "in_training_data_fraction",
                                                "is_end_to_end_evaluation"}
     assert response.get_json()["is_end_to_end_evaluation"]
-    assert set(response.get_json()["actions"].keys()) == {"action",
-                                                          "predicted",
-                                                          "confidence",
-                                                          "policy"}
+    assert set(response.get_json()["actions"][0].keys()) == {"action",
+                                                             "predicted",
+                                                             "confidence",
+                                                             "policy"}
 
 
 def test_list_conversations_with_jwt(secured_app):
