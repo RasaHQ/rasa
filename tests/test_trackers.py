@@ -429,6 +429,6 @@ def test_tracker_dump_e2e_story(default_agent):
     story = tracker.export_stories(e2e=True)
     assert story.strip().split('\n') == [
         "## test_tracker_dump_e2e_story",
-        "* greet:/greet",
+        "* greet: /greet",
         "    - utter_greet",
-        "* goodbye:/goodbye"]
+        "* goodbye: /goodbye"]
