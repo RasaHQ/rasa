@@ -73,6 +73,7 @@ def add_logging_option_arguments(parser):
     )
 
 
+# noinspection PyUnresolvedReferences
 def class_from_module_path(module_path):
     # type: (Text) -> Any
     """Given the module name and path of a class, tries to retrieve the class.
