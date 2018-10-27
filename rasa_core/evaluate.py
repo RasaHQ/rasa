@@ -191,8 +191,6 @@ class WronglyPredictedAction(ActionExecuted):
                                                     self.predicted_action)
 
 
-
-
 class EndToEndUserUtterance(UserUttered):
     """End-to-end user utterance.
 
@@ -201,6 +199,7 @@ class EndToEndUserUtterance(UserUttered):
 
     def as_story_string(self):
         return super(EndToEndUserUtterance, self).as_story_string(e2e=True)
+
 
 class WronglyClassifiedUserUtterance(UserUttered):
     """The NLU model predicted the wrong user utterance.
