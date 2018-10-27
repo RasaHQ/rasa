@@ -341,5 +341,5 @@ def test_story_export(app):
     assert response.status_code == 200
     story_lines = response.get_data(as_text=True).strip().split('\n')
     assert story_lines == ["## mynewid",
-                           "* greet:/greet",
+                           "* greet: /greet",
                            "    - utter_greet"]

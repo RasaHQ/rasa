@@ -54,7 +54,7 @@ def deserialise_entities(entities):
 
 def md_format_message(text, intent, entities):
     message_from_md = MarkdownReader()._parse_training_example(text)
-    deserialised_entities = _deserialise_entities(entities)
+    deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter()._generate_message_md(
             {"text": message_from_md.text,
              "intent": intent,
@@ -260,8 +260,7 @@ class UserUttered(Event):
                            intent=self.intent.get("name", ""),
                            entities=ent_string)
             if e2e:
-                message = md_format_message(self,
-                                            text,
+                message = md_format_message(self.text,
                                             self.intent,
                                             self.entities)
                 return "{}: {}".format(self.intent.get("name"), message)
