@@ -156,7 +156,7 @@ Volume Explanation
 
   - If you use connectors to :ref:`connectors`
     you have to configure the required credentials for these in a file `credentials.yml`.
-    Use the provided credentials by adding :code:`--credentials <path to your credentials file>``
+    Use the provided credentials by adding ``--credentials <path to your credentials file>``
     to the run command of Rasa Core.
 
 - **./rasa-app-data/project**: This directory contains your Rasa project and may be used to train a model.
