@@ -412,7 +412,7 @@ def collect_story_predictions(
         fail_on_prediction_errors=False,  # type: bool
         use_e2e=False  # type: bool
 ):
-    # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker], List[Dict[Text, Any]], float]
+    # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker], List[Dict[Text, Any]], float]  # nopep8
     """Test the stories from a file, running them through the stored model."""
 
     story_eval_store = EvaluationStore()
