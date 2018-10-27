@@ -466,6 +466,21 @@ def bool_arg(name, default=True):
     return request.args.get(name, str(default)).lower() == 'true'
 
 
+def float_arg(name):
+    # type: ( Text) -> float
+    """Return a passed argument cast as a float or None.
+
+    Checks the `name` parameter of the request if it contains a valid
+    float value. If not, `None` is returned."""
+    from flask import request
+
+    arg = request.args.get(name)
+    try:
+        return float(arg)
+    except TypeError:
+        return None
+
+
 def extract_args(kwargs,  # type: Dict[Text, Any]
                  keys_to_extract  # type: Set[Text]
                  ):
