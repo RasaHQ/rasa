@@ -99,7 +99,7 @@ paths:
                       Minimum version this Core is
                       able to load models from
               example:
-                version": 0.12.0
+                version: 0.12.0
                 minimum_compatible_version: 0.12.0
   /status:
     get:
@@ -874,24 +874,23 @@ components:
           - action: utter_ask_howcanhelp
             confidence: 1.0
             policy: policy_0_MemoizationPolicy
-            predicted": utter_ask_howcanhelp
+            predicted: utter_ask_howcanhelp
           - action: action_listen
             confidence: 0.7885686478768559
             policy: policy_1_RestaurantPolicy
-            predicted": utter_ask_numpeople
+            predicted: utter_ask_numpeople
         report: >-
           # classification report
-                         precision    recall  f1-score   support
+                                 precision    recall  f1-score   support
+                  action_listen       1.00      1.00      1.00         3
+                          greet       1.00      1.00      1.00         1
+                         inform       1.00      1.00      1.00         2
+           utter_ask_howcanhelp       1.00      1.00      1.00         1
+             utter_ask_location       1.00      1.00      1.00         1
+            utter_ask_numpeople       0.00      0.00      0.00         0
+                    utter_on_it       1.00      0.50      0.67         2
 
-          action_listen       1.00      1.00      1.00         3
-                  greet       1.00      1.00      1.00         1
-                 inform       1.00      1.00      1.00         2
-   utter_ask_howcanhelp       1.00      1.00      1.00         1
-     utter_ask_location       1.00      1.00      1.00         1
-    utter_ask_numpeople       0.00      0.00      0.00         0
-            utter_on_it       1.00      0.50      0.67         2
-
-            avg / total       1.00      0.90      0.93        10
+                    avg / total       1.00      0.90      0.93        10
 
   responses:
     200Tracker:
