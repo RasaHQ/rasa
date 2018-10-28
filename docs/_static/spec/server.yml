@@ -933,9 +933,11 @@ components:
         text/markdown:
           example: >-
             ## story_00055028
+
             * greet: hello
              - utter_ask_howcanhelp
-            * inform{"cuisine": "indian", "people": "two", "price": "moderate"}: I'm looking for a moderately priced Indian restaurant for two people
+            * inform: I'm looking for a [moderately priced](price:moderate) 
+            [Indian](cuisine) restaurant for [two](people) people
              - utter_on_it
              - utter_ask_location
 
