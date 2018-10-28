@@ -513,7 +513,7 @@ def run_story_evaluation(resource_name, agent,
                               story_evaluation.in_training_data_fraction,
                               out_file_plot)
 
-    log_failed_stories(story_evaluation.failed_trackers, out_file_stories)
+    log_failed_stories(story_evaluation.failed_stories, out_file_stories)
 
     return {
         "report": report,
