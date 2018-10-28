@@ -417,3 +417,18 @@ def test_current_state_applied_events(default_agent):
 
     state = tracker.current_state(EventVerbosity.APPLIED)
     assert state.get("events") == applied_events
+
+
+def test_tracker_dump_e2e_story(default_agent):
+    sender_id = "test_tracker_dump_e2e_story"
+
+    default_agent.handle_message("/greet", sender_id=sender_id)
+    default_agent.handle_message("/goodbye", sender_id=sender_id)
+    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+
+    story = tracker.export_stories(e2e=True)
+    assert story.strip().split('\n') == [
+        "## test_tracker_dump_e2e_story",
+        "* greet: /greet",
+        "    - utter_greet",
+        "* goodbye: /goodbye"]

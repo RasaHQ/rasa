@@ -229,6 +229,40 @@ paths:
                 reason: "NoTrackerStore"
                 code: 503
 
+  /conversations/{sender_id}/story:
+    get:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Story
+      summary: Retrieve an end-to-end story corresponding to a conversation
+      description: >-
+        The story represents the whole conversation, in end-to-end
+        format. This can be posted to the /evaluate endpoint and used
+        as a test.
+      operationId: getStory
+      parameters:
+      - $ref: '#/components/parameters/senderId'
+      responses:
+        200:
+          $ref: '#/components/responses/200Story'
+        403:
+          $ref: '#/components/responses/403Permissions'
+        503:
+          description: Tracker store is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                version: "0.12.0"
+                status: "failure"
+                message: >-
+                  No tracker store available.
+                reason: "NoTrackerStore"
+                code: 503
+
   /conversations/{sender_id}/execute:
     post:
       security:
@@ -902,6 +936,20 @@ components:
           examples:
             Tracker:
               $ref: '#/components/examples/Tracker'
+
+    200Story:
+      description: Success
+      content:
+        text/markdown:
+          example: >-
+            ## story_00055028
+
+            * greet: hello
+             - utter_ask_howcanhelp
+            * inform: I'm looking for a [moderately priced](price:moderate) 
+            [Indian](cuisine) restaurant for [two](people) people
+             - utter_on_it
+             - utter_ask_location
 
     500Action:
       description: Action Exception
