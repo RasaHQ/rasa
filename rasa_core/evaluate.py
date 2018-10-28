@@ -9,7 +9,8 @@ import json
 import logging
 import warnings
 from builtins import str
-from typing import List, Tuple, Optional, Any, Text, Dict
+from collections import namedtuple
+from typing import List, Optional, Any, Text, Dict
 
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
@@ -27,6 +28,12 @@ from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 logger = logging.getLogger(__name__)
+
+StoryEvalution = namedtuple("StoryEvaluation",
+                            "evaluation_store "
+                            "failed_stories "
+                            "action_list "
+                            "in_training_data_fraction")
 
 
 def create_argument_parser():
@@ -334,7 +341,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
     action_executed_eval_store = EvaluationStore()
 
-    action, policy, _ = processor.predict_next_action(partial_tracker)
+    action, policy, confidence = processor.predict_next_action(partial_tracker)
 
     predicted = action.name()
     gold = event.action_name
@@ -354,42 +361,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     else:
         partial_tracker.update(event)
 
-    return action_executed_eval_store, policy
-
-
-def _is_in_training_data(tracker, agent, fail_on_prediction_errors=False):
-    processor = agent.create_processor()
-
-    events = list(tracker.events)
-
-    partial_tracker = DialogueStateTracker.from_events(tracker.sender_id,
-                                                       events[:1],
-                                                       agent.domain.slots)
-
-    in_training_data = True
-    test_in_training_data = True
-
-    for event in events[1:]:
-        if isinstance(event, ActionExecuted):
-            _, policy = \
-                _collect_action_executed_predictions(
-                        processor, partial_tracker, event,
-                        fail_on_prediction_errors
-                )
-            if (test_in_training_data and
-                    policy is not None and
-                    SimplePolicyEnsemble.is_not_memo_policy(policy)):
-                in_training_data = False
-                test_in_training_data = False
-
-    return in_training_data
-
-
-def _in_training_data_fraction(in_training_data_list):
-    try:
-        return sum(in_training_data_list) / len(in_training_data_list)
-    except ZeroDivisionError:
-        return 0
+    return action_executed_eval_store, policy, confidence
 
 
 def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
@@ -403,14 +375,22 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
                                                        events[:1],
                                                        agent.domain.slots)
 
+    tracker_actions = []
+
     for event in events[1:]:
         if isinstance(event, ActionExecuted):
-            action_executed_result, policy = \
+            action_executed_result, policy, confidence = \
                 _collect_action_executed_predictions(
                         processor, partial_tracker, event,
                         fail_on_prediction_errors
                 )
             tracker_eval_store.merge_store(action_executed_result)
+            tracker_actions.append(
+                    {"action": action_executed_result.action_targets[0],
+                     "predicted": action_executed_result.action_predictions[0],
+                     "policy": policy,
+                     "confidence": confidence}
+            )
         elif use_e2e and isinstance(event, UserUttered):
             user_uttered_result = \
                 _collect_user_uttered_predictions(
@@ -420,7 +400,19 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
         else:
             partial_tracker.update(event)
 
-    return tracker_eval_store, partial_tracker
+    return tracker_eval_store, partial_tracker, tracker_actions
+
+
+def _in_training_data_fraction(action_list):
+    """Given a list of action items, returns the fraction of actions
+
+    that were predicted using one of the Memoization policies."""
+    in_training_data = [
+        a["action"] for a in action_list
+        if not SimplePolicyEnsemble.is_not_memo_policy(a["policy"])
+    ]
+
+    return len(in_training_data) / len(action_list)
 
 
 def collect_story_predictions(
@@ -429,7 +421,7 @@ def collect_story_predictions(
         fail_on_prediction_errors=False,  # type: bool
         use_e2e=False  # type: bool
 ):
-    # type: (...) -> Tuple[EvaluationStore, List[DialogueStateTracker], float]
+    # type: (...) -> StoryEvalution
     """Test the stories from a file, running them through the stored model."""
 
     story_eval_store = EvaluationStore()
@@ -439,18 +431,16 @@ def collect_story_predictions(
     logger.info("Evaluating {} stories\n"
                 "Progress:".format(len(completed_trackers)))
 
-    is_in_training_data_list = []
+    action_list = []
 
     for tracker in tqdm(completed_trackers):
-        tracker_results, predicted_tracker = \
+        tracker_results, predicted_tracker, tracker_actions = \
             _predict_tracker_actions(tracker, agent,
                                      fail_on_prediction_errors, use_e2e)
 
-        is_in_training_data = _is_in_training_data(tracker, agent,
-                                                   fail_on_prediction_errors)
-
-        is_in_training_data_list.append(int(is_in_training_data))
         story_eval_store.merge_store(tracker_results)
+
+        action_list.extend(tracker_actions)
 
         if tracker_results.has_prediction_target_mismatch():
             # there is at least one wrong prediction
@@ -463,8 +453,7 @@ def collect_story_predictions(
     report, precision, f1, accuracy = get_evaluation_metrics(
             [1] * len(completed_trackers), correct_dialogues)
 
-    in_training_data_fraction = \
-        _in_training_data_fraction(is_in_training_data_list)
+    in_training_data_fraction = _in_training_data_fraction(action_list)
 
     log_evaluation_table([1] * len(completed_trackers),
                          "END-TO-END" if use_e2e else "CONVERSATION",
@@ -472,7 +461,10 @@ def collect_story_predictions(
                          in_training_data_fraction,
                          include_report=False)
 
-    return story_eval_store, failed, in_training_data_fraction
+    return StoryEvalution(evaluation_store=story_eval_store,
+                          failed_stories=failed,
+                          action_list=action_list,
+                          in_training_data_fraction=in_training_data_fraction)
 
 
 def log_failed_stories(failed, failed_output):
@@ -501,30 +493,36 @@ def run_story_evaluation(resource_name, agent,
     completed_trackers = _generate_trackers(resource_name, agent,
                                             max_stories, use_e2e)
 
-    story_results, failed, in_training_data = collect_story_predictions(
-            completed_trackers, agent, fail_on_prediction_errors, use_e2e)
+    story_evaluation = collect_story_predictions(completed_trackers, agent,
+                                                 fail_on_prediction_errors,
+                                                 use_e2e)
+
+    evaluation_store = story_evaluation.evaluation_store
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)
         report, precision, f1, accuracy = get_evaluation_metrics(
-                story_results.serialise_targets(),
-                story_results.serialise_predictions()
+                evaluation_store.serialise_targets(),
+                evaluation_store.serialise_predictions()
         )
 
     if out_file_plot:
-        plot_story_evaluation(story_results.action_targets,
-                              story_results.action_predictions,
+        plot_story_evaluation(evaluation_store.action_targets,
+                              evaluation_store.action_predictions,
                               report, precision, f1, accuracy,
-                              in_training_data, out_file_plot)
+                              story_evaluation.in_training_data_fraction,
+                              out_file_plot)
 
-    log_failed_stories(failed, out_file_stories)
+    log_failed_stories(story_evaluation.failed_stories, out_file_stories)
 
     return {
         "report": report,
         "precision": precision,
         "f1": f1,
         "accuracy": accuracy,
-        "in_training_data_fraction": in_training_data,
+        "actions": story_evaluation.action_list,
+        "in_training_data_fraction":
+            story_evaluation.in_training_data_fraction,
         "is_end_to_end_evaluation": use_e2e
     }
 
