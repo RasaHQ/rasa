@@ -36,19 +36,23 @@ def test_action_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
             DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
 
-    evaluation_result, failed_stories, _, _ = collect_story_predictions(
-            completed_trackers, default_agent, use_e2e=False)
+    story_evaluation = collect_story_predictions(completed_trackers,
+                                                 default_agent,
+                                                 use_e2e=False)
 
-    assert not evaluation_result.has_prediction_target_mismatch()
-    assert len(failed_stories) == 0
+    assert not story_evaluation.evaluation_store. \
+        has_prediction_target_mismatch()
+    assert len(story_evaluation.failed_stories) == 0
 
 
 def test_end_to_end_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
             END_TO_END_STORY_FILE, default_agent, use_e2e=True)
 
-    evaluation_result, failed_stories, _, _ = collect_story_predictions(
-            completed_trackers, default_agent, use_e2e=True)
+    story_evaluation = collect_story_predictions(completed_trackers,
+                                                 default_agent,
+                                                 use_e2e=True)
 
-    assert not evaluation_result.has_prediction_target_mismatch()
-    assert len(failed_stories) == 0
+    assert not story_evaluation.evaluation_store. \
+        has_prediction_target_mismatch()
+    assert len(story_evaluation.failed_stories) == 0
