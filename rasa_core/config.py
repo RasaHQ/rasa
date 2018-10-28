@@ -3,15 +3,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from typing import Optional, Text, Dict, Any, List
+
 from rasa_core.constants import (
     DEFAULT_NLU_FALLBACK_THRESHOLD,
     DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core import utils
-from rasa_core.policies import PolicyEnsemble
+from rasa_core.policies import PolicyEnsemble, Policy
 
 
 def load(config_file, fallback_args, max_history):
-    # type: Dict[Text, Any] -> List[Policy]
+    # type: (Optional[Text], Dict[Text, Any], int) -> List[Policy]
     """Load policy data stored in the specified file. fallback_args and
     max_history are typically command line arguments. They take precedence
     over the arguments specified in the config yaml.
@@ -28,7 +30,7 @@ def load(config_file, fallback_args, max_history):
 
 
 def handle_precedence_and_defaults(config_data, fallback_args, max_history):
-    # type: Dict[Text, Any] -> Dict[Text, Any]
+    # type: (Dict[Text, Any], Dict[Text, Any], int) -> Dict[Text, Any]
 
     for policy in config_data.get('policies'):
 
