@@ -43,3 +43,4 @@ PyInquirer==1.0.2
 flask-jwt-simple==0.0.3
 python-socketio==2.0.0
 prompt_toolkit==1.0.14
+pydot==1.2.4
