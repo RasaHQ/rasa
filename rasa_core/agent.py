@@ -512,8 +512,7 @@ class Agent(object):
     def handle_channels(self, channels,
                         http_port=constants.DEFAULT_SERVER_PORT,
                         serve_forever=True,
-                        route="/webhooks/"
-                       ):
+                        route="/webhooks/"):
         # type: (List[InputChannel], int, bool, text) -> WSGIServer
         """Start a webserver attaching the input channels and handling msgs.
 
