@@ -8,7 +8,6 @@ numpy==1.14.5
 typing==3.6.4
 ruamel.yaml==0.15.66
 requests==2.20.0
-graphviz==0.9.0
 keras==2.1.6
 tensorflow==1.10.0
 h5py==2.8.0
