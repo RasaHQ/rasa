@@ -73,6 +73,7 @@ def add_logging_option_arguments(parser):
     )
 
 
+# noinspection PyUnresolvedReferences
 def class_from_module_path(module_path):
     # type: (Text) -> Any
     """Given the module name and path of a class, tries to retrieve the class.
@@ -468,6 +469,21 @@ def bool_arg(name, default=True):
     from flask import request
 
     return request.args.get(name, str(default)).lower() == 'true'
+
+
+def float_arg(name):
+    # type: ( Text) -> float
+    """Return a passed argument cast as a float or None.
+
+    Checks the `name` parameter of the request if it contains a valid
+    float value. If not, `None` is returned."""
+    from flask import request
+
+    arg = request.args.get(name)
+    try:
+        return float(arg)
+    except TypeError:
+        return None
 
 
 def extract_args(kwargs,  # type: Dict[Text, Any]

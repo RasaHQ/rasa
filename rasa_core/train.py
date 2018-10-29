@@ -11,13 +11,7 @@ import logging
 from rasa_core import config
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.featurizers import (
-    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies import FallbackPolicy
-from rasa_core.policies.ensemble import PolicyEnsemble
-from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
 from rasa_core.tracker_store import TrackerStore
@@ -30,19 +24,14 @@ def create_argument_parser():
     parser = argparse.ArgumentParser(
             description='trains a dialogue model')
 
-    # either the user can pass in a story file, or the data will get
-    # downloaded from a url
-    group = parser.add_mutually_exclusive_group(required=True)
-
-    group = add_args_to_group(group)
-    parser = add_args_to_parser(parser)
-
+    add_model_and_story_group(parser)
+    add_args_to_parser(parser)
     utils.add_logging_option_arguments(parser)
+
     return parser
 
 
 def add_args_to_parser(parser):
-
     parser.add_argument(
             '-o', '--out',
             type=str,
@@ -147,8 +136,10 @@ def add_args_to_parser(parser):
     return parser
 
 
-def add_args_to_group(group):
-
+def add_model_and_story_group(parser):
+    # either the user can pass in a story file, or the data will get
+    # downloaded from a url
+    group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
             '-s', '--stories',
             type=str,
@@ -164,7 +155,7 @@ def add_args_to_group(group):
             default=None,
             help="path to load a pre-trained model instead of training (for "
                  "interactive mode only)")
-    return group
+    return parser
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
@@ -204,6 +195,22 @@ def train_dialogue_model(domain_file, stories_file, output_path,
     return agent
 
 
+def _additional_arguments(args):
+    additional = {
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "validation_split": args.validation_split,
+        "augmentation_factor": args.augmentation,
+        "debug_plots": args.debug_plots,
+        "nlu_threshold": args.nlu_threshold,
+        "core_threshold": args.core_threshold,
+        "fallback_action_name": args.fallback_action_name
+    }
+
+    # remove None values
+    return {k: v for k, v in additional.items() if v is not None}
+
+
 if __name__ == '__main__':
 
     # Running as standalone python application
@@ -212,16 +219,7 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
-    additional_arguments = {
-        "epochs": cmdline_args.epochs,
-        "batch_size": cmdline_args.batch_size,
-        "validation_split": cmdline_args.validation_split,
-        "augmentation_factor": cmdline_args.augmentation,
-        "debug_plots": cmdline_args.debug_plots,
-        "nlu_threshold": cmdline_args.nlu_threshold,
-        "core_threshold": cmdline_args.core_threshold,
-        "fallback_action_name": cmdline_args.fallback_action_name
-    }
+    additional_arguments = _additional_arguments(cmdline_args)
 
     if cmdline_args.url:
         stories = utils.download_file_from_url(cmdline_args.url)
