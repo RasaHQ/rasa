@@ -157,7 +157,7 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
 
     graph = graph.with_cycles_removed()
 
-    out_path = tmpdir.join("graph.png").strpath
+    out_path = tmpdir.join("graph.html").strpath
 
     # this will be the plotted networkx graph
     G = graph.visualize(out_path)
