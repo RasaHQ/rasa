@@ -21,7 +21,6 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
 from rasa_core.tracker_store import TrackerStore
-from rasa_core.domain import TemplateDomain
 logger = logging.getLogger(__name__)
 
 
@@ -233,8 +232,7 @@ if __name__ == '__main__':
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
 
-    domain = TemplateDomain.load(cmdline_args.domain)
-    _tracker_store = TrackerStore.find_tracker_store(domain,
+    _tracker_store = TrackerStore.find_tracker_store(None,
                                                      _endpoints.tracker_store)
     if cmdline_args.core:
         if not cmdline_args.interactive:

@@ -25,7 +25,6 @@ from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.utils import read_yaml_file, AvailableEndpoints
-from rasa_core.domain import TemplateDomain
 logger = logging.getLogger()  # get the root logger
 
 
@@ -246,9 +245,8 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
-    domain = TemplateDomain.load(os.path.join(cmdline_args.core, "domain.yml"))
     _tracker_store = TrackerStore.find_tracker_store(
-        domain, _endpoints.tracker_store)
+        None, _endpoints.tracker_store)
     _agent = load_agent(cmdline_args.core,
                         interpreter=_interpreter,
                         tracker_store=_tracker_store,
