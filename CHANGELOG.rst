@@ -30,6 +30,8 @@ Added
   the end-to-end story describing a conversation
 - docker-compose file to start a rasa core server together with nlu, an action server, and duckling
 - http server (``rasa_core.run --enable-api``) evaluation endpoint
+- ``auth_source`` parameter in ``MongoTrackerStore`` defining the database to
+  authenticate against
 
 Changed
 -------

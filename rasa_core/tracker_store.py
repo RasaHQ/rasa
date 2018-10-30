@@ -155,6 +155,7 @@ class MongoTrackerStore(TrackerStore):
                  db="rasa",
                  username=None,
                  password=None,
+                 auth_source="admin",
                  collection="conversations",
                  event_broker=None):
         from pymongo.database import Database
@@ -163,6 +164,7 @@ class MongoTrackerStore(TrackerStore):
         self.client = MongoClient(host,
                                   username=username,
                                   password=password,
+                                  auth_source=auth_source,
                                   # delay connect until process forking is done
                                   connect=False)
 
