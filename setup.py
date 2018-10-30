@@ -35,7 +35,7 @@ install_requires = [
     "future~=0.16",
     "numpy~=1.14",
     "typing~=3.0",
-    "requests~=2.15",
+    "requests~=2.20",
     "graphviz~=0.9.0",
     "keras~=2.0",
     "tensorflow==1.10.0",
