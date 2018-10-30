@@ -102,7 +102,7 @@ class StoryStep(object):
         if not self._is_action_listen(event):
             self.events.append(event)
 
-    def as_story_string(self, flat=False):
+    def as_story_string(self, flat=False, e2e=False):
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
         if flat:
@@ -114,7 +114,7 @@ class StoryStep(object):
                     result += "> {}\n".format(s.as_story_string())
         for s in self.events:
             if isinstance(s, UserUttered):
-                result += "* {}\n".format(s.as_story_string())
+                result += "* {}\n".format(s.as_story_string(e2e))
             elif isinstance(s, Event):
                 converted = s.as_story_string()
                 if converted:
@@ -187,10 +187,10 @@ class Story(object):
         events.append(ActionExecuted(ACTION_LISTEN_NAME))
         return Dialogue(sender_id, events)
 
-    def as_story_string(self, flat=False):
+    def as_story_string(self, flat=False, e2e=False):
         story_content = ""
         for step in self.story_steps:
-            story_content += step.as_story_string(flat)
+            story_content += step.as_story_string(flat, e2e)
 
         if flat:
             if self.story_name:
@@ -201,9 +201,9 @@ class Story(object):
         else:
             return story_content
 
-    def dump_to_file(self, filename, flat=False):
+    def dump_to_file(self, filename, flat=False, e2e=False):
         with io.open(filename, "a", encoding="utf-8") as f:
-            f.write(self.as_story_string(flat))
+            f.write(self.as_story_string(flat, e2e))
 
 
 class StoryGraph(object):
