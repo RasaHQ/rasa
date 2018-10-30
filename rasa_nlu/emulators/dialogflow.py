@@ -40,7 +40,7 @@ class DialogflowEmulator(NoEmulator):
                 "source": "agent",
                 "resolvedQuery": data["text"],
                 "action": data["intent"]["name"],
-                "actionIncomplete": None,
+                "actionIncomplete": False,
                 "parameters": entities,
                 "contexts": [],
                 "metadata": {

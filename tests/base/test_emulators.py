@@ -126,7 +126,7 @@ def test_dialogflow_response():
         "id": norm["id"],
         "result": {
             "action": data["intent"]["name"],
-            "actionIncomplete": None,
+            "actionIncomplete": False,
             "contexts": [],
             "fulfillment": {},
             "metadata": {
