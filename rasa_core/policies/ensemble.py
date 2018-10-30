@@ -17,12 +17,18 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
+from rasa_core.constants import (
+    DEFAULT_NLU_FALLBACK_THRESHOLD,
+    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa_core.exceptions import UnsupportedDialogueModelError
-from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.featurizers import (MaxHistoryTrackerFeaturizer,
+                                   BinarySingleStateFeaturizer)
+from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.memoization import (MemoizationPolicy,
                                             AugmentedMemoizationPolicy)
+from rasa_core.policies.form_policy import FormPolicy
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 
@@ -192,6 +198,48 @@ class PolicyEnsemble(object):
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
+
+    @classmethod
+    def from_dict(cls, dictionary):
+        # type: (Dict[Text, Any]) -> List[Policy]
+
+        policies = []
+
+        for policy in dictionary.get('policies', []):
+
+            policy_name = policy.pop('name')
+
+            if policy_name == 'KerasPolicy':
+                policy_object = KerasPolicy(MaxHistoryTrackerFeaturizer(
+                                BinarySingleStateFeaturizer(),
+                                max_history=policy.get('max_history', 3)))
+            constr_func = utils.class_from_module_path(policy_name)
+
+            policy_object = constr_func(**policy)
+            policies.append(policy_object)
+
+        return policies
+
+    @classmethod
+    def default_policies(cls, fallback_args, max_history):
+        # type: (Dict[Text, Any], int) -> List[Policy]
+        """Load the default policy setup consisting of
+        FallbackPolicy, MemoizationPolicy and KerasPolicy."""
+
+        return [
+            FallbackPolicy(
+                    fallback_args.get("nlu_threshold",
+                                      DEFAULT_NLU_FALLBACK_THRESHOLD),
+                    fallback_args.get("core_threshold",
+                                      DEFAULT_CORE_FALLBACK_THRESHOLD),
+                    fallback_args.get("fallback_action_name",
+                                      DEFAULT_FALLBACK_ACTION)),
+            MemoizationPolicy(
+                    max_history=max_history),
+            KerasPolicy(
+                    MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                                max_history=max_history)),
+            FormPolicy()]
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None

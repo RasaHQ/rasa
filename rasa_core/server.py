@@ -316,7 +316,34 @@ def create_app(agent,
 
         verbosity = event_verbosity_parameter(default_verbosity)
 
-        until_time = request.args.get('until', None)
+        # retrieve tracker and set to requested state
+        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        if not tracker:
+            return error(503,
+                         "NoDomain",
+                         "Could not retrieve tracker. Most likely "
+                         "because there is no domain set on the agent.")
+
+        until_time = utils.float_arg('until')
+        if until_time is not None:
+            tracker = tracker.travel_back_in_time(until_time)
+
+        # dump and return tracker
+
+        state = tracker.current_state(verbosity)
+        return jsonify(state)
+
+    @app.route("/conversations/<sender_id>/story",
+               methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(app, auth_token)
+    def retrieve_story(sender_id):
+        """Get an end-to-end story corresponding to this conversation."""
+
+        if not agent.tracker_store:
+            return error(503, "NoTrackerStore",
+                         "No tracker store available. Make sure to configure "
+                         "a tracker store when starting the server.")
 
         # retrieve tracker and set to requested state
         tracker = agent.tracker_store.get_or_create_tracker(sender_id)
@@ -326,13 +353,13 @@ def create_app(agent,
                          "Could not retrieve tracker. Most likely "
                          "because there is no domain set on the agent.")
 
+        until_time = utils.float_arg('until')
         if until_time is not None:
-            tracker = tracker.travel_back_in_time(float(until_time))
+            tracker = tracker.travel_back_in_time(until_time)
 
         # dump and return tracker
-
-        state = tracker.current_state(verbosity)
-        return jsonify(state)
+        state = tracker.export_stories(e2e=True)
+        return state
 
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])

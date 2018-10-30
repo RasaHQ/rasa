@@ -119,15 +119,15 @@ class StoryStep(object):
         return "> {}\n".format(story_step_element.as_story_string())
 
     @staticmethod
-    def _user_string(story_step_element, prefix=''):
-        return "* {}{}\n".format(prefix, story_step_element.as_story_string())
+    def _user_string(story_step_element, e2e, prefix=''):
+        return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
 
-    def _store_user_strings(self, story_step_element, prefix=''):
+    def _store_user_strings(self, story_step_element, e2e, prefix=''):
         self.as_story_string_helper.no_form_string += self._user_string(
-                story_step_element
+                story_step_element, e2e
         )
         self.as_story_string_helper.form_string += self._user_string(
-                story_step_element, prefix
+                story_step_element, e2e, prefix
         )
 
     @staticmethod
@@ -147,7 +147,7 @@ class StoryStep(object):
         self.as_story_string_helper.form_string = ''
         self.as_story_string_helper.no_form_string = ''
 
-    def as_story_string(self, flat=False):
+    def as_story_string(self, flat=False, e2e=False):
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
 
@@ -167,13 +167,13 @@ class StoryStep(object):
         for s in self.events:
             if isinstance(s, UserUttered):
                 if self.as_story_string_helper.active_form is None:
-                    result += self._user_string(s)
+                    result += self._user_string(s, e2e)
                 else:
                     # form is active
                     # it is not known whether the form will be
                     # successfully executed, so store this
                     # story string for later
-                    self._store_user_strings(s, FORM_PREFIX)
+                    self._store_user_strings(s, e2e, FORM_PREFIX)
 
             elif isinstance(s, Form):
                 # form got either activated or deactivated
@@ -335,7 +335,7 @@ class Story(object):
         events.append(ActionExecuted(ACTION_LISTEN_NAME))
         return Dialogue(sender_id, events)
 
-    def as_story_string(self, flat=False):
+    def as_story_string(self, flat=False, e2e=False):
         story_content = ""
 
         # initialize helper for first story step
@@ -345,7 +345,7 @@ class Story(object):
             # use helper from previous story step
             step.as_story_string_helper = as_story_string_helper
             # create string for current story step
-            story_content += step.as_story_string(flat)
+            story_content += step.as_story_string(flat, e2e)
             # override helper for next story step
             as_story_string_helper = step.as_story_string_helper
 
@@ -358,9 +358,9 @@ class Story(object):
         else:
             return story_content
 
-    def dump_to_file(self, filename, flat=False):
+    def dump_to_file(self, filename, flat=False, e2e=False):
         with io.open(filename, "a", encoding="utf-8") as f:
-            f.write(self.as_story_string(flat))
+            f.write(self.as_story_string(flat, e2e))
 
 
 class StoryGraph(object):

@@ -412,7 +412,7 @@ class DialogueStateTracker(object):
         self.events.append(event)
         event.apply_to(self)
 
-    def export_stories(self):
+    def export_stories(self, e2e=False):
         # type: () -> Text
         """Dump the tracker as a story in the Rasa Core story format.
 
@@ -420,7 +420,7 @@ class DialogueStateTracker(object):
         from rasa_core.training.structures import Story
 
         story = Story.from_events(self.applied_events(), self.sender_id)
-        return story.as_story_string(flat=True)
+        return story.as_story_string(flat=True, e2e=e2e)
 
     def export_stories_to_file(self, export_path="debug.md"):
         # type: (Text) -> None

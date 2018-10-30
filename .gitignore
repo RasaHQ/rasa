@@ -48,6 +48,7 @@ examples/formbot/models*
 examples/concertbot/data*
 examples/concertbot/models*
 examples/moodbot/models*
+examples/restaurantbot/models*
 docs/key 
 docs/key.pub
 secrets.tar

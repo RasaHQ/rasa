@@ -19,11 +19,15 @@ Added
 - Command line interface for interactive learning now displays policy
   confidence alongside the action name
 - added action prediction confidence & policy to ``ActionExecuted`` event
+- the Core policy configuration can now be set in a config.yaml file. 
+  This makes training custom policies possible.
 - both the date and the time at which a model was trained are now
   included in the policy's metadata when it is persisted
 - show visualization of conversation while doing interactive learning
 - option for end-to-end evaluation of Rasa Core and NLU examples in
   ``evaluate.py`` script
+- `/conversations/{sender_id}/story` endpoint for returning
+  the end-to-end story describing a conversation
 - docker-compose file to start a rasa core server together with nlu, an action server, and duckling
 - http server (``rasa_core.run --enable-api``) evaluation endpoint
 
