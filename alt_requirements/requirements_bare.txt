@@ -6,7 +6,7 @@ future==0.16.0
 six==1.11.0
 jsonschema==2.6.0
 matplotlib==2.1.0
-requests==2.18.4
+requests==2.20.0
 tqdm==4.19.5
 numpy==1.14.5
 simplejson==3.13.2
