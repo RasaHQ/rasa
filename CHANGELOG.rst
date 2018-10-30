@@ -39,11 +39,12 @@ Changed
 - ``agent.log_message`` now returns a tracker instead of the trackers state
 - the core container does not load the nlu model by default anymore.
   Instead it can be connected to a nlu server.
+- stories are now visualized as ``.html`` page instead of an image
 
 
 Removed
 -------
-
+- removed graphviz dependency
 
 Fixed
 -----

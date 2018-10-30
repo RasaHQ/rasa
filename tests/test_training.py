@@ -21,7 +21,7 @@ def test_story_visualization(default_domain, tmpdir):
     story_steps = StoryFileReader.read_from_file(
             "data/test_stories/stories.md", default_domain,
             interpreter=RegexInterpreter())
-    out_file = tmpdir.join("graph.png").strpath
+    out_file = tmpdir.join("graph.html").strpath
     generated_graph = visualize_stories(story_steps, default_domain,
                                         output_file=out_file,
                                         max_history=3,
