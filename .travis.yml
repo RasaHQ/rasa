@@ -38,6 +38,9 @@ jobs:
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
+    - RASABASTER=rasabaster-0.7.17.tar.gz
+    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
+    - pip install $RASABASTER
     - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
     - pip install -e .
