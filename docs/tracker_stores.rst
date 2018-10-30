@@ -51,7 +51,13 @@ RedisTrackerStore
         .. code-block:: bash
 
             python -m rasa_core.run --core models/dialogue --endpoints endpoints.yml
-
+:Parameters:
+    - ``url`` (default: ``localhost``): The url of your redis instance
+    - ``port`` (default: ``6379``): The port which redis is running on
+    - ``db`` (default: ``0``): The number of your redis database
+    - ``password`` (default: ``None``): Password used for authentication
+      (``None`` equals no authentication)
+    - ``record_exp`` (default: ``None``): Record expiry in seconds
 
 MongoTrackerStore
 ~~~~~~~~~~~~~~~~~
@@ -70,7 +76,7 @@ MongoTrackerStore
                 store_type: mongod
                 url: <url to your mongo instance, e.g. mongodb://localhost:27017>
                 db: <name of the db within your mongo instance, e.g. rasa>
-                user: <username used for authentication>
+                username: <username used for authentication>
                 password: <password used for authentication>
 
     3. To start the Rasa Core server using your configured MongoDB instance,
@@ -79,7 +85,13 @@ MongoTrackerStore
             .. code-block:: bash
 
                 python -m rasa_core.run --core models/dialogue --endpoints endpoints.yml
-
+:Parameters:
+    - ``url`` (default: ``mongodb://localhost:27017``): URL of your MongoDB
+    - ``db`` (default: ``rasa``): The database name which should be used
+    - ``username`` (default: ``0``): The username which is used for authentication
+    - ``password`` (default: ``None``): The password which is used for authentication
+    - ``collection`` (default: ``conversations``): The collection name which is
+      used to store the conversations
 
 Custom Tracker Store
 ~~~~~~~~~~~~~~~~~~~~
