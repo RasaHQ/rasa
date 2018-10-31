@@ -506,7 +506,8 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
 
 
 def arguments_of(func):
-    """Return the parameters of the function `func` as a list of their names."""
+    """Return the parameters of the function `func` """
+    """as a list of their names."""
 
     try:
         # python 3.x is used
@@ -547,7 +548,7 @@ def all_subclasses(cls):
 
 def read_endpoint_config(filename, endpoint_type):
     # type: (Text, Text) -> Optional[EndpointConfig]
-    """Read an endpoint configuration file from disk and extract one config. """
+    """Read an endpoint configuration file from disk and extract one config."""
 
     if not filename:
         return None
@@ -621,27 +622,37 @@ class AvailableEndpoints(object):
                 endpoint_file, endpoint_type="action_endpoint")
         model = read_endpoint_config(
                 endpoint_file, endpoint_type="models")
+        tracker_store = read_endpoint_config(
+                endpoint_file, endpoint_type="tracker_store")
 
-        return cls(nlg, nlu, action, model)
+        return cls(nlg, nlu, action, model, tracker_store)
 
-    def __init__(self, nlg=None, nlu=None, action=None, model=None):
+    def __init__(self,
+                 nlg=None,
+                 nlu=None,
+                 action=None,
+                 model=None,
+                 tracker_store=None):
         self.model = model
         self.action = action
         self.nlu = nlu
         self.nlg = nlg
+        self.tracker_store = tracker_store
 
 
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
     def __init__(self, url, params=None, headers=None, basic_auth=None,
-                 token=None, token_name="token"):
+                 token=None, token_name="token", **kwargs):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
+        self.store_type = kwargs.pop('store_type', None)
+        self.kwargs = kwargs
 
     def request(self,
                 method="post",  # type: Text
@@ -692,13 +703,7 @@ class EndpointConfig(object):
 
     @classmethod
     def from_dict(cls, data):
-        return EndpointConfig(
-                data.get("url"),
-                data.get("params"),
-                data.get("headers"),
-                data.get("basic_auth"),
-                data.get("token"),
-                data.get("token_name"))
+        return EndpointConfig(**data)
 
     def __eq__(self, other):
         if isinstance(self, type(other)):
