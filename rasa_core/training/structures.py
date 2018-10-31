@@ -120,7 +120,8 @@ class StoryStep(object):
 
     @staticmethod
     def _user_string(story_step_element, e2e, prefix=''):
-        return "* {}{}\n".format(prefix, story_step_element.as_story_string(e2e))
+        return "* {}{}\n".format(prefix,
+                                 story_step_element.as_story_string(e2e))
 
     def _store_user_strings(self, story_step_element, e2e, prefix=''):
         self.as_story_string_helper.no_form_string += self._user_string(
@@ -212,8 +213,9 @@ class StoryStep(object):
                                     ActionExecuted(ACTION_LISTEN_NAME))
                             result += self.as_story_string_helper.form_string
                         else:
-                            result += self.as_story_string_helper.no_form_string
-                        # form rejected, so add story string without form prefix
+                            result += \
+                                self.as_story_string_helper.no_form_string
+                        # form rejected, add story string without form prefix
                         result += self._bot_string(s)
                     else:
                         # form succeeded, so add story string with form prefix
@@ -411,17 +413,17 @@ class StoryGraph(object):
         all_overlapping_cps = set()
 
         if self.cyclic_edge_ids:
-            # we are going to do this in a recursive way. we are going to remove
-            # one cycle and then we are going to let the cycle detection run
-            # again
+            # we are going to do this in a recursive way. we are going to
+            # remove one cycle and then we are going to
+            # let the cycle detection run again
             # this is not inherently necessary so if this becomes a performance
             # issue, we can change it. It is actually enough to run the cycle
             # detection only once and then remove one cycle after another, but
             # since removing the cycle is done by adding / removing edges and
             #  nodes
             # the logic is a lot easier if we only need to make sure the
-            # change is
-            # consistent if we only change one compared to changing all of them.
+            # change is consistent if we only change one compared to
+            # changing all of them.
 
             for s, e in cyclic_edge_ids:
                 cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
