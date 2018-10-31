@@ -177,8 +177,11 @@ class DialogueStateTracker(object):
             and reset form validation and rejection parameters
         """
         self.latest_action_name = action_name
-        self.active_form['validate'] = True
+        if self.active_form.get('name'):
+            # reset form validation if some form is active
+            self.active_form['validate'] = True
         if action_name == self.active_form.get('name'):
+            # reset form rejection if it was predicted again
             self.active_form['rejected'] = False
 
     def current_slot_values(self):

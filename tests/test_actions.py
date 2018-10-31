@@ -56,12 +56,13 @@ def test_domain_action_instantiation():
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 5
+    assert len(instantiated_actions) == 6
     assert instantiated_actions[0].name() == "action_listen"
     assert instantiated_actions[1].name() == "action_restart"
     assert instantiated_actions[2].name() == "action_default_fallback"
-    assert instantiated_actions[3].name() == "my_module.ActionTest"
-    assert instantiated_actions[4].name() == "utter_test"
+    assert instantiated_actions[3].name() == "action_deactivate_form"
+    assert instantiated_actions[4].name() == "my_module.ActionTest"
+    assert instantiated_actions[5].name() == "utter_test"
 
 
 def test_domain_fails_on_duplicated_actions():
@@ -108,7 +109,7 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
                 'intent': {},
                 'text': None
             },
-            'active_form': None,
+            'active_form': {},
             'latest_action_name': None,
             'sender_id': 'default',
             'paused': False,
@@ -163,7 +164,7 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
                 'intent': {},
                 'text': None
             },
-            'active_form': None,
+            'active_form': {},
             'latest_action_name': None,
             'sender_id': 'default',
             'paused': False,
