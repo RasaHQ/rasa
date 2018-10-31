@@ -217,7 +217,7 @@ class PolicyEnsemble(object):
             else:
                 constr_func = utils.class_from_module_path(policy_name)
                 policy_object = constr_func(**policy)
-            
+
             policies.append(policy_object)
 
         return policies
