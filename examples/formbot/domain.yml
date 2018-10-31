@@ -28,25 +28,25 @@ slots:
     type: unfeaturized
 
 templates:
-  utter_ask_num_people:
-    - text: "how many people?"
   utter_ask_cuisine:
     - text: "what cuisine?"
+  utter_ask_num_people:
+    - text: "how many people?"
   utter_ask_outdoor_seating:
-  - text: "do you want to seat outside?"
+    - text: "do you want to seat outside?"
   utter_ask_preferences:
-  - text: "please provide additional preferences"
+    - text: "please provide additional preferences"
   utter_ask_feedback:
-  - text: "please give your feedback"
+    - text: "please give your feedback"
   utter_submit:
-  - text: "done!"
+    - text: "done!"
   utter_slots_values:
-  - text: "got slots:\n
-           - cuisine: {cuisine}\n
-           - num_people: {num_people}\n
-           - outdoor_seating: {outdoor_seating}\n
-           - preferences: {preferences}\n
-           - feedback: {feedback}"
+    - text: "got slots:\n
+             - cuisine: {cuisine}\n
+             - num_people: {num_people}\n
+             - outdoor_seating: {outdoor_seating}\n
+             - preferences: {preferences}\n
+             - feedback: {feedback}"
   utter_noworries:
     - text: "you are welcome :)"
   utter_chitchat:
