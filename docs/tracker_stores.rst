@@ -103,14 +103,17 @@ Custom Tracker Store
     .. autoclass:: rasa_core.tracker_store.TrackerStore
 
 :Steps:
-    1. Extend the `TrackerStore` base class
-    2. Adapt the code in :code:`rasa_core.run.py` to use your custom tracker store.
+    1. Extend the `TrackerStore` base class. Note that your constructor has to
+       provide a parameter ``url``.
+    2. In your endpoints.yml put in the module path to your custom tracker store
+       and the parameters you require:
 
-        .. code-block:: python
+        .. code-block:: yaml
 
-            [...]
-             _agent = load_agent(cmdline_args.core,
-                        interpreter=_interpreter,
-                        endpoints=_endpoints,
-                        tracker_store=CustomTrackerStore(...))
-            [...]
+            tracker_store:
+              store_type: path.to.your.module.Class
+              url: localhost
+              a_parameter: a value
+              another_parameter: another value
+
+
