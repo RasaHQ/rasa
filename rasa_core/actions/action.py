@@ -202,7 +202,7 @@ class ActionDeactivateForm(Action):
     """Deactivates a form"""
 
     def name(self):
-        return ACTION_DEACTIVATE_FORM
+        return ACTION_DEACTIVATE_FORM_NAME
 
     def run(self, dispatcher, tracker, domain):
         from rasa_core.events import Form, SlotSet
