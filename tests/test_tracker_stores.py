@@ -76,3 +76,35 @@ def test_find_tracker_store(default_domain):
                       type(
                         TrackerStore.find_tracker_store(default_domain, store)
                           ))
+
+
+def test_tracker_store_from_string(default_domain):
+    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
+    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+
+    tracker_store = TrackerStore.find_tracker_store(default_domain,
+                                                    store_config)
+
+    assert isinstance(tracker_store, RedisTrackerStore)
+
+
+def test_tracker_store_from_invalid_module(default_domain):
+    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
+    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+    store_config.store_type = "a.module.which.cannot.be.found"
+
+    tracker_store = TrackerStore.find_tracker_store(default_domain,
+                                                    store_config)
+
+    assert isinstance(tracker_store, InMemoryTrackerStore)
+
+
+def test_tracker_store_from_invalid_string(default_domain):
+    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
+    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+    store_config.store_type = "any string"
+
+    tracker_store = TrackerStore.find_tracker_store(default_domain,
+                                                    store_config)
+
+    assert isinstance(tracker_store, InMemoryTrackerStore)
