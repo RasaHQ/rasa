@@ -82,8 +82,8 @@ class MemoizationPolicy(Policy):
         # type: (bool) -> None
         self.is_enabled = activate
 
-    def _add(self, trackers_as_states, trackers_as_actions,
-             domain, online=False):
+    def _add_states_to_lookup(self, trackers_as_states, trackers_as_actions,
+                              domain, online=False):
         """Add states to lookup dict"""
         if not trackers_as_states:
             return

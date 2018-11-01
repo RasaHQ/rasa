@@ -42,12 +42,20 @@ class FormPolicy(MemoizationPolicy):
 
     @staticmethod
     def _active_form_in_state(state):
-        return any(ACTIVE_FORM_PREFIX in k and v > 0 for k, v in state.items())
+        return any(ACTIVE_FORM_PREFIX in state_name and prob > 0
+                   for state_name, prob in state.items())
 
     @staticmethod
     def _prev_action_listen_in_state(state):
-        return any(PREV_PREFIX + ACTION_LISTEN_NAME in k and v > 0
-                   for k, v in state.items())
+        return any(PREV_PREFIX + ACTION_LISTEN_NAME in state_name and prob > 0
+                   for state_name, prob in state.items())
+
+    @staticmethod
+    def _get_form_name(state):
+        # by construction there is only one active form
+        return [state_name[len(ACTIVE_FORM_PREFIX):]
+                for state_name, prob in state.items()
+                if ACTIVE_FORM_PREFIX in state_name and prob > 0][0]
 
     @staticmethod
     def _modified_states(states):
@@ -55,28 +63,24 @@ class FormPolicy(MemoizationPolicy):
             - capture previous meaningful action before action_listen
             - ignore previous intent
         """
-        prev_prev_action = {k: v
-                            for k, v in states[0].items()
-                            if PREV_PREFIX in k and v > 0}
-        return [prev_prev_action, states[-1]]
+        action_before_listen = {state_name: prob
+                                for state_name, prob in states[0].items()
+                                if PREV_PREFIX in state_name and prob > 0}
+        return [action_before_listen, states[-1]]
 
-    def _add(self, trackers_as_states, trackers_as_actions,
-             domain, online=False):
+    def _add_states_to_lookup(self, trackers_as_states, trackers_as_actions,
+                              domain, online=False):
         """Add states to lookup dict"""
         for states in trackers_as_states:
             if (self._active_form_in_state(states[-1]) and
                     self._prev_action_listen_in_state(states[-1])):
-                # by construction there is only one active form
-                form = [k[len(ACTIVE_FORM_PREFIX):]
-                        for k, v in states[-1].items()
-                        if ACTIVE_FORM_PREFIX in k and v > 0][0]
                 # modify the states
                 states = self._modified_states(states)
                 feature_key = self._create_feature_key(states)
                 # even if there are two identical feature keys
                 # their form will be the same
                 # because of `active_form_...` feature
-                self.lookup[feature_key] = form
+                self.lookup[feature_key] = self._get_form_name(states[-1])
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]

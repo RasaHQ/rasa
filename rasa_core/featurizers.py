@@ -297,7 +297,7 @@ class TrackerFeaturizer(object):
                 bin_state = dict(state)
                 best_intent = None
                 best_intent_prob = -1.0
-                for state_name, prob in state:
+                for state_name, prob in state.items():
                     if state_name.startswith('intent_'):
                         if prob > best_intent_prob:
                             # finding the maximum confidence intent

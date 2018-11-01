@@ -831,10 +831,9 @@ class AgentUttered(Event):
 
 
 class Form(Event):
-    """A Form gets activated/deactivated
-
-    This  sets the `active_form` of the tracker"""
-
+    """If `name` is not None: activates a form with `name`
+        else deactivates active form
+    """
     type_name = "form"
 
     def __init__(self, name, timestamp=None):

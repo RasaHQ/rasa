@@ -141,8 +141,7 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     training_data = featurizer.featurize_trackers(training_trackers,
                                                   default_domain)
     y = training_data.y.argmax(axis=-1)
-    print(y)
-    print(Counter(y))
+
     # how many there are depends on the graph which is not created in a
     # deterministic way but should always be 3 or 4
     assert len(training_trackers) == 3 or len(training_trackers) == 4

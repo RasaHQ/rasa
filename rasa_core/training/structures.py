@@ -41,18 +41,24 @@ FORM_PREFIX = "form: "
 
 
 class AsStoryStringHelper(object):
+    """A helper class to mark story steps that are inside a form with `form: `
+    """
     def __init__(self,
                  active_form=None,
                  form_validation=True,
                  form_rejected=False,
-                 form_string='',
-                 no_form_string=''):
-
+                 form_prefix_string='',
+                 no_form_prefix_string=''):
+        # track active form
         self.active_form = active_form
+        # track whether a from should be validated
         self.form_validation = form_validation
+        # track whether a from was rejected
         self.form_rejected = form_rejected
-        self.form_string = form_string
-        self.no_form_string = no_form_string
+        # save story strings with form prefix for later
+        self.form_prefix_string = form_prefix_string
+        # save story strings without form prefix for later
+        self.no_form_prefix_string = no_form_prefix_string
 
 
 class Checkpoint(object):
@@ -124,10 +130,10 @@ class StoryStep(object):
                                  story_step_element.as_story_string(e2e))
 
     def _store_user_strings(self, story_step_element, e2e, prefix=''):
-        self.as_story_string_helper.no_form_string += self._user_string(
+        self.as_story_string_helper.no_form_prefix_string += self._user_string(
                 story_step_element, e2e
         )
-        self.as_story_string_helper.form_string += self._user_string(
+        self.as_story_string_helper.form_prefix_string += self._user_string(
                 story_step_element, e2e, prefix
         )
 
@@ -137,16 +143,16 @@ class StoryStep(object):
                                      story_step_element.as_story_string())
 
     def _store_bot_strings(self, story_step_element, prefix=''):
-        self.as_story_string_helper.no_form_string += self._bot_string(
+        self.as_story_string_helper.no_form_prefix_string += self._bot_string(
                 story_step_element
         )
-        self.as_story_string_helper.form_string += self._bot_string(
+        self.as_story_string_helper.form_prefix_string += self._bot_string(
                 story_step_element, prefix
         )
 
     def _reset_stored_strings(self):
-        self.as_story_string_helper.form_string = ''
-        self.as_story_string_helper.no_form_string = ''
+        self.as_story_string_helper.form_prefix_string = ''
+        self.as_story_string_helper.no_form_prefix_string = ''
 
     def as_story_string(self, flat=False, e2e=False):
         # if the result should be flattened, we
@@ -183,7 +189,7 @@ class StoryStep(object):
                 if self.as_story_string_helper.active_form is None:
                     # form deactivated, so form succeeded,
                     # so add story string with form prefix
-                    result += self.as_story_string_helper.form_string
+                    result += self.as_story_string_helper.form_prefix_string
                     # remove all stored story strings
                     self._reset_stored_strings()
 
@@ -211,15 +217,17 @@ class StoryStep(object):
                                 self.as_story_string_helper.active_form):
                             result += self._bot_string(
                                     ActionExecuted(ACTION_LISTEN_NAME))
-                            result += self.as_story_string_helper.form_string
+                            result += (self.as_story_string_helper.
+                                       form_prefix_string)
                         else:
-                            result += \
-                                self.as_story_string_helper.no_form_string
+                            result += (self.as_story_string_helper.
+                                       no_form_prefix_string)
                         # form rejected, add story string without form prefix
                         result += self._bot_string(s)
                     else:
                         # form succeeded, so add story string with form prefix
-                        result += self.as_story_string_helper.form_string
+                        result += (self.as_story_string_helper.
+                                   form_prefix_string)
                         result += self._bot_string(s, FORM_PREFIX)
 
                     # remove all stored story strings

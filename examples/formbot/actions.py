@@ -81,7 +81,7 @@ class RestaurantForm(FormAction):
     def validate(self, dispatcher, tracker, domain):
         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
         """Validate extracted requested slot
-            else reject to execute the form action
+            else reject the execution of the form action
         """
         # extract other slots that were not requested
         # but set by corresponding entity
@@ -93,7 +93,7 @@ class RestaurantForm(FormAction):
             slot_values.update(self.extract_requested_slot(dispatcher,
                                                            tracker, domain))
             if not slot_values:
-                # reject to execute the form action
+                # reject form action execution
                 # if some slot was requested but nothing was extracted
                 # it will allow other policies to predict another action
                 raise ActionExecutionRejection(self.name(),
@@ -132,7 +132,7 @@ class RestaurantForm(FormAction):
                         # validation failed, set slot to None
                         slot_values[slot] = None
 
-        # validation succeed, set slots to extracted values
+        # validation succeed, set the slots values to the extracted values
         return [SlotSet(slot, value) for slot, value in slot_values.items()]
 
     def submit(self, dispatcher, tracker, domain):
