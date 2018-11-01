@@ -80,7 +80,7 @@ class FormPolicy(MemoizationPolicy):
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
-        """Predicts a form action if form is active"""
+        """Predicts the corresponding form action if there is an active form"""
         result = [0.0] * domain.num_actions
 
         if tracker.active_form.get('name'):
