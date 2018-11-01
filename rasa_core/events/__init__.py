@@ -873,8 +873,8 @@ class Form(Event):
 
 
 class FormValidation(Event):
-    """Event added by FormPolicy to notify form action whether or not to validate 
-    the user input"""
+    """Event added by FormPolicy to notify form action
+        whether or not to validate the user input"""
 
     type_name = "form_validation"
 
