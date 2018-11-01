@@ -30,6 +30,7 @@ Added
   the end-to-end story describing a conversation
 - docker-compose file to start a rasa core server together with nlu, an action server, and duckling
 - http server (``rasa_core.run --enable-api``) evaluation endpoint
+- ability to add tracker_store using endpoints.yml 
 
 Changed
 -------
@@ -38,11 +39,12 @@ Changed
 - ``agent.log_message`` now returns a tracker instead of the trackers state
 - the core container does not load the nlu model by default anymore.
   Instead it can be connected to a nlu server.
+- stories are now visualized as ``.html`` page instead of an image
 
 
 Removed
 -------
-
+- removed graphviz dependency
 
 Fixed
 -----

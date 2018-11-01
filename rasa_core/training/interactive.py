@@ -34,7 +34,7 @@ from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
 from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
-    visualize_neighborhood)
+    visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
@@ -1070,7 +1070,7 @@ def _plot_trackers(sender_ids,  # type: List[Union[Text, List[Event]]]
                                    output_file=None,
                                    max_history=2)
 
-    from networkx.drawing.nx_agraph import write_dot
+    from networkx.drawing.nx_pydot import write_dot
     write_dot(graph, output_file)
 
 
@@ -1217,7 +1217,7 @@ def _add_visualization_routes(app, image_path=None):
     # type: (Flask, Text) -> None
     """Add routes to serve the conversation visualization files."""
 
-    @app.route("/visualization.html", methods=["GET"])
+    @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
     def visualisation_html():
         return send_from_directory(os.path.dirname(__file__),
                                    'visualization.html')

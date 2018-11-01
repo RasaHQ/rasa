@@ -40,6 +40,7 @@ server/
 tmp/
 tokens.dat
 graph.png
+graph.html
 debug.md
 examples/restaurantbot/models*
 examples/moodbot/*.png
