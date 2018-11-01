@@ -368,7 +368,7 @@ class RemoteAction(Action):
 
 class ActionExecutionRejection(Exception):
     """Raising this exception will allow other policies
-        to predict another action"""
+        to predict a different action"""
 
     def __init__(self, action_name, message=None):
         self.action_name = action_name
