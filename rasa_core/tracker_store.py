@@ -38,11 +38,11 @@ class TrackerStore(object):
             return InMemoryTrackerStore(domain)
         elif store.store_type == 'redis':
             return RedisTrackerStore(domain=domain,
-                                     host=store.url,
+                                     url=store.url,
                                      **store.kwargs)
         elif store.store_type == 'mongod':
             return MongoTrackerStore(domain=domain,
-                                     host=store.url,
+                                     url=store.url,
                                      **store.kwargs)
         else:
             return TrackerStore.load_tracker_from_module_string(domain, store)
@@ -152,12 +152,12 @@ class RedisTrackerStore(TrackerStore):
     def keys(self):
         pass
 
-    def __init__(self, domain, host='localhost',
+    def __init__(self, domain, url='localhost',
                  port=6379, db=0, password=None, event_broker=None,
                  record_exp=None):
 
         import redis
-        self.red = redis.StrictRedis(host=host, port=port, db=db,
+        self.red = redis.StrictRedis(host=url, port=port, db=db,
                                      password=password)
         self.record_exp = record_exp
         super(RedisTrackerStore, self).__init__(domain, event_broker)
@@ -183,7 +183,7 @@ class RedisTrackerStore(TrackerStore):
 class MongoTrackerStore(TrackerStore):
     def __init__(self,
                  domain,
-                 host="mongodb://localhost:27017",
+                 url="mongodb://localhost:27017",
                  db="rasa",
                  username=None,
                  password=None,
@@ -192,7 +192,7 @@ class MongoTrackerStore(TrackerStore):
         from pymongo.database import Database
         from pymongo import MongoClient
 
-        self.client = MongoClient(host,
+        self.client = MongoClient(url,
                                   username=username,
                                   password=password,
                                   # delay connect until process forking is done

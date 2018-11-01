@@ -66,7 +66,7 @@ def test_tracker_store_endpoint_config_loading():
 def test_find_tracker_store(default_domain):
     store = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
     tracker_store = RedisTrackerStore(domain=default_domain,
-                                      host="localhost",
+                                      url="localhost",
                                       port=6379,
                                       db=0,
                                       password="password",
