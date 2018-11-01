@@ -148,7 +148,8 @@ class MemoizationPolicy(Policy):
         (trackers_as_states,
          trackers_as_actions) = self.featurizer.training_states_and_actions(
                 training_trackers, domain)
-        self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
+        self._add_states_to_lookup(trackers_as_states, trackers_as_actions,
+                                   domain)
         logger.debug("Memorized {} unique examples."
                      "".format(len(self.lookup)))
 
@@ -160,7 +161,7 @@ class MemoizationPolicy(Policy):
          trackers_as_actions) = self.featurizer.training_states_and_actions(
                 training_trackers[-1:], domain)
         self._add_states_to_lookup(trackers_as_states, trackers_as_actions,
-                  domain, online=True)
+                                   domain, online=True)
 
     def _recall_states(self, states):
         # type: (List[Dict[Text, float]]) -> Optional[int]
