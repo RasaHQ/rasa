@@ -603,7 +603,7 @@ def _ask_if_quit(sender_id, endpoint):
 
 
 def _request_action_from_user(predictions, sender_id, endpoint):
-    # type: (List[Dict[Text, Any]],Text, EndpointConfig) -> Text
+    # type: (List[Dict[Text, Any]],Text, EndpointConfig) -> (Text, bool)
     """Ask the user to correct an action prediction."""
 
     _print_history(sender_id, endpoint)
