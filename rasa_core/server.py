@@ -3,23 +3,21 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from flask import json
 import logging
 import os
 import tempfile
 import zipfile
-from flask import Flask, request, abort, Response, jsonify
+from functools import wraps
+from typing import List, Text, Optional, Union
+
+from flask import Flask, request, abort, Response, jsonify, json
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
-from functools import wraps
-from typing import List
-from typing import Text, Optional
-from typing import Union
 
+import rasa_nlu
 from rasa_core import utils, constants
-from rasa_core.channels import (
-    CollectingOutputChannel)
-from rasa_core.channels import UserMessage
+from rasa_core.channels import CollectingOutputChannel, UserMessage
+from rasa_core.evaluate import run_story_evaluation
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
@@ -78,7 +76,7 @@ def requires_auth(app, token=None):
             argnames = utils.arguments_of(f)
             try:
                 sender_id_arg_idx = argnames.index("sender_id")
-                if "sender_id" in kwargs:   # try to fetch from kwargs first
+                if "sender_id" in kwargs:  # try to fetch from kwargs first
                     return kwargs["sender_id"]
                 if sender_id_arg_idx < len(args):
                     return args[sender_id_arg_idx]
@@ -111,8 +109,10 @@ def requires_auth(app, token=None):
                 if sufficient_scope(*args, **kwargs):
                     return f(*args, **kwargs)
                 abort(error(
-                    403, "NotAuthorized", "User has insufficient permissions.",
-                    help_url=_docs("/server.html#security-considerations")))
+                        403, "NotAuthorized",
+                        "User has insufficient permissions.",
+                        help_url=_docs(
+                                "/server.html#security-considerations")))
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
@@ -312,7 +312,34 @@ def create_app(agent,
 
         verbosity = event_verbosity_parameter(default_verbosity)
 
-        until_time = request.args.get('until', None)
+        # retrieve tracker and set to requested state
+        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        if not tracker:
+            return error(503,
+                         "NoDomain",
+                         "Could not retrieve tracker. Most likely "
+                         "because there is no domain set on the agent.")
+
+        until_time = utils.float_arg('until')
+        if until_time is not None:
+            tracker = tracker.travel_back_in_time(until_time)
+
+        # dump and return tracker
+
+        state = tracker.current_state(verbosity)
+        return jsonify(state)
+
+    @app.route("/conversations/<sender_id>/story",
+               methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(app, auth_token)
+    def retrieve_story(sender_id):
+        """Get an end-to-end story corresponding to this conversation."""
+
+        if not agent.tracker_store:
+            return error(503, "NoTrackerStore",
+                         "No tracker store available. Make sure to configure "
+                         "a tracker store when starting the server.")
 
         # retrieve tracker and set to requested state
         tracker = agent.tracker_store.get_or_create_tracker(sender_id)
@@ -322,13 +349,13 @@ def create_app(agent,
                          "Could not retrieve tracker. Most likely "
                          "because there is no domain set on the agent.")
 
+        until_time = utils.float_arg('until')
         if until_time is not None:
-            tracker = tracker.travel_back_in_time(float(until_time))
+            tracker = tracker.travel_back_in_time(until_time)
 
         # dump and return tracker
-
-        state = tracker.current_state(verbosity)
-        return jsonify(state)
+        state = tracker.export_stories(e2e=True)
+        return state
 
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
@@ -448,6 +475,23 @@ def create_app(agent,
         logger.debug("Finished loading new agent.")
         return '', 204
 
+    @app.route("/evaluate",
+               methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
+    @cross_origin(origins=cors_origins)
+    def evaluate_stories():
+        """Evaluate stories against the currently loaded model."""
+        tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
+                                                        mode='w+b')
+        use_e2e = utils.bool_arg('e2e', default=False)
+        try:
+            evaluation = run_story_evaluation(tmp_file, agent, use_e2e=use_e2e)
+            return jsonify(evaluation)
+        except ValueError as e:
+            return error(400, "FailedEvaluation",
+                         "Evaluation could not be created. Error: {}"
+                         "".format(e))
+
     @app.route("/domain",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
@@ -539,8 +583,9 @@ def create_app(agent,
                          {"parameter": "", "in": "body"})
 
         policy_ensemble = agent.policy_ensemble
-        probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, agent.domain)
+        probabilities, policy = \
+            policy_ensemble.probabilities_using_best_policy(tracker,
+                                                            agent.domain)
 
         scores = [{"action": a, "score": p}
                   for a, p in zip(agent.domain.action_names, probabilities)]

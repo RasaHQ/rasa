@@ -20,7 +20,7 @@ from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import (
-    MemoizationPolicy, AugmentedMemoizationPolicy)
+    Policy, MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
@@ -45,6 +45,12 @@ DEFAULT_ENDPOINTS_FILE = "data/example_endpoints.yml"
 class CustomSlot(Slot):
     def as_feature(self):
         return [0.5]
+
+
+class ExamplePolicy(Policy):
+
+    def __init__(self, example_arg):
+        pass
 
 
 @pytest.fixture(scope="session")

@@ -97,6 +97,7 @@ The Rasa Core dialogue engine
    :caption: Developer Documentation
 
    migrations
+   tracker_stores
    brokers
    docker
    changelog

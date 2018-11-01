@@ -35,7 +35,7 @@ def create_argument_parser():
     parser.add_argument('-o', '--output',
                         required=True,
                         type=str,
-                        help="filename of the output path, e.g. 'graph.png")
+                        help="filename of the output path, e.g. 'graph.html")
     parser.add_argument('-m', '--max_history',
                         default=2,
                         type=int,

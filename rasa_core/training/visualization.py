@@ -26,6 +26,8 @@ START_NODE_ID = 0
 END_NODE_ID = -1
 TMP_NODE_ID = -2
 
+VISUALIZATION_TEMPLATE_PATH = '/visualization.html'
+
 
 class UserMessageGenerator(object):
     def __init__(self, nlu_training_data):
@@ -259,14 +261,25 @@ def _replace_edge_labels_with_nodes(graph,
 
 
 def persist_graph(graph, output_file):
-    """Plots the graph and persists it into a file. Uses graphviz (needs to
-    be installed!)."""
+    """Plots the graph and persists it into a html file."""
     import networkx as nx
+    import io
+    import pkg_resources
 
-    expg = nx.nx_agraph.to_agraph(graph)  # convert to a graphviz graph
-    expg.layout("dot", args="-Goverlap=false -Gsplines=true "
-                            "-Gconcentrate=true -Gfontname=typewriter")
-    expg.draw(output_file)
+    expg = nx.nx_pydot.to_pydot(graph)
+
+    template_path = pkg_resources.resource_filename(__name__,
+                                                    VISUALIZATION_TEMPLATE_PATH)
+    with io.open(template_path, 'r') as file:
+        template = file.read()
+
+    # customize content of template by replacing tags
+    template = template.replace('// { is-client }', 'isClient = true', 1)
+    template = template.replace('// { graph-content }', "graph = `{}`"
+                                .format(expg.to_string()), 1)
+
+    with io.open(output_file, 'w') as file:
+        file.write(template)
 
 
 def _length_of_common_action_prefix(this, other):
