@@ -172,7 +172,6 @@ def send_action(endpoint, sender_id, action_name, is_new=False):
                            "you are recommended to implement this action "
                            "in your action server and try again."
                            "".format(action_name))
-            #  TODO add policy and confidence back in once #1013 merged
             payload = {"event": "action",
                        "name": action_name,
                        "timestamp": None}
