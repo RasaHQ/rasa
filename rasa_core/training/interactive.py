@@ -414,7 +414,7 @@ def _request_intent_from_user(latest_message,
 
     if intent_name == OTHER_INTENT:
         intent_name = _request_free_text_intent(sender_id, endpoint)
-        predictions.append({"name": intent_name, "confidence": 1.0})
+        return {"name": intent_name, "confidence": 1.0}
     # returns the selected intent with the original probability value
     return next((x for x in predictions if x["name"] == intent_name), None)
 
