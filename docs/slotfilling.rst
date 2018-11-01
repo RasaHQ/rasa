@@ -324,7 +324,7 @@ Some important things to consider:
 
 
 Setting categorical slots and Free-text Input
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The pre-defined ``slot_mapping`` types are:
 
