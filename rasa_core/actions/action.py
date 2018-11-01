@@ -29,7 +29,7 @@ ACTION_RESTART_NAME = "action_restart"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
-ACTION_DEACTIVATE_FORM = "action_deactivate_form"
+ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
 
 
 def default_actions():
