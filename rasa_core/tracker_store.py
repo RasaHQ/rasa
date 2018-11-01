@@ -31,6 +31,19 @@ class TrackerStore(object):
         self.domain = domain
         self.event_broker = event_broker
 
+    @staticmethod
+    def find_tracker_store(domain, store=None):
+        if store is None or store.store_type is None:
+            return InMemoryTrackerStore(domain)
+        elif store.store_type == 'redis':
+            return RedisTrackerStore(domain=domain,
+                                     host=store.url,
+                                     **store.kwargs)
+        elif store.store_type == 'mongod':
+            return MongoTrackerStore(domain=domain,
+                                     host=store.url,
+                                     **store.kwargs)
+
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
         if tracker is None:
