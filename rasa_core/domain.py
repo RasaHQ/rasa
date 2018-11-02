@@ -206,7 +206,7 @@ class Domain(object):
         self.user_actions = action_names
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = action.combine_user_with_default_actions(
-                action_names) + self.form_names
+                action_names) + form_names
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
