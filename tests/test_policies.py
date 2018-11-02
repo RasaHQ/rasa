@@ -400,12 +400,27 @@ class TestFormPolicy(PolicyTestCollection):
             recalled = trained_policy.recall(states, tracker, domain)
             active_form = trained_policy._get_active_form_name(states[-1])
 
-            if 'intent_start_form' in states[-1].keys():
+            if states[0] is not None and states[-1] is not None:
+                # explicitly set intents and actions before listen that
+                # should ignore validation
+                is_no_validation = (
+                        ('prev_some_form' in states[0].keys() and
+                         'intent_default' in states[-1].keys()) or
+                        ('prev_some_form' in states[0].keys() and
+                         'intent_stop' in states[-1].keys()) or
+                        ('prev_utter_ask_continue' in states[0].keys() and
+                         'intent_affirm' in states[-1].keys()) or
+                        ('prev_utter_ask_continue' in states[0].keys() and
+                         'intent_deny' in states[-1].keys())
+                )
+            else:
+                is_no_validation = False
+
+            if 'intent_start_form' in states[-1]:
                 # explicitly check that intent that starts the form
                 # is not memorized as non validation intent
                 assert recalled is None
-            elif (active_form and
-                    trained_policy._prev_action_listen_in_state(states[-1])):
+            elif is_no_validation:
                 assert recalled == active_form
             else:
                 assert recalled is None
