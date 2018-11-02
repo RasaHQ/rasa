@@ -25,7 +25,7 @@ Removed
 
 Fixed
 -----
-
+- Should loading jieba custom dictionaries only once.
 
 [0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^
