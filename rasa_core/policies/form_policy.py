@@ -41,22 +41,17 @@ class FormPolicy(MemoizationPolicy):
                                          lookup=lookup)
 
     @staticmethod
-    def _active_form_in_state(state):
-        return any(ACTIVE_FORM_PREFIX in state_name and prob > 0
-                   for state_name, prob in state.items())
-
-    @staticmethod
-    def _prev_action_listen_in_state(state):
-        return any(PREV_PREFIX + ACTION_LISTEN_NAME in state_name and prob > 0
-                   for state_name, prob in state.items())
-
-    @staticmethod
-    def _get_form_name(state):
+    def _get_active_form_name(state):
         found_forms = [state_name[len(ACTIVE_FORM_PREFIX):]
                        for state_name, prob in state.items()
                        if ACTIVE_FORM_PREFIX in state_name and prob > 0]
         # by construction there is only one active form
         return found_forms[0] if found_forms else None
+
+    @staticmethod
+    def _prev_action_listen_in_state(state):
+        return any(PREV_PREFIX + ACTION_LISTEN_NAME in state_name and prob > 0
+                   for state_name, prob in state.items())
 
     @staticmethod
     def _modified_states(states):
@@ -77,15 +72,15 @@ class FormPolicy(MemoizationPolicy):
                               domain, online=False):
         """Add states to lookup dict"""
         for states in trackers_as_states:
-            if (self._active_form_in_state(states[-1]) and
-                    self._prev_action_listen_in_state(states[-1])):
+            active_form = self._get_active_form_name(states[-1])
+            if active_form and self._prev_action_listen_in_state(states[-1]):
                 # modify the states
                 states = self._modified_states(states)
                 feature_key = self._create_feature_key(states)
                 # even if there are two identical feature keys
                 # their form will be the same
                 # because of `active_form_...` feature
-                self.lookup[feature_key] = self._get_form_name(states[-1])
+                self.lookup[feature_key] = active_form
 
     def recall(self,
                states,  # type: List[Dict[Text, float]]

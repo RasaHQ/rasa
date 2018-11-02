@@ -385,7 +385,7 @@ class TestFormPolicy(PolicyTestCollection):
     def test_memorise(self, trained_policy, default_domain):
         domain = Domain.load('data/test_domains/form.yml')
         trackers = training.load_data('data/test_stories/stories_form.md',
-                                      domain, augmentation_factor=0)
+                                      domain)
         trained_policy.train(trackers, domain)
 
         (all_states, all_actions) = \
@@ -398,10 +398,14 @@ class TestFormPolicy(PolicyTestCollection):
                     # check that 'form: inform' was ignored
                     assert 'intent_inform' not in state.keys()
             recalled = trained_policy.recall(states, tracker, domain)
-            active_form = trained_policy._get_form_name(states[-1])
-            # check that intent that starts the form
-            # is not memorized as non validation intent
-            if active_form and 'intent_start_form' not in states[-1].keys():
+            active_form = trained_policy._get_active_form_name(states[-1])
+
+            if 'intent_start_form' in states[-1].keys():
+                # explicitly check that intent that starts the form
+                # is not memorized as non validation intent
+                assert recalled is None
+            elif (active_form and
+                    trained_policy._prev_action_listen_in_state(states[-1])):
                 assert recalled == active_form
             else:
                 assert recalled is None
