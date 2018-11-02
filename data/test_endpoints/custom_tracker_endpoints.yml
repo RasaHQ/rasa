@@ -1,5 +1,5 @@
 tracker_store:
-  store_type: rasa_core.tracker_store.RedisTrackerStore
+  store_type: tests.test_tracker_stores.TestTrackerStore
   url: localhost
   port: 6379
   db: 0
