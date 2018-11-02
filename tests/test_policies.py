@@ -20,6 +20,7 @@ from rasa_core.policies.memoization import \
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.embedding_policy import EmbeddingPolicy
+from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.featurizers import (
@@ -372,3 +373,41 @@ class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
                      attn_before_rnn=True,
                      attn_after_rnn=True)
         return policy
+
+
+class TestFormPolicy(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        p = FormPolicy()
+        return p
+
+    def test_memorise(self, trained_policy, default_domain):
+        domain = Domain.load('data/test_domains/form.yml')
+        trackers = training.load_data('data/test_stories/stories_form.md',
+                                      domain, augmentation_factor=0)
+        trained_policy.train(trackers, domain)
+
+        (all_states, all_actions) = \
+            trained_policy.featurizer.training_states_and_actions(
+                trackers, domain)
+
+        for tracker, states, actions in zip(trackers, all_states, all_actions):
+            for state in states:
+                if state is not None:
+                    # check that 'form: inform' was ignored
+                    assert 'intent_inform' not in state.keys()
+            recalled = trained_policy.recall(states, tracker, domain)
+            active_form = trained_policy._get_form_name(states[-1])
+            # check that intent that starts the form
+            # is not memorized as non validation intent
+            if active_form and 'intent_start_form' not in states[-1].keys():
+                assert recalled == active_form
+            else:
+                assert recalled is None
+
+        nums = np.random.randn(domain.num_states)
+        random_states = [{f: num
+                          for f, num in
+                          zip(domain.input_states, nums)}]
+        assert trained_policy.recall(random_states, None, domain) is None

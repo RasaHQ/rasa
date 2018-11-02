@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import logging
 import typing
 
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Text
 
 from rasa_core.constants import FORM_SCORE
 from rasa_core.policies.memoization import MemoizationPolicy
@@ -52,10 +52,11 @@ class FormPolicy(MemoizationPolicy):
 
     @staticmethod
     def _get_form_name(state):
+        found_forms = [state_name[len(ACTIVE_FORM_PREFIX):]
+                       for state_name, prob in state.items()
+                       if ACTIVE_FORM_PREFIX in state_name and prob > 0]
         # by construction there is only one active form
-        return [state_name[len(ACTIVE_FORM_PREFIX):]
-                for state_name, prob in state.items()
-                if ACTIVE_FORM_PREFIX in state_name and prob > 0][0]
+        return found_forms[0] if found_forms else None
 
     @staticmethod
     def _modified_states(states):
@@ -63,9 +64,13 @@ class FormPolicy(MemoizationPolicy):
             - capture previous meaningful action before action_listen
             - ignore previous intent
         """
-        action_before_listen = {state_name: prob
-                                for state_name, prob in states[0].items()
-                                if PREV_PREFIX in state_name and prob > 0}
+        if states[0] is None:
+            action_before_listen = None
+        else:
+            action_before_listen = {state_name: prob
+                                    for state_name, prob in states[0].items()
+                                    if PREV_PREFIX in state_name and prob > 0}
+
         return [action_before_listen, states[-1]]
 
     def _add_states_to_lookup(self, trackers_as_states, trackers_as_actions,
@@ -81,6 +86,15 @@ class FormPolicy(MemoizationPolicy):
                 # their form will be the same
                 # because of `active_form_...` feature
                 self.lookup[feature_key] = self._get_form_name(states[-1])
+
+    def recall(self,
+               states,  # type: List[Dict[Text, float]]
+               tracker,  # type: DialogueStateTracker
+               domain  # type: Domain
+               ):
+        # type: (...) -> Optional[int]
+        # modify the states
+        return self._recall_states(self._modified_states(states))
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -99,14 +113,13 @@ class FormPolicy(MemoizationPolicy):
                     # it should not be validated if predicted by other policy
                     tracker_as_states = self.featurizer.prediction_states(
                             [tracker], domain)
-                    # modify the states
-                    states = self._modified_states(tracker_as_states[0])
-                    memorized_form = self._recall_states(states)
+                    states = tracker_as_states[0]
+                    memorized_form = self.recall(states, tracker, domain)
 
                     if memorized_form == tracker.active_form['name']:
                         logger.debug("There is a memorized tracker state {}, "
                                      "added `FormValidation(False)` event"
-                                     "".format(states))
+                                     "".format(self._modified_states(states)))
                         tracker.update(FormValidation(False))
                         return result
 
