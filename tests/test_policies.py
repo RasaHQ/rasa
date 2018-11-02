@@ -401,8 +401,9 @@ class TestFormPolicy(PolicyTestCollection):
             active_form = trained_policy._get_active_form_name(states[-1])
 
             if states[0] is not None and states[-1] is not None:
-                # explicitly set intents and actions before listen that
-                # should ignore validation
+                # explicitly set intents and actions before listen after
+                # which FormPolicy should not predict a form action and
+                # should add FormValidation(False) event
                 is_no_validation = (
                         ('prev_some_form' in states[0].keys() and
                          'intent_default' in states[-1].keys()) or
