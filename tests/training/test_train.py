@@ -90,23 +90,24 @@ def test_train_model(pipeline_template, component_builder, tmpdir):
 def test_random_seed(component_builder, tmpdir):
     # test if train result is the same for two runs of tf embedding
     _config = utilities.base_test_conf("tensorflow_embedding")
-    # run 1
-    (trained_1, _, persisted_path_1) = train.do_train(
+    # first run
+    (trained_a, _, persisted_path_a) = train.do_train(
             _config,
-            path=tmpdir.strpath + "_1",
+            path=tmpdir.strpath + "_a",
             data=DEFAULT_DATA_PATH,
             component_builder=component_builder)
-    # run 2
-    (trained_2, _, persisted_path_2) = train.do_train(
+    # second run
+    (trained_b, _, persisted_path_b) = train.do_train(
             _config,
-            path=tmpdir.strpath + "_2",
+            path=tmpdir.strpath + "_b",
             data=DEFAULT_DATA_PATH,
             component_builder=component_builder)
-    assert trained_1.pipeline
-    assert trained_2.pipeline
-    loaded_1 = Interpreter.load(persisted_path_1, component_builder)
-    loaded_2 = Interpreter.load(persisted_path_2, component_builder)
-    assert loaded_1.parse("hello") == loaded_2.parse("hello")
+
+    loaded_a = Interpreter.load(persisted_path_a, component_builder)
+    loaded_b = Interpreter.load(persisted_path_b, component_builder)
+    result_a = loaded_a.parse("hello")["user_input"]["intent"]["confidence"]
+    result_b = loaded_b.parse("hello")["user_input"]["intent"]["confidence"]
+    assert result_a == result_b
 
 
 @utilities.slowtest
