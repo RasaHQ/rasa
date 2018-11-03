@@ -18,12 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class SocketBlueprint(Blueprint):
-    def __init__(self, sio, *args, **kwargs):
+    def __init__(self, sio, socketio_path, *args, **kwargs):
         self.sio = sio
+        self.socketio_path = socketio_path
         super(SocketBlueprint, self).__init__(*args, **kwargs)
 
     def register(self, app, options, first_registration=False):
-        app.wsgi_app = socketio.Middleware(self.sio, app.wsgi_app)
+        app.wsgi_app = socketio.Middleware(self.sio, app.wsgi_app, self.socketio_path)
         super(SocketBlueprint, self).register(app, options, first_registration)
 
 
@@ -113,15 +114,17 @@ class SocketIOInput(InputChannel):
     def __init__(self,
                  user_message_evt="user_uttered",  # type: Text
                  bot_message_evt="bot_uttered",  # type: Text
-                 namespace=None  # type: Optional[Text]
+                 namespace=None,  # type: Optional[Text]
+                 socketio_path='/socket.io'  # type: Optional[Text]
                  ):
         self.bot_message_evt = bot_message_evt
         self.user_message_evt = user_message_evt
         self.namespace = namespace
+        self.socketio_path = socketio_path
 
     def blueprint(self, on_new_message):
         sio = socketio.Server()
-        socketio_webhook = SocketBlueprint(sio, 'socketio_webhook', __name__)
+        socketio_webhook = SocketBlueprint(sio, self.socketio_path, 'socketio_webhook', __name__)
 
         @socketio_webhook.route("/", methods=['GET'])
         def health():
