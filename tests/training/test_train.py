@@ -106,7 +106,9 @@ def test_random_seed(component_builder, tmpdir):
     assert trained_2.pipeline
     loaded_1 = Interpreter.load(persisted_path_1, component_builder)
     loaded_2 = Interpreter.load(persisted_path_2, component_builder)
-    assert loaded_1.parse("hello") == loaded_2.parse("hello")
+    result_1 = loaded_1.parse("hello")["user_input"]["intent"]["confidence"]
+    result_2 = loaded_2.parse("hello")["user_input"]["intent"]["confidence"]
+    assert result_1 == result_2
 
 
 @utilities.slowtest
