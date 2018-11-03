@@ -501,6 +501,7 @@ intent_classifier_tensorflow_embedding
             - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
             - ``num_neg`` sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;
             - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
+            - ``random_seed`` sets the random seed for numpy and tensorflow, so that the random initialisation is always the same and produces the same result, try changing to another int if you do not get good results
         - regularization:
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
@@ -542,6 +543,9 @@ intent_classifier_tensorflow_embedding
           # visualization of accuracy
           "evaluate_every_num_epochs": 10  # small values may hurt performance
           "evaluate_on_num_examples": 1000  # large values may hurt performance
+          # set random seed to get reproducible results
+          # try to change to another int if you are not getting good results
+          "random_seed": 1
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.

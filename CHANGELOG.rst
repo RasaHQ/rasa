@@ -31,6 +31,7 @@ Added
 - add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)
 - add a feature for each regex in the training set for crf_entity_extractor
 - Current training processes count for server and projects.
+- random seed to `tensorflow_embedding`` pipeline for stable training results
 
 Changed
 -------

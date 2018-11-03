@@ -87,7 +87,11 @@ class EmbeddingIntentClassifier(Component):
 
         # visualization of accuracy
         "evaluate_every_num_epochs": 10,  # small values may hurt performance
-        "evaluate_on_num_examples": 1000  # large values may hurt performance
+        "evaluate_on_num_examples": 1000,  # large values may hurt performance
+
+        # set random seed to get reproducible results
+        # try to change to another int if you are not getting good results
+        "random_seed": 1
     }
 
     @classmethod
@@ -112,6 +116,7 @@ class EmbeddingIntentClassifier(Component):
         self.similarity_type = self.component_config['similarity_type']
         self.num_neg = self.component_config['num_neg']
         self.use_max_sim_neg = self.component_config['use_max_sim_neg']
+        self.random_seed = self.component_config['random_seed']
 
     def _load_regularization_params(self):
         self.C2 = self.component_config['C2']
@@ -505,6 +510,9 @@ class EmbeddingIntentClassifier(Component):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
+            np.random.seed(self.random_seed)
+            tf.set_random_seed(self.random_seed)
+
             self.a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
                                        name='a')
             self.b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),

@@ -87,6 +87,29 @@ def test_train_model(pipeline_template, component_builder, tmpdir):
 
 
 @utilities.slowtest
+def test_random_seed(component_builder, tmpdir):
+    # test if train result is the same for two runs of tf embedding
+    _config = utilities.base_test_conf("tensorflow_embedding")
+    # run 1
+    (trained_1, _, persisted_path_1) = train.do_train(
+            _config,
+            path=tmpdir.strpath + "_1",
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder)
+    # run 2
+    (trained_2, _, persisted_path_2) = train.do_train(
+            _config,
+            path=tmpdir.strpath + "_2",
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder)
+    assert trained_1.pipeline
+    assert trained_2.pipeline
+    loaded_1 = Interpreter.load(persisted_path_1, component_builder)
+    loaded_2 = Interpreter.load(persisted_path_2, component_builder)
+    assert loaded_1.parse("hello") == loaded_2.parse("hello")
+
+
+@utilities.slowtest
 @pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
 def test_train_model_on_test_pipelines(language, pipeline,
                                        component_builder, tmpdir):
