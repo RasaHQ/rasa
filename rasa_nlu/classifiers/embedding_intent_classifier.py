@@ -36,7 +36,7 @@ except ImportError:
     tf = None
 
 
-class EmbeddingintentClassifier(Component):
+class EmbeddingIntentClassifier(Component):
     """intent classifier using supervised embeddings.
 
     The embedding intent classifier embeds user inputs
@@ -131,7 +131,7 @@ class EmbeddingintentClassifier(Component):
         # type: (...) -> None
         """Declare instant variables with default values"""
         self._check_tensorflow()
-        super(EmbeddingintentClassifier, self).__init__(component_config)
+        super(EmbeddingIntentClassifier, self).__init__(component_config)
 
         self._load_params()
 
@@ -266,7 +266,7 @@ class EmbeddingintentClassifier(Component):
             to create candidates for training examples
             to calculate training accuracy"""
         return np.stack([self.encoded_all_intents] * size)
-    
+
     # noinspection PyPep8Naming
     def _prepare_data_for_training(self, training_data, intent_dict):
         # type: (TrainingData, Dict[Text, int]) -> Tuple
@@ -655,7 +655,7 @@ class EmbeddingintentClassifier(Component):
              cached_component=None,  # type: Optional[Component]
              **kwargs  # type: **Any
              ):
-        # type: (...) -> EmbeddingintentClassifier
+        # type: (...) -> EmbeddingIntentClassifier
 
         meta = model_metadata.for_component(cls.name)
 
