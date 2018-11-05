@@ -84,16 +84,13 @@ def component_config_from_pipeline(
     # type: (...) -> Dict[Text, Any]
     from rasa_nlu.registry import registered_components
     for c in pipeline:
-        if c.get("name") in registered_components:
-            if c.get("name") == name:
-                return override_defaults(defaults, c)
-        else:
-            # this must be a valid custom component (checked while loading)
-            # custom components have their module path listed as "name"
-            # we therefore have to get their name attribute before comparing
-            custom = utils.class_from_module_path(c.get("name"))
-            if custom.name == name:
-                return override_defaults(defaults, c)
+        c_name = c.get("name")
+        
+        if c_name not in registered_components:
+            c_name = utils.class_from_module_path(c.get("name")).name
+
+        if c_name == name:
+            return override_defaults(defaults, c)
     else:
         return override_defaults(defaults, {})
 
