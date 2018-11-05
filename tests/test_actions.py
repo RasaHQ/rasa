@@ -12,7 +12,8 @@ from httpretty import httpretty
 from rasa_core.actions import action
 from rasa_core.actions.action import (
     ActionRestart, UtterAction,
-    ActionListen, RemoteAction)
+    ActionListen, RemoteAction,
+    ActionExecutionRejection)
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
@@ -235,6 +236,31 @@ def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
                           default_domain)
     httpretty.disable()
     assert "Failed to execute custom action." in str(execinfo.value)
+
+
+def test_remote_action_endpoint_responds_400(default_dispatcher_collecting,
+                                             default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    httpretty.register_uri(
+            httpretty.POST,
+            'https://abc.defg/webhooks/actions',
+            status=400,
+            body='{"action_name": "my_action"}')
+
+    httpretty.enable()
+
+    with pytest.raises(Exception) as execinfo:
+        remote_action.run(default_dispatcher_collecting,
+                          tracker,
+                          default_domain)
+    httpretty.disable()
+    assert execinfo.type == ActionExecutionRejection
+    assert "Custom action 'my_action' rejected to run" in str(execinfo.value)
 
 
 def test_default_action(default_dispatcher_collecting,
