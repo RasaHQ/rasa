@@ -13,6 +13,7 @@ import logging
 import six.moves.cPickle as pickler
 from typing import Text, Optional, List
 
+from rasa_core.utils import class_from_module_path
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
 from rasa_core.trackers import (
@@ -45,6 +46,24 @@ class TrackerStore(object):
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
+        else:
+            return TrackerStore.load_tracker_from_module_string(domain, store)
+
+    @staticmethod
+    def load_tracker_from_module_string(domain, store):
+        custom_tracker = None
+        try:
+            custom_tracker = class_from_module_path(store.store_type)
+        except (AttributeError, ImportError):
+            logger.warning("Store type {} not found. "
+                           "Using InMemoryTrackerStore instead"
+                           .format(store.store_type))
+
+        if custom_tracker:
+            return custom_tracker(domain=domain,
+                                  url=store.url, **store.kwargs)
+        else:
+            return InMemoryTrackerStore(domain)
 
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
