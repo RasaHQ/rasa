@@ -110,6 +110,48 @@ class Domain(object):
                 **additional_arguments
         )
 
+    def merge(self, domain, override=False):
+        # type: (Domain, bool) -> Domain
+        """Merge this domain with another one, combining their attributes.
+
+        List attributes like ``intents`` and ``actions`` will be deduped and merged.
+        Single attributes will be taken from ``self`` unless override is True,
+        in which case they are taken from ``domain``"""
+        domain_dict = domain.as_dict()
+        combined = self.as_dict()
+
+        def merge_dicts(d1, d2, override=False):
+            if override:
+                a, b = d1.copy(), d2.copy()
+            else:
+                a, b = d2.copy(), d1.copy()
+            a.update(b)
+            return a
+
+        def merge_lists(l1, l2):
+            return list(set(l1 + l2))
+
+        if override:
+            for key, val in domain_dict['config'].items():
+                combined['config'][key] = val
+
+        # intents is list of dicts
+        intents_1 = {list(i.keys())[0]: i for i in combined["intents"]}
+        intents_2 = {list(i.keys())[0]: i for i in domain_dict["intents"]}
+        merged_intents = merge_dicts(intents_1, intents_2, override)
+        combined['intents'] = list(merged_intents.values())
+
+        for key in ['entities', 'actions']:
+            combined[key] = merge_lists(combined[key],
+                                        domain_dict[key])
+
+        for key in ['templates', 'slots']:
+            combined[key] = merge_dicts(combined[key],
+                                        domain_dict[key],
+                                        override=override)
+
+        return self.__class__.from_dict(combined)
+
     @classmethod
     def validate_domain_yaml(cls, yaml):
         """Validate domain yaml."""
