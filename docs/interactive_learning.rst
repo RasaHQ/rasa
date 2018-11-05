@@ -29,9 +29,9 @@ Run the following to start interactive learning:
    python -m rasa_core.train \
      --interactive -o models/dialogue \
      -d domain.yml -s stories.md \
-     --endpoints endpoints.yml 
-     
-To include an existing model to identify intents use --nlu models/current/nlu in the above command. Else interactive learning will use a default REGEX to intentify default intents from the user input text. 
+     --endpoints endpoints.yml
+
+To include an existing model to identify intents use --nlu models/current/nlu in the above command. Else interactive learning will use a default REGEX to intentify default intents from the user input text.
 
 The first command starts the action server (see :ref:`customactions`).
 
@@ -139,6 +139,11 @@ provide you with exit options, e.g. writing the created conversations as
 stories to a file. Make sure to combine the dumped story with your original
 training data for the next training.
 
+Form Action corrections
+^^^^^^^^^^^^^^^^^^^^^^^
+
+If you're using a FormAction, there are some additional things to note
+apart from the standard interactive learning behaviour described above. 
 
 Visualization of conversations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -156,5 +161,3 @@ script.
 .. image:: _static/images/interactive_learning_graph.gif
 
 .. include:: feedback.inc
-
-
