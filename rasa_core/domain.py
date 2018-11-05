@@ -114,7 +114,8 @@ class Domain(object):
         # type: (Domain, bool) -> Domain
         """Merge this domain with another one, combining their attributes.
 
-        List attributes like ``intents`` and ``actions`` will be deduped and merged.
+        List attributes like ``intents`` and ``actions`` will be deduped
+        and merged.
         Single attributes will be taken from ``self`` unless override is True,
         in which case they are taken from ``domain``"""
         domain_dict = domain.as_dict()
