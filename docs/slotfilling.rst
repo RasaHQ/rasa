@@ -143,7 +143,7 @@ The predefined functions work as follows:
 Validating user input
 ~~~~~~~~~~~~~~~~~~~~~
 
-By default validation will fail only if the slot isn't filled. If
+By default validation will fail only if none of the requested slots are filled. If
 you want to add custom validation, e.g. only accept a specific type of cuisine,
 overwrite the ``validate()`` function:
 
@@ -198,7 +198,7 @@ overwrite the ``validate()`` function:
 
         return validated_events
 
-If nothing is extracted from the users utterance for the slot, an
+If nothing is extracted from the users utterance for any of the required slots, an
 ``ActionExecutionRejection`` error will be raised, meaning the action execution
 was rejected and therefore Core will fall back onto a different policy to
 predict another action.
@@ -225,10 +225,11 @@ The requested_slot slot
 ~~~~~~~~~~~~~~~~~~~~~~~
 The slot ``requested_slot`` is automatically added to the domain as an
 unfeaturized slot. If you want to make it featurized, you need to add it
-to your domain file. You might want to do this if you want to handle your
-unhappy paths differently depending on what slot is currently being asked from
-the user. For example, say you want to let your users ask for explanations of
-the different slot values. Then your stories would look something like this:
+to your domain file as a categorical slot. You might want to do this if you
+want to handle your unhappy paths differently depending on what slot is
+currently being asked from the user. For example, say you want to let your
+users ask for explanations of the different slot values.
+Then your stories would look something like this:
 
 .. code-block:: story
 
@@ -240,6 +241,8 @@ the different slot values. Then your stories would look something like this:
     * explain
         - utter_explain_cuisine
         - restaurant_form
+        - slot{"cuisine": "greek"}
+        ( ... all other slots the form set ... )
         - form{"name": null}
 
     ## explain num_people slot
@@ -250,6 +253,8 @@ the different slot values. Then your stories would look something like this:
     * explain
         - utter_explain_num_people
         - restaurant_form
+        - slot{"cuisine": "greek"}
+        ( ... all other slots the form set ... )
         - form{"name": null}
 
 
@@ -283,8 +288,8 @@ Interactive learning
 
 You may want to teach the bot how to handle unexpected user behaviour like
 chitchat through interactive learning. Please read `these instructions
-<https://rasa.com/docs/core/interactive_learning/>`_ on how to use interative
-learning with forms
+<https://rasa.com/docs/core/interactive_learning#form-action-corrections>`_
+on how to use interactive learning with forms.
 
 
 Example: Providing the Weather
