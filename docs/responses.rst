@@ -50,7 +50,7 @@ external HTTP server with a ``POST`` request. To configure this endpoint,
 you need to create an ``endpoints.yml`` and pass it either to the ``run``
 or ``server`` script. The content of the ``endpoints.yml`` should be
 
-.. literalinclude:: ../data/example_endpoints.yml
+.. literalinclude:: ../data/test_endpoints/example_endpoints.yml
    :language: yaml
 
 and you can use this file like this:

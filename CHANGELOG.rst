@@ -30,7 +30,8 @@ Added
   the end-to-end story describing a conversation
 - docker-compose file to start a rasa core server together with nlu, an action server, and duckling
 - http server (``rasa_core.run --enable-api``) evaluation endpoint
-- ability to add tracker_store using endpoints.yml 
+- ability to add tracker_store using endpoints.yml
+- ability to add an event broker using an endpoint configuration file
 
 Changed
 -------
