@@ -27,7 +27,8 @@ following command:
     # Docker version 18.06.1-ce, build e68fc7a
     # docker-compose version 1.22.0, build f46880f
 
-If your output is not similar to the one above, please install Docker.
+If Docker is installed on your machine, the command above will print the
+versions of docker and docker-compose. If not - please install Docker.
 See `this instruction page <https://docs.docker.com/install/>`_ for the
 instructions.
 
@@ -44,7 +45,7 @@ This section will cover the following:
 ~~~~~~~~~
 
 Start by creating a directory ``data`` in your project directory. Then create
-a file called ``stories.md`` in this directory which will continue the stories
+a file called ``stories.md`` in this directory which will contain the stories
 to train your chatbot.
 
 .. code-block:: bash
@@ -502,8 +503,18 @@ The configuration of the ``rasa_nlu`` server might then look similar to this:
 
 .. note::
 
-  Depending on the selected pipeline you might have to use a different
-  Rasa NLU image.
+Depending on the selected
+`NLU Pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_ you might
+have to use a different Rasa NLU image:
+
+  - ``rasa/rasa_nlu:latest-spacy``: To use the ``spaCy`` pipeline
+  - ``rasa/rasa_nlu:latest-tensorflow``: To use the ``tensorflow_embedding``
+    pipeline
+  - ``rasa/rasa_nlu:latest-mitie``: To use a pipeline which includes ``mitie``
+  - ``rasa/rasa_nlu:latest-full``: To build a pipeline with dependencies to
+    spaCy and TensorFlow
+  - ``rasa/rasa_nlu:latest-bare``: To start with minimal dependencies so
+    that you can then add your own
 
 4. Adding Custom Actions
 ------------------------
@@ -544,8 +555,8 @@ Then build a custom action using the Rasa Core SDK, e.g.:
       dispatcher.utter_message(joke) #send the message back to the user
       return []
 
-Then add the custom action in your stories and your domain file.
-Continuing the example from above replace replace ``utter_cheer_up`` in
+Next add the custom action in your stories and your domain file.
+Continuing the example from above replace ``utter_cheer_up`` in
 ``data/stories.md`` with the custom action ``action_joke`` and add
 ``action_joke`` to the actions in the domain file.
 
@@ -574,8 +585,8 @@ server. Add this to your ``config/endpoints.yml``:
   action_endpoint:
     url: http://action_server:5055/webhook
 
-If you then run ``docker-compose up`` the action server starts together
-with Rasa Core and Rasa NLU and executes your custom actions.
+Run ``docker-compose up`` to start the action server together
+with Rasa Core and Rasa NLU and to execute your custom actions.
 
 4.3 Adding Custom Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
