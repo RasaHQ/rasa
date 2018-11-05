@@ -22,7 +22,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",
     ],
-    version="1.0.0",
+    version="0.1.0",
     install_requires=install_requires,
     description="Rasa Stack - A package which includes Rasa Core and Rasa NLU",
     long_description=long_description,
