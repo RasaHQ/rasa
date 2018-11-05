@@ -25,7 +25,7 @@ run:
 	make run-actions&
 	make run-core
 
-run-interactive:
+train-interactive:
 	python -m rasa_core.train --interactive -s data/stories.md -d domain.yml -o models/dialogue --debug --endpoints endpoints.yml
 
 visualize:
