@@ -91,7 +91,7 @@ def component_config_from_pipeline(
 
         if c_name == name:
             return override_defaults(defaults, c)
-    
+
     return override_defaults(defaults, {})
 
 
