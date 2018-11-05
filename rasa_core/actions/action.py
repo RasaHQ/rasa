@@ -328,9 +328,13 @@ class RemoteAction(Action):
 
             if response.status_code == 400:
                 response_data = response.json()
-                logger.debug(response_data["error"])
-                raise ActionExecutionRejection(response_data["action_name"],
-                                               response_data["error"])
+                exception = ActionExecutionRejection(
+                        response_data["action_name"],
+                        response_data.get("error")
+                )
+                logger.debug(exception.message)
+                raise exception
+
             response.raise_for_status()
             response_data = response.json()
             self._validate_action_result(response_data)
