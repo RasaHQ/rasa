@@ -18,6 +18,7 @@ import rasa_core
 from rasa_core import constants, agent
 from rasa_core import utils, server
 from rasa_core.agent import Agent
+from rasa_core.broker import PikaProducer
 from rasa_core.channels import (
     console, RestInput, InputChannel,
     BUILTIN_CHANNELS)
@@ -245,8 +246,10 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
+    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+
     _tracker_store = TrackerStore.find_tracker_store(
-        None, _endpoints.tracker_store)
+        None, _endpoints.tracker_store, _broker)
     _agent = load_agent(cmdline_args.core,
                         interpreter=_interpreter,
                         tracker_store=_tracker_store,
