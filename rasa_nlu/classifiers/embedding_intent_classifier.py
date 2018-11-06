@@ -10,7 +10,7 @@ import os
 from tqdm import tqdm
 
 import typing
-from typing import List, Text, Any, Optional, Dict
+from typing import List, Text, Any, Optional, Dict, Tuple
 
 from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa_nlu.components import Component
@@ -37,7 +37,7 @@ except ImportError:
 
 
 class EmbeddingIntentClassifier(Component):
-    """intent classifier using supervised embeddings.
+    """Intent classifier using supervised embeddings.
 
     The embedding intent classifier embeds user inputs
     and intent labels into the same space.
@@ -268,8 +268,11 @@ class EmbeddingIntentClassifier(Component):
         return np.stack([self.encoded_all_intents] * size)
 
     # noinspection PyPep8Naming
-    def _prepare_data_for_training(self, training_data, intent_dict):
-        # type: (TrainingData, Dict[Text, int]) -> Tuple
+    def _prepare_data_for_training(self,
+                                   training_data,  # type: TrainingData
+                                   intent_dict  # type: Dict[Text, int]
+                                   ):
+        # type: (...) -> Tuple[np.ndarray, np.ndarray, np.ndarray]
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features")
@@ -305,8 +308,12 @@ class EmbeddingIntentClassifier(Component):
                             name='embed_layer_{}'.format(name))
         return x
 
-    def _create_tf_embed(self, a_in, b_in, is_training):
-        # type: (tf.Tensor, tf.Tensor, tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]
+    def _create_tf_embed(self,
+                         a_in,  # type: tf.Tensor
+                         b_in,  # type: tf.Tensor
+                         is_training  # type: tf.Tensor
+                         ):
+        # type: (...) -> Tuple[tf.Tensor, tf.Tensor]
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(a_in, is_training,
@@ -485,7 +492,7 @@ class EmbeddingIntentClassifier(Component):
 
     # noinspection PyPep8Naming
     def train(self, training_data, cfg=None, **kwargs):
-        # type: (TrainingData, Optional[RasaNLUModelConfig], **Any) -> None
+        # type: (TrainingData, Optional[RasaNLUModelConfig], Any) -> None
         """Train the embedding intent classifier on a data set."""
 
         intent_dict = self._create_intent_dict(training_data)
@@ -562,7 +569,7 @@ class EmbeddingIntentClassifier(Component):
 
     # noinspection PyPep8Naming
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
         """Return the most likely intent and its similarity to the input."""
 
         intent = {"name": None, "confidence": 0.0}
@@ -653,7 +660,7 @@ class EmbeddingIntentClassifier(Component):
              model_dir=None,  # type: Text
              model_metadata=None,  # type: Metadata
              cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> EmbeddingIntentClassifier
 
