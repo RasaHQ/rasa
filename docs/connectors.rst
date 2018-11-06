@@ -51,14 +51,25 @@ Getting Credentials
 **How to get the FB credentials:**
 You need to set up a Facebook app and a page.
 
-  1. To create the app go to: https://developers.facebook.com/
-     and click on *"Add a new app"*.
-  2. go onto the dashboard for the app and under *Products*,
-     click *Add Product* and *add Messenger*. Under the settings for
-     Messenger, scroll down to *Token Generation* and click on the
-     link to create a new page for your app.
-  3. Use the collected ``verify``, ``secret`` and ``access token``
-     to connect your bot to facebook.
+  1. To create the app head over to
+     `Facebook for Developers <https://developers.facebook.com/>`_
+     and click on *My Apps* -> *Add New App*.
+  2. Go onto the dashboard for the app and under *Products*,
+     find the *Messenger* section and click *Set Up*. Scroll down to
+     *Token Generation* and click on the link to create a new page for your
+     app.
+  3. Create your page and select it in the dropdown menu for the
+     *Token Generation*. The shown *Page Access Token* is the
+     ``page-access-token`` needed later on.
+  4. Set up a *Webhook* and select at least the *messaging* and
+     *messaging_postback* subscriptions. Insert your callback URL which will
+     look like ``https://<YOUR_HOST>/webhooks/facebook/webhook``. Insert a
+     *Verify Token* of your choice, which has to match the ``verify``
+     entry in your ``credentials.yml``.
+  5. Locate the *App Secret* in the app dashboard under *Settings* -> *Basic*.
+     This will be your ``secret``.
+  6. Use the collected ``verify``, ``secret`` and ``page-access-token`` in
+     the ``credentials.yml`` to connect your bot to facebook.
 
 For more detailed steps, visit the
 `messenger docs <https://developers.facebook.com/docs/graph-api/webhooks>`_.
