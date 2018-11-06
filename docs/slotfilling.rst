@@ -43,7 +43,7 @@ If a user says
 "I'd like a vegetarian Chinese restaurant for 8 people", they won't be 
 asked about the ``cuisine`` and ``num_people`` slots.
 
-Note that this works best if your slots are `unfeaturized
+Note that your slots should be `unfeaturized
 <https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot>`_:
 
 
