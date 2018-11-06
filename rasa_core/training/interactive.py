@@ -782,15 +782,15 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     msgs = _collect_messages(evts)
     actions = _collect_actions(evts)
 
-    new_domain = dict.from_keys(domain.keys())
-    new_domain["intents"] = list(set({m.data["intent"]: {"use_entities": True}}
-                                     for m in msgs))
+    new_domain = dict.fromkeys(domain.keys(), {})
+    new_domain["intents"] = [{i: {"use_entities": True}}
+                             for i in set(m.data["intent"]
+                                          for m in msgs)]
     new_domain["entities"] = list(set([e["entity"]
                                        for m in msgs
                                        for e in m.data.get("entities", [])]))
     new_domain["actions"] = list(set([e["name"] for e in actions]))
     new_domain = Domain.from_dict(new_domain)
-
     new_domain = old_domain.merge(new_domain)
 
     new_domain.persist_clean(domain_path)
