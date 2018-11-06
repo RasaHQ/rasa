@@ -6,21 +6,21 @@ Interactive Learning
 ====================
 
 
-Interactive learning means giving feedback to your bot while you talk
-to it. It is a powerful tool! Interactive learning is a powerful way
+In interactive learning mode, you provide feedback to your bot while you talk
+to it. This is a powerful way
 to explore what your bot can do, and the easiest way to fix any mistakes
-it makes. One advantage of machine learning based dialogue is that when
+it makes. One advantage of machine learning-based dialogue is that when
 your bot doesn't know how to do something yet, you can just teach it!
-Some people are calling this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
+Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
 
 
 Load up an existing bot
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-We have a basic working bot, and want to teach it by providing
-feedback on mistakes it makes.
+We have created some initial stories, and now want to improve our bot 
+by providing feedback on mistakes it makes.
 
-Run the following to start interactive learning:
+Run the following command to start interactive learning:
 
 .. code-block:: bash
 
@@ -29,15 +29,15 @@ Run the following to start interactive learning:
    python -m rasa_core.train \
      --interactive -o models/dialogue \
      -d domain.yml -s stories.md \
+     --nlu models/current/nlu \
      --endpoints endpoints.yml
-
-To include an existing model to identify intents use --nlu models/current/nlu in the above command. Else interactive learning will use a default REGEX to intentify default intents from the user input text.
 
 The first command starts the action server (see :ref:`customactions`).
 
 The second command starts the bot in interactive mode.
-In interactive mode, the bot will ask you to confirm it has chosen
-the right action before proceeding:
+In interactive mode, the bot will ask you to confirm every prediction 
+made by NLU and Core before proceeding.
+Here's an example:
 
 
 .. code-block:: text
@@ -62,12 +62,15 @@ the right action before proceeding:
     ? The bot wants to run 'utter_greet', correct?  (Y/n)
 
 
-This gives you all the info you should hopefully need to decide
-what the bot *should* have done. In this case, the bot chose the
+The chat history and slot values are printed to the screen, which 
+should be all the information your need to decide what the correct 
+next action is.
+
+In this case, the bot chose the
 right action (``utter_greet``), so we type ``y``.
-Then we type ``y`` again, because 'action_listen' is the correct
-action after greeting. We continue this loop until the bot chooses
-the wrong action.
+Then we type ``y`` again, because ``action_listen`` is the correct
+action after greeting. We continue this loop, chatting with the bot, 
+until the bot chooses the wrong action.
 
 Providing feedback on errors
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -135,23 +138,49 @@ reviews!) so we select that action.
 
 Now we can keep talking to the bot for as long as we like to create a longer
 conversation. At any point you can press ``Ctrl-C`` and the bot will
-provide you with exit options, e.g. writing the created conversations as
-stories to a file. Make sure to combine the dumped story with your original
+provide you with exit options. You can write your newly-created stories and NLU 
+data to files. You can also go back a step if you made a mistake when providing 
+feedback.
+
+Make sure to combine the dumped stories and NLU examples with your original
 training data for the next training.
 
-Form Action corrections
-^^^^^^^^^^^^^^^^^^^^^^^
+Visualization of conversations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you're using a FormAction, there are some additional things to note
-apart from the standard interactive learning behaviour described above.
+During the interactive learning, Core will plot the current conversation
+and a few similar conversations from the training data to help you
+keep track of where you are.
+
+You can view the visualization at http://localhost:5005/visualization.html
+as soon as you've started interactive learning.
+
+To skip the visualization, pass ``--skip_visualization`` to the training
+script.
+
+.. image:: _static/images/interactive_learning_graph.gif
+
+.. _section_interactive_learning_forms:
+
+Interactive Learning with Forms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you're using a FormAction, there are some additional things to keep in mind 
+when using interactive learning.
 
 The ``form:`` prefix
 ~~~~~~~~~~~~~~~~~~~~
 
-Since forms work mainly with rule based behaviour, Rasa Core should not be
-trained on anything that was predicted within a form. To still capture what's
-going in the form action during interactive learning, these events will have
-a ``form:`` prefix in the generated story. For example:
+The form logic is described by your ``FormAction`` class, and not by the stories.
+The machine learning policies should not have to learn this behavior, and should 
+not get confused if you later change your form action, for example by adding or 
+removing a required slot. 
+When you generate stories using a form, the conversation steps handled by the form 
+get a :code:`form:` prefix. This tells Rasa Core to ignore these steps when training 
+your other policies. There is nothing special you have to do here, all of the form's 
+happy paths are still covered by the basic story given in :ref:`section_form_basics`.
+
+Here is an example:
 
 .. code-block:: story
 
@@ -171,14 +200,14 @@ a ``form:`` prefix in the generated story. For example:
         - slot{"requested_slot": null}
         - utter_slots_values
 
+
 Input validation
 ~~~~~~~~~~~~~~~~
 
-Every time the user enters some unexpected input (i.e. doesn't provide the
-requested slot), you will be asked whether you want the form action to validate
-the users input when returning to it. This is necessary because in certain
-situations you may not want the users current input to be used to fill the
-current requested slot. Take the example below:
+Every time the user responds with something *other* than the requested slot, 
+you will be asked whether you want the form action to try and extract a slot 
+from the user's message when returning to the form. This is best explained with 
+and example:
 
 .. code-block:: text
 
@@ -209,9 +238,9 @@ current requested slot. Take the example below:
     2018-11-05 21:37:08 DEBUG    rasa_core.tracker_store  - Recreating tracker for id 'default'
     ? Should 'restaurant_form' validate user input to fill the slot 'outdoor_seating'?  (Y/n)
 
-Here the user asked to stop the form, and the bot asks the user whether he's sure
-he doesn't want to continue. The user says he wants to continue with
-``/affirm``. Here ``outdoor_seating`` has a ``from_intent`` slot mapping (mapping
+Here the user asked to stop the form, and the bot asks the user whether they're sure
+they don't want to continue. The user says they want to continue (the ``/affirm`` intent). 
+Here ``outdoor_seating`` has a ``from_intent`` slot mapping (mapping
 the ``/affirm`` intent to ``True``), so this user input could be used to fill
 that slot. However, in this case the user is just responding to the
 "do you want to continue?" question and so you select ``n``, the user input
@@ -233,20 +262,5 @@ should not be validated. The bot will then continue to ask for the
     Once you've removed that story, you can press enter and continue with
     interactive learning
 
-
-Visualization of conversations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-During the interactive learning, Core will plot the current conversation
-and close surrounding conversations from the training data to help you
-keep track of where you are.
-
-You can view the visualization at http://localhost:5005/visualization.html
-as soon as you have started the interactive learning.
-
-To skip the visualization, pass ``--skip_visualization`` to the training
-script.
-
-.. image:: _static/images/interactive_learning_graph.gif
 
 .. include:: feedback.inc

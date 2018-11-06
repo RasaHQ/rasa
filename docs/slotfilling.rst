@@ -20,6 +20,8 @@ You can take a look at the FormAction base class by clicking this link:
 
 .. autoclass:: rasa_core_sdk.forms.FormAction
 
+.. _section_form_basics:
+
 Basics
 ------
 
@@ -246,8 +248,7 @@ you could add a story like this:
 
 It is **strongly** recommended that you build these stories using interactive learning.
 If you write these stories by hand you will likely miss important things.
-Please read `these instructions
-<https://rasa.com/docs/core/interactive_learning#form-action-corrections>`_
+Please read :ref:`section_interactive_learning_forms`
 on how to use interactive learning with forms.
 
 The requested_slot slot
@@ -290,8 +291,7 @@ In the restaurant case, your stories would look something like this:
 
 Again, is is **strongly** recommended that you use interactive 
 learning to build these stories.
-Please read `these instructions
-<https://rasa.com/docs/core/interactive_learning#form-action-corrections>`_
+Please read :ref:`section_interactive_learning_forms`
 on how to use interactive learning with forms.
 
 Handling conditional slot logic
