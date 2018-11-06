@@ -516,10 +516,14 @@ class Domain(object):
         }
 
     def persist(self, filename):
+        # type: (Domain, Text) -> None
+        """Write domain to a file."""
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
     def persist_clean(self, filename):
+        # type: (Domain, Text) -> None
+        """Write domain to a file, stripping redundant keys with default values"""
         data = self.as_dict()
 
         for idx, intent_info in enumerate(data["intents"]):
