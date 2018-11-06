@@ -9,24 +9,26 @@ One of the most common conversation patterns is to collect a few pieces of
 information from a user in order to do something (book a restaurant, call an
 API, search a database, etc.). This is also called **slot filling**.
 
-Slot Filling with a ``FormAction``
-----------------------------------
 
-If you need to collect multiple pieces of information in a row, it is recommended
-to create a ``FormAction``. You can take a look at the base class of
-the FormAction below:
+If you need to collect multiple pieces of information in a row, we recommended 
+that you create a ``FormAction``. This is a single action which contains the 
+logic to loop over the required slots and ask the user for this information.
+There is a full example using forms in the ``examples/formbot`` directory of 
+Rasa Core.
+
+You can take a look at the FormAction base class by clicking this link:
 
 .. autoclass:: rasa_core_sdk.forms.FormAction
 
 Basics
-~~~~~~
+------
 
-This lets you have a single action that is called multiple times, rather than
-separate actions for each question. The idea behind this is that you can get the
-happy path of your bot up and running quickly. If we take the example of the
-restaurant bot, this means your initial story will look as simple as this
-(provided your slots are `unfeaturized
-<https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot>`_):
+Using a ``FormAction``, you can describe *all* of the happy paths with a single 
+story. By "happy path", we mean that whenever you ask a user for some information, 
+they respond with what you asked for.
+
+If we take the example of the restaurant bot, this single story describes all of the 
+happy paths. 
 
 .. code-block:: story
 
@@ -36,13 +38,22 @@ restaurant bot, this means your initial story will look as simple as this
         - form{"name": "restaurant_form"}
         - form{"name": null}
 
-This means that even if you provide multiple slots at one, e.g. if someone says
-"I'd like a vegetarian Chinese restaurant for 8 people" the slots ``cuisine``
-and ``num_people`` won't get asked for.
+The ``FormAction`` will only requests slots which haven't already been set.
+If a user says 
+"I'd like a vegetarian Chinese restaurant for 8 people", they won't be 
+asked about the ``cuisine`` and ``num_people`` slots.
 
-The ``restaurant_form`` is the form action, for which you need to define only a
-few methods in order to get it working: ``name()``, ``required_slots(tracker)``
-and ``submit(self, dispatcher, tracker, domain)``
+Note that this works best if your slots are `unfeaturized
+<https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot>`_:
+
+
+The ``restaurant_form`` in the story above is the name of our form action.
+Here is an example of what it looks like. 
+You need to define three methods:
+
+- ``name``: the name of this action
+- ``required_slots``: a list of slots that need to be filled for the ``submit`` method to work.
+- ``submit``: what to do at the end of the form, when all the slots have been filled.
 
 
 .. code-block:: python
@@ -73,30 +84,33 @@ and ``submit(self, dispatcher, tracker, domain)``
         dispatcher.utter_template('utter_submit', tracker)
         return []
 
-The way this works is that once the form action gets called for the first time,
-the form gets activated and the ``FormPolicy`` jumps in. The ``FormPolicy`` always
-predicts the active form if there was just some user input, and always predicts
-waiting for user input when the active form was just called.
 
-At each turn that the form action gets called, it will take the next slot from
-the ``required_slots(tracker)`` that is still empty and set a slot called
-``requested_slot`` to keep track of what it has asked the user.
-This is done by using the ``utter_ask_{slot_name}`` templates that you need to
-define in your domain file. By default it will fill the slot with the entity of
-the same name if it's present.
+Once the form action gets called for the first time,
+the form gets activated and the ``FormPolicy`` jumps in. 
+The ``FormPolicy`` is extremely simple and just always predicts the form action.
+See :ref:`section_unhappy` for how to work with unexpected user input.
 
-Once all the slots are filled, the ``submit()`` method is called, in which you
-can perform some final actions, e.g. querying a restaurant API with the
-extracted slots (or you can also just do nothing by only writing ``return []``).
-After this the form is deactivated, and prediction goes back to other policies
-present in your Core model.
+Every time the form action gets called, it will ask the user for the next slot in
+``required_slots`` which is not already set. 
+It does this by looking for a template called ``utter_ask_{slot_name}``, 
+so you need to define these in your domain file for each required slot. 
+
+Once all the slots are filled, the ``submit()`` method is called, where you can
+use the information you've collected to do something for the user, for example 
+querying a restaurant API.
+If you don't want your form to do anything at the end, just use ``return []``
+as your submit method.
+After the submit method is called, the form is deactivated, 
+and other policies in your Core model will be used to predict the next action.
 
 Custom slot mappings
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
-You can also fill slots with the full user message, map an intent to a value,
-or map a slot to an entity of a different name by defining the ``slot_mapping()``
-function. Here's an example for the restaurant bot:
+Some slots (like ``cuisine``) can be picked up using a single entity, but a 
+``FormAction`` can also support yes/no questions and free-text input.
+The ``slot_mapping`` method defines how to extract slot values from user responses.
+
+Here's an example for the restaurant bot:
 
 .. code-block:: python
 
@@ -141,11 +155,14 @@ The predefined functions work as follows:
 
 
 Validating user input
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
-By default validation will fail only if none of the requested slots are filled. If
-you want to add custom validation, e.g. only accept a specific type of cuisine,
-overwrite the ``validate()`` function:
+After extracting a slot value from user input, the form will try to validate the 
+value of the slot. By default, this only checks if the requested slot was extracted.
+If you want to add custom validation, for example to check a value against a database, 
+you can do this by overwriting the ``validate()`` method. 
+Here is an example which checks if the extracted cuisine slot belongs to a 
+list of supported cuisines.
 
 .. code-block:: python
 
@@ -198,14 +215,20 @@ overwrite the ``validate()`` function:
 
         return validated_events
 
-If nothing is extracted from the users utterance for any of the required slots, an
+If nothing is extracted from the user's utterance for any of the required slots, an
 ``ActionExecutionRejection`` error will be raised, meaning the action execution
 was rejected and therefore Core will fall back onto a different policy to
 predict another action.
 
-Handling unhappy paths
-~~~~~~~~~~~~~~~~~~~~~~
+.. _section_unhappy:
 
+Handling unhappy paths
+----------------------
+
+Of course your users will not always respond with the information you ask of them. 
+Typically, users will ask questions, make chitchat, change their mind, or otherwise 
+stray from the happy path. The way this works with forms is that a form will raise
+an ``ActionExecutionRejection`` if the user didn't provide the requested information.
 You need to handle events that might cause ``ActionExecutionRejection`` errors
 in your stories. For example, if you expect your users to chitchat with your bot,
 you could add a story like this:
@@ -221,15 +244,23 @@ you could add a story like this:
         - restaurant_form
         - form{"name": null}
 
+It is **strongly** recommended that you build these stories using interactive learning.
+If you write these stories by hand you will likely miss important things.
+Please read `these instructions
+<https://rasa.com/docs/core/interactive_learning#form-action-corrections>`_
+on how to use interactive learning with forms.
+
 The requested_slot slot
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
+
 The slot ``requested_slot`` is automatically added to the domain as an
 unfeaturized slot. If you want to make it featurized, you need to add it
 to your domain file as a categorical slot. You might want to do this if you
 want to handle your unhappy paths differently depending on what slot is
-currently being asked from the user. For example, say you want to let your
-users ask for explanations of the different slot values.
-Then your stories would look something like this:
+currently being asked from the user. For example, say your users respond
+to one of the bot's questions with another question, like *why do you need to know that?*
+The response to this ``explain`` intent depends on where we are in the story.
+In the restaurant case, your stories would look something like this:
 
 .. code-block:: story
 
@@ -257,16 +288,21 @@ Then your stories would look something like this:
         ( ... all other slots the form set ... )
         - form{"name": null}
 
+Again, is is **strongly** recommended that you use interactive 
+learning to build these stories.
+Please read `these instructions
+<https://rasa.com/docs/core/interactive_learning#form-action-corrections>`_
+on how to use interactive learning with forms.
 
 Handling conditional slot logic
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------
 
-If you want to change the lists of slots needed from the user dependent on
-some Rasa Core event (e.g. the first slot has a specific value) you should
-do this in the ``required_slots(tracker)`` method by returning a different list
-dependent on that event. For example, say that only greek restaurants provide
-outdoor seating and so you don't want to ask that for other cuisines. Then
-your method would look something like this:
+Many forms require more logic than just requesting a list of fields.
+For example, if someone requests ``greek`` as their cuisine, you may want to
+ask if they are looking for somewhere with outside seating.
+
+You can achieve this by writing some logic into the ``required_slots()`` method,
+for example:
 
 .. code-block:: python
 
@@ -282,106 +318,11 @@ your method would look something like this:
          return ["cuisine", "num_people",
                  "preferences", "feedback"]
 
-
-Interactive learning
-~~~~~~~~~~~~~~~~~~~~
-
-You may want to teach the bot how to handle unexpected user behaviour like
-chitchat through interactive learning. Please read `these instructions
-<https://rasa.com/docs/core/interactive_learning#form-action-corrections>`_
-on how to use interactive learning with forms.
-
-
-Example: Providing the Weather
-------------------------------
-
-
-Let's say you are building a weather bot ⛅️. If somebody asks you for the weather, you will
-need to know their location. Users might say that right away, e.g. `What's the weather in Caracas?`
-When they don't provide this information, you'll have to ask them for it.
-We can provide two stories to Rasa Core, so that it can learn to handle both cases:
-
-.. code-block:: story
-
-    # story1
-    * ask_weather{"location": "Caracas"}
-       - action_weather_api
-
-    # story2
-    * ask_weather
-       - utter_ask_location
-    * inform{"location": "Caracas"}
-       - action_weather_api
-
-Here we are assuming you have defined an ``inform`` intent, which captures the cases where a user
-is just providing information.
-
-But :ref:`customactions` can also set slots, and these can also influence the conversation.
-For example, a location like `San Jose` could refer to multiple places, in this case, probably in
-Costa Rica 🇨🇷  or California 🇺🇸
-
-Let's add a call to a location API to deal with this.
-Start by defining a ``location_match`` slot:
-
-.. code-block:: yaml
-
-    slots:
-      location_match:
-        type: categorical
-        values:
-        - zero
-        - one
-        - multiple
-
-
-And our location api action will have to use the API response to fill in this slot.
-It can ``return [SlotSet("location_match", value)]``, where ``value`` is one of ``"zero"``, ``"one"``, or
-``"multiple"``, depending on what the API sends back.
-
-We then define stories for each of these cases:
-
-
-.. code-block:: story
-    :emphasize-lines: 12-13, 18-19, 24-25
-
-    # story1
-    * ask_weather{"location": "Caracas"}
-       - action_location_api
-       - slot{"location_match": "one"}
-       - action_weather_api
-
-    # story2
-    * ask_weather
-       - utter_ask_location
-    * inform{"location": "Caracas"}
-       - action_location_api
-       - slot{"location_match": "one"}
-       - action_weather_api
-
-    # story3
-    * ask_weather{"location": "the Moon"}
-       - action_location_api
-       - slot{"location_match": "none"}
-       - utter_location_not_found
-
-    # story4
-    * ask_weather{"location": "San Jose"}
-       - action_location_api
-       - slot{"location_match": "multiple"}
-       - utter_ask_which_location
-
-
-Now we've given Rasa Core a few examples of how to handle the different values
-that the ``location_match`` slot can take.
-Right now, we still only have four stories, which is not a lot of training data.
-:ref:`interactive_learning` is a great way to explore more conversations
-that aren't in your stories already.
-The best way to improve your model is to test it yourself, have other people test it,
-and correct the mistakes it makes.
-
+This mechanism is quite general and you can use it to build many different 
+kinds of logic into your forms.
 
 Debugging
-~~~~~~~~~
+---------
 
 The first thing to try is to run your bot with the ``debug`` flag, see :ref:`debugging` for details.
 If you are just getting started, you probably only have a few hand-written stories.
