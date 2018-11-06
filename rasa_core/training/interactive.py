@@ -847,7 +847,7 @@ def _validate_action(action_name,  # type: Text
                                              "validate": False})
         elif not tracker.get('active_form', {}).get('validate'):
             # handle contradiction with learned behaviour
-            q = ("WARNING: FormPolicy predicted no form validation "
+            q = ("ERROR: FormPolicy predicted no form validation "
                  "based on previous training stories. "
                  "Make sure to remove contradictory stories "
                  "from training data. "
