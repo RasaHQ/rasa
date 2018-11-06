@@ -267,6 +267,15 @@ class StoryStep(object):
                 raise Exception("Unexpected element in story step: "
                                 "{}".format(s))
 
+        if (not self.end_checkpoints and
+                self.story_string_helper.active_form is not None):
+            # there are no end checkpoints
+            # form is active
+            # add story string with form prefix
+            result += self.story_string_helper.form_prefix_string
+            # remove all stored story strings
+            self._reset_stored_strings()
+
         if not flat:
             for e in self.end_checkpoints:
                 result += "> {}\n".format(e.as_story_string())

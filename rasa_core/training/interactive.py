@@ -819,6 +819,8 @@ def _validate_action(action_name,  # type: Text
     # check whether the form is called again after it was rejected
     form_is_restored = (tracker.get('active_form', {}).get('rejected')
                         and
+                        tracker.get('latest_action_name') == 'action_listen'
+                        and
                         action_name == tracker.get('active_form',
                                                    {}).get('name'))
     if form_is_rejected:
