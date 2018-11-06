@@ -32,15 +32,13 @@ class NestedEntityExtractor(EntityExtractor):
 
         self.nested_entities = nested_entities if nested_entities else {
             'lookup_tables': [],
-            'composite_entries': []
+            'composite_entities': []
         }
 
     def train(self, training_data, cfg, **kwargs):
         # type: (TrainingData) -> None
         self.add_lookup_tables(training_data.lookup_tables)
-        self.add_composite_entities_from_entities_synonyms(
-            training_data.entity_synonyms.items()
-        )
+        self.nested_entities['composite_entities'] = training_data.composite_entities
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -76,7 +74,7 @@ class NestedEntityExtractor(EntityExtractor):
         else:
             nested_entities = {
                 'lookup_tables': [],
-                'composite_entries': []
+                'composite_entities': []
             }
             warnings.warn("Failed to load nested entities file from '{}'"
                           "".format(nested_entities_file))
@@ -100,7 +98,7 @@ class NestedEntityExtractor(EntityExtractor):
     def break_on_lookup_tables(self, each_lookup,
                                child_name,
                                broad_value):
-        for lookup_entry in each_lookup['entries']:
+        for lookup_entry in each_lookup['elements']:
             find_index = broad_value.find(lookup_entry.lower())
             if(find_index > -1):
                 return {
@@ -160,10 +158,10 @@ class NestedEntityExtractor(EntityExtractor):
         for nested_composite in nested_composites:
             nested_composite_value = nested_composite.split(':')[0]
             child_of_nested_composite = filter(
-                lambda x: x['value'] == nested_composite_value,
-                self.nested_entities['composite_entries'])
+                lambda x: x['name'] == nested_composite_value,
+                self.nested_entities['composite_entities'])
             if(len(child_of_nested_composite) > 0):
-                child_synonymns = child_of_nested_composite[0]['synonyms']
+                child_synonymns = child_of_nested_composite[0]['composites']
                 relevance_score = self.get_relevance(
                     broad_value, child_synonymns)
                 if(relevance_score > highest_relevance_score):
@@ -195,9 +193,9 @@ class NestedEntityExtractor(EntityExtractor):
     def split_two_levels(self, composite_child, broad_value):
         broken_entity = {}
         child_name = composite_child.split(':')[0][1:]
-        for each_nested in self.nested_entities['composite_entries']:
-            if(each_nested['value'] == child_name):
-                nested_composites = each_nested['synonyms']
+        for each_nested in self.nested_entities['composite_entities']:
+            if(each_nested['name'] == child_name):
+                nested_composites = each_nested['composites']
                 most_relevant_composite = self.get_most_relevant_composite(
                     nested_composites, broad_value)
                 broken_entity = self.add_most_relevant_composite(
@@ -211,7 +209,7 @@ class NestedEntityExtractor(EntityExtractor):
     def split_composite_entity(self, composite_entry, entity):
         broken_entity = {}
         broad_value = entity["value"].lower()
-        composite_children = composite_entry['synonyms']
+        composite_children = composite_entry['composites']
         for composite_child in composite_children:
             if(composite_child[0] == '@'):
 
@@ -237,35 +235,12 @@ class NestedEntityExtractor(EntityExtractor):
     def split_nested_entities(self, entities):
         for each_entity in entities:
             entity = each_entity["entity"]
-            for composite_entry in self.nested_entities['composite_entries']:
-                if(composite_entry['value'] == entity):
+            for composite_entry in self.nested_entities['composite_entities']:
+                if(composite_entry['name'] == entity):
                     self.split_composite_entity(composite_entry, each_entity)
-
-    def add_to_composite_entities(self, value, synonym):
-        element_present = False
-        composite_entries = enumerate(
-            self.nested_entities['composite_entries'])
-        for index, element in composite_entries:
-            if element['value'] == value:
-                self.nested_entities['composite_entries'][index]['synonyms'].append(synonym)
-                element_present = True
-        if not element_present:
-            self.nested_entities['composite_entries'].append({
-                'synonyms': [
-                    synonym
-                ],
-                'value': value
-            })
-
-    def add_composite_entities_from_entities_synonyms(self, entity_synonyms):
-        """Unpack smuggled entities"""
-        for synonym, value in list(entity_synonyms):
-            if(value[0] == '@' and synonym.startswith(value)):
-                synonym = synonym.replace(value + "_", "")
-                self.add_to_composite_entities(value[1:], synonym)
 
     def add_lookup_tables(self, lookup_tables):
         """Need to sort by length so that we get the broadest entry first"""
         for lookup in lookup_tables:
-            lookup['entries'].sort(key=len, reverse=True)
+            lookup['elements'].sort(key=len, reverse=True)
             self.nested_entities['lookup_tables'].append(lookup)

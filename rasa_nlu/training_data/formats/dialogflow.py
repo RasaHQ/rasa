@@ -41,7 +41,7 @@ class DialogflowReader(TrainingDataReader):
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
         elif fformat == DIALOGFLOW_ENTITIES:
-            return self._read_entities(examples_js)
+            return self._read_entities(root_js, examples_js)
 
     def _read_intent(self, intent_js, examples_js):
         """Reads the intent and examples from respective jsons."""
@@ -79,9 +79,42 @@ class DialogflowReader(TrainingDataReader):
 
         return entity
 
-    def _read_entities(self, examples_js):
+    def _extract_lookup_tables(self, entity, synonyms):
+        """Extract the lookup table from the entity synonyms"""
+        lookup_tables = []
+        for s in synonyms:
+            if "synonyms" in s:
+                for synonym in s["synonyms"]:
+                    if "@" not in synonym:
+                        lookup_tables.append(synonym)
+        if len(lookup_tables) == 0:
+            return False
+        return [{
+            'name': entity,
+            'elements': lookup_tables
+        }]
+ 
+    def _extract_composite_entities(self, entity, synonyms):
+        """Extract the composite entities"""
+        composite_entities = set()
+        for s in synonyms:
+            if "value" in s and "@" in s["value"]:
+                for each in s["value"].split(" "):
+                    if each:
+                        composite_entities.add(each)
+        if len(composite_entities) == 0:
+            return False
+        return [{
+            'name': entity,
+            'composites': list(composite_entities)
+        }]
+
+    def _read_entities(self, entity_js, examples_js):
+        entity = entity_js.get("name")
         entity_synonyms = transform_entity_synonyms(examples_js)
-        return TrainingData([], entity_synonyms)
+        lookup_tables = self._extract_lookup_tables(entity, examples_js)
+        composite_entities = self._extract_composite_entities(entity, examples_js)
+        return TrainingData([], entity_synonyms, [], lookup_tables, composite_entities)
 
     def _read_examples_js(self, fn, language, fformat):
         """Infer and load the example file based on the root filename and root format."""

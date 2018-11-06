@@ -17,7 +17,7 @@ Then to generate your model:
 
 .. code-block:: bash
     python -m rasa_nlu.train -c sample_configs/config_composite_entities.yml \
-        --data data/examples/dialogflow/training_data.json -o models \
+        --data data/examples/dialogflow -o models \
         --fixed_model_name df-agent --project current --verbose
 
 Then start the server with ``python -m rasa_nlu.server --debug --path models/``

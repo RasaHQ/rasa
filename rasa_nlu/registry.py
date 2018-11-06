@@ -25,6 +25,7 @@ from rasa_nlu.classifiers.embedding_intent_classifier import \
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa_nlu.extractors.nested_entity_extractor import NestedEntityExtractor
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
@@ -53,6 +54,7 @@ component_classes = [
     SpacyEntityExtractor, MitieEntityExtractor, DucklingExtractor,
     CRFEntityExtractor, DucklingHTTPExtractor,
     EntitySynonymMapper,
+    NestedEntityExtractor,
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     CountVectorsFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer, JiebaTokenizer,

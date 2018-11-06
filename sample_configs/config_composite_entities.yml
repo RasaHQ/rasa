@@ -7,6 +7,6 @@ pipeline:
 - name: "tokenizer_whitespace"
 - name: "intent_featurizer_count_vectors"
 - name: "intent_classifier_tensorflow_embedding"
-- name: "custom_components.nested_entity_extractor.NestedEntityExtractor"
+- name: "nested_entity_extractor"
   intent_tokenization_flag: true
   intent_split_symbol: "."

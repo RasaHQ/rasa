@@ -28,6 +28,7 @@ class RasaReader(JsonTrainingDataReader):
         entity_synonyms = data.get("entity_synonyms", [])
         regex_features = data.get("regex_features", [])
         lookup_tables = data.get("lookup_tables", [])
+        composite_entities = data.get("composite_entities", [])
 
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
@@ -47,7 +48,8 @@ class RasaReader(JsonTrainingDataReader):
             training_examples.append(msg)
 
         return TrainingData(training_examples, entity_synonyms,
-                            regex_features, lookup_tables)
+                            regex_features, lookup_tables, 
+                            composite_entities)
 
 
 class RasaWriter(TrainingDataWriter):
@@ -69,6 +71,7 @@ class RasaWriter(TrainingDataWriter):
                 "common_examples": formatted_examples,
                 "regex_features": training_data.regex_features,
                 "lookup_tables": training_data.lookup_tables,
+                "composite_entities": training_data.composite_entities,
                 "entity_synonyms": formatted_synonyms
             }
         }, **kwargs)
@@ -138,6 +141,14 @@ def _rasa_nlu_data_schema():
         }
     }
 
+    composite_entities_schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "composites": {"type": "string"},
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
@@ -163,6 +174,10 @@ def _rasa_nlu_data_schema():
                     "lookup_tables": {
                         "type": "array",
                         "items": lookup_table_schema
+                    },
+                    "composite_entities": {
+                        "type": "array",
+                        "items": composite_entities_schema
                     }
                 }
             }
