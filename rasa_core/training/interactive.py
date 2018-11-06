@@ -776,26 +776,24 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     # type: (Text, List[Dict[Text, Any]], EndpointConfig) -> None
     """Write an updated domain file to the file path."""
 
-    spec = retrieve_domain(endpoint)
+    domain = retrieve_domain(endpoint)
+    old_domain = Domain.from_dict(domain)
+
     msgs = _collect_messages(evts)
-    acts = _collect_actions(evts)
+    actions = _collect_actions(evts)
 
-    found_intents = set(m.data["intent"] for m in msgs)
-    spec_intents = [list(i.keys())[0] for i in spec["intents"]]
-    for name in found_intents:
-        if name not in spec_intents:
-            spec["intents"].append({name: {"use_entities": True}})
+    new_domain = dict.from_keys(domain.keys())
+    new_domain["intents"] = list(set({m.data["intent"]: {"use_entities": True}}
+                                     for m in msgs))
+    new_domain["entities"] = list(set([e["entity"]
+                                       for m in msgs
+                                       for e in m.data.get("entities", [])]))
+    new_domain["actions"] = list(set([e["name"] for e in actions]))
+    new_domain = Domain.from_dict(new_domain)
 
-    found_entities = [e["entity"]
-                      for m in msgs
-                      for e in m.data.get("entities", [])]
-    spec["entities"] = list(set(found_entities + spec["entities"]))
+    new_domain = old_domain.merge(new_domain)
 
-    found_actions = [e["name"] for e in acts]
-    spec["actions"] = list(set(found_actions + spec["actions"]))
-
-    domain = Domain.from_dict(spec)
-    domain.persist_clean(domain_path)
+    new_domain.persist_clean(domain_path)
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
