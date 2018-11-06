@@ -26,6 +26,7 @@ Removed
 Fixed
 -----
 - Should loading jieba custom dictionaries only once.
+- Set attributes of custom components correctly if they defer from the default
 
 [0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^
