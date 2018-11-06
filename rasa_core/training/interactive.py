@@ -850,7 +850,9 @@ def _validate_action(action_name,  # type: Text
             q = ("WARNING: FormPolicy predicted no form validation "
                  "based on previous training stories. "
                  "Make sure to remove contradictory stories "
-                 "from training data.")
+                 "from training data. "
+                 "Otherwise predicting no form validation "
+                 "will not work as expected.")
             warning_questions = [{
                 "name": "warning",
                 "type": "input",
