@@ -115,8 +115,46 @@ at every step in the conversation.
 There are different policies to choose from, and you can include
 multiple policies in a single :class:`rasa_core.agent.Agent`. At
 every turn, the policy which predicts the next action with the
-highest confidence will be used. You can pass a list of policies
-when you create an agent:
+highest confidence will be used.
+
+.. _policy_file:
+
+Configuring polices using a configuration file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can set the policies you would like the Core model to use in a YAML file.
+
+For example:
+
+.. code-block:: yaml
+
+  policies:
+    - name: "KerasPolicy"
+      max_history: 5
+    - name: "MemoizationPolicy"
+      max_history: 5
+    - name: "FallbackPolicy"
+      nlu_threshold: 0.4
+      core_threshold: 0.3
+      fallback_action_name: "my_fallback_action"
+    - name: "path.to.your.policy.class"
+      arg1: "..."
+
+Pass the YAML file's name to the train script using the ``--config``
+argument (or just ``-c``). If no config.yaml is given, the policies
+default to
+``[KerasPolicy(), MemoizationPolicy(), FallbackPolicy(), FormPolicy()]``.
+
+.. note::
+
+    Policies specified higher in the ``config.yaml`` will take
+    precedence over a policy specified lower if the confidences
+    are equal.
+
+Configuring polices in code
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can pass a list of policies when you create an agent:
 
 .. code-block:: python
 

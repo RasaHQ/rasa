@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.train import train_dialogue_model
 from rasa_core.agent import Agent
+from rasa_core.policies.form_policy import FormPolicy
 
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.training.visualization import visualize_stories
@@ -21,7 +22,7 @@ def test_story_visualization(default_domain, tmpdir):
     story_steps = StoryFileReader.read_from_file(
             "data/test_stories/stories.md", default_domain,
             interpreter=RegexInterpreter())
-    out_file = tmpdir.join("graph.png").strpath
+    out_file = tmpdir.join("graph.html").strpath
     generated_graph = visualize_stories(story_steps, default_domain,
                                         output_file=out_file,
                                         max_history=3,
@@ -62,8 +63,11 @@ def test_training_script_without_max_history_set(tmpdir):
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
-            assert policy.featurizer.max_history == \
-                   policy.featurizer.MAX_HISTORY_DEFAULT
+            if type(policy) == FormPolicy:
+                assert policy.featurizer.max_history == 2
+            else:
+                assert policy.featurizer.max_history == \
+                       policy.featurizer.MAX_HISTORY_DEFAULT
 
 
 def test_training_script_with_max_history_set(tmpdir):
@@ -76,7 +80,10 @@ def test_training_script_with_max_history_set(tmpdir):
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
-            assert policy.featurizer.max_history == max_history
+            if type(policy) == FormPolicy:
+                assert policy.featurizer.max_history == 2
+            else:
+                assert policy.featurizer.max_history == max_history
 
 
 def test_training_script_with_restart_stories(tmpdir):

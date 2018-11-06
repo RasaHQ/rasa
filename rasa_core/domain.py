@@ -28,6 +28,7 @@ from rasa_core.constants import REQUESTED_SLOT
 logger = logging.getLogger(__name__)
 
 PREV_PREFIX = 'prev_'
+ACTIVE_FORM_PREFIX = 'active_form_'
 
 
 class InvalidDomain(Exception):
@@ -205,7 +206,7 @@ class Domain(object):
         self.user_actions = action_names
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = action.combine_user_with_default_actions(
-                action_names) + self.form_names
+                action_names) + form_names
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
@@ -415,9 +416,9 @@ class Domain(object):
     def get_active_form(tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
         """Turns tracker's active form into a state name."""
-        form = tracker.active_form
+        form = tracker.active_form.get('name')
         if form is not None:
-            return {'active_form_{}'.format(form): 1.0}
+            return {ACTIVE_FORM_PREFIX + form: 1.0}
         else:
             return {}
 

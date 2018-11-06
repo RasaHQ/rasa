@@ -3,6 +3,8 @@
 Installation
 ============
 
+.. contents::
+
 Install Rasa Core to get started with the Rasa stack.
 
 .. note::
@@ -24,7 +26,7 @@ The recommended way to install Rasa Core is using pip:
     pip install rasa_core
 
 
-If you alredy have `rasa_core` installed and want to update it run:
+If you already have `rasa_core` installed and want to update it run:
 
 .. copyable::
 
@@ -79,6 +81,7 @@ You can also use other NLU services like wit.ai, dialogflow, or LUIS.
 In fact, you don't need to use NLU at all, if your messaging app uses buttons
 rather than free text.
 
+
 Build your first Rasa assistant!
 --------------------------------
 After following the quickstart and installing Rasa Core, the next step is to
@@ -87,7 +90,7 @@ Rasa Stack starter-pack which has all the files you need to build your first cus
 chatbot. On top of that, the starter-pack includes a training data set ready
 for you to use.
 
-Click the linke below to get the Rasa Stack starter-pack:
+Click the link below to get the Rasa Stack starter-pack:
 	
 `Rasa Stack starter-pack <https://github.com/RasaHQ/starter-pack-rasa-stack>`_
 	
@@ -95,6 +98,75 @@ Let us know how you are getting on! If you have any questions about the starter-
 using Rasa Stack in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!
 
 
-.. include:: feedback.inc
+Using Docker Compose
+--------------------
+Rasa provides all components as official Docker images which are continuously updated.
+To quickly run Rasa Core with other components,
+you can use the provided `docker compose <https://docs.docker.com/compose/overview/>`_ file.
+This is useful for a quick local setup or if you want to host the Rasa components on cloud services.
 
+
+Compose File Example
+~~~~~~~~~~~~~~~~~~~~
+.. literalinclude:: ../docker/docker-compose.yml
+
+
+.. note::
+
+    If you do not require components like `nlu <https://rasa.com/docs/nlu/>`_ or duckling,
+    you can simply remove them from your docker compose file.
+
+Running it
+~~~~~~~~~~
+To run all components locally, execute :code:`docker-compose up`.
+You can then interact with your chat bot using the :ref:`section_http`.
+For example:
+
+    .. code-block:: bash
+
+        curl -XPOST \
+            --header 'content-type: application/json' \
+            --data '{"message": "Hi Bot"}' \
+            http://localhost:5005/webhooks/rest/webhook
+
+To run commands inside a specific container, use ``docker-compose run <container name>``.
+For example to train the core model:
+
+    .. code-block:: bash
+
+         docker-compose run rasa_core train
+
+Volume Explanation
+~~~~~~~~~~~~~~~~~~
+- **./rasa-app-data/models/current/dialogue**: This directory contains the trained Rasa Core models.
+  You can also move previously trained models to this directory to load them within the Docker container.
+- **./rasa-app-data/config**: This directory is for the configuration of the endpoints and of the
+  different :ref:`connectors` you can use Rasa Core with.
+
+  - To connect other components with Rasa Core this directory should contain a file ``endpoints.yml``,
+    which specifies how to reach these components.
+    For the shown docker-compose example the file should look like this:
+
+        .. code-block:: yaml
+
+            action_endpoint:
+                url: 'http://action_server:5055/webhook'
+            nlu:
+                url: 'http://rasa_nlu:5000'
+
+  - If you use connectors to :ref:`connectors`
+    you have to configure the required credentials for these in a file `credentials.yml`.
+    Use the provided credentials by adding ``--credentials <path to your credentials file>``
+    to the run command of Rasa Core.
+
+- **./rasa-app-data/project**: This directory contains your Rasa project and may be used to train a model.
+- **./rasa-app-data/models/**: This directory contains the nlu project and its trained models.
+  You can also move previously trained models to this directory to load them within the Docker container.
+
+.. note::
+
+    You can also use custom directory structures or port mappings.
+    But don't forget to reflect this changes in the docker compose file and in your endpoint configuration.
+
+.. include:: feedback.inc
 

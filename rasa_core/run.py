@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from builtins import str
 from collections import namedtuple
-
+import os
 import argparse
 import logging
 from flask import Flask
@@ -18,13 +18,14 @@ import rasa_core
 from rasa_core import constants, agent
 from rasa_core import utils, server
 from rasa_core.agent import Agent
+from rasa_core.broker import PikaProducer
 from rasa_core.channels import (
     console, RestInput, InputChannel,
     BUILTIN_CHANNELS)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
+from rasa_core.tracker_store import TrackerStore
 from rasa_core.utils import read_yaml_file, AvailableEndpoints
-
 logger = logging.getLogger()  # get the root logger
 
 
@@ -127,9 +128,9 @@ def _create_single_channel(channel, credentials):
             raise Exception(
                     "Failed to find input channel class for '{}'. Unknown "
                     "input channel. Check your credentials configuration to "
-                    "make sure the mentioned channel is not misspelled. If you "
-                    "are creating your own channel, make sure it is a proper "
-                    "name of a class in a module.".format(channel))
+                    "make sure the mentioned channel is not misspelled. "
+                    "If you are creating your own channel, make sure it "
+                    "is a proper name of a class in a module.".format(channel))
 
 
 def start_cmdline_io(server_url, on_finish, **kwargs):
@@ -217,7 +218,7 @@ def load_agent(core_model, interpreter, endpoints,
                 generator=endpoints.nlg,
                 action_endpoint=endpoints.action,
                 model_server=endpoints.model,
-                tracker_store=tracker_store,
+                tracker_store=endpoints.tracker_store,
                 wait_time_between_pulls=wait_time_between_pulls
         )
     else:
@@ -245,10 +246,14 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
+    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+
+    _tracker_store = TrackerStore.find_tracker_store(
+        None, _endpoints.tracker_store, _broker)
     _agent = load_agent(cmdline_args.core,
                         interpreter=_interpreter,
+                        tracker_store=_tracker_store,
                         endpoints=_endpoints)
-
     serve_application(_agent,
                       cmdline_args.connector,
                       cmdline_args.port,

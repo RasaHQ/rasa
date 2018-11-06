@@ -3,10 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain
 from rasa_core.events import SlotSet, ActionExecuted, Restarted
-from rasa_core.tracker_store import InMemoryTrackerStore
+from rasa_core.tracker_store import (
+    TrackerStore,
+    InMemoryTrackerStore,
+    RedisTrackerStore)
+from rasa_core.utils import EndpointConfig
+from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")
 
@@ -42,3 +48,73 @@ def test_restart_after_retrieval_from_tracker_store(default_domain):
     tr2 = store.retrieve("myuser")
     latest_restart_after_loading = tr2.idx_after_latest_restart()
     assert latest_restart == latest_restart_after_loading
+
+
+def test_tracker_store_endpoint_config_loading():
+    cfg = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+
+    assert cfg == EndpointConfig.from_dict({
+        "store_type": "redis",
+        "url": "localhost",
+        "port": 6379,
+        "db": 0,
+        "password": "password",
+        "timeout": 30000
+    })
+
+
+def test_find_tracker_store(default_domain):
+    store = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+    tracker_store = RedisTrackerStore(domain=default_domain,
+                                      host="localhost",
+                                      port=6379,
+                                      db=0,
+                                      password="password",
+                                      record_exp=3000)
+
+    assert isinstance(tracker_store,
+                      type(
+                        TrackerStore.find_tracker_store(default_domain, store)
+                          ))
+
+
+class TestTrackerStore(RedisTrackerStore):
+    def __init__(self, domain, url, port, db, password, record_exp):
+        super(TestTrackerStore, self).__init__(domain,
+                                               host=url,
+                                               port=port,
+                                               db=db,
+                                               password=password,
+                                               record_exp=record_exp)
+
+
+def test_tracker_store_from_string(default_domain):
+    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
+    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+
+    tracker_store = TrackerStore.find_tracker_store(default_domain,
+                                                    store_config)
+
+    assert isinstance(tracker_store, TestTrackerStore)
+
+
+def test_tracker_store_from_invalid_module(default_domain):
+    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
+    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+    store_config.store_type = "a.module.which.cannot.be.found"
+
+    tracker_store = TrackerStore.find_tracker_store(default_domain,
+                                                    store_config)
+
+    assert isinstance(tracker_store, InMemoryTrackerStore)
+
+
+def test_tracker_store_from_invalid_string(default_domain):
+    endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
+    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+    store_config.store_type = "any string"
+
+    tracker_store = TrackerStore.find_tracker_store(default_domain,
+                                                    store_config)
+
+    assert isinstance(tracker_store, InMemoryTrackerStore)

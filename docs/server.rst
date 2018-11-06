@@ -75,7 +75,7 @@ regularly queries for zipped Rasa Core models:
 
 .. code-block:: yaml
 
-    model:
+    models:
       url: http://my-server.com/models/default_core@latest
 
 .. note::
@@ -185,7 +185,7 @@ Documentation of the server API as
 :download:`OpenAPI Spec <_static/spec/server.yml>`.
 
 .. apidoc::
-   :path: ../_downloads/server.yml
+   :path: ../_static/spec/server.yml
 
 .. include:: feedback.inc
 

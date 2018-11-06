@@ -12,7 +12,8 @@ from httpretty import httpretty
 from rasa_core.actions import action
 from rasa_core.actions.action import (
     ActionRestart, UtterAction,
-    ActionListen, RemoteAction)
+    ActionListen, RemoteAction,
+    ActionExecutionRejection)
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
@@ -56,12 +57,13 @@ def test_domain_action_instantiation():
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 5
+    assert len(instantiated_actions) == 6
     assert instantiated_actions[0].name() == "action_listen"
     assert instantiated_actions[1].name() == "action_restart"
     assert instantiated_actions[2].name() == "action_default_fallback"
-    assert instantiated_actions[3].name() == "my_module.ActionTest"
-    assert instantiated_actions[4].name() == "utter_test"
+    assert instantiated_actions[3].name() == "action_deactivate_form"
+    assert instantiated_actions[4].name() == "my_module.ActionTest"
+    assert instantiated_actions[5].name() == "utter_test"
 
 
 def test_domain_fails_on_duplicated_actions():
@@ -108,7 +110,7 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
                 'intent': {},
                 'text': None
             },
-            'active_form': None,
+            'active_form': {},
             'latest_action_name': None,
             'sender_id': 'default',
             'paused': False,
@@ -163,7 +165,7 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
                 'intent': {},
                 'text': None
             },
-            'active_form': None,
+            'active_form': {},
             'latest_action_name': None,
             'sender_id': 'default',
             'paused': False,
@@ -234,6 +236,31 @@ def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
                           default_domain)
     httpretty.disable()
     assert "Failed to execute custom action." in str(execinfo.value)
+
+
+def test_remote_action_endpoint_responds_400(default_dispatcher_collecting,
+                                             default_domain):
+    tracker = DialogueStateTracker("default",
+                                   default_domain.slots)
+
+    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    httpretty.register_uri(
+            httpretty.POST,
+            'https://abc.defg/webhooks/actions',
+            status=400,
+            body='{"action_name": "my_action"}')
+
+    httpretty.enable()
+
+    with pytest.raises(Exception) as execinfo:
+        remote_action.run(default_dispatcher_collecting,
+                          tracker,
+                          default_domain)
+    httpretty.disable()
+    assert execinfo.type == ActionExecutionRejection
+    assert "Custom action 'my_action' rejected to run" in str(execinfo.value)
 
 
 def test_default_action(default_dispatcher_collecting,

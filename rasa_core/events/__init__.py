@@ -15,6 +15,7 @@ import jsonpickle
 from dateutil import parser
 
 from rasa_core import utils
+from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -42,6 +43,23 @@ def deserialise_events(serialized_events):
                                "events. Couldn't parse it.")
 
     return deserialised
+
+
+def deserialise_entities(entities):
+    if isinstance(entities, str):
+        entities = json.loads(entities)
+
+    return [e for e in entities if isinstance(e, dict)]
+
+
+def md_format_message(text, intent, entities):
+    message_from_md = MarkdownReader()._parse_training_example(text)
+    deserialised_entities = deserialise_entities(entities)
+    return MarkdownWriter()._generate_message_md(
+            {"text": message_from_md.text,
+             "intent": intent,
+             "entities": deserialised_entities}
+    )
 
 
 def first_key(d, default_key):
@@ -230,7 +248,7 @@ class UserUttered(Event):
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
-    def as_story_string(self):
+    def as_story_string(self, e2e=False):
         if self.intent:
             if self.entities:
                 ent_string = json.dumps({ent['entity']: ent['value']
@@ -238,9 +256,16 @@ class UserUttered(Event):
             else:
                 ent_string = ""
 
-            return "{intent}{entities}".format(
-                    intent=self.intent.get("name", ""),
-                    entities=ent_string)
+            parse_string = "{intent}{entities}".format(
+                           intent=self.intent.get("name", ""),
+                           entities=ent_string)
+            if e2e:
+                message = md_format_message(self.text,
+                                            self.intent,
+                                            self.entities)
+                return "{}: {}".format(self.intent.get("name"), message)
+            else:
+                return parse_string
         else:
             return self.text
 
@@ -709,7 +734,6 @@ class ActionExecuted(Event):
         return ("ActionExecuted(action: {}, policy: {}, confidence: {})"
                 "".format(self.action_name, self.policy, self.confidence))
 
-
     def __hash__(self):
         return hash(self.action_name)
 
@@ -744,7 +768,7 @@ class ActionExecuted(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        tracker.latest_action_name = self.action_name
+        tracker.set_latest_action_name(self.action_name)
         tracker.clear_followup_action()
 
 
@@ -807,10 +831,9 @@ class AgentUttered(Event):
 
 
 class Form(Event):
-    """A Form gets activated/deactivated
-
-    This  sets the `active_form` of the tracker"""
-
+    """If `name` is not None: activates a form with `name`
+        else deactivates active form
+    """
     type_name = "form"
 
     def __init__(self, name, timestamp=None):
@@ -849,8 +872,47 @@ class Form(Event):
         tracker.change_form_to(self.name)
 
 
+class FormValidation(Event):
+    """Event added by FormPolicy to notify form action
+        whether or not to validate the user input"""
+
+    type_name = "form_validation"
+
+    def __init__(self,
+                 validate,
+                 timestamp=None):
+        self.validate = validate
+        super(FormValidation, self).__init__(timestamp)
+
+    def __str__(self):
+        return "FormValidation({})".format(self.validate)
+
+    def __hash__(self):
+        return hash(self.validate)
+
+    def __eq__(self, other):
+        return isinstance(other, FormValidation)
+
+    def as_story_string(self):
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        return FormValidation(parameters.get("validate"),
+                              parameters.get("timestamp"))
+
+    def as_dict(self):
+        d = super(FormValidation, self).as_dict()
+        d.update({"validate": self.validate})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.set_form_validation(self.validate)
+
+
 class ActionExecutionRejected(Event):
-    """Notify Core that the execution of an action has failed"""
+    """Notify Core that the execution of the action has been rejected"""
 
     type_name = 'action_execution_rejected'
 
@@ -897,4 +959,4 @@ class ActionExecutionRejected(Event):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-        pass
+        tracker.reject_action(self.action_name)

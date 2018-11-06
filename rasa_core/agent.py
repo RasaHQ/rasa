@@ -32,7 +32,7 @@ from rasa_core.policies import Policy, FormPolicy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
-from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.utils import is_url
@@ -199,9 +199,7 @@ class Agent(object):
         if self.domain:
             self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
-        if (self.domain and self.domain.form_names and not
-                any(isinstance(p, FormPolicy) for p
-                    in self.policy_ensemble.policies)):
+        if self._form_policy_not_present():
             raise InvalidDomain(
                     "You have defined a form action, but haven't added the "
                     "FormPolicy to your policy ensemble."
@@ -679,3 +677,12 @@ class Agent(object):
                     "Invalid param `policies`. Passed object is "
                     "of type '{}', but should be policy, an array of "
                     "policies, or a policy ensemble".format(passed_type))
+
+    def _form_policy_not_present(self):
+        # type: () -> bool
+        """Check whether form policy is not present
+            if there is a form action in the domain
+        """
+        return (self.domain and self.domain.form_names and
+                not any(isinstance(p, FormPolicy)
+                        for p in self.policy_ensemble.policies))

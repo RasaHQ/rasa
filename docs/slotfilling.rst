@@ -3,11 +3,293 @@
 Slot Filling
 ============
 
-One of the most common conversation patterns
-is to collect a few pieces of information
-from a user in order to do something (book a restaurant, call an API, search a database, etc.).
-This is also called **slot filling**.
+.. contents::
 
+One of the most common conversation patterns is to collect a few pieces of
+information from a user in order to do something (book a restaurant, call an
+API, search a database, etc.). This is also called **slot filling**.
+
+Slot Filling with a ``FormAction``
+----------------------------------
+
+If you need to collect multiple pieces of information in a row, it is recommended
+to create a ``FormAction``. You can take a look at the base class of
+the FormAction below:
+
+.. autoclass:: rasa_core_sdk.forms.FormAction
+
+Basics
+~~~~~~
+
+This lets you have a single action that is called multiple times, rather than
+separate actions for each question. The idea behind this is that you can get the
+happy path of your bot up and running quickly. If we take the example of the
+restaurant bot, this means your initial story will look as simple as this
+(provided your slots are `unfeaturized
+<https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot>`_):
+
+.. code-block:: story
+
+    ## happy path
+    * request_restaurant
+        - restaurant_form
+        - form{"name": "restaurant_form"}
+        - form{"name": null}
+
+This means that even if you provide multiple slots at one, e.g. if someone says
+"I'd like a vegetarian Chinese restaurant for 8 people" the slots ``cuisine``
+and ``num_people`` won't get asked for.
+
+The ``restaurant_form`` is the form action, for which you need to define only a
+few methods in order to get it working: ``name()``, ``required_slots(tracker)``
+and ``submit(self, dispatcher, tracker, domain)``
+
+
+.. code-block:: python
+
+ class RestaurantForm(FormAction):
+    """Example of a custom form action"""
+
+    def name(self):
+        # type: () -> Text
+        """Unique identifier of the form"""
+
+        return "restaurant_form"
+
+    @staticmethod
+    def required_slots(tracker):
+        # type: () -> List[Text]
+        """A list of required slots that the form has to fill"""
+
+        return ["cuisine", "num_people", "outdoor_seating",
+                "preferences", "feedback"]
+
+    def submit(self, dispatcher, tracker, domain):
+        # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
+        """Define what the form has to do
+            after all required slots are filled"""
+
+        # utter submit template
+        dispatcher.utter_template('utter_submit', tracker)
+        return []
+
+The way this works is that once the form action gets called for the first time,
+the form gets activated and the ``FormPolicy`` jumps in. The ``FormPolicy`` always
+predicts the active form if there was just some user input, and always predicts
+waiting for user input when the active form was just called.
+
+At each turn that the form action gets called, it will take the next slot from
+the ``required_slots(tracker)`` that is still empty and set a slot called
+``requested_slot`` to keep track of what it has asked the user.
+This is done by using the ``utter_ask_{slot_name}`` templates that you need to
+define in your domain file. By default it will fill the slot with the entity of
+the same name if it's present.
+
+Once all the slots are filled, the ``submit()`` method is called, in which you
+can perform some final actions, e.g. querying a restaurant API with the
+extracted slots (or you can also just do nothing by only writing ``return []``).
+After this the form is deactivated, and prediction goes back to other policies
+present in your Core model.
+
+Custom slot mappings
+~~~~~~~~~~~~~~~~~~~~
+
+You can also fill slots with the full user message, map an intent to a value,
+or map a slot to an entity of a different name by defining the ``slot_mapping()``
+function. Here's an example for the restaurant bot:
+
+.. code-block:: python
+
+    def slot_mapping(self):
+        # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
+        """A dictionary to map required slots to
+            - an extracted entity
+            - intent: value pairs
+            - a whole message
+            or a list of them, where the first match will be picked"""
+
+        return {"cuisine": self.from_entity(entity="cuisine",
+                                            intent="inform"),
+                "num_people": self.from_entity(entity="number"),
+                "outdoor_seating": [self.from_entity(entity="seating"),
+                                    self.from_intent(intent='affirm',
+                                                     value=True),
+                                    self.from_intent(intent='deny',
+                                                     value=False)],
+                "preferences": [self.from_text(intent='inform'),
+                                self.from_intent(intent='deny',
+                                                 value="no additional "
+                                                       "preferences")],
+                "feedback": [self.from_entity(entity="feedback"),
+                             self.from_text()]}
+
+The predefined functions work as follows:
+
+- ``self.from_entity(entity=entity_name, intent=intent_name)``
+  will look for an entity called ``entity_name`` to fill a slot
+  ``slot_name`` regardless of user intent if ``intent_name`` is ``None``
+  else only if the users intent is ``intent_name``.
+- ``self.from_intent(intent=intent_name, value=value)``
+  will fill slot ``slot_name`` with ``value`` if user intent is ``intent_name``.
+  To make a boolean slot, take a look at the definition of ``outdoor_seating``
+  above.
+- ``self.from_text(intent=intent_name)`` will use the next
+  user utterance to fill the text slot ``slot_name`` regardless of user intent
+  if ``intent_name`` is ``None`` else only if user intent is ``intent_name``.
+- If you want to allow a combination of these, provide them as a list as in the
+  example above
+
+
+Validating user input
+~~~~~~~~~~~~~~~~~~~~~
+
+By default validation will fail only if none of the requested slots are filled. If
+you want to add custom validation, e.g. only accept a specific type of cuisine,
+overwrite the ``validate()`` function:
+
+.. code-block:: python
+
+    @staticmethod
+    def cuisine_db():
+        # type: () -> List[Text]
+        """Database of supported cuisines"""
+        return ["caribbean", "chinese", "french", "greek", "indian",
+                "italian", "mexican"]
+
+    def validate(self, dispatcher, tracker, domain):
+        # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
+        """"Validate extracted requested slot else raise an error"""
+        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+
+        # extract requested slot from a user input by using `slot_mapping`
+        events = self.extract(dispatcher, tracker, domain)
+        if events is None:
+            # raise an error if nothing was extracted
+            raise ActionExecutionRejection(self.name(),
+                                           "Failed to validate slot {0} "
+                                           "with action {1}"
+                                           "".format(slot_to_fill,
+                                                     self.name()))
+
+        extracted_slots = []
+        validated_events = []
+        for e in events:
+            if e['event'] == 'slot':
+                # get values of extracted slots to validate them later
+                extracted_slots.append(e['value'])
+            else:
+                # add other events without validating them
+                validated_events.append(e)
+
+        for slot in extracted_slots:
+            if slot_to_fill == 'cuisine':
+                if slot.lower() not in self.cuisine_db():
+                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
+                    # validation failed, set this slot to None, meaning the
+                    user will be asked for the slot again
+                    validated_events.append(SlotSet(slot_to_fill, None))
+                else:
+                    # validation succeeded
+                    validated_events.append(SlotSet(slot_to_fill, slot))
+
+            else:
+                # no validation needed
+                validated_events.append(SlotSet(slot_to_fill, slot))
+
+        return validated_events
+
+If nothing is extracted from the users utterance for any of the required slots, an
+``ActionExecutionRejection`` error will be raised, meaning the action execution
+was rejected and therefore Core will fall back onto a different policy to
+predict another action.
+
+Handling unhappy paths
+~~~~~~~~~~~~~~~~~~~~~~
+
+You need to handle events that might cause ``ActionExecutionRejection`` errors
+in your stories. For example, if you expect your users to chitchat with your bot,
+you could add a story like this:
+
+.. code-block:: story
+
+    ## chitchat
+    * request_restaurant
+        - restaurant_form
+        - form{"name": "restaurant_form"}
+    * chitchat
+        - utter_chitchat
+        - restaurant_form
+        - form{"name": null}
+
+The requested_slot slot
+~~~~~~~~~~~~~~~~~~~~~~~
+The slot ``requested_slot`` is automatically added to the domain as an
+unfeaturized slot. If you want to make it featurized, you need to add it
+to your domain file as a categorical slot. You might want to do this if you
+want to handle your unhappy paths differently depending on what slot is
+currently being asked from the user. For example, say you want to let your
+users ask for explanations of the different slot values.
+Then your stories would look something like this:
+
+.. code-block:: story
+
+    ## explain cuisine slot
+    * request_restaurant
+        - restaurant_form
+        - form{"name": "restaurant_form"}
+        - slot{"requested_slot": "cuisine"}
+    * explain
+        - utter_explain_cuisine
+        - restaurant_form
+        - slot{"cuisine": "greek"}
+        ( ... all other slots the form set ... )
+        - form{"name": null}
+
+    ## explain num_people slot
+    * request_restaurant
+        - restaurant_form
+        - form{"name": "restaurant_form"}
+        - slot{"requested_slot": "num_people"}
+    * explain
+        - utter_explain_num_people
+        - restaurant_form
+        - slot{"cuisine": "greek"}
+        ( ... all other slots the form set ... )
+        - form{"name": null}
+
+
+Handling conditional slot logic
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to change the lists of slots needed from the user dependent on
+some Rasa Core event (e.g. the first slot has a specific value) you should
+do this in the ``required_slots(tracker)`` method by returning a different list
+dependent on that event. For example, say that only greek restaurants provide
+outdoor seating and so you don't want to ask that for other cuisines. Then
+your method would look something like this:
+
+.. code-block:: python
+
+    @staticmethod
+    def required_slots(tracker):
+       # type: () -> List[Text]
+       """A list of required slots that the form has to fill"""
+
+       if tracker.get_slot('cuisine') == 'greek':
+         return ["cuisine", "num_people", "outdoor_seating",
+                 "preferences", "feedback"]
+       else:
+         return ["cuisine", "num_people",
+                 "preferences", "feedback"]
+
+
+Interactive learning
+~~~~~~~~~~~~~~~~~~~~
+
+You may want to teach the bot how to handle unexpected user behaviour like
+chitchat through interactive learning. Please read `these instructions
+<https://rasa.com/docs/core/interactive_learning#form-action-corrections>`_
+on how to use interactive learning with forms.
 
 
 Example: Providing the Weather
@@ -92,7 +374,7 @@ We then define stories for each of these cases:
 Now we've given Rasa Core a few examples of how to handle the different values
 that the ``location_match`` slot can take.
 Right now, we still only have four stories, which is not a lot of training data.
-:ref:`interactive_learning` is agreat way to explore more conversations
+:ref:`interactive_learning` is a great way to explore more conversations
 that aren't in your stories already.
 The best way to improve your model is to test it yourself, have other people test it,
 and correct the mistakes it makes.
@@ -109,236 +391,8 @@ behind Rasa Core is:
 
 .. pull-quote:: Learning from real conversations is more important than designing hypothetical ones
 
-So don't try to cover every possiblity in your hand-written stories before giving it to testers.
+So don't try to cover every possibility in your hand-written stories before giving it to testers.
 Real user behavior will always surprise you!
 
 
-Slot Filling with a ``FormAction``
-----------------------------------
-
-If you need to collect multiple pieces of information in a row, it is sometimes easier
-to create a ``FormAction``.
-This lets you have a single action that is called multiple times, rather than separate actions for each question,
-e.g. ``utter_ask_cuisine``, ``utter_ask_num_people``, in a restaurant bot.
-
-
-.. note::
-    You don't *have* to use a ``FormAction`` to do slot filling! It just means you need
-    fewer stories to get the initial flow working.
-
-A form action has a set of required slots, which you define for the class:
-
-.. code-block:: python
-
- class RestaurantForm(FormAction):
-    """Example of a custom form action"""
-
-    def name(self):
-        # type: () -> Text
-        """Unique identifier of the form"""
-
-        return "restaurant_form"
-
-    @staticmethod
-    def required_slots():
-        # type: () -> List[Text]
-        """A list of required slots that the form has to fill"""
-
-        return ["cuisine", "num_people", "outdoor_seating",
-                "preferences", "feedback"]
-
-
-The way this works is that every time you call this action, it will pick one slot from the
-``required_slots()`` that's still missing and ask the user for it. You can also ask a yes/no
-question by providing intent - value pairs in ``slot_mapping``:
-
-.. code-block:: python
-
- class RestaurantForm(FormAction):
-    """Example of a custom form action"""
-
-    ...
-
-    def slot_mapping(self):
-        # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
-        """A dictionary to map required slots to
-            - an extracted entity
-            - intent: value pairs
-            - a whole message
-            or a list of them, where a first match will be picked"""
-
-        return {"cuisine": self.from_entity(entity="cuisine",
-                                            intent="inform"),
-                "num_people": self.from_entity(entity="number"),
-                "outdoor_seating": [self.from_entity(entity="seating"),
-                                    self.from_intent(intent='affirm',
-                                                     value=True),
-                                    self.from_intent(intent='deny',
-                                                     value=False)],
-                "preferences": [self.from_text(intent='inform'),
-                                self.from_intent(intent='deny',
-                                                 value="no additional "
-                                                       "preferences")],
-                "feedback": [self.from_entity(entity="feedback"),
-                             self.from_text()]}
-
-
-The form action will set a slot called ``requested_slot`` to keep track of what it has asked the user and to be able to validate arbitrary user input:
-
-.. code-block:: python
-
- class RestaurantForm(FormAction):
-    """Example of a custom form action"""
-
-    ...
-
-        @staticmethod
-    def cuisine_db():
-        # type: () -> List[Text]
-        """Database of supported cuisines"""
-        return ["caribbean",
-                "chinese",
-                "french",
-                "greek",
-                "indian",
-                "italian",
-                "mexican"]
-
-    @staticmethod
-    def is_int(string):
-        # type: (Text) -> bool
-        """Check if a string is an integer"""
-        try:
-            int(string)
-            return True
-        except ValueError:
-            return False
-
-    def validate(self, dispatcher, tracker, domain):
-        # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-        """"Validate extracted requested slot else raise an error"""
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
-
-        # extract requested slot from a user input by using `slot_mapping`
-        events = self.extract(dispatcher, tracker, domain)
-        if events is None:
-            # raise an error if nothing was extracted
-            raise ActionExecutionRejection(self.name(),
-                                           "Failed to validate slot {0} "
-                                           "with action {1}"
-                                           "".format(slot_to_fill,
-                                                     self.name()))
-
-        extracted_slots = []
-        validated_events = []
-        for e in events:
-            if e['event'] == 'slot':
-                # get values of extracted slots to validate them later
-                extracted_slots.append(e['value'])
-            else:
-                # add other events without validating them
-                validated_events.append(e)
-
-        for slot in extracted_slots:
-            if slot_to_fill == 'cuisine':
-                if slot.lower() not in self.cuisine_db():
-                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                    # validation failed, set this slot to None
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            elif slot_to_fill == 'num_people':
-                if not self.is_int(slot) or int(slot) <= 0:
-                    dispatcher.utter_template('utter_wrong_num_people',
-                                              tracker)
-                    # validation failed, set this slot to None
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            elif slot_to_fill == 'outdoor_seating':
-                if isinstance(slot, bool):
-                    # slot already boolean
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-                elif 'out' in slot:
-                    # convert out... to True
-                    validated_events.append(SlotSet(slot_to_fill, True))
-                elif 'in' in slot:
-                    # convert in... to False
-                    validated_events.append(SlotSet(slot_to_fill, False))
-                else:
-                    # set a slot to whatever it is
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            else:
-                # no validation needed
-                validated_events.append(SlotSet(slot_to_fill, slot))
-
-        return validated_events
-
-
-The ``submit()`` method is called when the action is run and all slots are filled.
-
-.. code-block:: python
-
- class RestaurantForm(FormAction):
-    """Example of a custom form action"""
-
-    ...
-
-    def submit(self, dispatcher, tracker, domain):
-    # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-    """Define what the form has to do
-        after all required slots are filled"""
-
-    # utter submit template
-    dispatcher.utter_template('utter_submit', tracker)
-    return []
-
-
-
-Important is that a story should only contain the first call to ``FormAction``,
-so a story will look something like this, if all slots are ``unfeaturized``:
-
-.. code-block:: story
-
-    ## happy path
-    * request_restaurant
-        - restaurant_form
-        - form{"name": "restaurant_form"}
-        - form{"name": null}
-
-
-Some important things to consider:
-
-- If you are just collecting some information and don't need to make an API call at the end, your ``submit()`` method
-  should just ``return []``.
-- The slot ``requested_slot`` is automatically added to the domain as an unfeaturized slot. If you want to make it featurized, you need to add it to your domain file.
-- You need to define utterances for asking for each slot in your domain, e.g. ``utter_ask_{slot_name}``.
-- We strongly recommend that you create these stories using interactive learning, because if you
-  type these by hand you will probably forget to include the lines for the ``requested_slot``.
-- Any slots that are already set won't be asked for. E.g. if someone says "I'd like a vegetarian Chinese restaurant for 8 people" the ``submit`` function should get called right away.
-
-
-Setting categorical slots and Free-text Input
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The pre-defined ``slot_mapping`` types are:
-
-- ``{slot_name: self.from_entity(entity=entity_name, intent=intent_name)}``, which will
-  look for an entity called ``entity_name`` to fill a slot ``slot_name`` regardless of user intent if ``intent_name`` is ``None`` else if user intent is ``intent_name``.
-- ``{slot_name: self.from_intent(intent=intent_name, value=value)}``, which will fill slot ``slot_name`` with ``value`` if user intent is ``intent_name``.
-  To make a slot boolean use ``{boolean_slot_name: [self.from_intent(intent=affirm_intent, value=True), self.from_intent(intent=deny_intent, value=False)]}``
-  which looks for the intent ``affirm_intent`` and ``deny_intent`` to fill a boolean slot called ``boolean_slot_name``.
-- ``{slot_name: self.from_text(intent=intent_name)}``, which will use the next user utterance to fill the text slot ``slot_name`` regardless of user intent if ``intent_name`` is ``None`` else if user intent is ``intent_name``.
-
-
-Before setting a slot``FormAction`` will call ``self.validate(...)``. By default this just checks that the slot can be extracted, but if you want to check
-the value against a DB, or check a pattern is matched, you can do so by overriding the ``validate(...)`` method.
-
 .. include:: feedback.inc
-
-

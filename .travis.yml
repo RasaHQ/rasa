@@ -15,7 +15,8 @@ install:
 - pip install coveralls==1.3.0
 - pip list
 script:
-- travis_wait py.test tests --cov rasa_core --pep8 -v
+- py.test --pep8 -m pep8
+- travis_wait py.test tests --cov rasa_core -v
  #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
 - coveralls
@@ -40,6 +41,9 @@ jobs:
   - stage: build docs
     if: fork = false AND branch = "master"
     install:
+    - RASABASTER=rasabaster-0.7.17.tar.gz
+    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
+    - pip install $RASABASTER
     - pip install -r docs-requirements.txt
     - pip install -e .
     - pip list

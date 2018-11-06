@@ -66,6 +66,11 @@ def test_cap_length_with_short_string():
     assert utils.cap_length("my", 3) == "my"
 
 
+def test_pad_list_to_size():
+    assert utils.pad_list_to_size(["e1", "e2"], 4, "other") == \
+           ["e1", "e2", "other", "other"]
+
+
 def test_read_lines():
     lines = utils.read_lines("data/test_stories/stories.md",
                              max_line_limit=2,
@@ -84,7 +89,12 @@ def test_endpoint_config():
             basic_auth={"username": "user",
                         "password": "pass"},
             token="mytoken",
-            token_name="letoken"
+            token_name="letoken",
+            store_type="redis",
+            port=6379,
+            db=0,
+            password="password",
+            timeout=30000
     )
 
     httpretty.register_uri(

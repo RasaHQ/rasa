@@ -21,7 +21,6 @@ tests_requires = [
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
     "matplotlib~=2.0",
-    "pygraphviz~=1.0",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
 ]
@@ -35,8 +34,7 @@ install_requires = [
     "future~=0.16",
     "numpy~=1.14",
     "typing~=3.0",
-    "requests~=2.15",
-    "graphviz~=0.9.0",
+    "requests~=2.20",
     "keras~=2.0",
     "tensorflow==1.10.0",
     "h5py~=2.0",
@@ -69,8 +67,10 @@ install_requires = [
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "PyInquirer~=1.0",
+    "prompt_toolkit==1.0.14",
     "flask-jwt-simple~=0.0.3",
     "python-socketio~=2.0",
+    "pydot~=1.2",
 ]
 
 extras_requires = {
@@ -118,5 +118,6 @@ setup(
 )
 
 print("\nWelcome to Rasa Core!")
-print("If any questions please visit documentation page https://rasa.com/docs/core")
+print("If any questions please visit documentation "
+      "page https://rasa.com/docs/core")
 print("or join the community discussions on https://forum.rasa.com")

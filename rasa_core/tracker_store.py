@@ -13,6 +13,7 @@ import logging
 import six.moves.cPickle as pickler
 from typing import Text, Optional, List
 
+from rasa_core.utils import class_from_module_path
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
 from rasa_core.trackers import (
@@ -30,6 +31,39 @@ class TrackerStore(object):
         # type: (Optional[Domain], Optional[EventChannel]) -> None
         self.domain = domain
         self.event_broker = event_broker
+
+    @staticmethod
+    def find_tracker_store(domain, store=None, event_broker=None):
+        if store is None or store.store_type is None:
+            return InMemoryTrackerStore(domain, event_broker=event_broker)
+        elif store.store_type == 'redis':
+            return RedisTrackerStore(domain=domain,
+                                     host=store.url,
+                                     event_broker=event_broker,
+                                     **store.kwargs)
+        elif store.store_type == 'mongod':
+            return MongoTrackerStore(domain=domain,
+                                     host=store.url,
+                                     event_broker=event_broker,
+                                     **store.kwargs)
+        else:
+            return TrackerStore.load_tracker_from_module_string(domain, store)
+
+    @staticmethod
+    def load_tracker_from_module_string(domain, store):
+        custom_tracker = None
+        try:
+            custom_tracker = class_from_module_path(store.store_type)
+        except (AttributeError, ImportError):
+            logger.warning("Store type {} not found. "
+                           "Using InMemoryTrackerStore instead"
+                           .format(store.store_type))
+
+        if custom_tracker:
+            return custom_tracker(domain=domain,
+                                  url=store.url, **store.kwargs)
+        else:
+            return InMemoryTrackerStore(domain)
 
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
@@ -192,6 +226,16 @@ class MongoTrackerStore(TrackerStore):
 
     def retrieve(self, sender_id):
         stored = self.conversations.find_one({"sender_id": sender_id})
+
+        # look for conversations which have used an `int` sender_id in the past
+        # and update them.
+        if stored is None and sender_id.isdigit():
+            from pymongo import ReturnDocument
+            stored = self.conversations.find_one_and_update(
+                {"sender_id": int(sender_id)},
+                {"$set": {"sender_id": str(sender_id)}},
+                return_document=ReturnDocument.AFTER)
+
         if stored is not None:
             if self.domain:
                 return DialogueStateTracker.from_dict(sender_id,

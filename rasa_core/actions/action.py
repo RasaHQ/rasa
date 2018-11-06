@@ -29,7 +29,7 @@ ACTION_RESTART_NAME = "action_restart"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
-ACTION_DEACTIVATE_FORM = "action_deactivate_form"
+ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
 
 
 def default_actions():
@@ -111,7 +111,7 @@ class Action(object):
 
         Args:
             dispatcher (Dispatcher): the dispatcher which is used to send
-                messages back to the user. Use ``dipatcher.utter_message()``
+                messages back to the user. Use ``dispatcher.utter_message()``
                 or any other :class:`rasa_core.dispatcher.Dispatcher` method.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using
@@ -202,7 +202,7 @@ class ActionDeactivateForm(Action):
     """Deactivates a form"""
 
     def name(self):
-        return ACTION_DEACTIVATE_FORM
+        return ACTION_DEACTIVATE_FORM_NAME
 
     def run(self, dispatcher, tracker, domain):
         from rasa_core.events import Form, SlotSet
@@ -328,9 +328,13 @@ class RemoteAction(Action):
 
             if response.status_code == 400:
                 response_data = response.json()
-                logger.debug(response_data["error"])
-                raise ActionExecutionRejection(response_data["action_name"],
-                                               response_data["error"])
+                exception = ActionExecutionRejection(
+                        response_data["action_name"],
+                        response_data.get("error")
+                )
+                logger.debug(exception.message)
+                raise exception
+
             response.raise_for_status()
             response_data = response.json()
             self._validate_action_result(response_data)
@@ -367,6 +371,8 @@ class RemoteAction(Action):
 
 
 class ActionExecutionRejection(Exception):
+    """Raising this exception will allow other policies
+        to predict a different action"""
 
     def __init__(self, action_name, message=None):
         self.action_name = action_name
