@@ -19,10 +19,8 @@ from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.evaluate import run_story_evaluation
 from rasa_core.events import Event
-from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import AvailableEndpoints
 from rasa_core.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -600,38 +598,5 @@ def create_app(agent,
 
 
 if __name__ == '__main__':
-    # Running as standalone python application
-    from rasa_core import run
-
-    arg_parser = run.create_argument_parser()
-    cmdline_args = arg_parser.parse_args()
-
-    logging.getLogger('werkzeug').setLevel(logging.WARN)
-    logging.getLogger('matplotlib').setLevel(logging.WARN)
-
-    utils.configure_colored_logging(cmdline_args.loglevel)
-    utils.configure_file_logging(cmdline_args.loglevel,
-                                 cmdline_args.log_file)
-
-    logger.warning("USING `rasa_core.server` is deprecated and will be "
-                   "removed in the future. Use `rasa_core.run --enable_api` "
-                   "instead.")
-
-    logger.info("Rasa process starting")
-
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
-    _agent = run.load_agent(cmdline_args.core,
-                            interpreter=_interpreter,
-                            endpoints=_endpoints)
-
-    run.serve_application(_agent,
-                          cmdline_args.connector,
-                          cmdline_args.port,
-                          cmdline_args.credentials,
-                          cmdline_args.cors,
-                          cmdline_args.auth_token,
-                          cmdline_args.enable_api,
-                          cmdline_args.jwt_secret,
-                          cmdline_args.jwt_method)
+    raise RuntimeError("Using `rasa_core.server` is not longer supported. "
+                       "Please use `rasa_core.run --enable_api` instead.")
