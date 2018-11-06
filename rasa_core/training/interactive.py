@@ -811,15 +811,22 @@ def _validate_action(action_name,  # type: Text
     tracker = retrieve_tracker(endpoint, sender_id,
                                EventVerbosity.AFTER_RESTART)
 
-    if (tracker.get('active_form', {}).get('name') and
-            action_name not in {tracker['active_form']['name'],
-                                ACTION_LISTEN_NAME}):
+    # check whether the form is rejected
+    form_is_rejected = (tracker.get('active_form', {}).get('name')
+                        and
+                        action_name not in {tracker['active_form']['name'],
+                                            ACTION_LISTEN_NAME})
+    # check whether the form is called again after it was rejected
+    form_is_restored = (tracker.get('active_form', {}).get('rejected')
+                        and
+                        action_name == tracker.get('active_form',
+                                                   {}).get('name'))
+    if form_is_rejected:
         # notify the tracker that form was rejected
         send_event(endpoint, sender_id,
                    {"event": "action_execution_rejected",
                     "name": tracker['active_form']['name']})
-    elif (action_name == tracker.get('active_form', {}).get('name') and
-            tracker.get('active_form', {}).get('rejected')):
+    elif form_is_restored:
         # active form was chosen after it was rejected
         # ask a user whether an input should be validated
         q = ("Should '{}' validate user input to fill the slot '{}'?"
