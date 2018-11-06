@@ -14,6 +14,18 @@
 * chitchat
     - utter_chitchat
     - restaurant_form
+    - form{"name": null}
+    - utter_slots_values
+* thank
+    - utter_noworries
+
+## very unhappy path
+* request_restaurant
+    - restaurant_form
+    - form{"name": "restaurant_form"}
+* chitchat
+    - utter_chitchat
+    - restaurant_form
 * chitchat
     - utter_chitchat
     - restaurant_form
@@ -45,8 +57,8 @@
 * stop
     - utter_ask_continue
 * deny
-    - action_restart
-    - restart
+    - action_deactivate_form
+    - form{"name": null}
 
 ## chitchat stop but continue path
 * request_restaurant
@@ -109,8 +121,8 @@
 * stop
     - utter_ask_continue
 * deny
-    - action_restart
-    - restart
+    - action_deactivate_form
+    - form{"name": null}
 
 ## Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
 * request_restaurant
