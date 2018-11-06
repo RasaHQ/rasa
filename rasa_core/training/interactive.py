@@ -812,17 +812,18 @@ def _validate_action(action_name,  # type: Text
                                EventVerbosity.AFTER_RESTART)
 
     # check whether the form is rejected
-    form_is_rejected = (tracker.get('active_form', {}).get('name')
-                        and
-                        action_name not in {tracker['active_form']['name'],
-                                            ACTION_LISTEN_NAME})
+    form_is_rejected = (
+            tracker.get('active_form', {}).get('name') and
+            action_name not in {tracker['active_form']['name'],
+                                ACTION_LISTEN_NAME}
+    )
     # check whether the form is called again after it was rejected
-    form_is_restored = (tracker.get('active_form', {}).get('rejected')
-                        and
-                        tracker.get('latest_action_name') == 'action_listen'
-                        and
-                        action_name == tracker.get('active_form',
-                                                   {}).get('name'))
+    form_is_restored = (
+            tracker.get('active_form', {}).get('rejected') and
+            tracker.get('latest_action_name') == 'action_listen' and
+            action_name == tracker.get('active_form',
+                                       {}).get('name')
+    )
     if form_is_rejected:
         # notify the tracker that form was rejected
         send_event(endpoint, sender_id,
