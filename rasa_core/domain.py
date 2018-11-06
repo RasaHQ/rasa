@@ -165,8 +165,8 @@ class Domain(object):
     @staticmethod
     def collect_templates(yml_templates):
         # type: (Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
-        """Go through the templates and make sure they are all in dict format"""
-
+        """Go through the templates and make sure they are all in dict format
+        """
         templates = {}
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
@@ -279,7 +279,8 @@ class Domain(object):
         raise NameError(
                 "Can not access action '{}', "
                 "as that name is not a registered action for this domain. "
-                "Available actions are: \n{}".format(action_name, action_names))
+                "Available actions are: \n{}"
+                "".format(action_name, action_names))
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
@@ -446,7 +447,8 @@ class Domain(object):
                                          if e['entity'] == s.name]
                     if matching_entities:
                         if s.type_name == 'list':
-                            slot_events.append(SlotSet(s.name, matching_entities))
+                            slot_events.append(SlotSet(s.name,
+                                                       matching_entities))
                         else:
                             slot_events.append(SlotSet(s.name,
                                                        matching_entities[-1]))
