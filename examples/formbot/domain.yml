@@ -1,11 +1,13 @@
 intents:
-  - thank
-  - request_restaurant
+  - request_restaurant:
+      use_entities: false
+  - chitchat:
+      use_entities: false
   - inform
-  - chitchat
   - affirm
   - deny
   - stop
+  - thank
 
 entities:
   - cuisine
@@ -16,14 +18,19 @@ entities:
 slots:
   cuisine:
     type: unfeaturized
+    auto_fill: false
   num_people:
     type: unfeaturized
+    auto_fill: false
   outdoor_seating:
     type: unfeaturized
+    auto_fill: false
   preferences:
     type: unfeaturized
+    auto_fill: false
   feedback:
     type: unfeaturized
+    auto_fill: false
   requested_slot:
     type: unfeaturized
 

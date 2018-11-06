@@ -440,15 +440,16 @@ class Domain(object):
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
-                matching_entities = [e['value']
-                                     for e in entities
-                                     if e['entity'] == s.name]
-                if matching_entities:
-                    if s.type_name == 'list':
-                        slot_events.append(SlotSet(s.name, matching_entities))
-                    else:
-                        slot_events.append(SlotSet(s.name,
-                                                   matching_entities[-1]))
+                if s.auto_fill:
+                    matching_entities = [e['value']
+                                         for e in entities
+                                         if e['entity'] == s.name]
+                    if matching_entities:
+                        if s.type_name == 'list':
+                            slot_events.append(SlotSet(s.name, matching_entities))
+                        else:
+                            slot_events.append(SlotSet(s.name,
+                                                       matching_entities[-1]))
             return slot_events
         else:
             return []
