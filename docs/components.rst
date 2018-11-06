@@ -647,7 +647,7 @@ ner_duckling_http
         pipeline:
         - name: "ner_duckling_http"
           # url of the running duckling server
-          url: "http://localhost:8000"
+          url: "http://duckling:8000"
           # dimensions to extract
           dimensions: ["time", "number", "amount-of-money", "distance"]
           # allows you to configure the locale, by default the language is
