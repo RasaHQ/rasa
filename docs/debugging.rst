@@ -72,27 +72,16 @@ Sometimes it is helpful to get an overview of the conversational paths that
 are described within a story file. To make debugging easier and to ease
 discussions about bot flows, you can visualize the content of a story file.
 
-.. note::
-   For this to
-   work, you need to **install graphviz**. These are the instructions to do that
-   on OSX, for other systems the instructions might be slightly different:
-
-   .. code-block:: bash
-
-      brew install graphviz
-      pip install pygraphviz --install-option="--include-path=/usr/include/graphviz" \
-        --install-option="--library-path=/usr/lib/graphviz/"
-
-As soon as this is installed you can visualize stories with this command:
+You can visualize stories with this command:
 
 ..  code-block:: bash
 
    cd examples/concertbot/
-   python -m rasa_core.visualize -d domain.yml -s data/stories.md -o graph.png
+   python -m rasa_core.visualize -d domain.yml -s data/stories.md -o graph.html
 
 This will run through the stories of the ``concertbot`` example in
-``data/stories.md`` and create a graph stored in the
-output image ``graph.png``.
+``data/stories.md`` and create a graph which can be shown in your browser by
+opening ``graph.html`` with browser of your choice.
 
 .. image:: _static/images/concert_stories.png
 

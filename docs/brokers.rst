@@ -9,7 +9,24 @@ the Python client library for `RabbitMQ <https://www.rabbitmq.com>`_.
 
 The event broker emits events into the event queue. It becomes part of the
 ``TrackerStore`` which you use when starting an ``Agent`` or launch
-``rasa_core.run``. Here's how you add it:
+``rasa_core.run``.
+
+Adding an Event Broker Using the Endpoint Configuration
+-------------------------------------------------------
+
+You can use an endpoint configuration file to instruct Rasa Core to stream
+all events to your event broker. To do so, add the following section to your
+endpoint configuration, e.g. ``endpoints.yml``:
+
+.. literalinclude:: ../data/test_endpoints/event_broker_endpoint.yml
+
+Then instruct Rasa Core to use the endpoint configuration by adding
+``--endpoints <path to your endpoint configuration`` when running it.
+
+Adding an Event Broker in Python
+--------------------------------
+
+Here is how you add it using Python code:
 
 .. code-block:: python
 
@@ -23,7 +40,11 @@ The event broker emits events into the event queue. It becomes part of the
 
     tracker_store = InMemoryTrackerStore(db=db, event_broker=pika_broker)
 
-These events are streamed to RabbitMQ as serialised dictionaries every time
+
+Implementing an Event Consumer
+------------------------------
+
+All events are streamed to RabbitMQ as serialised dictionaries every time
 the tracker updates it state. An example event emitted from the ``default``
 tracker looks like this:
 

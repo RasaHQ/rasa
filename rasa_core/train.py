@@ -11,10 +11,11 @@ import logging
 from rasa_core import config
 from rasa_core import utils
 from rasa_core.agent import Agent
+from rasa_core.broker import PikaProducer
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
-
+from rasa_core.tracker_store import TrackerStore
 logger = logging.getLogger(__name__)
 
 
@@ -124,9 +125,9 @@ def add_args_to_parser(parser):
             type=str,
             default=None,
             required=False,
-            help="When a fallback is triggered (e.g. because the ML prediction "
-                 "is of low confidence) this is the name of tje action that "
-                 "will get triggered instead.")
+            help="When a fallback is triggered (e.g. because the "
+                 "ML prediction is of low confidence) this is the name "
+                 "of the action that will get triggered instead.")
     parser.add_argument(
             '-c', '--config',
             type=str,
@@ -229,7 +230,10 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
-
+    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+    _tracker_store = TrackerStore.find_tracker_store(None,
+                                                     _endpoints.tracker_store,
+                                                     _broker)
     if cmdline_args.core:
         if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
@@ -243,6 +247,7 @@ if __name__ == '__main__':
         _agent = Agent.load(cmdline_args.core,
                             interpreter=_interpreter,
                             generator=_endpoints.nlg,
+                            tracker_store=_tracker_store,
                             action_endpoint=_endpoints.action)
     else:
         if not cmdline_args.out:
