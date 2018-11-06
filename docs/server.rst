@@ -75,7 +75,7 @@ regularly queries for zipped Rasa Core models:
 
 .. code-block:: yaml
 
-    model:
+    models:
       url: http://my-server.com/models/default_core@latest
 
 .. note::
