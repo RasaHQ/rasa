@@ -127,64 +127,58 @@ os.environ['PASS'] = 'pass'
 
 def test_read_yaml_string():
     config_without_env_var = """
-    tracker_store:
-      user: user
-      password: pass
+    user: user
+    password: pass
     """
     r = utils.read_yaml_string(config_without_env_var)
-    assert r['tracker_store']['user'] == 'user' and \
-        r['tracker_store']['password'] == 'pass'
+    assert r['user'] == 'user' and \
+        r['password'] == 'pass'
 
 
 def test_read_yaml_string_with_env_var():
     config_with_env_var = """
-    tracker_store:
-      user: ${USER_NAME}
-      password: ${PASS}
+    user: ${USER_NAME}
+    password: ${PASS}
     """
     r = utils.read_yaml_string(config_with_env_var)
-    assert r['tracker_store']['user'] == 'user' and \
-        r['tracker_store']['password'] == 'pass'
+    assert r['user'] == 'user' and \
+        r['password'] == 'pass'
 
 
 def test_read_yaml_string_with_env_var_prefix():
     config_with_env_var_prefix = """
-    tracker_store:
-      user: db_${USER_NAME}
-      password: db_${PASS}
+    user: db_${USER_NAME}
+    password: db_${PASS}
     """
     r = utils.read_yaml_string(config_with_env_var_prefix)
-    assert r['tracker_store']['user'] == 'db_user' and \
-        r['tracker_store']['password'] == 'db_pass'
+    assert r['user'] == 'db_user' and \
+        r['password'] == 'db_pass'
 
 
 def test_read_yaml_string_with_env_var_postfix():
     config_with_env_var_postfix = """
-    tracker_store:
-      user: ${USER_NAME}_admin
-      password: ${PASS}_admin
+    user: ${USER_NAME}_admin
+    password: ${PASS}_admin
     """
     r = utils.read_yaml_string(config_with_env_var_postfix)
-    assert r['tracker_store']['user'] == 'user_admin' and \
-        r['tracker_store']['password'] == 'pass_admin'
+    assert r['user'] == 'user_admin' and \
+        r['password'] == 'pass_admin'
 
 
 def test_read_yaml_string_with_env_var_infix():
     config_with_env_var_infix = """
-    tracker_store:
-      user: db_${USER_NAME}_admin
-      password: db_${PASS}_admin
+    user: db_${USER_NAME}_admin
+    password: db_${PASS}_admin
     """
     r = utils.read_yaml_string(config_with_env_var_infix)
-    assert r['tracker_store']['user'] == 'db_user_admin' and \
-        r['tracker_store']['password'] == 'db_pass_admin'
+    assert r['user'] == 'db_user_admin' and \
+        r['password'] == 'db_pass_admin'
 
 
 def test_read_yaml_string_with_env_var_not_exist():
     config_with_env_var_not_exist = """
-    tracker_store:
-      user: ${USER_NAME}
-      password: ${PASSWORD}
+    user: ${USER_NAME}
+    password: ${PASSWORD}
     """
     try:
         r = utils.read_yaml_string(config_with_env_var_not_exist)
