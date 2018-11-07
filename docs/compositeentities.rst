@@ -8,12 +8,7 @@ Composite Entities
 Generating
 ----------
 
-Using the dialogflow example data
-
-Run ``python transfer_from_dialogflow_to_rasa.py data/examples/dialogflow``
-to generate the training data as Rasa needs it inside the df-agent folder.
-
-Then to generate your model:
+Using the dialogflow example data, generate your model:
 
 .. code-block:: bash
     python -m rasa_nlu.train -c sample_configs/config_composite_entities.yml \
@@ -26,7 +21,7 @@ Then running
 
 .. code-block:: bash
     curl 'http://localhost:5000/parse?project=current&model=df-agent&q=I%20will%20like%20some%20rice%20and%20chicken'
-    
+
     {
 	"project": "current",
 	"entities": [{
