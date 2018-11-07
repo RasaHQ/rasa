@@ -85,6 +85,7 @@ def class_from_module_path(module_path):
     from rasa_core.policies.keras_policy import KerasPolicy
     from rasa_core.policies.fallback import FallbackPolicy
     from rasa_core.policies.memoization import MemoizationPolicy
+    from rasa_core.policies.embedding_policy import EmbeddingPolicy
 
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition('.')
