@@ -209,38 +209,26 @@ class PolicyEnsemble(object):
         for policy in dictionary.get('policies', []):
 
             policy_name = policy.pop('name')
-
-            if policy_name == 'KerasPolicy':
-                policy_object = KerasPolicy(MaxHistoryTrackerFeaturizer(
-                                BinarySingleStateFeaturizer(),
-                                max_history=policy.get('max_history', 3)))
-            else:
-                constr_func = utils.class_from_module_path(policy_name)
-                policy_object = constr_func(**policy)
+            # if policy.get('featurizer'):
+            #     featurizer_func = utils.class_from_module_path
+            constr_func = utils.class_from_module_path(policy_name)
+            policy_object = constr_func(**policy)
 
             policies.append(policy_object)
 
         return policies
 
     @classmethod
-    def default_policies(cls, fallback_args, max_history):
+    def default_policies(cls):
         # type: (Dict[Text, Any], int) -> List[Policy]
         """Load the default policy setup consisting of
         FallbackPolicy, MemoizationPolicy and KerasPolicy."""
 
         return [
-            FallbackPolicy(
-                    fallback_args.get("nlu_threshold",
-                                      DEFAULT_NLU_FALLBACK_THRESHOLD),
-                    fallback_args.get("core_threshold",
-                                      DEFAULT_CORE_FALLBACK_THRESHOLD),
-                    fallback_args.get("fallback_action_name",
-                                      DEFAULT_FALLBACK_ACTION)),
-            MemoizationPolicy(
-                    max_history=max_history),
+            FallbackPolicy(),
+            MemoizationPolicy(),
             KerasPolicy(
-                    MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                                max_history=max_history))]
+                    MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer()))]
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
