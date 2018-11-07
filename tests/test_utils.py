@@ -148,45 +148,45 @@ def test_read_yaml_string_with_env_var():
 
 
 def test_read_yaml_string_with_env_var_prefix():
-    config_with_env_var = """
+    config_with_env_var_prefix = """
     tracker_store:
       user: db_${USER_NAME}
       password: db_${PASS}
     """
-    r = utils.read_yaml_string(config_with_env_var)
+    r = utils.read_yaml_string(config_with_env_var_prefix)
     assert r['tracker_store']['user'] == 'db_user' and \
         r['tracker_store']['password'] == 'db_pass'
 
 
 def test_read_yaml_string_with_env_var_postfix():
-    config_with_env_var = """
+    config_with_env_var_postfix = """
     tracker_store:
       user: ${USER_NAME}_admin
       password: ${PASS}_admin
     """
-    r = utils.read_yaml_string(config_with_env_var)
+    r = utils.read_yaml_string(config_with_env_var_postfix)
     assert r['tracker_store']['user'] == 'user_admin' and \
         r['tracker_store']['password'] == 'pass_admin'
 
 
 def test_read_yaml_string_with_env_var_infix():
-    config_with_env_var = """
+    config_with_env_var_infix = """
     tracker_store:
       user: db_${USER_NAME}_admin
       password: db_${PASS}_admin
     """
-    r = utils.read_yaml_string(config_with_env_var)
+    r = utils.read_yaml_string(config_with_env_var_infix)
     assert r['tracker_store']['user'] == 'db_user_admin' and \
         r['tracker_store']['password'] == 'db_pass_admin'
 
 
 def test_read_yaml_string_with_env_var_not_exist():
-    config_with_env_var = """
+    config_with_env_var_not_exist = """
     tracker_store:
       user: ${USER_NAME}
       password: ${PASSWORD}
     """
     try:
-        r = utils.read_yaml_string(config_with_env_var)
+        r = utils.read_yaml_string(config_with_env_var_not_exist)
     except Exception as e:
         assert isinstance(e, KeyError) and e.args[0] == 'PASSWORD'
