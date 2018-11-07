@@ -1,0 +1,25 @@
+. tests/base/test_extractors.py::test_crf_extractor
+. tests/base/test_extractors.py::test_crf_json_from_BILOU
+. tests/base/test_extractors.py::test_crf_json_from_non_BILOU
+. tests/base/test_extractors.py::test_duckling_entity_extractor
+. tests/base/test_extractors.py::test_duckling_entity_extractor_and_synonyms
+. tests/base/test_extractors.py::test_unintentional_synonyms_capitalized
+F tests/base/test_extractors.py::test_spacy_ner_extractor
+ spacy_nlp = <spacy.lang.en.English object at 0x10e94d9b0>
+ 
+     def test_spacy_ner_extractor(spacy_nlp):
+         ext = SpacyEntityExtractor()
+         example = Message("anywhere in the West", {
+             "intent": "restaurant_search",
+             "entities": [],
+             "spacy_doc": spacy_nlp("anywhere in the west")})
+     
+         ext.process(example, spacy_nlp=spacy_nlp)
+     
+ >       assert len(example.get("entities", [])) == 1
+ E       AssertionError: assert 0 == 1
+ E        +  where 0 = len([])
+ E        +    where [] = <bound method Message.get of <rasa_nlu.training_data.message.Message object at 0x11f6c2860>>('entities', [])
+ E        +      where <bound method Message.get of <rasa_nlu.training_data.message.Message object at 0x11f6c2860>> = <rasa_nlu.training_data.message.Message object at 0x11f6c2860>.get
+ 
+ tests/base/test_extractors.py:188: AssertionError
