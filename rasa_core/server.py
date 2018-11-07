@@ -598,5 +598,6 @@ def create_app(agent,
 
 
 if __name__ == '__main__':
-    raise RuntimeError("Using `rasa_core.server` is not longer supported. "
+    raise RuntimeError("Calling `rasa_core.server` directly is "
+                       "no longer supported. "
                        "Please use `rasa_core.run --enable_api` instead.")
