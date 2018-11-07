@@ -1,0 +1,4 @@
+policies:
+  - name: KerasPolicy
+    epochs: 50
+    max_history: 3
