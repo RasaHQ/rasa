@@ -339,6 +339,7 @@ intent_classifier_tensorflow_embedding
             - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
             - ``num_neg`` sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;
             - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
+            - ``random_seed`` (None or int) An integer sets the random seed for numpy and tensorflow, so that the random initialisation is always the same and produces the same training result
         - regularization:
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
@@ -368,6 +369,7 @@ intent_classifier_tensorflow_embedding
           "similarity_type": "cosine"  # string 'cosine' or 'inner'
           "num_neg": 20
           "use_max_sim_neg": true  # flag which loss function to use
+          "random_seed": None # set to any int to generate a reproducible training result
           # regularization
           "C2": 0.002
           "C_emb": 0.8
