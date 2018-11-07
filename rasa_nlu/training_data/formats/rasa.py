@@ -48,7 +48,7 @@ class RasaReader(JsonTrainingDataReader):
             training_examples.append(msg)
 
         return TrainingData(training_examples, entity_synonyms,
-                            regex_features, lookup_tables, 
+                            regex_features, lookup_tables,
                             composite_entities)
 
 
@@ -145,7 +145,10 @@ def _rasa_nlu_data_schema():
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "composites": {"type": "string"},
+            "composites": {
+                "type": "array",
+                "items": {"type": "string"}
+            }
         }
     }
 

@@ -70,7 +70,6 @@ class TrainingData(object):
             regex_features.extend(deepcopy(o.regex_features))
             lookup_tables.extend(deepcopy(o.lookup_tables))
             composite_entities.extend(deepcopy(o.composite_entities))
-            
 
             for text, syn in o.entity_synonyms.items():
                 check_duplicate_synonym(entity_synonyms, text, syn,
@@ -79,7 +78,7 @@ class TrainingData(object):
             entity_synonyms.update(o.entity_synonyms)
 
         return TrainingData(training_examples, entity_synonyms,
-                            regex_features, lookup_tables, 
+                            regex_features, lookup_tables,
                             composite_entities)
 
     @staticmethod

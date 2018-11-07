@@ -44,6 +44,7 @@ def pipelines_for_tests():
                                "ner_duckling",
                                "ner_duckling_http",
                                "ner_synonyms",
+                               "nested_entity_extractor",
                                "intent_classifier_keyword",
                                "intent_classifier_sklearn",
                                "intent_classifier_mitie",

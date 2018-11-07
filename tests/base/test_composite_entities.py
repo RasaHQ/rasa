@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from custom_components.nested_entity_extractor import NestedEntityExtractor
+from rasa_nlu.extractors.nested_entity_extractor import NestedEntityExtractor
 
 
 def test_composite_entities():
@@ -27,7 +27,7 @@ def test_composite_entities():
         "lookup_tables": [
             {
                 "name": "carbohydrates",
-                "entries": [
+                "elements": [
                     "noodles",
                     "noodle",
                     "rice",
@@ -36,7 +36,7 @@ def test_composite_entities():
             },
             {
                 "name": "protein",
-                "entries": [
+                "elements": [
                     "chicken",
                     "eggs",
                     "pork",
@@ -44,13 +44,13 @@ def test_composite_entities():
                 ]
             }
         ],
-        "composite_entries": [
+        "composite_entities": [
             {
-                "synonyms": [
+                "composites": [
                     "@protein:protein",
                     "@carbohydrates:carbohydrates"
                 ],
-                "value": "meal"
+                "name": "meal"
             }
         ]
     }

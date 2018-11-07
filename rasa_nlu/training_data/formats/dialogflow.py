@@ -93,7 +93,7 @@ class DialogflowReader(TrainingDataReader):
             'name': entity,
             'elements': lookup_tables
         }]
- 
+
     def _extract_composite_entities(self, entity, synonyms):
         """Extract the composite entities"""
         composite_entities = set()

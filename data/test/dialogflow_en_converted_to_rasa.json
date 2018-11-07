@@ -12,6 +12,18 @@
       {
         "value": "indian",
         "synonyms": ["india"]
+      },
+      {
+        "value": "chinese",
+        "synonyms": ["china"]
+      },
+      {
+        "value": "eggs",
+        "synonyms": ["egg"]
+      },
+      {
+        "value": "noodles",
+        "synonyms": ["noodle"]
       }
     ],
     "common_examples": [
@@ -175,6 +187,104 @@
         "text": "i'm looking for a place to eat",
         "intent": "inform",
         "entities": []
+      },
+      {
+        "entities": [
+          {
+            "start": 9,
+            "end": 28,
+            "value": "noodles and chicken",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "Is there noodles and chicken on the menu"
+      },
+      {
+        "entities": [
+          {
+            "start": 12,
+            "end": 16,
+            "value": "pork",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "Do you have pork"
+      },
+      {
+        "entities": [
+          {
+            "start": 10,
+            "end": 21,
+            "value": "yam and egg",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "Can I get yam and egg"
+      },
+      {
+        "entities": [
+          {
+            "start": 25,
+            "end": 41,
+            "value": "rice and chicken",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "I will like to order for rice and chicken"
+      }
+    ],
+    "lookup_tables": [
+      {
+        "elements": [
+          "centre",
+          "west",
+          "central",
+          "north"
+        ],
+        "name": "location"
+      },
+      {
+        "elements": [
+          "eggs",
+          "egg",
+          "pork",
+          "chicken"
+        ],
+        "name": "protein"
+      },
+      {
+        "elements": [
+          "rice",
+          "yam",
+          "noodles",
+          "noodle"
+        ],
+        "name": "carbohydrates"
+      },
+      {
+        "elements": [
+          "mexican",
+          "mexico",
+          "chinese",
+          "china",
+          "indian",
+          "india"
+        ],
+        "name": "cuisine"
+      }
+    ],
+    "composite_entities": [
+      {
+        "composites": [
+          "and",
+          "@carbohydrates:carbohydrates",
+          "@protein:protein"
+        ],
+        "name": "meal"
       }
     ]
   }

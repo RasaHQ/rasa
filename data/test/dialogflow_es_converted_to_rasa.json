@@ -38,6 +38,30 @@
         "synonyms": [
           "céntrico"
         ]
+      },
+      {
+        "value": "tallarines",
+        "synonyms": [
+          "fideos"
+        ]
+      },
+      {
+        "value": "huevos",
+        "synonyms": [
+          "huevo"
+        ]
+      },
+      {
+        "value": "batata",
+        "synonyms": [
+          "ñame"
+        ]
+      },
+      {
+        "value": "cerdo",
+        "synonyms": [
+          "puerco"
+        ]
       }
     ],
     "common_examples": [
@@ -201,6 +225,54 @@
         "text": "estoy buscando un lugar para comer",
         "intent": "inform",
         "entities": []
+      },
+      {
+        "entities": [
+          {
+            "start": 5,
+            "end": 19,
+            "value": "fideos y pollo",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "¿Hay fideos y pollo en el menú?"
+      },
+      {
+        "entities": [
+          {
+            "start": 7,
+            "end": 13,
+            "value": "puerco",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "Tienes puerco"
+      },
+      {
+        "entities": [
+          {
+            "start": 16,
+            "end": 34,
+            "value": "el ñame y el huevo",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "Puedo conseguir el ñame y el huevo"
+      },
+      {
+        "entities": [
+          {
+            "start": 18,
+            "end": 31,
+            "value": "arroz y pollo",
+            "entity": "meal"
+          }
+        ],
+        "intent": "order",
+        "text": "Me gustaría pedir arroz y pollo."
       }
     ]
   }
