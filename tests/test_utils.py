@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 from builtins import str
@@ -118,3 +119,90 @@ def test_endpoint_config():
     assert r.querystring.get("A") == ["B"]
     assert r.querystring.get("P") == ["1"]
     assert r.querystring.get("letoken") == ["mytoken"]
+
+
+def test_read_yaml_string():
+    config_without_env_var = """
+    tracker_store:
+      mongo:
+         host: http://localhost:27017
+         db: rasa
+         user: user
+         password: pass
+         collection: conversations
+    """
+    r = utils.read_yaml_string(config_without_env_var)
+    assert r['tracker_store']['mongo']['user'] == 'user' and \
+        r['tracker_store']['mongo']['password'] == 'pass'
+
+
+def test_read_yaml_string_with_env_var():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
+    config_with_env_var = """
+    tracker_store:
+      mongo:
+         host: http://localhost:27017
+         db: rasa
+         user: ${USER_NAME}
+         password: ${PASS}
+         collection: conversations
+    """
+    r = utils.read_yaml_string(config_with_env_var)
+    assert r['tracker_store']['mongo']['user'] == 'user' and \
+        r['tracker_store']['mongo']['password'] == 'pass'
+
+
+def test_read_yaml_string_with_env_var_prefix():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
+    config_with_env_var = """
+    tracker_store:
+      mongo:
+         host: http://localhost:27017
+         db: rasa
+         user: db_${USER_NAME}
+         password: db_${PASS}
+         collection: conversations
+    """
+    r = utils.read_yaml_string(config_with_env_var)
+    assert r['tracker_store']['mongo']['user'] == 'db_user' and \
+        r['tracker_store']['mongo']['password'] == 'db_pass'
+
+
+def test_read_yaml_string_with_env_var_postfix():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
+    config_with_env_var = """
+    tracker_store:
+      mongo:
+         host: http://localhost:27017
+         db: rasa
+         user: ${USER_NAME}_admin
+         password: ${PASS}_admin
+         collection: conversations
+    """
+    r = utils.read_yaml_string(config_with_env_var)
+    assert r['tracker_store']['mongo']['user'] == 'user_admin' and \
+        r['tracker_store']['mongo']['password'] == 'pass_admin'
+
+
+def test_read_yaml_string_with_env_var_infix():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
+    config_with_env_var = """
+    tracker_store:
+      mongo:
+         host: http://localhost:27017
+         db: rasa
+         user: db_${USER_NAME}_admin
+         password: db_${PASS}_admin
+         collection: conversations
+    """
+    r = utils.read_yaml_string(config_with_env_var)
+    assert r['tracker_store']['mongo']['user'] == 'db_user_admin' and \
+        r['tracker_store']['mongo']['password'] == 'db_pass_admin'
