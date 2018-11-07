@@ -68,7 +68,7 @@ def register(input_channels,  # type: List[InputChannel]
 def button_to_string(button, idx=0):
     """Create a string representation of a button."""
     return "{idx}: {title} ({val})".format(
-            idx=idx + 1, title=button['title'], val=button['payload'])
+            idx=idx + 1, title=button.get('title', ''), val=button.get('payload', ''))
 
 
 class InputChannel(object):
