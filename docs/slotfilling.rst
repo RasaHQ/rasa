@@ -45,9 +45,9 @@ If a user says
 "I'd like a vegetarian Chinese restaurant for 8 people", they won't be 
 asked about the ``cuisine`` and ``num_people`` slots.
 
-Note that your slots should be `unfeaturized
-<https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot>`_:
-
+Note that for this story to work, your slots should be `unfeaturized
+<https://rasa.com/docs/core/api/slots_api/#unfeaturized-slot>`_.
+If they're not, you should add all the slots that have been set by the form.
 
 The ``restaurant_form`` in the story above is the name of our form action.
 Here is an example of what it looks like. 
