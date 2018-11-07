@@ -143,3 +143,54 @@ def test_endpoint_config():
     assert r.querystring.get("A") == ["B"]
     assert r.querystring.get("P") == ["1"]
     assert r.querystring.get("letoken") == ["mytoken"]
+
+
+def test_environment_variable_not_existing():
+    content = "model: \n  test: ${variable}"
+    with pytest.raises(KeyError):
+        utils.read_yaml(content)
+
+
+def test_environment_variable_dict_without_prefix_and_postfix():
+    os.environ['variable'] = 'test'
+    content = "model: \n  test: ${variable}"
+
+    result = utils.read_yaml(content)
+
+    assert result['model']['test'] == 'test'
+
+
+def test_environment_variable_in_list():
+    os.environ['variable'] = 'test'
+    content = "model: \n  - value\n  - ${variable}"
+
+    result = utils.read_yaml(content)
+
+    assert result['model'][1] == 'test'
+
+
+def test_environment_variable_dict_with_prefix():
+    os.environ['variable'] = 'test'
+    content = "model: \n  test: dir/${variable}"
+
+    result = utils.read_yaml(content)
+
+    assert result['model']['test'] == 'dir/test'
+
+
+def test_environment_variable_dict_with_postfix():
+    os.environ['variable'] = 'test'
+    content = "model: \n  test: ${variable}/dir"
+
+    result = utils.read_yaml(content)
+
+    assert result['model']['test'] == 'test/dir'
+
+
+def test_environment_variable_dict_with_prefix_and_with_postfix():
+    os.environ['variable'] = 'test'
+    content = "model: \n  test: dir/${variable}/dir"
+
+    result = utils.read_yaml(content)
+
+    assert result['model']['test'] == 'dir/test/dir'
