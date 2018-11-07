@@ -121,10 +121,11 @@ def test_endpoint_config():
     assert r.querystring.get("letoken") == ["mytoken"]
 
 
-def test_read_yaml_string():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
+os.environ['USER_NAME'] = 'user'
+os.environ['PASS'] = 'pass'
 
+
+def test_read_yaml_string():
     config_without_env_var = """
     tracker_store:
       mongo:
@@ -140,9 +141,6 @@ def test_read_yaml_string():
 
 
 def test_read_yaml_string_with_env_var():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -158,9 +156,6 @@ def test_read_yaml_string_with_env_var():
 
 
 def test_read_yaml_string_with_env_var_prefix():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -176,9 +171,6 @@ def test_read_yaml_string_with_env_var_prefix():
 
 
 def test_read_yaml_string_with_env_var_postfix():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -194,9 +186,6 @@ def test_read_yaml_string_with_env_var_postfix():
 
 
 def test_read_yaml_string_with_env_var_infix():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -212,9 +201,6 @@ def test_read_yaml_string_with_env_var_infix():
 
 
 def test_read_yaml_string_with_env_var_not_exist():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
