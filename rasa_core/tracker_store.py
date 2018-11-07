@@ -198,7 +198,7 @@ class MongoTrackerStore(TrackerStore):
         self.client = MongoClient(host,
                                   username=username,
                                   password=password,
-                                  auth_source=auth_source,
+                                  authSource=auth_source,
                                   # delay connect until process forking is done
                                   connect=False)
 
