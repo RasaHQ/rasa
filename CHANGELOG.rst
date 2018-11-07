@@ -35,6 +35,8 @@ Added
 - ability to add an event broker using an endpoint configuration file
 - raise an exception when ``server.py`` is used instead of ``rasa_core.run --enable-api``
 - add documentation on how to configure endpoints within a configuration file
+- ``auth_source`` parameter in ``MongoTrackerStore`` defining the database to
+  authenticate against
 
 Changed
 -------
