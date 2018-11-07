@@ -34,6 +34,7 @@ Added
 - ability load custom tracker store modules using the endpoints.yml
 - ability to add an event broker using an endpoint configuration file
 - raise an exception when ``server.py`` is used instead of ``rasa_core.run --enable-api``
+- add documentation on how to configure endpoints within a configuration file
 
 Changed
 -------
