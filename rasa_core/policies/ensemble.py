@@ -202,7 +202,7 @@ class PolicyEnsemble(object):
 
     @classmethod
     def from_dict(cls, dictionary):
-        # type: Dict[Text, Any] -> List[Policy]
+        # type: (Dict[Text, Any]) -> List[Policy]
 
         policies = []
 
@@ -223,7 +223,7 @@ class PolicyEnsemble(object):
 
     @classmethod
     def default_policies(cls, fallback_args, max_history):
-        # type: None -> List[Policy]
+        # type: (Dict[Text, Any], int) -> List[Policy]
         """Load the default policy setup consisting of
         FallbackPolicy, MemoizationPolicy and KerasPolicy."""
 

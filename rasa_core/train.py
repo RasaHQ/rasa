@@ -27,7 +27,6 @@ from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
 from rasa_core.training.dsl import StoryFileReader
-
 logger = logging.getLogger(__name__)
 
 
@@ -39,18 +38,14 @@ def create_argument_parser():
 
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
-    group = parser.add_mutually_exclusive_group(required=True)
     subparsers = parser.add_subparsers(help='mode')
     default_parser = subparsers.add_parser('default', help='default mode: train a dialogue model')
     compare_parser = subparsers.add_parser('compare', help='compare mode: train multiple dialogue models to compare policies')
 
     add_default_args(default_parser)
     add_compare_args(compare_parser)
-
-    group = add_args_to_group(group)
-    parser = add_args_to_parser(parser)
-
     utils.add_logging_option_arguments(parser)
+
     return parser
 
 
@@ -125,9 +120,9 @@ def add_default_args(parser):
             type=str,
             default=None,
             required=False,
-            help="When a fallback is triggered (e.g. because the ML prediction "
-                 "is of low confidence) this is the name of tje action that "
-                 "will get triggered instead.")
+            help="When a fallback is triggered (e.g. because the "
+                 "ML prediction is of low confidence) this is the name "
+                 "of the action that will get triggered instead.")
 
 
 def add_args_to_parser(parser):
@@ -185,8 +180,10 @@ def add_args_to_parser(parser):
     return parser
 
 
-def add_args_to_group(group):
-
+def add_model_and_story_group(parser):
+    # either the user can pass in a story file, or the data will get
+    # downloaded from a url
+    group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
             '-s', '--stories',
             type=str,
@@ -202,7 +199,7 @@ def add_args_to_group(group):
             default=None,
             help="path to load a pre-trained model instead of training (for "
                  "interactive mode only)")
-    return group
+    return parser
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
@@ -290,6 +287,7 @@ def get_no_of_stories(stories, domain):
     return no_stories
 
 
+
 if __name__ == '__main__':
 
     # Running as standalone python application
@@ -298,16 +296,7 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
-    additional_arguments = {
-        "epochs": cmdline_args.epochs,
-        "batch_size": cmdline_args.batch_size,
-        "validation_split": cmdline_args.validation_split,
-        "augmentation_factor": cmdline_args.augmentation,
-        "debug_plots": cmdline_args.debug_plots,
-        "nlu_threshold": cmdline_args.nlu_threshold,
-        "core_threshold": cmdline_args.core_threshold,
-        "fallback_action_name": cmdline_args.fallback_action_name
-    }
+    additional_arguments = _additional_arguments(cmdline_args)
 
     if cmdline_args.url:
         stories = utils.download_file_from_url(cmdline_args.url)
@@ -317,7 +306,10 @@ if __name__ == '__main__':
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
-
+    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+    _tracker_store = TrackerStore.find_tracker_store(None,
+                                                     _endpoints.tracker_store,
+                                                     _broker)
     if cmdline_args.core and cmdline_args.mode == 'default':
         if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
@@ -331,6 +323,7 @@ if __name__ == '__main__':
         _agent = Agent.load(cmdline_args.core,
                             interpreter=_interpreter,
                             generator=_endpoints.nlg,
+                            tracker_store=_tracker_store,
                             action_endpoint=_endpoints.action)
     elif cmdline_args.mode == 'default':
         if not cmdline_args.out:

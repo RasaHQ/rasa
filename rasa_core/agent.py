@@ -32,7 +32,7 @@ from rasa_core.policies import Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
-from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.utils import is_url
