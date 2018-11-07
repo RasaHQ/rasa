@@ -501,8 +501,6 @@ The configuration of the ``rasa_nlu`` server might then look similar to this:
         - -c
         - config/nlu_config.yml
 
-.. note::
-
 Depending on the selected
 `NLU Pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_ you might
 have to use a different Rasa NLU image:
