@@ -36,10 +36,10 @@ def create_argument_parser():
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
     subparsers = parser.add_subparsers(help='mode', dest='mode')
-    default_parser = subparsers.add_parser('default',
-                                           help='default mode: train a dialogue'
-                                                ' model',
-                                           parents=[parent_parser])
+    subparsers.add_parser('default',
+                          help='default mode: train a dialogue'
+                               ' model',
+                               parents=[parent_parser])
     compare_parser = subparsers.add_parser('compare',
                                            help='compare mode: train multiple '
                                                 'dialogue models to compare '
@@ -47,10 +47,10 @@ def create_argument_parser():
                                            parents=[parent_parser])
     interactive_parser = subparsers.add_parser('interactive',
                                                help='teach the bot with '
-                                                    'interactive learning')
-
-    add_default_args(default_parser)
+                                                    'interactive learning',
+                                               parents=[parent_parser])
     add_compare_args(compare_parser)
+    add_interactive_args(interactive_parser)
 
     return parser
 
@@ -69,44 +69,27 @@ def add_compare_args(parser):
             help="Number of runs for experiments")
 
 
-def add_default_args(parser):
-    parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            default=None,
-            help="trained nlu model")
-    parser.add_argument(
-            '--debug_plots',
-            default=False,
-            action='store_true',
-            help="If enabled, will create plots showing checkpoints "
-                 "and their connections between story blocks in a  "
-                 "file called `story_blocks_connections.pdf`.")
-    parser.add_argument(
-            '--dump_stories',
-            default=False,
-            action='store_true',
-            help="If enabled, save flattened stories to a file")
-    parser.add_argument(
-            '--endpoints',
-            default=None,
-            help="Configuration file for the connectors as a yml file")
-    parser.add_argument(
-            '--interactive',
-            default=False,
-            action='store_true',
-            help="enable interactive training")
-    parser.add_argument(
-            '--skip_visualization',
-            default=False,
-            action='store_true',
-            help="disables plotting the visualization during "
-                 "interactive learning")
-    parser.add_argument(
-            '--finetune',
-            default=False,
-            action='store_true',
-            help="retrain the model immediately based on feedback.")
+def add_interactive_args(parser):
+        parser.add_argument(
+                '-u', '--nlu',
+                type=str,
+                default=None,
+                help="trained nlu model")
+        parser.add_argument(
+                '--endpoints',
+                default=None,
+                help="Configuration file for the connectors as a yml file")
+        parser.add_argument(
+                '--skip_visualization',
+                default=False,
+                action='store_true',
+                help="disables plotting the visualization during "
+                     "interactive learning")
+        parser.add_argument(
+                '--finetune',
+                default=False,
+                action='store_true',
+                help="retrain the model immediately based on feedback.")
 
 
 def add_args_to_parser(parser):
@@ -137,8 +120,19 @@ def add_args_to_parser(parser):
             type=str,
             nargs="*",
             required=False,
-            help="Policy specification yaml file."
-    )
+            help="Policy specification yaml file.")
+    parser.add_argument(
+            '--dump_stories',
+            default=False,
+            action='store_true',
+            help="If enabled, save flattened stories to a file")
+    parser.add_argument(
+            '--debug_plots',
+            default=False,
+            action='store_true',
+            help="If enabled, will create plots showing checkpoints "
+                 "and their connections between story blocks in a  "
+                 "file called `story_blocks_connections.pdf`.")
 
     return parser
 
@@ -168,7 +162,7 @@ def add_model_and_story_group(parser):
 def train_dialogue_model(domain_file, stories_file, output_path,
                          interpreter=None,
                          endpoints=AvailableEndpoints(),
-                         dump_flattened_stories=False,
+                         dump_stories=False,
                          policy_config=None,
                          exclusion_percentage=None,
                          kwargs=None):
@@ -194,7 +188,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                     exclusion_percentage=exclusion_percentage,
                                     **data_load_args)
     agent.train(training_data, **kwargs)
-    agent.persist(output_path, dump_flattened_stories)
+    agent.persist(output_path, dump_stories)
 
     return agent
 
@@ -215,7 +209,9 @@ def train_comparison_models(story_filename,
                             output_path=None,
                             exclusion_percentages=None,
                             policy_configs=None,
-                            runs=None):
+                            runs=None,
+                            dump_stories=False,
+                            kwargs=None):
 
     """Trains either a KerasPolicy model or an EmbeddingPolicy, excluding a
     certain percentage of a story file"""
@@ -230,8 +226,8 @@ def train_comparison_models(story_filename,
                                      "model for comparison")
                 policy_name = type(policies[0]).__name__
                 output = os.path.join(output_path, 'run_' + str(r + 1),
-                                           policy_name +
-                                           str(current_round))
+                                      policy_name +
+                                      str(current_round))
 
                 logging.info("Starting to train {} round {}/{}"
                              " with {}% exclusion".format(
@@ -240,9 +236,12 @@ def train_comparison_models(story_filename,
                                                 len(exclusion_percentages),
                                                 i))
 
-                train_dialogue_model(domain, stories, output,
-                                     policy_config=policy_config,
-                                     exclusion_percentage=i)
+                train_dialogue_model(
+                            domain, stories, output,
+                            policy_config=policy_config,
+                            exclusion_percentage=i,
+                            kwargs=kwargs,
+                            dump_stories=dump_stories)
 
 
 def get_no_of_stories(stories, domain):
@@ -260,6 +259,7 @@ if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
+    additional_arguments = _additional_arguments(cmdline_args)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
@@ -268,60 +268,76 @@ if __name__ == '__main__':
     else:
         stories = cmdline_args.stories
 
-    if cmdline_args.core and cmdline_args.mode == 'default':
-        if not cmdline_args.interactive:
-            raise ValueError("--core can only be used together with the"
-                             "--interactive flag.")
-        elif cmdline_args.finetune:
-            raise ValueError("--core can only be used together with the"
-                             "--interactive flag and without --finetune flag.")
-        else:
-            logger.info("loading a pre-trained model. ",
-                        "all training-related parameters will be ignored")
-        _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-        _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                         _endpoints.nlu)
-        _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
-        _tracker_store = TrackerStore.find_tracker_store(None,
-                                                         _endpoints.tracker_store,
-                                                         _broker)
-        _agent = Agent.load(cmdline_args.core,
-                            interpreter=_interpreter,
-                            generator=_endpoints.nlg,
-                            tracker_store=_tracker_store,
-                            action_endpoint=_endpoints.action)
-    elif cmdline_args.mode == 'default':
-        additional_arguments = _additional_arguments(cmdline_args)
+    if cmdline_args.mode == 'default':
         if not cmdline_args.out:
             raise ValueError("you must provide a path where the model "
                              "will be saved using -o / --out")
         if (isinstance(cmdline_args.config, list) and
                 len(cmdline_args.config) > 1):
             raise ValueError("You can only pass one config file at a time")
+
+        _agent = train_dialogue_model(domain_file=cmdline_args.domain,
+                                      stories_file=stories,
+                                      output_path=cmdline_args.out,
+                                      dump_stories=cmdline_args.dump_stories,
+                                      policy_config=cmdline_args.config[0],
+                                      kwargs=additional_arguments)
+
+    elif cmdline_args.mode == 'interactive':
         _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
         _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                          _endpoints.nlu)
-        _agent = train_dialogue_model(cmdline_args.domain,
-                                      stories,
-                                      cmdline_args.out,
-                                      _interpreter,
-                                      _endpoints,
-                                      cmdline_args.dump_stories,
-                                      cmdline_args.config[0],
-                                      None,
-                                      additional_arguments)
+        if (isinstance(cmdline_args.config, list) and
+                len(cmdline_args.config) > 1):
+            raise ValueError("You can only pass one config file at a time")
+        if cmdline_args.core and cmdline_args.finetune:
+            raise ValueError("--core can only be used without --finetune flag.")
+        elif cmdline_args.core:
+            logger.info("loading a pre-trained model. "
+                        "all training-related parameters will be ignored")
+
+            _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+            _tracker_store = TrackerStore.find_tracker_store(
+                                                None,
+                                                _endpoints.tracker_store,
+                                                _broker)
+            _agent = Agent.load(cmdline_args.core,
+                                interpreter=_interpreter,
+                                generator=_endpoints.nlg,
+                                tracker_store=_tracker_store,
+                                action_endpoint=_endpoints.action)
+        else:
+            if not cmdline_args.out:
+                raise ValueError("you must provide a path where the model "
+                                 "will be saved using -o / --out")
+
+            _agent = train_dialogue_model(cmdline_args.domain,
+                                          stories,
+                                          cmdline_args.out,
+                                          _interpreter,
+                                          _endpoints,
+                                          cmdline_args.dump_stories,
+                                          cmdline_args.config[0],
+                                          None,
+                                          additional_arguments)
+        interactive.run_interactive_learning(
+                _agent, stories,
+                finetune=cmdline_args.finetune,
+                skip_visualization=cmdline_args.skip_visualization)
 
     elif cmdline_args.mode == 'compare':
         if not cmdline_args.out:
             raise ValueError("you must provide a path where the model "
                              "will be saved using -o / --out")
 
-        train_comparison_models(story_filename=cmdline_args.stories,
-                                domain=cmdline_args.domain,
-                                output_path=cmdline_args.out,
-                                exclusion_percentages=cmdline_args.percentages,
-                                policy_configs=cmdline_args.config,
-                                runs=cmdline_args.runs)
+        train_comparison_models(cmdline_args.stories,
+                                cmdline_args.domain,
+                                cmdline_args.out,
+                                cmdline_args.percentages,
+                                cmdline_args.config,
+                                cmdline_args.runs,
+                                cmdline_args.dump_stories,
+                                additional_arguments)
 
         no_stories = get_no_of_stories(cmdline_args.stories,
                                        cmdline_args.domain)
@@ -334,9 +350,3 @@ if __name__ == '__main__':
         pickle.dump(story_range,
                     io.open(os.path.join(cmdline_args.out, 'num_stories.p'),
                             'wb'))
-
-    if cmdline_args.interactive:
-        interactive.run_interactive_learning(
-                _agent, stories,
-                finetune=cmdline_args.finetune,
-                skip_visualization=cmdline_args.skip_visualization)

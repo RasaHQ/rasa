@@ -68,11 +68,10 @@ class KerasPolicy(Policy):
 
     def _load_params(self, **kwargs):
         # type: (Dict[Text, Any]) -> None
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
-        self.rnn_size = config['rnn_size']
-        self.epochs = config['epochs']
-        self.batch_size = config['epochs']
+        self.defaults.update(kwargs)
+        self.rnn_size = self.defaults['rnn_size']
+        self.epochs = self.defaults['epochs']
+        self.batch_size = self.defaults['epochs']
 
     @property
     def max_len(self):
@@ -146,7 +145,7 @@ class KerasPolicy(Policy):
               **kwargs  # type: Any
               ):
         # type: (...) -> Dict[Text: Any]
-        print(self.epochs)
+        print(self.defaults)
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
             self._load_params(**kwargs)
