@@ -178,7 +178,7 @@ class OutputChannel(object):
 
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
-                    title=element['title'], subtitle=element['subtitle'])
+                    title=element.get('title', ''), subtitle=element.get('subtitle', ''))
             self.send_text_with_buttons(
                     recipient_id, element_msg, element['buttons'])
 
