@@ -180,7 +180,5 @@ def test_read_yaml_string_with_env_var_not_exist():
     user: ${USER_NAME}
     password: ${PASSWORD}
     """
-    try:
+    with pytest.raises(KeyError):
         r = utils.read_yaml_string(config_with_env_var_not_exist)
-    except Exception as e:
-        assert isinstance(e, KeyError) and e.args[0] == 'PASSWORD'
