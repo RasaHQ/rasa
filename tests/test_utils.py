@@ -8,9 +8,6 @@ from httpretty import httpretty
 from rasa_core import utils
 from rasa_core.utils import EndpointConfig
 
-# add environment variables
-os.environ['USER_NAME'] = 'user'
-os.environ['PASS'] = 'pass'
 
 def test_is_int():
     assert utils.is_int(1)
@@ -125,6 +122,9 @@ def test_endpoint_config():
 
 
 def test_read_yaml_string():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
     config_without_env_var = """
     tracker_store:
       mongo:
@@ -140,6 +140,9 @@ def test_read_yaml_string():
 
 
 def test_read_yaml_string_with_env_var():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -155,6 +158,9 @@ def test_read_yaml_string_with_env_var():
 
 
 def test_read_yaml_string_with_env_var_prefix():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -170,6 +176,9 @@ def test_read_yaml_string_with_env_var_prefix():
 
 
 def test_read_yaml_string_with_env_var_postfix():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -185,6 +194,9 @@ def test_read_yaml_string_with_env_var_postfix():
 
 
 def test_read_yaml_string_with_env_var_infix():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -197,3 +209,22 @@ def test_read_yaml_string_with_env_var_infix():
     r = utils.read_yaml_string(config_with_env_var)
     assert r['tracker_store']['mongo']['user'] == 'db_user_admin' and \
         r['tracker_store']['mongo']['password'] == 'db_pass_admin'
+
+
+def test_read_yaml_string_with_env_var_not_exist():
+    os.environ['USER_NAME'] = 'user'
+    os.environ['PASS'] = 'pass'
+
+    config_with_env_var = """
+    tracker_store:
+      mongo:
+         host: http://localhost:27017
+         db: rasa
+         user: ${USER_NAME}
+         password: ${PASSWORD}
+         collection: conversations
+    """
+    try:
+        r = utils.read_yaml_string(config_with_env_var)
+    except Exception as e:
+        assert isinstance(e, KeyError) and e.args[0] == 'PASSWORD'
