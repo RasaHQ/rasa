@@ -39,7 +39,7 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
-DEFAULT_ENDPOINTS_FILE = "data/example_endpoints.yml"
+DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
 
 class CustomSlot(Slot):
