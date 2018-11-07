@@ -9,6 +9,7 @@ import logging
 import os
 import warnings
 import tensorflow as tf
+import copy
 
 import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
@@ -16,6 +17,8 @@ from typing import Any, List, Dict, Text, Optional, Tuple
 from rasa_core import utils
 from rasa_core.policies.policy import Policy
 from rasa_core.featurizers import TrackerFeaturizer
+from rasa_core.featurizers import (
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -29,21 +32,32 @@ class KerasPolicy(Policy):
 
     defaults = {
         # Neural Net and training params
-        "rnn_size": 32
+        "rnn_size": 32,
+        "epochs": 100,
+        "batch_size": 32
     }
+
+    @staticmethod
+    def _standard_featurizer(cls, max_history=None):
+        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                           max_history=None)
 
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
                  model=None,  # type: Optional[tf.keras.models.Sequential]
                  graph=None,  # type: Optional[tf.Graph]
                  session=None,  # type: Optional[tf.Session]
-                 current_epoch=0  # type: int
+                 current_epoch=0,  # type: int
+                 max_history=None,  # type: Optional[int]
+                 **kwargs  # type: Any
                  ):
         # type: (...) -> None
+        if not featurizer:
+            featurizer = self._standard_featurizer(max_history)
         super(KerasPolicy, self).__init__(featurizer)
 
-        self.rnn_size = self.defaults['rnn_size']
-
+        self._load_params(**kwargs)
+        print(self.epochs)
         self.model = model
         # by default keras uses default tf graph and global tf session
         # we are going to either load them or create them in train(...)
@@ -51,6 +65,14 @@ class KerasPolicy(Policy):
         self.session = session
 
         self.current_epoch = current_epoch
+
+    def _load_params(self, **kwargs):
+        # type: (Dict[Text, Any]) -> None
+        config = copy.deepcopy(self.defaults)
+        config.update(kwargs)
+        self.rnn_size = config['rnn_size']
+        self.epochs = config['epochs']
+        self.batch_size = config['epochs']
 
     @property
     def max_len(self):
@@ -124,11 +146,10 @@ class KerasPolicy(Policy):
               **kwargs  # type: Any
               ):
         # type: (...) -> Dict[Text: Any]
-
-        if kwargs.get('rnn_size') is not None:
-            logger.debug("Parameter `rnn_size` is updated with {}"
-                         "".format(kwargs.get('rnn_size')))
-            self.rnn_size = kwargs.get('rnn_size')
+        print(self.epochs)
+        if kwargs:
+            logger.debug("Config is updated with {}".format(kwargs))
+            self._load_params(**kwargs)
 
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
@@ -153,9 +174,12 @@ class KerasPolicy(Policy):
                 # filter out kwargs that cannot be passed to fit
                 params = self._get_valid_params(self.model.fit, **kwargs)
 
-                self.model.fit(shuffled_X, shuffled_y, **params)
+                self.model.fit(shuffled_X, shuffled_y,
+                               epochs=self.epochs,
+                               batch_size=self.batch_size,
+                               **params)
                 # the default parameter for epochs in keras fit is 1
-                self.current_epoch = kwargs.get("epochs", 1)
+                self.current_epoch = self.defaults.get("epochs", 1)
                 logger.info("Done fitting keras policy model")
 
     def continue_training(self, training_trackers, domain, **kwargs):
