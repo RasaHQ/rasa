@@ -8,6 +8,9 @@ from httpretty import httpretty
 from rasa_core import utils
 from rasa_core.utils import EndpointConfig
 
+# add environment variables
+os.environ['USER_NAME'] = 'user'
+os.environ['PASS'] = 'pass'
 
 def test_is_int():
     assert utils.is_int(1)
@@ -137,9 +140,6 @@ def test_read_yaml_string():
 
 
 def test_read_yaml_string_with_env_var():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -155,9 +155,6 @@ def test_read_yaml_string_with_env_var():
 
 
 def test_read_yaml_string_with_env_var_prefix():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -173,9 +170,6 @@ def test_read_yaml_string_with_env_var_prefix():
 
 
 def test_read_yaml_string_with_env_var_postfix():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
@@ -191,9 +185,6 @@ def test_read_yaml_string_with_env_var_postfix():
 
 
 def test_read_yaml_string_with_env_var_infix():
-    os.environ['USER_NAME'] = 'user'
-    os.environ['PASS'] = 'pass'
-
     config_with_env_var = """
     tracker_store:
       mongo:
