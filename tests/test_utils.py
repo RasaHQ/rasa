@@ -128,87 +128,63 @@ os.environ['PASS'] = 'pass'
 def test_read_yaml_string():
     config_without_env_var = """
     tracker_store:
-      mongo:
-         host: http://localhost:27017
-         db: rasa
-         user: user
-         password: pass
-         collection: conversations
+      user: user
+      password: pass
     """
     r = utils.read_yaml_string(config_without_env_var)
-    assert r['tracker_store']['mongo']['user'] == 'user' and \
-        r['tracker_store']['mongo']['password'] == 'pass'
+    assert r['tracker_store']['user'] == 'user' and \
+        r['tracker_store']['password'] == 'pass'
 
 
 def test_read_yaml_string_with_env_var():
     config_with_env_var = """
     tracker_store:
-      mongo:
-         host: http://localhost:27017
-         db: rasa
-         user: ${USER_NAME}
-         password: ${PASS}
-         collection: conversations
+      user: ${USER_NAME}
+      password: ${PASS}
     """
     r = utils.read_yaml_string(config_with_env_var)
-    assert r['tracker_store']['mongo']['user'] == 'user' and \
-        r['tracker_store']['mongo']['password'] == 'pass'
+    assert r['tracker_store']['user'] == 'user' and \
+        r['tracker_store']['password'] == 'pass'
 
 
 def test_read_yaml_string_with_env_var_prefix():
     config_with_env_var = """
     tracker_store:
-      mongo:
-         host: http://localhost:27017
-         db: rasa
-         user: db_${USER_NAME}
-         password: db_${PASS}
-         collection: conversations
+      user: db_${USER_NAME}
+      password: db_${PASS}
     """
     r = utils.read_yaml_string(config_with_env_var)
-    assert r['tracker_store']['mongo']['user'] == 'db_user' and \
-        r['tracker_store']['mongo']['password'] == 'db_pass'
+    assert r['tracker_store']['user'] == 'db_user' and \
+        r['tracker_store']['password'] == 'db_pass'
 
 
 def test_read_yaml_string_with_env_var_postfix():
     config_with_env_var = """
     tracker_store:
-      mongo:
-         host: http://localhost:27017
-         db: rasa
-         user: ${USER_NAME}_admin
-         password: ${PASS}_admin
-         collection: conversations
+      user: ${USER_NAME}_admin
+      password: ${PASS}_admin
     """
     r = utils.read_yaml_string(config_with_env_var)
-    assert r['tracker_store']['mongo']['user'] == 'user_admin' and \
-        r['tracker_store']['mongo']['password'] == 'pass_admin'
+    assert r['tracker_store']['user'] == 'user_admin' and \
+        r['tracker_store']['password'] == 'pass_admin'
 
 
 def test_read_yaml_string_with_env_var_infix():
     config_with_env_var = """
     tracker_store:
-      mongo:
-         host: http://localhost:27017
-         db: rasa
-         user: db_${USER_NAME}_admin
-         password: db_${PASS}_admin
-         collection: conversations
+      user: db_${USER_NAME}_admin
+      password: db_${PASS}_admin
     """
     r = utils.read_yaml_string(config_with_env_var)
-    assert r['tracker_store']['mongo']['user'] == 'db_user_admin' and \
-        r['tracker_store']['mongo']['password'] == 'db_pass_admin'
+    assert r['tracker_store']['user'] == 'db_user_admin' and \
+        r['tracker_store']['password'] == 'db_pass_admin'
 
 
 def test_read_yaml_string_with_env_var_not_exist():
     config_with_env_var = """
     tracker_store:
-      mongo:
-         host: http://localhost:27017
-         db: rasa
-         user: ${USER_NAME}
-         password: ${PASSWORD}
-         collection: conversations
+      user: ${USER_NAME}
+      password: ${PASSWORD}
     """
     try:
         r = utils.read_yaml_string(config_with_env_var)
