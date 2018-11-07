@@ -15,17 +15,11 @@ from rasa_core import config
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.domain import TemplateDomain
-from rasa_core.featurizers import (
-    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer,
-    FullDialogueTrackerFeaturizer, LabelTokenizerSingleStateFeaturizer)
+from rasa_core.broker import PikaProducer
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies import FallbackPolicy
-from rasa_core.policies.ensemble import PolicyEnsemble
-from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
+from rasa_core.tracker_store import TrackerStore
 from rasa_core.training.dsl import StoryFileReader
 logger = logging.getLogger(__name__)
 
@@ -35,16 +29,28 @@ def create_argument_parser():
 
     parser = argparse.ArgumentParser(
             description='trains a dialogue model')
-
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    add_args_to_parser(parent_parser)
+    add_model_and_story_group(parent_parser)
+    utils.add_logging_option_arguments(parent_parser)
     # either the user can pass in a story file, or the data will get
     # downloaded from a url
-    subparsers = parser.add_subparsers(help='mode')
-    default_parser = subparsers.add_parser('default', help='default mode: train a dialogue model')
-    compare_parser = subparsers.add_parser('compare', help='compare mode: train multiple dialogue models to compare policies')
+    subparsers = parser.add_subparsers(help='mode', dest='mode')
+    default_parser = subparsers.add_parser('default',
+                                           help='default mode: train a dialogue'
+                                                ' model',
+                                           parents=[parent_parser])
+    compare_parser = subparsers.add_parser('compare',
+                                           help='compare mode: train multiple '
+                                                'dialogue models to compare '
+                                                'policies',
+                                           parents=[parent_parser])
+    interactive_parser = subparsers.add_parser('interactive',
+                                               help='teach the bot with '
+                                                    'interactive learning')
 
     add_default_args(default_parser)
     add_compare_args(compare_parser)
-    utils.add_logging_option_arguments(parser)
 
     return parser
 
@@ -101,28 +107,6 @@ def add_default_args(parser):
             default=False,
             action='store_true',
             help="retrain the model immediately based on feedback.")
-    parser.add_argument(
-            '--nlu_threshold',
-            type=float,
-            default=None,
-            required=False,
-            help="If NLU prediction confidence is below threshold, fallback "
-                 "will get triggered.")
-    parser.add_argument(
-            '--core_threshold',
-            type=float,
-            default=None,
-            required=False,
-            help="If Core action prediction confidence is below the threshold "
-                 "a fallback action will get triggered")
-    parser.add_argument(
-            '--fallback_action_name',
-            type=str,
-            default=None,
-            required=False,
-            help="When a fallback is triggered (e.g. because the "
-                 "ML prediction is of low confidence) this is the name "
-                 "of the action that will get triggered instead.")
 
 
 def add_args_to_parser(parser):
@@ -137,38 +121,17 @@ def add_args_to_parser(parser):
             type=str,
             required=True,
             help="domain specification yaml file")
-    # parser.add_argument(
-    #         '--history',
-    #         type=int,
-    #         default=None,
-    #         help="max history to use of a story")
-    # parser.add_argument(
-            # '--epochs',
-            # type=int,
-            # default=100,
-            # help="number of epochs to train the model")
     parser.add_argument(
             '--validation_split',
             type=float,
             default=0.1,
             help="Percentage of training samples used for validation, "
                  "0.1 by default")
-    # parser.add_argument(
-    #         '--batch_size',
-    #         type=int,
-    #         default=20,
-    #         help="number of training samples to put into one training batch")
     parser.add_argument(
             '--augmentation',
             type=int,
             default=50,
             help="how much data augmentation to use during training")
-    parser.add_argument(
-            '--mode',
-            choices=['default', 'compare'],
-            default="default",
-            help="default|compare (train a model, or train multiple models to "
-                 "compare policies)")
     parser.add_argument(
             '-c', '--config',
             type=str,
@@ -205,19 +168,14 @@ def add_model_and_story_group(parser):
 def train_dialogue_model(domain_file, stories_file, output_path,
                          interpreter=None,
                          endpoints=AvailableEndpoints(),
-                         max_history=None,
                          dump_flattened_stories=False,
                          policy_config=None,
+                         exclusion_percentage=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
 
-    fallback_args, kwargs = utils.extract_args(kwargs,
-                                               {"nlu_threshold",
-                                                "core_threshold",
-                                                "fallback_action_name"})
-
-    policies = config.load(policy_config, fallback_args, max_history)
+    policies = config.load(policy_config)
 
     agent = Agent(domain_file,
                   generator=endpoints.nlg,
@@ -232,49 +190,59 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "remove_duplicates",
                                                  "debug_plots"})
 
-    training_data = agent.load_data(stories_file, **data_load_args)
+    training_data = agent.load_data(stories_file,
+                                    exclusion_percentage=exclusion_percentage,
+                                    **data_load_args)
     agent.train(training_data, **kwargs)
     agent.persist(output_path, dump_flattened_stories)
 
     return agent
 
 
+def _additional_arguments(args):
+    additional = {
+        "validation_split": args.validation_split,
+        "augmentation_factor": args.augmentation,
+        "debug_plots": args.debug_plots
+    }
+
+    # remove None values
+    return {k: v for k, v in additional.items() if v is not None}
+
+
 def train_comparison_models(story_filename,
                             domain,
-                            epochs,
                             output_path=None,
-                            exclusion_percentage=None,
-                            starspace=True,
-                            max_history=None):
+                            exclusion_percentages=None,
+                            policy_configs=None,
+                            runs=None):
 
     """Trains either a KerasPolicy model or an EmbeddingPolicy, excluding a
     certain percentage of a story file"""
+    for r in range(cmdline_args.runs):
+        logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
+        for i in exclusion_percentages:
+            current_round = cmdline_args.percentages.index(i) + 1
+            for policy_config in policy_configs:
+                policies = config.load(policy_config)
+                if len(policies) > 1:
+                    raise ValueError("You can only specify one policy per "
+                                     "model for comparison")
+                policy_name = type(policies[0]).__name__
+                output = os.path.join(output_path, 'run_' + str(r + 1),
+                                           policy_name +
+                                           str(current_round))
 
-    if starspace:
-        featurizer = FullDialogueTrackerFeaturizer(
-                        LabelTokenizerSingleStateFeaturizer())
-        policies = [EmbeddingPolicy()]
-    else:
-        featurizer = MaxHistoryTrackerFeaturizer(
-                        BinarySingleStateFeaturizer(),
-                        max_history=max_history)
-        policies = [KerasPolicy(featurizer)]
+                logging.info("Starting to train {} round {}/{}"
+                             " with {}% exclusion".format(
+                                                policy_name,
+                                                current_round,
+                                                len(exclusion_percentages),
+                                                i))
 
-    agent = Agent(domain,
-                  policies=policies)
-
-    data = agent.load_data(story_filename,
-                           remove_duplicates=True,
-                           augmentation_factor=0,
-                           exclusion_percentage=exclusion_percentage)
-
-    agent.train(data,
-                rnn_size=64,
-                epochs=epochs,
-                embed_dim=20,
-                attn_shift_range=5)
-
-    agent.persist(model_path=output_path)
+                train_dialogue_model(domain, stories, output,
+                                     policy_config=policy_config,
+                                     exclusion_percentage=i)
 
 
 def get_no_of_stories(stories, domain):
@@ -287,7 +255,6 @@ def get_no_of_stories(stories, domain):
     return no_stories
 
 
-
 if __name__ == '__main__':
 
     # Running as standalone python application
@@ -296,20 +263,11 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
-    additional_arguments = _additional_arguments(cmdline_args)
-
     if cmdline_args.url:
         stories = utils.download_file_from_url(cmdline_args.url)
     else:
         stories = cmdline_args.stories
 
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
-    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
-    _tracker_store = TrackerStore.find_tracker_store(None,
-                                                     _endpoints.tracker_store,
-                                                     _broker)
     if cmdline_args.core and cmdline_args.mode == 'default':
         if not cmdline_args.interactive:
             raise ValueError("--core can only be used together with the"
@@ -320,66 +278,50 @@ if __name__ == '__main__':
         else:
             logger.info("loading a pre-trained model. ",
                         "all training-related parameters will be ignored")
+        _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
+        _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                         _endpoints.nlu)
+        _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+        _tracker_store = TrackerStore.find_tracker_store(None,
+                                                         _endpoints.tracker_store,
+                                                         _broker)
         _agent = Agent.load(cmdline_args.core,
                             interpreter=_interpreter,
                             generator=_endpoints.nlg,
                             tracker_store=_tracker_store,
                             action_endpoint=_endpoints.action)
     elif cmdline_args.mode == 'default':
+        additional_arguments = _additional_arguments(cmdline_args)
         if not cmdline_args.out:
             raise ValueError("you must provide a path where the model "
                              "will be saved using -o / --out")
+        if (isinstance(cmdline_args.config, list) and
+                len(cmdline_args.config) > 1):
+            raise ValueError("You can only pass one config file at a time")
+        _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
+        _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                         _endpoints.nlu)
         _agent = train_dialogue_model(cmdline_args.domain,
                                       stories,
                                       cmdline_args.out,
                                       _interpreter,
                                       _endpoints,
-                                      cmdline_args.history,
                                       cmdline_args.dump_stories,
-                                      cmdline_args.config,
+                                      cmdline_args.config[0],
+                                      None,
                                       additional_arguments)
 
     elif cmdline_args.mode == 'compare':
         if not cmdline_args.out:
             raise ValueError("you must provide a path where the model "
                              "will be saved using -o / --out")
-        for r in range(cmdline_args.runs):
-            logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
-            for i in cmdline_args.percentages:
 
-                current_round = cmdline_args.percentages.index(i) + 1
-
-                output_path_keras = (os.path.join(cmdline_args.out, 'run_' +
-                                     str(r + 1), 'keras' + str(current_round)))
-
-                output_path_embed = (os.path.join(cmdline_args.out, 'run_' +
-                                     str(r + 1), 'embed' + str(current_round)))
-
-                logging.info("Starting to train embedding policy round {}/{}"
-                             " with {}% exclusion".format(
-                                                current_round,
-                                                len(cmdline_args.percentages),
-                                                i))
-
-                train_comparison_models(story_filename=cmdline_args.stories,
-                                        domain=cmdline_args.domain,
-                                        epochs=cmdline_args.epochs_embed,
-                                        output_path=output_path_embed,
-                                        exclusion_percentage=i,
-                                        starspace=True)
-
-                logging.info("Starting to train keras policy round {}/{}"
-                             " with {}% exclusion".format(
-                                                current_round,
-                                                len(cmdline_args.percentages),
-                                                i))
-
-                train_comparison_models(story_filename=cmdline_args.stories,
-                                        domain=cmdline_args.domain,
-                                        epochs=cmdline_args.epochs_keras,
-                                        output_path=output_path_keras,
-                                        exclusion_percentage=i,
-                                        starspace=False)
+        train_comparison_models(story_filename=cmdline_args.stories,
+                                domain=cmdline_args.domain,
+                                output_path=cmdline_args.out,
+                                exclusion_percentages=cmdline_args.percentages,
+                                policy_configs=cmdline_args.config,
+                                runs=cmdline_args.runs)
 
         no_stories = get_no_of_stories(cmdline_args.stories,
                                        cmdline_args.domain)
