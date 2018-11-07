@@ -64,15 +64,18 @@ def test_wit_data():
 
 def test_dialogflow_data():
     td = training_data.load_data('data/examples/dialogflow/')
-    assert len(td.entity_examples) == 5
-    assert len(td.intent_examples) == 24
-    assert len(td.training_examples) == 24
-    assert td.intents == {"affirm", "goodbye", "hi", "inform"}
-    assert td.entities == {"cuisine", "location"}
+    assert len(td.entity_examples) == 9
+    assert len(td.intent_examples) == 28
+    assert len(td.training_examples) == 28
+    assert len(td.composite_entities) == 1
+    assert td.intents == {"affirm", "goodbye", "hi", "inform", "order"}
+    assert td.entities == {"cuisine", "location", "meal"}
     non_trivial_synonyms = {k: v for k, v in td.entity_synonyms.items() if k != v}
     assert non_trivial_synonyms == {"mexico": "mexican",
                                     "china": "chinese",
-                                    "india": "indian"}
+                                    "india": "indian",
+                                    "noodle": "noodles",
+                                    "egg": "eggs"}
 
 
 def test_lookup_table_json():

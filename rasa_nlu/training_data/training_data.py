@@ -40,7 +40,8 @@ class TrainingData(object):
                  training_examples=None,
                  entity_synonyms=None,
                  regex_features=None,
-                 lookup_tables=None):
+                 lookup_tables=None,
+                 composite_entities=None):
         # type: (Optional[List[Message]], Optional[Dict[Text, Text]]) -> None
 
         if training_examples:
@@ -51,6 +52,7 @@ class TrainingData(object):
         self.regex_features = regex_features if regex_features else []
         self.sort_regex_features()
         self.lookup_tables = lookup_tables if lookup_tables else []
+        self.composite_entities = composite_entities if composite_entities else []
 
         self.print_stats()
 
@@ -61,11 +63,13 @@ class TrainingData(object):
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
         lookup_tables = deepcopy(self.lookup_tables)
+        composite_entities = deepcopy(self.composite_entities)
 
         for o in others:
             training_examples.extend(deepcopy(o.training_examples))
             regex_features.extend(deepcopy(o.regex_features))
             lookup_tables.extend(deepcopy(o.lookup_tables))
+            composite_entities.extend(deepcopy(o.composite_entities))
 
             for text, syn in o.entity_synonyms.items():
                 check_duplicate_synonym(entity_synonyms, text, syn,
@@ -74,7 +78,8 @@ class TrainingData(object):
             entity_synonyms.update(o.entity_synonyms)
 
         return TrainingData(training_examples, entity_synonyms,
-                            regex_features, lookup_tables)
+                            regex_features, lookup_tables,
+                            composite_entities)
 
     @staticmethod
     def sanitize_examples(examples):
@@ -212,12 +217,14 @@ class TrainingData(object):
             train,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
-            lookup_tables=self.lookup_tables)
+            lookup_tables=self.lookup_tables,
+            composite_entities=self.composite_entities)
         data_test = TrainingData(
             test,
             entity_synonyms=self.entity_synonyms,
             regex_features=self.regex_features,
-            lookup_tables=self.lookup_tables)
+            lookup_tables=self.lookup_tables,
+            composite_entities=self.composite_entities)
         return data_train, data_test
 
     def print_stats(self):
