@@ -35,7 +35,8 @@ Added
 - ability to add an event broker using an endpoint configuration file
 - raise an exception when ``server.py`` is used instead of ``rasa_core.run --enable-api``
 - add documentation on how to configure endpoints within a configuration file
-- ability to add environment variables in the endpoint configuration file
+- environment variables specified with ``${env_variable}`` in a yaml
+  configuration file are now replaced with the value of the environment variable
 
 Changed
 -------

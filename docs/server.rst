@@ -154,17 +154,8 @@ For example:
         --endpoints <path to endpoint configuration>.yml
 
 .. note::
-    The sensitive information like secret key, user name and password should not be saved in the YAML file as plain texts.
-    Instead, you can save the sensitive information in the environment variables, and add placeholders in the YAML file.
-
-    For example:
-
-    .. code-block:: yaml
-
-      facebook:
-        verify: rasa-bot
-        secret: ${SECRET}
-        page-access-token: ${PAGE_ACCESS_TOKEN}
+    You can use environment variables within configuration files by specifying them with ``${name of environment variable}``.
+    These placeholders are then replaced by the value of the environment variable.
 
 
 Fetching Models From a Server
