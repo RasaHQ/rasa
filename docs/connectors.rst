@@ -61,15 +61,18 @@ You need to set up a Facebook app and a page.
   3. Create your page and select it in the dropdown menu for the
      *Token Generation*. The shown *Page Access Token* is the
      ``page-access-token`` needed later on.
-  4. Set up a *Webhook* and select at least the *messaging* and
-     *messaging_postback* subscriptions. Insert your callback URL which will
-     look like ``https://<YOUR_HOST>/webhooks/facebook/webhook``. Insert a
-     *Verify Token* of your choice, which has to match the ``verify``
-     entry in your ``credentials.yml``.
-  5. Locate the *App Secret* in the app dashboard under *Settings* -> *Basic*.
+  4. Locate the *App Secret* in the app dashboard under *Settings* -> *Basic*.
      This will be your ``secret``.
-  6. Use the collected ``verify``, ``secret`` and ``page-access-token`` in
-     the ``credentials.yml`` to connect your bot to facebook.
+  5. Use the collected ``secret`` and ``page-access-token`` in your
+     ``credentials.yml``, and add a field called ``verify`` containing
+     a string of your choice. Start ``rasa_core.run`` with the
+     ``--credentials credentials.yml`` option.
+  6. Set up a *Webhook* and select at least the *messaging* and
+     *messaging_postback* subscriptions. Insert your callback URL which will
+     look like ``https://<YOUR_HOST>/webhooks/facebook/webhook``. Insert the
+     *Verify Token* which has to match the ``verify``
+     entry in your ``credentials.yml``.
+
 
 For more detailed steps, visit the
 `messenger docs <https://developers.facebook.com/docs/graph-api/webhooks>`_.
