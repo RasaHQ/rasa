@@ -328,12 +328,39 @@ def fix_yaml_loader():
                                     construct_yaml_str)
 
 
+def process_env_var():
+    """Enable yaml loader to process the environment variables in the yaml."""
+    if six.PY2:
+        import yaml
+    else:
+        import ruamel.yaml as yaml
+    import re
+    import os
+
+    # eg. ${USER_NAME}, ${PASSWORD}
+    env_var_pattern = re.compile(r"^\$\{(.*)\}(.*)$")
+    yaml.add_implicit_resolver('!env_var', env_var_pattern)
+
+    def env_var_constructor(loader, node):
+        """Process environment variables found in the YAML."""
+        value = loader.construct_scalar(node)
+        envVar, remainingPath = env_var_pattern.match(value).groups()
+        return os.environ[envVar] + remainingPath
+
+    if six.PY2:
+        yaml.add_constructor(u'!env_var', env_var_constructor)
+    else:
+        yaml.constructor.SafeConstructor.add_constructor(
+            u'!env_var', env_var_constructor)
+
+
 def read_yaml_file(filename):
     """Read contents of `filename` interpreting them as yaml."""
     return read_yaml_string(read_file(filename))
 
 
 def read_yaml_string(string):
+    process_env_var()
     if six.PY2:
         import yaml
 
