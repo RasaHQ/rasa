@@ -19,7 +19,7 @@ Added
 - Command line interface for interactive learning now displays policy
   confidence alongside the action name
 - added action prediction confidence & policy to ``ActionExecuted`` event
-- the Core policy configuration can now be set in a config.yaml file. 
+- the Core policy configuration can now be set in a config.yaml file.
   This makes training custom policies possible.
 - both the date and the time at which a model was trained are now
   included in the policy's metadata when it is persisted
@@ -33,6 +33,7 @@ Added
 - ability to add tracker_store using endpoints.yml
 - ability load custom tracker store modules using the endpoints.yml
 - ability to add an event broker using an endpoint configuration file
+- ability to add environment variables in the endpoint configuration file
 
 Changed
 -------
