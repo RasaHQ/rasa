@@ -130,7 +130,7 @@
     - form{"name": "restaurant_form"}
     - slot{"requested_slot": "cuisine"}
 * chitchat
-    - utter_chitchat
+    - utter_chitchat  <!-- restaurant_form was predicted by FormPolicy and rejected, other policy predicted utter_chitchat -->
     - restaurant_form
     - slot{"requested_slot": "cuisine"}
 * form: inform{"cuisine": "mexican"}
@@ -145,6 +145,11 @@
 * chitchat
     - utter_chitchat
     - restaurant_form
+    - slot{"requested_slot": "outdoor_seating"}
+* stop
+    - utter_ask_continue
+* affirm
+    - restaurant_form  <!-- FormPolicy predicted FormValidation(False), other policy predicted restaurant_form -->
     - slot{"requested_slot": "outdoor_seating"}
 * form: affirm
     - form: restaurant_form

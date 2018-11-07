@@ -42,9 +42,10 @@ class RestaurantForm(FormAction):
             or a list of them, where a first match will be picked"""
 
         return {"cuisine": self.from_entity(entity="cuisine",
-                                            intent="inform"),
+                                            not_intent="chitchat"),
                 "num_people": [self.from_entity(entity="num_people",
-                                                intent="inform"),
+                                                intent=["inform",
+                                                        "request_restaurant"]),
                                self.from_entity(entity="number")],
                 "outdoor_seating": [self.from_entity(entity="seating"),
                                     self.from_intent(intent='affirm',
