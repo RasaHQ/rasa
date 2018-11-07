@@ -1,7 +1,7 @@
 .. _docker_walkthrough:
 
-Docker Walkthrough
-==================
+Development with Docker
+=======================
 
 This walkthrough provides a tutorial on how to set up Rasa Core, Rasa NLU,
 and an Action Server with Docker containers.
@@ -46,7 +46,7 @@ This section will cover the following:
 
 Start by creating a directory ``data`` in your project directory. Then create
 a file called ``stories.md`` in this directory which will contain the stories
-to train your chatbot.
+to train your chatbot:
 
 .. code-block:: bash
 
@@ -74,14 +74,14 @@ Then add some stories to ``data/stories.md``, e.g.:
     - utter_goodbye
 
 After defining some training data for your chatbot, you have to define its domain.
-To do so create a file ``domain.yml`` in your project directory.
+To do so create a file ``domain.yml`` in your project directory:
 
 .. code-block:: bash
 
   touch domain.yml
 
 Then add the user intents, the actions of your chatbot, and the templates
-for the chatbot responses to ``domain.yml```
+for the chatbot responses to ``domain.yml``:
 
 .. code-block:: yaml
 
@@ -148,9 +148,10 @@ the trained Rasa Core model.
 2.3 Testing
 ~~~~~~~~~~~
 
-You can test the trained model by running the command below. Keep in mind
+You can now test the trained model. Keep in mind
 that there is currently no Rasa NLU set up. Therefore, you have to explicitly
 specify the user intent using the ``/`` prefix, e.g. ``/greet``.
+Use the following command to run Rasa Core:
 
 .. code-block:: bash
 
@@ -189,7 +190,7 @@ This section will cover the following:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To add some Rasa NLU training data, add a file ``nlu.md`` to your ``data``
-directory.
+directory:
 
 .. code-block:: bash
 
@@ -240,7 +241,7 @@ Then add some examples to each intent, e.g.:
 
 You can then train the Rasa NLU model by executing the command below.
 As output of the command the directory ``models/rasa_nlu`` will contain
-the trained Rasa NLU model.
+the trained Rasa NLU model:
 
 .. code-block:: bash
 
@@ -345,7 +346,7 @@ the server for the model.
 
 To instruct Rasa Core to connect to the Rasa NLU server and which NLU model
 it should use, it is required to create a file ``config/endpoints.yml`` which
-contains the URL Rasa Core should connect to.
+contains the URL Rasa Core should connect to:
 
 
 .. code-block:: bash
@@ -355,7 +356,7 @@ contains the URL Rasa Core should connect to.
 
 Docker containers which are started using Docker Compose are using the same
 network. Hence, each service can access other services by their service name.
-Therefore, you can use ``rasa_nlu`` as host in ``config/endpoints.yml``.
+Therefore, you can use ``rasa_nlu`` as host in ``config/endpoints.yml``:
 
 .. code-block:: yaml
 
@@ -444,7 +445,7 @@ If the chatbot cannot understand you, the answer is ``[]``.
 
 If you want to configure the components of your
 `NLU Pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_, start by
-creating a file ``nlu_config.yml`` in your ``config`` directory.
+creating a file ``nlu_config.yml`` in your ``config`` directory:
 
 .. code-block:: bash
 
@@ -465,7 +466,7 @@ Put the description of your custom pipeline in there, e.g.:
 
 Then retrain your NLU model. In contrast to the previous training also mount
 the ``config`` directory which contains the NLU configuration
-and specify it in the run command.
+and specify it in the run command:
 
 .. code-block:: bash
 
@@ -524,7 +525,7 @@ the user a joke to cheer the user up.
 4.1 Creating a Custom Action
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Start with creating the custom actions in a directory ``actions``.
+Start with creating the custom actions in a directory ``actions``:
 
 .. code-block:: bash
 
@@ -563,7 +564,7 @@ Continuing the example from above replace ``utter_cheer_up`` in
 
 The custom actions are run by the action server.
 To spin it up together with Rasa Core and Rasa NLU, add a service
-``action_server`` to the ``docker-compose.yml``.
+``action_server`` to the ``docker-compose.yml``:
 
 .. code-block:: yaml
 
@@ -608,7 +609,7 @@ dependencies, e.g.:
     RUN pip install --no-cache-dir \
         jupyter
 
-You can then build the image and use it in your ``docker-compose.yml``.
+You can then build the image and use it in your ``docker-compose.yml``:
 
 .. code-block:: bash
 
@@ -628,7 +629,7 @@ If you want to persist your conversations, you can use different
 Start by adding MongoDB to your docker-compose file. The following example
 adds the MongoDB as well as a UI (you can skip this), which will be available
 at ``localhost:8081``. Username and password for the MongoDB instance are
-specified as ``rasa`` and ``example``.
+specified as ``rasa`` and ``example``. For example:
 
 .. code-block:: yaml
 
@@ -646,7 +647,7 @@ specified as ``rasa`` and ``example``.
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
 
 Then add the MongoDB to the ``tracker_store`` section of your endpoints
-configuration ``config/endpoints.yml``.
+configuration ``config/endpoints.yml``:
 
 .. code-block:: yaml
 
@@ -669,7 +670,7 @@ Start by adding Redis to your docker-compose file:
     image: redis:latest
 
 Then add Redis to the ``tracker_store`` section of your endpoint
-configuration ``config/endpoints.yml``.
+configuration ``config/endpoints.yml``:
 
 .. code-block:: yaml
 
@@ -691,3 +692,5 @@ Then add the required configuration to your endpoint configuration
 If you want the tracker store component (e.g. a certain database) to be part
 of your docker compose file, add a corresponding service and configuration
 there.
+
+.. include:: feedback.inc
