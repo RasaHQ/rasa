@@ -544,8 +544,12 @@ class EmbeddingIntentClassifier(Component):
                            loss, is_training, train_op)
 
     # process helpers
-    def _calculate_message_sim(self, X, all_Y):
-        # type: (np.ndarray, np.ndarray) -> Tuple[List[int], List[int]]
+    # noinspection PyPep8Naming
+    def _calculate_message_sim(self,
+                               X,  # type: np.ndarray
+                               all_Y  # type: np.ndarray
+                               ):
+        # type: (...) -> Tuple[np.ndarray, List[float]]
         """Load tf graph and calculate message similarities"""
 
         message_sim = self.session.run(self.sim_op,
