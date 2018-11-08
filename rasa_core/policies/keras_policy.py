@@ -38,9 +38,9 @@ class KerasPolicy(Policy):
     }
 
     @staticmethod
-    def _standard_featurizer(cls, max_history=None):
+    def _standard_featurizer(max_history=None):
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                           max_history=None)
+                                           max_history=max_history)
 
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
