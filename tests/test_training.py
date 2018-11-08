@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.train import train_dialogue_model
 from rasa_core.agent import Agent
+from rasa_core.policies.form_policy import FormPolicy
 
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.training.visualization import visualize_stories
@@ -63,8 +64,11 @@ def test_training_script_without_max_history_set(tmpdir):
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
-            assert policy.featurizer.max_history == \
-                   policy.featurizer.MAX_HISTORY_DEFAULT
+            if type(policy) == FormPolicy:
+                assert policy.featurizer.max_history == 2
+            else:
+                assert policy.featurizer.max_history == \
+                       policy.featurizer.MAX_HISTORY_DEFAULT
 
 
 def test_training_script_with_max_history_set(tmpdir):
@@ -76,7 +80,10 @@ def test_training_script_with_max_history_set(tmpdir):
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
-            assert policy.featurizer.max_history == 5
+            if type(policy) == FormPolicy:
+                assert policy.featurizer.max_history == 2
+            else:
+                assert policy.featurizer.max_history == 5
 
 
 def test_training_script_with_restart_stories(tmpdir):
