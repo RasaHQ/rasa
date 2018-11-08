@@ -62,7 +62,7 @@ Changed
   Instead it can be connected to a nlu server.
 - stories are now visualized as ``.html`` page instead of an image
 - move and deduplicate restaurantbot nlu data from ``franken_data.json`` to ``nlu_data.md``
-- rework forms
+- forms were completely reworked, see changelog in ``rasa_core_sdk``
 - state featurization if some form is active changed
 - ``Domain`` raises ``InvalidDomain`` exception
 

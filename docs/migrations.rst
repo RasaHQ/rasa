@@ -22,8 +22,21 @@ how you can migrate from one version to another.
 Forms
 ~~~~~
 
-- Forms were completely refactored, please follow :ref:`slotfilling`
+- Forms were completely reworked, please follow :ref:`slotfilling`
   for instructions how to use them.
+- ``FormField`` class and its subclasses were removed,
+  overwrite ``FormAction.slot_mapping()`` method to specify the mapping between
+  user input and requested slot in the form
+  utilizing helper methods ``FormAction.from_entity(...)``,
+  ``FormAction.from_intent(...)`` and ``FormAction.from_text(...)``
+- stories for forms need to be written differently,
+  it is recommended to use interactive learning to create form stories
+- functionality of ``FormAction.get_other_slots(...)`` was moved to
+  ``FormAction.extract_other_slots(...)``
+- functionality of ``FormAction.get_requested_slot(...)`` was moved to
+  ``FormAction.extract_requested_slot(...)``
+- overwrite ``FormAction.validate(...)`` method to validate user input against
+  the slot requested by the form
 
 .. _migration-to-0-11-0:
 
