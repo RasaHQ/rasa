@@ -27,11 +27,12 @@ from rasa_core.channels.rocketchat import RocketChatInput  # nopep8
 from rasa_core.channels.slack import SlackInput  # nopep8
 from rasa_core.channels.telegram import TelegramInput  # nopep8
 from rasa_core.channels.twilio import TwilioInput  # nopep8
+from rasa_core.channels.ciscowebexteams import CiscoWebexTeamsInput # nopep8
 
 input_channel_classes = [
     CmdlineInput, FacebookInput, SlackInput, TelegramInput, MattermostInput,
     TwilioInput, RasaChatInput, BotFrameworkInput, RocketChatInput,
-    CallbackInput, RestInput, SocketIOInput
+    CallbackInput, RestInput, SocketIOInput, CiscoWebexTeamsInput
 ]  # type: List[InputChannel]
 
 # Mapping from a input channel name to its class to allow name based lookup.
