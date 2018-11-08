@@ -15,11 +15,15 @@ logger = logging.getLogger(__name__)
 class Slot(object):
     type_name = None
 
-    def __init__(self, name, initial_value=None, value_reset_delay=None):
+    def __init__(self, name,
+                 initial_value=None,
+                 value_reset_delay=None,
+                 auto_fill=True):
         self.name = name
         self.value = initial_value
         self.initial_value = initial_value
         self._value_reset_delay = value_reset_delay
+        self.auto_fill = auto_fill
 
     def feature_dimensionality(self):
         """How many features this single slot creates.
@@ -80,7 +84,8 @@ class Slot(object):
 
     def persistence_info(self):
         return {"type": utils.module_path_from_instance(self),
-                "initial_value": self.initial_value}
+                "initial_value": self.initial_value,
+                "auto_fill": self.auto_fill}
 
 
 class FloatSlot(Slot):
@@ -89,9 +94,13 @@ class FloatSlot(Slot):
     def __init__(self, name,
                  initial_value=None,
                  value_reset_delay=None,
+                 auto_fill=True,
                  max_value=1.0,
                  min_value=0.0):
-        super(FloatSlot, self).__init__(name, initial_value, value_reset_delay)
+        super(FloatSlot, self).__init__(name,
+                                        initial_value,
+                                        value_reset_delay,
+                                        auto_fill)
         self.max_value = max_value
         self.min_value = min_value
 
@@ -182,10 +191,12 @@ class CategoricalSlot(Slot):
     def __init__(self, name,
                  values=None,
                  initial_value=None,
-                 value_reset_delay=None):
+                 value_reset_delay=None,
+                 auto_fill=True):
         super(CategoricalSlot, self).__init__(name,
                                               initial_value,
-                                              value_reset_delay)
+                                              value_reset_delay,
+                                              auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
 
     def persistence_info(self):
@@ -221,8 +232,14 @@ class CategoricalSlot(Slot):
 
 
 class DataSlot(Slot):
-    def __init__(self, name, initial_value=None, value_reset_delay=1):
-        super(DataSlot, self).__init__(name, initial_value, value_reset_delay)
+    def __init__(self, name,
+                 initial_value=None,
+                 value_reset_delay=1,
+                 auto_fill=True):
+        super(DataSlot, self).__init__(name,
+                                       initial_value,
+                                       value_reset_delay,
+                                       auto_fill)
 
     def as_feature(self):
         raise NotImplementedError("Each slot type needs to specify how its "
