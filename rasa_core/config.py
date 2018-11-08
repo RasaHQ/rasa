@@ -15,7 +15,9 @@ def load(config_file):
     max_history are typically command line arguments. They take precedence
     over the arguments specified in the config yaml.
     """
-
-    config_data = utils.read_yaml_file(config_file)
+    if config_file:
+        config_data = utils.read_yaml_file(config_file)
+    else:
+        raise ValueError("You have to provide a config file")
 
     return PolicyEnsemble.from_dict(config_data)
