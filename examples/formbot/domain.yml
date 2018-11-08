@@ -7,10 +7,11 @@ intents:
   - affirm
   - deny
   - stop
-  - thank
+  - thankyou
 
 entities:
   - cuisine
+  - num_people
   - number
   - feedback
   - seating

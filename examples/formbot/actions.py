@@ -52,10 +52,10 @@ class RestaurantForm(FormAction):
                                                      value=True),
                                     self.from_intent(intent='deny',
                                                      value=False)],
-                "preferences": [self.from_text(intent='inform'),
-                                self.from_intent(intent='deny',
+                "preferences": [self.from_intent(intent='deny',
                                                  value="no additional "
-                                                       "preferences")],
+                                                       "preferences"),
+                                self.from_text(not_intent="affirm")],
                 "feedback": [self.from_entity(entity="feedback"),
                              self.from_text()]}
 

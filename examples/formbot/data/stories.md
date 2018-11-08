@@ -4,7 +4,7 @@
     - form{"name": "restaurant_form"}
     - form{"name": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
 
 ## unhappy path
@@ -16,7 +16,7 @@
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
 
 ## very unhappy path
@@ -34,7 +34,7 @@
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
 
 ## stop but continue path
@@ -47,7 +47,7 @@
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
 
 ## stop and really stop path
@@ -73,7 +73,7 @@
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
 
 ## stop but continue and chitchat path
@@ -89,7 +89,7 @@
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
 
 ## chitchat stop but continue and chitchat path
@@ -108,7 +108,7 @@
     - restaurant_form
     - form{"name": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
 
 ## chitchat, stop and really stop path
@@ -166,5 +166,5 @@
     - form{"name": null}
     - slot{"requested_slot": null}
     - utter_slots_values
-* thank
+* thankyou
     - utter_noworries
