@@ -1,4 +1,8 @@
 policies:
   - name: KerasPolicy
-    epochs: 50
-    max_history: 3
+    epochs: 100
+    max_history: 5
+  - name: FallbackPolicy
+    fallback_action_name: 'action_default_fallback'
+  - name: MemoizationPolicy
+    max_history: 5
