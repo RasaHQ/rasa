@@ -37,9 +37,9 @@ Added
 - add documentation on how to configure endpoints within a configuration file
 - ``auth_source`` parameter in ``MongoTrackerStore`` defining the database to
   authenticate against
+- missing instructions on setting up the facebook connector
 - environment variables specified with ``${env_variable}`` in a yaml
     configuration file are now replaced with the value of the environment variable
-
 
 Changed
 -------
