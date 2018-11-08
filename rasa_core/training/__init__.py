@@ -27,10 +27,11 @@ def extract_story_graph(
 
     if not interpreter:
         interpreter = RegexInterpreter()
-    story_steps = StoryFileReader.read_from_folder(resource_name,
-                                                   domain, interpreter,
-                                                   use_e2e=use_e2e,
-                                                   exclusion_percentage=exclusion_percentage)
+    story_steps = StoryFileReader.read_from_folder(
+                                    resource_name,
+                                    domain, interpreter,
+                                    use_e2e=use_e2e,
+                                    exclusion_percentage=exclusion_percentage)
     return StoryGraph(story_steps)
 
 
