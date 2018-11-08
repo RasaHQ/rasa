@@ -16,42 +16,10 @@ from rasa_core.channels.channel import UserMessage, OutputChannel
 logger = logging.getLogger(__name__)
 
 
-"""
-class CiscoWebexTeamsBot(WebexTeamsAPI, OutputChannel):
-    #A Cisco Webex Teams communication channel
-
-    @classmethod
-    def name(cls):
-        return "ciscowebexteams"
-
-    def __init__(self, access_token, ciscowebexteams_room):
-
-        self.ciscowebexteams_room = ciscowebexteams_room
-        super(CiscoWebexTeamsBot, self).__init__(access_token)
-
-
-    def send_text_message(self, recipient_id, message):
-        recipient = self.ciscowebexteams_room or recipient_id
-        for message_part in message.split("\n\n"):
-            super(CiscoWebexTeamsBot, self).messages.create(roomId=recipient,text=message_part)
-
-    def send_image_url(self, recipient_id, image_url, message=""):
-        recipient = self.ciscowebexteams_room or recipient_id
-        return super(CiscoWebexTeamsBot, self).messages.create(
-                                              roomId=recipient,
-                                              files=[image_url])
-    def send_file_url(self, recipient_id, file_url, message=""):
-        #file url can be public url or local file path
-        recipient = self.ciscowebexteams_room or recipient_id
-        return super(CiscoWebexTeamsBot, self).messages.create(
-                                              roomId=recipient,
-                                              files=[file_url])
-"""
-
 
 class CiscoWebexTeamsBot(OutputChannel):
     #A Cisco Webex Teams communication channel
-    #an alternate implementation that doesn't subclass WebexTeamsAPI - seems more readable
+
     @classmethod
     def name(cls):
         return "ciscowebexteams"
@@ -89,7 +57,6 @@ class CiscoWebexTeamsInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        #    dont think we need to add credentials.get("CiscoWebexTeams_Room")
         return cls(credentials.get("ciscowebexteams_accesstoken"),
                     credentials.get("ciscowebexteams_room"))
 
@@ -137,15 +104,10 @@ class CiscoWebexTeamsInput(InputChannel):
                    <html lang="en">
                        <head>
                            <meta charset="UTF-8">
-                           <title>Webex Teams Bot served via Flask</title>
+                           <title>Webex Teams Bot</title>
                        </head>
                    <body>
-                   <p>
-                   <strong>Your Flask web server is up and running!</strong>
-                   </p>
-                   <p>
-                   Hey there. I am your Rasa Bot
-                   </p>
+                    Hello there
                    </body>
                    </html>
                 """)
@@ -154,10 +116,8 @@ class CiscoWebexTeamsInput(InputChannel):
 
                 # Get the POST data sent from Webex Teams
                 json_data = request.json
-                print("\n")
                 print("WEBHOOK POST RECEIVED:")
                 print(json_data)
-                print("\n")
 
                 # Create a Webhook object from the JSON data
                 webhook_obj = Webhook(json_data)
