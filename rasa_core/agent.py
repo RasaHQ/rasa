@@ -55,7 +55,6 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
                      tracker_store=None,  # type: Optional[TrackerStore]
                      action_endpoint=None,  # type: Optional[EndpointConfig]
                      model_server=None,  # type: Optional[EndpointConfig]
-                     wait_time_between_pulls=None,  # type: Optional[int]
                      ):
     # type: (...) -> Agent
     """Load a persisted model from a server."""
@@ -65,10 +64,14 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
                   tracker_store=tracker_store,
                   action_endpoint=action_endpoint)
 
-    if wait_time_between_pulls:
+    wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
+                                                      100)
+    if wait_time_between_pulls is not None and \
+        (isinstance(wait_time_between_pulls, int) or
+         wait_time_between_pulls.isdigit()):
         # continuously pull the model every `wait_time_between_pulls` seconds
         start_model_pulling_in_worker(model_server,
-                                      wait_time_between_pulls,
+                                      int(wait_time_between_pulls),
                                       agent)
     else:
         # just pull the model once

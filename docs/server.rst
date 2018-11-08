@@ -180,6 +180,12 @@ regularly queries for zipped Rasa Core models:
 
     models:
       url: http://my-server.com/models/default_core@latest
+      wait_time_between_pulls:  10 [optional](default: 100)
+
+.. note::
+
+    If you want to pull the model just once from the server, set
+    ``wait_time_between_pulls`` to ``None``.
 
 .. note::
 
