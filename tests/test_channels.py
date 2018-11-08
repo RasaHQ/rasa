@@ -86,7 +86,7 @@ def test_ciscowebexteams_channel():
     input_channel = CiscoWebexTeamsInput(
             ciscowebexteams_accesstoken="YOUR_ACCESS_TOKEN",
             # this is the `bot access token`
-            CiscoWebexTeams_Room="YOUR_WEBEX_ROOM"
+            ciscowebexteams_room="YOUR_WEBEX_ROOM"
             # the name of your channel to which the bot posts (optional)
     )
 
