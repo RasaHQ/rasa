@@ -19,7 +19,7 @@ Added
 - Command line interface for interactive learning now displays policy
   confidence alongside the action name
 - added action prediction confidence & policy to ``ActionExecuted`` event
-- the Core policy configuration can now be set in a config.yaml file. 
+- the Core policy configuration can now be set in a config.yaml file.
   This makes training custom policies possible.
 - both the date and the time at which a model was trained are now
   included in the policy's metadata when it is persisted
@@ -37,6 +37,10 @@ Added
 - add documentation on how to configure endpoints within a configuration file
 - ``auth_source`` parameter in ``MongoTrackerStore`` defining the database to
   authenticate against
+- missing instructions on setting up the facebook connector
+- environment variables specified with ``${env_variable}`` in a yaml
+  configuration file are now replaced with the value of the environment variable
+- detailed documentation on how to deploy Rasa with Docker
 - add ``FormPolicy`` to handle form action prediction
 - add ``ActionExecutionRejection`` exception and ``ActionExecutionRejected`` event
 - add default action ``ActionDeactivateForm()``
