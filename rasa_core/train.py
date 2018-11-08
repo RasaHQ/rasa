@@ -33,8 +33,6 @@ def create_argument_parser():
     add_args_to_parser(parent_parser)
     add_model_and_story_group(parent_parser)
     utils.add_logging_option_arguments(parent_parser)
-    # either the user can pass in a story file, or the data will get
-    # downloaded from a url
     subparsers = parser.add_subparsers(help='mode', dest='mode')
     subparsers.add_parser('default',
                           help='default mode: train a dialogue'

@@ -7,7 +7,7 @@ import glob
 import pytest
 
 from tests.conftest import ExamplePolicy
-from rasa_core.config import load, handle_precedence_and_defaults
+from rasa_core.config import load
 from rasa_core.policies.memoization import MemoizationPolicy
 
 
