@@ -7,6 +7,24 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-0-12-0:
+
+0.11.x to 0.12.0
+----------------
+
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the mentioned
+    before updating. Please make sure to
+    **retrain your models when switching to this version**.
+
+Forms
+~~~~~
+
+- Forms were completely refactored, please follow :ref:`slotfilling`
+  for instructions how to use them.
+
 .. _migration-to-0-11-0:
 
 0.10.x to 0.11.0
