@@ -92,6 +92,9 @@ class EmbeddingIntentClassifier(Component):
         # flag: if true, only minimize the maximum similarity for
         # incorrect intent labels
         "use_max_sim_neg": True,
+        # set random seed to any int to get reproducible results
+        # try to change to another int if you are not getting good results
+        "random_seed": None,
 
         # regularization parameters
         # the scale of L2 regularization
@@ -168,6 +171,7 @@ class EmbeddingIntentClassifier(Component):
         self.similarity_type = config['similarity_type']
         self.num_neg = config['num_neg']
         self.use_max_sim_neg = config['use_max_sim_neg']
+        self.random_seed = self.component_config['random_seed']
 
     def _load_regularization_params(self, config):
         # type: (Dict[Text, Any]) -> None
@@ -520,6 +524,10 @@ class EmbeddingIntentClassifier(Component):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
+            # set random seed
+            np.random.seed(self.random_seed)
+            tf.set_random_seed(self.random_seed)
+
             self.a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
                                        name='a')
             self.b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),
