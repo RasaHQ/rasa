@@ -117,7 +117,8 @@ def add_args_to_parser(parser):
             '-c', '--config',
             type=str,
             nargs="*",
-            required=False,
+            default='default_config.yml',
+            required=True,
             help="Policy specification yaml file.")
     parser.add_argument(
             '--dump_stories',

@@ -19,14 +19,9 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
-from rasa_core.constants import (
-    DEFAULT_NLU_FALLBACK_THRESHOLD,
-    DEFAULT_CORE_FALLBACK_THRESHOLD, DEFAULT_FALLBACK_ACTION)
 from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.exceptions import UnsupportedDialogueModelError
-from rasa_core.featurizers import (MaxHistoryTrackerFeaturizer,
-                                   BinarySingleStateFeaturizer)
-from rasa_core.policies.keras_policy import KerasPolicy
+from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.memoization import (MemoizationPolicy,
                                             AugmentedMemoizationPolicy)
@@ -217,18 +212,6 @@ class PolicyEnsemble(object):
             policies.append(policy_object)
 
         return policies
-
-    @classmethod
-    def default_policies(cls):
-        # type: (Dict[Text, Any], int) -> List[Policy]
-        """Load the default policy setup consisting of
-        FallbackPolicy, MemoizationPolicy and KerasPolicy."""
-
-        return [
-            FallbackPolicy(),
-            MemoizationPolicy(),
-            KerasPolicy(
-                    MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer()))]
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None

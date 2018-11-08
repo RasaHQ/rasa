@@ -16,9 +16,6 @@ def load(config_file):
     over the arguments specified in the config yaml.
     """
 
-    if config_file is None:
-        return PolicyEnsemble.default_policies()
-
     config_data = utils.read_yaml_file(config_file)
 
     return PolicyEnsemble.from_dict(config_data)
