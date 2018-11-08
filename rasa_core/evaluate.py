@@ -460,7 +460,7 @@ def collect_story_predictions(
                          report, precision, f1, accuracy,
                          in_training_data_fraction,
                          include_report=False)
-# TODO: return num_stories somewhere
+
     return (StoryEvalution(evaluation_store=story_eval_store,
                            failed_stories=failed,
                            action_list=action_list,
