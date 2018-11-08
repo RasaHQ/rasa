@@ -115,7 +115,6 @@ class CiscoWebexTeamsInput(InputChannel):
                 # Get the POST data sent from Webex Teams
                 json_data = request.json
                 print("WEBHOOK POST RECEIVED:")
-                print(json_data)
 
                 # Create a Webhook object from the JSON data
                 webhook_obj = Webhook(json_data)
