@@ -768,7 +768,7 @@ class ActionExecuted(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        tracker.latest_action_name = self.action_name
+        tracker.set_latest_action_name(self.action_name)
         tracker.clear_followup_action()
 
 
@@ -828,3 +828,135 @@ class AgentUttered(Event):
         except KeyError as e:
             raise ValueError("Failed to parse agent uttered event. "
                              "{}".format(e))
+
+
+class Form(Event):
+    """If `name` is not None: activates a form with `name`
+        else deactivates active form
+    """
+    type_name = "form"
+
+    def __init__(self, name, timestamp=None):
+        self.name = name
+        super(Form, self).__init__(timestamp)
+
+    def __str__(self):
+        return "Form({})".format(self.name)
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        if not isinstance(other, Form):
+            return False
+        else:
+            return self.name == other.name
+
+    def as_story_string(self):
+        props = json.dumps({"name": self.name})
+        return "{name}{props}".format(name=self.type_name, props=props)
+
+    @classmethod
+    def _from_story_string(cls, parameters):
+        """Called to convert a parsed story line into an event."""
+        return [Form(parameters.get("name"),
+                     parameters.get("timestamp"))]
+
+    def as_dict(self):
+        d = super(Form, self).as_dict()
+        d.update({"name": self.name})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.change_form_to(self.name)
+
+
+class FormValidation(Event):
+    """Event added by FormPolicy to notify form action
+        whether or not to validate the user input"""
+
+    type_name = "form_validation"
+
+    def __init__(self,
+                 validate,
+                 timestamp=None):
+        self.validate = validate
+        super(FormValidation, self).__init__(timestamp)
+
+    def __str__(self):
+        return "FormValidation({})".format(self.validate)
+
+    def __hash__(self):
+        return hash(self.validate)
+
+    def __eq__(self, other):
+        return isinstance(other, FormValidation)
+
+    def as_story_string(self):
+        return None
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        return FormValidation(parameters.get("validate"),
+                              parameters.get("timestamp"))
+
+    def as_dict(self):
+        d = super(FormValidation, self).as_dict()
+        d.update({"validate": self.validate})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.set_form_validation(self.validate)
+
+
+class ActionExecutionRejected(Event):
+    """Notify Core that the execution of the action has been rejected"""
+
+    type_name = 'action_execution_rejected'
+
+    def __init__(self,
+                 action_name,
+                 policy=None,
+                 confidence=None,
+                 timestamp=None):
+        self.action_name = action_name
+        self.policy = policy
+        self.confidence = confidence
+        super(ActionExecutionRejected, self).__init__(timestamp)
+
+    def __str__(self):
+        return ("ActionExecutionRejected("
+                "action: {}, policy: {}, confidence: {})"
+                "".format(self.action_name, self.policy, self.confidence))
+
+    def __hash__(self):
+        return hash(self.action_name)
+
+    def __eq__(self, other):
+        if not isinstance(other, ActionExecutionRejected):
+            return False
+        else:
+            return self.action_name == other.action_name
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        return ActionExecutionRejected(parameters.get("name"),
+                                       parameters.get("policy"),
+                                       parameters.get("confidence"),
+                                       parameters.get("timestamp"))
+
+    def as_story_string(self):
+        return None
+
+    def as_dict(self):
+        d = super(ActionExecutionRejected, self).as_dict()
+        d.update({"name": self.action_name,
+                  "policy": self.policy,
+                  "confidence": self.confidence})
+        return d
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+        tracker.reject_action(self.action_name)

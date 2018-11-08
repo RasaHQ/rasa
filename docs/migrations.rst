@@ -7,6 +7,37 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-0-12-0:
+
+0.11.x to 0.12.0
+----------------
+
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the mentioned
+    before updating. Please make sure to
+    **retrain your models when switching to this version**.
+
+Forms
+~~~~~
+
+- Forms were completely reworked, please follow :ref:`slotfilling`
+  for instructions how to use them.
+- ``FormField`` class and its subclasses were removed,
+  overwrite ``FormAction.slot_mapping()`` method to specify the mapping between
+  user input and requested slot in the form
+  utilizing helper methods ``FormAction.from_entity(...)``,
+  ``FormAction.from_intent(...)`` and ``FormAction.from_text(...)``
+- stories for forms need to be written differently,
+  it is recommended to use interactive learning to create form stories
+- functionality of ``FormAction.get_other_slots(...)`` was moved to
+  ``FormAction.extract_other_slots(...)``
+- functionality of ``FormAction.get_requested_slot(...)`` was moved to
+  ``FormAction.extract_requested_slot(...)``
+- overwrite ``FormAction.validate(...)`` method to validate user input against
+  the slot requested by the form
+
 .. _migration-to-0-11-0:
 
 0.10.x to 0.11.0
