@@ -470,7 +470,8 @@ def collect_story_predictions(
 
 def log_failed_stories(failed, out_directory):
     """Takes stories as a list of dicts"""
-
+    if not out_directory:
+        return
     with io.open(os.path.join(out_directory, 'failed_stories.md'), 'w',
                  encoding="utf-8") as f:
         if len(failed) == 0:
