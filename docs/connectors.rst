@@ -106,7 +106,7 @@ Code to create a Messenger-compatible webserver looks like this:
 .. _ciscowebexteams_connector:
 
 Cisco Webex Teams Setup
------------
+-----------------------
 
 You first need to retrieve some credentials, once you have them you can
 **either** attach the input channel running the provided ``rasa_core.run``
