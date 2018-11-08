@@ -73,6 +73,36 @@ def test_facebook_channel():
     finally:
         s.stop()
 
+# USED FOR DOCS - don't rename without changing in the docs
+def test_ciscowebexteams_channel():
+    from rasa_core.channels.ciscowebex import CiscoWebexTeamsInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+    input_channel = CiscoWebexTeamsInput(
+            ciscowebexteams_accesstoken="YOUR_ACCESS_TOKEN",
+            # this is the `bot access token`
+            CiscoWebexTeams_Room="YOUR_WEBEX_ROOM"
+            # the name of your channel to which the bot posts (optional)
+    )
+
+    # set serve_forever=True if you want to keep the server running
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+    # END DOC INCLUDE
+    # the above marker marks the end of the code snipped included
+    # in the docs
+    try:
+        assert s.started
+        routes_list = utils.list_routes(s.application)
+        assert routes_list.get("/webhooks/ciscowebexteams/").startswith(
+                'ciscowebexteams_webhook.health')
+        assert routes_list.get("/webhooks/ciscowebexteams/webhook").startswith(
+                'ciscowebexteams_webhook.webhook')
+    finally:
+        s.stop()
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_slack_channel():
