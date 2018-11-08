@@ -73,9 +73,10 @@ def test_facebook_channel():
     finally:
         s.stop()
 
+
 # USED FOR DOCS - don't rename without changing in the docs
 def test_ciscowebexteams_channel():
-    from rasa_core.channels.ciscowebex import CiscoWebexTeamsInput
+    from rasa_core.channels.ciscowebexteams import CiscoWebexTeamsInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
 
@@ -103,6 +104,7 @@ def test_ciscowebexteams_channel():
                 'ciscowebexteams_webhook.webhook')
     finally:
         s.stop()
+
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_slack_channel():

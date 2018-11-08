@@ -16,9 +16,8 @@ from rasa_core.channels.channel import UserMessage, OutputChannel
 logger = logging.getLogger(__name__)
 
 
-
 class CiscoWebexTeamsBot(OutputChannel):
-    #A Cisco Webex Teams communication channel
+    """A Cisco WebexTeams communication channel"""
 
     @classmethod
     def name(cls):
@@ -29,7 +28,6 @@ class CiscoWebexTeamsBot(OutputChannel):
         self.ciscowebexteams_room = ciscowebexteams_room
         self.api = WebexTeamsAPI(access_token)
 
-
     def send_text_message(self, recipient_id, message):
         recipient = self.ciscowebexteams_room or recipient_id
         for message_part in message.split("\n\n"):
@@ -37,16 +35,15 @@ class CiscoWebexTeamsBot(OutputChannel):
 
     def send_image_url(self, recipient_id, image_url, message=""):
         recipient = self.ciscowebexteams_room or recipient_id
-        return self.api.messages.create(roomId=recipient,files=[image_url])
+        return self.api.messages.create(roomId=recipient, files=[image_url])
 
     def send_file_url(self, recipient_id, file_url, message=""):
         recipient = self.ciscowebexteams_room or recipient_id
-        return self.api.messages.create(roomId=recipient,files=[file_url])
-
+        return self.api.messages.create(roomId=recipient, files=[file_url])
 
 
 class CiscoWebexTeamsInput(InputChannel):
-    """Webex Teams input channel implementation. Based on the HTTPInputChannel."""
+    """WebexTeams input channel. Based on the HTTPInputChannel."""
 
     @classmethod
     def name(cls):
@@ -58,7 +55,7 @@ class CiscoWebexTeamsInput(InputChannel):
             cls.raise_missing_credentials_exception()
 
         return cls(credentials.get("ciscowebexteams_accesstoken"),
-                    credentials.get("ciscowebexteams_room"))
+                   credentials.get("ciscowebexteams_room"))
 
     def __init__(self, ciscowebexteams_accesstoken, ciscowebexteams_room):
         # type: (Text, Optional[Text], Optional[List[Text]]) -> None
@@ -66,7 +63,7 @@ class CiscoWebexTeamsInput(InputChannel):
 
         Needs a couple of settings to properly authenticate and validate
         messages. Details here https://developer.webex.com/authentication.html
-        :param ciscowebexteams_accesstoken: Your Cisco Webex Teams Authentication token.
+        :param ciscowebexteams_accesstoken: Cisco WebexTeams bot access token.
 
         :param ciscowebexteams_room: the string identifier for a room to which
             the bot posts
@@ -78,7 +75,8 @@ class CiscoWebexTeamsInput(InputChannel):
     def process_message(self, on_new_message, text, sender_id):
 
         try:
-            out_channel = CiscoWebexTeamsBot(self.ciscowebexteams_token, self.ciscowebexteams_room)
+            out_channel = CiscoWebexTeamsBot(self.ciscowebexteams_token,
+                                             self.ciscowebexteams_room)
             user_msg = UserMessage(text, out_channel, sender_id,
                                    input_channel=self.name())
             on_new_message(user_msg)
@@ -112,7 +110,7 @@ class CiscoWebexTeamsInput(InputChannel):
                    </html>
                 """)
             elif request.method == 'POST':
-                """Respond to inbound webhook JSON HTTP POST from Webex Teams."""
+                """Respond to inbound webhook HTTP POST from Webex Teams."""
 
                 # Get the POST data sent from Webex Teams
                 json_data = request.json
@@ -133,8 +131,8 @@ class CiscoWebexTeamsInput(InputChannel):
                 print("MESSAGE '{}'\n".format(message.text))
 
                 # This is a VERY IMPORTANT loop prevention control step.
-                # If you respond to all messages...  You will respond to the messages
-                # that the bot posts and thereby create a loop condition.
+                # If you respond to all messages...  You will respond to the
+                # messages that the bot posts and thereby create a loop
                 me = self.api.people.me()
                 if message.personId == me.id:
                     # Message was sent by me (bot); do not respond.
@@ -145,7 +143,6 @@ class CiscoWebexTeamsInput(InputChannel):
                             on_new_message,
                             text=message.text,
                             sender_id=message.personId)
-
 
             return make_response()
 
