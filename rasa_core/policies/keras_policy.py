@@ -34,7 +34,8 @@ class KerasPolicy(Policy):
         # Neural Net and training params
         "rnn_size": 32,
         "epochs": 100,
-        "batch_size": 32
+        "batch_size": 32,
+        "validation_split": 0.1
     }
 
     @staticmethod
@@ -57,7 +58,6 @@ class KerasPolicy(Policy):
         super(KerasPolicy, self).__init__(featurizer)
 
         self._load_params(**kwargs)
-        print(self.epochs)
         self.model = model
         # by default keras uses default tf graph and global tf session
         # we are going to either load them or create them in train(...)
@@ -68,10 +68,13 @@ class KerasPolicy(Policy):
 
     def _load_params(self, **kwargs):
         # type: (Dict[Text, Any]) -> None
-        self.defaults.update(kwargs)
-        self.rnn_size = self.defaults['rnn_size']
-        self.epochs = self.defaults['epochs']
-        self.batch_size = self.defaults['epochs']
+        config = copy.deepcopy(self.defaults)
+        config.update(kwargs)
+
+        self.rnn_size = config['rnn_size']
+        self.epochs = config['epochs']
+        self.batch_size = config['epochs']
+        self.validation_split = config['validation_split']
 
     @property
     def max_len(self):
@@ -145,10 +148,6 @@ class KerasPolicy(Policy):
               **kwargs  # type: Any
               ):
         # type: (...) -> Dict[Text: Any]
-        print(self.defaults)
-        if kwargs:
-            logger.debug("Config is updated with {}".format(kwargs))
-            self._load_params(**kwargs)
 
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
@@ -165,11 +164,10 @@ class KerasPolicy(Policy):
                     self.model = self.model_architecture(shuffled_X.shape[1:],
                                                          shuffled_y.shape[1:])
 
-                validation_split = kwargs.get("validation_split", 0.0)
                 logger.info("Fitting model with {} total samples and a "
                             "validation split of {}".format(
                                 training_data.num_examples(),
-                                validation_split))
+                                self.validation_split))
                 # filter out kwargs that cannot be passed to fit
                 params = self._get_valid_params(self.model.fit, **kwargs)
 

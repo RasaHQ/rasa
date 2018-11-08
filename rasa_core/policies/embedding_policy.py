@@ -910,10 +910,6 @@ class EmbeddingPolicy(Policy):
 
         logger.debug('Started training embedding policy.')
 
-        if kwargs:
-            logger.debug("Config is updated with {}".format(kwargs))
-            self._load_params(**kwargs)
-
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
