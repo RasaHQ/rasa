@@ -153,6 +153,11 @@ For example:
         --d <core model> \
         --endpoints <path to endpoint configuration>.yml
 
+.. note::
+    You can use environment variables within configuration files by specifying them with ``${name of environment variable}``.
+    These placeholders are then replaced by the value of the environment variable.
+
+
 Fetching Models From a Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -240,5 +245,3 @@ Documentation of the server API as
    :path: ../_static/spec/server.yml
 
 .. include:: feedback.inc
-
-
