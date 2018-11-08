@@ -84,7 +84,7 @@ a new model
 #### Json format
 ```
 curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/sample_configs/config_train_server_json.yml' | \
-curl --request POST --header 'content-type: application/x-yml' -d@- --url 'localhost:5000/train?project=test_model'
+curl --request POST --header 'content-type: application/x-yml' --data-binary @- --url 'localhost:5000/train?project=test_model'
 ```
 
 This will train a simple keyword based models (not usable for anything but this demo). For better

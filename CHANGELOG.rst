@@ -11,6 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- environment variables specified with ``${env_variable}`` in a yaml
+  configuration file are now replaced with the value of the environment variable
 
 Changed
 -------
@@ -21,10 +23,11 @@ Changed
 
 Removed
 -------
+- ``/config`` endpoint
 
 Fixed
 -----
-
+- Should loading jieba custom dictionaries only once.
 
 [0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^
