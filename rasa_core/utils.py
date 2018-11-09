@@ -84,9 +84,11 @@ def class_from_module_path(module_path):
     # load the module, will raise ImportError if module cannot be loaded
     from rasa_core.policies.keras_policy import KerasPolicy
     from rasa_core.policies.fallback import FallbackPolicy
-    from rasa_core.policies.memoization import MemoizationPolicy
+    from rasa_core.policies.memoization import (MemoizationPolicy,
+                                                AugmentedMemoizationPolicy)
     from rasa_core.policies.embedding_policy import EmbeddingPolicy
     from rasa_core.policies.form_policy import FormPolicy
+    from rasa_core.policies.sklearn_policy import SklearnPolicy
 
     from rasa_core.featurizers import (FullDialogueTrackerFeaturizer,
                                        MaxHistoryTrackerFeaturizer,

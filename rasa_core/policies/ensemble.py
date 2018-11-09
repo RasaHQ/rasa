@@ -203,20 +203,33 @@ class PolicyEnsemble(object):
 
             policy_name = policy.pop('name')
             if policy.get('featurizer'):
+                # policy can have only 1 featurizer
+                if len(policy['featurizer']) > 1:
+                    raise InvalidPolicyConfig(
+                            "policy can have only 1 featurizer")
                 featurizer_config = policy['featurizer'][0]
                 featurizer_name = featurizer_config.pop('name')
                 featurizer_func = utils.class_from_module_path(featurizer_name)
 
-                state_featurizer_config = featurizer_config.pop(
-                        'state_featurizer')[0]
-                state_featurizer_name = state_featurizer_config.pop('name')
-                state_featurizer_func = utils.class_from_module_path(
-                        state_featurizer_name)
+                if featurizer_config.get('state_featurizer'):
+                    # featurizer can have only 1 state featurizer
+                    if len(featurizer_config['state_featurizer']) > 1:
+                        raise InvalidPolicyConfig(
+                                "featurizer can have only 1 state featurizer")
+                    state_featurizer_config = (
+                            featurizer_config['state_featurizer'][0]
+                    )
+                    state_featurizer_name = state_featurizer_config.pop('name')
+                    state_featurizer_func = utils.class_from_module_path(
+                            state_featurizer_name)
+                    # override featurizer's state_featurizer
+                    # with real state_featurizer class
+                    featurizer_config['state_featurizer'] = (
+                            state_featurizer_func(**state_featurizer_config)
+                    )
 
-                policy['featurizer'] = featurizer_func(
-                        state_featurizer_func(**state_featurizer_config),
-                        **featurizer_config
-                )
+                # override policy's featurizer with real featurizer class
+                policy['featurizer'] = featurizer_func(**featurizer_config)
 
             constr_func = utils.class_from_module_path(policy_name)
             policy_object = constr_func(**policy)
@@ -294,3 +307,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
         return result, best_policy_name
+
+
+class InvalidPolicyConfig(Exception):
+    """Exception that can be raised when policy config is not valid."""
+    pass
