@@ -24,7 +24,8 @@ class SocketBlueprint(Blueprint):
         super(SocketBlueprint, self).__init__(*args, **kwargs)
 
     def register(self, app, options, first_registration=False):
-        app.wsgi_app = socketio.Middleware(self.sio, app.wsgi_app, self.socketio_path)
+        app.wsgi_app = socketio.Middleware(self.sio, app.wsgi_app,
+                                           self.socketio_path)
         super(SocketBlueprint, self).register(app, options, first_registration)
 
 
@@ -124,7 +125,8 @@ class SocketIOInput(InputChannel):
 
     def blueprint(self, on_new_message):
         sio = socketio.Server()
-        socketio_webhook = SocketBlueprint(sio, self.socketio_path, 'socketio_webhook', __name__)
+        socketio_webhook = SocketBlueprint(sio, self.socketio_path,
+                                           'socketio_webhook', __name__)
 
         @socketio_webhook.route("/", methods=['GET'])
         def health():
