@@ -238,7 +238,7 @@ def train_comparison_models(story_filename,
 
 def get_no_of_stories(stories, domain):
 
-    """gets number of stories in a file"""
+    """Get number of stories in a file."""
 
     no_stories = len(StoryFileReader.read_from_folder(stories,
                                                       TemplateDomain.load(
