@@ -154,7 +154,8 @@ class EmbeddingPolicy(Policy):
             rnn_embed=None,  # type: Optional[tf.Tensor]
             attn_embed=None,  # type: Optional[tf.Tensor]
             copy_attn_debug=None,  # type: Optional[tf.Tensor]
-            all_time_masks=None  # type: Optional[tf.Tensor]
+            all_time_masks=None,  # type: Optional[tf.Tensor]
+            **kwargs  # type: Any
     ):
         # type: (...) -> None
         if featurizer:
@@ -171,7 +172,7 @@ class EmbeddingPolicy(Policy):
         except AttributeError:
             self.share_embedding = False
 
-        self._load_params()
+        self._load_params(**kwargs)
 
         # chrono initialization for forget bias
         self.characteristic_time = None
@@ -908,10 +909,6 @@ class EmbeddingPolicy(Policy):
         """Trains the policy on given training trackers."""
 
         logger.debug('Started training embedding policy.')
-
-        if kwargs:
-            logger.debug("Config is updated with {}".format(kwargs))
-            self._load_params(**kwargs)
 
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers,

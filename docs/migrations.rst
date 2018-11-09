@@ -7,6 +7,57 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-0-12-0:
+
+0.11.x to 0.12.0
+----------------
+
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the mentioned
+    before updating. Please make sure to
+    **retrain your models when switching to this version**.
+
+Train script
+~~~~~~~~~~~~
+
+- You **must** pass a policy config flag with ``-c/--config`` now when training
+  a model, see :ref:`policy_file`. There is a default config file ``default_config.yml``
+  in the Github repo
+- Interactive learning is now started with ``python -m rasa_core.train interactive``
+  rather than the ``--interactive`` flag
+- All policy configuration related flags have been removed (--epochs,
+  --max_history, --validation_split, --batch_size, --nlu_threshold, --core_threshold,
+  --fallback_action_name), specify these in the policy config file instead,
+  see :ref:`policy_file`
+
+Evaluation script
+~~~~~~~~~~~~~~~~~
+
+- The ``--output`` flag now takes one argument: the name of the folder any files
+  generated from the script should be written to
+- The ``--failed`` flag was removed, as this is part of the ``--output`` flag now
+
+Forms
+~~~~~
+
+- Forms were completely reworked, please follow :ref:`slotfilling`
+  for instructions how to use them.
+- ``FormField`` class and its subclasses were removed,
+  overwrite ``FormAction.slot_mapping()`` method to specify the mapping between
+  user input and requested slot in the form
+  utilizing helper methods ``FormAction.from_entity(...)``,
+  ``FormAction.from_intent(...)`` and ``FormAction.from_text(...)``
+- stories for forms need to be written differently,
+  it is recommended to use interactive learning to create form stories
+- functionality of ``FormAction.get_other_slots(...)`` was moved to
+  ``FormAction.extract_other_slots(...)``
+- functionality of ``FormAction.get_requested_slot(...)`` was moved to
+  ``FormAction.extract_requested_slot(...)``
+- overwrite ``FormAction.validate(...)`` method to validate user input against
+  the slot requested by the form
+
 .. _migration-to-0-11-0:
 
 0.10.x to 0.11.0
@@ -279,6 +330,3 @@ There have been some API changes to classes and methods:
 
 
 .. include:: feedback.inc
-
-
-

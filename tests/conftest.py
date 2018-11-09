@@ -20,7 +20,7 @@ from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import (
-    MemoizationPolicy, AugmentedMemoizationPolicy)
+    Policy, MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
@@ -39,12 +39,18 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
-DEFAULT_ENDPOINTS_FILE = "data/example_endpoints.yml"
+DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
 
 class CustomSlot(Slot):
     def as_feature(self):
         return [0.5]
+
+
+class ExamplePolicy(Policy):
+
+    def __init__(self, example_arg):
+        pass
 
 
 @pytest.fixture(scope="session")
@@ -99,7 +105,7 @@ def trained_moodbot_path():
             stories_file="examples/moodbot/data/stories.md",
             output_path=MOODBOT_MODEL_PATH,
             interpreter=RegexInterpreter(),
-            max_history=None,
+            policy_config='default_config.yml',
             kwargs=None
     )
 

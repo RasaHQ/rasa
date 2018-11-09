@@ -18,7 +18,7 @@ from rasa_core.conversation import Dialogue
 from rasa_core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
-    BotUttered)
+    BotUttered, Form)
 from rasa_core.slots import Slot
 
 logger = logging.getLogger(__name__)
@@ -104,10 +104,11 @@ class DialogueStateTracker(object):
         # A deterministically scheduled action to be executed next
         self.followup_action = ACTION_LISTEN_NAME  # type: Optional[Text]
         self.latest_action_name = None
-        self.latest_message = None
         # Stores the most recent message sent by the user
+        self.latest_message = None
         self.latest_bot_utterance = None
         self._reset()
+        self.active_form = {}
 
     ###
     # Public tracker interface
@@ -137,7 +138,9 @@ class DialogueStateTracker(object):
             "followup_action": self.followup_action,
             "paused": self.is_paused(),
             "events": evts,
-            "latest_input_channel": self.get_latest_input_channel()
+            "latest_input_channel": self.get_latest_input_channel(),
+            "active_form": self.active_form,
+            "latest_action_name": self.latest_action_name
         }
 
     def past_states(self, domain):
@@ -146,6 +149,40 @@ class DialogueStateTracker(object):
 
         generated_states = domain.states_for_tracker_history(self)
         return deque((frozenset(s.items()) for s in generated_states))
+
+    def change_form_to(self, form_name):
+        # type: (Text) -> None
+        """Activate or deactivate a form"""
+        if form_name is not None:
+            self.active_form = {'name': form_name,
+                                'validate': True,
+                                'rejected': False}
+        else:
+            self.active_form = {}
+
+    def set_form_validation(self, validate):
+        # type: (bool) -> None
+        """Toggle form validation"""
+        self.active_form['validate'] = validate
+
+    def reject_action(self, action_name):
+        # type: (Text) -> None
+        """Notify active form that it was rejected"""
+        if action_name == self.active_form.get('name'):
+            self.active_form['rejected'] = True
+
+    def set_latest_action_name(self, action_name):
+        # type: (Text) -> None
+        """Set latest action name
+            and reset form validation and rejection parameters
+        """
+        self.latest_action_name = action_name
+        if self.active_form.get('name'):
+            # reset form validation if some form is active
+            self.active_form['validate'] = True
+        if action_name == self.active_form.get('name'):
+            # reset form rejection if it was predicted again
+            self.active_form['rejected'] = False
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
@@ -222,12 +259,66 @@ class DialogueStateTracker(object):
 
         tracker = self.init_copy()
 
-        for event in self.applied_events():
-            if isinstance(event, ActionExecuted):
-                yield tracker
+        ignored_trackers = []
+        latest_message = tracker.latest_message
+
+        for i, event in enumerate(self.applied_events()):
+            if isinstance(event, UserUttered):
+                if tracker.active_form.get('name') is None:
+                    # store latest user message before the form
+                    latest_message = event
+
+            elif isinstance(event, Form):
+                # form got either activated or deactivated, so override
+                # tracker's latest message
+                tracker.latest_message = latest_message
+
+            elif isinstance(event, ActionExecuted):
+                # yields the intermediate state
+                if tracker.active_form.get('name') is None:
+                    yield tracker
+
+                elif tracker.active_form.get('rejected'):
+                    for tr in ignored_trackers:
+                        yield tr
+                    ignored_trackers = []
+
+                    if (not tracker.active_form.get('validate') or
+                            event.action_name !=
+                            tracker.active_form.get('name')):
+                        # persist latest user message
+                        # that was rejected by the form
+                        latest_message = tracker.latest_message
+                    else:
+                        # form was called with validation, so
+                        # override tracker's latest message
+                        tracker.latest_message = latest_message
+
+                    yield tracker
+
+                elif event.action_name != tracker.active_form.get('name'):
+                    # it is not known whether the form will be
+                    # successfully executed, so store this tracker for later
+                    tr = tracker.copy()
+                    # form was called with validation, so
+                    # override tracker's latest message
+                    tr.latest_message = latest_message
+                    ignored_trackers.append(tr)
+
+                if event.action_name == tracker.active_form.get('name'):
+                    # the form was successfully executed, so
+                    # remove all stored trackers
+                    ignored_trackers = []
+
             tracker.update(event)
 
-        yield tracker  # yields the final state
+        # yields the final state
+        if tracker.active_form.get('name') is None:
+            yield tracker
+        elif tracker.active_form.get('rejected'):
+            for tr in ignored_trackers:
+                yield tr
+            yield tracker
 
     def applied_events(self):
         # type: () -> List[Event]
@@ -324,7 +415,7 @@ class DialogueStateTracker(object):
         self.events.append(event)
         event.apply_to(self)
 
-    def export_stories(self):
+    def export_stories(self, e2e=False):
         # type: () -> Text
         """Dump the tracker as a story in the Rasa Core story format.
 
@@ -332,7 +423,7 @@ class DialogueStateTracker(object):
         from rasa_core.training.structures import Story
 
         story = Story.from_events(self.applied_events(), self.sender_id)
-        return story.as_story_string(flat=True)
+        return story.as_story_string(flat=True, e2e=e2e)
 
     def export_stories_to_file(self, export_path="debug.md"):
         # type: (Text) -> None
@@ -356,6 +447,7 @@ class DialogueStateTracker(object):
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.followup_action = ACTION_LISTEN_NAME
+        self.active_form = {}
 
     def _reset_slots(self):
         # type: () -> None

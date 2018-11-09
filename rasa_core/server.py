@@ -3,28 +3,24 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from flask import json
 import logging
 import os
 import tempfile
 import zipfile
-from flask import Flask, request, abort, Response, jsonify
+from functools import wraps
+from typing import List, Text, Optional, Union
+
+from flask import Flask, request, abort, Response, jsonify, json
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
-from functools import wraps
-from typing import List
-from typing import Text, Optional
-from typing import Union
 
+import rasa_nlu
 from rasa_core import utils, constants
-from rasa_core.channels import (
-    CollectingOutputChannel)
-from rasa_core.channels import UserMessage
+from rasa_core.channels import CollectingOutputChannel, UserMessage
+from rasa_core.evaluate import run_story_evaluation
 from rasa_core.events import Event
-from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import AvailableEndpoints
 from rasa_core.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -78,7 +74,7 @@ def requires_auth(app, token=None):
             argnames = utils.arguments_of(f)
             try:
                 sender_id_arg_idx = argnames.index("sender_id")
-                if "sender_id" in kwargs:   # try to fetch from kwargs first
+                if "sender_id" in kwargs:  # try to fetch from kwargs first
                     return kwargs["sender_id"]
                 if sender_id_arg_idx < len(args):
                     return args[sender_id_arg_idx]
@@ -111,8 +107,10 @@ def requires_auth(app, token=None):
                 if sufficient_scope(*args, **kwargs):
                     return f(*args, **kwargs)
                 abort(error(
-                    403, "NotAuthorized", "User has insufficient permissions.",
-                    help_url=_docs("/server.html#security-considerations")))
+                        403, "NotAuthorized",
+                        "User has insufficient permissions.",
+                        help_url=_docs(
+                                "/server.html#security-considerations")))
             elif token is None and app.config.get('JWT_ALGORITHM') is None:
                 # authentication is disabled
                 return f(*args, **kwargs)
@@ -209,13 +207,17 @@ def create_app(agent,
     def execute_action(sender_id):
         request_params = request.get_json(force=True)
         action_to_execute = request_params.get("action", None)
+        policy = request_params.get("policy", None)
+        confidence = request_params.get("confidence", None)
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)
 
         try:
             out = CollectingOutputChannel()
             agent.execute_action(sender_id,
                                  action_to_execute,
-                                 out)
+                                 out,
+                                 policy,
+                                 confidence)
 
             # retrieve tracker and set to requested state
             tracker = agent.tracker_store.get_or_create_tracker(sender_id)
@@ -312,7 +314,34 @@ def create_app(agent,
 
         verbosity = event_verbosity_parameter(default_verbosity)
 
-        until_time = request.args.get('until', None)
+        # retrieve tracker and set to requested state
+        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        if not tracker:
+            return error(503,
+                         "NoDomain",
+                         "Could not retrieve tracker. Most likely "
+                         "because there is no domain set on the agent.")
+
+        until_time = utils.float_arg('until')
+        if until_time is not None:
+            tracker = tracker.travel_back_in_time(until_time)
+
+        # dump and return tracker
+
+        state = tracker.current_state(verbosity)
+        return jsonify(state)
+
+    @app.route("/conversations/<sender_id>/story",
+               methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(app, auth_token)
+    def retrieve_story(sender_id):
+        """Get an end-to-end story corresponding to this conversation."""
+
+        if not agent.tracker_store:
+            return error(503, "NoTrackerStore",
+                         "No tracker store available. Make sure to configure "
+                         "a tracker store when starting the server.")
 
         # retrieve tracker and set to requested state
         tracker = agent.tracker_store.get_or_create_tracker(sender_id)
@@ -322,13 +351,13 @@ def create_app(agent,
                          "Could not retrieve tracker. Most likely "
                          "because there is no domain set on the agent.")
 
+        until_time = utils.float_arg('until')
         if until_time is not None:
-            tracker = tracker.travel_back_in_time(float(until_time))
+            tracker = tracker.travel_back_in_time(until_time)
 
         # dump and return tracker
-
-        state = tracker.current_state(verbosity)
-        return jsonify(state)
+        state = tracker.export_stories(e2e=True)
+        return state
 
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
@@ -448,6 +477,23 @@ def create_app(agent,
         logger.debug("Finished loading new agent.")
         return '', 204
 
+    @app.route("/evaluate",
+               methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
+    @cross_origin(origins=cors_origins)
+    def evaluate_stories():
+        """Evaluate stories against the currently loaded model."""
+        tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
+                                                        mode='w+b')
+        use_e2e = utils.bool_arg('e2e', default=False)
+        try:
+            evaluation = run_story_evaluation(tmp_file, agent, use_e2e=use_e2e)
+            return jsonify(evaluation)
+        except ValueError as e:
+            return error(400, "FailedEvaluation",
+                         "Evaluation could not be created. Error: {}"
+                         "".format(e))
+
     @app.route("/domain",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
@@ -539,8 +585,9 @@ def create_app(agent,
                          {"parameter": "", "in": "body"})
 
         policy_ensemble = agent.policy_ensemble
-        probabilities, policy = policy_ensemble.probabilities_using_best_policy(
-                tracker, agent.domain)
+        probabilities, policy = \
+            policy_ensemble.probabilities_using_best_policy(tracker,
+                                                            agent.domain)
 
         scores = [{"action": a, "score": p}
                   for a, p in zip(agent.domain.action_names, probabilities)]
@@ -555,38 +602,6 @@ def create_app(agent,
 
 
 if __name__ == '__main__':
-    # Running as standalone python application
-    from rasa_core import run
-
-    arg_parser = run.create_argument_parser()
-    cmdline_args = arg_parser.parse_args()
-
-    logging.getLogger('werkzeug').setLevel(logging.WARN)
-    logging.getLogger('matplotlib').setLevel(logging.WARN)
-
-    utils.configure_colored_logging(cmdline_args.loglevel)
-    utils.configure_file_logging(cmdline_args.loglevel,
-                                 cmdline_args.log_file)
-
-    logger.warning("USING `rasa_core.server` is deprecated and will be "
-                   "removed in the future. Use `rasa_core.run --enable_api` "
-                   "instead.")
-
-    logger.info("Rasa process starting")
-
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
-    _agent = run.load_agent(cmdline_args.core,
-                            interpreter=_interpreter,
-                            endpoints=_endpoints)
-
-    run.serve_application(_agent,
-                          cmdline_args.connector,
-                          cmdline_args.port,
-                          cmdline_args.credentials,
-                          cmdline_args.cors,
-                          cmdline_args.auth_token,
-                          cmdline_args.enable_api,
-                          cmdline_args.jwt_secret,
-                          cmdline_args.jwt_method)
+    raise RuntimeError("Calling `rasa_core.server` directly is "
+                       "no longer supported. "
+                       "Please use `rasa_core.run --enable_api` instead.")

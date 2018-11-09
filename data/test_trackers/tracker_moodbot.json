@@ -22,6 +22,8 @@
     ]
   },
   "sender_id": "mysender",
+  "latest_action_name": "action_listen",
+  "active_form": {},
   "paused": false,
   "latest_event_time": 1517821726.211042,
   "followup_action": null,

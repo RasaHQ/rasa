@@ -73,6 +73,7 @@ The Rasa Core dialogue engine
    policies
    debugging
    evaluation
+   docker_walkthrough
 
 .. toctree::
    :maxdepth: 1
@@ -97,6 +98,7 @@ The Rasa Core dialogue engine
    :caption: Developer Documentation
 
    migrations
+   tracker_stores
    brokers
    docker
    changelog

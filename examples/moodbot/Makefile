@@ -11,7 +11,7 @@ train-nlu:
 	       --data ./data/nlu.md --path models/ --project nlu
 
 train-core:
-	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300
+	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue -c ../../default_config.yml
 
 run-fb:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials credentials.yml
@@ -32,4 +32,4 @@ evaluate-nlu:
 	python -m rasa_nlu.evaluate  --model models/nlu/current --data ./data/nlu.md
 
 visualize:
-	python -m rasa_core.visualize -s data/stories.md -d domain.yml -o story_graph.png
+	python -m rasa_core.visualize -s data/stories.md -d domain.yml -o story_graph.html

@@ -99,7 +99,7 @@ paths:
                       Minimum version this Core is
                       able to load models from
               example:
-                version": 0.12.0
+                version: 0.12.0
                 minimum_compatible_version: 0.12.0
   /status:
     get:
@@ -213,6 +213,40 @@ paths:
                   Should be one of ALL, AFTER_RESTART, APPLIED, NONE
                 reason: "InvalidParameter"
                 code: 400
+        403:
+          $ref: '#/components/responses/403Permissions'
+        503:
+          description: Tracker store is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                version: "0.12.0"
+                status: "failure"
+                message: >-
+                  No tracker store available.
+                reason: "NoTrackerStore"
+                code: 503
+
+  /conversations/{sender_id}/story:
+    get:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Story
+      summary: Retrieve an end-to-end story corresponding to a conversation
+      description: >-
+        The story represents the whole conversation, in end-to-end
+        format. This can be posted to the /evaluate endpoint and used
+        as a test.
+      operationId: getStory
+      parameters:
+      - $ref: '#/components/parameters/senderId'
+      responses:
+        200:
+          $ref: '#/components/responses/200Story'
         403:
           $ref: '#/components/responses/403Permissions'
         503:
@@ -541,6 +575,46 @@ paths:
           $ref: '#/components/responses/400Events'
         500:
           $ref: '#/components/responses/500Action'
+
+  /evaluate:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Evaluate stories
+      description: >-
+        Evaluates one or multiple stories against the currently loaded model.
+      operationId: evaluateStories
+      parameters:
+      - $ref: '#/components/parameters/e2e'
+      requestBody:
+        required: true
+        content:
+          text/markdown:
+            schema:
+              type: string
+            example: >-
+              ## story_00055028
+              * greet
+               - utter_ask_howcanhelp
+              * inform{"cuisine": "indian", "people": "two", "price": "moderate"}
+               - utter_on_it
+               - utter_ask_location
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+              examples:
+                PredictResult:
+                  $ref: '#/components/examples/EvaluationResult'
+        400:
+          $ref: '#/components/responses/400Evaluation'
+
   /predict:
     post:
       security:
@@ -587,8 +661,10 @@ paths:
               examples:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
-        400:
-          $ref: '#/components/responses/400Events'
+        403:
+          $ref: '#/components/responses/403Permissions'
+        500:
+          $ref: '#/components/responses/500Action'
 
   /domain:
     get:
@@ -684,6 +760,14 @@ components:
           - APPLIED
           - AFTER_RESTART
           - NONE
+    e2e:
+      in: path
+      name: e2e
+      description: Perform an end-to-end evaluation on the posted stories
+      schema:
+        type: boolean
+        default: false
+      required: false
 
   requestBodies:
     Event:
@@ -813,6 +897,34 @@ components:
         policy: "policy_2_KerasPolicy"
         tracker:
           <<: *tracker-example
+    EvaluationResult:
+      value:
+        accuracy: 0.9
+        f1: 0.9333333333333333
+        in_training_data_fraction: 0.8571428571428571
+        precision: 1.0
+        is_end_to_end_evaluation: true
+        actions:
+          - action: utter_ask_howcanhelp
+            confidence: 1.0
+            policy: policy_0_MemoizationPolicy
+            predicted: utter_ask_howcanhelp
+          - action: action_listen
+            confidence: 0.7885686478768559
+            policy: policy_1_RestaurantPolicy
+            predicted: utter_ask_numpeople
+        report: >-
+          # classification report
+                                 precision    recall  f1-score   support
+                  action_listen       1.00      1.00      1.00         3
+                          greet       1.00      1.00      1.00         1
+                         inform       1.00      1.00      1.00         2
+           utter_ask_howcanhelp       1.00      1.00      1.00         1
+             utter_ask_location       1.00      1.00      1.00         1
+            utter_ask_numpeople       0.00      0.00      0.00         0
+                    utter_on_it       1.00      0.50      0.67         2
+
+                    avg / total       1.00      0.90      0.93        10
 
   responses:
     200Tracker:
@@ -824,6 +936,20 @@ components:
           examples:
             Tracker:
               $ref: '#/components/examples/Tracker'
+
+    200Story:
+      description: Success
+      content:
+        text/markdown:
+          example: >-
+            ## story_00055028
+
+            * greet: hello
+             - utter_ask_howcanhelp
+            * inform: I'm looking for a [moderately priced](price:moderate) 
+            [Indian](cuisine) restaurant for [two](people) people
+             - utter_on_it
+             - utter_ask_location
 
     500Action:
       description: Action Exception
@@ -851,6 +977,20 @@ components:
             message: >-
               Supplied events are not valid.
             reason: "InvalidParameter"
+            code: 400
+
+    400Evaluation:
+      description: Failed Evaluation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Evaluation could not be created.
+            reason: "FailedEvaluation"
             code: 400
 
     403Permissions:
@@ -1190,3 +1330,55 @@ components:
             Policy which predicted the most likely action
         tracker:
           $ref: '#/components/schemas/Tracker'
+
+    EvaluationResult:
+      type: object
+      properties:
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+                description: Name of the actual action
+              predicted:
+                type: string
+                description: Name of the predicted action
+              policy:
+                type: string
+                description: Machine-learning policy used in the prediction
+              confidence:
+                type: string
+                description: Confidence score of the prediction
+          description: >-
+            Accuracy of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+        is_end_to_end_evaluation:
+          type: bool
+          description: True if evaluation is end-to-end, false otherwise
+        precision:
+          type: number
+          description: >-
+            Precision of the classification, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+        f1:
+          type: number
+          description: >-
+            F1 score of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+        accuracy:
+          type: number
+          description: >-
+            Accuracy of the classification,
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
+        in_training_data_fraction:
+          type: number
+          description: >-
+            Fraction of stories that are present in the training data of the
+            model loaded at evaluation time.
+        report:
+          type: string
+          description: >-
+            Sklearn classifcation report, see
+            http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html

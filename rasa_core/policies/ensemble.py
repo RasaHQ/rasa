@@ -17,7 +17,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
-from rasa_core.events import SlotSet, ActionExecuted
+from rasa_core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies.fallback import FallbackPolicy
@@ -193,6 +193,64 @@ class PolicyEnsemble(object):
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
 
+    @classmethod
+    def from_dict(cls, dictionary):
+        # type: (Dict[Text, Any]) -> List[Policy]
+
+        policies = []
+
+        for policy in dictionary.get('policies', []):
+
+            policy_name = policy.pop('name')
+            if policy.get('featurizer'):
+                featurizer_func, featurizer_config = \
+                                cls.get_featurizer_from_dict(policy)
+
+                if featurizer_config.get('state_featurizer'):
+                    state_featurizer_func, state_featurizer_config = \
+                                cls.get_featurizer_from_dict(featurizer_config)
+
+                    # override featurizer's state_featurizer
+                    # with real state_featurizer class
+                    featurizer_config['state_featurizer'] = (
+                            state_featurizer_func(**state_featurizer_config)
+                    )
+
+                # override policy's featurizer with real featurizer class
+                policy['featurizer'] = featurizer_func(**featurizer_config)
+
+            constr_func = utils.class_from_module_path(policy_name)
+            policy_object = constr_func(**policy)
+
+            policies.append(policy_object)
+
+        return policies
+
+    def get_featurizer_from_dict(self, policy):
+        # policy can have only 1 featurizer
+        if len(policy['featurizer']) > 1:
+            raise InvalidPolicyConfig(
+                    "policy can have only 1 featurizer")
+        featurizer_config = policy['featurizer'][0]
+        featurizer_name = featurizer_config.pop('name')
+        featurizer_func = utils.class_from_module_path(featurizer_name)
+
+        return featurizer_func, featurizer_config
+
+    def get_state_featurizer_from_dict(self, featurizer_config):
+        # featurizer can have only 1 state featurizer
+        if len(featurizer_config['state_featurizer']) > 1:
+            raise InvalidPolicyConfig(
+                    "featurizer can have only 1 state featurizer")
+        state_featurizer_config = (
+                featurizer_config['state_featurizer'][0]
+        )
+        state_featurizer_name = state_featurizer_config.pop('name')
+        state_featurizer_func = utils.class_from_module_path(
+                state_featurizer_name)
+
+        return state_featurizer_func, state_featurizer_config
+
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
 
@@ -215,8 +273,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         result = None
         max_confidence = -1
         best_policy_name = None
+
         for i, p in enumerate(self.policies):
             probabilities = p.predict_action_probabilities(tracker, domain)
+            if isinstance(tracker.events[-1], ActionExecutionRejected):
+                probabilities[domain.index_for_action(
+                                    tracker.events[-1].action_name)] = 0.0
             confidence = np.max(probabilities)
             if confidence > max_confidence:
                 max_confidence = confidence
@@ -258,3 +320,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
         return result, best_policy_name
+
+
+class InvalidPolicyConfig(Exception):
+    """Exception that can be raised when policy config is not valid."""
+    pass
