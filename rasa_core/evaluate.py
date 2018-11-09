@@ -469,7 +469,7 @@ def collect_story_predictions(
 
 
 def log_failed_stories(failed, out_directory):
-    """Takes stories as a list of dicts"""
+    """Take stories as a list of dicts."""
     if not out_directory:
         return
     with io.open(os.path.join(out_directory, 'failed_stories.md'), 'w',
@@ -604,7 +604,7 @@ def run_comparison_evaluation(models, stories, output):
 
 
 def plot_curve(output, no_stories, ax=None, **kwargs):
-    """ plots the results from run_comparison_evaluation"""
+    """Plot the results from run_comparison_evaluation."""
     import matplotlib.pyplot as plt
 
     ax = ax or plt.gca()
@@ -628,7 +628,7 @@ def plot_curve(output, no_stories, ax=None, **kwargs):
     ax.legend(loc=4)
     ax.set_xlabel("Number of stories present during training")
     ax.set_ylabel("Number of correct test stories")
-    plt.savefig(os.path.join(output, 'comparison_graph.pdf'), format='pdf')
+    plt.savefig(os.path.join(output, 'model_comparison_graph.pdf'), format='pdf')
     plt.show()
 
 
