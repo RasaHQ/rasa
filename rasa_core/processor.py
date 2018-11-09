@@ -18,14 +18,19 @@ from typing import Text
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME)
+    ACTION_RESTART_NAME,
+    ActionExecutionRejection)
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.channels import UserMessage
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import ReminderScheduled, Event
 from rasa_core.events import SlotSet
-from rasa_core.events import UserUttered, ActionExecuted, BotUttered
+from rasa_core.events import (
+    UserUttered,
+    ActionExecuted,
+    BotUttered,
+    ActionExecutionRejected)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
@@ -107,6 +112,7 @@ class MessageProcessor(object):
         return {
             "scores": scores,
             "policy": policy,
+            "confidence": np.max(probabilities),
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART)
         }
 
@@ -128,15 +134,22 @@ class MessageProcessor(object):
                            "'{}'.".format(message.sender_id))
         return tracker
 
-    def execute_action(self, sender_id, action_name, dispatcher):
-        # type: (Text, Text, Dispatcher) -> Optional[DialogueStateTracker]
+    def execute_action(self,
+                       sender_id,  # type: Text
+                       action_name,  # type: Text
+                       dispatcher,  # type: Dispatcher
+                       policy,  # type: Text
+                       confidence  # type: float
+                       ):
+        # type: (...) -> Optional[DialogueStateTracker]
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(sender_id)
         if tracker:
             action = self._get_action(action_name)
-            self._run_action(action, tracker, dispatcher)
+            self._run_action(action, tracker, dispatcher, policy,
+                             confidence)
 
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -336,6 +349,11 @@ class MessageProcessor(object):
         # the tracker state after an action has been taken
         try:
             events = action.run(dispatcher, tracker, self.domain)
+        except ActionExecutionRejection:
+            events = [ActionExecutionRejected(action.name(),
+                                              policy, confidence)]
+            tracker.update(events[0])
+            return self.should_predict_another_action(action.name(), events)
         except Exception as e:
             logger.error("Encountered an exception while running action '{}'. "
                          "Bot will continue, but the actions events are lost. "
@@ -363,17 +381,21 @@ class MessageProcessor(object):
             if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
                 if s and s.has_features():
-                    logger.warning(
-                            "Action '{0}' set a slot type '{1}' that "
-                            "it never set during the training. This "
-                            "can throw of the prediction. Make sure to "
-                            "include training examples in your stories "
-                            "for the different types of slots this "
-                            "action can return. Remember: you need to "
-                            "set the slots manually in the stories by "
-                            "adding '- slot{{\"{1}\": {2}}}' "
-                            "after the action."
-                            "".format(action_name, e.key, json.dumps(e.value)))
+                    if e.key == 'requested_slot' and tracker.active_form:
+                        pass
+                    else:
+                        logger.warning(
+                                "Action '{0}' set a slot type '{1}' that "
+                                "it never set during the training. This "
+                                "can throw of the prediction. Make sure to "
+                                "include training examples in your stories "
+                                "for the different types of slots this "
+                                "action can return. Remember: you need to "
+                                "set the slots manually in the stories by "
+                                "adding '- slot{{\"{1}\": {2}}}' "
+                                "after the action."
+                                "".format(action_name, e.key,
+                                          json.dumps(e.value)))
 
     @staticmethod
     def log_bot_utterances_on_tracker(tracker, dispatcher):

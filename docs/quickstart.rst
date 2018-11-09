@@ -324,7 +324,7 @@ Let's create some intent examples in a file called ``nlu.md``:
    - awful
    - terrible
    - not very good
-   - extremly sad
+   - extremely sad
    - so sad
    """
    %store nlu_md > nlu.md
