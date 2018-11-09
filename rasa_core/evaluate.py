@@ -572,7 +572,7 @@ def plot_story_evaluation(test_y, predictions,
 
 def run_comparison_evaluation(models, stories, output):
 
-    """Evaluates multiple trained models on a test set"""
+    """Evaluate multiple trained models on a test set."""
 
     num_correct = defaultdict(list)
 
