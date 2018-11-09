@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import tempfile
+import argparse
 from builtins import input, range, str
 from hashlib import sha1
 from random import Random
@@ -421,6 +422,12 @@ def read_file(filename, encoding="utf-8"):
         return f.read()
 
 
+def read_json_file(filename):
+    """Read json from a file"""
+    with io.open(filename) as f:
+        return json.load(f)
+
+
 def list_routes(app):
     """List all available routes of a flask web server."""
     from six.moves.urllib.parse import unquote
@@ -757,3 +764,25 @@ class EndpointConfig(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+def set_default_subparser(parser,
+                          default_subparser):
+    """default subparser selection. Call after setup, just before parse_args()
+
+    parser: the name of the parser you're making changes to
+    default_subparser: the name of the subparser to call by default"""
+    subparser_found = False
+    for arg in sys.argv[1:]:
+        if arg in ['-h', '--help']:  # global help if no subparser
+            break
+    else:
+        for x in parser._subparsers._actions:
+            if not isinstance(x, argparse._SubParsersAction):
+                continue
+            for sp_name in x._name_parser_map.keys():
+                if sp_name in sys.argv[1:]:
+                    subparser_found = True
+        if not subparser_found:
+            # insert default in first position before all other arguments
+            sys.argv.insert(1, default_subparser)

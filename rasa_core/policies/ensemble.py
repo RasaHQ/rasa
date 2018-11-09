@@ -203,25 +203,13 @@ class PolicyEnsemble(object):
 
             policy_name = policy.pop('name')
             if policy.get('featurizer'):
-                # policy can have only 1 featurizer
-                if len(policy['featurizer']) > 1:
-                    raise InvalidPolicyConfig(
-                            "policy can have only 1 featurizer")
-                featurizer_config = policy['featurizer'][0]
-                featurizer_name = featurizer_config.pop('name')
-                featurizer_func = utils.class_from_module_path(featurizer_name)
+                featurizer_func, featurizer_config = \
+                                cls.get_featurizer_from_dict(policy)
 
                 if featurizer_config.get('state_featurizer'):
-                    # featurizer can have only 1 state featurizer
-                    if len(featurizer_config['state_featurizer']) > 1:
-                        raise InvalidPolicyConfig(
-                                "featurizer can have only 1 state featurizer")
-                    state_featurizer_config = (
-                            featurizer_config['state_featurizer'][0]
-                    )
-                    state_featurizer_name = state_featurizer_config.pop('name')
-                    state_featurizer_func = utils.class_from_module_path(
-                            state_featurizer_name)
+                    state_featurizer_func, state_featurizer_config = \
+                                cls.get_featurizer_from_dict(featurizer_config)
+
                     # override featurizer's state_featurizer
                     # with real state_featurizer class
                     featurizer_config['state_featurizer'] = (
@@ -237,6 +225,31 @@ class PolicyEnsemble(object):
             policies.append(policy_object)
 
         return policies
+
+    def get_featurizer_from_dict(self, policy):
+        # policy can have only 1 featurizer
+        if len(policy['featurizer']) > 1:
+            raise InvalidPolicyConfig(
+                    "policy can have only 1 featurizer")
+        featurizer_config = policy['featurizer'][0]
+        featurizer_name = featurizer_config.pop('name')
+        featurizer_func = utils.class_from_module_path(featurizer_name)
+
+        return featurizer_func, featurizer_config
+
+    def get_state_featurizer_from_dict(self, featurizer_config):
+        # featurizer can have only 1 state featurizer
+        if len(featurizer_config['state_featurizer']) > 1:
+            raise InvalidPolicyConfig(
+                    "featurizer can have only 1 state featurizer")
+        state_featurizer_config = (
+                featurizer_config['state_featurizer'][0]
+        )
+        state_featurizer_name = state_featurizer_config.pop('name')
+        state_featurizer_func = utils.class_from_module_path(
+                state_featurizer_name)
+
+        return state_featurizer_func, state_featurizer_config
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None

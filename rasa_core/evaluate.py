@@ -571,7 +571,7 @@ def plot_story_evaluation(test_y, predictions,
 
 
 def run_comparison_evaluation(models, stories, output):
-
+    # type: (Text, Text, Text) -> None
     """Evaluates multiple trained models on a test set"""
 
     num_correct = defaultdict(list)
@@ -599,8 +599,8 @@ def run_comparison_evaluation(models, stories, output):
         for k, v in num_correct_run.items():
             num_correct[k].append(v)
 
-    with io.open(os.path.join(output, 'results.json'), 'w') as f:
-        json.dump(num_correct, f)
+    utils.dump_obj_as_json_to_file(os.path.join(output, 'results.json'),
+                                   num_correct)
 
 
 def plot_curve(output, no_stories, ax=None, **kwargs):
@@ -610,8 +610,7 @@ def plot_curve(output, no_stories, ax=None, **kwargs):
     ax = ax or plt.gca()
 
     # load results from file
-    with io.open(os.path.join(output, 'results.json')) as f:
-        data = json.load(f)
+    data = utils.read_json_file(os.path.join(output, 'results.json'))
     x = no_stories
 
     # compute mean of all the runs for keras/embed policies

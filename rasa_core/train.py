@@ -21,6 +21,7 @@ from rasa_core.run import AvailableEndpoints
 from rasa_core.training import interactive
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.training.dsl import StoryFileReader
+from rasa_core.utils import set_default_subparser
 logger = logging.getLogger(__name__)
 
 
@@ -204,9 +205,8 @@ def train_comparison_models(story_filename,
                             runs=None,
                             dump_stories=False,
                             kwargs=None):
-
-    """Trains either a KerasPolicy model or an EmbeddingPolicy, excluding a
-    certain percentage of a story file"""
+    """Train multiple models for comparison of policies"""
+    
     for r in range(cmdline_args.runs):
         logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
         for i in exclusion_percentages:
@@ -246,10 +246,97 @@ def get_no_of_stories(stories, domain):
     return no_stories
 
 
+def do_default_training(cmdline_args, stories, additional_arguments):
+    if not cmdline_args.out:
+        raise ValueError("you must provide a path where the model "
+                         "will be saved using -o / --out")
+    if (isinstance(cmdline_args.config, list) and
+            len(cmdline_args.config) > 1):
+        raise ValueError("You can only pass one config file at a time")
+
+    train_dialogue_model(domain_file=cmdline_args.domain,
+                         stories_file=stories,
+                         output_path=cmdline_args.out,
+                         dump_stories=cmdline_args.dump_stories,
+                         policy_config=cmdline_args.config[0],
+                         kwargs=additional_arguments)
+
+
+def do_compare_training(cmdline_args, stories, additional_arguments):
+    if not cmdline_args.out:
+        raise ValueError("you must provide a path where the model "
+                         "will be saved using -o / --out")
+
+    train_comparison_models(cmdline_args.stories,
+                            cmdline_args.domain,
+                            cmdline_args.out,
+                            cmdline_args.percentages,
+                            cmdline_args.config,
+                            cmdline_args.runs,
+                            cmdline_args.dump_stories,
+                            additional_arguments)
+
+    no_stories = get_no_of_stories(cmdline_args.stories,
+                                   cmdline_args.domain)
+
+    # store the list of the number of stories present at each exclusion
+    # percentage
+    story_range = [no_stories - round((x/100.0) * no_stories) for x in
+                   cmdline_args.percentages]
+
+    pickle.dump(story_range,
+                io.open(os.path.join(cmdline_args.out, 'num_stories.p'),
+                        'wb'))
+
+
+def do_interactive_learning(cmdline_args, stories, additional_arguments):
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
+    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                     _endpoints.nlu)
+    if (isinstance(cmdline_args.config, list) and
+            len(cmdline_args.config) > 1):
+        raise ValueError("You can only pass one config file at a time")
+    if cmdline_args.core and cmdline_args.finetune:
+        raise ValueError("--core can only be used without --finetune flag.")
+    elif cmdline_args.core:
+        logger.info("loading a pre-trained model. "
+                    "all training-related parameters will be ignored")
+
+        _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+        _tracker_store = TrackerStore.find_tracker_store(
+                                            None,
+                                            _endpoints.tracker_store,
+                                            _broker)
+        _agent = Agent.load(cmdline_args.core,
+                            interpreter=_interpreter,
+                            generator=_endpoints.nlg,
+                            tracker_store=_tracker_store,
+                            action_endpoint=_endpoints.action)
+    else:
+        if not cmdline_args.out:
+            raise ValueError("you must provide a path where the model "
+                             "will be saved using -o / --out")
+
+        _agent = train_dialogue_model(cmdline_args.domain,
+                                      stories,
+                                      cmdline_args.out,
+                                      _interpreter,
+                                      _endpoints,
+                                      cmdline_args.dump_stories,
+                                      cmdline_args.config[0],
+                                      None,
+                                      additional_arguments)
+    interactive.run_interactive_learning(
+            _agent, stories,
+            finetune=cmdline_args.finetune,
+            skip_visualization=cmdline_args.skip_visualization)
+
+
 if __name__ == '__main__':
 
     # Running as standalone python application
     arg_parser = create_argument_parser()
+    set_default_subparser(arg_parser, 'default')
     cmdline_args = arg_parser.parse_args()
     if not cmdline_args.mode:
         raise ValueError("You must specify the mode you want training to run "
@@ -264,84 +351,10 @@ if __name__ == '__main__':
         stories = cmdline_args.stories
 
     if cmdline_args.mode == 'default':
-        if not cmdline_args.out:
-            raise ValueError("you must provide a path where the model "
-                             "will be saved using -o / --out")
-        if (isinstance(cmdline_args.config, list) and
-                len(cmdline_args.config) > 1):
-            raise ValueError("You can only pass one config file at a time")
-
-        _agent = train_dialogue_model(domain_file=cmdline_args.domain,
-                                      stories_file=stories,
-                                      output_path=cmdline_args.out,
-                                      dump_stories=cmdline_args.dump_stories,
-                                      policy_config=cmdline_args.config[0],
-                                      kwargs=additional_arguments)
+        do_default_training(cmdline_args, stories, additional_arguments)
 
     elif cmdline_args.mode == 'interactive':
-        _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-        _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                         _endpoints.nlu)
-        if (isinstance(cmdline_args.config, list) and
-                len(cmdline_args.config) > 1):
-            raise ValueError("You can only pass one config file at a time")
-        if cmdline_args.core and cmdline_args.finetune:
-            raise ValueError("--core can only be used without --finetune flag.")
-        elif cmdline_args.core:
-            logger.info("loading a pre-trained model. "
-                        "all training-related parameters will be ignored")
-
-            _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
-            _tracker_store = TrackerStore.find_tracker_store(
-                                                None,
-                                                _endpoints.tracker_store,
-                                                _broker)
-            _agent = Agent.load(cmdline_args.core,
-                                interpreter=_interpreter,
-                                generator=_endpoints.nlg,
-                                tracker_store=_tracker_store,
-                                action_endpoint=_endpoints.action)
-        else:
-            if not cmdline_args.out:
-                raise ValueError("you must provide a path where the model "
-                                 "will be saved using -o / --out")
-
-            _agent = train_dialogue_model(cmdline_args.domain,
-                                          stories,
-                                          cmdline_args.out,
-                                          _interpreter,
-                                          _endpoints,
-                                          cmdline_args.dump_stories,
-                                          cmdline_args.config[0],
-                                          None,
-                                          additional_arguments)
-        interactive.run_interactive_learning(
-                _agent, stories,
-                finetune=cmdline_args.finetune,
-                skip_visualization=cmdline_args.skip_visualization)
+        do_interactive_learning(cmdline_args, stories, additional_arguments)
 
     elif cmdline_args.mode == 'compare':
-        if not cmdline_args.out:
-            raise ValueError("you must provide a path where the model "
-                             "will be saved using -o / --out")
-
-        train_comparison_models(cmdline_args.stories,
-                                cmdline_args.domain,
-                                cmdline_args.out,
-                                cmdline_args.percentages,
-                                cmdline_args.config,
-                                cmdline_args.runs,
-                                cmdline_args.dump_stories,
-                                additional_arguments)
-
-        no_stories = get_no_of_stories(cmdline_args.stories,
-                                       cmdline_args.domain)
-
-        # store the list of the number of stories present at each exclusion
-        # percentage
-        story_range = [no_stories - round((x/100.0) * no_stories) for x in
-                       cmdline_args.percentages]
-
-        pickle.dump(story_range,
-                    io.open(os.path.join(cmdline_args.out, 'num_stories.p'),
-                            'wb'))
+        do_compare_training(cmdline_args, stories, additional_arguments)
