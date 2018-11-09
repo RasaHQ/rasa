@@ -28,7 +28,8 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import SimplePolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.utils import AvailableEndpoints, pad_list_to_size
+from rasa_core.utils import (AvailableEndpoints, pad_list_to_size,
+                             set_default_subparser)
 
 from rasa_nlu import utils as nlu_utils
 from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
@@ -636,6 +637,7 @@ def plot_curve(output, no_stories, ax=None, **kwargs):
 if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
+    set_default_subparser(arg_parser, 'default')
     cmdline_args = arg_parser.parse_args()
 
     logging.basicConfig(level=cmdline_args.loglevel)
