@@ -26,7 +26,7 @@ Train script
   a model, see :ref:`policy_file`. There is a default config file ``default_config.yml``
   in the Github repo
 - Interactive learning is now started with ``python -m rasa_core.train interactive``
-  rather than the `--interactive` flag
+  rather than the ``--interactive`` flag
 - All policy configuration related flags have been removed (--epochs,
   --max_history, --validation_split, --batch_size, --nlu_threshold, --core_threshold,
   --fallback_action_name), specify these in the policy config file instead,

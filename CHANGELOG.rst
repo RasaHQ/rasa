@@ -13,7 +13,6 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
-- added train/eval scripts to compare policies
 - openapi documentation of server API
 - NLU data learned through interactive learning will now be stored in a
   separate markdown-format file (any previous NLU data is merged)
@@ -53,6 +52,7 @@ Added
 - add ``Form`` and ``FormValidation`` events
 - add ``REQUESTED_SLOT`` constant
 - add ability to read ``action_listen`` from stories
+- added train/eval scripts to compare policies
 
 Changed
 -------
