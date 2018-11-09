@@ -604,7 +604,7 @@ def run_comparison_evaluation(models, stories, output):
 
 
 def plot_curve(output, no_stories, ax=None, **kwargs):
-    """ plots the results from run_comparison_evaluation"""
+    """Plot the results from run_comparison_evaluation."""
     import matplotlib.pyplot as plt
 
     ax = ax or plt.gca()
