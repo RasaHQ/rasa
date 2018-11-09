@@ -19,6 +19,26 @@ how you can migrate from one version to another.
     before updating. Please make sure to
     **retrain your models when switching to this version**.
 
+Train script
+~~~~~~~~~~~~
+
+- You **must** pass a policy config flag with ``-c/--config`` now when training
+  a model, see :ref:`policy_file`. There is a default config file ``default_config.yml``
+  in the Github repo
+- Interactive learning is now started with ``python -m rasa_core.train interactive``
+  rather than the ``--interactive`` flag
+- All policy configuration related flags have been removed (--epochs,
+  --max_history, --validation_split, --batch_size, --nlu_threshold, --core_threshold,
+  --fallback_action_name), specify these in the policy config file instead,
+  see :ref:`policy_file`
+
+Evaluation script
+~~~~~~~~~~~~~~~~~
+
+- The ``--output`` flag now takes one argument: the name of the folder any files
+  generated from the script should be written to
+- The ``--failed`` flag was removed, as this is part of the ``--output`` flag now
+
 Forms
 ~~~~~
 
@@ -310,6 +330,3 @@ There have been some API changes to classes and methods:
 
 
 .. include:: feedback.inc
-
-
-

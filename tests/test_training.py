@@ -49,17 +49,19 @@ def test_story_visualization_with_merging(default_domain):
 def test_training_script(tmpdir):
     train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
                          tmpdir.strpath,
+                         policy_config='data/test_config/max_hist_config.yml',
                          interpreter=RegexInterpreter(),
                          kwargs={})
     assert True
 
 
 def test_training_script_without_max_history_set(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                         tmpdir.strpath,
-                         interpreter=RegexInterpreter(),
-                         max_history=None,
-                         kwargs={})
+    train_dialogue_model(
+            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+            tmpdir.strpath,
+            interpreter=RegexInterpreter(),
+            policy_config='data/test_config/no_max_hist_config.yml',
+            kwargs={})
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
@@ -71,11 +73,10 @@ def test_training_script_without_max_history_set(tmpdir):
 
 
 def test_training_script_with_max_history_set(tmpdir):
-    max_history = 3
     train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
                          tmpdir.strpath,
                          interpreter=RegexInterpreter(),
-                         max_history=max_history,
+                         policy_config='data/test_config/max_hist_config.yml',
                          kwargs={})
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
@@ -83,7 +84,7 @@ def test_training_script_with_max_history_set(tmpdir):
             if type(policy) == FormPolicy:
                 assert policy.featurizer.max_history == 2
             else:
-                assert policy.featurizer.max_history == max_history
+                assert policy.featurizer.max_history == 5
 
 
 def test_training_script_with_restart_stories(tmpdir):
@@ -91,5 +92,6 @@ def test_training_script_with_restart_stories(tmpdir):
                          "data/test_stories/stories_restart.md",
                          tmpdir.strpath,
                          interpreter=RegexInterpreter(),
+                         policy_config='data/test_config/max_hist_config.yml',
                          kwargs={})
     assert True

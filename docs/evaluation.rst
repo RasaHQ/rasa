@@ -20,21 +20,21 @@ by using the evaluate script:
 .. code-block:: bash
 
     $ python -m rasa_core.evaluate -d models/dialogue \
-      -s test_stories.md -o matrix.pdf --failed failed_stories.md
+      -s test_stories.md -o results
 
 
-This will print the failed stories to ``failed_stories.md``.
+This will print the failed stories to ``results/failed_stories.md``.
 We count any story as `failed` if at least one of the actions
 was predicted incorrectly.
 
 In addition, this will save a confusion matrix to a file called
-``matrix.pdf``. The confusion matrix shows, for each action in your
-domain, how often that action was predicted, and how often an
+``results/story_confmat.pdf``. The confusion matrix shows, for each action in 
+your domain, how often that action was predicted, and how often an
 incorrect action was predicted instead.
 
 The full list of options for the script is:
 
-.. program-output:: python -m rasa_core.evaluate -h
+.. program-output:: python -m rasa_core.evaluate default -h
 
 .. _end_to_end_evaluation:
 
@@ -77,7 +77,7 @@ the full end-to-end evaluation command is this:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.evaluate -d models/dialogue --nlu models/nlu/current \
+  $ python -m rasa_core.evaluate default -d models/dialogue --nlu models/nlu/current \
     -s e2e_stories.md --e2e
 
 .. note::
@@ -98,14 +98,40 @@ your bot, so you don't just want to throw some away to use as a test set.
 
 Rasa Core has some scripts to help you choose and fine-tune your policy.
 Once you are happy with it, you can then train your final policy on your
-full data set. To do this, split your training data into multiple files
-in a single directory. You can then use the ``train_paper`` script to
-train multiple policies on the same data. You can choose one of the
-files to be partially excluded. This means that Rasa Core will be
-trained multiple times, with 0, 5, 25, 50, 70, 90, 95, and 100% of
-the stories in that file removed from the training data. By evaluating
-on the full set of stories, you can measure how well Rasa Core is
-predicting the held-out stories.
+full data set. To do this, you first have to train models for your different
+policies. Create two (or more) policy config files of the policies you want to
+compare (containing only one policy each), and then use the ``compare`` mode of
+the train script to train your models:
+
+.. code-block:: bash
+
+  $ python -m rasa_core.train compare -c policy_config1.yml policy_config2.yml \
+    -d domain.yml -s stories_folder -o comparison_models --runs 3 --percentages \
+    0 5 25 50 70 90 95
+
+For each policy configuration provided, Rasa Core will be trained multiple times
+with 0, 5, 25, 50, 70 and 95% of your training stories excluded from the training
+data. This is done for multiple runs, to ensure consistent results.
+
+Once this script has finished, you can now use the evaluate script in compare
+mode to evaluate the models you just trained:
+
+.. code-block:: bash
+
+  $ python -m rasa_core.evaluate compare -s stories_folder -d comparison_models \
+    -o comparison_results
+
+This will evaluate each of the models on the training set, and plot some graphs
+to show you which policy is best.  By evaluating on the full set of stories, you
+can measure how well Rasa Core is predicting the held-out stories.
+
+If you're not sure which policies to compare, we'd recommend trying out the
+``EmbeddingPolicy`` and the ``KerasPolicy`` to see which one works better for
+you.
+
+.. note::
+    This training process can take a long time, so we'd suggest letting it run
+    somewhere in the background where it can't be interrupted
 
 
 Evaluating stories over http
@@ -129,5 +155,3 @@ you may do so by adding the ``e2e=true`` query parameter:
   $ curl --data-binary @eval_stories.md "localhost:5005/evaluate?e2e=true" | python -m json.tool
 
 .. include:: feedback.inc
-
-

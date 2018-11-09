@@ -105,7 +105,7 @@ def trained_moodbot_path():
             stories_file="examples/moodbot/data/stories.md",
             output_path=MOODBOT_MODEL_PATH,
             interpreter=RegexInterpreter(),
-            max_history=None,
+            policy_config='default_config.yml',
             kwargs=None
     )
 

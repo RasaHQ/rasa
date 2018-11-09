@@ -14,6 +14,11 @@ from typing import List, Optional, Any, Text, Dict
 
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
+import os
+import json
+import numpy as np
+import pickle
+from collections import defaultdict
 
 from rasa_core import training
 from rasa_core import utils
@@ -23,8 +28,12 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import SimplePolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.utils import AvailableEndpoints, pad_list_to_size
+from rasa_core.utils import (AvailableEndpoints, pad_list_to_size,
+                             set_default_subparser)
+
+from rasa_nlu import utils as nlu_utils
 from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
+from rasa_core.events import md_format_message
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +50,24 @@ def create_argument_parser():
 
     parser = argparse.ArgumentParser(
             description='evaluates a dialogue model')
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    add_args_to_parser(parent_parser)
+    utils.add_logging_option_arguments(parent_parser)
+    subparsers = parser.add_subparsers(help='mode', dest='mode')
+    subparsers.add_parser('default',
+                          help='default mode: evaluate a dialogue'
+                               ' model',
+                               parents=[parent_parser])
+    subparsers.add_parser('compare',
+                          help='compare mode: evaluate multiple'
+                               ' dialogue models to compare '
+                               'policies',
+                               parents=[parent_parser])
+
+    return parser
+
+
+def add_args_to_parser(parser):
     parser.add_argument(
             '-s', '--stories',
             type=str,
@@ -52,9 +79,8 @@ def create_argument_parser():
             help="maximum number of stories to test on")
     parser.add_argument(
             '-d', '--core',
-            required=True,
             type=str,
-            help="core model to run with the server")
+            help="core model directory to evaluate")
     parser.add_argument(
             '-u', '--nlu',
             type=str,
@@ -62,21 +88,14 @@ def create_argument_parser():
     parser.add_argument(
             '-o', '--output',
             type=str,
-            nargs="?",
-            const="story_confmat.pdf",
-            help="output path for the created evaluation plot. If not "
-                 "specified, no plot will be generated.")
+            default="results",
+            help="output path for the any files created from the evaluation")
     parser.add_argument(
             '--e2e', '--end-to-end',
             action='store_true',
             help="Run an end-to-end evaluation for combined action and "
                  "intent prediction. Requires a story file in end-to-end "
                  "format.")
-    parser.add_argument(
-            '--failed',
-            type=str,
-            default="failed_stories.md",
-            help="output path for the failed stories")
     parser.add_argument(
             '--endpoints',
             default=None,
@@ -88,7 +107,6 @@ def create_argument_parser():
                  "is thrown. This can be used to validate stories during "
                  "tests, e.g. on travis.")
 
-    utils.add_logging_option_arguments(parser)
     return parser
 
 
@@ -238,12 +256,12 @@ class WronglyClassifiedUserUtterance(UserUttered):
                                                              input_channel)
 
     def as_story_string(self):
-        correct_message = _md_format_message(self.text,
-                                             self.intent,
-                                             self.entities)
-        predicted_message = _md_format_message(self.text,
-                                               self.predicted_intent,
-                                               self.predicted_entities)
+        correct_message = md_format_message(self.text,
+                                            self.intent,
+                                            self.entities)
+        predicted_message = md_format_message(self.text,
+                                              self.predicted_intent,
+                                              self.predicted_entities)
         return ("{}: {}   <!-- predicted: {}: {} -->"
                 "").format(self.intent.get("name"),
                            correct_message,
@@ -409,9 +427,10 @@ def collect_story_predictions(
     story_eval_store = EvaluationStore()
     failed = []
     correct_dialogues = []
+    num_stories = len(completed_trackers)
 
     logger.info("Evaluating {} stories\n"
-                "Progress:".format(len(completed_trackers)))
+                "Progress:".format(num_stories))
 
     action_list = []
 
@@ -443,19 +462,19 @@ def collect_story_predictions(
                          in_training_data_fraction,
                          include_report=False)
 
-    return StoryEvalution(evaluation_store=story_eval_store,
-                          failed_stories=failed,
-                          action_list=action_list,
-                          in_training_data_fraction=in_training_data_fraction)
+    return (StoryEvalution(evaluation_store=story_eval_store,
+                           failed_stories=failed,
+                           action_list=action_list,
+                           in_training_data_fraction=in_training_data_fraction),
+            num_stories)
 
 
-def log_failed_stories(failed, failed_output):
-    """Takes stories as a list of dicts"""
-
-    if not failed_output:
+def log_failed_stories(failed, out_directory):
+    """Take stories as a list of dicts."""
+    if not out_directory:
         return
-
-    with io.open(failed_output, 'w', encoding="utf-8") as f:
+    with io.open(os.path.join(out_directory, 'failed_stories.md'), 'w',
+                 encoding="utf-8") as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
         else:
@@ -466,8 +485,7 @@ def log_failed_stories(failed, failed_output):
 
 def run_story_evaluation(resource_name, agent,
                          max_stories=None,
-                         out_file_stories=None,
-                         out_file_plot=None,
+                         out_directory=None,
                          fail_on_prediction_errors=False,
                          use_e2e=False):
     """Run the evaluation of the stories, optionally plots the results."""
@@ -475,9 +493,9 @@ def run_story_evaluation(resource_name, agent,
     completed_trackers = _generate_trackers(resource_name, agent,
                                             max_stories, use_e2e)
 
-    story_evaluation = collect_story_predictions(completed_trackers, agent,
-                                                 fail_on_prediction_errors,
-                                                 use_e2e)
+    story_evaluation, _ = collect_story_predictions(completed_trackers, agent,
+                                                    fail_on_prediction_errors,
+                                                    use_e2e)
 
     evaluation_store = story_evaluation.evaluation_store
 
@@ -488,14 +506,14 @@ def run_story_evaluation(resource_name, agent,
                 evaluation_store.serialise_predictions()
         )
 
-    if out_file_plot:
+    if out_directory:
         plot_story_evaluation(evaluation_store.action_targets,
                               evaluation_store.action_predictions,
                               report, precision, f1, accuracy,
                               story_evaluation.in_training_data_fraction,
-                              out_file_plot)
+                              out_directory)
 
-    log_failed_stories(story_evaluation.failed_stories, out_file_stories)
+    log_failed_stories(story_evaluation.failed_stories, out_directory)
 
     return {
         "report": report,
@@ -530,7 +548,7 @@ def log_evaluation_table(golds, name,
 def plot_story_evaluation(test_y, predictions,
                           report, precision, f1, accuracy,
                           in_training_data_fraction,
-                          out_file):
+                          out_directory):
     """Plot the results of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
@@ -549,29 +567,109 @@ def plot_story_evaluation(test_y, predictions,
 
     fig = plt.gcf()
     fig.set_size_inches(int(20), int(20))
-    fig.savefig(out_file, bbox_inches='tight')
+    fig.savefig(os.path.join(out_directory, "story_confmat.pdf"),
+                bbox_inches='tight')
+
+
+def run_comparison_evaluation(models, stories, output):
+    # type: (Text, Text, Text) -> None
+    """Evaluates multiple trained models on a test set"""
+
+    num_correct = defaultdict(list)
+
+    for run in nlu_utils.list_subdirectories(models):
+        num_correct_run = defaultdict(list)
+
+        for model in sorted(nlu_utils.list_subdirectories(run)):
+            logger.info("Evaluating model {}".format(model))
+
+            agent = Agent.load(model)
+
+            completed_trackers = _generate_trackers(stories, agent)
+
+            story_eval_store, no_of_stories = \
+                collect_story_predictions(completed_trackers,
+                                          agent)
+
+            failed_stories = story_eval_store.failed_stories
+            policy_name = ''.join([i for i in os.path.basename(model) if not
+                                   i.isdigit()])
+            num_correct_run[policy_name].append(no_of_stories -
+                                                len(failed_stories))
+
+        for k, v in num_correct_run.items():
+            num_correct[k].append(v)
+
+    utils.dump_obj_as_json_to_file(os.path.join(output, 'results.json'),
+                                   num_correct)
+
+
+def plot_curve(output, no_stories, ax=None, **kwargs):
+    """Plot the results from run_comparison_evaluation."""
+    import matplotlib.pyplot as plt
+
+    ax = ax or plt.gca()
+
+    # load results from file
+    data = utils.read_json_file(os.path.join(output, 'results.json'))
+    x = no_stories
+
+    # compute mean of all the runs for keras/embed policies
+    for label in data.keys():
+        if len(data[label]) == 0:
+            continue
+        mean = np.mean(data[label], axis=0)
+        std = np.std(data[label], axis=0)
+        ax.plot(x, mean, label=label, marker='.')
+        ax.fill_between(x,
+                        [m-s for m, s in zip(mean, std)],
+                        [m+s for m, s in zip(mean, std)],
+                        color='#6b2def',
+                        alpha=0.2)
+    ax.legend(loc=4)
+    ax.set_xlabel("Number of stories present during training")
+    ax.set_ylabel("Number of correct test stories")
+    plt.savefig(os.path.join(output, 'model_comparison_graph.pdf'),
+                format='pdf')
+    plt.show()
 
 
 if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
+    set_default_subparser(arg_parser, 'default')
     cmdline_args = arg_parser.parse_args()
 
     logging.basicConfig(level=cmdline_args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
+    if cmdline_args.output:
+        nlu_utils.create_dir(cmdline_args.output)
 
-    _agent = Agent.load(cmdline_args.core,
-                        interpreter=_interpreter)
+    if not cmdline_args.core:
+        raise ValueError("you must provide a core model directory to evaluate "
+                         "using -d / --core")
+    if cmdline_args.mode == 'default':
 
-    run_story_evaluation(cmdline_args.stories,
-                         _agent,
-                         cmdline_args.max_stories,
-                         cmdline_args.failed,
-                         cmdline_args.output,
-                         cmdline_args.fail_on_prediction_errors,
-                         cmdline_args.e2e)
+        _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+                                                         _endpoints.nlu)
+
+        _agent = Agent.load(cmdline_args.core,
+                            interpreter=_interpreter)
+        run_story_evaluation(cmdline_args.stories,
+                             _agent,
+                             cmdline_args.max_stories,
+                             cmdline_args.output,
+                             cmdline_args.fail_on_prediction_errors,
+                             cmdline_args.e2e)
+
+    elif cmdline_args.mode == 'compare':
+        run_comparison_evaluation(cmdline_args.core, cmdline_args.stories,
+                                  cmdline_args.output)
+
+        no_stories = pickle.load(io.open(os.path.join(cmdline_args.core,
+                                                      'num_stories.p'), 'rb'))
+
+        plot_curve(cmdline_args.output, no_stories)
 
     logger.info("Finished evaluation")

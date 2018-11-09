@@ -13,6 +13,7 @@ import os
 import re
 import sys
 import tempfile
+import argparse
 from builtins import input, range, str
 from hashlib import sha1
 from random import Random
@@ -84,8 +85,16 @@ def class_from_module_path(module_path):
     # load the module, will raise ImportError if module cannot be loaded
     from rasa_core.policies.keras_policy import KerasPolicy
     from rasa_core.policies.fallback import FallbackPolicy
-    from rasa_core.policies.memoization import MemoizationPolicy
+    from rasa_core.policies.memoization import (MemoizationPolicy,
+                                                AugmentedMemoizationPolicy)
+    from rasa_core.policies.embedding_policy import EmbeddingPolicy
+    from rasa_core.policies.form_policy import FormPolicy
+    from rasa_core.policies.sklearn_policy import SklearnPolicy
 
+    from rasa_core.featurizers import (FullDialogueTrackerFeaturizer,
+                                       MaxHistoryTrackerFeaturizer,
+                                       BinarySingleStateFeaturizer,
+                                       LabelTokenizerSingleStateFeaturizer)
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition('.')
         m = importlib.import_module(module_name)
@@ -411,6 +420,12 @@ def read_file(filename, encoding="utf-8"):
     """Read text from a file."""
     with io.open(filename, encoding=encoding) as f:
         return f.read()
+
+
+def read_json_file(filename):
+    """Read json from a file"""
+    with io.open(filename) as f:
+        return json.load(f)
 
 
 def list_routes(app):
@@ -749,3 +764,25 @@ class EndpointConfig(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+def set_default_subparser(parser,
+                          default_subparser):
+    """default subparser selection. Call after setup, just before parse_args()
+
+    parser: the name of the parser you're making changes to
+    default_subparser: the name of the subparser to call by default"""
+    subparser_found = False
+    for arg in sys.argv[1:]:
+        if arg in ['-h', '--help']:  # global help if no subparser
+            break
+    else:
+        for x in parser._subparsers._actions:
+            if not isinstance(x, argparse._SubParsersAction):
+                continue
+            for sp_name in x._name_parser_map.keys():
+                if sp_name in sys.argv[1:]:
+                    subparser_found = True
+        if not subparser_found:
+            # insert default in first position before all other arguments
+            sys.argv.insert(1, default_subparser)
