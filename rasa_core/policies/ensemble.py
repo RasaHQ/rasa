@@ -203,8 +203,22 @@ class PolicyEnsemble(object):
         for policy in dictionary.get('policies', []):
 
             policy_name = policy.pop('name')
-            # if policy.get('featurizer'):
-            #     featurizer_func = utils.class_from_module_path
+            if policy.get('featurizer'):
+                featurizer_config = policy['featurizer'][0]
+                featurizer_name = featurizer_config.pop('name')
+                featurizer_func = utils.class_from_module_path(featurizer_name)
+
+                state_featurizer_config = featurizer_config.pop(
+                        'state_featurizer')[0]
+                state_featurizer_name = state_featurizer_config.pop('name')
+                state_featurizer_func = utils.class_from_module_path(
+                        state_featurizer_name)
+
+                policy['featurizer'] = featurizer_func(
+                        state_featurizer_func(**state_featurizer_config),
+                        **featurizer_config
+                )
+
             constr_func = utils.class_from_module_path(policy_name)
             policy_object = constr_func(**policy)
 
