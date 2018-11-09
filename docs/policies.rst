@@ -142,7 +142,8 @@ For example:
 
 Pass the YAML file's name to the train script using the ``--config``
 argument (or just ``-c``). If no config.yaml is given, the policies
-default to ``[KerasPolicy(), MemoizationPolicy(), FallbackPolicy()]``.
+default to
+``[KerasPolicy(), MemoizationPolicy(), FallbackPolicy(), FormPolicy()]``.
 
 .. note::
 
