@@ -52,6 +52,7 @@ Added
 - add ``Form`` and ``FormValidation`` events
 - add ``REQUESTED_SLOT`` constant
 - add ability to read ``action_listen`` from stories
+- added train/eval scripts to compare policies
 
 Changed
 -------
@@ -65,10 +66,16 @@ Changed
 - forms were completely reworked, see changelog in ``rasa_core_sdk``
 - state featurization if some form is active changed
 - ``Domain`` raises ``InvalidDomain`` exception
+- interactive learning is now started with rasa_core.train interactive
+- passing a policy config file to train a model is now required
+- flags for output of evaluate script have been merged to one flag ``--output``
+  where you provide a folder where any output from the script should be stored
 
 Removed
 -------
 - removed graphviz dependency
+- policy config related flags in training script (see migration guide)
+
 
 Fixed
 -----

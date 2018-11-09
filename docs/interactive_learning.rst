@@ -17,7 +17,7 @@ Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a
 Load up an existing bot
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-We have created some initial stories, and now want to improve our bot 
+We have created some initial stories, and now want to improve our bot
 by providing feedback on mistakes it makes.
 
 Run the following command to start interactive learning:
@@ -27,7 +27,7 @@ Run the following command to start interactive learning:
    python -m rasa_core_sdk.endpoint --actions actions&
 
    python -m rasa_core.train \
-     --interactive -o models/dialogue \
+     interactive -o models/dialogue \
      -d domain.yml -s stories.md \
      --nlu models/current/nlu \
      --endpoints endpoints.yml
@@ -35,7 +35,7 @@ Run the following command to start interactive learning:
 The first command starts the action server (see :ref:`customactions`).
 
 The second command starts the bot in interactive mode.
-In interactive mode, the bot will ask you to confirm every prediction 
+In interactive mode, the bot will ask you to confirm every prediction
 made by NLU and Core before proceeding.
 Here's an example:
 
@@ -62,14 +62,14 @@ Here's an example:
     ? The bot wants to run 'utter_greet', correct?  (Y/n)
 
 
-The chat history and slot values are printed to the screen, which 
-should be all the information your need to decide what the correct 
+The chat history and slot values are printed to the screen, which
+should be all the information your need to decide what the correct
 next action is.
 
 In this case, the bot chose the
 right action (``utter_greet``), so we type ``y``.
 Then we type ``y`` again, because ``action_listen`` is the correct
-action after greeting. We continue this loop, chatting with the bot, 
+action after greeting. We continue this loop, chatting with the bot,
 until the bot chooses the wrong action.
 
 Providing feedback on errors
@@ -138,8 +138,8 @@ reviews!) so we select that action.
 
 Now we can keep talking to the bot for as long as we like to create a longer
 conversation. At any point you can press ``Ctrl-C`` and the bot will
-provide you with exit options. You can write your newly-created stories and NLU 
-data to files. You can also go back a step if you made a mistake when providing 
+provide you with exit options. You can write your newly-created stories and NLU
+data to files. You can also go back a step if you made a mistake when providing
 feedback.
 
 Make sure to combine the dumped stories and NLU examples with your original
@@ -165,20 +165,20 @@ script.
 Interactive Learning with Forms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you're using a FormAction, there are some additional things to keep in mind 
+If you're using a FormAction, there are some additional things to keep in mind
 when using interactive learning.
 
 The ``form:`` prefix
 ~~~~~~~~~~~~~~~~~~~~
 
 The form logic is described by your ``FormAction`` class, and not by the stories.
-The machine learning policies should not have to learn this behavior, and should 
-not get confused if you later change your form action, for example by adding or 
-removing a required slot. 
-When you user interactive learning to generate stories containing a form, 
-the conversation steps handled by the form 
-get a :code:`form:` prefix. This tells Rasa Core to ignore these steps when training 
-your other policies. There is nothing special you have to do here, all of the form's 
+The machine learning policies should not have to learn this behavior, and should
+not get confused if you later change your form action, for example by adding or
+removing a required slot.
+When you user interactive learning to generate stories containing a form,
+the conversation steps handled by the form
+get a :code:`form:` prefix. This tells Rasa Core to ignore these steps when training
+your other policies. There is nothing special you have to do here, all of the form's
 happy paths are still covered by the basic story given in :ref:`section_form_basics`.
 
 Here is an example:
@@ -205,10 +205,10 @@ Here is an example:
 Input validation
 ~~~~~~~~~~~~~~~~
 
-Every time the user responds with something *other* than the requested slot or 
-any of the required slots, 
-you will be asked whether you want the form action to try and extract a slot 
-from the user's message when returning to the form. This is best explained with 
+Every time the user responds with something *other* than the requested slot or
+any of the required slots,
+you will be asked whether you want the form action to try and extract a slot
+from the user's message when returning to the form. This is best explained with
 and example:
 
 .. code-block:: text
@@ -241,7 +241,7 @@ and example:
     ? Should 'restaurant_form' validate user input to fill the slot 'outdoor_seating'?  (Y/n)
 
 Here the user asked to stop the form, and the bot asks the user whether they're sure
-they don't want to continue. The user says they want to continue (the ``/affirm`` intent). 
+they don't want to continue. The user says they want to continue (the ``/affirm`` intent).
 Here ``outdoor_seating`` has a ``from_intent`` slot mapping (mapping
 the ``/affirm`` intent to ``True``), so this user input could be used to fill
 that slot. However, in this case the user is just responding to the
@@ -260,7 +260,7 @@ should not be validated. The bot will then continue to ask for the
 
     **WARNING: FormPolicy predicted no form validation based on previous training
     stories. Make sure to remove contradictory stories from training data**
-    
+
     Once you've removed that story, you can press enter and continue with
     interactive learning
 

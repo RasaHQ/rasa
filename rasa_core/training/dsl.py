@@ -161,7 +161,8 @@ class StoryFileReader(object):
 
     @staticmethod
     def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
-                         template_variables=None, use_e2e=False):
+                         template_variables=None, use_e2e=False,
+                         exclusion_percentage=None):
         """Given a path reads all contained story files."""
 
         story_steps = []
@@ -169,6 +170,14 @@ class StoryFileReader(object):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,
                                                    template_variables, use_e2e)
             story_steps.extend(steps)
+
+            # if exclusion percentage is not 100
+            if exclusion_percentage and exclusion_percentage is not 100:
+                import random
+                idx = int(round(exclusion_percentage/100.0 * len(story_steps)))
+                random.shuffle(story_steps)
+                story_steps = story_steps[:-idx]
+
         return story_steps
 
     @staticmethod

@@ -441,7 +441,8 @@ class Agent(object):
                   augmentation_factor=20,  # type: int
                   tracker_limit=None,  # type: Optional[int]
                   use_story_concatenation=True,  # type: bool
-                  debug_plots=False  # type: bool
+                  debug_plots=False,  # type: bool
+                  exclusion_percentage=None  # type: int
                   ):
         # type: (...) -> List[DialogueStateTracker]
         """Load training data from a resource."""
@@ -478,7 +479,8 @@ class Agent(object):
                                   remove_duplicates, unique_last_num_states,
                                   augmentation_factor,
                                   tracker_limit, use_story_concatenation,
-                                  debug_plots)
+                                  debug_plots,
+                                  exclusion_percentage=exclusion_percentage)
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
