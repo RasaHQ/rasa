@@ -33,7 +33,7 @@ Train script
   see :ref:`policy_file`
 
 Evaluation script
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 - The ``--output`` flag now takes one argument: the name of the folder any files
   generated from the script should be written to
