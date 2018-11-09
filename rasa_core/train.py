@@ -303,7 +303,7 @@ if __name__ == '__main__':
                                 action_endpoint=_endpoints.action)
         else:
             if not cmdline_args.out:
-                raise ValueError("you must provide a path where the model "
+                raise ValueError("You must provide a path where the model "
                                  "will be saved using -o / --out")
 
             _agent = train_dialogue_model(cmdline_args.domain,
