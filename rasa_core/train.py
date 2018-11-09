@@ -206,7 +206,7 @@ def train_comparison_models(story_filename,
                             dump_stories=False,
                             kwargs=None):
     """Train multiple models for comparison of policies"""
-    
+
     for r in range(cmdline_args.runs):
         logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
         for i in exclusion_percentages:
