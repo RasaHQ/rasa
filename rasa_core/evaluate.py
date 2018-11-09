@@ -628,7 +628,8 @@ def plot_curve(output, no_stories, ax=None, **kwargs):
     ax.legend(loc=4)
     ax.set_xlabel("Number of stories present during training")
     ax.set_ylabel("Number of correct test stories")
-    plt.savefig(os.path.join(output, 'model_comparison_graph.pdf'), format='pdf')
+    plt.savefig(os.path.join(output, 'model_comparison_graph.pdf'),
+                format='pdf')
     plt.show()
 
 
