@@ -103,12 +103,6 @@ def add_args_to_parser(parser):
             required=True,
             help="domain specification yaml file")
     parser.add_argument(
-            '--validation_split',
-            type=float,
-            default=0.1,
-            help="Percentage of training samples used for validation, "
-                 "0.1 by default")
-    parser.add_argument(
             '--augmentation',
             type=int,
             default=50,
@@ -194,7 +188,6 @@ def train_dialogue_model(domain_file, stories_file, output_path,
 
 def _additional_arguments(args):
     additional = {
-        "validation_split": args.validation_split,
         "augmentation_factor": args.augmentation,
         "debug_plots": args.debug_plots
     }
@@ -258,6 +251,9 @@ if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
+    if not cmdline_args.mode:
+        raise ValueError("You must specify the mode you want training to run "
+                         "in. The options are: (default|compare|interactive)")
     additional_arguments = _additional_arguments(cmdline_args)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
