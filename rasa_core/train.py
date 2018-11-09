@@ -286,7 +286,9 @@ if __name__ == '__main__':
                 len(cmdline_args.config) > 1):
             raise ValueError("You can only pass one config file at a time")
         if cmdline_args.core and cmdline_args.finetune:
-            raise ValueError("--core can only be used without --finetune flag.")
+            raise ValueError("The flag `--core` to specify a rasa core "
+                             "model can not be used together with "
+                             "the `--finetune` flag.")
         elif cmdline_args.core:
             logger.info("loading a pre-trained model. "
                         "all training-related parameters will be ignored")
