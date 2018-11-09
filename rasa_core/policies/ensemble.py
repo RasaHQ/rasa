@@ -17,7 +17,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import rasa_core
 from rasa_core import utils, training, constants
-from rasa_core.events import SlotSet, ActionExecuted
+from rasa_core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies.fallback import FallbackPolicy
@@ -237,7 +237,7 @@ class PolicyEnsemble(object):
             policies.append(policy_object)
 
         return policies
-    
+
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Any) -> None
 

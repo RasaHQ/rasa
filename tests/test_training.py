@@ -56,11 +56,12 @@ def test_training_script(tmpdir):
 
 
 def test_training_script_without_max_history_set(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                         tmpdir.strpath,
-                         interpreter=RegexInterpreter(),
-                         policy_config='data/test_config/no_max_hist_config.yml',
-                         kwargs={})
+    train_dialogue_model(
+            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+            tmpdir.strpath,
+            interpreter=RegexInterpreter(),
+            policy_config='data/test_config/no_max_hist_config.yml',
+            kwargs={})
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
