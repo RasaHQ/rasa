@@ -10,6 +10,7 @@ from rasa_core import training
 from rasa_core.domain import Domain
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.utils import read_file
+from rasa_core.slots import TextSlot
 from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
@@ -187,3 +188,52 @@ templates:
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
     domain = Domain.from_yaml(domain.as_yaml())
+
+
+def test_merge_yaml_domains():
+    test_yaml_1 = """actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+intents: []
+slots: {}
+templates:
+  utter_greet:
+  - text: hey there!"""
+
+    test_yaml_2 = """actions:
+- utter_greet
+- utter_goodbye
+config:
+  store_entities_as_slots: false
+entities:
+- cuisine
+intents:
+- greet
+slots:
+  cuisine:
+    type: text
+templates:
+  utter_greet:
+  - text: hey you!"""
+
+    domain_1 = Domain.from_yaml(test_yaml_1)
+    domain_2 = Domain.from_yaml(test_yaml_2)
+    domain = domain_1.merge(domain_2)
+    # single attribute should be taken from domain_1
+    assert domain.store_entities_as_slots
+    # conflicts should be taken from domain_1
+    assert domain.templates == {"utter_greet": [{"text": "hey there!"}]}
+    # lists should be deduplicated and merged
+    assert domain.intents == ["greet"]
+    assert domain.entities == ["cuisine"]
+    assert isinstance(domain.slots[0], TextSlot)
+    assert domain.slots[0].name == "cuisine"
+    assert sorted(domain.user_actions) == sorted(["utter_greet", "utter_goodbye"])
+
+    domain = domain_1.merge(domain_2, override=True)
+    # single attribute should be taken from domain_2
+    assert not domain.store_entities_as_slots
+    # conflicts should take value from domain_2
+    assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}

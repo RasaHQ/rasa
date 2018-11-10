@@ -197,20 +197,23 @@ def _additional_arguments(args):
     return {k: v for k, v in additional.items() if v is not None}
 
 
-def train_comparison_models(story_filename,
+def train_comparison_models(stories,
                             domain,
-                            output_path=None,
+                            output_path="",
                             exclusion_percentages=None,
                             policy_configs=None,
-                            runs=None,
+                            runs=1,
                             dump_stories=False,
                             kwargs=None):
     """Train multiple models for comparison of policies"""
 
-    for r in range(cmdline_args.runs):
-        logging.info("Starting run {}/{}".format(r + 1, cmdline_args.runs))
+    exclusion_percentages = exclusion_percentages or []
+    policy_configs = policy_configs or []
+
+    for r in range(runs):
+        logging.info("Starting run {}/{}".format(r + 1, runs))
         for i in exclusion_percentages:
-            current_round = cmdline_args.percentages.index(i) + 1
+            current_round = exclusion_percentages.index(i) + 1
             for policy_config in policy_configs:
                 policies = config.load(policy_config)
                 if len(policies) > 1:
@@ -267,7 +270,7 @@ def do_compare_training(cmdline_args, stories, additional_arguments):
         raise ValueError("you must provide a path where the model "
                          "will be saved using -o / --out")
 
-    train_comparison_models(cmdline_args.stories,
+    train_comparison_models(stories,
                             cmdline_args.domain,
                             cmdline_args.out,
                             cmdline_args.percentages,
@@ -293,6 +296,7 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
+
     if (isinstance(cmdline_args.config, list) and
             len(cmdline_args.config) > 1):
         raise ValueError("You can only pass one config file at a time")
@@ -307,6 +311,7 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
                                             None,
                                             _endpoints.tracker_store,
                                             _broker)
+
         _agent = Agent.load(cmdline_args.core,
                             interpreter=_interpreter,
                             generator=_endpoints.nlg,
@@ -337,24 +342,30 @@ if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
     set_default_subparser(arg_parser, 'default')
-    cmdline_args = arg_parser.parse_args()
-    if not cmdline_args.mode:
+    cmdline_arguments = arg_parser.parse_args()
+    if not cmdline_arguments.mode:
         raise ValueError("You must specify the mode you want training to run "
                          "in. The options are: (default|compare|interactive)")
-    additional_arguments = _additional_arguments(cmdline_args)
+    additional_args = _additional_arguments(cmdline_arguments)
 
-    utils.configure_colored_logging(cmdline_args.loglevel)
+    utils.configure_colored_logging(cmdline_arguments.loglevel)
 
-    if cmdline_args.url:
-        stories = utils.download_file_from_url(cmdline_args.url)
+    if cmdline_arguments.url:
+        training_stories = utils.download_file_from_url(cmdline_arguments.url)
     else:
-        stories = cmdline_args.stories
+        training_stories = cmdline_arguments.stories
 
-    if cmdline_args.mode == 'default':
-        do_default_training(cmdline_args, stories, additional_arguments)
+    if cmdline_arguments.mode == 'default':
+        do_default_training(cmdline_arguments,
+                            training_stories,
+                            additional_args)
 
-    elif cmdline_args.mode == 'interactive':
-        do_interactive_learning(cmdline_args, stories, additional_arguments)
+    elif cmdline_arguments.mode == 'interactive':
+        do_interactive_learning(cmdline_arguments,
+                                training_stories,
+                                additional_args)
 
-    elif cmdline_args.mode == 'compare':
-        do_compare_training(cmdline_args, stories, additional_arguments)
+    elif cmdline_arguments.mode == 'compare':
+        do_compare_training(cmdline_arguments,
+                            training_stories,
+                            additional_args)
