@@ -222,7 +222,7 @@ class EndToEndUserUtterance(UserUttered):
     Mostly used to print the full end-to-end user message in the
     `failed_stories.md` output file."""
 
-    def as_story_string(self):
+    def as_story_string(self, e2e=True):
         return super(EndToEndUserUtterance, self).as_story_string(e2e=True)
 
 
@@ -255,7 +255,8 @@ class WronglyClassifiedUserUtterance(UserUttered):
                                                              timestamp,
                                                              input_channel)
 
-    def as_story_string(self):
+    def as_story_string(self, e2e=True):
+        from rasa_core.events import md_format_message
         correct_message = md_format_message(self.text,
                                             self.intent,
                                             self.entities)
