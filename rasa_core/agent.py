@@ -24,11 +24,11 @@ from rasa_core import training, constants
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
-from rasa_core.domain import Domain, check_domain_sanity
+from rasa_core.domain import Domain, check_domain_sanity, InvalidDomain
 from rasa_core.exceptions import AgentNotReady
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
-from rasa_core.policies import Policy
+from rasa_core.policies import Policy, FormPolicy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
@@ -55,7 +55,6 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
                      tracker_store=None,  # type: Optional[TrackerStore]
                      action_endpoint=None,  # type: Optional[EndpointConfig]
                      model_server=None,  # type: Optional[EndpointConfig]
-                     wait_time_between_pulls=None,  # type: Optional[int]
                      ):
     # type: (...) -> Agent
     """Load a persisted model from a server."""
@@ -65,10 +64,14 @@ def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
                   tracker_store=tracker_store,
                   action_endpoint=action_endpoint)
 
-    if wait_time_between_pulls:
+    wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
+                                                      100)
+    if wait_time_between_pulls is not None and \
+        (isinstance(wait_time_between_pulls, int) or
+         wait_time_between_pulls.isdigit()):
         # continuously pull the model every `wait_time_between_pulls` seconds
         start_model_pulling_in_worker(model_server,
-                                      wait_time_between_pulls,
+                                      int(wait_time_between_pulls),
                                       agent)
     else:
         # just pull the model once
@@ -136,10 +139,11 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
                        "".format(e))
         return None
 
-    if response.status_code == 204:
-        logger.debug("Model server returned 204 status code, indicating "
+    if response.status_code in [204, 304]:
+        logger.debug("Model server returned {} status code, indicating "
                      "that no new model is available. "
-                     "Current fingerprint: {}".format(fingerprint))
+                     "Current fingerprint: {}"
+                     "".format(response.status_code, fingerprint))
         return response.headers.get("ETag")
     elif response.status_code == 404:
         logger.debug("Model server didn't find a model for our request. "
@@ -196,7 +200,14 @@ class Agent(object):
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
+        if self.domain:
+            self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
+        if self._form_policy_not_present():
+            raise InvalidDomain(
+                    "You have defined a form action, but haven't added the "
+                    "FormPolicy to your policy ensemble."
+            )
 
         if not isinstance(interpreter, NaturalLanguageInterpreter):
             if interpreter is not None:
@@ -333,7 +344,9 @@ class Agent(object):
             self,
             sender_id,  # type: Text
             action,  # type: Text
-            output_channel  # type: OutputChannel
+            output_channel,  # type: OutputChannel
+            policy,  # type: Text
+            confidence  # type: float
     ):
         # type: (...) -> DialogueStateTracker
         """Handle a single message."""
@@ -342,7 +355,8 @@ class Agent(object):
         dispatcher = Dispatcher(sender_id,
                                 output_channel,
                                 self.nlg)
-        return processor.execute_action(sender_id, action, dispatcher)
+        return processor.execute_action(sender_id, action, dispatcher, policy,
+                                        confidence)
 
     def handle_text(
             self,
@@ -431,7 +445,8 @@ class Agent(object):
                   augmentation_factor=20,  # type: int
                   tracker_limit=None,  # type: Optional[int]
                   use_story_concatenation=True,  # type: bool
-                  debug_plots=False  # type: bool
+                  debug_plots=False,  # type: bool
+                  exclusion_percentage=None  # type: int
                   ):
         # type: (...) -> List[DialogueStateTracker]
         """Load training data from a resource."""
@@ -468,7 +483,8 @@ class Agent(object):
                                   remove_duplicates, unique_last_num_states,
                                   augmentation_factor,
                                   tracker_limit, use_story_concatenation,
-                                  debug_plots)
+                                  debug_plots,
+                                  exclusion_percentage=exclusion_percentage)
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
@@ -511,8 +527,9 @@ class Agent(object):
 
     def handle_channels(self, channels,
                         http_port=constants.DEFAULT_SERVER_PORT,
-                        serve_forever=True):
-        # type: (List[InputChannel], int, bool) -> WSGIServer
+                        serve_forever=True,
+                        route="/webhooks/"):
+        # type: (List[InputChannel], int, bool, Text) -> WSGIServer
         """Start a webserver attaching the input channels and handling msgs.
 
         If ``serve_forever`` is set to ``True``, this call will be blocking.
@@ -524,7 +541,7 @@ class Agent(object):
         rasa_core.channels.channel.register(channels,
                                             app,
                                             self.handle_message,
-                                            route="/webhooks/")
+                                            route=route)
 
         http_server = WSGIServer(('0.0.0.0', http_port), app)
         http_server.start()
@@ -667,3 +684,12 @@ class Agent(object):
                     "Invalid param `policies`. Passed object is "
                     "of type '{}', but should be policy, an array of "
                     "policies, or a policy ensemble".format(passed_type))
+
+    def _form_policy_not_present(self):
+        # type: () -> bool
+        """Check whether form policy is not present
+            if there is a form action in the domain
+        """
+        return (self.domain and self.domain.form_names and
+                not any(isinstance(p, FormPolicy)
+                        for p in self.policy_ensemble.policies))

@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import sys
-import typing
 
 import io
 import logging
@@ -18,17 +17,13 @@ from PyInquirer import prompt
 from colorclass import Color
 from flask import Flask, send_from_directory, send_file, abort
 from gevent.pywsgi import WSGIServer
-from terminaltables import SingleTable, AsciiTable
-from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable, Union
-
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import (
-    DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL)
+    DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
 from rasa_core.domain import Domain
 from rasa_core.events import Event, ActionExecuted
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
@@ -37,9 +32,13 @@ from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
     visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
 from rasa_core.utils import EndpointConfig
+from terminaltables import SingleTable, AsciiTable
+from threading import Thread
+from typing import Any, Text, Dict, List, Optional, Callable, Union
+
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
-from rasa_nlu.training_data.loading import load_data, _guess_format
+from rasa_nlu.training_data.loading import load_data, guess_format
 from rasa_nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
@@ -111,7 +110,8 @@ def send_message(endpoint,  # type: EndpointConfig
 
     r = endpoint.request(json=payload,
                          method="post",
-                         subpath="/conversations/{}/messages".format(sender_id))
+                         subpath="/conversations/{}/messages"
+                                 "".format(sender_id))
 
     return _response_as_json(r)
 
@@ -150,11 +150,20 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint, sender_id, action_name, is_new=False):
-    # type: (EndpointConfig, Text, Text) -> Dict[Text, Any]
+def send_action(endpoint,  # type: EndpointConfig
+                sender_id,  # type: Text
+                action_name,  # type: Text
+                policy=None,  # type: Optional[Text]
+                confidence=None,  # type: Optional[float]
+                is_new_action=False  # bool
+                ):
+    # type: (...) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
-    payload = {"action": action_name}
+    payload = {"action": action_name,
+               "policy": policy,
+               "confidence": confidence}
+
     subpath = "/conversations/{}/execute".format(sender_id)
 
     try:
@@ -162,8 +171,8 @@ def send_action(endpoint, sender_id, action_name, is_new=False):
                              method="post",
                              subpath=subpath)
         return _response_as_json(r)
-    except requests.exceptions.HTTPError as e:
-        if is_new:
+    except requests.exceptions.HTTPError:
+        if is_new_action:
             logger.warning("You have created a new action: {} "
                            "which was not successfully executed. \n"
                            "If this action does not return any events, "
@@ -172,13 +181,16 @@ def send_action(endpoint, sender_id, action_name, is_new=False):
                            "you are recommended to implement this action "
                            "in your action server and try again."
                            "".format(action_name))
+
             payload = {"event": "action",
                        "name": action_name,
                        "timestamp": None}
+
             subpath = "/conversations/{}/tracker/events".format(sender_id)
             r = endpoint.request(json=payload,
                                  method="post",
                                  subpath=subpath)
+
             return _response_as_json(r)
         else:
             logger.error("failed to execute action!")
@@ -396,7 +408,8 @@ def _request_intent_from_user(latest_message,
 
     Returns the intent dict that has been selected by the user."""
 
-    predictions = latest_message.get("parse_data", {}).get("intent_ranking", [])
+    predictions = latest_message.get("parse_data",
+                                     {}).get("intent_ranking", [])
 
     predicted_intents = {p["name"] for p in predictions}
 
@@ -515,7 +528,8 @@ def _chat_history_table(evts):
 
         elif evt.get("event") != "bot":
             e = Event.from_parameters(evt)
-            bot_column.append(wrap(e.as_story_string(), bot_width(table)))
+            if e.as_story_string():
+                bot_column.append(wrap(e.as_story_string(), bot_width(table)))
 
     if bot_column:
         text = "\n".join(bot_column)
@@ -624,12 +638,12 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     }]
     answers = _ask_questions(questions, sender_id, endpoint)
     action_name = answers["action"]
-    is_new = False
-    if action_name == OTHER_ACTION:
-        is_new = True
+    is_new_action = action_name == OTHER_ACTION
+
+    if is_new_action:
         action_name = _request_free_text_action(sender_id, endpoint)
     print("Thanks! The bot will now run {}.\n".format(action_name))
-    return action_name, is_new
+    return action_name, is_new_action
 
 
 def _request_export_info():
@@ -670,9 +684,9 @@ def _request_export_info():
     if not answers:
         sys.exit()
 
-    return answers["export stories"], \
-        answers["export nlu"], \
-        answers["export domain"]
+    return (answers["export stories"],
+            answers["export nlu"],
+            answers["export domain"])
 
 
 def _split_conversation_at_restarts(evts):
@@ -715,7 +729,7 @@ def _collect_messages(evts):
 
 
 def _collect_actions(evts):
-    # type: (List[Dict[Text, Any]]) -> List[Doct[Text, Any]]
+    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
     """Collect all the actionexecuted events into a list"""
 
     acts = []
@@ -766,10 +780,28 @@ def _write_nlu_to_file(export_nlu_path, evts):
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
     with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
-        if _guess_format(export_nlu_path) in ["md", "unk"]:
+        if guess_format(export_nlu_path) in {"md", "unk"}:
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
+
+
+def _entities_from_messages(messages):
+    """Return all entities that occur in atleast one of the messages."""
+    return list({e["entity"]
+                 for m in messages
+                 for e in m.data.get("entities", [])})
+
+
+def _intents_from_messages(messages):
+    """Return all intents that occur in atleast one of the messages."""
+
+    # set of distinct intents
+    intents = {m.data["intent"]
+               for m in messages
+               if "intent" in m.data}
+
+    return [{i: {"use_entities": True}} for i in intents]
 
 
 def _write_domain_to_file(domain_path, evts, endpoint):
@@ -779,17 +811,13 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     domain = retrieve_domain(endpoint)
     old_domain = Domain.from_dict(domain)
 
-    msgs = _collect_messages(evts)
+    messages = _collect_messages(evts)
     actions = _collect_actions(evts)
 
     new_domain = dict.fromkeys(domain.keys(), {})
-    new_domain["intents"] = [{i: {"use_entities": True}}
-                             for i in set(m.data["intent"]
-                                          for m in msgs)]
-    new_domain["entities"] = list(set([e["entity"]
-                                       for m in msgs
-                                       for e in m.data.get("entities", [])]))
-    new_domain["actions"] = list(set([e["name"] for e in actions]))
+    new_domain["intents"] = _intents_from_messages(messages)
+    new_domain["entities"] = _entities_from_messages(messages)
+    new_domain["actions"] = list({e["name"] for e in actions})
     new_domain = Domain.from_dict(new_domain)
     new_domain = old_domain.merge(new_domain)
 
@@ -812,13 +840,16 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
         action_name = predictions[pred_out].get("action")
+        policy = response.get("policy")
+        confidence = response.get("confidence")
 
         _print_history(sender_id, endpoint)
         _plot_trackers(sender_ids, plot_file, endpoint,
                        unconfirmed=[ActionExecuted(action_name)])
 
-        listen = _validate_action(action_name, predictions,
-                                  endpoint, sender_id, finetune=finetune)
+        listen = _validate_action(action_name, policy, confidence,
+                                  predictions, endpoint, sender_id,
+                                  finetune=finetune)
 
         _plot_trackers(sender_ids, plot_file, endpoint)
 
@@ -846,7 +877,7 @@ def _correct_wrong_action(corrected_action,  # type: Text
                           endpoint,  # type: EndpointConfig
                           sender_id,  # type: Text
                           finetune=False,  # type: bool
-                          is_new=False  # type: bool
+                          is_new_action=False  # type: bool
                           ):
     # type: (...) -> None
     """A wrong action prediction got corrected, update core's tracker."""
@@ -854,14 +885,68 @@ def _correct_wrong_action(corrected_action,  # type: Text
     response = send_action(endpoint,
                            sender_id,
                            corrected_action,
-                           is_new=is_new)
+                           is_new_action=is_new_action)
 
     if finetune:
         send_finetune(endpoint,
                       response.get("tracker", {}).get("events", []))
 
 
+def _form_is_rejected(action_name, tracker):
+    """Check if the form got rejected with the most recent action name."""
+    return (tracker.get('active_form', {}).get('name')
+            and action_name != tracker['active_form']['name']
+            and action_name != ACTION_LISTEN_NAME)
+
+
+def _form_is_restored(action_name, tracker):
+    """Check whether the form is called again after it was rejected."""
+    return (tracker.get('active_form', {}).get('rejected')
+            and tracker.get('latest_action_name') == ACTION_LISTEN_NAME
+            and action_name == tracker.get('active_form', {}).get('name'))
+
+
+def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
+    """Ask a user whether an input for a form should be validated.
+
+    Previous to this call, the active form was chosen after it was rejected."""
+
+    requested_slot = tracker.get("slots", {}).get(REQUESTED_SLOT)
+
+    validation_questions = [{
+        "name": "validation",
+        "type": "confirm",
+        "message": "Should '{}' validate user input to fill "
+                   "the slot '{}'?".format(action_name, requested_slot)
+    }]
+    form_answers = _ask_questions(validation_questions, sender_id, endpoint)
+
+    if not form_answers["validation"]:
+        # notify form action to skip validation
+        send_event(endpoint, sender_id,
+                   {"event": "form_validation", "validate": False})
+
+    elif not tracker.get('active_form', {}).get('validate'):
+        # handle contradiction with learned behaviour
+        warning_questions = [{
+            "name": "warning",
+            "type": "input",
+            "message": "ERROR: FormPolicy predicted no form validation "
+                       "based on previous training stories. "
+                       "Make sure to remove contradictory stories "
+                       "from training data. "
+                       "Otherwise predicting no form validation "
+                       "will not work as expected."
+        }]
+        _ask_questions(warning_questions, sender_id, endpoint)
+        # notify form action to validate an input
+        send_event(endpoint, sender_id,
+                   {"event": "form_validation", "validate": True})
+
+
 def _validate_action(action_name,  # type: Text
+                     policy,  # type: Text
+                     confidence,  # type: float
                      predictions,  # type: List[Dict[Text, Any]]
                      endpoint,  # type: EndpointConfig
                      sender_id,  # type: Text
@@ -881,17 +966,33 @@ def _validate_action(action_name,  # type: Text
         }
     ]
     answers = _ask_questions(questions, sender_id, endpoint)
+
     if not answers["action"]:
-        corrected_action, is_new = _request_action_from_user(
-            predictions,
-            sender_id,
-            endpoint)
-        _correct_wrong_action(corrected_action, endpoint, sender_id,
-                              finetune=finetune, is_new=is_new)
-        return corrected_action == ACTION_LISTEN_NAME
+        action_name, is_new_action = _request_action_from_user(
+                predictions, sender_id, endpoint)
     else:
-        send_action(endpoint, sender_id, action_name)
-        return action_name == ACTION_LISTEN_NAME
+        is_new_action = False
+
+    tracker = retrieve_tracker(endpoint, sender_id,
+                               EventVerbosity.AFTER_RESTART)
+
+    if _form_is_rejected(action_name, tracker):
+        # notify the tracker that form was rejected
+        send_event(endpoint, sender_id,
+                   {"event": "action_execution_rejected",
+                    "name": tracker['active_form']['name']})
+
+    elif _form_is_restored(action_name, tracker):
+        _confirm_form_validation(action_name, tracker, endpoint, sender_id)
+
+    if not answers["action"]:
+        _correct_wrong_action(action_name, endpoint, sender_id,
+                              finetune=finetune,
+                              is_new_action=is_new_action)
+    else:
+        send_action(endpoint, sender_id, action_name, policy, confidence)
+
+    return action_name == ACTION_LISTEN_NAME
 
 
 def _as_md_message(parse_data):

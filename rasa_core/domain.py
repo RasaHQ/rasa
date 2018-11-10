@@ -20,13 +20,20 @@ from typing import Text
 
 from rasa_core import utils
 from rasa_core.actions import Action, action
-from rasa_core.slots import Slot
+from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
+from rasa_core.constants import REQUESTED_SLOT
 
 logger = logging.getLogger(__name__)
 
 PREV_PREFIX = 'prev_'
+ACTIVE_FORM_PREFIX = 'active_form_'
+
+
+class InvalidDomain(Exception):
+    """Exception that can be raised when domain is not valid."""
+    pass
 
 
 def check_domain_sanity(domain):
@@ -67,11 +74,11 @@ def check_domain_sanity(domain):
             duplicate_intents or \
             duplicate_slots or \
             duplicate_entities:
-        raise Exception(get_exception_message([
-            (duplicate_actions, "actions"),
-            (duplicate_intents, "intents"),
-            (duplicate_slots, "slots"),
-            (duplicate_entities, "entities")]))
+        raise InvalidDomain(get_exception_message([
+                (duplicate_actions, "actions"),
+                (duplicate_intents, "intents"),
+                (duplicate_slots, "slots"),
+                (duplicate_entities, "entities")]))
 
 
 class Domain(object):
@@ -107,6 +114,7 @@ class Domain(object):
                 slots,
                 utter_templates,
                 data.get("actions", []),
+                data.get("forms", []),
                 **additional_arguments
         )
 
@@ -169,10 +177,10 @@ class Domain(object):
         try:
             c.validate(raise_exception=True)
         except SchemaError:
-            raise ValueError("Failed to validate your domain yaml. "
-                             "Make sure the file is correct, to do so"
-                             "take a look at the errors logged during "
-                             "validation previous to this exception. ")
+            raise InvalidDomain("Failed to validate your domain yaml. "
+                                "Make sure the file is correct, to do so"
+                                "take a look at the errors logged during "
+                                "validation previous to this exception. ")
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -200,8 +208,8 @@ class Domain(object):
     @staticmethod
     def collect_templates(yml_templates):
         # type: (Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
-        """Go through the templates and make sure they are all in dict format"""
-
+        """Go through the templates and make sure they are all in dict format
+        """
         templates = {}
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
@@ -211,9 +219,9 @@ class Domain(object):
                 if isinstance(t, string_types):
                     validated_variations.append({"text": t})
                 elif "text" not in t:
-                    raise Exception("Utter template '{}' needs to contain"
-                                    "'- text: ' attribute to be a proper"
-                                    "template".format(template_key))
+                    raise InvalidDomain("Utter template '{}' needs to contain"
+                                        "'- text: ' attribute to be a proper"
+                                        "template".format(template_key))
                 else:
                     validated_variations.append(t)
             templates[template_key] = validated_variations
@@ -225,6 +233,7 @@ class Domain(object):
                  slots,  # type: List[Slot]
                  templates,  # type: Dict[Text, Any]
                  action_names,  # type: List[Text]
+                 form_names,  # type: List[Text]
                  store_entities_as_slots=True,  # type: bool
                  restart_intent="restart"  # type: Text
                  ):
@@ -232,19 +241,25 @@ class Domain(object):
 
         self.intent_properties = intent_properties
         self.entities = entities
+        self.form_names = form_names
         self.slots = slots
         self.templates = templates
 
         # only includes custom actions and utterance actions
         self.user_actions = action_names
-        # includes all actions (custom, utterance, and default actions)
+        # includes all actions (custom, utterance, default actions and forms)
         self.action_names = action.combine_user_with_default_actions(
-                action_names)
-
+                action_names) + form_names
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
         action.ensure_action_name_uniqueness(self.action_names)
+
+    @utils.lazyproperty
+    def user_actions_and_forms(self):
+        """Returns combination of user actions and forms"""
+
+        return self.user_actions + self.form_names
 
     @utils.lazyproperty
     def num_actions(self):
@@ -259,6 +274,11 @@ class Domain(object):
 
         return len(self.input_states)
 
+    def add_requested_slot(self):
+        if self.form_names and REQUESTED_SLOT not in [s.name for
+                                                      s in self.slots]:
+            self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
+
     def action_for_name(self, action_name, action_endpoint):
         # type: (Text, Optional[EndpointConfig]) -> Optional[Action]
         """Looks up which action corresponds to this action name."""
@@ -268,7 +288,7 @@ class Domain(object):
 
         return action.action_from_name(action_name,
                                        action_endpoint,
-                                       self.user_actions)
+                                       self.user_actions_and_forms)
 
     def action_for_index(self, index, action_endpoint):
         # type: (int, Optional[EndpointConfig]) -> Optional[Action]
@@ -277,10 +297,11 @@ class Domain(object):
         This method resolves the index to the actions name."""
 
         if self.num_actions <= index or index < 0:
-            raise Exception(
+            raise IndexError(
                     "Can not access action at index {}. "
                     "Domain has {} actions.".format(index, self.num_actions))
-        return self.action_for_name(self.action_names[index], action_endpoint)
+        return self.action_for_name(self.action_names[index],
+                                    action_endpoint)
 
     def actions(self, action_endpoint):
         return [self.action_for_name(name, action_endpoint)
@@ -298,10 +319,11 @@ class Domain(object):
     def _raise_action_not_found_exception(self, action_name):
         action_names = "\n".join(["\t - {}".format(a)
                                   for a in self.action_names])
-        raise Exception(
+        raise NameError(
                 "Can not access action '{}', "
                 "as that name is not a registered action for this domain. "
-                "Available actions are: \n{}".format(action_name, action_names))
+                "Available actions are: \n{}"
+                "".format(action_name, action_names))
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
@@ -345,6 +367,12 @@ class Domain(object):
         return ["entity_{0}".format(e)
                 for e in self.entities]
 
+    # noinspection PyTypeChecker
+    @utils.lazyproperty
+    def form_states(self):
+        # type: () -> List[Text]
+        return ["active_form_{0}".format(f) for f in self.form_names]
+
     def index_of_state(self, state_name):
         # type: (Text) -> Optional[int]
         """Provides the index of a state."""
@@ -366,7 +394,8 @@ class Domain(object):
             self.intent_states + \
             self.entity_states + \
             self.slot_states + \
-            self.prev_action_states
+            self.prev_action_states + \
+            self.form_states
 
     def get_parsing_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
@@ -391,17 +420,18 @@ class Domain(object):
                         slot_id = "slot_{}_{}".format(key, i)
                         state_dict[slot_id] = slot_value
 
-        latest_msg = tracker.latest_message
+        latest_message = tracker.latest_message
 
-        if "intent_ranking" in latest_msg.parse_data:
-            for intent in latest_msg.parse_data["intent_ranking"]:
+        if "intent_ranking" in latest_message.parse_data:
+            for intent in latest_message.parse_data["intent_ranking"]:
                 if intent.get("name"):
                     intent_id = "intent_{}".format(intent["name"])
                     state_dict[intent_id] = intent["confidence"]
 
-        elif latest_msg.intent.get("name"):
-            intent_id = "intent_{}".format(latest_msg.intent["name"])
-            state_dict[intent_id] = latest_msg.intent.get("confidence", 1.0)
+        elif latest_message.intent.get("name"):
+            intent_id = "intent_{}".format(latest_message.intent["name"])
+            state_dict[intent_id] = latest_message.intent.get("confidence",
+                                                              1.0)
 
         return state_dict
 
@@ -426,11 +456,22 @@ class Domain(object):
         else:
             return {}
 
+    @staticmethod
+    def get_active_form(tracker):
+        # type: (DialogueStateTracker) -> Dict[Text, float]
+        """Turns tracker's active form into a state name."""
+        form = tracker.active_form.get('name')
+        if form is not None:
+            return {ACTIVE_FORM_PREFIX + form: 1.0}
+        else:
+            return {}
+
     def get_active_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
         """Return a bag of active states from the tracker state"""
         state_dict = self.get_parsing_states(tracker)
         state_dict.update(self.get_prev_action_states(tracker))
+        state_dict.update(self.get_active_form(tracker))
         return state_dict
 
     def states_for_tracker_history(self, tracker):
@@ -443,15 +484,17 @@ class Domain(object):
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
-                matching_entities = [e['value']
-                                     for e in entities
-                                     if e['entity'] == s.name]
-                if matching_entities:
-                    if s.type_name == 'list':
-                        slot_events.append(SlotSet(s.name, matching_entities))
-                    else:
-                        slot_events.append(SlotSet(s.name,
-                                                   matching_entities[-1]))
+                if s.auto_fill:
+                    matching_entities = [e['value']
+                                         for e in entities
+                                         if e['entity'] == s.name]
+                    if matching_entities:
+                        if s.type_name == 'list':
+                            slot_events.append(SlotSet(s.name,
+                                                       matching_entities))
+                        else:
+                            slot_events.append(SlotSet(s.name,
+                                                       matching_entities[-1]))
             return slot_events
         else:
             return []
@@ -489,7 +532,7 @@ class Domain(object):
         if states != self.input_states:
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
-            raise Exception(
+            raise InvalidDomain(
                     "Domain specification has changed. "
                     "You MUST retrain the policy. " +
                     "Detected mismatch in domain specification. " +
@@ -513,6 +556,7 @@ class Domain(object):
             "slots": self._slot_definitions(),
             "templates": self.templates,
             "actions": self.user_actions,  # class names of the actions
+            "forms": self.form_names
         }
 
     def persist(self, filename):

@@ -39,7 +39,7 @@ END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
-DEFAULT_ENDPOINTS_FILE = "data/example_endpoints.yml"
+DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
 
 class CustomSlot(Slot):
@@ -105,7 +105,7 @@ def trained_moodbot_path():
             stories_file="examples/moodbot/data/stories.md",
             output_path=MOODBOT_MODEL_PATH,
             interpreter=RegexInterpreter(),
-            max_history=None,
+            policy_config='default_config.yml',
             kwargs=None
     )
 

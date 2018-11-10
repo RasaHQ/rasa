@@ -73,6 +73,7 @@ The Rasa Core dialogue engine
    policies
    debugging
    evaluation
+   docker_walkthrough
 
 .. toctree::
    :maxdepth: 1

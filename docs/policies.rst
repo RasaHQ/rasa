@@ -18,7 +18,7 @@ You can run training from the command line like in the :ref:`quickstart`:
 .. code-block:: bash
 
    python -m rasa_core.train -d domain.yml -s data/stories.md \
-     -o models/current/dialogue --epochs 200
+     -o models/current/dialogue -c default_config.yml
 
 Or by creating an agent and running the train method yourself:
 
@@ -66,8 +66,8 @@ One important hyperparameter for Rasa Core policies is the ``max_history``.
 This controls how much dialogue history the model looks at to decide which
 action to take next.
 
-You can set the ``max_history`` using the training script's ``--history``
-flag or by passing it to your policy's ``Featurizer``.
+You can set the ``max_history`` by passing it to your policy's ``Featurizer``
+in the policy configuration yaml file.
 
 .. note::
 
@@ -102,7 +102,7 @@ slot. Slot information is always available for every featurizer.
 Training Script Options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. program-output:: python -m rasa_core.train -h
+.. program-output:: python -m rasa_core.train default -h
 
 
 
@@ -122,7 +122,8 @@ highest confidence will be used.
 Configuring polices using a configuration file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can set the policies you would like the Core model to use in a YAML file.
+If you are using the training script, you must set the policies you would like
+the Core model to use in a YAML file.
 
 For example:
 
@@ -130,7 +131,11 @@ For example:
 
   policies:
     - name: "KerasPolicy"
-      max_history: 5
+      featurizer:
+      - name: MaxHistoryTrackerFeaturizer
+        max_history: 5
+        state_featurizer:
+          - name: BinarySingleStateFeaturizer
     - name: "MemoizationPolicy"
       max_history: 5
     - name: "FallbackPolicy"
@@ -141,8 +146,8 @@ For example:
       arg1: "..."
 
 Pass the YAML file's name to the train script using the ``--config``
-argument (or just ``-c``). If no config.yaml is given, the policies
-default to ``[KerasPolicy(), MemoizationPolicy(), FallbackPolicy()]``.
+argument (or just ``-c``). There is a default config file you can use in the
+github repository called ``default_config.yml``
 
 .. note::
 
@@ -376,5 +381,3 @@ It is recommended to use
 
 
 .. include:: feedback.inc
-
-	

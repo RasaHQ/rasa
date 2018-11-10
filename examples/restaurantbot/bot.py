@@ -25,14 +25,12 @@ def train_dialogue(domain_file="restaurant_domain.yml",
                    training_data_file="data/babi_stories.md"):
     agent = Agent(domain_file,
                   policies=[MemoizationPolicy(max_history=3),
-                            RestaurantPolicy()])
+                            RestaurantPolicy(batch_size=100, epochs=400,
+                                             validation_split=0.2)])
 
     training_data = agent.load_data(training_data_file)
     agent.train(
-            training_data,
-            epochs=400,
-            batch_size=100,
-            validation_split=0.2
+            training_data
     )
 
     agent.persist(model_path)
@@ -44,7 +42,7 @@ def train_nlu():
     from rasa_nlu import config
     from rasa_nlu.model import Trainer
 
-    training_data = load_data('data/franken_data.json')
+    training_data = load_data('data/nlu_data.md')
     trainer = Trainer(config.load("nlu_model_config.yml"))
     trainer.train(training_data)
     model_directory = trainer.persist('models/nlu/',
