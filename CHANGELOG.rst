@@ -41,6 +41,7 @@ Added
 - environment variables specified with ``${env_variable}`` in a yaml
   configuration file are now replaced with the value of the environment variable
 - detailed documentation on how to deploy Rasa with Docker
+- make ``wait_time_between_pulls`` configurable through endpoint configuration
 - add ``FormPolicy`` to handle form action prediction
 - add ``ActionExecutionRejection`` exception and ``ActionExecutionRejected`` event
 - add default action ``ActionDeactivateForm()``

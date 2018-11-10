@@ -210,16 +210,14 @@ def serve_application(initial_agent,
 
 
 def load_agent(core_model, interpreter, endpoints,
-               tracker_store=None,
-               wait_time_between_pulls=100):
+               tracker_store=None):
     if endpoints.model:
         return agent.load_from_server(
                 interpreter=interpreter,
                 generator=endpoints.nlg,
                 action_endpoint=endpoints.action,
                 model_server=endpoints.model,
-                tracker_store=tracker_store,
-                wait_time_between_pulls=wait_time_between_pulls
+                tracker_store=tracker_store
         )
     else:
         return Agent.load(core_model,
