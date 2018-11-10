@@ -523,7 +523,7 @@ class Agent(object):
                         http_port=constants.DEFAULT_SERVER_PORT,
                         serve_forever=True,
                         route="/webhooks/"):
-        # type: (List[InputChannel], int, bool, text) -> WSGIServer
+        # type: (List[InputChannel], int, bool, Text) -> WSGIServer
         """Start a webserver attaching the input channels and handling msgs.
 
         If ``serve_forever`` is set to ``True``, this call will be blocking.
