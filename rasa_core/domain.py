@@ -4,26 +4,23 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import collections
-import io
 import json
 import logging
-import os
-
 import numpy as np
+import os
 import pkg_resources
 from pykwalify.errors import SchemaError
+from rasa_core import utils
+from rasa_core.actions import Action, action
+from rasa_core.constants import REQUESTED_SLOT
+from rasa_core.slots import Slot, UnfeaturizedSlot
+from rasa_core.trackers import DialogueStateTracker, SlotSet
+from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
 from six import string_types
 from typing import Dict, Any
 from typing import List
 from typing import Optional
 from typing import Text
-
-from rasa_core import utils
-from rasa_core.actions import Action, action
-from rasa_core.slots import Slot, UnfeaturizedSlot
-from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from rasa_core.constants import REQUESTED_SLOT
 
 logger = logging.getLogger(__name__)
 
@@ -123,14 +120,14 @@ class Domain(object):
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
-        and merged.
-        Single attributes will be taken from ``self`` unless override is True,
-        in which case they are taken from ``domain``"""
+        and merged. Single attributes will be taken from ``self`` unless
+        override is `True`, in which case they are taken from ``domain``."""
+
         domain_dict = domain.as_dict()
         combined = self.as_dict()
 
-        def merge_dicts(d1, d2, override=False):
-            if override:
+        def merge_dicts(d1, d2, override_existing_values=False):
+            if override_existing_values:
                 a, b = d1.copy(), d2.copy()
             else:
                 a, b = d2.copy(), d1.copy()
@@ -157,7 +154,7 @@ class Domain(object):
         for key in ['templates', 'slots']:
             combined[key] = merge_dicts(combined[key],
                                         domain_dict[key],
-                                        override=override)
+                                        override)
 
         return self.__class__.from_dict(combined)
 
@@ -546,6 +543,8 @@ class Domain(object):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def as_dict(self):
+        # type: () -> Dict[Text, Any]
+
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
 
@@ -560,14 +559,18 @@ class Domain(object):
         }
 
     def persist(self, filename):
-        # type: (Domain, Text) -> None
+        # type: (Text) -> None
         """Write domain to a file."""
+
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
     def persist_clean(self, filename):
-        # type: (Domain, Text) -> None
-        """Write domain to a file, stripping redundant keys with default values"""
+        # type: (Text) -> None
+        """Write domain to a file.
+
+         Strips redundant keys with default values."""
+
         data = self.as_dict()
 
         for idx, intent_info in enumerate(data["intents"]):

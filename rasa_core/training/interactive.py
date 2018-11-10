@@ -25,7 +25,9 @@ from rasa_core.channels.channel import button_to_string
 from rasa_core.constants import (
     DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
 from rasa_core.domain import Domain
-from rasa_core.events import Event, ActionExecuted
+from rasa_core.events import (
+    Event, ActionExecuted, UserUttered, Restarted,
+    BotUttered)
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
 from rasa_core.training.structures import Story
@@ -103,7 +105,7 @@ def send_message(endpoint,  # type: EndpointConfig
     """Send a user message to a conversation."""
 
     payload = {
-        "sender": "user",
+        "sender": UserUttered.type_name,
         "message": message,
         "parse_data": parse_data
     }
@@ -160,9 +162,7 @@ def send_action(endpoint,  # type: EndpointConfig
     # type: (...) -> Dict[Text, Any]
     """Log an action to a conversation."""
 
-    payload = {"action": action_name,
-               "policy": policy,
-               "confidence": confidence}
+    payload = ActionExecuted(action_name, policy, confidence).as_dict()
 
     subpath = "/conversations/{}/execute".format(sender_id)
 
@@ -182,16 +182,9 @@ def send_action(endpoint,  # type: EndpointConfig
                            "in your action server and try again."
                            "".format(action_name))
 
-            payload = {"event": "action",
-                       "name": action_name,
-                       "timestamp": None}
+            payload = ActionExecuted(action_name).as_dict()
 
-            subpath = "/conversations/{}/tracker/events".format(sender_id)
-            r = endpoint.request(json=payload,
-                                 method="post",
-                                 subpath=subpath)
-
-            return _response_as_json(r)
+            return send_event(endpoint, sender_id, payload)
         else:
             logger.error("failed to execute action!")
             raise
@@ -263,7 +256,7 @@ def latest_user_message(evts):
     """Return most recent user message."""
 
     for i, e in enumerate(reversed(evts)):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             return e
     return None
 
@@ -273,7 +266,7 @@ def all_events_before_latest_user_msg(evts):
     """Return all events that happened before the most recent user message."""
 
     for i, e in enumerate(reversed(evts)):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             return evts[:-(i + 1)]
     return evts
 
@@ -385,7 +378,7 @@ def _request_fork_from_user(sender_id,
 
     choices = []
     for i, e in enumerate(tracker.get("events", [])):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             choices.append({"name": e.get("text"), "value": i})
 
     fork_idx = _request_fork_point_from_list(list(reversed(choices)),
@@ -507,13 +500,13 @@ def _chat_history_table(evts):
 
     bot_column = []
     for idx, evt in enumerate(evts):
-        if evt.get("event") == "action":
+        if evt.get("event") == ActionExecuted.type_name:
             bot_column.append(colored(evt['name'], 'autocyan'))
             if evt['confidence'] is not None:
                 bot_column[-1] += (
                     colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
 
-        elif evt.get("event") == 'user':
+        elif evt.get("event") == UserUttered.type_name:
             if bot_column:
                 text = "\n".join(bot_column)
                 add_bot_cell(table_data, text)
@@ -522,11 +515,11 @@ def _chat_history_table(evts):
             msg = format_user_msg(evt, user_width(table))
             add_user_cell(table_data, msg)
 
-        elif evt.get("event") == "bot":
+        elif evt.get("event") == BotUttered.type_name:
             wrapped = wrap(format_bot_output(evt), bot_width(table))
             bot_column.append(colored(wrapped, 'autoblue'))
 
-        elif evt.get("event") != "bot":
+        else:
             e = Event.from_parameters(evt)
             if e.as_story_string():
                 bot_column.append(wrap(e.as_story_string(), bot_width(table)))
@@ -719,7 +712,7 @@ def _collect_messages(evts):
     msgs = []
 
     for evt in evts:
-        if evt.get("event") == "user":
+        if evt.get("event") == UserUttered.type_name:
             data = evt.get("parse_data")
             msg = Message.build(data["text"], data["intent"]["name"],
                                 data["entities"])
@@ -730,15 +723,9 @@ def _collect_messages(evts):
 
 def _collect_actions(evts):
     # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
-    """Collect all the actionexecuted events into a list"""
+    """Collect all the `ActionExecuted` events into a list."""
 
-    acts = []
-
-    for evt in evts:
-        if evt.get("event") == "action":
-            acts.append(evt)
-
-    return acts
+    return [evt for evt in evts if evt.get("event") == ActionExecuted.type_name]
 
 
 def _write_stories_to_file(export_story_path, evts):
@@ -814,14 +801,15 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     messages = _collect_messages(evts)
     actions = _collect_actions(evts)
 
-    new_domain = dict.fromkeys(domain.keys(), {})
-    new_domain["intents"] = _intents_from_messages(messages)
-    new_domain["entities"] = _entities_from_messages(messages)
-    new_domain["actions"] = list({e["name"] for e in actions})
-    new_domain = Domain.from_dict(new_domain)
-    new_domain = old_domain.merge(new_domain)
+    domain_dict = dict.fromkeys(domain.keys(), {})  # type: Dict[Text, Any]
 
-    new_domain.persist_clean(domain_path)
+    domain_dict["intents"] = _intents_from_messages(messages)
+    domain_dict["entities"] = _entities_from_messages(messages)
+    domain_dict["actions"] = list({e["name"] for e in actions})
+
+    new_domain = Domain.from_dict(domain_dict)
+
+    old_domain.merge(new_domain).persist_clean(domain_path)
 
 
 def _predict_till_next_listen(endpoint,  # type: EndpointConfig
@@ -1128,9 +1116,9 @@ def is_listening_for_message(sender_id, endpoint):
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.APPLIED)
 
     for i, e in enumerate(reversed(tracker.get("events", []))):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             return False
-        elif e.get("event") == "action":
+        elif e.get("event") == ActionExecuted.type_name:
             return e.get("name") == ACTION_LISTEN_NAME
     return False
 
@@ -1143,10 +1131,10 @@ def _undo_latest(sender_id, endpoint):
 
     cutoff_index = None
     for i, e in enumerate(reversed(tracker.get("events", []))):
-        if e.get("event") in {"user", "action"}:
+        if e.get("event") in {ActionExecuted.type_name, UserUttered.type_name}:
             cutoff_index = i
             break
-        elif e.get("event") == "restart":
+        elif e.get("event") == Restarted.type_name:
             break
 
     if cutoff_index is not None:
@@ -1272,9 +1260,11 @@ def record_messages(endpoint,  # type: EndpointConfig
 
                 num_messages += 1
             except RestartConversation:
-                send_event(endpoint, sender_id, {"event": "restart"})
-                send_event(endpoint, sender_id, {"event": "action",
-                                                 "name": ACTION_LISTEN_NAME})
+                send_event(endpoint, sender_id,
+                           Restarted().as_dict())
+
+                send_event(endpoint, sender_id,
+                           ActionExecuted(ACTION_LISTEN_NAME).as_dict())
 
                 logger.info("Restarted conversation, starting a new one.")
             except UndoLastStep:
