@@ -191,7 +191,7 @@ Rasa Core sends requests to your model server with an ``If-None-Match``
 header that contains the current model hash. If your model server can
 provide a model with a different hash from the one you sent, it should send it
 in as a zip file with an ``ETag`` header containing the new hash. If not, Rasa
-Core expects an empty response with a ``204`` status code.
+Core expects an empty response with a ``204`` or ``304`` status code.
 
 An example request Rasa Core might make to your model server looks like this:
 
