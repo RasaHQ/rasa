@@ -101,7 +101,7 @@ which might look like this:
          return "action_check_restaurants"
 
       def run(self, dispatcher, tracker, domain):
-         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[dict]
+         # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict[Text, Any]]
 
          cuisine = tracker.get_slot('cuisine')
          q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
