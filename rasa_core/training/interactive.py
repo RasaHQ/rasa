@@ -40,7 +40,8 @@ from typing import Any, Text, Dict, List, Optional, Callable, Union
 
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
-from rasa_nlu.training_data.loading import load_data, guess_format
+# noinspection PyProtectedMember
+from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
@@ -767,7 +768,7 @@ def _write_nlu_to_file(export_nlu_path, evts):
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
     with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
-        if guess_format(export_nlu_path) in {"md", "unk"}:
+        if _guess_format(export_nlu_path) in {"md", "unk"}:
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
