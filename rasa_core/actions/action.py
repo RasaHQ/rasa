@@ -10,7 +10,9 @@ import typing
 from typing import List, Text, Optional, Dict, Any
 
 from rasa_core import events
-from rasa_core.constants import DOCS_BASE_URL, DEFAULT_REQUEST_TIMEOUT
+from rasa_core.constants import (DOCS_BASE_URL,
+                                 DEFAULT_REQUEST_TIMEOUT,
+                                 REQUESTED_SLOT)
 from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -27,11 +29,14 @@ ACTION_RESTART_NAME = "action_restart"
 
 ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
+ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
+
 
 def default_actions():
     # type: () -> List[Action]
     """List default actions."""
-    return [ActionListen(), ActionRestart(), ActionDefaultFallback()]
+    return [ActionListen(), ActionRestart(),
+            ActionDefaultFallback(), ActionDeactivateForm()]
 
 
 def default_action_names():
@@ -193,6 +198,17 @@ class ActionDefaultFallback(Action):
         return [UserUtteranceReverted()]
 
 
+class ActionDeactivateForm(Action):
+    """Deactivates a form"""
+
+    def name(self):
+        return ACTION_DEACTIVATE_FORM_NAME
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import Form, SlotSet
+        return [Form(None), SlotSet(REQUESTED_SLOT, None)]
+
+
 class RemoteAction(Action):
     def __init__(self, name, action_endpoint):
         # type: (Text, Optional[EndpointConfig]) -> None
@@ -309,9 +325,18 @@ class RemoteAction(Action):
                          "".format(self.name()))
             response = self.action_endpoint.request(
                     json=json, method="post", timeout=DEFAULT_REQUEST_TIMEOUT)
+
+            if response.status_code == 400:
+                response_data = response.json()
+                exception = ActionExecutionRejection(
+                        response_data["action_name"],
+                        response_data.get("error")
+                )
+                logger.debug(exception.message)
+                raise exception
+
             response.raise_for_status()
             response_data = response.json()
-
             self._validate_action_result(response_data)
         except requests.exceptions.ConnectionError as e:
 
@@ -343,3 +368,17 @@ class RemoteAction(Action):
 
     def name(self):
         return self._name
+
+
+class ActionExecutionRejection(Exception):
+    """Raising this exception will allow other policies
+        to predict a different action"""
+
+    def __init__(self, action_name, message=None):
+        self.action_name = action_name
+        self.message = (message or
+                        "Custom action '{}' rejected to run"
+                        "".format(action_name))
+
+    def __str__(self):
+        return self.message

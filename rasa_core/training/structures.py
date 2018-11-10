@@ -15,7 +15,10 @@ from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.conversation import Dialogue
-from rasa_core.events import UserUttered, ActionExecuted, Event
+from rasa_core.events import (UserUttered, ActionExecuted,
+                              Form, FormValidation,
+                              SlotSet, Event,
+                              ActionExecutionRejected)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -33,6 +36,29 @@ GENERATED_CHECKPOINT_PREFIX = "GENR_"
 CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 
 GENERATED_HASH_LENGTH = 5
+
+FORM_PREFIX = "form: "
+
+
+class StoryStringHelper(object):
+    """A helper class to mark story steps that are inside a form with `form: `
+    """
+    def __init__(self,
+                 active_form=None,
+                 form_validation=True,
+                 form_rejected=False,
+                 form_prefix_string='',
+                 no_form_prefix_string=''):
+        # track active form
+        self.active_form = active_form
+        # track whether a from should be validated
+        self.form_validation = form_validation
+        # track whether a from was rejected
+        self.form_rejected = form_rejected
+        # save story strings with form prefix for later
+        self.form_prefix_string = form_prefix_string
+        # save story strings without form prefix for later
+        self.no_form_prefix_string = no_form_prefix_string
 
 
 class Checkpoint(object):
@@ -78,6 +104,8 @@ class StoryStep(object):
         self.block_name = block_name
         self.id = uuid.uuid4().hex  # type: Text
 
+        self.story_string_helper = StoryStringHelper()
+
     def create_copy(self, use_new_id):
         copied = StoryStep(self.block_name, self.start_checkpoints,
                            self.end_checkpoints,
@@ -89,48 +117,186 @@ class StoryStep(object):
     def add_user_message(self, user_message):
         self.add_event(user_message)
 
-    @staticmethod
-    def _is_action_listen(event):
-        # this is not an isinstance because we don't want to allow subclasses
-        # here
-        return (type(event) == ActionExecuted and
-                event.action_name == ACTION_LISTEN_NAME)
-
     def add_event(self, event):
-        # stories never contain the action listen events they are implicit
-        # and added after a story is read and converted to a dialogue
-        if not self._is_action_listen(event):
-            self.events.append(event)
+        self.events.append(event)
+
+    @staticmethod
+    def _checkpoint_string(story_step_element):
+        return "> {}\n".format(story_step_element.as_story_string())
+
+    @staticmethod
+    def _user_string(story_step_element, e2e, prefix=''):
+        return "* {}{}\n".format(prefix,
+                                 story_step_element.as_story_string(e2e))
+
+    def _store_user_strings(self, story_step_element, e2e, prefix=''):
+        self.story_string_helper.no_form_prefix_string += self._user_string(
+                story_step_element, e2e
+        )
+        self.story_string_helper.form_prefix_string += self._user_string(
+                story_step_element, e2e, prefix
+        )
+
+    @staticmethod
+    def _bot_string(story_step_element, prefix=''):
+        return "    - {}{}\n".format(prefix,
+                                     story_step_element.as_story_string())
+
+    def _store_bot_strings(self, story_step_element, prefix=''):
+        self.story_string_helper.no_form_prefix_string += self._bot_string(
+                story_step_element
+        )
+        self.story_string_helper.form_prefix_string += self._bot_string(
+                story_step_element, prefix
+        )
+
+    def _reset_stored_strings(self):
+        self.story_string_helper.form_prefix_string = ''
+        self.story_string_helper.no_form_prefix_string = ''
 
     def as_story_string(self, flat=False, e2e=False):
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
+
+        for s in self.start_checkpoints:
+            if s.name == STORY_START:
+                # first story step in the story, so reset helper
+                self.story_string_helper = StoryStringHelper()
+
         if flat:
             result = ""
         else:
             result = "\n## {}\n".format(self.block_name)
             for s in self.start_checkpoints:
                 if s.name != STORY_START:
-                    result += "> {}\n".format(s.as_story_string())
+                    result += self._checkpoint_string(s)
+
         for s in self.events:
             if isinstance(s, UserUttered):
-                result += "* {}\n".format(s.as_story_string(e2e))
+                if self.story_string_helper.active_form is None:
+                    result += self._user_string(s, e2e)
+                else:
+                    # form is active
+                    # it is not known whether the form will be
+                    # successfully executed, so store this
+                    # story string for later
+                    self._store_user_strings(s, e2e, FORM_PREFIX)
+
+            elif isinstance(s, Form):
+                # form got either activated or deactivated
+                self.story_string_helper.active_form = s.name
+
+                if self.story_string_helper.active_form is None:
+                    # form deactivated, so form succeeded,
+                    # so add story string with form prefix
+                    result += self.story_string_helper.form_prefix_string
+                    # remove all stored story strings
+                    self._reset_stored_strings()
+
+                result += self._bot_string(s)
+
+            elif isinstance(s, FormValidation):
+                self.story_string_helper.form_validation = s.validate
+
+            elif isinstance(s, ActionExecutionRejected):
+                if (s.action_name ==
+                        self.story_string_helper.active_form):
+                    # form rejected
+                    self.story_string_helper.form_rejected = True
+
+            elif isinstance(s, ActionExecuted):
+                if self._is_action_listen(s):
+                    pass
+                elif self.story_string_helper.active_form is None:
+                    result += self._bot_string(s)
+                else:
+                    # form is active
+                    if self.story_string_helper.form_rejected:
+                        if (self.story_string_helper.form_validation and
+                                s.action_name ==
+                                self.story_string_helper.active_form):
+                            result += self._bot_string(
+                                    ActionExecuted(ACTION_LISTEN_NAME))
+                            result += (self.story_string_helper.
+                                       form_prefix_string)
+                        else:
+                            result += (self.story_string_helper.
+                                       no_form_prefix_string)
+                        # form rejected, add story string without form prefix
+                        result += self._bot_string(s)
+                    else:
+                        # form succeeded, so add story string with form prefix
+                        result += (self.story_string_helper.
+                                   form_prefix_string)
+                        result += self._bot_string(s, FORM_PREFIX)
+
+                    # remove all stored story strings
+                    self._reset_stored_strings()
+
+                    if (s.action_name ==
+                            self.story_string_helper.active_form):
+                        # form was successfully executed
+                        self.story_string_helper.form_rejected = False
+
+                self.story_string_helper.form_validation = True
+
+            elif isinstance(s, SlotSet):
+                if self.story_string_helper.active_form is None:
+                    result += self._bot_string(s)
+                else:
+                    # form is active
+                    # it is not known whether the form will be
+                    # successfully executed, so store this
+                    # story string for later
+                    # slots should be always printed without prefix
+                    self._store_bot_strings(s)
+
             elif isinstance(s, Event):
                 converted = s.as_story_string()
                 if converted:
-                    result += "    - {}\n".format(s.as_story_string())
+                    if self.story_string_helper.active_form is None:
+                        result += self._bot_string(s)
+                    else:
+                        # form is active
+                        # it is not known whether the form will be
+                        # successfully executed, so store this
+                        # story string for later
+                        self._store_bot_strings(s, FORM_PREFIX)
+
             else:
                 raise Exception("Unexpected element in story step: "
                                 "{}".format(s))
+
+        if (not self.end_checkpoints and
+                self.story_string_helper.active_form is not None):
+            # there are no end checkpoints
+            # form is active
+            # add story string with form prefix
+            result += self.story_string_helper.form_prefix_string
+            # remove all stored story strings
+            self._reset_stored_strings()
 
         if not flat:
             for e in self.end_checkpoints:
                 result += "> {}\n".format(e.as_story_string())
         return result
 
+    @staticmethod
+    def _is_action_listen(event):
+        # this is not an `isinstance` because
+        # we don't want to allow subclasses here
+        return (type(event) == ActionExecuted and
+                event.action_name == ACTION_LISTEN_NAME)
+
+    def _add_action_listen(self, events):
+        if not events or not self._is_action_listen(events[-1]):
+            # do not add second action_listen
+            events.append(ActionExecuted(ACTION_LISTEN_NAME))
+
     def explicit_events(self, domain, should_append_final_listen=True):
         # type: (Domain, bool) -> List[Event]
-        """Returns events contained in the story step including implicit events.
+        """Returns events contained in the story step
+            including implicit events.
 
         Not all events are always listed in the story dsl. This
         includes listen actions as well as implicitly
@@ -141,14 +307,15 @@ class StoryStep(object):
 
         for e in self.events:
             if isinstance(e, UserUttered):
-                events.append(ActionExecuted(ACTION_LISTEN_NAME))
+                self._add_action_listen(events)
                 events.append(e)
                 events.extend(domain.slots_for_entities(e.entities))
             else:
                 events.append(e)
 
         if not self.end_checkpoints and should_append_final_listen:
-            events.append(ActionExecuted(ACTION_LISTEN_NAME))
+            self._add_action_listen(events)
+
         return events
 
     def __repr__(self):
@@ -189,8 +356,17 @@ class Story(object):
 
     def as_story_string(self, flat=False, e2e=False):
         story_content = ""
+
+        # initialize helper for first story step
+        story_string_helper = StoryStringHelper()
+
         for step in self.story_steps:
+            # use helper from previous story step
+            step.story_string_helper = story_string_helper
+            # create string for current story step
             story_content += step.as_story_string(flat, e2e)
+            # override helper for next story step
+            story_string_helper = step.story_string_helper
 
         if flat:
             if self.story_name:
@@ -254,17 +430,17 @@ class StoryGraph(object):
         all_overlapping_cps = set()
 
         if self.cyclic_edge_ids:
-            # we are going to do this in a recursive way. we are going to remove
-            # one cycle and then we are going to let the cycle detection run
-            # again
+            # we are going to do this in a recursive way. we are going to
+            # remove one cycle and then we are going to
+            # let the cycle detection run again
             # this is not inherently necessary so if this becomes a performance
             # issue, we can change it. It is actually enough to run the cycle
             # detection only once and then remove one cycle after another, but
             # since removing the cycle is done by adding / removing edges and
             #  nodes
             # the logic is a lot easier if we only need to make sure the
-            # change is
-            # consistent if we only change one compared to changing all of them.
+            # change is consistent if we only change one compared to
+            # changing all of them.
 
             for s, e in cyclic_edge_ids:
                 cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)

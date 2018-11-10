@@ -1,0 +1,5 @@
+policies:
+  - name: MemoizationPolicy
+    max_history: 5
+  - name: KerasPolicy
+    max_history: 5
