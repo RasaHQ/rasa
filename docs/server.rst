@@ -180,7 +180,7 @@ regularly queries for zipped Rasa Core models:
 
     models:
       url: http://my-server.com/models/default_core@latest
-      wait_time_between_pulls:  10 [optional](default: 100)
+      wait_time_between_pulls:  10   # [optional](default: 100)
 
 .. note::
 
