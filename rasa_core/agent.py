@@ -139,7 +139,8 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
     if response.status_code in [204, 304]:
         logger.debug("Model server returned {} status code, indicating "
                      "that no new model is available. "
-                     "Current fingerprint: {}".format(response.status_code, fingerprint))
+                     "Current fingerprint: {}"
+                     "".format(response.status_code, fingerprint))
         return response.headers.get("ETag")
     elif response.status_code == 404:
         logger.debug("Model server didn't find a model for our request. "
