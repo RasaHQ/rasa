@@ -116,7 +116,7 @@ three arguments. You can access the values of slots and the latest message
 sent by the user using the ``tracker`` object, and you can send messages
 back to the user with the ``dispatcher`` object, by calling
 ``dispatcher.utter_template``, ``dispatcher.utter_message``, or any other
-:class:`rasa_core_sdk.executor.CollectingDispatcher` method.
+``rasa_core_sdk.executor.CollectingDispatcher`` method.
 
 Details of the ``run`` method:
 
