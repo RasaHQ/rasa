@@ -68,8 +68,9 @@ of the tracker has a couple steps:
 
     If the domain defines the possible ``actions``,
     ``[ActionGreet, ActionGoodbye]``,
-    two additional default actions are added:
-    ``[ActionListen, ActionRestart]``.
+    ``4`` additional default actions are added:
+    ``[ActionListen(), ActionRestart(),
+    ActionDefaultFallback(), ActionDeactivateForm()]``.
     Therefore, label ``0`` indicates default action listen, label ``1``
     default restart, label ``2`` a greeting and ``3`` indicates goodbye.
 

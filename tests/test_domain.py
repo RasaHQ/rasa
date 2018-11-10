@@ -118,7 +118,7 @@ def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = Domain.load(domain_file)
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 6
+    assert len(domain.action_names) == 7
 
 
 def test_utter_templates():
@@ -175,6 +175,7 @@ def test_domain_to_yaml():
 config:
   store_entities_as_slots: true
 entities: []
+forms: []
 intents: []
 slots: {}
 templates:

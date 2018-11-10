@@ -37,9 +37,21 @@ Added
 - add documentation on how to configure endpoints within a configuration file
 - ``auth_source`` parameter in ``MongoTrackerStore`` defining the database to
   authenticate against
+- missing instructions on setting up the facebook connector
 - environment variables specified with ``${env_variable}`` in a yaml
-    configuration file are now replaced with the value of the environment variable
-
+  configuration file are now replaced with the value of the environment variable
+- detailed documentation on how to deploy Rasa with Docker
+- add ``FormPolicy`` to handle form action prediction
+- add ``ActionExecutionRejection`` exception and ``ActionExecutionRejected`` event
+- add default action ``ActionDeactivateForm()``
+- add ``formbot`` example
+- add ability to turn off auto slot filling with entity for each slot in domain.yml
+- add ``InvalidDomain`` exception
+- add ``active_form_...`` to state dictionary
+- add ``active_form`` and ``latest_action_name`` properties to ``DialogueStateTracker``
+- add ``Form`` and ``FormValidation`` events
+- add ``REQUESTED_SLOT`` constant
+- add ability to read ``action_listen`` from stories
 
 Changed
 -------
@@ -49,7 +61,10 @@ Changed
 - the core container does not load the nlu model by default anymore.
   Instead it can be connected to a nlu server.
 - stories are now visualized as ``.html`` page instead of an image
-
+- move and deduplicate restaurantbot nlu data from ``franken_data.json`` to ``nlu_data.md``
+- forms were completely reworked, see changelog in ``rasa_core_sdk``
+- state featurization if some form is active changed
+- ``Domain`` raises ``InvalidDomain`` exception
 
 Removed
 -------

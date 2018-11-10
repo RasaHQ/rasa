@@ -143,12 +143,12 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     y = training_data.y.argmax(axis=-1)
 
     # how many there are depends on the graph which is not created in a
-    # deterministic way but should always be 3 or
+    # deterministic way but should always be 3 or 4
     assert len(training_trackers) == 3 or len(training_trackers) == 4
 
-    # if we have 4 trackers, there is going to be one example more for label 3
+    # if we have 4 trackers, there is going to be one example more for label 4
     num_threes = len(training_trackers) - 1
-    assert Counter(y) == {0: 6, 1: 2, 3: num_threes, 4: 1, 5: 3}
+    assert Counter(y) == {0: 6, 1: 2, 4: num_threes, 5: 1, 6: 3}
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):
