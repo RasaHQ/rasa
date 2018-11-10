@@ -527,8 +527,9 @@ class Agent(object):
 
     def handle_channels(self, channels,
                         http_port=constants.DEFAULT_SERVER_PORT,
-                        serve_forever=True):
-        # type: (List[InputChannel], int, bool) -> WSGIServer
+                        serve_forever=True,
+                        route="/webhooks/"):
+        # type: (List[InputChannel], int, bool, Text) -> WSGIServer
         """Start a webserver attaching the input channels and handling msgs.
 
         If ``serve_forever`` is set to ``True``, this call will be blocking.
@@ -540,7 +541,7 @@ class Agent(object):
         rasa_core.channels.channel.register(channels,
                                             app,
                                             self.handle_message,
-                                            route="/webhooks/")
+                                            route=route)
 
         http_server = WSGIServer(('0.0.0.0', http_port), app)
         http_server.start()
