@@ -255,7 +255,6 @@ class WronglyClassifiedUserUtterance(UserUttered):
                                                              timestamp,
                                                              input_channel)
 
-        
     def as_story_string(self, e2e=True):
         from rasa_core.events import md_format_message
         correct_message = md_format_message(self.text,
