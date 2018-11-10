@@ -883,16 +883,16 @@ def _correct_wrong_action(corrected_action,  # type: Text
 
 def _form_is_rejected(action_name, tracker):
     """Check if the form got rejected with the most recent action name."""
-    return (tracker.get('active_form', {}).get('name')
-            and action_name != tracker['active_form']['name']
-            and action_name != ACTION_LISTEN_NAME)
+    return (tracker.get('active_form', {}).get('name') and
+            action_name != tracker['active_form']['name'] and
+            action_name != ACTION_LISTEN_NAME)
 
 
 def _form_is_restored(action_name, tracker):
     """Check whether the form is called again after it was rejected."""
-    return (tracker.get('active_form', {}).get('rejected')
-            and tracker.get('latest_action_name') == ACTION_LISTEN_NAME
-            and action_name == tracker.get('active_form', {}).get('name'))
+    return (tracker.get('active_form', {}).get('rejected') and
+            tracker.get('latest_action_name') == ACTION_LISTEN_NAME and
+            action_name == tracker.get('active_form', {}).get('name'))
 
 
 def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
