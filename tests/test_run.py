@@ -10,7 +10,7 @@ def test_create_http_input_channels():
     # ensure correct order
     assert {c.name() for c in channels} == {"twilio", "slack",
                                             "telegram", "mattermost",
-                                            "facebook", "ciscowebexteams"}
+                                            "facebook", "webexteams"}
 
 
 def test_create_single_input_channels():

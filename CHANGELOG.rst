@@ -13,6 +13,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- new connector for the Cisco Webex Teams chat
 - openapi documentation of server API
 - NLU data learned through interactive learning will now be stored in a
   separate markdown-format file (any previous NLU data is merged)
