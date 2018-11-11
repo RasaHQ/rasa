@@ -6,10 +6,19 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. _master-release:
 
-[Unreleased 0.12.0.aX] - `master`_
+[Unreleased 0.13.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+[0.12.0] - 2018-11-11
+^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the
+    :ref:`migration` guide before updating. **You need to retrain your models.**
 
 Added
 -----
@@ -29,28 +38,35 @@ Added
   ``evaluate.py`` script
 - `/conversations/{sender_id}/story` endpoint for returning
   the end-to-end story describing a conversation
-- docker-compose file to start a rasa core server together with nlu, an action server, and duckling
+- docker-compose file to start a rasa core server together with nlu,
+  an action server, and duckling
 - http server (``rasa_core.run --enable-api``) evaluation endpoint
 - ability to add tracker_store using endpoints.yml
 - ability load custom tracker store modules using the endpoints.yml
 - ability to add an event broker using an endpoint configuration file
-- raise an exception when ``server.py`` is used instead of ``rasa_core.run --enable-api``
+- raise an exception when ``server.py`` is used instead of
+  ``rasa_core.run --enable-api``
 - add documentation on how to configure endpoints within a configuration file
 - ``auth_source`` parameter in ``MongoTrackerStore`` defining the database to
   authenticate against
 - missing instructions on setting up the facebook connector
 - environment variables specified with ``${env_variable}`` in a yaml
-  configuration file are now replaced with the value of the environment variable
+  configuration file are now replaced with the value of the
+  environment variable
 - detailed documentation on how to deploy Rasa with Docker
-- make ``wait_time_between_pulls`` configurable through endpoint configuration
+- make ``wait_time_between_pulls`` configurable through endpoint
+  configuration
 - add ``FormPolicy`` to handle form action prediction
-- add ``ActionExecutionRejection`` exception and ``ActionExecutionRejected`` event
+- add ``ActionExecutionRejection`` exception and
+  ``ActionExecutionRejected`` event
 - add default action ``ActionDeactivateForm()``
 - add ``formbot`` example
-- add ability to turn off auto slot filling with entity for each slot in domain.yml
+- add ability to turn off auto slot filling with entity for each
+  slot in domain.yml
 - add ``InvalidDomain`` exception
 - add ``active_form_...`` to state dictionary
-- add ``active_form`` and ``latest_action_name`` properties to ``DialogueStateTracker``
+- add ``active_form`` and ``latest_action_name`` properties to
+  ``DialogueStateTracker``
 - add ``Form`` and ``FormValidation`` events
 - add ``REQUESTED_SLOT`` constant
 - add ability to read ``action_listen`` from stories
@@ -64,7 +80,8 @@ Changed
 - the core container does not load the nlu model by default anymore.
   Instead it can be connected to a nlu server.
 - stories are now visualized as ``.html`` page instead of an image
-- move and deduplicate restaurantbot nlu data from ``franken_data.json`` to ``nlu_data.md``
+- move and deduplicate restaurantbot nlu data from ``franken_data.json``
+  to ``nlu_data.md``
 - forms were completely reworked, see changelog in ``rasa_core_sdk``
 - state featurization if some form is active changed
 - ``Domain`` raises ``InvalidDomain`` exception
