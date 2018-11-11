@@ -117,7 +117,7 @@ Code to create a Messenger-compatible webserver looks like this:
    :end-before: END DOC INCLUDE
 
 
-.. _ciscowebexteams_connector:
+.. _webexteams_connector:
 
 Cisco Webex Teams Setup
 -----------------------
