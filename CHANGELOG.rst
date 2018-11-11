@@ -11,6 +11,20 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+Added
+-----
+
+Removed
+-------
+
+Changed
+-------
+
+Fixed
+-----
+
+.. _v0-12-0:
+
 [0.12.0] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^
 
