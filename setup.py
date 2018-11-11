@@ -52,6 +52,7 @@ install_requires = [
     "slackclient~=1.0",
     "python-telegram-bot~=10.0",
     "twilio~=6.0",
+    "webexteamssdk~=1.0",
     "mattermostwrapper~=2.0",
     "rocketchat_API~=0.6.0",
     "colorhash~=1.0",

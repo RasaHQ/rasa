@@ -99,9 +99,9 @@ def test_webexteams_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/webexteams/").startswith(
-                'webhook.health')
+                'webexteams_webhook.health')
         assert routes_list.get("/webhooks/webexteams/webhook").startswith(
-                'webhook.webhook')
+                'webexteams_webhook.webhook')
     finally:
         s.stop()
 
