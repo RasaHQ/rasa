@@ -63,9 +63,15 @@ master_doc = 'index'
 
 nitpicky = True
 nitpick_ignore = [
+    ('py:class', 'CollectingDispatcher'),
+    ('py:class', 'Tracker'),
+    ('py:class', 'Dict'),
+    ('py:class', 'Text'),
+    ('py:class', 'Any'),
     ('py:class', 'List'),
-    # TODO: remove when https://github.com/sphinx-doc/sphinx/issues/5480 fixed
-    ('py:class', 'Domain'),
+    ('py:class', 'Dict'),
+    ('py:class', 'Text'),
+    ('py:class', 'Any'),
 ]
 
 # General information about the project.
@@ -383,7 +389,6 @@ def setup(sphinx):
     try:
         utils_path = os.path.abspath(os.path.join(__file__, '..', 'util'))
         sys.path.insert(0, utils_path)
-        sys.path.insert(0, os.path.abspath('rasa_core_sdk'))
         from StoryLexer import StoryLexer
         sphinx.add_lexer("story", StoryLexer())
     except ImportError:
