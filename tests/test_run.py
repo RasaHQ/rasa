@@ -5,12 +5,12 @@ CREDENTIALS_FILE = "examples/moodbot/credentials.yml"
 
 def test_create_http_input_channels():
     channels = run.create_http_input_channels(None, CREDENTIALS_FILE)
-    assert len(channels) == 5
+    assert len(channels) == 6
 
     # ensure correct order
     assert {c.name() for c in channels} == {"twilio", "slack",
                                             "telegram", "mattermost",
-                                            "facebook"}
+                                            "facebook", "ciscowebexteams"}
 
 
 def test_create_single_input_channels():
