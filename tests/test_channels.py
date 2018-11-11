@@ -75,18 +75,18 @@ def test_facebook_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_ciscowebexteams_channel():
-    from rasa_core.channels.ciscowebexteams import CiscoWebexTeamsInput
+def test_webexteams_channel():
+    from rasa_core.channels.webexteams import WebexTeamsInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
 
     # load your trained agent
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-    input_channel = CiscoWebexTeamsInput(
-            ciscowebexteams_accesstoken="YOUR_ACCESS_TOKEN",
+    input_channel = WebexTeamsInput(
+            access_token="YOUR_ACCESS_TOKEN",
             # this is the `bot access token`
-            ciscowebexteams_room="YOUR_WEBEX_ROOM"
+            room="YOUR_WEBEX_ROOM"
             # the name of your channel to which the bot posts (optional)
     )
 
@@ -98,10 +98,10 @@ def test_ciscowebexteams_channel():
     try:
         assert s.started
         routes_list = utils.list_routes(s.application)
-        assert routes_list.get("/webhooks/ciscowebexteams/").startswith(
-                'ciscowebexteams_webhook.health')
-        assert routes_list.get("/webhooks/ciscowebexteams/webhook").startswith(
-                'ciscowebexteams_webhook.webhook')
+        assert routes_list.get("/webhooks/webexteams/").startswith(
+                'webhook.health')
+        assert routes_list.get("/webhooks/webexteams/webhook").startswith(
+                'webhook.webhook')
     finally:
         s.stop()
 
