@@ -22,6 +22,9 @@ Changed
 
 Fixed
 -----
+- ``SlackBot`` when called in ``SlackInputChannel`` inherits the
+  ``slack_channel`` property, allowing Slack bots to post to any channels
+  instead of only back to the user
 
 .. _v0-12-0:
 
