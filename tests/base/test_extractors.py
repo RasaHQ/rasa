@@ -141,8 +141,8 @@ def test_duckling_entity_extractor(component_builder):
 
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
-    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
-    _config.set_component_attr("ner_duckling", dimensions=["number"])
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
+    _config.set_component_attr("ner_duckling_http", dimensions=["number"])
     duckling = component_builder.create_component("ner_duckling_http", _config)
     synonyms = component_builder.create_component("ner_synonyms", _config)
     message = Message("He was 6 feet away")
