@@ -22,7 +22,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import run_evaluation
 from rasa_nlu.model import InvalidProjectError
-from rasa_nlu.project import Project, load_from_server
+from rasa_nlu.project import Project, load_from_server, STATUS_READY, STATUS_TRAINING, STATUS_FAILED
 from rasa_nlu.train import do_train_in_worker, TrainingException
 
 logger = logging.getLogger(__name__)
@@ -315,34 +315,35 @@ class DataRouter(object):
             raise MaxTrainingError
 
         if project in self.project_store:
-            self.project_store[project].status = 1
+            self.project_store[project].status = STATUS_TRAINING
         elif project not in self.project_store:
             self.project_store[project] = Project(
                     self.component_builder, project,
                     self.project_dir, self.remote_storage)
-            self.project_store[project].status = 1
+            self.project_store[project].status = STATUS_TRAINING
 
         def training_callback(model_path):
             model_dir = os.path.basename(os.path.normpath(model_path))
             self.project_store[project].update(model_dir)
             self._current_training_processes -= 1
             self.project_store[project].current_training_processes -= 1
-            if (self.project_store[project].status == 1 and
+            if (self.project_store[project].status == STATUS_TRAINING and
                     self.project_store[project].current_training_processes ==
                     0):
-                self.project_store[project].status = 0
-            return model_dir
+                self.project_store[project].status = STATUS_READY
 
         def training_errback(failure):
             logger.warning(failure)
-            target_project = self.project_store.get(
+
+            if hasattr(failure.value, 'failed_target_project'): 
+                target_project = self.project_store.get(
                     failure.value.failed_target_project)
+                target_project.status = STATUS_FAILED
             self._current_training_processes -= 1
             self.project_store[project].current_training_processes -= 1
-            if (target_project and
-                    self.project_store[project].current_training_processes ==
-                    0):
-                target_project.status = 0
+            self.project_store[project].status = STATUS_FAILED
+            self.project_store[project].error_message = str(failure)
+
             return failure
 
         logger.debug("New training queued")
@@ -372,7 +373,7 @@ class DataRouter(object):
                 target_project = self.project_store.get(
                         e.failed_target_project)
                 if target_project:
-                    target_project.status = 0
+                    target_project.status = STATUS_READY
                 raise e
         else:
             result = self.pool.submit(do_train_in_worker,
