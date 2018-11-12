@@ -22,7 +22,8 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import run_evaluation
 from rasa_nlu.model import InvalidProjectError
-from rasa_nlu.project import Project, load_from_server, STATUS_READY, STATUS_TRAINING, STATUS_FAILED
+from rasa_nlu.project import Project, load_from_server, 
+        STATUS_READY, STATUS_TRAINING, STATUS_FAILED
 from rasa_nlu.train import do_train_in_worker, TrainingException
 
 logger = logging.getLogger(__name__)
@@ -335,7 +336,7 @@ class DataRouter(object):
         def training_errback(failure):
             logger.warning(failure)
 
-            if hasattr(failure.value, 'failed_target_project'): 
+            if hasattr(failure.value, 'failed_target_project'):
                 target_project = self.project_store.get(
                     failure.value.failed_target_project)
                 target_project.status = STATUS_FAILED
