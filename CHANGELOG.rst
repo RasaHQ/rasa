@@ -16,8 +16,8 @@ Fixed
   visualisation script
 - use default configuration if no policy configuration is passed
 - fixed html delivery from interactive server script (package compatible)
-- ``SlackBot`` when called in ``SlackInputChannel`` inherits the
-  ``slack_channel`` property, allowing Slack bots to post to any channels
+- ``SlackBot`` when created in ``SlackInputChannel`` inherits the
+  ``slack_channel`` property, allowing Slack bots to post to any channel
   instead of only back to the user
 
 [0.12.1] - 2018-11-11
