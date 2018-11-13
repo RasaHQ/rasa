@@ -41,7 +41,7 @@ jobs:
   - stage: build docs
     if: fork = false AND branch = "master"
     install:
-    - RASABASTER=rasabaster-0.7.17.tar.gz
+    - RASABASTER=rasabaster-0.7.18.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
     - pip install $RASABASTER
     - pip install -r docs-requirements.txt
