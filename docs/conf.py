@@ -373,7 +373,8 @@ scv_overflow = ("-A", "html_theme=rasabaster")
 scv_whitelist_branches = (re.compile('^master$'),)
 scv_whitelist_tags = (re.compile(r'^[123456789]+\.\d+\.\d+$'),
                       re.compile(r'^0\.[23456789]\d+\.\d+$'),
-                      re.compile(r'^0\.1[123456789]+\.\d+$'),
+                      re.compile(r'^0\.1[23456789]+\.\d+$'),
+                      '0.11.12',
                       '0.10.4',
                       '0.9.8',
                       '0.8.6',
