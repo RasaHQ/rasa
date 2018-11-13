@@ -3,24 +3,23 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from builtins import str
+from collections import defaultdict
+from collections import namedtuple
+
 import argparse
 import io
 import json
 import logging
+import numpy as np
+import os
+import pickle
 import warnings
-from builtins import str
-from collections import namedtuple
-from typing import List, Optional, Any, Text, Dict
-
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
-import os
-import json
-import numpy as np
-import pickle
-from collections import defaultdict
+from typing import List, Optional, Any, Text, Dict, Tuple
 
-from rasa_core import training
+from rasa_core import training, cli
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
@@ -28,13 +27,11 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import SimplePolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.utils import (AvailableEndpoints, pad_list_to_size,
-                             set_default_subparser)
-
+from rasa_core.utils import (
+    AvailableEndpoints, pad_list_to_size,
+    set_default_subparser)
 from rasa_nlu import utils as nlu_utils
 from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
-from rasa_core.events import md_format_message
-
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +49,8 @@ def create_argument_parser():
             description='evaluates a dialogue model')
     parent_parser = argparse.ArgumentParser(add_help=False)
     add_args_to_parser(parent_parser)
+    cli.arguments.add_model_and_story_group(parser,
+                                            allow_pretrained_model=False)
     utils.add_logging_option_arguments(parent_parser)
     subparsers = parser.add_subparsers(help='mode', dest='mode')
     subparsers.add_parser('default',
@@ -68,11 +67,6 @@ def create_argument_parser():
 
 
 def add_args_to_parser(parser):
-    parser.add_argument(
-            '-s', '--stories',
-            type=str,
-            required=True,
-            help="file or folder containing stories to evaluate on")
     parser.add_argument(
             '-m', '--max_stories',
             type=int,
@@ -422,7 +416,7 @@ def collect_story_predictions(
         fail_on_prediction_errors=False,  # type: bool
         use_e2e=False  # type: bool
 ):
-    # type: (...) -> StoryEvalution
+    # type: (...) -> Tuple[StoryEvalution, int]
     """Test the stories from a file, running them through the stored model."""
 
     story_eval_store = EvaluationStore()
@@ -572,7 +566,7 @@ def plot_story_evaluation(test_y, predictions,
                 bbox_inches='tight')
 
 
-def run_comparison_evaluation(models, stories, output):
+def run_comparison_evaluation(models, stories_file, output):
     # type: (Text, Text, Text) -> None
     """Evaluates multiple trained models on a test set"""
 
@@ -586,7 +580,7 @@ def run_comparison_evaluation(models, stories, output):
 
             agent = Agent.load(model)
 
-            completed_trackers = _generate_trackers(stories, agent)
+            completed_trackers = _generate_trackers(stories_file, agent)
 
             story_eval_store, no_of_stories = \
                 collect_story_predictions(completed_trackers,
@@ -605,7 +599,7 @@ def run_comparison_evaluation(models, stories, output):
                                    num_correct)
 
 
-def plot_curve(output, no_stories, ax=None, **kwargs):
+def plot_curve(output, no_stories, ax=None):
     """Plot the results from run_comparison_evaluation."""
     import matplotlib.pyplot as plt
 
@@ -639,38 +633,44 @@ if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
     set_default_subparser(arg_parser, 'default')
-    cmdline_args = arg_parser.parse_args()
+    cmdline_arguments = arg_parser.parse_args()
 
-    logging.basicConfig(level=cmdline_args.loglevel)
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
+    logging.basicConfig(level=cmdline_arguments.loglevel)
+    _endpoints = AvailableEndpoints.read_endpoints(cmdline_arguments.endpoints)
 
-    if cmdline_args.output:
-        nlu_utils.create_dir(cmdline_args.output)
+    if cmdline_arguments.output:
+        nlu_utils.create_dir(cmdline_arguments.output)
 
-    if not cmdline_args.core:
+    if not cmdline_arguments.core:
         raise ValueError("you must provide a core model directory to evaluate "
                          "using -d / --core")
-    if cmdline_args.mode == 'default':
+    if cmdline_arguments.mode == 'default':
 
-        _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
+        _interpreter = NaturalLanguageInterpreter.create(cmdline_arguments.nlu,
                                                          _endpoints.nlu)
 
-        _agent = Agent.load(cmdline_args.core,
+        _agent = Agent.load(cmdline_arguments.core,
                             interpreter=_interpreter)
-        run_story_evaluation(cmdline_args.stories,
+
+        stories = cli.stories_from_cli_args(cmdline_arguments)
+
+        run_story_evaluation(stories,
                              _agent,
-                             cmdline_args.max_stories,
-                             cmdline_args.output,
-                             cmdline_args.fail_on_prediction_errors,
-                             cmdline_args.e2e)
+                             cmdline_arguments.max_stories,
+                             cmdline_arguments.output,
+                             cmdline_arguments.fail_on_prediction_errors,
+                             cmdline_arguments.e2e)
 
-    elif cmdline_args.mode == 'compare':
-        run_comparison_evaluation(cmdline_args.core, cmdline_args.stories,
-                                  cmdline_args.output)
+    elif cmdline_arguments.mode == 'compare':
+        run_comparison_evaluation(cmdline_arguments.core,
+                                  cmdline_arguments.stories,
+                                  cmdline_arguments.output)
 
-        no_stories = pickle.load(io.open(os.path.join(cmdline_args.core,
-                                                      'num_stories.p'), 'rb'))
+        story_n_path = os.path.join(cmdline_arguments.core, 'num_stories.p')
 
-        plot_curve(cmdline_args.output, no_stories)
+        with io.open(story_n_path, 'rb') as story_n_file:
+            number_of_stories = pickle.load(story_n_file)
+
+        plot_curve(cmdline_arguments.output, number_of_stories)
 
     logger.info("Finished evaluation")

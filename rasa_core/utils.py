@@ -766,6 +766,7 @@ class EndpointConfig(object):
         return not self.__eq__(other)
 
 
+# noinspection PyProtectedMember
 def set_default_subparser(parser,
                           default_subparser):
     """default subparser selection. Call after setup, just before parse_args()

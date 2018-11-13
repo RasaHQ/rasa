@@ -11,10 +11,8 @@ from rasa_core.policies import PolicyEnsemble
 
 def load(config_file):
     # type: (Optional[Text], Dict[Text, Any], int) -> List[Policy]
-    """Load policy data stored in the specified file. fallback_args and
-    max_history are typically command line arguments. They take precedence
-    over the arguments specified in the config yaml.
-    """
+    """Load policy data stored in the specified file."""
+
     if config_file:
         config_data = utils.read_yaml_file(config_file)
     else:
