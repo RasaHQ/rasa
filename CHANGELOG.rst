@@ -4,6 +4,7 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+<<<<<<< HEAD
 .. _master-release:
 
 [Unreleased 0.13.0.aX] - `master`_
@@ -22,6 +23,14 @@ Changed
 
 Fixed
 -----
+
+[0.12.1] - 2018-11-11
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed interactive learning to properly submit executed actions to the action
+  server
 
 .. _v0-12-0:
 
