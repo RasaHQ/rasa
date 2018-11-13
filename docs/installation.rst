@@ -17,7 +17,7 @@ Install Rasa Core
 -----------------
 
 Stable (Recommended)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 The recommended way to install Rasa Core is using pip which will install the latest stable release of Rasa Core:
 
