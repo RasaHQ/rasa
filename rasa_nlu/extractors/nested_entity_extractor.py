@@ -157,9 +157,9 @@ class NestedEntityExtractor(EntityExtractor):
         composite_examples = []
         for nested_composite in nested_composites:
             nested_composite_value = nested_composite.split(':')[0]
-            child_of_nested_composite = filter(
-                lambda x: x['name'] == nested_composite_value,
-                self.nested_entities['composite_entities'])
+            child_of_nested_composite = [x for x in
+                self.nested_entities['composite_entities']
+                if x['name'] == nested_composite_value]
             if(len(child_of_nested_composite) > 0):
                 child_synonymns = child_of_nested_composite[0]['composites']
                 relevance_score = self.get_relevance(
