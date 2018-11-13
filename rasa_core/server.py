@@ -206,7 +206,11 @@ def create_app(agent,
     @ensure_loaded_agent(agent)
     def execute_action(sender_id):
         request_params = request.get_json(force=True)
-        action_to_execute = request_params.get("action", None)
+
+        # we'll accept both parameters to specify the actions name
+        action_to_execute = (request_params.get("name") or
+                             request_params.get("action"))
+
         policy = request_params.get("policy", None)
         confidence = request_params.get("confidence", None)
         verbosity = event_verbosity_parameter(EventVerbosity.AFTER_RESTART)

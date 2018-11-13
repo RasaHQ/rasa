@@ -287,11 +287,19 @@ paths:
             schema:
               type: object
               properties:
-                action:
+                name:
                   description: >-
                     Name of the action to be executed
                   type: string
-              required: ["action"]
+                policy:
+                  description: >-
+                    Name of the policy that predicted the action (optional).
+                  type: string
+                confidence:
+                  description: >-
+                    Confidence of the prediction (optional).
+                  type: number
+              required: ["name"]
             example:
               action: utter_greet
       responses:
