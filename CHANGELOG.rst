@@ -26,6 +26,14 @@ Fixed
   ``slack_channel`` property, allowing Slack bots to post to any channels
   instead of only back to the user
 
+[0.12.1] - 2018-11-11
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed interactive learning to properly submit executed actions to the action
+  server
+
 .. _v0-12-0:
 
 [0.12.0] - 2018-11-11
