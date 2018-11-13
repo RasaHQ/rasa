@@ -62,7 +62,7 @@ class NaturalLanguageInterpreter(object):
 class RegexInterpreter(NaturalLanguageInterpreter):
     @staticmethod
     def allowed_prefixes():
-        return INTENT_MESSAGE_PREFIX + "_"  # _ is deprecated but supported
+        return INTENT_MESSAGE_PREFIX
 
     @staticmethod
     def _create_entities(parsed_entities, sidx, eidx):
@@ -147,54 +147,11 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                            "'{}'. ".format(user_input))
             return None, 0.0, []
 
-    @staticmethod
-    def deprecated_extraction(user_input):
-        """DEPRECATED parse of user input message."""
-
-        value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
-        prefixes = re.escape(RegexInterpreter.allowed_prefixes())
-        structured_message_rx = '^[' + prefixes + ']?([^\[]+)(\[(.+)\])?'
-        m = re.search(structured_message_rx, user_input)
-        if m is not None:
-            intent = m.group(1).lower()
-            offset = m.start(3)
-            entities_str = m.group(3)
-            entities = []
-            if entities_str is not None:
-                for entity_str in entities_str.split(','):
-                    for match in re.finditer(value_assign_rx, entity_str):
-                        start = match.start(2) + offset
-                        end = match.end(0) + offset
-                        entity = {
-                            "entity": match.group(1),
-                            "start": start,
-                            "end": end,
-                            "value": match.group(2)}
-                        entities.append(entity)
-
-            return intent, 1.0, entities
-        else:
-            return None, []
-
-    @staticmethod
-    def is_using_deprecated_format(text):
-        """Indicates if the text string is using the deprecated intent format.
-
-        In the deprecated format entities where annotated using `[name=Rasa]`
-        which has been replaced with `{"name": "Rasa"}`."""
-
-        return (text.find("[") != -1 and
-                (text.find("{") == -1 or text.find("[") < text.find("{")))
-
     def parse(self, text):
         """Parse a text message."""
 
-        if self.is_using_deprecated_format(text):
-            intent, confidence, entities = \
-                self.deprecated_extraction(text)
-        else:
-            intent, confidence, entities = \
-                self.extract_intent_and_entities(text)
+        intent, confidence, entities = \
+            self.extract_intent_and_entities(text)
 
         if self._starts_with_intent_prefix(text):
             message_text = text

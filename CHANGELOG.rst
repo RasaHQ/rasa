@@ -16,6 +16,7 @@ Added
 
 Removed
 -------
+- support for deprecated intents/entities format
 
 Changed
 -------
