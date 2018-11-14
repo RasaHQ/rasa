@@ -5,10 +5,7 @@ from __future__ import unicode_literals
 
 from rasa_core import training
 
-try:  # py3
-    from unittest.mock import patch
-except ImportError:  # py2
-    from mock import patch
+from unittest.mock import patch
 import numpy as np
 import pytest
 

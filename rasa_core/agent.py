@@ -12,11 +12,9 @@ import uuid
 import zipfile
 from threading import Thread
 
-import six
 import typing
 from gevent.pywsgi import WSGIServer
 from requests.exceptions import InvalidURL, RequestException
-from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 import rasa_core
@@ -36,18 +34,13 @@ from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.utils import is_url
+from io import BytesIO as IOReader
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     # noinspection PyPep8Naming
     from rasa_core.nlg import NaturalLanguageGenerator as NLG
-
-if six.PY2:
-    # noinspection PyUnresolvedReferences
-    from StringIO import StringIO as IOReader
-else:
-    from io import BytesIO as IOReader
 
 
 def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
@@ -390,7 +383,7 @@ class Agent(object):
 
         """
 
-        if isinstance(text_message, string_types):
+        if isinstance(text_message, str):
             text_message = {"text": text_message}
 
         msg = UserMessage(text_message.get("text"),
@@ -510,7 +503,7 @@ class Agent(object):
                             "https://rasa.com/docs/core/migrations.html#x-to"
                             "-0-9-0")
 
-        if isinstance(training_trackers, string_types):
+        if isinstance(training_trackers, str):
             # the user most likely passed in a file name to load training
             # data from
             raise Exception("Passing a file name to `agent.train(...)` is "
@@ -648,7 +641,7 @@ class Agent(object):
     def _create_domain(domain):
         # type: (Union[None, Domain, Text]) -> Domain
 
-        if isinstance(domain, string_types):
+        if isinstance(domain, str):
             return Domain.load(domain)
         elif isinstance(domain, Domain):
             return domain

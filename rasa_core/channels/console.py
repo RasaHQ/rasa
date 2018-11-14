@@ -7,7 +7,6 @@ from builtins import input
 
 import json
 import requests
-import six
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
@@ -33,13 +32,7 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
 
 
 def get_cmd_input():
-    text = input().strip()
-    if six.PY2:
-        # in python 2 input doesn't return unicode values
-        # noinspection PyUnresolvedReferences
-        return text.decode("utf-8")
-    else:
-        return text
+    return input().strip()
 
 
 def send_message_receive_block(server_url, auth_token, sender_id, message):
