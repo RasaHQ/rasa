@@ -243,12 +243,13 @@ def format_bot_output(message):
     # type: (Dict[Text, Any]) -> Text
     """Format a bot response to be displayed in the history table."""
 
-    if "text" in message:
-        output = message.get("text")
-    else:
-        output = ""
+    output = ""
 
-    # Append all additional items
+    # First, add text to output
+    if message.get("text"):
+        output += message.get("text")
+
+    # Then, append all additional items
     data = message.get("data", {})
     if data.get("image"):
         output += "\nImage: " + data.get("image")
