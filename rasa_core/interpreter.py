@@ -150,8 +150,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
     def parse(self, text):
         """Parse a text message."""
 
-        intent, confidence, entities = \
-            self.extract_intent_and_entities(text)
+        intent, confidence, entities = self.extract_intent_and_entities(text)
 
         if self._starts_with_intent_prefix(text):
             message_text = text

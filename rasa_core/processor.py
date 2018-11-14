@@ -242,7 +242,9 @@ class MessageProcessor(object):
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
-        if (message.text.startswith(INTENT_MESSAGE_PREFIX)):
+        if message.text.startswith(INTENT_MESSAGE_PREFIX):
+            parse_data = RegexInterpreter().parse(message.text)
+        else:
             parse_data = self.interpreter.parse(message.text)
 
         logger.debug("Received user message '{}' with intent '{}' "

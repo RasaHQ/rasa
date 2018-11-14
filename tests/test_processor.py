@@ -21,6 +21,13 @@ def test_message_processor(default_processor):
             'text': 'hey there Core!'} == out.latest_output()
 
 
+def test_parsing(default_processor):
+    message = '/greet{"name":"boy"}'
+    parsed = default_processor._parse_message(message)
+    assert parsed["intent"]["name"] == 'greet'
+    assert parsed["entities"]["entity"] == 'name'
+
+
 def test_reminder_scheduled(default_processor):
     out = CollectingOutputChannel()
     sender_id = uuid.uuid4().hex
