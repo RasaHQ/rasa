@@ -72,6 +72,7 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    http
    python
    persist
+   endpoint_configuration
    docker
 
 .. toctree::

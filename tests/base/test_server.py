@@ -61,12 +61,6 @@ def test_status(app):
 
 
 @pytest.inlineCallbacks
-def test_config(app):
-    response = yield app.get("http://dummy-uri/config")
-    assert response.code == 200
-
-
-@pytest.inlineCallbacks
 def test_version(app):
     response = yield app.get("http://dummy-uri/version")
     rjs = yield response.json()
