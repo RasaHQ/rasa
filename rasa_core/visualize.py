@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     agent = Agent(args.domain, policies=[MemoizationPolicy(), KerasPolicy()])
 
-    # this is optional, only needed if the `_greet` type of
+    # this is optional, only needed if the `/greet` type of
     # messages in the stories should be replaced with actual
     # messages (e.g. `hello`)
     if args.nlu_data is not None:
