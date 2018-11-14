@@ -257,9 +257,16 @@ def format_bot_output(message):
         output += "\nAttachment: " + data.get("attachment")
 
     if data.get("buttons"):
+        output += "\nButtons:"
         for idx, button in enumerate(data.get("buttons")):
             button_str = button_to_string(button, idx)
             output += "\n" + button_str
+
+    if data.get("elements"):
+        output += "\nElements:"
+        for idx, element in enumerate(data.get("elements")):
+            element_str = element_to_string(element, idx)
+            output += "\n" + element_str
     return output
 
 
