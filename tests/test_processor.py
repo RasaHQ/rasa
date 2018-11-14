@@ -12,6 +12,7 @@ from rasa_core.dispatcher import Button, Dispatcher
 from rasa_core.events import (
     ReminderScheduled, UserUttered, ActionExecuted,
     BotUttered, Restarted)
+from rasa_nlu.training_data import Message
 
 
 def test_message_processor(default_processor):
@@ -22,10 +23,7 @@ def test_message_processor(default_processor):
 
 
 def test_parsing(default_processor):
-    class Message():
-        text = '/greet{"name":"boy"}'
-
-    message = Message()
+    message = Message('/greet{"name":"boy"}')
     parsed = default_processor._parse_message(message)
     assert parsed["intent"]["name"] == 'greet'
     assert parsed["entities"][0]["entity"] == 'name'
