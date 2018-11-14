@@ -804,6 +804,7 @@ def _write_domain_to_file(domain_path, evts, endpoint):
 
     domain_dict = dict.fromkeys(domain.keys(), {})  # type: Dict[Text, Any]
 
+    domain_dict["forms"] = []
     domain_dict["intents"] = _intents_from_messages(messages)
     domain_dict["entities"] = _entities_from_messages(messages)
     domain_dict["actions"] = list({e["name"] for e in actions})
