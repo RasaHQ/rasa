@@ -77,7 +77,7 @@ def button_to_string(button, idx=0):
                      idx=idx + 1,
                      title=title,
                      payload=payload,
-                     button=json.dumps(button))
+                     button=json.dumps(button, sort_keys=True))
 
     return button_string
 
@@ -90,7 +90,7 @@ def element_to_string(element, idx=0):
     element_string = "{idx}: {title} {element}".format(
                       idx=idx + 1,
                       title=title,
-                      element=json.dumps(element))
+                      element=json.dumps(element, sort_keys=True))
 
     return element_string
 
