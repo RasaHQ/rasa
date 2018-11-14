@@ -171,12 +171,12 @@ class StoryFileReader(object):
                                                    template_variables, use_e2e)
             story_steps.extend(steps)
 
-            # if exclusion percentage is not 100
-            if exclusion_percentage and exclusion_percentage is not 100:
-                import random
-                idx = int(round(exclusion_percentage/100.0 * len(story_steps)))
-                random.shuffle(story_steps)
-                story_steps = story_steps[:-idx]
+        # if exclusion percentage is not 100
+        if exclusion_percentage and exclusion_percentage is not 100:
+            import random
+            idx = int(round(exclusion_percentage/100.0 * len(story_steps)))
+            random.shuffle(story_steps)
+            story_steps = story_steps[:-idx]
 
         return story_steps
 
