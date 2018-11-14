@@ -38,7 +38,8 @@ class NestedEntityExtractor(EntityExtractor):
     def train(self, training_data, cfg, **kwargs):
         # type: (TrainingData) -> None
         self.add_lookup_tables(training_data.lookup_tables)
-        self.nested_entities['composite_entities'] = training_data.composite_entities
+        ce = training_data.composite_entities
+        self.nested_entities['composite_entities'] = ce
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -157,9 +158,11 @@ class NestedEntityExtractor(EntityExtractor):
         composite_examples = []
         for nested_composite in nested_composites:
             nested_composite_value = nested_composite.split(':')[0]
-            child_of_nested_composite = [x for x in
+            child_of_nested_composite = [
+                x for x in
                 self.nested_entities['composite_entities']
-                if x['name'] == nested_composite_value]
+                if x['name'] == nested_composite_value
+            ]
             if(len(child_of_nested_composite) > 0):
                 child_synonymns = child_of_nested_composite[0]['composites']
                 relevance_score = self.get_relevance(
