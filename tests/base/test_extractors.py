@@ -143,8 +143,9 @@ def test_duckling_entity_extractor(component_builder):
              '"latent":false}] '
     )
     httpretty.enable()
+
     _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
-    _config.set_component_attr("ner_duckling_http", dimensions=["time"])
+    _config.set_component_attr("ner_duckling_http", dimensions=["time"], timezone="UTC", url="http://localhost:8000")
     duckling = component_builder.create_component("ner_duckling_http", _config)
     message = Message("Today is the 5th of May. Let us meet tomorrow.")
     duckling.process(message)
