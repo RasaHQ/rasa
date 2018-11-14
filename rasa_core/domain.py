@@ -17,7 +17,7 @@ from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
 from six import string_types
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from typing import List
 from typing import Optional
 from typing import Text
@@ -34,7 +34,7 @@ class InvalidDomain(Exception):
 
 
 def check_domain_sanity(domain):
-    """Makes sure the domain is properly configured.
+    """Make sure the domain is properly configured.
 
     Checks the settings and checks if there are duplicate actions,
     intents, slots and entities."""
@@ -46,11 +46,8 @@ def check_domain_sanity(domain):
                 if count > 1]
 
     def get_exception_message(duplicates):
-        """Returns a message given a list of error locations.
-
-        Duplicates has the format of (duplicate_actions [List], name [Text]).
-        :param duplicates:
-        :return: """
+        # type: (List[Tuple[List[Text], Text]]) -> Text
+        """Return a message given a list of error locations."""
 
         msg = ""
         for d, name in duplicates:

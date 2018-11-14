@@ -6,28 +6,50 @@ from __future__ import unicode_literals
 import pkg_resources
 
 
-def add_config_arg(parser):
+def add_config_arg(parser, nargs="*", **kwargs):
     """Add an argument to the parser to request a policy configuration."""
 
     parser.add_argument(
             '-c', '--config',
             type=str,
-            nargs="*",
+            nargs=nargs,
             default=[pkg_resources.resource_filename(__name__,
                                                      "../default_config.yml")],
-            help="Policy specification yaml file.")
-    return parser
+            help="Policy specification yaml file.",
+            **kwargs)
 
 
-def add_domain_arg(parser):
+def add_core_model_arg(parser, **kwargs):
+    """Add an argument to the parser to request a policy configuration."""
+
+    parser.add_argument(
+            '--core',
+            type=str,
+            help="Path to a pre-trained core model directory",
+            **kwargs)
+
+
+def add_domain_arg(parser, required=True, **kwargs):
     """Add an argument to the parser to request a the domain file."""
 
     parser.add_argument(
             '-d', '--domain',
             type=str,
-            required=True,
-            help="domain specification yaml file")
-    return parser
+            required=required,
+            help="Domain specification (yml file)",
+            **kwargs)
+
+
+def add_output_arg(parser,
+                   help_text,
+                   required=True,
+                   **kwargs):
+    parser.add_argument(
+            '-o', '--out',
+            type=str,
+            required=required,
+            help=help_text,
+            **kwargs)
 
 
 def add_model_and_story_group(parser, allow_pretrained_model=True):
@@ -39,17 +61,13 @@ def add_model_and_story_group(parser, allow_pretrained_model=True):
     group.add_argument(
             '-s', '--stories',
             type=str,
-            help="file or folder containing the training stories")
+            help="File or folder containing stories")
     group.add_argument(
             '--url',
             type=str,
             help="If supplied, downloads a story file from a URL and "
                  "trains on it. Fetches the data by sending a GET request "
                  "to the supplied URL.")
+
     if allow_pretrained_model:
-        group.add_argument(
-                '--core',
-                default=None,
-                help="path to load a pre-trained model instead of training ("
-                     "for interactive mode only)")
-    return parser
+        add_core_model_arg(group)

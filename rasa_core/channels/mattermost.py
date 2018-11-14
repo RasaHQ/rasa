@@ -59,14 +59,13 @@ class MattermostInput(InputChannel):
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.
-        :param url: Your Mattermost team url including /v4 example
-                    https://mysite.example.com/api/v4
 
-        :param team: Your mattermost team name
-
-        :param user: Your mattermost userid that will post messages
-
-        :param pw: Your mattermost password for your user
+        Args:
+            url: Your Mattermost team url including /v4 example
+                https://mysite.example.com/api/v4
+            team: Your mattermost team name
+            user: Your mattermost userid that will post messages
+            pw: Your mattermost password for your user
         """
         self.url = url
         self.team = team

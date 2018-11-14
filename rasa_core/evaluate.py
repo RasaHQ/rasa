@@ -72,10 +72,6 @@ def add_args_to_parser(parser):
             type=int,
             help="maximum number of stories to test on")
     parser.add_argument(
-            '-d', '--core',
-            type=str,
-            help="core model directory to evaluate")
-    parser.add_argument(
             '-u', '--nlu',
             type=str,
             help="nlu model to run with the server. None for regex interpreter")
@@ -100,6 +96,8 @@ def add_args_to_parser(parser):
             help="If a prediction error is encountered, an exception "
                  "is thrown. This can be used to validate stories during "
                  "tests, e.g. on travis.")
+
+    cli.arguments.add_core_model_arg(parser)
 
     return parser
 
@@ -599,11 +597,17 @@ def run_comparison_evaluation(models, stories_file, output):
                                    num_correct)
 
 
-def plot_curve(output, no_stories, ax=None):
-    """Plot the results from run_comparison_evaluation."""
+def plot_curve(output, no_stories):
+    # type: (Text, List[int]) -> None
+    """Plot the results from run_comparison_evaluation.
+
+    Args:
+        output: Output directory to save resulting plots to
+        no_stories: Number of stories per run
+    """
     import matplotlib.pyplot as plt
 
-    ax = ax or plt.gca()
+    ax = plt.gca()
 
     # load results from file
     data = utils.read_json_file(os.path.join(output, 'results.json'))
@@ -666,11 +670,9 @@ if __name__ == '__main__':
                                   cmdline_arguments.stories,
                                   cmdline_arguments.output)
 
-        story_n_path = os.path.join(cmdline_arguments.core, 'num_stories.p')
+        story_n_path = os.path.join(cmdline_arguments.core, 'num_stories.json')
 
-        with io.open(story_n_path, 'rb') as story_n_file:
-            number_of_stories = pickle.load(story_n_file)
-
+        number_of_stories = utils.read_json_file(story_n_path)
         plot_curve(cmdline_arguments.output, number_of_stories)
 
     logger.info("Finished evaluation")

@@ -37,7 +37,7 @@ Default configuration
 ---------------------
 
 By default, we try to provide you with a good set of configuration values
-and policies that suite most people. But you are encouraged to modify
+and policies that suit most people. But you are encouraged to modify
 these to your needs:
 
 .. literalinclude:: ../rasa_core/default_config.yml

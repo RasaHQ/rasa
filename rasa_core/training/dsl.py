@@ -165,6 +165,11 @@ class StoryFileReader(object):
                          exclusion_percentage=None):
         """Given a path reads all contained story files."""
 
+        if not os.path.exists(resource_name):
+            raise ValueError("Story file or folder could not be found. Make "
+                             "sure '{}' exists and points to a story folder "
+                             "or file.".format(os.path.abspath(resource_name)))
+
         story_steps = []
         for f in nlu_utils.list_files(resource_name):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,

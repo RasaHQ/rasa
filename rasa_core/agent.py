@@ -448,7 +448,7 @@ class Agent(object):
 
         return max(max_histories, default=0)
 
-    def _are_all_featurizes_using_a_max_history(self):
+    def _are_all_featurizers_using_a_max_history(self):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         for policy in self.policy_ensemble.policies:
@@ -477,7 +477,7 @@ class Agent(object):
             # automatically detect unique_last_num_states
             # if it was not set and
             # if all featurizers are MaxHistoryTrackerFeaturizer
-            if self._are_all_featurizes_using_a_max_history():
+            if self._are_all_featurizers_using_a_max_history():
                 unique_last_num_states = max_history
         elif unique_last_num_states < max_history:
             # possibility of data loss
@@ -503,8 +503,9 @@ class Agent(object):
         # type: (...) -> None
         """Train the policies / policy ensemble using dialogue data from file.
 
-            :param training_trackers: trackers to train on
-            :param kwargs: additional arguments passed to the underlying ML
+        Args:
+            training_trackers: trackers to train on
+            **kwargs: additional arguments passed to the underlying ML
                            trainer (e.g. keras parameters)
         """
 

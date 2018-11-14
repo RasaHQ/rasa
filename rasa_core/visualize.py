@@ -41,7 +41,7 @@ def create_argument_parser():
 
     utils.add_logging_option_arguments(parser)
 
-    cli.arguments.add_config_arg(parser)
+    cli.arguments.add_config_arg(parser, nargs=1)
     cli.arguments.add_domain_arg(parser)
     cli.arguments.add_model_and_story_group(parser,
                                             allow_pretrained_model=False)
@@ -53,10 +53,6 @@ if __name__ == '__main__':
     cmdline_arguments = arg_parser.parse_args()
 
     utils.configure_colored_logging(cmdline_arguments.loglevel)
-
-    if (isinstance(cmdline_arguments.config, list) and
-            len(cmdline_arguments.config) > 1):
-        raise ValueError("You can only pass one config file at a time")
 
     policies = config.load(cmdline_arguments.config[0])
 

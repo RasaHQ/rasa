@@ -6,10 +6,9 @@ from __future__ import unicode_literals
 from builtins import str
 
 import argparse
-import io
 import logging
 import os
-import pickle
+import tempfile
 
 from rasa_core import config, cli
 from rasa_core import utils
@@ -30,29 +29,36 @@ def create_argument_parser():
     """Parse all the command line arguments for the training script."""
 
     parser = argparse.ArgumentParser(
-            description='trains a dialogue model')
+            description='Train a dialogue model for Rasa Core. '
+                        'The training will use your conversations '
+                        'in the story training data format and '
+                        'your domain definition to train a dialogue '
+                        'model to predict a bots actions.')
     parent_parser = argparse.ArgumentParser(add_help=False)
-    add_args_to_parser(parent_parser)
-    cli.arguments.add_domain_arg(parent_parser)
-    cli.arguments.add_config_arg(parent_parser)
-    cli.arguments.add_model_and_story_group(parent_parser)
-    utils.add_logging_option_arguments(parent_parser)
-    subparsers = parser.add_subparsers(help='mode', dest='mode')
-    subparsers.add_parser('default',
-                          help='default mode: train a dialogue'
-                               ' model',
-                          parents=[parent_parser])
-    compare_parser = subparsers.add_parser('compare',
-                                           help='compare mode: train multiple '
-                                                'dialogue models to compare '
-                                                'policies',
-                                           parents=[parent_parser])
-    interactive_parser = subparsers.add_parser('interactive',
-                                               help='teach the bot with '
-                                                    'interactive learning',
-                                               parents=[parent_parser])
+    add_general_args(parent_parser)
+
+    subparsers = parser.add_subparsers(
+            help='Training mode of core.',
+            dest='mode')
+    subparsers.required = True
+
+    train_parser = subparsers.add_parser(
+            'default',
+            help='train a dialogue model',
+            parents=[parent_parser])
+    compare_parser = subparsers.add_parser(
+            'compare',
+            help='train multiple dialogue models to compare '
+                 'policies',
+            parents=[parent_parser])
+    interactive_parser = subparsers.add_parser(
+            'interactive',
+            help='teach the bot with interactive learning',
+            parents=[parent_parser])
+
     add_compare_args(compare_parser)
     add_interactive_args(interactive_parser)
+    add_train_args(train_parser)
 
     return parser
 
@@ -69,6 +75,20 @@ def add_compare_args(parser):
             type=int,
             default=3,
             help="Number of runs for experiments")
+
+    cli.arguments.add_output_arg(
+            parser,
+            help_text="directory to persist the trained model in",
+            required=True)
+    cli.arguments.add_config_arg(
+            parser,
+            nargs="*")
+    cli.arguments.add_model_and_story_group(
+            parser,
+            allow_pretrained_model=False)
+    cli.arguments.add_domain_arg(
+            parser,
+            required=True)
 
 
 def add_interactive_args(parser):
@@ -93,13 +113,38 @@ def add_interactive_args(parser):
             action='store_true',
             help="retrain the model immediately based on feedback.")
 
+    cli.arguments.add_output_arg(
+            parser,
+            help_text="directory to persist the trained model in",
+            required=False)
+    cli.arguments.add_config_arg(
+            parser,
+            nargs=1)
+    cli.arguments.add_model_and_story_group(
+            parser,
+            allow_pretrained_model=True)
+    cli.arguments.add_domain_arg(
+            parser,
+            required=False)
 
-def add_args_to_parser(parser):
-    parser.add_argument(
-            '-o', '--out',
-            type=str,
-            required=False,
-            help="directory to persist the trained model in")
+
+def add_train_args(parser):
+    cli.arguments.add_config_arg(
+            parser,
+            nargs=1)
+    cli.arguments.add_output_arg(
+            parser,
+            help_text="directory to persist the trained model in",
+            required=True)
+    cli.arguments.add_model_and_story_group(
+            parser,
+            allow_pretrained_model=False)
+    cli.arguments.add_domain_arg(
+            parser,
+            required=True)
+
+
+def add_general_args(parser):
     parser.add_argument(
             '--augmentation',
             type=int,
@@ -118,7 +163,7 @@ def add_args_to_parser(parser):
                  "and their connections between story blocks in a  "
                  "file called `story_blocks_connections.pdf`.")
 
-    return parser
+    utils.add_logging_option_arguments(parser)
 
 
 def train_dialogue_model(domain_file, stories_file, output_path,
@@ -220,14 +265,6 @@ def get_no_of_stories(story_file, domain):
 def do_default_training(cmdline_args, stories, additional_arguments):
     """Train a model."""
 
-    if not cmdline_args.out:
-        raise ValueError("you must provide a path where the model "
-                         "will be saved using -o / --out")
-
-    if (isinstance(cmdline_args.config, list) and
-            len(cmdline_args.config) > 1):
-        raise ValueError("You can only pass one config file at a time")
-
     train_dialogue_model(domain_file=cmdline_args.domain,
                          stories_file=stories,
                          output_path=cmdline_args.out,
@@ -237,10 +274,6 @@ def do_default_training(cmdline_args, stories, additional_arguments):
 
 
 def do_compare_training(cmdline_args, stories, additional_arguments):
-    if not cmdline_args.out:
-        raise ValueError("you must provide a path where the model "
-                         "will be saved using -o / --out")
-
     train_comparison_models(stories,
                             cmdline_args.domain,
                             cmdline_args.out,
@@ -258,8 +291,8 @@ def do_compare_training(cmdline_args, stories, additional_arguments):
     story_range = [no_stories - round((x / 100.0) * no_stories)
                    for x in cmdline_args.percentages]
 
-    with io.open(os.path.join(cmdline_args.out, 'num_stories.p'), 'wb') as f:
-        pickle.dump(story_range, f)
+    story_n_path = os.path.join(cmdline_args.out, 'num_stories.json')
+    utils.dump_obj_as_json_to_file(story_n_path, story_range)
 
 
 def do_interactive_learning(cmdline_args, stories, additional_arguments):
@@ -267,15 +300,12 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
 
-    if (isinstance(cmdline_args.config, list) and
-            len(cmdline_args.config) > 1):
-        raise ValueError("You can only pass one config file at a time")
+    if cmdline_args.core:
+        if cmdline_args.finetune:
+            raise ValueError("--core can only be used without --finetune flag.")
 
-    if cmdline_args.core and cmdline_args.finetune:
-        raise ValueError("--core can only be used without --finetune flag.")
-    elif cmdline_args.core:
-        logger.info("loading a pre-trained model. "
-                    "all training-related parameters will be ignored")
+        logger.info("Loading a pre-trained model. This means that "
+                    "all training-related parameters will be ignored.")
 
         _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
         _tracker_store = TrackerStore.find_tracker_store(
@@ -289,13 +319,14 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
                             tracker_store=_tracker_store,
                             action_endpoint=_endpoints.action)
     else:
-        if not cmdline_args.out:
-            raise ValueError("you must provide a path where the model "
-                             "will be saved using -o / --out")
+        if cmdline_args.out:
+            model_directory = cmdline_args.out
+        else:
+            model_directory = tempfile.mkdtemp(suffix="_core_model")
 
         _agent = train_dialogue_model(cmdline_args.domain,
                                       stories,
-                                      cmdline_args.out,
+                                      model_directory,
                                       _interpreter,
                                       _endpoints,
                                       cmdline_args.dump_stories,
@@ -315,9 +346,6 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     set_default_subparser(arg_parser, 'default')
     cmdline_arguments = arg_parser.parse_args()
-    if not cmdline_arguments.mode:
-        raise ValueError("You must specify the mode you want training to run "
-                         "in. The options are: (default|compare|interactive)")
     additional_args = _additional_arguments(cmdline_arguments)
 
     utils.configure_colored_logging(cmdline_arguments.loglevel)

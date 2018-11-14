@@ -65,11 +65,11 @@ class PolicyEnsemble(object):
         if training_trackers:
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
-            self.training_trackers = training_trackers
-            self.date_trained = datetime.now().strftime('%Y%m%d-%H%M%S')
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
+        self.training_trackers = training_trackers
+        self.date_trained = datetime.now().strftime('%Y%m%d-%H%M%S')
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> Tuple[List[float], Text]
