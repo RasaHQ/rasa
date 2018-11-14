@@ -21,7 +21,7 @@ from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string
+from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
     DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
 from rasa_core.domain import Domain
