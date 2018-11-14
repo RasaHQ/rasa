@@ -88,7 +88,7 @@ def element_to_string(element, idx=0):
     title = element.get('title', '')
 
     element_string = "{idx}: {title} {element}".format(
-                      idx=idx,
+                      idx=idx + 1,
                       title=title,
                       element=json.dumps(element))
 

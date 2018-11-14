@@ -69,13 +69,15 @@ def test_bot_output_format():
                          "Image: http://example.com/myimage.png\n"
                          "Attachment: My Attachment\n"
                          "Buttons:\n"
-                         "1: yes (/yes) {\"payload\": \"/yes\", \"title\": \"yes\"}\n"
-                         "2: no (/no) {\"payload\": \"/no\", \"title\": \"no\"}\n"
+                         "1: yes (/yes) {\"payload\": \"/yes\", "
+                         "\"title\": \"yes\"}\n"
+                         "2: no (/no) {\"payload\": \"/no\", "
+                         "\"title\": \"no\"}\n"
                          "Elements:\n"
-                         "0: element1 {\"buttons\": [{\"payload\": \"/button1\", "
-                         "\"title\": \"button1\"}], \"title\": \"element1\"}\n"
-                         "1: element2 {\"buttons\": [{\"payload\": \"/button2\", "
-                         "\"title\": \"button2\"}], \"title\": \"element2\"}")
+                         "1: element1 {\"buttons\": [{\"payload\": \"/button1\""
+                         ", \"title\": \"button1\"}], \"title\": \"element1\"}\n"
+                         "2: element2 {\"buttons\": [{\"payload\": \"/button2\""
+                         ", \"title\": \"button2\"}], \"title\": \"element2\"}")
 
 
 def test_latest_user_message():
