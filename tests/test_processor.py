@@ -22,10 +22,13 @@ def test_message_processor(default_processor):
 
 
 def test_parsing(default_processor):
-    message = '/greet{"name":"boy"}'
+    class Message():
+        text = '/greet{"name":"boy"}'
+
+    message = Message()
     parsed = default_processor._parse_message(message)
     assert parsed["intent"]["name"] == 'greet'
-    assert parsed["entities"]["entity"] == 'name'
+    assert parsed["entities"][0]["entity"] == 'name'
 
 
 def test_reminder_scheduled(default_processor):
