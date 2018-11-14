@@ -16,10 +16,10 @@ Install Rasa Core to get started with the Rasa stack.
 Install Rasa Core
 -----------------
 
-Stable (Most recent release)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Stable (Recommended)
+~~~~~~~~~~~~~~~~~~~~
 
-The recommended way to install Rasa Core is using pip:
+The recommended way to install Rasa Core is using pip which will install the latest stable release of Rasa Core:
 
 .. copyable::
 
@@ -33,7 +33,7 @@ If you already have `rasa_core` installed and want to update it run:
     pip install -U rasa_core
 
 Unless you've already got numpy & scipy installed, we highly recommend
-that you install and use `Anaconda <https://www.continuum.io\/downloads>`_.
+that you install and use `Anaconda <https://www.anaconda.com/download/>`_.
 
 .. note::
 
