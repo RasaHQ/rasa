@@ -446,7 +446,7 @@ class Agent(object):
                          for policy in self.policy_ensemble.policies
                          if hasattr(policy.featurizer, 'max_history')]
 
-        return max(max_histories, default=0)
+        return max(max_histories or [0])
 
     def _are_all_featurizers_using_a_max_history(self):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
