@@ -194,3 +194,16 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     result = utils.read_yaml(content)
 
     assert result['model']['test'] == 'dir/test/dir'
+
+
+def test_emojis_in_tmp_file():
+    test_data = """
+        data:
+            - one 😁
+        """
+    test_file = utils.create_temporary_file(test_data)
+    with io.open(test_file, mode='r', encoding="utf-8") as file:
+        content = file.read()
+    actual = utils.read_yaml(content)
+
+    assert actual["data"][0] == "one 😁"

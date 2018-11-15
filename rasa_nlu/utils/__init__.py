@@ -358,7 +358,7 @@ def create_temporary_file(data, suffix="", mode="w+"):
 
     if PY3:
         f = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
-                                        delete=False)
+                                        delete=False, encoding="utf-8")
         f.write(data)
     else:
         f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
