@@ -18,7 +18,7 @@ from rasa_core.featurizers import BinarySingleStateFeaturizer, \
 
 
 @pytest.mark.parametrize("filename", glob.glob(
-            "data/test_config/example_config.yaml"))
+    "data/test_config/example_config.yaml"))
 def test_load_config(filename):
     loaded = load(filename)
     assert len(loaded) == 2
@@ -61,7 +61,7 @@ def test_ensemble_from_dict():
     # Check if all policies are present
     assert len(ensemble) == 4
     # MemoizationPolicy is parent of FormPolicy
-    assert any([isinstance(p, MemoizationPolicy) and \
+    assert any([isinstance(p, MemoizationPolicy) and
                 not isinstance(p, FormPolicy) for p in ensemble])
     assert any([isinstance(p, KerasPolicy) for p in ensemble])
     assert any([isinstance(p, FallbackPolicy) for p in ensemble])
