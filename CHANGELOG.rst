@@ -4,6 +4,24 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+.. _master-release:
+
+[Unreleased 0.13.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note:: This version is not yet released and is under active development.
+
+Added
+-----
+
+Removed
+-------
+
+Changed
+-------
+
+Fixed
+-----
 
 [0.12.1] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^
@@ -22,6 +40,7 @@ Fixed
 - fix writing of new domain file from interactive learning
 - fix reading of state featurizers from yaml
 - fix reading of batch_size parameter in keras policy
+
 
 .. _v0-12-0:
 
