@@ -523,16 +523,9 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
 
 
 def arguments_of(func):
-    """Return the parameters of the function `func` """
-    """as a list of their names."""
+    """Return the parameters of the function `func` as a list of names."""
 
-    try:
-        # python 3.x is used
-        return list(inspect.signature(func).parameters.keys())
-    except AttributeError:
-        # python 2.x is used
-        # noinspection PyDeprecation
-        return list(inspect.getargspec(func).args)
+    return list(inspect.signature(func).parameters.keys())
 
 
 def concat_url(base, subpath):
