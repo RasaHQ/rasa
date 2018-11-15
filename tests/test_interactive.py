@@ -1,3 +1,4 @@
+import yaml
 import json
 import pytest
 import uuid
@@ -205,3 +206,24 @@ def test_undo_latest_msg(mock_endpoint):
     replaced_evts = json.loads(b)
     assert len(replaced_evts) == 6
     assert replaced_evts == evts[:6]
+
+
+def test_interactive_domain_persistance(mock_endpoint, tmpdir):
+    # Test method interactive._write_domain_to_file
+
+    url = '{}/domain'.format(mock_endpoint.url)
+    httpretty.register_uri(httpretty.GET, url, body='{}')
+    httpretty.enable()
+
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(utils.read_file(tracker_dump))
+
+    events = tracker_json.get("events", [])
+
+    domain_path = tmpdir.join("interactive_domain_save.yml")
+    interactive._write_domain_to_file(domain_path, events, mock_endpoint)
+
+    saved_domain = yaml.safe_load(open(domain_path))
+
+    httpretty.disable()
+    assert "action_listen" not in saved_domain["actions"]
