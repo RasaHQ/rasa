@@ -208,7 +208,8 @@ class PolicyEnsemble(object):
 
                 if featurizer_config.get('state_featurizer'):
                     state_featurizer_func, state_featurizer_config = \
-                                cls.get_state_featurizer_from_dict(featurizer_config)
+                                cls.get_state_featurizer_from_dict(
+                                    featurizer_config)
 
                     # override featurizer's state_featurizer
                     # with real state_featurizer class

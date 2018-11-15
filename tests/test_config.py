@@ -29,7 +29,7 @@ def test_ensemble_from_dict():
             {'epochs': 50, 'name': 'KerasPolicy', 'featurizer': [
                 {'max_history': 5, 'name': 'MaxHistoryTrackerFeaturizer',
                  'state_featurizer': [
-                 	{'name': 'BinarySingleStateFeaturizer'}]}]},
+                     {'name': 'BinarySingleStateFeaturizer'}]}]},
             {'max_history': 5, 'name': 'MemoizationPolicy'},
             {'core_threshold': 0.7, 'name': 'FallbackPolicy',
              'nlu_threshold': 0.7,
