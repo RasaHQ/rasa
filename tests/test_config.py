@@ -42,6 +42,3 @@ def test_ensemble_from_dict():
     assert any([isinstance(p, KerasPolicy) for p in ensemble])
     assert any([isinstance(p, FallbackPolicy) for p in ensemble])
     assert any([isinstance(p, FormPolicy) for p in ensemble])
-
-
-
