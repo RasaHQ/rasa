@@ -21,18 +21,14 @@ from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 import requests
-import six
 from numpy import all, array
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import InvalidURL
+from io import StringIO
+from urllib.parse import unquote
 
 from rasa_nlu import utils as nlu_utils
 
-if six.PY2:
-    # noinspection PyUnresolvedReferences
-    from StringIO import StringIO
-else:
-    from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -339,10 +335,7 @@ def fix_yaml_loader():
 
 def replace_environment_variables():
     """Enable yaml loader to process the environment variables in the yaml."""
-    if six.PY2:
-        import yaml
-    else:
-        import ruamel.yaml as yaml
+    import ruamel.yaml as yaml
     import re
     import os
 
@@ -356,11 +349,7 @@ def replace_environment_variables():
         prefix, env_var, remaining_path = env_var_pattern.match(value).groups()
         return prefix + os.environ[env_var] + remaining_path
 
-    if six.PY2:
-        yaml.add_constructor(u'!env_var', env_var_constructor)
-    else:
-        yaml.SafeConstructor.add_constructor(
-            u'!env_var', env_var_constructor)
+    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
 def read_yaml_file(filename):
@@ -370,37 +359,24 @@ def read_yaml_file(filename):
 
 def read_yaml_string(string):
     replace_environment_variables()
-    if six.PY2:
-        import yaml
+    import ruamel.yaml
 
-        fix_yaml_loader()
-        return yaml.load(string)
-    else:
-        import ruamel.yaml
+    yaml_parser = ruamel.yaml.YAML(typ="safe")
+    yaml_parser.version = "1.1"
+    yaml_parser.unicode_supplementary = True
 
-        yaml_parser = ruamel.yaml.YAML(typ="safe")
-        yaml_parser.version = "1.1"
-        yaml_parser.unicode_supplementary = True
-
-        return yaml_parser.load(string)
+    return yaml_parser.load(string)
 
 
 def _dump_yaml(obj, output):
-    if six.PY2:
-        import yaml
+    import ruamel.yaml
 
-        yaml.safe_dump(obj, output,
-                       default_flow_style=False,
-                       allow_unicode=True)
-    else:
-        import ruamel.yaml
+    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+    yaml_writer.unicode_supplementary = True
+    yaml_writer.default_flow_style = False
+    yaml_writer.version = "1.1"
 
-        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-        yaml_writer.unicode_supplementary = True
-        yaml_writer.default_flow_style = False
-        yaml_writer.version = "1.1"
-
-        yaml_writer.dump(obj, output)
+    yaml_writer.dump(obj, output)
 
 
 def dump_obj_as_yaml_to_file(filename, obj):
@@ -430,7 +406,6 @@ def read_json_file(filename):
 
 def list_routes(app):
     """List all available routes of a flask web server."""
-    from six.moves.urllib.parse import unquote
     from flask import url_for
 
     output = {}
@@ -548,16 +523,9 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
 
 
 def arguments_of(func):
-    """Return the parameters of the function `func` """
-    """as a list of their names."""
+    """Return the parameters of the function `func` as a list of names."""
 
-    try:
-        # python 3.x is used
-        return list(inspect.signature(func).parameters.keys())
-    except AttributeError:
-        # python 2.x is used
-        # noinspection PyDeprecation
-        return list(inspect.getargspec(func).args)
+    return list(inspect.signature(func).parameters.keys())
 
 
 def concat_url(base, subpath):

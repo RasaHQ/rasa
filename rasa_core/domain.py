@@ -16,7 +16,6 @@ from rasa_core.constants import REQUESTED_SLOT
 from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from six import string_types
 from typing import Dict, Any, Tuple
 from typing import List
 from typing import Optional
@@ -210,7 +209,7 @@ class Domain(object):
             for t in template_variations:
                 # templates can either directly be strings or a dict with
                 # options we will always create a dict out of them
-                if isinstance(t, string_types):
+                if isinstance(t, str):
                     validated_variations.append({"text": t})
                 elif "text" not in t:
                     raise InvalidDomain("Utter template '{}' needs to contain"

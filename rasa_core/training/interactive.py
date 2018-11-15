@@ -11,7 +11,6 @@ import numpy as np
 import os
 import pkg_resources
 import requests
-import six
 import textwrap
 import uuid
 from PyInquirer import prompt
@@ -1157,7 +1156,7 @@ def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
 
     event_sequences = []
     for sender_id in sender_ids:
-        if isinstance(sender_id, six.string_types):
+        if isinstance(sender_id, str):
             tracker = retrieve_tracker(endpoint, sender_id)
             evts = tracker.get("events", [])
 
