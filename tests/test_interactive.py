@@ -223,7 +223,7 @@ def test_interactive_domain_persistance(mock_endpoint, tmpdir):
     domain_path = tmpdir.join("interactive_domain_save.yml")
     interactive._write_domain_to_file(domain_path, events, mock_endpoint)
 
-    saved_domain = yaml.safe_load(open(domain_path))
+    saved_domain = utils.read_yaml_file(domain_path)
 
     httpretty.disable()
     assert "action_listen" not in saved_domain["actions"]
