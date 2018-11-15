@@ -20,6 +20,7 @@ Changed
   config parameters as well as comments and types for all class functions.
 - the http server's ``POST /evaluate`` endpoint returns evaluation results
   for both entities and intents
+- use cloudpickle version 0.6.1
 
 Removed
 -------
