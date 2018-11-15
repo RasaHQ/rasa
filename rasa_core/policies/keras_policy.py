@@ -73,7 +73,7 @@ class KerasPolicy(Policy):
 
         self.rnn_size = config['rnn_size']
         self.epochs = config['epochs']
-        self.batch_size = config['epochs']
+        self.batch_size = config['batch_size']
         self.validation_split = config['validation_split']
 
     @property
