@@ -296,38 +296,6 @@ class HashableNDArray(object):
         return self.__wrapped
 
 
-def fix_yaml_loader():
-    """Ensure that any string read by yaml is represented as unicode."""
-    import yaml
-    import re
-
-    def construct_yaml_str(self, node):
-        # Override the default string handling function
-        # to always return unicode objects
-        return self.construct_scalar(node)
-
-    # this will allow the reader to process emojis under py2
-    # need to differentiate between narrow build (e.g. osx, windows) and
-    # linux build. in the narrow build, emojis are 2 char strings using a
-    # surrogate
-    if sys.maxunicode == 0xffff:
-        # noinspection PyUnresolvedReferences
-        yaml.reader.Reader.NON_PRINTABLE = re.compile(
-                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
-                '\ude00-\ude50\udc4d\ud83c\udf89\ude80\udc4c\ud83e\uddde'
-                '\udd74\udcde\uddd1\udd16]')
-    else:
-        # noinspection PyUnresolvedReferences
-        yaml.reader.Reader.NON_PRINTABLE = re.compile(
-                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
-                '\U00010000-\U0010FFFF]')
-
-    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str',
-                                construct_yaml_str)
-    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
-                                    construct_yaml_str)
-
-
 def replace_environment_variables():
     """Enable yaml loader to process the environment variables in the yaml."""
     import ruamel.yaml as yaml
