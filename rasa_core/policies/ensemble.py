@@ -208,7 +208,8 @@ class PolicyEnsemble(object):
 
                 if featurizer_config.get('state_featurizer'):
                     state_featurizer_func, state_featurizer_config = \
-                                cls.get_featurizer_from_dict(featurizer_config)
+                                cls.get_state_featurizer_from_dict(
+                                    featurizer_config)
 
                     # override featurizer's state_featurizer
                     # with real state_featurizer class
@@ -226,7 +227,8 @@ class PolicyEnsemble(object):
 
         return policies
 
-    def get_featurizer_from_dict(self, policy):
+    @classmethod
+    def get_featurizer_from_dict(cls, policy):
         # policy can have only 1 featurizer
         if len(policy['featurizer']) > 1:
             raise InvalidPolicyConfig(
@@ -237,7 +239,8 @@ class PolicyEnsemble(object):
 
         return featurizer_func, featurizer_config
 
-    def get_state_featurizer_from_dict(self, featurizer_config):
+    @classmethod
+    def get_state_featurizer_from_dict(cls, featurizer_config):
         # featurizer can have only 1 state featurizer
         if len(featurizer_config['state_featurizer']) > 1:
             raise InvalidPolicyConfig(
