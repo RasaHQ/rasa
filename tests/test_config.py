@@ -47,22 +47,22 @@ def test_ensemble_from_dict():
         assert p.core_threshold == 0.7
 
     ensemble_dict = {'policies': [
-            {'epochs': 50, 'name': 'KerasPolicy', 'featurizer': [
-                {'max_history': 5, 'name': 'MaxHistoryTrackerFeaturizer',
-                 'state_featurizer': [
-                     {'name': 'BinarySingleStateFeaturizer'}]}]},
-            {'max_history': 5, 'name': 'MemoizationPolicy'},
-            {'core_threshold': 0.7, 'name': 'FallbackPolicy',
-             'nlu_threshold': 0.7,
-             'fallback_action_name': 'action_default_fallback'},
-            {'name': 'FormPolicy'}]}
+        {'epochs': 50, 'name': 'KerasPolicy', 'featurizer': [
+            {'max_history': 5, 'name': 'MaxHistoryTrackerFeaturizer',
+             'state_featurizer': [
+                 {'name': 'BinarySingleStateFeaturizer'}]}]},
+        {'max_history': 5, 'name': 'MemoizationPolicy'},
+        {'core_threshold': 0.7, 'name': 'FallbackPolicy',
+         'nlu_threshold': 0.7,
+         'fallback_action_name': 'action_default_fallback'},
+        {'name': 'FormPolicy'}]}
     ensemble = PolicyEnsemble.from_dict(ensemble_dict)
 
     # Check if all policies are present
     assert len(ensemble) == 4
     # MemoizationPolicy is parent of FormPolicy
-    assert any([isinstance(p, MemoizationPolicy) and
-        not isinstance(p, FormPolicy) for p in ensemble])
+    assert any([isinstance(p, MemoizationPolicy) and \
+                not isinstance(p, FormPolicy) for p in ensemble])
     assert any([isinstance(p, KerasPolicy) for p in ensemble])
     assert any([isinstance(p, FallbackPolicy) for p in ensemble])
     assert any([isinstance(p, FormPolicy) for p in ensemble])
@@ -70,7 +70,7 @@ def test_ensemble_from_dict():
     # Verify policy configurations
     for policy in ensemble:
         if isinstance(policy, MemoizationPolicy) \
-        and not isinstance(policy, FormPolicy):
+                and not isinstance(policy, FormPolicy):
             check_memoization(policy)
         elif isinstance(policy, KerasPolicy):
             check_keras(policy)
