@@ -5,7 +5,6 @@ cache:
   - "$HOME/.cache/pip"
   - "$HOME/build/amn41/rasa_core/data"
 python:
-- '2.7'
 - '3.5'
 - '3.6'
 install:
