@@ -13,7 +13,7 @@ from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.policies.ensemble import PolicyEnsemble
-from rasa_core.featurizers import BinarySingleStateFeaturizer, 
+from rasa_core.featurizers import BinarySingleStateFeaturizer, \
     MaxHistoryTrackerFeaturizer
 
 
