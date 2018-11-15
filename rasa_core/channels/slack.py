@@ -152,7 +152,7 @@ class SlackInput(InputChannel):
             return Response(status=201, headers={'X-Slack-No-Retry': 1})
 
         try:
-            out_channel = SlackBot(self.slack_token)
+            out_channel = SlackBot(self.slack_token, self.slack_channel)
             user_msg = UserMessage(text, out_channel, sender_id,
                                    input_channel=self.name())
             on_new_message(user_msg)

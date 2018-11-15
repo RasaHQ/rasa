@@ -16,6 +16,12 @@ Fixed
   visualisation script
 - use default configuration if no policy configuration is passed
 - fixed html delivery from interactive server script (package compatible)
+- ``SlackBot`` when created in ``SlackInputChannel`` inherits the
+  ``slack_channel`` property, allowing Slack bots to post to any channel
+  instead of only back to the user
+- fix writing of new domain file from interactive learning
+- fix reading of state featurizers from yaml
+- fix reading of batch_size parameter in keras policy
 
 .. _v0-12-0:
 
