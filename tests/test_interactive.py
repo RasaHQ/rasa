@@ -216,7 +216,7 @@ def test_interactive_domain_persistance(mock_endpoint, tmpdir):
     httpretty.enable()
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(utils.read_file(tracker_dump))
+    tracker_json = utils.read_json_file(tracker_dump)
 
     events = tracker_json.get("events", [])
 
