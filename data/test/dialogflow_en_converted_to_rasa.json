@@ -281,8 +281,8 @@
       {
         "composites": [
           "and",
-          "@carbohydrates:carbohydrates",
-          "@protein:protein"
+          "@carbohydrates",
+          "@protein"
         ],
         "name": "meal"
       }

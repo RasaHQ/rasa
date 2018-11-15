@@ -108,7 +108,7 @@ class NestedEntityExtractor(EntityExtractor):
 
     def split_by_lookup_tables(self, composite_child, broad_value):
         broken_entity = {}
-        child_name = composite_child.split(':')[0][1:]
+        child_name = composite_child[1:]
         for each_lookup in self.nested_entities['lookup_tables']:
             if(each_lookup['name'] == child_name):
                 broken_entity = self.merge_two_dicts(
@@ -120,18 +120,14 @@ class NestedEntityExtractor(EntityExtractor):
 
     def split_by_sys(self, composite_child, broad_value):
         broken_entity = {}
-        if(composite_child[0:11] == '@sys.number'):
-            child_name = composite_child.split(':')[1]
+        if(composite_child in ['@number', '@year']):
+            child_name = composite_child[1:]
             expression = r'\d+'
             if(child_name == 'year'):
                 expression = r'\d{4}'
-
-            match = re.findall(r'\d+', broad_value)
+            match = re.findall(expression, broad_value)
             if(match):
                 broken_entity[child_name] = match[0]
-            # TODO ['one', 'two', 'three', 'four', 'five', 'six',
-            # 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
-            # find the examples of one, twi, three, four, etc
         return broken_entity
 
     def split_one_level(self, composite_child, broad_value):
@@ -156,9 +152,8 @@ class NestedEntityExtractor(EntityExtractor):
         highest_relevance_score = 0
         composite_examples = []
         for nested_composite in nested_composites:
-            nested_composite_value = nested_composite.split(':')[0]
             child_of_nested_composite = filter(
-                lambda x: x['name'] == nested_composite_value,
+                lambda x: x['name'] == nested_composite,
                 self.nested_entities['composite_entities'])
             if(len(child_of_nested_composite) > 0):
                 child_synonymns = child_of_nested_composite[0]['composites']
@@ -192,7 +187,7 @@ class NestedEntityExtractor(EntityExtractor):
 
     def split_two_levels(self, composite_child, broad_value):
         broken_entity = {}
-        child_name = composite_child.split(':')[0][1:]
+        child_name = composite_child[1:]
         for each_nested in self.nested_entities['composite_entities']:
             if(each_nested['name'] == child_name):
                 nested_composites = each_nested['composites']
@@ -242,5 +237,6 @@ class NestedEntityExtractor(EntityExtractor):
     def add_lookup_tables(self, lookup_tables):
         """Need to sort by length so that we get the broadest entry first"""
         for lookup in lookup_tables:
-            lookup['elements'].sort(key=len, reverse=True)
-            self.nested_entities['lookup_tables'].append(lookup)
+            if('elements' in lookup):
+                lookup['elements'].sort(key=len, reverse=True)
+                self.nested_entities['lookup_tables'].append(lookup)
