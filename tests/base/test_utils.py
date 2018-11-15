@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -196,14 +197,28 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     assert result['model']['test'] == 'dir/test/dir'
 
 
+def test_emojis_in_yaml():
+    test_data = """
+    data:
+        - one 😁
+        - two £
+    """
+    actual = utils.read_yaml(test_data)
+
+    assert actual["data"][0] == "one 😁"
+    assert actual["data"][1] == "two £"
+
+
 def test_emojis_in_tmp_file():
     test_data = """
         data:
             - one 😁
+            - two £
         """
     test_file = utils.create_temporary_file(test_data)
-    with io.open(test_file, mode='r', encoding="utf-8") as file:
-        content = file.read()
+    with io.open(test_file, mode='r', encoding="utf-8") as f:
+        content = f.read()
     actual = utils.read_yaml(content)
 
     assert actual["data"][0] == "one 😁"
+    assert actual["data"][1] == "two £"

@@ -20,9 +20,23 @@ import requests
 import simplejson
 import six
 import yaml
+import yaml.reader
 from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
+
+
+if PY3:
+    yaml.reader.Reader.NON_PRINTABLE = re.compile(
+        u'[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\uE000-\uFFFD\U00010000-'
+        u'\U0010FFFF]')
+else:
+    # to make this compatible with narrow builds use fix
+    # from https://stackoverflow.com/a/31605097/3429596
+    yaml.reader.Reader.NON_PRINTABLE = re.compile(
+        u'/(?:[\0-\x08\x0B\f\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|'
+        u'[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|'
+        u'(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF])/')
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
