@@ -10,7 +10,7 @@ from rasa_core.policies import PolicyEnsemble
 
 
 def load(config_file):
-    # type: (Optional[Text], Dict[Text, Any], int) -> List[Policy]
+    # type: (Optional[Text]) -> List[Policy]
     """Load policy data stored in the specified file. fallback_args and
     max_history are typically command line arguments. They take precedence
     over the arguments specified in the config yaml.

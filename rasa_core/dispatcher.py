@@ -72,7 +72,7 @@ class Dispatcher(object):
         self.output_channel.send_text_message(self.sender_id, text)
 
     def utter_custom_message(self, *elements):
-        # type: (*Dict[Text, Any]) -> None
+        # type: (Dict[Text, Any]) -> None
         """Sends a message with custom elements to the output channel."""
 
         bot_message = BotMessage(text=None,
