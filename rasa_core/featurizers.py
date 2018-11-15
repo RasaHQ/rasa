@@ -152,12 +152,13 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     bot action names into tokens and uses these tokens to
     create bag-of-words feature vectors.
 
-    :param Text split_symbol:
-      The symbol that separates words in intets and action names.
+    Args:
+        split_symbol: The symbol that separates words in
+            intets and action names.
 
-    :param bool use_shared_vocab:
-      The flag that specifies if to create the same vocabulary for
-      user intents and bot actions."""
+        use_shared_vocab: The flag that specifies if to create
+            the same vocabulary for user intents and bot actions.
+    """
 
     def __init__(self, use_shared_vocab=False, split_symbol='_'):
         # type: (bool, Text) -> None

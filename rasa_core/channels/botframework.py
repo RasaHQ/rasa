@@ -149,8 +149,9 @@ class BotFrameworkInput(InputChannel):
         # type: (Text, Text) -> None
         """Create a Bot Framework input channel.
 
-        :param app_id: Bot Framework's API id
-        :param app_password: Bot Framework application secret
+        Args:
+            app_id: Bot Framework's API id
+            app_password: Bot Framework application secret
         """
 
         self.app_id = app_id

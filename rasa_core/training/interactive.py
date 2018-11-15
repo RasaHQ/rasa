@@ -9,6 +9,7 @@ import io
 import logging
 import numpy as np
 import os
+import pkg_resources
 import requests
 import six
 import textwrap
@@ -30,6 +31,7 @@ from rasa_core.events import (
     BotUttered)
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
+from rasa_core.training import visualization
 from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
     visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
@@ -1344,8 +1346,7 @@ def _add_visualization_routes(app, image_path=None):
 
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
     def visualisation_html():
-        return send_from_directory(os.path.dirname(__file__),
-                                   'visualization.html')
+        return send_file(visualization.visualization_html_path())
 
     @app.route("/visualization.dot", methods=["GET"])
     def visualisation_png():

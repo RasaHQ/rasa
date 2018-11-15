@@ -12,7 +12,10 @@ Fixed
 -----
 - fixed interactive learning to properly submit executed actions to the action
   server
-
+- allow the specification of the policy configuration while using the
+  visualisation script
+- use default configuration if no policy configuration is passed
+- fixed html delivery from interactive server script (package compatible)
 
 .. _v0-12-0:
 
