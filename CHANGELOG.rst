@@ -11,16 +11,23 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- environment variables specified with ``${env_variable}`` in a yaml
+  configuration file are now replaced with the value of the environment variable
 
 Changed
 -------
+- ``EmbeddingIntentClassifier`` has been refactored, including changes to the
+  config parameters as well as comments and types for all class functions.
+- the http server's ``POST /evaluate`` endpoint returns evaluation results
+  for both entities and intents
 
 Removed
 -------
+- ``/config`` endpoint
 
 Fixed
 -----
-
+- Should loading jieba custom dictionaries only once.
 
 [0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^

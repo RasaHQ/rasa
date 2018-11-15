@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import copy
 import logging
 import os
 from tqdm import tqdm
@@ -61,120 +62,62 @@ class EmbeddingIntentClassifier(Component):
 
     defaults = {
         # nn architecture
-        "num_hidden_layers_a": 2,
-        "hidden_layer_size_a": [256, 128],
-        "num_hidden_layers_b": 0,
-        "hidden_layer_size_b": [],
+        # sizes of hidden layers before the embedding layer for input words
+        # the number of hidden layers is thus equal to the length of this list
+        "hidden_layers_sizes_a": [256, 128],
+        # sizes of hidden layers before the embedding layer for intent labels
+        # the number of hidden layers is thus equal to the length of this list
+        "hidden_layers_sizes_b": [],
+
+        # training parameters
+        # initial and final batch sizes - batch size will be
+        # linearly increased for each epoch
         "batch_size": [64, 256],
+        # number of epochs
         "epochs": 300,
 
         # embedding parameters
+        # dimension size of embedding vectors
         "embed_dim": 20,
+        # how similar the algorithm should try
+        # to make embedding vectors for correct intent labels
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        # maximum negative similarity for incorrect intent labels
         "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        # the type of the similarity
         "similarity_type": 'cosine',  # string 'cosine' or 'inner'
+        # the number of incorrect intents, the algorithm will minimize
+        # their similarity to the input words during training
         "num_neg": 20,
-        "use_max_sim_neg": True,  # flag which loss function to use
+        # flag: if true, only minimize the maximum similarity for
+        # incorrect intent labels
+        "use_max_sim_neg": True,
+        # set random seed to any int to get reproducible results
+        # try to change to another int if you are not getting good results
+        "random_seed": None,
 
-        # regularization
+        # regularization parameters
+        # the scale of L2 regularization
         "C2": 0.002,
+        # the scale of how critical the algorithm should be of minimizing the
+        # maximum similarity between embeddings of different intent labels
         "C_emb": 0.8,
+        # dropout rate for rnn
         "droprate": 0.2,
 
-        # flag if tokenize intents
+
+        # flag: if true, the algorithm will split the intent labels into tokens
+        #       and use bag-of-words representations for them
         "intent_tokenization_flag": False,
+        # delimiter string to split the intent labels
         "intent_split_symbol": '_',
 
         # visualization of accuracy
+        # how often to calculate training accuracy
         "evaluate_every_num_epochs": 10,  # small values may hurt performance
+        # how many examples to use for calculation of training accuracy
         "evaluate_on_num_examples": 1000  # large values may hurt performance
     }
-
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["tensorflow"]
-
-    def _load_nn_architecture_params(self):
-        self.num_hidden_layers_a = self.component_config['num_hidden_layers_a']
-        self.hidden_layer_size_a = self.component_config['hidden_layer_size_a']
-        self.num_hidden_layers_b = self.component_config['num_hidden_layers_b']
-        self.hidden_layer_size_b = self.component_config['hidden_layer_size_b']
-        self.batch_size = self.component_config['batch_size']
-        if not isinstance(self.batch_size, list):
-            self.batch_size = [self.batch_size, self.batch_size]
-        self.epochs = self.component_config['epochs']
-
-    def _load_embedding_params(self):
-        self.embed_dim = self.component_config['embed_dim']
-        self.mu_pos = self.component_config['mu_pos']
-        self.mu_neg = self.component_config['mu_neg']
-        self.similarity_type = self.component_config['similarity_type']
-        self.num_neg = self.component_config['num_neg']
-        self.use_max_sim_neg = self.component_config['use_max_sim_neg']
-
-    def _load_regularization_params(self):
-        self.C2 = self.component_config['C2']
-        self.C_emb = self.component_config['C_emb']
-        self.droprate = self.component_config['droprate']
-
-    def _load_flag_if_tokenize_intents(self):
-        self.intent_tokenization_flag = self.component_config[
-                                            'intent_tokenization_flag']
-        self.intent_split_symbol = self.component_config[
-                                        'intent_split_symbol']
-        if self.intent_tokenization_flag and not self.intent_split_symbol:
-            logger.warning("intent_split_symbol was not specified, "
-                           "so intent tokenization will be ignored")
-            self.intent_tokenization_flag = False
-
-    def _load_visual_params(self):
-        self.evaluate_every_num_epochs = self.component_config[
-                                            'evaluate_every_num_epochs']
-        if self.evaluate_every_num_epochs < 1:
-            self.evaluate_every_num_epochs = self.epochs
-        self.evaluate_on_num_examples = self.component_config[
-                                            'evaluate_on_num_examples']
-
-    @staticmethod
-    def _check_hidden_layer_sizes(num_layers, layer_size, name=''):
-        num_layers = int(num_layers)
-
-        if num_layers < 0:
-            logger.error("num_hidden_layers_{} = {} < 0."
-                         "Set it to 0".format(name, num_layers))
-            num_layers = 0
-
-        if isinstance(layer_size, list) and len(layer_size) != num_layers:
-            if len(layer_size) == 0:
-                raise ValueError("hidden_layer_size_{} = {} "
-                                 "is an empty list, "
-                                 "while num_hidden_layers_{} = {} > 0"
-                                 "".format(name, layer_size,
-                                           name, num_layers))
-
-            logger.error("The length of hidden_layer_size_{} = {} "
-                         "does not correspond to num_hidden_layers_{} "
-                         "= {}. Set hidden_layer_size_{} to "
-                         "the first element = {} for all layers"
-                         "".format(name, len(layer_size),
-                                   name, num_layers,
-                                   name, layer_size[0]))
-
-            layer_size = layer_size[0]
-
-        if not isinstance(layer_size, list):
-            layer_size = [layer_size for _ in range(num_layers)]
-
-        return num_layers, layer_size
-
-    @staticmethod
-    def _check_tensorflow():
-        if tf is None:
-            raise ImportError(
-                'Failed to import `tensorflow`. '
-                'Please install `tensorflow`. '
-                'For example with `pip install tensorflow`.')
 
     def __init__(self,
                  component_config=None,  # type: Optional[Dict[Text, Any]]
@@ -193,28 +136,7 @@ class EmbeddingIntentClassifier(Component):
         self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
-        # nn architecture parameters
-        self._load_nn_architecture_params()
-        # embedding parameters
-        self._load_embedding_params()
-        # regularization
-        self._load_regularization_params()
-        # flag if tokenize intents
-        self._load_flag_if_tokenize_intents()
-        # visualization of accuracy
-        self._load_visual_params()
-
-        # check if hidden_layer_sizes are valid
-        (self.num_hidden_layers_a,
-         self.hidden_layer_size_a) = self._check_hidden_layer_sizes(
-                                        self.num_hidden_layers_a,
-                                        self.hidden_layer_size_a,
-                                        name='a')
-        (self.num_hidden_layers_b,
-         self.hidden_layer_size_b) = self._check_hidden_layer_sizes(
-                                        self.num_hidden_layers_b,
-                                        self.hidden_layer_size_b,
-                                        name='b')
+        self._load_params()
 
         # transform numbers to intents
         self.inv_intent_dict = inv_intent_dict
@@ -232,9 +154,77 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
+    # init helpers
+    def _load_nn_architecture_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.hidden_layer_sizes = {'a': config['hidden_layers_sizes_a'],
+                                   'b': config['hidden_layers_sizes_b']}
+
+        self.batch_size = config['batch_size']
+        self.epochs = config['epochs']
+
+    def _load_embedding_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.embed_dim = config['embed_dim']
+        self.mu_pos = config['mu_pos']
+        self.mu_neg = config['mu_neg']
+        self.similarity_type = config['similarity_type']
+        self.num_neg = config['num_neg']
+        self.use_max_sim_neg = config['use_max_sim_neg']
+        self.random_seed = self.component_config['random_seed']
+
+    def _load_regularization_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.C2 = config['C2']
+        self.C_emb = config['C_emb']
+        self.droprate = config['droprate']
+
+    def _load_flag_if_tokenize_intents(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.intent_tokenization_flag = config['intent_tokenization_flag']
+        self.intent_split_symbol = config['intent_split_symbol']
+        if self.intent_tokenization_flag and not self.intent_split_symbol:
+            logger.warning("intent_split_symbol was not specified, "
+                           "so intent tokenization will be ignored")
+            self.intent_tokenization_flag = False
+
+    def _load_visual_params(self, config):
+        # type: (Dict[Text, Any]) -> None
+        self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
+        if self.evaluate_every_num_epochs < 1:
+            self.evaluate_every_num_epochs = self.epochs
+
+        self.evaluate_on_num_examples = config['evaluate_on_num_examples']
+
+    def _load_params(self, **kwargs):
+        # type: (Dict[Text, Any]) -> None
+        config = copy.deepcopy(self.defaults)
+        config.update(kwargs)
+
+        self._load_nn_architecture_params(config)
+        self._load_embedding_params(config)
+        self._load_regularization_params(config)
+        self._load_flag_if_tokenize_intents(config)
+        self._load_visual_params(config)
+
+    # package safety checks
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["tensorflow"]
+
+    @staticmethod
+    def _check_tensorflow():
+        if tf is None:
+            raise ImportError(
+                'Failed to import `tensorflow`. '
+                'Please install `tensorflow`. '
+                'For example with `pip install tensorflow`.')
+
     # training data helpers:
     @staticmethod
     def _create_intent_dict(training_data):
+        # type: (TrainingData) -> Dict[Text, Int]
         """Create intent dictionary"""
 
         distinct_intents = set([example.get("intent")
@@ -244,6 +234,7 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _create_intent_token_dict(intents, intent_split_symbol):
+        # type: (List[Text], Text) -> Dict[Text, Int]
         """Create intent token dictionary"""
 
         distinct_tokens = set([token
@@ -254,8 +245,9 @@ class EmbeddingIntentClassifier(Component):
                 for idx, token in enumerate(sorted(distinct_tokens))}
 
     def _create_encoded_intents(self, intent_dict):
-        """Create matrix with intents encoded in rows as bag of words,
-        if intent_tokenization_flag = False this is identity matrix"""
+        # type: (Dict[Text, Int]) -> np.ndarray
+        """Create matrix with intents encoded in rows as bag of words.
+           If intent_tokenization_flag is off, returns identity matrix"""
 
         if self.intent_tokenization_flag:
             intent_token_dict = self._create_intent_token_dict(
@@ -271,16 +263,15 @@ class EmbeddingIntentClassifier(Component):
         else:
             return np.eye(len(intent_dict))
 
-    # data helpers:
     def _create_all_Y(self, size):
-        # stack encoded_all_intents on top of each other
-        # to create candidates for training examples
-        # to calculate training accuracy
-        all_Y = np.stack([self.encoded_all_intents for _ in range(size)])
-
-        return all_Y
+        # type: (Int) -> np.ndarray
+        """Stack encoded_all_intents on top of each other
+            to create candidates for training examples
+            to calculate training accuracy"""
+        return np.stack([self.encoded_all_intents] * size)
 
     def _prepare_data_for_training(self, training_data, intent_dict):
+        # type: (TrainingData, Dict[Text, Int]) -> Tuple
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features")
@@ -296,14 +287,15 @@ class EmbeddingIntentClassifier(Component):
 
     # tf helpers:
     def _create_tf_embed_nn(self, x_in, is_training,
-                            num_layers, layer_size, name):
-        """Create embed nn for layer with name"""
+                            layer_sizes, name):
+        # type: (tf.Tensor, tf.Tensor, List[Int], Text) -> tf.Tensor
+        """Create nn with hidden layers and name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         x = x_in
-        for i in range(num_layers):
+        for i, layer_size in enumerate(layer_sizes):
             x = tf.layers.dense(inputs=x,
-                                units=layer_size[i],
+                                units=layer_size,
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg,
                                 name='hidden_layer_{}_{}'.format(name, i))
@@ -316,65 +308,66 @@ class EmbeddingIntentClassifier(Component):
         return x
 
     def _create_tf_embed(self, a_in, b_in, is_training):
+        # type: (tf.Tensor, tf.Tensor, tf.Tensor) -> tf.Tensor
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(a_in, is_training,
-                                         self.num_hidden_layers_a,
-                                         self.hidden_layer_size_a,
+                                         self.hidden_layer_sizes['a'],
                                          name='a')
         emb_b = self._create_tf_embed_nn(b_in, is_training,
-                                         self.num_hidden_layers_b,
-                                         self.hidden_layer_size_b,
+                                         self.hidden_layer_sizes['b'],
                                          name='b')
         return emb_a, emb_b
 
     def _tf_sim(self, a, b):
-        """Define similarity"""
+        # type: (tf.Tensor, tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]
+        """Define similarity in two cases:
+            sim: between embedded words and embedded intent labels
+            sim_emb: between individual embedded intent labels only"""
 
         if self.similarity_type == 'cosine':
+            # normalize embedding vectors for cosine similarity
             a = tf.nn.l2_normalize(a, -1)
             b = tf.nn.l2_normalize(b, -1)
 
-        if self.similarity_type == 'cosine' or self.similarity_type == 'inner':
+        if self.similarity_type in {'cosine', 'inner'}:
             sim = tf.reduce_sum(tf.expand_dims(a, 1) * b, -1)
-
-            # similarity between intent embeddings
             sim_emb = tf.reduce_sum(b[:, 0:1, :] * b[:, 1:, :], -1)
 
             return sim, sim_emb
+
         else:
             raise ValueError("Wrong similarity type {}, "
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
     def _tf_loss(self, sim, sim_emb):
+        # type: (tf.Tensor, tf.Tensor) -> tf.Tensor
         """Define loss"""
 
+        # loss for maximizing similarity with correct action
+        loss = tf.maximum(0., self.mu_pos - sim[:, 0])
+
         if self.use_max_sim_neg:
+            # minimize only maximum similarity over incorrect actions
             max_sim_neg = tf.reduce_max(sim[:, 1:], -1)
-            loss = tf.reduce_mean(tf.maximum(0., self.mu_pos - sim[:, 0]) +
-                                  tf.maximum(0., self.mu_neg + max_sim_neg))
+            loss += tf.maximum(0., self.mu_neg + max_sim_neg)
         else:
-            # create an array for mu
-            mu = self.mu_neg * np.ones(self.num_neg + 1)
-            mu[0] = self.mu_pos
+            # minimize all similarities with incorrect actions
+            max_margin = tf.maximum(0., self.mu_neg + sim[:, 1:])
+            loss += tf.reduce_sum(max_margin, -1)
 
-            factors = tf.concat([-1 * tf.ones([1, 1]),
-                                 tf.ones([1, tf.shape(sim)[1] - 1])], 1)
-            max_margin = tf.maximum(0., mu + factors * sim)
-            loss = tf.reduce_mean(tf.reduce_sum(max_margin, -1))
-
+        # penalize max similarity between intent embeddings
         max_sim_emb = tf.maximum(0., tf.reduce_max(sim_emb, -1))
+        loss += max_sim_emb * self.C_emb
 
-        loss = (loss +
-                # penalize max similarity between intent embeddings
-                tf.reduce_mean(max_sim_emb) * self.C_emb +
-                # add regularization losses
-                tf.losses.get_regularization_loss())
+        # average the loss over the batch and add regularization losses
+        loss = (tf.reduce_mean(loss) + tf.losses.get_regularization_loss())
         return loss
 
     # training helpers:
     def _create_batch_b(self, batch_pos_b, intent_ids):
+        # type: (np.ndarray, np.ndarray) -> np.ndarray
         """Create batch of intents, where the first is correct intent
             and the rest are wrong intents sampled randomly"""
 
@@ -395,16 +388,29 @@ class EmbeddingIntentClassifier(Component):
 
         return np.concatenate([batch_pos_b, batch_neg_b], 1)
 
-    def _linearly_increasing_batch_size(self, ep):
+    def _linearly_increasing_batch_size(self, epoch):
+        # type: (Int) -> Int
+        """Linearly increase batch size with every epoch.
+            The idea comes from https://arxiv.org/abs/1711.00489"""
+        if not isinstance(self.batch_size, list):
+            return int(self.batch_size)
+
         if self.epochs > 1:
             return int(self.batch_size[0] +
-                       ep * (self.batch_size[1] - self.batch_size[0]) /
-                       (self.epochs - 1))
+                       epoch * (self.batch_size[1] -
+                                self.batch_size[0]) / (self.epochs - 1))
         else:
             return int(self.batch_size[0])
 
-    def _train_tf(self, X, Y, intents_for_X,
-                  loss, is_training, train_op):
+    def _train_tf(self,
+                  X,  # type: np.ndarray
+                  Y,  # type: np.ndarray
+                  intents_for_X,  # type: np.ndarray
+                  loss,  # type: tf.Tensor
+                  is_training,  # type: tf.Tensor
+                  train_op  # type: tf.Tensor
+                  ):
+        # type: (...) -> None
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
@@ -458,11 +464,12 @@ class EmbeddingIntentClassifier(Component):
                 })
 
         if self.evaluate_on_num_examples:
-            logger.info("Finished training embedding policy, "
+            logger.info("Finished training embedding classifier, "
                         "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
 
     def _output_training_stat(self, X, intents_for_X, is_training):
+        # type: (np.ndarray, np.ndarray, tf.Tensor) -> Float
         """Output training statistics"""
         n = self.evaluate_on_num_examples
         ids = np.random.permutation(len(X))[:n]
@@ -505,6 +512,10 @@ class EmbeddingIntentClassifier(Component):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
+            # set random seed
+            np.random.seed(self.random_seed)
+            tf.set_random_seed(self.random_seed)
+
             self.a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
                                        name='a')
             self.b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),
@@ -530,6 +541,7 @@ class EmbeddingIntentClassifier(Component):
 
     # process helpers
     def _calculate_message_sim(self, X, all_Y):
+        # type: (np.ndarray, np.ndarray) -> Tuple[List[Int], List[Int]]
         """Load tf graph and calculate message similarities"""
 
         message_sim = self.session.run(self.sim_op,

@@ -7,14 +7,12 @@ from __future__ import unicode_literals
 import io
 import json
 import tempfile
-import time
 
 import pytest
+import time
 import yaml
 from treq.testing import StubTreq
 
-from rasa_nlu import utils
-from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.server import RasaNLU
 from tests import utilities
@@ -60,12 +58,6 @@ def test_status(app):
     assert "current_training_processes" in rjs
     assert "max_training_processes" in rjs
     assert "default" in rjs["available_projects"]
-
-
-@pytest.inlineCallbacks
-def test_config(app):
-    response = yield app.get("http://dummy-uri/config")
-    assert response.code == 200
 
 
 @pytest.inlineCallbacks
@@ -236,6 +228,7 @@ def test_evaluate(app, rasa_default_train_data):
     rjs = yield response.json()
     assert response.code == 200, "Evaluation should start"
     assert "intent_evaluation" in rjs
+    assert "entity_evaluation" in rjs
     assert all(prop in rjs["intent_evaluation"] for prop in ["report",
                                                              "predictions",
                                                              "precision",

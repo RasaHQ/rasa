@@ -327,8 +327,8 @@ intent_classifier_tensorflow_embedding
 
     The algorithm also has hyperparameters to control:
         - neural network's architecture:
-            - ``num_hidden_layers_a`` and ``hidden_layer_size_a`` set the number of hidden layers and their sizes before embedding layer for user inputs;
-            - ``num_hidden_layers_b`` and ``hidden_layer_size_b`` set the number of hidden layers and their sizes before embedding layer for intent labels;
+            - ``hidden_layers_sizes_a`` sets a list of hidden layer sizes before the embedding layer for user inputs, the number of hidden layers is equal to the length of the list
+            - ``hidden_layers_sizes_b`` sets a list of hidden layer sizes before the embedding layer for intent labels, the number of hidden layers is equal to the length of the list
         - training:
             - ``batch_size`` sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you'll need;
             - ``epochs`` sets the number of times the algorithm will see training data, where ``one epoch`` = one forward pass and one backward pass of all the training examples;
@@ -339,6 +339,7 @@ intent_classifier_tensorflow_embedding
             - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
             - ``num_neg`` sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;
             - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
+            - ``random_seed`` (None or int) An integer sets the random seed for numpy and tensorflow, so that the random initialisation is always the same and produces the same training result
         - regularization:
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
@@ -357,10 +358,8 @@ intent_classifier_tensorflow_embedding
         pipeline:
         - name: "intent_classifier_tensorflow_embedding"
           # nn architecture
-          "num_hidden_layers_a": 2
-          "hidden_layer_size_a": [256, 128]
-          "num_hidden_layers_b": 0
-          "hidden_layer_size_b": []
+          "hidden_layers_sizes_a": [256, 128]
+          "hidden_layers_sizes_b": []
           "batch_size": [64, 256]
           "epochs": 300
           # embedding parameters
@@ -370,11 +369,12 @@ intent_classifier_tensorflow_embedding
           "similarity_type": "cosine"  # string 'cosine' or 'inner'
           "num_neg": 20
           "use_max_sim_neg": true  # flag which loss function to use
+          "random_seed": None # set to any int to generate a reproducible training result
           # regularization
           "C2": 0.002
           "C_emb": 0.8
           "droprate": 0.2
-          # flag if to tokenize intents
+          # flag for tokenizing intents
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
           # visualization of accuracy
