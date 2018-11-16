@@ -1,11 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import typing
-from typing import Optional, Text, List
+from typing import Optional, Text, Dict, Any, List
 
 from rasa_core import utils
 from rasa_core.policies import PolicyEnsemble
