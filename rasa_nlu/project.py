@@ -389,15 +389,16 @@ class Project(object):
             return Metadata.load(path)
 
     def as_dict(self):
-        result.status = 'ready'
+        result = {}
+        result["status"] = 'ready'
         if self.status == STATUS_TRAINING:
-            result.status = 'training'
+            result["status"] = 'training'
         elif self.status == STATUS_FAILED:
-            result.status = 'failed'
-            result.error_message = self.error_message
-        result.current_training_processes = self.current_training_processes
-        result.available_models = list(self._models.keys())
-        result.loaded_models = self._list_loaded_models()
+            result["status"] = 'failed'
+            result["error_message"] = self.error_message
+        result["current_training_processes"] = self.current_training_processes
+        result["available_models"] = list(self._models.keys())
+        result["loaded_models"] = self._list_loaded_models()
         return result
 
     def _list_loaded_models(self):
