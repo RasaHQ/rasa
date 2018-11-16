@@ -67,7 +67,7 @@ class SocketIOOutput(OutputChannel):
         self._send_message(recipient_id, message)
 
     def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
+        # type: (Text, Text, List[Dict[Text, Any]], Any) -> None
         """Sends buttons to the output."""
 
         message = {
