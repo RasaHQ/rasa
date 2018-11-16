@@ -493,13 +493,15 @@ class ReminderScheduled(Event):
                  kill_on_user_message=True, timestamp=None):
         """Creates the reminder
 
-        :param action_name: name of the action to be scheduled
-        :param trigger_date_time: date at which the execution of the action
-                                  should be triggered (either utc or with tz)
-        :param name: id of the reminder. if there are multiple reminders with
-                     the same id only the last will be run
-        :param kill_on_user_message: ``True`` means a user message before the
-                                     trigger date will abort the reminder
+        Args:
+            action_name: name of the action to be scheduled
+            trigger_date_time: date at which the execution of the action
+                should be triggered (either utc or with tz)
+            name: id of the reminder. if there are multiple reminders with
+                 the same id only the last will be run
+            kill_on_user_message: ``True`` means a user message before the
+                 trigger date will abort the reminder
+            timestamp: creation date of the event
         """
 
         self.action_name = action_name

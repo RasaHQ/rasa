@@ -230,10 +230,12 @@ class FacebookInput(InputChannel):
         messages. Details to setup:
 
         https://github.com/rehabstudio/fbmessenger#facebook-app-setup
-        :param fb_verify: FB Verification string
-                          (can be chosen by yourself on webhook creation)
-        :param fb_secret: facebook application secret
-        :param fb_access_token: access token to post in the name of the FB page
+
+        Args:
+            fb_verify: FB Verification string
+                (can be chosen by yourself on webhook creation)
+            fb_secret: facebook application secret
+            fb_access_token: access token to post in the name of the FB page
         """
         self.fb_verify = fb_verify
         self.fb_secret = fb_secret
@@ -276,12 +278,15 @@ class FacebookInput(InputChannel):
     @staticmethod
     def validate_hub_signature(app_secret, request_payload,
                                hub_signature_header):
-        """Makes sure the incoming webhook requests are properly signed.
+        """Make sure the incoming webhook requests are properly signed.
 
-        :param app_secret: Secret Key for application
-        :param request_payload: request body
-        :param hub_signature_header: X-Hub-Signature header sent with request
-        :return: boolean indicated that hub signature is validated
+        Args:
+            app_secret: Secret Key for application
+            request_payload: request body
+            hub_signature_header: X-Hub-Signature header sent with request
+
+        Returns:
+            bool: indicated that hub signature is validated
         """
 
         # noinspection PyBroadException

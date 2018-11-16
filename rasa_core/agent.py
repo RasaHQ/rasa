@@ -1,15 +1,15 @@
+import time
 import logging
 import os
 import shutil
 import tempfile
-import time
+import typing
 import uuid
 import zipfile
-from threading import Thread
-
-import typing
 from gevent.pywsgi import WSGIServer
+from io import BytesIO as IOReader
 from requests.exceptions import InvalidURL, RequestException
+from threading import Thread
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 import rasa_core
@@ -26,16 +26,16 @@ from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore
-from rasa_core.trackers import DialogueStateTracker, EventVerbosity
+from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import EndpointConfig
 from rasa_nlu.utils import is_url
-from io import BytesIO as IOReader
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     # noinspection PyPep8Naming
     from rasa_core.nlg import NaturalLanguageGenerator as NLG
+    from rasa_core.tracker_store import TrackerStore
 
 
 def load_from_server(interpreter=None,  # type: NaturalLanguageInterpreter
@@ -426,6 +426,24 @@ class Agent(object):
                                                **kwargs)
         self._set_fingerprint()
 
+    def _max_history(self):
+        """Find maximum max_history."""
+
+        max_histories = [policy.featurizer.max_history
+                         for policy in self.policy_ensemble.policies
+                         if hasattr(policy.featurizer, 'max_history')]
+
+        return max(max_histories or [0])
+
+    def _are_all_featurizers_using_a_max_history(self):
+        """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
+
+        for policy in self.policy_ensemble.policies:
+            if (policy.featurizer and
+                    not hasattr(policy.featurizer, 'max_history')):
+                return False
+        return True
+
     def load_data(self,
                   resource_name,  # type: Text
                   remove_duplicates=True,  # type: bool
@@ -439,25 +457,16 @@ class Agent(object):
         # type: (...) -> List[DialogueStateTracker]
         """Load training data from a resource."""
 
-        # find maximum max_history
-        # and if all featurizers are MaxHistoryTrackerFeaturizer
-        max_max_history = 0
-        all_max_history_featurizers = True
-        for policy in self.policy_ensemble.policies:
-            if hasattr(policy.featurizer, 'max_history'):
-                max_max_history = max(policy.featurizer.max_history,
-                                      max_max_history)
-            elif policy.featurizer is not None:
-                all_max_history_featurizers = False
+        max_history = self._max_history()
 
         if unique_last_num_states is None:
             # for speed up of data generation
             # automatically detect unique_last_num_states
             # if it was not set and
             # if all featurizers are MaxHistoryTrackerFeaturizer
-            if all_max_history_featurizers:
-                unique_last_num_states = max_max_history
-        elif unique_last_num_states < max_max_history:
+            if self._are_all_featurizers_using_a_max_history():
+                unique_last_num_states = max_history
+        elif unique_last_num_states < max_history:
             # possibility of data loss
             logger.warning("unique_last_num_states={} but "
                            "maximum max_history={}."
@@ -465,7 +474,7 @@ class Agent(object):
                            "It is recommended to set "
                            "unique_last_num_states to "
                            "at least maximum max_history."
-                           "".format(unique_last_num_states, max_max_history))
+                           "".format(unique_last_num_states, max_history))
 
         return training.load_data(resource_name, self.domain,
                                   remove_duplicates, unique_last_num_states,
@@ -481,8 +490,9 @@ class Agent(object):
         # type: (...) -> None
         """Train the policies / policy ensemble using dialogue data from file.
 
-            :param training_trackers: trackers to train on
-            :param kwargs: additional arguments passed to the underlying ML
+        Args:
+            training_trackers: trackers to train on
+            **kwargs: additional arguments passed to the underlying ML
                            trainer (e.g. keras parameters)
         """
 
@@ -589,7 +599,7 @@ class Agent(object):
     def visualize(self,
                   resource_name,  # type: Text
                   output_file,  # type: Text
-                  max_history,  # type: int
+                  max_history=None,  # type: Optional[int]
                   nlu_training_data=None,  # type: Optional[Text]
                   should_merge_nodes=True,  # type: bool
                   fontsize=12  # type: int
@@ -599,11 +609,15 @@ class Agent(object):
         from rasa_core.training.dsl import StoryFileReader
         """Visualize the loaded training data from the resource."""
 
+        # if the user doesn't provide a max history, we will use the
+        # largest value from any policy
+        max_history = max_history or self._max_history()
+
         story_steps = StoryFileReader.read_from_folder(resource_name,
                                                        self.domain)
-        visualize_stories(story_steps, self.domain, output_file, max_history,
-                          self.interpreter, nlu_training_data,
-                          should_merge_nodes, fontsize)
+        visualize_stories(story_steps, self.domain, output_file,
+                          max_history, self.interpreter,
+                          nlu_training_data, should_merge_nodes, fontsize)
 
     def _ensure_agent_is_ready(self):
         # type: () -> None
