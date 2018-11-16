@@ -18,7 +18,7 @@ You can run training from the command line like in the :ref:`quickstart`:
 .. code-block:: bash
 
    python -m rasa_core.train -d domain.yml -s data/stories.md \
-     -o models/current/dialogue -c default_config.yml
+     -o models/current/dialogue -c config.yml
 
 Or by creating an agent and running the train method yourself:
 
@@ -30,6 +30,17 @@ Or by creating an agent and running the train method yourself:
    data = agent.load_data("stories.md")
    agent.train(data)
 
+
+.. _default_config:
+
+Default configuration
+---------------------
+
+By default, we try to provide you with a good set of configuration values
+and policies that suit most people. But you are encouraged to modify
+these to your needs:
+
+.. literalinclude:: ../rasa_core/default_config.yml
 
 
 Data Augmentation
@@ -146,8 +157,8 @@ For example:
       arg1: "..."
 
 Pass the YAML file's name to the train script using the ``--config``
-argument (or just ``-c``). There is a default config file you can use in the
-github repository called ``default_config.yml``
+argument (or just ``-c``). There is a default config file you can use to
+get started: :ref:`default_config`.
 
 .. note::
 

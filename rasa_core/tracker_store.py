@@ -1,16 +1,12 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import itertools
+
+import pickle
 import typing
 
 import json
 import logging
 
 # noinspection PyPep8Naming
-import six.moves.cPickle as pickler
 from typing import Text, Optional, List
 
 from rasa_core.utils import class_from_module_path
@@ -116,10 +112,10 @@ class TrackerStore(object):
     @staticmethod
     def serialise_tracker(tracker):
         dialogue = tracker.as_dialogue()
-        return pickler.dumps(dialogue)
+        return pickle.dumps(dialogue)
 
     def deserialise_tracker(self, sender_id, _json):
-        dialogue = pickler.loads(_json)
+        dialogue = pickle.loads(_json)
         tracker = self.init_tracker(sender_id)
         tracker.recreate_from_dialogue(dialogue)
         return tracker

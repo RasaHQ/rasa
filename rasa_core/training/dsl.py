@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import io
 import json
 import logging
@@ -164,6 +159,11 @@ class StoryFileReader(object):
                          template_variables=None, use_e2e=False,
                          exclusion_percentage=None):
         """Given a path reads all contained story files."""
+
+        if not os.path.exists(resource_name):
+            raise ValueError("Story file or folder could not be found. Make "
+                             "sure '{}' exists and points to a story folder "
+                             "or file.".format(os.path.abspath(resource_name)))
 
         story_steps = []
         for f in nlu_utils.list_files(resource_name):

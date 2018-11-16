@@ -51,7 +51,7 @@ def test_formbot_example():
                                  stories,
                                  os.path.join(p, "models", "dialogue"),
                                  endpoints=endpoints,
-                                 policy_config="default_config.yml")
+                                 policy_config="rasa_core/default_config.yml")
     response = {
         'events': [
             {'event': 'form', 'name': 'restaurant_form', 'timestamp': None},

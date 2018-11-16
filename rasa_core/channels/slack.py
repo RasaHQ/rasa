@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import json
 import logging
 from typing import Text, Optional, List
@@ -103,17 +98,19 @@ class SlackInput(InputChannel):
         messages. Details to setup:
 
         https://github.com/slackapi/python-slackclient
-        :param slack_token: Your Slack Authentication token. You can find or
-            generate a test token
-             `here <https://api.slack.com/docs/oauth-test-tokens>`_.
-        :param slack_channel: the string identifier for a channel to which
-            the bot posts, or channel name
-            (e.g. 'C1234ABC', 'bot-test' or '#bot-test')
-            If unset, messages will be sent back to the user they came from.
-        :param errors_ignore_retry: If error code given by slack
-            included in this list then it will ignore the event.
-            The code is listed here:
-            https://api.slack.com/events-api#errors
+
+        Args:
+            slack_token: Your Slack Authentication token. You can find or
+                generate a test token
+                `here <https://api.slack.com/docs/oauth-test-tokens>`_.
+            slack_channel: the string identifier for a channel to which
+                the bot posts, or channel name (e.g. 'C1234ABC', 'bot-test'
+                or '#bot-test') If unset, messages will be sent back
+                to the user they came from.
+            errors_ignore_retry: If error code given by slack
+                included in this list then it will ignore the event.
+                The code is listed here:
+                https://api.slack.com/events-api#errors
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel

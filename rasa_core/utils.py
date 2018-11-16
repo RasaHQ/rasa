@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import errno
 import inspect
 import io
@@ -21,18 +16,14 @@ from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 import requests
-import six
 from numpy import all, array
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import InvalidURL
+from io import StringIO
+from urllib.parse import unquote
 
 from rasa_nlu import utils as nlu_utils
 
-if six.PY2:
-    # noinspection PyUnresolvedReferences
-    from StringIO import StringIO
-else:
-    from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -305,44 +296,9 @@ class HashableNDArray(object):
         return self.__wrapped
 
 
-def fix_yaml_loader():
-    """Ensure that any string read by yaml is represented as unicode."""
-    import yaml
-    import re
-
-    def construct_yaml_str(self, node):
-        # Override the default string handling function
-        # to always return unicode objects
-        return self.construct_scalar(node)
-
-    # this will allow the reader to process emojis under py2
-    # need to differentiate between narrow build (e.g. osx, windows) and
-    # linux build. in the narrow build, emojis are 2 char strings using a
-    # surrogate
-    if sys.maxunicode == 0xffff:
-        # noinspection PyUnresolvedReferences
-        yaml.reader.Reader.NON_PRINTABLE = re.compile(
-                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
-                '\ude00-\ude50\udc4d\ud83c\udf89\ude80\udc4c\ud83e\uddde'
-                '\udd74\udcde\uddd1\udd16]')
-    else:
-        # noinspection PyUnresolvedReferences
-        yaml.reader.Reader.NON_PRINTABLE = re.compile(
-                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
-                '\U00010000-\U0010FFFF]')
-
-    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str',
-                                construct_yaml_str)
-    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
-                                    construct_yaml_str)
-
-
 def replace_environment_variables():
     """Enable yaml loader to process the environment variables in the yaml."""
-    if six.PY2:
-        import yaml
-    else:
-        import ruamel.yaml as yaml
+    import ruamel.yaml as yaml
     import re
     import os
 
@@ -356,11 +312,7 @@ def replace_environment_variables():
         prefix, env_var, remaining_path = env_var_pattern.match(value).groups()
         return prefix + os.environ[env_var] + remaining_path
 
-    if six.PY2:
-        yaml.add_constructor(u'!env_var', env_var_constructor)
-    else:
-        yaml.SafeConstructor.add_constructor(
-            u'!env_var', env_var_constructor)
+    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
 def read_yaml_file(filename):
@@ -370,37 +322,24 @@ def read_yaml_file(filename):
 
 def read_yaml_string(string):
     replace_environment_variables()
-    if six.PY2:
-        import yaml
+    import ruamel.yaml
 
-        fix_yaml_loader()
-        return yaml.load(string)
-    else:
-        import ruamel.yaml
+    yaml_parser = ruamel.yaml.YAML(typ="safe")
+    yaml_parser.version = "1.1"
+    yaml_parser.unicode_supplementary = True
 
-        yaml_parser = ruamel.yaml.YAML(typ="safe")
-        yaml_parser.version = "1.1"
-        yaml_parser.unicode_supplementary = True
-
-        return yaml_parser.load(string)
+    return yaml_parser.load(string)
 
 
 def _dump_yaml(obj, output):
-    if six.PY2:
-        import yaml
+    import ruamel.yaml
 
-        yaml.safe_dump(obj, output,
-                       default_flow_style=False,
-                       allow_unicode=True)
-    else:
-        import ruamel.yaml
+    yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+    yaml_writer.unicode_supplementary = True
+    yaml_writer.default_flow_style = False
+    yaml_writer.version = "1.1"
 
-        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-        yaml_writer.unicode_supplementary = True
-        yaml_writer.default_flow_style = False
-        yaml_writer.version = "1.1"
-
-        yaml_writer.dump(obj, output)
+    yaml_writer.dump(obj, output)
 
 
 def dump_obj_as_yaml_to_file(filename, obj):
@@ -430,7 +369,6 @@ def read_json_file(filename):
 
 def list_routes(app):
     """List all available routes of a flask web server."""
-    from six.moves.urllib.parse import unquote
     from flask import url_for
 
     output = {}
@@ -548,16 +486,9 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
 
 
 def arguments_of(func):
-    """Return the parameters of the function `func` """
-    """as a list of their names."""
+    """Return the parameters of the function `func` as a list of names."""
 
-    try:
-        # python 3.x is used
-        return list(inspect.signature(func).parameters.keys())
-    except AttributeError:
-        # python 2.x is used
-        # noinspection PyDeprecation
-        return list(inspect.getargspec(func).args)
+    return list(inspect.signature(func).parameters.keys())
 
 
 def concat_url(base, subpath):
@@ -766,6 +697,7 @@ class EndpointConfig(object):
         return not self.__eq__(other)
 
 
+# noinspection PyProtectedMember
 def set_default_subparser(parser,
                           default_subparser):
     """default subparser selection. Call after setup, just before parse_args()
