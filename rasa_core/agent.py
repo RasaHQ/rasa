@@ -67,9 +67,8 @@ def load_from_server(interpreter: NaturalLanguageInterpreter = None,
     return agent
 
 
-def _init_model_from_server(
-    model_server: EndpointConfig
-) -> Optional[typing.Tuple[Text, Text]]:
+def _init_model_from_server(model_server: EndpointConfig
+                            ) -> Optional[typing.Tuple[Text, Text]]:
     """Initialise a Rasa Core model from a URL."""
 
     if not is_url(model_server.url):
@@ -84,10 +83,9 @@ def _init_model_from_server(
     return fingerprint, model_directory
 
 
-def _update_model_from_server(
-    model_server: EndpointConfig,
-    agent: 'Agent',
-) -> None:
+def _update_model_from_server(model_server: EndpointConfig,
+                              agent: 'Agent'
+                              ) -> None:
     """Load a zipped Rasa Core model from a URL and update the passed agent."""
 
     if not is_url(model_server.url):
@@ -108,11 +106,10 @@ def _update_model_from_server(
                      "URL {}".format(model_server.url))
 
 
-def _pull_model_and_fingerprint(
-    model_server: EndpointConfig,
-    model_directory: Text,
-    fingerprint: Optional[Text]
-) -> Optional[Text]:
+def _pull_model_and_fingerprint(model_server: EndpointConfig,
+                                model_directory: Text,
+                                fingerprint: Optional[Text]
+                                ) -> Optional[Text]:
     """Queries the model server and returns the value of the response's
 
     <ETag> header which contains the model hash."""
@@ -220,12 +217,10 @@ class Agent(object):
 
         self._set_fingerprint(fingerprint)
 
-    def update_model(
-        self,
-        domain: Union[Text, Domain],
-        policy_ensemble: PolicyEnsemble,
-        fingerprint: Optional[Text]
-    ):
+    def update_model(self,
+                     domain: Union[Text, Domain],
+                     policy_ensemble: PolicyEnsemble,
+                     fingerprint: Optional[Text]) -> None:
         self.domain = domain
         self.policy_ensemble = policy_ensemble
 
