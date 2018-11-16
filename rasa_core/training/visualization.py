@@ -255,17 +255,20 @@ def _replace_edge_labels_with_nodes(graph,
             graph.add_edge(next_id, e, **{"class": d.get("class", "")})
 
 
+def visualization_html_path():
+    import pkg_resources
+    return pkg_resources.resource_filename(__name__,
+                                           VISUALIZATION_TEMPLATE_PATH)
+
+
 def persist_graph(graph, output_file):
     """Plots the graph and persists it into a html file."""
     import networkx as nx
     import io
-    import pkg_resources
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    template_path = pkg_resources.resource_filename(__name__,
-                                                    VISUALIZATION_TEMPLATE_PATH)
-    with io.open(template_path, 'r') as file:
+    with io.open(visualization_html_path(), 'r') as file:
         template = file.read()
 
     # customize content of template by replacing tags
