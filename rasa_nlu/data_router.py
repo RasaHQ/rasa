@@ -332,14 +332,11 @@ class DataRouter(object):
                     self.project_store[project].current_training_processes ==
                     0):
                 self.project_store[project].status = STATUS_READY
+            return model_dir
 
         def training_errback(failure):
             logger.warning(failure)
 
-            if hasattr(failure.value, 'failed_target_project'):
-                target_project = self.project_store.get(
-                    failure.value.failed_target_project)
-                target_project.status = STATUS_FAILED
             self._current_training_processes -= 1
             self.project_store[project].current_training_processes -= 1
             self.project_store[project].status = STATUS_FAILED
