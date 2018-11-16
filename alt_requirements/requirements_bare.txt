@@ -15,3 +15,4 @@ msgpack-python==0.5.4
 packaging==17.1
 pyyaml==3.12
 coloredlogs==9.0
+word2number==1.1

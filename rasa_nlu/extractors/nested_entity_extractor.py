@@ -19,6 +19,8 @@ from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.utils import write_json_to_file
 
+from word2number import w2n
+
 NESTED_ENTITIES_FILE_NAME = "nested_entities.json"
 
 
@@ -127,7 +129,15 @@ class NestedEntityExtractor(EntityExtractor):
                 expression = r'\d{4}'
             match = re.findall(expression, broad_value)
             if(match):
-                broken_entity[child_name] = match[0]
+                broken_entity[child_name] = int(match[0])
+            else:
+                match = False
+                try:
+                    match = w2n.word_to_num(broad_value.encode("utf-8"))
+                except ValueError:
+                    pass
+                if(match):
+                    broken_entity[child_name] = match
         return broken_entity
 
     def split_one_level(self, composite_child, broad_value):

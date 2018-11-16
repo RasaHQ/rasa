@@ -45,7 +45,7 @@ class DialogflowReader(TrainingDataReader):
 
     def _get_intent_name(self, intent_js):
         intent_name = None
-        if(intent_js.get("responses")):
+        if(intent_js.get("responses") and intent_js.get("responses")[0]):
             intent_name = intent_js.get("responses")[0].get('action')
         if(intent_name == None):
             intent_name = intent_js.get("name")
