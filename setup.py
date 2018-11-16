@@ -59,7 +59,6 @@ install_requires = [
     "jsonschema~=2.6",
     "packaging~=17.0",
     "gevent~=1.2",
-    "pyyaml~=3.12",
     "pytz~=2018.4",
     "python-dateutil~=2.7",
     "rasa_nlu~=0.13.0",
