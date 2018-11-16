@@ -1,13 +1,12 @@
-import json
-import logging
 import time
 import typing
-import uuid
-from builtins import str
-from typing import List, Dict, Text, Any, Type, Optional
 
+import json
 import jsonpickle
+import logging
+import uuid
 from dateutil import parser
+from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa_core import utils
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
@@ -18,8 +17,8 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def deserialise_events(serialized_events):
-    # type: (List[Dict[Text, Any]]) -> List[Event]
+def deserialise_events(serialized_events: List[Dict[Text, Any]]
+                       ) -> List['Event']:
     """Convert a list of dictionaries to a list of corresponding events.
 
     Example format:
@@ -51,9 +50,9 @@ def md_format_message(text, intent, entities):
     message_from_md = MarkdownReader()._parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter()._generate_message_md(
-            {"text": message_from_md.text,
-             "intent": intent,
-             "entities": deserialised_entities}
+        {"text": message_from_md.text,
+         "intent": intent,
+         "entities": deserialised_entities}
     )
 
 
@@ -89,11 +88,10 @@ class Event(object):
         raise NotImplementedError
 
     @staticmethod
-    def from_story_string(event_name,  # type: Text
-                          parameters,  # type: Dict[Text, Any]
-                          default=None  # type: Optional[Type[Event]]
-                          ):
-        # type: (...) -> Optional[List[Event]]
+    def from_story_string(event_name: Text,
+                          parameters: Dict[Text, Any],
+                          default: Optional[Type['Event']] = None
+                          ) -> Optional[List['Event']]:
         event = Event.resolve_by_type(event_name, default)
 
         if event:
@@ -102,8 +100,9 @@ class Event(object):
             return None
 
     @staticmethod
-    def from_parameters(parameters, default=None):
-        # type: (Dict[Text, Any], Optional[Type[Event]]) -> Optional[Event]
+    def from_parameters(parameters: Dict[Text, Any],
+                        default: Optional[Type['Event']] = None
+                        ) -> Optional['Event']:
 
         event_name = parameters.get("event")
         if event_name is not None:
@@ -119,8 +118,10 @@ class Event(object):
             return None
 
     @classmethod
-    def _from_story_string(cls, parameters):
-        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+    def _from_story_string(
+        cls,
+        parameters: Dict[Text, Any]
+    ) -> Optional[List['Event']]:
         """Called to convert a parsed story line into an event."""
         return [cls(parameters.get("timestamp"))]
 
@@ -148,8 +149,10 @@ class Event(object):
         return result[0] if result else None
 
     @staticmethod
-    def resolve_by_type(type_name, default=None):
-        # type: (Text, Optional[Text]) -> Optional[Type[Event]]
+    def resolve_by_type(
+        type_name: Text,
+        default: Optional[Text] = None
+    ) -> Optional[Type['Event']]:
         """Returns a slots class by its type name."""
 
         for cls in utils.all_subclasses(Event):
@@ -162,8 +165,7 @@ class Event(object):
         else:
             raise ValueError("Unknown event name '{}'.".format(type_name))
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         pass
 
 
@@ -233,8 +235,10 @@ class UserUttered(Event):
         return d
 
     @classmethod
-    def _from_story_string(cls, parameters):
-        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+    def _from_story_string(
+        cls,
+        parameters: Dict[Text, Any]
+    ) -> Optional[List[Event]]:
         try:
             return [cls._from_parse_data(parameters.get("text"),
                                          parameters.get("parse_data"),
@@ -252,8 +256,8 @@ class UserUttered(Event):
                 ent_string = ""
 
             parse_string = "{intent}{entities}".format(
-                           intent=self.intent.get("name", ""),
-                           entities=ent_string)
+                intent=self.intent.get("name", ""),
+                entities=ent_string)
             if e2e:
                 message = md_format_message(self.text,
                                             self.intent,
@@ -264,9 +268,7 @@ class UserUttered(Event):
         else:
             return self.text
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
-
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         tracker.latest_message = self
         tracker.clear_followup_action()
 
@@ -300,8 +302,7 @@ class BotUttered(Event):
         return ("BotUttered(text: {}, data: {})"
                 "".format(self.text, json.dumps(self.data, indent=2)))
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
 
         tracker.latest_bot_utterance = self
 
@@ -364,8 +365,10 @@ class SlotSet(Event):
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
-    def _from_story_string(cls, parameters):
-        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+    def _from_story_string(
+        cls,
+        parameters: Dict[Text, Any]
+    ) -> Optional[List[Event]]:
 
         slots = []
         for slot_key, slot_val in parameters.items():
@@ -447,9 +450,7 @@ class UserUtteranceReverted(Event):
     def as_story_string(self):
         return self.type_name
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
-
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         tracker._reset()
         tracker.replay_events()
 
@@ -544,8 +545,10 @@ class ReminderScheduled(Event):
         return d
 
     @classmethod
-    def _from_story_string(cls, parameters):
-        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+    def _from_story_string(
+        cls,
+        parameters: Dict[Text, Any]
+    ) -> Optional[List[Event]]:
 
         trigger_date_time = parser.parse(parameters.get("date_time"))
         return [ReminderScheduled(parameters.get("action"),
@@ -579,9 +582,7 @@ class ActionReverted(Event):
     def as_story_string(self):
         return self.type_name
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
-
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         tracker._reset()
         tracker.replay_events()
 
@@ -608,8 +609,7 @@ class StoryExported(Event):
     def as_story_string(self):
         return self.type_name
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         if self.path:
             tracker.export_stories_to_file(self.path)
 
@@ -641,8 +641,9 @@ class FollowupAction(Event):
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
-    def _from_story_string(cls, parameters):
-        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+    def _from_story_string(cls,
+                           parameters: Dict[Text, Any]
+                           ) -> Optional[List[Event]]:
 
         return [FollowupAction(parameters.get("name"),
                                parameters.get("timestamp"))]
@@ -652,8 +653,7 @@ class FollowupAction(Event):
         d.update({"name": self.action_name})
         return d
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         tracker.trigger_followup_action(self.action_name)
 
 
@@ -744,8 +744,10 @@ class ActionExecuted(Event):
         return self.action_name
 
     @classmethod
-    def _from_story_string(cls, parameters):
-        # type: (Dict[Text, Any]) -> Optional[List[Event]]
+    def _from_story_string(
+        cls,
+        parameters: Dict[Text, Any]
+    ) -> Optional[List[Event]]:
 
         return [ActionExecuted(parameters.get("name"),
                                parameters.get("policy"),
@@ -762,8 +764,7 @@ class ActionExecuted(Event):
         })
         return d
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
 
         tracker.set_latest_action_name(self.action_name)
         tracker.clear_followup_action()
@@ -794,10 +795,9 @@ class AgentUttered(Event):
 
     def __str__(self):
         return "AgentUttered(text: {}, data: {})".format(
-                self.text, json.dumps(self.data, indent=2))
+            self.text, json.dumps(self.data, indent=2))
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
 
         pass
 
@@ -864,8 +864,7 @@ class Form(Event):
         d.update({"name": self.name})
         return d
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         tracker.change_form_to(self.name)
 
 
@@ -903,8 +902,7 @@ class FormValidation(Event):
         d.update({"validate": self.validate})
         return d
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         tracker.set_form_validation(self.validate)
 
 
@@ -954,6 +952,5 @@ class ActionExecutionRejected(Event):
                   "confidence": self.confidence})
         return d
 
-    def apply_to(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def apply_to(self, tracker: 'DialogueStateTracker') -> None:
         tracker.reject_action(self.action_name)

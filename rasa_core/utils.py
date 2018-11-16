@@ -9,7 +9,6 @@ import re
 import sys
 import tempfile
 import argparse
-from builtins import input, range, str
 from hashlib import sha1
 from random import Random
 from threading import Thread
@@ -23,7 +22,6 @@ from io import StringIO
 from urllib.parse import unquote
 
 from rasa_nlu import utils as nlu_utils
-
 
 logger = logging.getLogger(__name__)
 
@@ -41,33 +39,32 @@ def add_logging_option_arguments(parser):
 
     # arguments for logging configuration
     parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
-            default=logging.INFO,
+        '-v', '--verbose',
+        help="Be verbose. Sets logging level to INFO",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
+        default=logging.INFO,
     )
     parser.add_argument(
-            '-vv', '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
+        '-vv', '--debug',
+        help="Print lots of debugging statements. "
+             "Sets logging level to DEBUG",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
     )
     parser.add_argument(
-            '--quiet',
-            help="Be quiet! Sets logging level to WARNING",
-            action="store_const",
-            dest="loglevel",
-            const=logging.WARNING,
+        '--quiet',
+        help="Be quiet! Sets logging level to WARNING",
+        action="store_const",
+        dest="loglevel",
+        const=logging.WARNING,
     )
 
 
 # noinspection PyUnresolvedReferences
-def class_from_module_path(module_path):
-    # type: (Text) -> Any
+def class_from_module_path(module_path: Text) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects. """
@@ -76,16 +73,18 @@ def class_from_module_path(module_path):
     # load the module, will raise ImportError if module cannot be loaded
     from rasa_core.policies.keras_policy import KerasPolicy
     from rasa_core.policies.fallback import FallbackPolicy
-    from rasa_core.policies.memoization import (MemoizationPolicy,
-                                                AugmentedMemoizationPolicy)
+    from rasa_core.policies.memoization import (
+        MemoizationPolicy,
+        AugmentedMemoizationPolicy)
     from rasa_core.policies.embedding_policy import EmbeddingPolicy
     from rasa_core.policies.form_policy import FormPolicy
     from rasa_core.policies.sklearn_policy import SklearnPolicy
 
-    from rasa_core.featurizers import (FullDialogueTrackerFeaturizer,
-                                       MaxHistoryTrackerFeaturizer,
-                                       BinarySingleStateFeaturizer,
-                                       LabelTokenizerSingleStateFeaturizer)
+    from rasa_core.featurizers import (
+        FullDialogueTrackerFeaturizer,
+        MaxHistoryTrackerFeaturizer,
+        BinarySingleStateFeaturizer,
+        LabelTokenizerSingleStateFeaturizer)
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition('.')
         m = importlib.import_module(module_name)
@@ -95,21 +94,18 @@ def class_from_module_path(module_path):
         return globals().get(module_path, locals().get(module_path))
 
 
-def module_path_from_instance(inst):
-    # type: (Any) -> Text
+def module_path_from_instance(inst: Any) -> Text:
     """Return the module path of an instances class."""
     return inst.__module__ + "." + inst.__class__.__name__
 
 
-def dump_obj_as_json_to_file(filename, obj):
-    # type: (Text, Any) -> None
+def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
     """Dump an object as a json string to a file."""
 
     dump_obj_as_str_to_file(filename, json.dumps(obj, indent=2))
 
 
-def dump_obj_as_str_to_file(filename, text):
-    # type: (Text, Text) -> None
+def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
     """Dump a text to a file."""
 
     with io.open(filename, 'w', encoding="utf-8") as f:
@@ -117,9 +113,10 @@ def dump_obj_as_str_to_file(filename, text):
         f.write(str(text))
 
 
-def subsample_array(arr, max_values, can_modify_incoming_array=True,
-                    rand=None):
-    # type: (List[Any], int, bool, Optional[Random]) -> List[Any]
+def subsample_array(arr: List[Any],
+                    max_values: int,
+                    can_modify_incoming_array: bool = True,
+                    rand: Optional[Random] = None) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -132,8 +129,7 @@ def subsample_array(arr, max_values, can_modify_incoming_array=True,
     return arr[:max_values]
 
 
-def is_int(value):
-    # type: (Any) -> bool
+def is_int(value: Any) -> bool:
     """Checks if a value is an integer.
 
     The type of the value is not important, it might be an int or a float."""
@@ -163,8 +159,7 @@ def lazyproperty(fn):
     return _lazyprop
 
 
-def create_dir_for_file(file_path):
-    # type: (Text) -> None
+def create_dir_for_file(file_path: Text) -> None:
     """Creates any missing parent directories of this files path."""
 
     try:
@@ -205,18 +200,18 @@ def configure_colored_logging(loglevel):
     level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
     level_styles['debug'] = {}
     coloredlogs.install(
-            level=loglevel,
-            use_chroot=False,
-            fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
-            level_styles=level_styles,
-            field_styles=field_styles)
+        level=loglevel,
+        use_chroot=False,
+        fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
+        level_styles=level_styles,
+        field_styles=field_styles)
 
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
         print("Invalid answer, only {}{} allowed\n".format(
-                ", ".join(valid_values[:max_suggested]),
-                ",..." if len(valid_values) > max_suggested else ""))
+            ", ".join(valid_values[:max_suggested]),
+            ",..." if len(valid_values) > max_suggested else ""))
 
     while True:
         try:
@@ -383,7 +378,7 @@ def list_routes(app):
 
             url = url_for(rule.endpoint, **options)
             line = unquote(
-                    "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
+                "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
             output[url] = line
 
         url_table = "\n".join(output[url] for url in sorted(output))
@@ -417,8 +412,7 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
         return s
 
 
-def wait_for_threads(threads):
-    # type: (List[Thread]) -> None
+def wait_for_threads(threads: List[Thread]) -> None:
     """Block until all child threads have been terminated."""
 
     while len(threads) > 0:
@@ -440,8 +434,7 @@ def wait_for_threads(threads):
                 "Stopping to serve forever.")
 
 
-def bool_arg(name, default=True):
-    # type: ( Text, bool) -> bool
+def bool_arg(name: Text, default: bool = True) -> bool:
     """Return a passed boolean argument of the request or a default.
 
     Checks the `name` parameter of the request if it contains a valid
@@ -451,8 +444,7 @@ def bool_arg(name, default=True):
     return request.args.get(name, str(default)).lower() == 'true'
 
 
-def float_arg(name):
-    # type: ( Text) -> float
+def float_arg(name: Text) -> Optional[float]:
     """Return a passed argument cast as a float or None.
 
     Checks the `name` parameter of the request if it contains a valid
@@ -466,10 +458,9 @@ def float_arg(name):
         return None
 
 
-def extract_args(kwargs,  # type: Dict[Text, Any]
-                 keys_to_extract  # type: Set[Text]
-                 ):
-    # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+def extract_args(kwargs: Dict[Text, Any],
+                 keys_to_extract: Set[Text]
+                 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:
     """Go through the kwargs and filter out the specified keys.
 
     Return both, the filtered kwargs as well as the remaining kwargs."""
@@ -491,8 +482,7 @@ def arguments_of(func):
     return list(inspect.signature(func).parameters.keys())
 
 
-def concat_url(base, subpath):
-    # type: (Text, Optional[Text]) -> Text
+def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     """Append a subpath to a base url.
 
     Strips leading slashes from the subpath if necessary. This behaves
@@ -511,16 +501,15 @@ def concat_url(base, subpath):
         return base
 
 
-def all_subclasses(cls):
-    # type: (Any) -> List[Any]
+def all_subclasses(cls: Any) -> List[Any]:
     """Returns all known (imported) subclasses of a class."""
 
     return cls.__subclasses__() + [g for s in cls.__subclasses__()
                                    for g in all_subclasses(s)]
 
 
-def read_endpoint_config(filename, endpoint_type):
-    # type: (Text, Text) -> Optional[EndpointConfig]
+def read_endpoint_config(filename: Text,
+                         endpoint_type: Text) -> Optional['EndpointConfig']:
     """Read an endpoint configuration file from disk and extract one config."""
 
     if not filename:
@@ -554,8 +543,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
                 break
 
 
-def download_file_from_url(url):
-    # type: (Text) -> Text
+def download_file_from_url(url: Text) -> Text:
     """Download a story file from a url and persists it into a temp file.
 
     Returns the file path of the temp file that contains the
@@ -588,17 +576,17 @@ class AvailableEndpoints(object):
     @classmethod
     def read_endpoints(cls, endpoint_file):
         nlg = read_endpoint_config(
-                endpoint_file, endpoint_type="nlg")
+            endpoint_file, endpoint_type="nlg")
         nlu = read_endpoint_config(
-                endpoint_file, endpoint_type="nlu")
+            endpoint_file, endpoint_type="nlu")
         action = read_endpoint_config(
-                endpoint_file, endpoint_type="action_endpoint")
+            endpoint_file, endpoint_type="action_endpoint")
         model = read_endpoint_config(
-                endpoint_file, endpoint_type="models")
+            endpoint_file, endpoint_type="models")
         tracker_store = read_endpoint_config(
-                endpoint_file, endpoint_type="tracker_store")
+            endpoint_file, endpoint_type="tracker_store")
         event_broker = read_endpoint_config(
-                endpoint_file, endpoint_type="event_broker")
+            endpoint_file, endpoint_type="event_broker")
 
         return cls(nlg, nlu, action, model, tracker_store, event_broker)
 
@@ -632,12 +620,11 @@ class EndpointConfig(object):
         self.kwargs = kwargs
 
     def request(self,
-                method="post",  # type: Text
-                subpath=None,  # type: Optional[Text]
-                content_type="application/json",  # type: Optional[Text]
-                **kwargs  # type: Any
-                ):
-        # type: (...) -> requests.Response
+                method: Text = "post",
+                subpath: Optional[Text] = None,
+                content_type: Optional[Text] = "application/json",
+                **kwargs: Any
+                ) -> requests.Response:
         """Send a HTTP request to the endpoint.
 
         All additional arguments will get passed through

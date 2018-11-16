@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 
 from rasa_core.policies.keras_policy import KerasPolicy
@@ -17,8 +12,8 @@ class RestaurantPolicy(KerasPolicy):
         from keras.models import Sequential
 
         from keras.models import Sequential
-        from keras.layers import \
-            Masking, LSTM, Dense, TimeDistributed, Activation
+        from keras.layers import (
+            Masking, LSTM, Dense, TimeDistributed, Activation)
 
         # Build Model
         model = Sequential()

@@ -1,9 +1,4 @@
 # coding=utf-8
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import pytest
 
 from rasa_core.channels import CollectingOutputChannel
@@ -48,7 +43,7 @@ def test_dispatcher_template_invalid_vars():
     dispatcher.utter_template("my_made_up_template", tracker)
     collected = dispatcher.output_channel.latest_output()
     assert collected['text'].startswith(
-            "a template referencing an invalid {variable}.")
+        "a template referencing an invalid {variable}.")
 
 
 def test_dispatcher_utter_response(default_dispatcher_collecting):

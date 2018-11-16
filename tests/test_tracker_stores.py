@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain
@@ -74,18 +69,18 @@ def test_find_tracker_store(default_domain):
 
     assert isinstance(tracker_store,
                       type(
-                        TrackerStore.find_tracker_store(default_domain, store)
-                          ))
+                          TrackerStore.find_tracker_store(default_domain, store)
+                      ))
 
 
-class TestTrackerStore(RedisTrackerStore):
+class ExampleTrackerStore(RedisTrackerStore):
     def __init__(self, domain, url, port, db, password, record_exp):
-        super(TestTrackerStore, self).__init__(domain,
-                                               host=url,
-                                               port=port,
-                                               db=db,
-                                               password=password,
-                                               record_exp=record_exp)
+        super(ExampleTrackerStore, self).__init__(domain,
+                                                  host=url,
+                                                  port=port,
+                                                  db=db,
+                                                  password=password,
+                                                  record_exp=record_exp)
 
 
 def test_tracker_store_from_string(default_domain):
@@ -95,7 +90,7 @@ def test_tracker_store_from_string(default_domain):
     tracker_store = TrackerStore.find_tracker_store(default_domain,
                                                     store_config)
 
-    assert isinstance(tracker_store, TestTrackerStore)
+    assert isinstance(tracker_store, ExampleTrackerStore)
 
 
 def test_tracker_store_from_invalid_module(default_domain):

@@ -150,19 +150,19 @@ class TelegramInput(InputChannel):
                         return "success"
                 sender_id = msg.chat.id
                 try:
-                    if(text == '_restart' or
+                    if (text == '_restart' or
                             text == constants.USER_INTENT_RESTART):
 
                         on_new_message(UserMessage(
-                                text, out_channel, sender_id,
-                                input_channel=self.name()))
+                            text, out_channel, sender_id,
+                            input_channel=self.name()))
                         on_new_message(UserMessage(
-                                '/start', out_channel, sender_id,
-                                input_channel=self.name()))
+                            '/start', out_channel, sender_id,
+                            input_channel=self.name()))
                     else:
                         on_new_message(UserMessage(
-                                text, out_channel, sender_id,
-                                input_channel=self.name()))
+                            text, out_channel, sender_id,
+                            input_channel=self.name()))
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))
