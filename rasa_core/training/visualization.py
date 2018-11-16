@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import re
 import typing
 from collections import defaultdict, deque
 
@@ -335,6 +336,13 @@ def _create_graph(fontsize=12):
     return graph
 
 
+def sanitize(s):
+    if s:
+        return re.sub(r"[^a-zA-Z0-9\s_-]", "",  s)
+    else:
+        return s
+
+
 def _add_message_edge(graph,  # type: networkx.MultiDiGraph
                       message,  # type: Dict[Text, Any]
                       current_node,  # type: int
@@ -344,8 +352,8 @@ def _add_message_edge(graph,  # type: networkx.MultiDiGraph
     """Create an edge based on the user message."""
 
     if message:
-        message_key = message.get("intent", {}).get("name", None)
-        message_label = message.get("text", None)
+        message_key = sanitize(message.get("intent", {}).get("name", None))
+        message_label = sanitize(message.get("text", None))
     else:
         message_key = None
         message_label = None
