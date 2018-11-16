@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import datetime
 import uuid
 
@@ -105,5 +100,5 @@ def test_logging_of_bot_utterances_on_tracker(default_processor,
     assert len(default_dispatcher_collecting.latest_bot_messages) == 4
 
     default_processor.log_bot_utterances_on_tracker(
-            tracker, default_dispatcher_collecting)
+        tracker, default_dispatcher_collecting)
     assert not default_dispatcher_collecting.latest_bot_messages

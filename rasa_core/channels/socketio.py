@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Text
+from typing import Optional, Text, Any, List, Dict
 
 import socketio
 from flask import Blueprint, jsonify
@@ -34,24 +34,20 @@ class SocketIOOutput(OutputChannel):
         self.sio = sio
         self.bot_message_evt = bot_message_evt
 
-    def send(self, recipient_id, message):
-        # type: (Text, Any) -> None
+    def send(self, recipient_id: Text, message: Any) -> None:
         """Sends a message to the recipient."""
         self.sio.emit(message, room=recipient_id)
 
-    def _send_message(self, recipient_id, response):
-        # type: (Text, Any) -> None
+    def _send_message(self, recipient_id: Text, response: Any) -> None:
         """Sends a message to the recipient using the bot event."""
         self.sio.emit(self.bot_message_evt, response, room=recipient_id)
 
-    def send_text_message(self, recipient_id, message):
-        # type: (Text, Text) -> None
+    def send_text_message(self, recipient_id: Text, message: Text) -> None:
         """Send a message through this channel."""
 
         self._send_message(recipient_id, {"text": message})
 
-    def send_image_url(self, recipient_id, image_url):
-        # type: (Text, Text) -> None
+    def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
         """Sends an image. Default will just post the url as a string."""
         message = {
             "attachment": {
@@ -61,8 +57,9 @@ class SocketIOOutput(OutputChannel):
         }
         self._send_message(recipient_id, message)
 
-    def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], Any) -> None
+    def send_text_with_buttons(self, recipient_id: Text, text: Text,
+                               buttons: List[Dict[Text, Any]],
+                               **kwargs: Any) -> None:
         """Sends buttons to the output."""
 
         message = {
@@ -79,8 +76,8 @@ class SocketIOOutput(OutputChannel):
 
         self._send_message(recipient_id, message)
 
-    def send_custom_message(self, recipient_id, elements):
-        # type: (Text, List[Dict[Text, Any]]) -> None
+    def send_custom_message(self, recipient_id: Text,
+                            elements: List[Dict[Text, Any]]) -> None:
         """Sends elements to the output."""
 
         message = {"attachment": {
@@ -108,9 +105,9 @@ class SocketIOInput(InputChannel):
                    credentials.get("namespace"))
 
     def __init__(self,
-                 user_message_evt="user_uttered",  # type: Text
-                 bot_message_evt="bot_uttered",  # type: Text
-                 namespace=None,  # type: Optional[Text]
+                 user_message_evt: Text = "user_uttered",
+                 bot_message_evt: Text = "bot_uttered",
+                 namespace: Optional[Text] = None,
                  socketio_path='/socket.io'  # type: Optional[Text]
                  ):
         self.bot_message_evt = bot_message_evt

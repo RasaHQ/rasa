@@ -49,8 +49,7 @@ class MattermostInput(InputChannel):
                    credentials.get("user"),
                    credentials.get("pw"))
 
-    def __init__(self, url, team, user, pw):
-        # type: (Text, Text, Text, Text) -> None
+    def __init__(self, url: Text, team: Text, user: Text, pw: Text) -> None:
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.

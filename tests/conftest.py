@@ -1,11 +1,5 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 import os
-from builtins import str
 
 import matplotlib
 import pytest
@@ -101,12 +95,12 @@ def default_processor(default_domain, default_nlg):
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
     train.train_dialogue_model(
-            domain_file="examples/moodbot/domain.yml",
-            stories_file="examples/moodbot/data/stories.md",
-            output_path=MOODBOT_MODEL_PATH,
-            interpreter=RegexInterpreter(),
-            policy_config='rasa_core/default_config.yml',
-            kwargs=None
+        domain_file="examples/moodbot/domain.yml",
+        stories_file="examples/moodbot/data/stories.md",
+        output_path=MOODBOT_MODEL_PATH,
+        interpreter=RegexInterpreter(),
+        policy_config='rasa_core/default_config.yml',
+        kwargs=None
     )
 
     return MOODBOT_MODEL_PATH

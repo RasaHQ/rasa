@@ -9,8 +9,7 @@ if typing.TYPE_CHECKING:
     from rasa_core.policies import Policy
 
 
-def load(config_file):
-    # type: (Optional[Text]) -> List[Policy]
+def load(config_file: Optional[Text]) -> List['Policy']:
     """Load policy data stored in the specified file."""
 
     if config_file and os.path.isfile(config_file):

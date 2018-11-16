@@ -7,7 +7,6 @@ import json
 import logging
 import numpy as np
 import os
-import pickle
 import warnings
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
@@ -40,7 +39,7 @@ def create_argument_parser():
     """Create argument parser for the evaluate script."""
 
     parser = argparse.ArgumentParser(
-            description='evaluates a dialogue model')
+        description='evaluates a dialogue model')
     parent_parser = argparse.ArgumentParser(add_help=False)
     add_args_to_parser(parent_parser)
     cli.arguments.add_model_and_story_group(parser,
@@ -50,46 +49,46 @@ def create_argument_parser():
     subparsers.add_parser('default',
                           help='default mode: evaluate a dialogue'
                                ' model',
-                               parents=[parent_parser])
+                          parents=[parent_parser])
     subparsers.add_parser('compare',
                           help='compare mode: evaluate multiple'
                                ' dialogue models to compare '
                                'policies',
-                               parents=[parent_parser])
+                          parents=[parent_parser])
 
     return parser
 
 
 def add_args_to_parser(parser):
     parser.add_argument(
-            '-m', '--max_stories',
-            type=int,
-            help="maximum number of stories to test on")
+        '-m', '--max_stories',
+        type=int,
+        help="maximum number of stories to test on")
     parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            help="nlu model to run with the server. None for regex interpreter")
+        '-u', '--nlu',
+        type=str,
+        help="nlu model to run with the server. None for regex interpreter")
     parser.add_argument(
-            '-o', '--output',
-            type=str,
-            default="results",
-            help="output path for the any files created from the evaluation")
+        '-o', '--output',
+        type=str,
+        default="results",
+        help="output path for the any files created from the evaluation")
     parser.add_argument(
-            '--e2e', '--end-to-end',
-            action='store_true',
-            help="Run an end-to-end evaluation for combined action and "
-                 "intent prediction. Requires a story file in end-to-end "
-                 "format.")
+        '--e2e', '--end-to-end',
+        action='store_true',
+        help="Run an end-to-end evaluation for combined action and "
+             "intent prediction. Requires a story file in end-to-end "
+             "format.")
     parser.add_argument(
-            '--endpoints',
-            default=None,
-            help="Configuration file for the connectors as a yml file")
+        '--endpoints',
+        default=None,
+        help="Configuration file for the connectors as a yml file")
     parser.add_argument(
-            '--fail_on_prediction_errors',
-            action='store_true',
-            help="If a prediction error is encountered, an exception "
-                 "is thrown. This can be used to validate stories during "
-                 "tests, e.g. on travis.")
+        '--fail_on_prediction_errors',
+        action='store_true',
+        help="If a prediction error is encountered, an exception "
+             "is thrown. This can be used to validate stories during "
+             "tests, e.g. on travis.")
 
     cli.arguments.add_core_model_arg(parser)
 
@@ -100,15 +99,14 @@ class EvaluationStore(object):
     """Class storing action, intent and entity predictions and targets."""
 
     def __init__(
-            self,
-            action_predictions=None,  # type: Optional[List[str]]
-            action_targets=None,  # type: Optional[List[str]]
-            intent_predictions=None,  # type: Optional[List[str]]
-            intent_targets=None,  # type: Optional[List[str]]
-            entity_predictions=None,  # type: Optional[List[Dict[Text, Any]]]
-            entity_targets=None  # type: Optional[List[Dict[Text, Any]]]
-    ):
-        # type: (...) -> None
+        self,
+        action_predictions: Optional[List[str]] = None,
+        action_targets: Optional[List[str]] = None,
+        intent_predictions: Optional[List[str]] = None,
+        intent_targets: Optional[List[str]] = None,
+        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
+        entity_targets: Optional[List[Dict[Text, Any]]] = None
+    ) -> None:
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
         self.intent_predictions = intent_predictions or []
@@ -117,15 +115,14 @@ class EvaluationStore(object):
         self.entity_targets = entity_targets or []
 
     def add_to_store(
-            self,
-            action_predictions=None,  # type: Optional[List[str]]
-            action_targets=None,  # type: Optional[List[str]]
-            intent_predictions=None,  # type: Optional[List[str]]
-            intent_targets=None,  # type: Optional[List[str]]
-            entity_predictions=None,  # type: Optional[List[Dict[Text, Any]]]
-            entity_targets=None  # type: Optional[List[Dict[Text, Any]]]
-    ):
-        # type: (...) -> None
+        self,
+        action_predictions: Optional[List[str]] = None,
+        action_targets: Optional[List[str]] = None,
+        intent_predictions: Optional[List[str]] = None,
+        intent_targets: Optional[List[str]] = None,
+        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
+        entity_targets: Optional[List[Dict[Text, Any]]] = None
+    ) -> None:
         """Add items or lists of items to the store"""
         for k, v in locals().items():
             if k != 'self' and v:
@@ -135,8 +132,7 @@ class EvaluationStore(object):
                 else:
                     attr.append(v)
 
-    def merge_store(self, other):
-        # type: (EvaluationStore) -> None
+    def merge_store(self, other: 'EvaluationStore') -> None:
         """Add the contents of other to self"""
         self.add_to_store(action_predictions=other.action_predictions,
                           action_targets=other.action_targets,
@@ -146,9 +142,9 @@ class EvaluationStore(object):
                           entity_targets=other.entity_targets)
 
     def has_prediction_target_mismatch(self):
-        return self.intent_predictions != self.intent_targets or \
-               self.entity_predictions != self.entity_targets or \
-               self.action_predictions != self.action_targets
+        return (self.intent_predictions != self.intent_targets or
+                self.entity_predictions != self.entity_targets or
+                self.action_predictions != self.action_targets)
 
     def serialise_targets(self,
                           include_actions=True,
@@ -297,28 +293,28 @@ def _collect_user_uttered_predictions(event,
                                            "None")
 
         user_uttered_eval_store.add_to_store(
-                entity_targets=_clean_entity_results(entity_gold),
-                entity_predictions=_clean_entity_results(predicted_entities)
+            entity_targets=_clean_entity_results(entity_gold),
+            entity_predictions=_clean_entity_results(predicted_entities)
         )
 
     if user_uttered_eval_store.has_prediction_target_mismatch():
         partial_tracker.update(
-                WronglyClassifiedUserUtterance(
-                        event.text, intent_gold,
-                        user_uttered_eval_store.entity_predictions,
-                        event.parse_data,
-                        event.timestamp,
-                        event.input_channel,
-                        predicted_intent,
-                        user_uttered_eval_store.entity_targets)
+            WronglyClassifiedUserUtterance(
+                event.text, intent_gold,
+                user_uttered_eval_store.entity_predictions,
+                event.parse_data,
+                event.timestamp,
+                event.input_channel,
+                predicted_intent,
+                user_uttered_eval_store.entity_targets)
         )
         if fail_on_prediction_errors:
             raise ValueError(
-                    "NLU model predicted a wrong intent. Failed Story:"
-                    " \n\n{}".format(partial_tracker.export_stories()))
+                "NLU model predicted a wrong intent. Failed Story:"
+                " \n\n{}".format(partial_tracker.export_stories()))
     else:
         end_to_end_user_utterance = EndToEndUserUtterance(
-                event.text, event.intent, event.entities)
+            event.text, event.intent, event.entities)
         partial_tracker.update(end_to_end_user_utterance)
 
     return user_uttered_eval_store
@@ -343,8 +339,8 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                                       event.timestamp))
         if fail_on_prediction_errors:
             raise ValueError(
-                    "Model predicted a wrong action. Failed Story: "
-                    "\n\n{}".format(partial_tracker.export_stories()))
+                "Model predicted a wrong action. Failed Story: "
+                "\n\n{}".format(partial_tracker.export_stories()))
     else:
         partial_tracker.update(event)
 
@@ -368,20 +364,20 @@ def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
         if isinstance(event, ActionExecuted):
             action_executed_result, policy, confidence = \
                 _collect_action_executed_predictions(
-                        processor, partial_tracker, event,
-                        fail_on_prediction_errors
+                    processor, partial_tracker, event,
+                    fail_on_prediction_errors
                 )
             tracker_eval_store.merge_store(action_executed_result)
             tracker_actions.append(
-                    {"action": action_executed_result.action_targets[0],
-                     "predicted": action_executed_result.action_predictions[0],
-                     "policy": policy,
-                     "confidence": confidence}
+                {"action": action_executed_result.action_targets[0],
+                 "predicted": action_executed_result.action_predictions[0],
+                 "policy": policy,
+                 "confidence": confidence}
             )
         elif use_e2e and isinstance(event, UserUttered):
             user_uttered_result = \
                 _collect_user_uttered_predictions(
-                        event, partial_tracker, fail_on_prediction_errors)
+                    event, partial_tracker, fail_on_prediction_errors)
 
             tracker_eval_store.merge_store(user_uttered_result)
         else:
@@ -403,12 +399,11 @@ def _in_training_data_fraction(action_list):
 
 
 def collect_story_predictions(
-        completed_trackers,  # type: List[DialogueStateTracker]
-        agent,  # type: Agent
-        fail_on_prediction_errors=False,  # type: bool
-        use_e2e=False  # type: bool
-):
-    # type: (...) -> Tuple[StoryEvalution, int]
+    completed_trackers: List[DialogueStateTracker],
+    agent: Agent,
+    fail_on_prediction_errors: bool = False,
+    use_e2e: bool = False
+) -> Tuple[StoryEvalution, int]:
     """Test the stories from a file, running them through the stored model."""
 
     story_eval_store = EvaluationStore()
@@ -439,7 +434,7 @@ def collect_story_predictions(
 
     logger.info("Finished collecting predictions.")
     report, precision, f1, accuracy = get_evaluation_metrics(
-            [1] * len(completed_trackers), correct_dialogues)
+        [1] * len(completed_trackers), correct_dialogues)
 
     in_training_data_fraction = _in_training_data_fraction(action_list)
 
@@ -489,8 +484,8 @@ def run_story_evaluation(resource_name, agent,
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UndefinedMetricWarning)
         report, precision, f1, accuracy = get_evaluation_metrics(
-                evaluation_store.serialise_targets(),
-                evaluation_store.serialise_predictions()
+            evaluation_store.serialise_targets(),
+            evaluation_store.serialise_predictions()
         )
 
     if out_directory:
@@ -558,8 +553,9 @@ def plot_story_evaluation(test_y, predictions,
                 bbox_inches='tight')
 
 
-def run_comparison_evaluation(models, stories_file, output):
-    # type: (Text, Text, Text) -> None
+def run_comparison_evaluation(models: Text,
+                              stories_file: Text,
+                              output: Text) -> None:
     """Evaluates multiple trained models on a test set"""
 
     num_correct = defaultdict(list)
@@ -579,8 +575,8 @@ def run_comparison_evaluation(models, stories_file, output):
                                           agent)
 
             failed_stories = story_eval_store.failed_stories
-            policy_name = ''.join([i for i in os.path.basename(model) if not
-                                   i.isdigit()])
+            policy_name = ''.join(
+                [i for i in os.path.basename(model) if not i.isdigit()])
             num_correct_run[policy_name].append(no_of_stories -
                                                 len(failed_stories))
 
@@ -591,8 +587,7 @@ def run_comparison_evaluation(models, stories_file, output):
                                    num_correct)
 
 
-def plot_curve(output, no_stories):
-    # type: (Text, List[int]) -> None
+def plot_curve(output: Text, no_stories: List[int]) -> None:
     """Plot the results from run_comparison_evaluation.
 
     Args:
@@ -615,8 +610,8 @@ def plot_curve(output, no_stories):
         std = np.std(data[label], axis=0)
         ax.plot(x, mean, label=label, marker='.')
         ax.fill_between(x,
-                        [m-s for m, s in zip(mean, std)],
-                        [m+s for m, s in zip(mean, std)],
+                        [m - s for m, s in zip(mean, std)],
+                        [m + s for m, s in zip(mean, std)],
                         color='#6b2def',
                         alpha=0.2)
     ax.legend(loc=4)

@@ -36,16 +36,17 @@ class Button(dict):
 class Dispatcher(object):
     """Send messages back to user"""
 
-    def __init__(self, sender_id, output_channel, nlg):
-        # type: (Text, OutputChannel, NaturalLanguageGenerator) -> None
+    def __init__(self,
+                 sender_id: Text,
+                 output_channel: OutputChannel,
+                 nlg: NaturalLanguageGenerator) -> None:
 
         self.sender_id = sender_id
         self.output_channel = output_channel
         self.nlg = nlg
         self.latest_bot_messages = []
 
-    def utter_response(self, message):
-        # type: (Dict[Text, Any]) -> None
+    def utter_response(self, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
         bot_message = BotMessage(text=message.get("text"),
@@ -56,8 +57,7 @@ class Dispatcher(object):
         self.latest_bot_messages.append(bot_message)
         self.output_channel.send_response(self.sender_id, message)
 
-    def utter_message(self, text):
-        # type: (Text) -> None
+    def utter_message(self, text: Text) -> None:
         """"Send a text to the output channel"""
         # Adding the text to the latest bot messages (with no data)
         bot_message = BotMessage(text=text,
@@ -66,8 +66,7 @@ class Dispatcher(object):
         self.latest_bot_messages.append(bot_message)
         self.output_channel.send_text_message(self.sender_id, text)
 
-    def utter_custom_message(self, *elements):
-        # type: (Dict[Text, Any]) -> None
+    def utter_custom_message(self, *elements: Dict[Text, Any]) -> None:
         """Sends a message with custom elements to the output channel."""
 
         bot_message = BotMessage(text=None,
@@ -76,8 +75,10 @@ class Dispatcher(object):
         self.latest_bot_messages.append(bot_message)
         self.output_channel.send_custom_message(self.sender_id, elements)
 
-    def utter_button_message(self, text, buttons, **kwargs):
-        # type: (Text, List[Dict[Text, Any]], Any) -> None
+    def utter_button_message(self,
+                             text: Text,
+                             buttons: List[Dict[Text, Any]],
+                             **kwargs: Any) -> None:
         """Sends a message with buttons to the output channel."""
         # Adding the text and data (buttons) to the latest bot messages
         bot_message = BotMessage(text=text,
@@ -88,8 +89,7 @@ class Dispatcher(object):
                                                    buttons,
                                                    **kwargs)
 
-    def utter_attachment(self, attachment):
-        # type: (Text) -> None
+    def utter_attachment(self, attachment: Text) -> None:
         """Send a message to the client with attachments."""
         bot_message = BotMessage(text=None,
                                  data={"attachment": attachment})
@@ -97,15 +97,15 @@ class Dispatcher(object):
         self.latest_bot_messages.append(bot_message)
         self.output_channel.send_image_url(self.sender_id, attachment)
 
-    # TODO: deprecate this function
+        # TODO: deprecate this function
+
     def utter_button_template(self,
-                              template,  # type: Text
-                              buttons,  # type: List[Dict[Text, Any]]
-                              tracker,  # type: DialogueStateTracker
-                              silent_fail=False,  # type: bool
-                              **kwargs   # type: Any
-                              ):
-        # type: (...) -> None
+                              template: Text,
+                              buttons: List[Dict[Text, Any]],
+                              tracker: 'DialogueStateTracker',
+                              silent_fail: bool = False,
+                              **kwargs: Any
+                              ) -> None:
         """Sends a message template with buttons to the output channel."""
 
         message = self._generate_response(template,
@@ -122,12 +122,11 @@ class Dispatcher(object):
         self.utter_response(message)
 
     def utter_template(self,
-                       template,  # type: Text
-                       tracker,  # type: DialogueStateTracker
-                       silent_fail=False,  # type: bool
-                       **kwargs  # type: Any
-                       ):
-        # type: (...) -> None
+                       template: Text,
+                       tracker: 'DialogueStateTracker',
+                       silent_fail: bool = False,
+                       **kwargs: Any
+                       ) -> None:
         """"Send a message to the client based on a template."""
 
         message = self._generate_response(template,
@@ -140,14 +139,12 @@ class Dispatcher(object):
 
         self.utter_response(message)
 
-    def _generate_response(
-        self,
-        template,  # type: Text
-        tracker,  # type: DialogueStateTracker
-        silent_fail=False,  # type: bool
-        **kwargs  # type: Any
-    ):
-        # type: (...) -> Dict[Text, Any]
+    def _generate_response(self,
+                           template: Text,
+                           tracker: 'DialogueStateTracker',
+                           silent_fail: bool = False,
+                           **kwargs: Any
+                           ) -> Dict[Text, Any]:
         """"Generate a response."""
 
         message = self.nlg.generate(template, tracker,

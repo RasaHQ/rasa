@@ -49,8 +49,7 @@ class WebexTeamsInput(InputChannel):
         return cls(credentials.get("access_token"),
                    credentials.get("room"))
 
-    def __init__(self, access_token, room=None):
-        # type: (Text, Optional[Text]) -> None
+    def __init__(self, access_token: Text, room: Optional[Text] = None) -> None:
         """Create a Cisco Webex Teams input channel.
 
         Needs a couple of settings to properly authenticate and validate
@@ -108,8 +107,8 @@ class WebexTeamsInput(InputChannel):
 
             else:
                 return self.process_message(
-                        on_new_message,
-                        text=message.text,
-                        sender_id=message.personId)
+                    on_new_message,
+                    text=message.text,
+                    sender_id=message.personId)
 
         return webexteams_webhook

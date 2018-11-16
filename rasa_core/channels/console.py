@@ -1,3 +1,4 @@
+# this builtin is needed so we can overwrite in test
 from builtins import input
 
 import json
@@ -37,8 +38,8 @@ def send_message_receive_block(server_url, auth_token, sender_id, message):
     }
 
     response = requests.post("{}/webhooks/rest/webhook?token={}".format(
-            server_url, auth_token),
-            json=payload)
+        server_url, auth_token),
+        json=payload)
     response.raise_for_status()
     return response.json()
 
@@ -49,10 +50,10 @@ def send_message_receive_stream(server_url, auth_token, sender_id, message):
         "message": message
     }
 
-    with requests.post("{}/webhooks/rest/webhook?stream=true&token={}".format(
-            server_url, auth_token),
-            json=payload,
-            stream=True) as r:
+    url = "{}/webhooks/rest/webhook?stream=true&token={}".format(
+        server_url, auth_token)
+
+    with requests.post(url, json=payload, stream=True) as r:
 
         r.raise_for_status()
 

@@ -4,7 +4,6 @@ import re
 
 import os
 import requests
-from builtins import str
 from typing import Text, List, Dict, Any
 
 from rasa_core import constants
@@ -17,8 +16,8 @@ logger = logging.getLogger(__name__)
 class NaturalLanguageInterpreter(object):
     def parse(self, text):
         raise NotImplementedError(
-                "Interpreter needs to be able to parse "
-                "messages into structured output.")
+            "Interpreter needs to be able to parse "
+            "messages into structured output.")
 
     @staticmethod
     def create(obj, endpoint=None):
@@ -44,10 +43,10 @@ class NaturalLanguageInterpreter(object):
             else:
                 if endpoint:
                     raise Exception(
-                            "You have configured an endpoint to use for "
-                            "the NLU model. To use it, you need to "
-                            "specify the model to use with "
-                            "`--nlu project/model`.")
+                        "You have configured an endpoint to use for "
+                        "the NLU model. To use it, you need to "
+                        "specify the model to use with "
+                        "`--nlu project/model`.")
                 else:
                     return RasaNLUInterpreter(model_directory=obj)
         else:
@@ -75,8 +74,10 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         return entities
 
     @staticmethod
-    def _parse_parameters(entitiy_str, sidx, eidx, user_input):
-        # type: (Text, int, int, Text) -> List[Dict[Text, Any]]
+    def _parse_parameters(entitiy_str: Text,
+                          sidx: int,
+                          eidx: int,
+                          user_input: Text) -> List[Dict[Text, Any]]:
         if entitiy_str is None or not entitiy_str.strip():
             # if there is nothing to parse we will directly exit
             return []
@@ -99,8 +100,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             return []
 
     @staticmethod
-    def _parse_confidence(confidence_str):
-        # type: (Text) -> float
+    def _parse_confidence(confidence_str: Text) -> float:
         if confidence_str is None:
             return 1.0
 
@@ -120,8 +120,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         return False
 
     @staticmethod
-    def extract_intent_and_entities(user_input):
-        # type: (Text) -> object
+    def extract_intent_and_entities(user_input: Text) -> object:
         """Parse the user input using regexes to extract intent & entities."""
 
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
@@ -211,8 +210,10 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
-    def __init__(self, model_name=None, endpoint=None, project_name='default'):
-        # type: (Text, EndpointConfig, Text) -> None
+    def __init__(self,
+                 model_name: Text = None,
+                 endpoint: EndpointConfig = None,
+                 project_name: Text = 'default') -> None:
 
         self.model_name = model_name
         self.project_name = project_name
@@ -240,8 +241,8 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
 
         if not self.endpoint:
             logger.error(
-                    "Failed to parse text '{}' using rasa NLU over http. "
-                    "No rasa NLU server specified!".format(text))
+                "Failed to parse text '{}' using rasa NLU over http. "
+                "No rasa NLU server specified!".format(text))
             return None
 
         params = {
@@ -257,13 +258,13 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                 return result.json()
             else:
                 logger.error(
-                        "Failed to parse text '{}' using rasa NLU over http. "
-                        "Error: {}".format(text, result.text))
+                    "Failed to parse text '{}' using rasa NLU over http. "
+                    "Error: {}".format(text, result.text))
                 return None
         except Exception as e:
             logger.error(
-                    "Failed to parse text '{}' using rasa NLU over http. "
-                    "Error: {}".format(text, e))
+                "Failed to parse text '{}' using rasa NLU over http. "
+                "Error: {}".format(text, e))
             return None
 
 

@@ -1,5 +1,3 @@
-from builtins import str
-
 import argparse
 import json
 import logging
@@ -25,33 +23,33 @@ def create_argument_parser():
     """Parse all the command line arguments for the restore script."""
 
     parser = argparse.ArgumentParser(
-            description='starts the bot')
+        description='starts the bot')
     parser.add_argument(
-            '-d', '--core',
-            required=True,
-            type=str,
-            help="core model to run")
+        '-d', '--core',
+        required=True,
+        type=str,
+        help="core model to run")
     parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            help="nlu model to run")
+        '-u', '--nlu',
+        type=str,
+        help="nlu model to run")
     parser.add_argument(
-            'tracker_dump',
-            type=str,
-            help="file that contains a dumped tracker state in json format")
+        'tracker_dump',
+        type=str,
+        help="file that contains a dumped tracker state in json format")
     parser.add_argument(
-            '--enable_api',
-            action="store_true",
-            help="Start the web server api in addition to the input channel")
+        '--enable_api',
+        action="store_true",
+        help="Start the web server api in addition to the input channel")
 
     utils.add_logging_option_arguments(parser)
 
     return parser
 
 
-def _check_prediction_aligns_with_story(last_prediction,
-                                        actions_between_utterances):
-    # type: (List[Text], List[Text]) -> None
+def _check_prediction_aligns_with_story(last_prediction: List[Text],
+                                        actions_between_utterances: List[Text]
+                                        ) -> None:
     """Emit a warning if predictions do not align with expected actions."""
 
     p, a = align_lists(last_prediction, actions_between_utterances)
@@ -61,8 +59,9 @@ def _check_prediction_aligns_with_story(last_prediction,
                       "{} but got {}.".format(p, a))
 
 
-def align_lists(predictions, golds):
-    # type: (List[Text], List[Text]) -> Tuple[List[Text], List[Text]]
+def align_lists(predictions: List[Text],
+                golds: List[Text]
+                ) -> Tuple[List[Text], List[Text]]:
     """Align two lists trying to keep same elements at the same index.
 
     If lists contain different items at some indices, the algorithm will
@@ -83,8 +82,7 @@ def align_lists(predictions, golds):
     return padded_predictions, padded_golds
 
 
-def actions_since_last_utterance(tracker):
-    # type: (DialogueStateTracker) -> List[Text]
+def actions_since_last_utterance(tracker: DialogueStateTracker) -> List[Text]:
     """Extract all events after the most recent utterance from the user."""
 
     actions = []
@@ -97,8 +95,7 @@ def actions_since_last_utterance(tracker):
     return actions
 
 
-def replay_events(tracker, agent):
-    # type: (DialogueStateTracker, Agent) -> None
+def replay_events(tracker: DialogueStateTracker, agent: Agent) -> None:
     """Take a tracker and replay the logged user utterances against an agent.
 
     During replaying of the user utterances, the executed actions and events
@@ -135,8 +132,8 @@ def replay_events(tracker, agent):
                                         actions_between_utterances)
 
 
-def load_tracker_from_json(tracker_dump, domain):
-    # type: (Text, Domain) -> DialogueStateTracker
+def load_tracker_from_json(tracker_dump: Text,
+                           domain: Domain) -> DialogueStateTracker:
     """Read the json dump from the file and instantiate a tracker it."""
 
     tracker_json = json.loads(utils.read_file(tracker_dump))
@@ -146,12 +143,12 @@ def load_tracker_from_json(tracker_dump, domain):
                                           domain.slots)
 
 
-def serve_application(model_directory,  # type: Text
-                      nlu_model=None,  # type: Optional[Text]
-                      tracker_dump=None,  # type: Optional[Text]
-                      port=constants.DEFAULT_SERVER_PORT,  # type: int
-                      endpoints=None,  # type: Optional[Text]
-                      enable_api=True  # type: bool
+def serve_application(model_directory: Text,
+                      nlu_model: Optional[Text] = None,
+                      tracker_dump: Optional[Text] = None,
+                      port: int = constants.DEFAULT_SERVER_PORT,
+                      endpoints: Optional[Text] = None,
+                      enable_api: bool = True
                       ):
     from rasa_core import run
 
@@ -192,9 +189,9 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
 
     print(utils.wrap_with_color(
-            "We'll recreate the dialogue state. After that you can chat "
-            "with the bot, continuing the input conversation.",
-            utils.bcolors.OKGREEN + utils.bcolors.UNDERLINE))
+        "We'll recreate the dialogue state. After that you can chat "
+        "with the bot, continuing the input conversation.",
+        utils.bcolors.OKGREEN + utils.bcolors.UNDERLINE))
 
     serve_application(cmdline_args.core,
                       cmdline_args.nlu,
