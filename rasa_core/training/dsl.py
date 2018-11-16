@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import io
 import json
 import logging
@@ -165,18 +160,23 @@ class StoryFileReader(object):
                          exclusion_percentage=None):
         """Given a path reads all contained story files."""
 
+        if not os.path.exists(resource_name):
+            raise ValueError("Story file or folder could not be found. Make "
+                             "sure '{}' exists and points to a story folder "
+                             "or file.".format(os.path.abspath(resource_name)))
+
         story_steps = []
         for f in nlu_utils.list_files(resource_name):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,
                                                    template_variables, use_e2e)
             story_steps.extend(steps)
 
-            # if exclusion percentage is not 100
-            if exclusion_percentage and exclusion_percentage is not 100:
-                import random
-                idx = int(round(exclusion_percentage/100.0 * len(story_steps)))
-                random.shuffle(story_steps)
-                story_steps = story_steps[:-idx]
+        # if exclusion percentage is not 100
+        if exclusion_percentage and exclusion_percentage is not 100:
+            import random
+            idx = int(round(exclusion_percentage/100.0 * len(story_steps)))
+            random.shuffle(story_steps)
+            story_steps = story_steps[:-idx]
 
         return story_steps
 

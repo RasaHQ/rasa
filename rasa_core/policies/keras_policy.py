@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import io
 import json
 import logging
@@ -73,7 +68,7 @@ class KerasPolicy(Policy):
 
         self.rnn_size = config['rnn_size']
         self.epochs = config['epochs']
-        self.batch_size = config['epochs']
+        self.batch_size = config['batch_size']
         self.validation_split = config['validation_split']
 
     @property

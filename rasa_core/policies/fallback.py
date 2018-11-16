@@ -1,19 +1,12 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
+import json
 import logging
 import os
-import json
-import io
 import typing
-
 from typing import Any, List, Text
 
 from rasa_core import utils
-from rasa_core.policies.policy import Policy
 from rasa_core.constants import FALLBACK_SCORE
+from rasa_core.policies.policy import Policy
 
 logger = logging.getLogger(__name__)
 
@@ -23,23 +16,11 @@ if typing.TYPE_CHECKING:
 
 
 class FallbackPolicy(Policy):
-    """Policy which executes a fallback action if NLU confidence is low
-        or no other policy has a high-confidence prediction.
+    """Policy which predicts fallback actions.
 
-        :param float nlu_threshold:
-          minimum threshold for NLU confidence.
-          If intent prediction confidence is lower than this,
-          predict fallback action with confidence 1.0.
-
-        :param float core_threshold:
-          if NLU confidence threshold is met,
-          predict fallback action with confidence `core_threshold`.
-          If this is the highest confidence in the ensemble,
-          the fallback action will be executed.
-
-        :param Text fallback_action_name:
-          name of the action to execute as a fallback.
-    """
+    A fallback can be triggered by a low confidence score on a
+    NLU prediction or by a low confidence score on an action
+    prediction. """
 
     @staticmethod
     def _standard_featurizer():
@@ -51,6 +32,18 @@ class FallbackPolicy(Policy):
                  fallback_action_name="action_default_fallback"  # type: Text
                  ):
         # type: (...) -> None
+        """Create a new Fallback policy.
+
+        Args:
+            core_threshold: if NLU confidence threshold is met,
+                predict fallback action with confidence `core_threshold`.
+                If this is the highest confidence in the ensemble,
+                the fallback action will be executed.
+            nlu_threshold: minimum threshold for NLU confidence.
+                If intent prediction confidence is lower than this,
+                predict fallback action with confidence 1.0.
+            fallback_action_name: name of the action to execute as a fallback
+        """
 
         super(FallbackPolicy, self).__init__()
 

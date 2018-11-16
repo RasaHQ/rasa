@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 import os
 import pickle
@@ -32,33 +27,7 @@ if typing.TYPE_CHECKING:
 
 
 class SklearnPolicy(Policy):
-    """Use an sklearn classifier to train a policy.
-
-        Supports cross validation and grid search.
-
-        :param sklearn.base.ClassifierMixin model:
-          The sklearn model or model pipeline.
-
-        :param cv:
-          If *cv* is not None, perform a cross validation on the training
-          data. *cv* should then conform to the sklearn standard
-          (e.g. *cv=5* for a 5-fold cross-validation).
-
-        :param dict param_grid:
-          If *param_grid* is not None and *cv* is given, a grid search on
-          the given *param_grid* is performed
-          (e.g. *param_grid={'n_estimators': [50, 100]}*).
-
-        :param scoring:
-          Scoring strategy, using the sklearn standard.
-
-        :param sklearn.base.TransformerMixin label_encoder:
-          Encoder for the labels. Must implement an *inverse_transform*
-          method.
-
-        :param bool shuffle:
-          Whether to shuffle training data.
-    """
+    """Use an sklearn classifier to train a policy."""
 
     def __init__(
         self,
@@ -71,6 +40,23 @@ class SklearnPolicy(Policy):
         shuffle=True,  # type: bool
     ):
         # type: (...) -> None
+        """Create a new sklearn policy.
+
+        Args:
+            featurizer: Featurizer used to convert the training data into
+                vector format.
+            model: The sklearn model or model pipeline.
+            param_grid: If *param_grid* is not None and *cv* is given,
+                a grid search on the given *param_grid* is performed
+                (e.g. *param_grid={'n_estimators': [50, 100]}*).
+            cv: If *cv* is not None, perform a cross validation on
+                the training data. *cv* should then conform to the
+                sklearn standard (e.g. *cv=5* for a 5-fold cross-validation).
+            scoring: Scoring strategy, using the sklearn standard.
+            label_encoder: Encoder for the labels. Must implement an
+                *inverse_transform* method.
+            shuffle: Whether to shuffle training data.
+        """
 
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):

@@ -23,8 +23,8 @@ Train script
 ~~~~~~~~~~~~
 
 - You **must** pass a policy config flag with ``-c/--config`` now when training
-  a model, see :ref:`policy_file`. There is a default config file
-  ``default_config.yml`` in the Github repo
+  a model, see :ref:`policy_file`. There is a default config file in the
+  documentation :ref:`default_config`.
 - Interactive learning is now started with
   ``python -m rasa_core.train interactive`` rather than the
   ``--interactive`` flag
@@ -33,6 +33,13 @@ Train script
   ``--nlu_threshold``, ``--core_threshold``,
   ``--fallback_action_name``), specify these in the policy config file instead,
   see :ref:`policy_file`
+
+Visualisation script
+~~~~~~~~~~~~~~~~~~~~
+
+- You **must** pass a policy config flag with ``-c/--config`` now,
+  see :ref:`policy_file`. There is a default config file in the
+  documentation :ref:`default_config`.
 
 Evaluation script
 ~~~~~~~~~~~~~~~~~

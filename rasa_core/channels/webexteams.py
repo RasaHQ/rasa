@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 from flask import Blueprint, request, jsonify, make_response
 from typing import Text, Optional
@@ -61,8 +56,9 @@ class WebexTeamsInput(InputChannel):
         Needs a couple of settings to properly authenticate and validate
         messages. Details here https://developer.webex.com/authentication.html
 
-        :param access_token: Cisco WebexTeams bot access token.
-        :param room: the string identifier for a room to which the bot posts
+        Args:
+            access_token: Cisco WebexTeams bot access token.
+            room: the string identifier for a room to which the bot posts
         """
         self.token = access_token
         self.room = room

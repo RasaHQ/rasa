@@ -1,16 +1,11 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import sys
 
 import io
 import logging
 import numpy as np
 import os
+import pkg_resources
 import requests
-import six
 import textwrap
 import uuid
 from PyInquirer import prompt
@@ -30,6 +25,7 @@ from rasa_core.events import (
     BotUttered)
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
+from rasa_core.training import visualization
 from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
     visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
@@ -804,6 +800,7 @@ def _write_domain_to_file(domain_path, evts, endpoint):
 
     domain_dict = dict.fromkeys(domain.keys(), {})  # type: Dict[Text, Any]
 
+    domain_dict["forms"] = []
     domain_dict["intents"] = _intents_from_messages(messages)
     domain_dict["entities"] = _entities_from_messages(messages)
     domain_dict["actions"] = list({e["name"] for e in actions})
@@ -1154,7 +1151,7 @@ def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
 
     event_sequences = []
     for sender_id in sender_ids:
-        if isinstance(sender_id, six.string_types):
+        if isinstance(sender_id, str):
             tracker = retrieve_tracker(endpoint, sender_id)
             evts = tracker.get("events", [])
 
@@ -1344,8 +1341,7 @@ def _add_visualization_routes(app, image_path=None):
 
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
     def visualisation_html():
-        return send_from_directory(os.path.dirname(__file__),
-                                   'visualization.html')
+        return send_file(visualization.visualization_html_path())
 
     @app.route("/visualization.dot", methods=["GET"])
     def visualisation_png():
