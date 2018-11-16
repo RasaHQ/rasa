@@ -331,14 +331,6 @@ class StoryFileReader(object):
                                 parse_data.get("intent"),
                                 parse_data.get("entities"),
                                 parse_data)
-
-        if message.startswith("_"):
-            c = utterance.as_story_string()
-            logger.warning("Stating user intents with a leading '_' is "
-                           "deprecated. The new format is "
-                           "'* {}'. Please update "
-                           "your example '{}' to the new format."
-                           "".format(c, message))
         intent_name = utterance.intent.get("name")
         if intent_name not in self.domain.intents:
             logger.warning("Found unknown intent '{}' on line {}. "

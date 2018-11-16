@@ -3,7 +3,6 @@ import time
 import json
 import logging
 import numpy as np
-import warnings
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import UnknownTimeZoneError
 from types import LambdaType
@@ -237,16 +236,9 @@ class MessageProcessor(object):
 
     def _parse_message(self, message):
         # for testing - you can short-cut the NLU part with a message
-        # in the format _intent[entity1=val1,entity=val2]
+        # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
-        if (message.text.startswith(INTENT_MESSAGE_PREFIX) or
-                message.text.startswith("_")):
-            if RegexInterpreter.is_using_deprecated_format(message.text):
-                warnings.warn(
-                    "Parsing messages with leading `_` is deprecated and "
-                    "will be removed. Instead, prepend your intents with "
-                    "`{0}`, e.g. `{0}mood_greet` "
-                    "or `{0}restart`.".format(INTENT_MESSAGE_PREFIX))
+        if message.text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = RegexInterpreter().parse(message.text)
         else:
             parse_data = self.interpreter.parse(message.text)
