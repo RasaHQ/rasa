@@ -43,9 +43,17 @@ class DialogflowReader(TrainingDataReader):
         elif fformat == DIALOGFLOW_ENTITIES:
             return self._read_entities(root_js, examples_js)
 
+    def _get_intent_name(self, intent_js):
+        intent_name = None
+        if(intent_js.get("responses")):
+            intent_name = intent_js.get("responses")[0].get('action')
+        if(intent_name == None):
+            intent_name = intent_js.get("name")
+        return intent_name
+
     def _read_intent(self, intent_js, examples_js):
         """Reads the intent and examples from respective jsons."""
-        intent = intent_js.get("name")
+        intent = self._get_intent_name(intent_js)
 
         training_examples = []
         for ex in examples_js:
@@ -94,14 +102,23 @@ class DialogflowReader(TrainingDataReader):
             'elements': lookup_tables
         }]
 
+    def _add_to_composites(self, each, composite_entities):
+        if each:
+            if(each[0:11] == '@sys.number'):
+                composite_entities.add("@" + each[12:])
+            else:
+                composite_entities.add(each.split(':')[0])
+        return composite_entities
+
     def _extract_composite_entities(self, entity, synonyms):
         """Extract the composite entities"""
         composite_entities = set()
         for s in synonyms:
             if "value" in s and "@" in s["value"]:
                 for each in s["value"].split(" "):
-                    if each:
-                        composite_entities.add(each)
+                    composite_entities = self._add_to_composites(
+                                            each,
+                                            composite_entities)
         if len(composite_entities) == 0:
             return False
         return [{
@@ -113,8 +130,14 @@ class DialogflowReader(TrainingDataReader):
         entity = entity_js.get("name")
         entity_synonyms = transform_entity_synonyms(examples_js)
         lookup_tables = self._extract_lookup_tables(entity, examples_js)
-        composite_entities = self._extract_composite_entities(entity, examples_js)
-        return TrainingData([], entity_synonyms, [], lookup_tables, composite_entities)
+        composite_entities = self._extract_composite_entities(
+                                entity,
+                                examples_js)
+        return TrainingData([],
+                            entity_synonyms,
+                            [],
+                            lookup_tables,
+                            composite_entities)
 
     def _read_examples_js(self, fn, language, fformat):
         """Infer and load the example file based on the root filename and root format."""

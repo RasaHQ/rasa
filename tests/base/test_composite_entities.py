@@ -47,8 +47,8 @@ def test_composite_entities():
         "composite_entities": [
             {
                 "composites": [
-                    "@protein:protein",
-                    "@carbohydrates:carbohydrates"
+                    "@protein",
+                    "@carbohydrates"
                 ],
                 "name": "meal"
             }
