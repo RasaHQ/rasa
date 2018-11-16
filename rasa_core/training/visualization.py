@@ -338,7 +338,7 @@ def _create_graph(fontsize=12):
 
 def sanitize(s):
     if s:
-        return re.sub(r"[^a-zA-Z0-9\s_-]", "",  s)
+        return re.sub(r"[^a-zA-Z0-9\s_-]", "", s)
     else:
         return s
 
