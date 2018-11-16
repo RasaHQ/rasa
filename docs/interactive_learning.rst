@@ -175,7 +175,7 @@ The form logic is described by your ``FormAction`` class, and not by the stories
 The machine learning policies should not have to learn this behavior, and should
 not get confused if you later change your form action, for example by adding or
 removing a required slot.
-When you user interactive learning to generate stories containing a form,
+When you use interactive learning to generate stories containing a form,
 the conversation steps handled by the form
 get a :code:`form:` prefix. This tells Rasa Core to ignore these steps when training
 your other policies. There is nothing special you have to do here, all of the form's
