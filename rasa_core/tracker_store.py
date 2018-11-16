@@ -4,7 +4,7 @@ import json
 import logging
 import pickle
 # noinspection PyPep8Naming
-from typing import Text, Optional, List
+from typing import Text, Optional, List, KeysView
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
@@ -116,17 +116,20 @@ class TrackerStore(object):
 
 
 class InMemoryTrackerStore(TrackerStore):
-    def __init__(self, domain, event_broker=None):
+    def __init__(self,
+                 domain: Domain,
+                 event_broker: Optional[EventChannel]=None
+                 ) -> None:
         self.store = {}
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         if self.event_broker:
             self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
-    def retrieve(self, sender_id):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         if sender_id in self.store:
             logger.debug('Recreating tracker for '
                          'id \'{}\''.format(sender_id))
@@ -136,7 +139,7 @@ class InMemoryTrackerStore(TrackerStore):
                          'id \'{}\'.'.format(sender_id))
             return None
 
-    def keys(self):
+    def keys(self) -> KeysView[Text]:
         return self.store.keys()
 
 

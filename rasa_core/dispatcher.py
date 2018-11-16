@@ -97,8 +97,7 @@ class Dispatcher(object):
         self.latest_bot_messages.append(bot_message)
         self.output_channel.send_image_url(self.sender_id, attachment)
 
-        # TODO: deprecate this function
-
+    # TODO: deprecate this function
     def utter_button_template(self,
                               template: Text,
                               buttons: List[Dict[Text, Any]],
