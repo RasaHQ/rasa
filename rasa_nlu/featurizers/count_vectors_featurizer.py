@@ -61,7 +61,7 @@ class CountVectorsFeaturizer(Featurizer):
         "max_ngram": 1,  # int
 
         # whether to use word- or character ngrams
-        "analyzer": 'word', #  use 'char' or 'char_wb' for character
+        "analyzer": 'word',  # use 'char' or 'char_wb' for character
 
         # limit vocabulary size
         "max_features": None,  # int or None
