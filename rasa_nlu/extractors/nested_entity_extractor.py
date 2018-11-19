@@ -19,6 +19,8 @@ from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.utils import write_json_to_file
 
+from word2number import w2n
+
 NESTED_ENTITIES_FILE_NAME = "nested_entities.json"
 
 
@@ -128,7 +130,15 @@ class NestedEntityExtractor(EntityExtractor):
                 expression = r'\d{4}'
             match = re.findall(expression, broad_value)
             if(match):
-                broken_entity[child_name] = match[0]
+                broken_entity[child_name] = int(match[0])
+            else:
+                match = False
+                try:
+                    match = w2n.word_to_num(broad_value.encode("utf-8"))
+                except ValueError:
+                    pass
+                if(match):
+                    broken_entity[child_name] = match
         return broken_entity
 
     def split_one_level(self, composite_child, broad_value):
@@ -152,19 +162,11 @@ class NestedEntityExtractor(EntityExtractor):
                                     broad_value):
         highest_relevance_score = 0
         composite_examples = []
-        for nested_composite in nested_composites:
-            child_of_nested_composite = [
-                x for x in
-                self.nested_entities['composite_entities']
-                if x['name'] == nested_composite
-            ]
-            if(len(child_of_nested_composite) > 0):
-                child_synonymns = child_of_nested_composite[0]['composites']
-                relevance_score = self.get_relevance(
-                    broad_value, child_synonymns)
-                if(relevance_score > highest_relevance_score):
-                    highest_relevance_score = relevance_score
-                    composite_examples = child_synonymns
+        relevance_score = self.get_relevance(
+            broad_value, nested_composites)
+        if(relevance_score > highest_relevance_score):
+            highest_relevance_score = relevance_score
+            composite_examples = nested_composites
         return {
             "highest_relevance_score": highest_relevance_score,
             "composite_examples": composite_examples
