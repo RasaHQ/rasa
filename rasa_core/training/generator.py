@@ -56,13 +56,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         return self._states
 
-    def clear_states(self):
-        # type: () -> None
+    def clear_states(self) -> None:
         """Reset the states."""
         self._states = None
 
-    def init_copy(self):
-        # type: () -> TrackerWithCachedStates
+    def init_copy(self)-> 'TrackerWithCachedStates':
         """Create a new state tracker with the same initial values."""
         return type(self)("",
                           self.slots.values(),
@@ -88,9 +86,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         return tracker  # yields the final state
 
-    def _append_current_state(self):
-        # type: () -> None
-
+    def _append_current_state(self) -> None:
         if self._states is None:
             self._states = self.past_states(self.domain)
         else:
@@ -226,8 +222,13 @@ class TrainingDataGenerator(object):
 
             num_active_trackers = self._count_trackers(active_trackers)
 
-            logger.debug("Starting {} ... (with {} trackers)"
-                         "".format(phase_name, num_active_trackers))
+            if num_active_trackers:
+                logger.debug("Starting {} ... (with {} trackers)"
+                             "".format(phase_name, num_active_trackers))
+            else:
+                logger.debug("There are no trackers for {}"
+                             "".format(phase_name))
+                break
 
             # track unused checkpoints for this phase
             unused_checkpoints = set()  # type: Set[Text]
@@ -273,7 +274,7 @@ class TrainingDataGenerator(object):
 
                 trackers, end_trackers = self._process_step(step,
                                                             incoming_trackers)
-                # append end trackers to finished trackers
+                # add end trackers to finished trackers
                 finished_trackers.extend(end_trackers)
 
                 # update our tracker dictionary with the trackers
@@ -311,8 +312,15 @@ class TrainingDataGenerator(object):
                 # than last one, we assume there is still
                 # something left to reach and we continue
 
+                unused_checkpoints = self._add_unused_end_checkpoints(
+                    set(active_trackers.keys()),
+                    unused_checkpoints,
+                    used_checkpoints
+                )
                 active_trackers = self._filter_active_trackers(
-                    active_trackers, unused_checkpoints)
+                    active_trackers,
+                    unused_checkpoints
+                )
                 num_active_trackers = self._count_trackers(active_trackers)
 
                 everything_reachable_is_reached = (
@@ -322,7 +330,12 @@ class TrainingDataGenerator(object):
 
                 if everything_reachable_is_reached:
                     # should happen only once
+
                     previous_unused -= used_checkpoints
+                    # add trackers with unused checkpoints
+                    # to finished trackers
+                    for start_name in previous_unused:
+                        finished_trackers.extend(active_trackers[start_name])
 
                     logger.debug("Data generation rounds finished.")
                     logger.debug("Found {} unused checkpoints"
@@ -380,6 +393,21 @@ class TrainingDataGenerator(object):
         return self.story_graph.story_end_checkpoints.get(end_name, end_name)
 
     @staticmethod
+    def _add_unused_end_checkpoints(start_checkpoints: Set[Text],
+                                    unused_checkpoints: Set[Text],
+                                    used_checkpoints: Set[Text]
+                                    ) -> Set[Text]:
+        """Add unused end checkpoints
+            if they were never encountered as start checkpoints
+        """
+
+        return unused_checkpoints.union(
+            set(start_name
+                for start_name in start_checkpoints
+                if start_name not in used_checkpoints)
+        )
+
+    @staticmethod
     def _filter_active_trackers(active_trackers: TrackerLookupDict,
                                 unused_checkpoints: Set[Text]
                                 ) -> TrackerLookupDict:
@@ -389,8 +417,10 @@ class TrainingDataGenerator(object):
 
         for start_name in unused_checkpoints:
             # process trackers ended with unused checkpoints further
-            next_active_trackers[start_name] = \
-                active_trackers.get(start_name, [])
+            if start_name != STORY_START:
+                # there is no point to process STORY_START checkpoint again
+                next_active_trackers[start_name] = \
+                    active_trackers.get(start_name, [])
 
         return next_active_trackers
 
@@ -549,8 +579,7 @@ class TrainingDataGenerator(object):
 
         return unique_trackers
 
-    def _mark_first_action_in_story_steps_as_unpredictable(self):
-        # type: () -> None
+    def _mark_first_action_in_story_steps_as_unpredictable(self) -> None:
         """Mark actions which shouldn't be used during ML training.
 
         If a story starts with an action, we can not use
@@ -589,19 +618,45 @@ class TrainingDataGenerator(object):
     ) -> None:
         """Warns about unused story blocks.
 
-        Unused steps are ones having a start checkpoint
-        that no one provided)."""
+        Unused steps are ones having a start or end checkpoint
+        that no one provided."""
+
+        if STORY_START in unused_checkpoints:
+            logger.warning("There is no starting story block "
+                           "in the training data. "
+                           "All your story blocks start with some checkpoint. "
+                           "There should be at least one story block "
+                           "that starts without any checkpoint.")
 
         # running through the steps first will result in only one warning
         # per block (as one block might have multiple steps)
-        collected = set()
+        collected_start = set()
+        collected_end = set()
         for step in self.story_graph.story_steps:
             for start in step.start_checkpoints:
                 if start.name in unused_checkpoints:
                     # After processing, there shouldn't be a story part left.
                     # This indicates a start checkpoint that doesn't exist
-                    collected.add((start.name, step.block_name))
-        for cp, block_name in collected:
+                    collected_start.add((start.name, step.block_name))
+
+            for end in step.end_checkpoints:
+                if end.name in unused_checkpoints:
+                    # After processing, there shouldn't be a story part left.
+                    # This indicates an end checkpoint that doesn't exist
+                    collected_end.add((end.name, step.block_name))
+
+        for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
                 logger.warning("Unsatisfied start checkpoint '{}' "
-                               "in block '{}'".format(cp, block_name))
+                               "in block '{}'. "
+                               "Remove this checkpoint or add "
+                               "story blocks that end "
+                               "with this checkpoint.".format(cp, block_name))
+
+        for cp, block_name in collected_end:
+            if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
+                logger.warning("Unsatisfied end checkpoint '{}' "
+                               "in block '{}'. "
+                               "Remove this checkpoint or add "
+                               "story blocks that start "
+                               "with this checkpoint.".format(cp, block_name))

@@ -391,14 +391,14 @@ class StoryGraph(object):
         else:
             self.story_end_checkpoints = {}
 
-    def ordered_steps(self):
-        # type: () -> List[StoryStep]
+    def ordered_steps(self) -> List[StoryStep]:
         """Returns the story steps ordered by topological order of the DAG."""
 
         return [self.get(step_id) for step_id in self.ordered_ids]
 
-    def cyclic_edges(self):
-        # type: () -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]
+    def cyclic_edges(
+        self
+    ) -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]:
         """Returns the story steps ordered by topological order of the DAG."""
 
         return [(self.get(source), self.get(target))
@@ -411,8 +411,7 @@ class StoryGraph(object):
 
         return {cp.name for cp in cps} & {cp.name for cp in other_cps}
 
-    def with_cycles_removed(self):
-        # type: () -> StoryGraph
+    def with_cycles_removed(self) -> 'StoryGraph':
         """Create a graph with the cyclic edges removed from this graph."""
 
         story_end_checkpoints = self.story_end_checkpoints.copy()
@@ -585,8 +584,7 @@ class StoryGraph(object):
 
         return self.step_lookup.get(step_id)
 
-    def as_story_string(self):
-        # type: () -> Text
+    def as_story_string(self) -> Text:
         """Convert the graph into the story file format."""
 
         story_content = ""
