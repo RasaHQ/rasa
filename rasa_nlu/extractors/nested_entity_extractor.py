@@ -40,7 +40,8 @@ class NestedEntityExtractor(EntityExtractor):
     def train(self, training_data, cfg, **kwargs):
         # type: (TrainingData) -> None
         self.add_lookup_tables(training_data.lookup_tables)
-        self.nested_entities['composite_entities'] = training_data.composite_entities
+        ce = training_data.composite_entities
+        self.nested_entities['composite_entities'] = ce
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None

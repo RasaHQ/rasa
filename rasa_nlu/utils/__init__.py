@@ -229,14 +229,31 @@ def fix_yaml_loader():
     SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
 
 
+def replace_environment_variables():
+    """Enable yaml loader to process the environment variables in the yaml."""
+    import re
+    import os
+
+    env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
+    yaml.add_implicit_resolver('!env_var', env_var_pattern)
+
+    def env_var_constructor(loader, node):
+        """Process environment variables found in the YAML."""
+        value = loader.construct_scalar(node)
+        prefix, env_var, postfix = env_var_pattern.match(value).groups()
+        return prefix + os.environ[env_var] + postfix
+
+    yaml.add_constructor(u'!env_var', env_var_constructor)
+
+
 def read_yaml(content):
     fix_yaml_loader()
+    replace_environment_variables()
     return yaml.load(content)
 
 
 def read_yaml_file(filename):
-    fix_yaml_loader()
-    return yaml.load(read_file(filename, "utf-8"))
+    return read_yaml(read_file(filename, "utf-8"))
 
 
 def build_entity(start, end, value, entity_type, **kwargs):
