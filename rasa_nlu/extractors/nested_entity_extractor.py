@@ -21,6 +21,13 @@ from rasa_nlu.utils import write_json_to_file
 
 from word2number import w2n
 
+try:
+    # Python 2
+    from __builtin__ import str as builtin_str
+except ImportError:
+    # Python 3
+    from builtins import str as builtin_str
+
 NESTED_ENTITIES_FILE_NAME = "nested_entities.json"
 
 
@@ -121,24 +128,33 @@ class NestedEntityExtractor(EntityExtractor):
                                                 broad_value))
         return broken_entity
 
+    def find_number_in_words(self, word):
+        match = False
+        try:
+            match = w2n.word_to_num(builtin_str(word))
+        except ValueError:
+            pass
+        return match
+
+    def find_number_by_regex(self, child_name, broad_value):
+        match = False
+        expression = r'\d+'
+        if(child_name == 'year'):
+            expression = r'\d{4}'
+        match = re.findall(expression, broad_value)
+        if match:
+            match = match[0]
+        return match
+
     def split_by_sys(self, composite_child, broad_value):
         broken_entity = {}
         if(composite_child in ['@number', '@year']):
             child_name = composite_child[1:]
-            expression = r'\d+'
-            if(child_name == 'year'):
-                expression = r'\d{4}'
-            match = re.findall(expression, broad_value)
-            if(match):
-                broken_entity[child_name] = int(match[0])
-            else:
-                match = False
-                try:
-                    match = w2n.word_to_num(broad_value.encode("utf-8"))
-                except ValueError:
-                    pass
-                if(match):
-                    broken_entity[child_name] = match
+            match = self.find_number_by_regex(child_name, broad_value)
+            if not match:
+                match = self.find_number_in_words(broad_value)
+            if match:
+                broken_entity[child_name] = int(match)
         return broken_entity
 
     def split_one_level(self, composite_child, broad_value):
@@ -180,14 +196,15 @@ class NestedEntityExtractor(EntityExtractor):
                                     ):
         if(most_relevant_composite['highest_relevance_score'] > 0):
             broken_entity[child_name] = {}
-            for nested_child in most_relevant_composite['composite_examples']:
-                if(nested_child[0] == '@'):
-                    broken_entity[child_name] = self.merge_two_dicts(
-                        broken_entity[child_name],
-                        self.split_one_level(
-                            nested_child,
-                            broad_value)
-                    )
+            ce = most_relevant_composite['composite_examples']
+            nested_children = [child for child in ce if child[0] == '@']
+            for nested_child in nested_children :
+                broken_entity[child_name] = self.merge_two_dicts(
+                    broken_entity[child_name],
+                    self.split_one_level(
+                        nested_child,
+                        broad_value)
+                )
         return broken_entity
 
     def split_two_levels(self, composite_child, broad_value):
