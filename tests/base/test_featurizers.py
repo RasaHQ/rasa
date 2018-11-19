@@ -202,6 +202,7 @@ def test_count_vector_featurizer(sentence, expected):
 
     assert np.all(test_message.get("text_features") == expected)
 
+
 @pytest.mark.parametrize("sentence, expected", [
     ("hello hello hello hello hello __OOV__", [1, 5]),
     ("hello goodbye hello __oov__", [1, 1, 2]),
