@@ -10,7 +10,7 @@ import tempfile
 
 import pytest
 import time
-import yaml
+import ruamel.yaml as yaml
 from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter

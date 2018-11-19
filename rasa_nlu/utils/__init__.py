@@ -19,24 +19,10 @@ from typing import Text
 import requests
 import simplejson
 import six
-import yaml
-import yaml.reader
+import ruamel.yaml as yaml
 from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
-
-
-if PY3:
-    yaml.reader.Reader.NON_PRINTABLE = re.compile(
-        u'[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\uE000-\uFFFD\U00010000-'
-        u'\U0010FFFF]')
-else:
-    # to make this compatible with narrow builds use fix
-    # from https://stackoverflow.com/a/31605097/3429596
-    yaml.reader.Reader.NON_PRINTABLE = re.compile(
-        u'/(?:[\0-\x08\x0B\f\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|'
-        u'[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|'
-        u'(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF])/')
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -257,13 +243,18 @@ def replace_environment_variables():
         prefix, env_var, postfix = env_var_pattern.match(value).groups()
         return prefix + os.environ[env_var] + postfix
 
-    yaml.add_constructor(u'!env_var', env_var_constructor)
+    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
 def read_yaml(content):
     fix_yaml_loader()
     replace_environment_variables()
-    return yaml.load(content)
+
+    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser.version = "1.1"
+    yaml_parser.unicode_supplementary = True
+
+    return yaml_parser.load(content)
 
 
 def read_yaml_file(filename):
@@ -371,8 +362,9 @@ def create_temporary_file(data, suffix="", mode="w+"):
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
     if PY3:
+        encoding = None if 'b' in mode else 'utf-8'
         f = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
-                                        delete=False, encoding="utf-8")
+                                        delete=False, encoding=encoding)
         f.write(data)
     else:
         f = tempfile.NamedTemporaryFile("w+", suffix=suffix,

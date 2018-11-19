@@ -8,7 +8,7 @@ import logging
 import os
 
 import six
-import yaml
+import ruamel.yaml as yaml
 from builtins import object
 # Describes where to search for the config file if no location is specified
 from typing import Text, Optional, Dict, Any, List
