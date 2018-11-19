@@ -624,7 +624,7 @@ class TrainingDataGenerator(object):
         if STORY_START in unused_checkpoints:
             logger.warning("There is no starting story block "
                            "in the training data. "
-                           "All story blocks start with some checkpoint. "
+                           "All your story blocks start with some checkpoint. "
                            "There should be at least one story block "
                            "that starts without any checkpoint.")
 
