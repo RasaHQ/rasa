@@ -60,6 +60,9 @@ class CountVectorsFeaturizer(Featurizer):
         "min_ngram": 1,  # int
         "max_ngram": 1,  # int
 
+        # whether to use word- or character ngrams
+        "analyzer": 'word' # use 'char' or 'char_wb' for character
+
         # limit vocabulary size
         "max_features": None,  # int or None
 
@@ -97,6 +100,9 @@ class CountVectorsFeaturizer(Featurizer):
         # set ngram range
         self.min_ngram = self.component_config['min_ngram']
         self.max_ngram = self.component_config['max_ngram']
+
+        # set analyer
+        self.analyzer = self.component_config['analyzer']
 
         # limit vocabulary size
         self.max_features = self.component_config['max_features']
@@ -202,7 +208,8 @@ class CountVectorsFeaturizer(Featurizer):
                                     max_df=self.max_df,
                                     min_df=self.min_df,
                                     max_features=self.max_features,
-                                    tokenizer=self._tokenizer)
+                                    tokenizer=self._tokenizer,
+                                    analyzer=self.analyzer)
 
         lem_exs = [self._get_message_text(example)
                    for example in training_data.intent_examples]
