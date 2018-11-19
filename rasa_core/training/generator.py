@@ -622,7 +622,11 @@ class TrainingDataGenerator(object):
         that no one provided."""
 
         if STORY_START in unused_checkpoints:
-            logger.warning("There is no starting story in the training data")
+            logger.warning("There is no starting story block "
+                           "in the training data. "
+                           "All story blocks start with some checkpoint. "
+                           "There should be at least one story block "
+                           "that starts without any checkpoint.")
 
         # running through the steps first will result in only one warning
         # per block (as one block might have multiple steps)
@@ -644,9 +648,15 @@ class TrainingDataGenerator(object):
         for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
                 logger.warning("Unsatisfied start checkpoint '{}' "
-                               "in block '{}'".format(cp, block_name))
+                               "in block '{}'. "
+                               "Remove this checkpoint or add "
+                               "story blocks that end "
+                               "with this checkpoint.".format(cp, block_name))
 
         for cp, block_name in collected_end:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
                 logger.warning("Unsatisfied end checkpoint '{}' "
-                               "in block '{}'".format(cp, block_name))
+                               "in block '{}'. "
+                               "Remove this checkpoint or add "
+                               "story blocks that start "
+                               "with this checkpoint.".format(cp, block_name))
