@@ -222,3 +222,17 @@ def test_emojis_in_tmp_file():
 
     assert actual["data"][0] == "one 😁"
     assert actual["data"][1] == "two £"
+
+
+def test_bool_str():
+    test_data = """
+    one: "yes"
+    two: "true"
+    three: "True"
+    """
+
+    actual = utils.read_yaml(test_data)
+
+    assert actual["one"] == "yes"
+    assert actual["two"] == "true"
+    assert actual["three"] == "True"

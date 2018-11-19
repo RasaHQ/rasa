@@ -251,7 +251,7 @@ def read_yaml(content):
     replace_environment_variables()
 
     yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = "1.1"
+    yaml_parser.version = "1.2"
     yaml_parser.unicode_supplementary = True
 
     return yaml_parser.load(content)
