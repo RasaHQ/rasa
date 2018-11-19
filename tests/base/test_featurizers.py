@@ -181,6 +181,28 @@ def test_count_vector_featurizer(sentence, expected):
 
 
 @pytest.mark.parametrize("sentence, expected", [
+    ("ababab", [3, 3, 3, 2]),
+    ("ab ab ab", [2, 2, 3, 3, 3, 2]),
+    ("abc", [1, 1, 1, 1, 1])
+])
+def test_count_vector_featurizer(sentence, expected):
+    from rasa_nlu.featurizers.count_vectors_featurizer import \
+        CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"min_ngram": 1,
+                                  "max_ngram": 2,
+                                  "analyzer": 'char'})
+    train_message = Message(sentence)
+    train_message.set("intent", "bla")
+    data = TrainingData([train_message])
+    ftr.train(data)
+
+    test_message = Message(sentence)
+    ftr.process(test_message)
+
+    assert np.all(test_message.get("text_features") == expected)
+
+@pytest.mark.parametrize("sentence, expected", [
     ("hello hello hello hello hello __OOV__", [1, 5]),
     ("hello goodbye hello __oov__", [1, 1, 2]),
     ("a b c d e f __oov__ __OOV__ __OOV__", [3, 1, 1, 1, 1, 1, 1]),
