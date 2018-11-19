@@ -161,17 +161,11 @@ class NestedEntityExtractor(EntityExtractor):
                                     broad_value):
         highest_relevance_score = 0
         composite_examples = []
-        for nested_composite in nested_composites:
-            child_of_nested_composite = filter(
-                lambda x: x['name'] == nested_composite,
-                self.nested_entities['composite_entities'])
-            if(len(child_of_nested_composite) > 0):
-                child_synonymns = child_of_nested_composite[0]['composites']
-                relevance_score = self.get_relevance(
-                    broad_value, child_synonymns)
-                if(relevance_score > highest_relevance_score):
-                    highest_relevance_score = relevance_score
-                    composite_examples = child_synonymns
+        relevance_score = self.get_relevance(
+            broad_value, nested_composites)
+        if(relevance_score > highest_relevance_score):
+            highest_relevance_score = relevance_score
+            composite_examples = nested_composites
         return {
             "highest_relevance_score": highest_relevance_score,
             "composite_examples": composite_examples

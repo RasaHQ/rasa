@@ -7,26 +7,31 @@ from rasa_nlu.extractors.nested_entity_extractor import NestedEntityExtractor
 
 
 def test_composite_entities():
-    entities = [{
-        "entity": "meal",
-        "value": "rice and chicken"
-    },
-    {
-        "entity": "meal",
-        "value": "yam, egg"
-    },
-    {
-        "entity": "meal",
-        "value": "noodles"
-    },
-    {
-        "entity": "meal",
-        "value": "four pieces"
-    },
-    {
-        "entity": "meal",
-        "value": "5 orders"
-    }
+    entities = [
+        {
+            "entity": "meal",
+            "value": "rice and chicken"
+        },
+        {
+            "entity": "meal",
+            "value": "yam, egg"
+        },
+        {
+            "entity": "meal",
+            "value": "noodles"
+        },
+        {
+            "entity": "meal",
+            "value": "four pieces"
+        },
+        {
+            "entity": "meal",
+            "value": "5 orders"
+        },
+        {
+            "entity": "drink",
+            "value": "2 bottles of beer"
+        }
     ]
     nested_entities = {
         "lookup_tables": [
@@ -85,7 +90,7 @@ def test_composite_entities():
     }
     NestedEntityExtractor(
         nested_entities=nested_entities).split_nested_entities(entities)
-    assert len(entities) == 5
+    assert len(entities) == 6
     assert entities[0]["value"] == {
         "protein": "chicken",
         "carbohydrates": "rice"
@@ -102,4 +107,9 @@ def test_composite_entities():
     }
     assert entities[4]["value"] == {
         "number": 5
+    }
+    assert entities[5]["value"] == {
+        "alcohol": {
+            "number": 2
+        }
     }
