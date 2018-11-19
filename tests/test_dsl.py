@@ -147,6 +147,18 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     assert Counter(y) == {0: 6, 1: 2, 4: num_threes, 5: 1, 6: 3}
 
 
+def test_generate_training_data_with_unused_checkpoints(tmpdir,
+                                                        default_domain):
+    training_trackers = training.load_data(
+        "data/test_stories/stories_unused_checkpoints.md",
+        default_domain,
+    )
+    # there are 3 training stories:
+    #   2 with unused end checkpoints -> training_trackers
+    #   1 with unused start checkpoints -> ignored
+    assert len(training_trackers) == 2
+
+
 def test_visualize_training_data_graph(tmpdir, default_domain):
     graph = training.extract_story_graph(
         "data/test_stories/stories_with_cycle.md", default_domain)
