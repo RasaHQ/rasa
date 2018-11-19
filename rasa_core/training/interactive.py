@@ -239,10 +239,8 @@ def format_bot_output(
 ) -> Text:
     """Format a bot response to be displayed in the history table."""
 
-    if "text" in message:
-        output = message.get("text")
-    else:
-        output = ""
+    output = message.get("text", "")
+    output = "" if output is None else output
 
     # Append all additional items
     data = message.get("data", {})
@@ -256,6 +254,12 @@ def format_bot_output(
         for idx, button in enumerate(data.get("buttons")):
             button_str = button_to_string(button, idx)
             output += "\n" + button_str
+
+    if data.get("elements"):
+        for element in data.get('elements'):
+            import json
+            output += "\nElements: "
+            output += "\n" + json.dumps(element)
     return output
 
 

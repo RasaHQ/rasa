@@ -205,3 +205,25 @@ def test_undo_latest_msg(mock_endpoint):
     replaced_evts = json.loads(b)
     assert len(replaced_evts) == 6
     assert replaced_evts == evts[:6]
+
+
+def test_utter_custom_message():
+    test_event = """
+      {
+      "data": {
+        "attachment": null,
+        "buttons": null,
+        "elements": [
+          {
+            "a": "b"
+          }
+        ]
+      },
+      "event": "bot",
+      "text": null,
+      "timestamp": 1542649219.331037
+    }
+    """
+    actual = interactive._chat_history_table([json.loads(test_event)])
+
+    assert json.dumps({'a': 'b'}) in actual
