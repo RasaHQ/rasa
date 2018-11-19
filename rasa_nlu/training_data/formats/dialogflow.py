@@ -95,9 +95,7 @@ class DialogflowReader(TrainingDataReader):
         lookup_tables = []
         synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
         synonyms = self._flatten(synonyms)
-        for synonym in synonyms:
-            if "@" not in synonym:
-                lookup_tables.append(synonym)
+        lookup_tables = [synonym for synonym in synonyms if "@" not in synonym]
         if len(lookup_tables) == 0:
             return False
         return [{
@@ -116,8 +114,9 @@ class DialogflowReader(TrainingDataReader):
     def _extract_composite_entities(self, entity, synonyms):
         """Extract the composite entities"""
         composite_entities = set()
-        words = [s["value"].split(" ") for s in
-                synonyms if "value" in s and "@" in s["value"]]
+        words = [
+            s["value"].split(" ") for s in synonyms
+            if "value" in s and "@" in s["value"]]
         words = self._flatten(words)
         for word in words:
             composite_entities = self._add_to_composites(

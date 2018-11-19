@@ -198,7 +198,7 @@ class NestedEntityExtractor(EntityExtractor):
             broken_entity[child_name] = {}
             ce = most_relevant_composite['composite_examples']
             nested_children = [child for child in ce if child[0] == '@']
-            for nested_child in nested_children :
+            for nested_child in nested_children:
                 broken_entity[child_name] = self.merge_two_dicts(
                     broken_entity[child_name],
                     self.split_one_level(
