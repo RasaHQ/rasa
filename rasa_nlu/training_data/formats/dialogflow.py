@@ -87,14 +87,17 @@ class DialogflowReader(TrainingDataReader):
 
         return entity
 
-    def _extract_lookup_tables(self, entity, synonyms):
+    def _flatten(self, list_of_lists):
+        return [item for items in list_of_lists for item in items]
+
+    def _extract_lookup_tables(self, entity, examples):
         """Extract the lookup table from the entity synonyms"""
         lookup_tables = []
-        for s in synonyms:
-            if "synonyms" in s:
-                for synonym in s["synonyms"]:
-                    if "@" not in synonym:
-                        lookup_tables.append(synonym)
+        synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
+        synonyms = self._flatten(synonyms)
+        for synonym in synonyms:
+            if "@" not in synonym:
+                lookup_tables.append(synonym)
         if len(lookup_tables) == 0:
             return False
         return [{
@@ -113,12 +116,13 @@ class DialogflowReader(TrainingDataReader):
     def _extract_composite_entities(self, entity, synonyms):
         """Extract the composite entities"""
         composite_entities = set()
-        for s in synonyms:
-            if "value" in s and "@" in s["value"]:
-                for each in s["value"].split(" "):
-                    composite_entities = self._add_to_composites(
-                                            each,
-                                            composite_entities)
+        words = [s["value"].split(" ") for s in
+                synonyms if "value" in s and "@" in s["value"]]
+        words = self._flatten(words)
+        for word in words:
+            composite_entities = self._add_to_composites(
+                                    word,
+                                    composite_entities)
         if len(composite_entities) == 0:
             return False
         return [{
