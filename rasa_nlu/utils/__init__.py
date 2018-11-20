@@ -218,15 +218,15 @@ def read_json_file(filename):
 
 def fix_yaml_loader():
     """Ensure that any string read by yaml is represented as unicode."""
-    from yaml import Loader, SafeLoader
 
     def construct_yaml_str(self, node):
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
 
-    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
+                                    construct_yaml_str)
 
 
 def replace_environment_variables():
