@@ -681,3 +681,15 @@ def test_int_sender_id_in_user_message():
     message = UserMessage("A text", sender_id=1234567890)
 
     assert message.sender_id == "1234567890"
+
+
+def test_send_custom_messages_without_buttons():
+    from rasa_core.channels.channel import OutputChannel
+
+    def test_message(sender, message):
+        assert sender == 'user'
+        assert message == 'a : b'
+
+    channel = OutputChannel()
+    channel.send_text_message = test_message
+    channel.send_custom_message("user", [{'title': 'a', 'subtitle': 'b'}])

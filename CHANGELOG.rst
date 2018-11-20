@@ -23,6 +23,8 @@ Changed
 
 Fixed
 -----
+- fix error during interactive learning which was caused by actions which
+  dispatched messages using ``dispatcher.utter_custom_message``
 
 [0.12.1] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^
