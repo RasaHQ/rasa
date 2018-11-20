@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 
+[0.12.2] - 2018-11-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- argument handling on evaluate script
+- added basic sanitization during visualization
+
 [0.12.1] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^
 
