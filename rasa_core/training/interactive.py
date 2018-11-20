@@ -239,7 +239,7 @@ def format_bot_output(
 ) -> Text:
     """Format a bot response to be displayed in the history table."""
 
-    output = message.get("text", "")
+    output = message.get("text") or ""
     output = "" if output is None else output
 
     # Append all additional items
