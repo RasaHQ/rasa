@@ -21,6 +21,7 @@ Changed
 - the http server's ``POST /evaluate`` endpoint returns evaluation results
   for both entities and intents
 - use cloudpickle version 0.6.1
+- replaced ``yaml`` with ``ruamel.yaml``
 
 Removed
 -------
@@ -30,6 +31,7 @@ Fixed
 -----
 - Should loading jieba custom dictionaries only once.
 - Set attributes of custom components correctly if they defer from the default
+- NLU Server can now handle training data mit emojis in it
 
 [0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^

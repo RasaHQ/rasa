@@ -19,7 +19,7 @@ from typing import Text
 import requests
 import simplejson
 import six
-import yaml
+import ruamel.yaml as yaml
 from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
@@ -243,13 +243,18 @@ def replace_environment_variables():
         prefix, env_var, postfix = env_var_pattern.match(value).groups()
         return prefix + os.environ[env_var] + postfix
 
-    yaml.add_constructor(u'!env_var', env_var_constructor)
+    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
 def read_yaml(content):
     fix_yaml_loader()
     replace_environment_variables()
-    return yaml.load(content)
+
+    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser.version = "1.2"
+    yaml_parser.unicode_supplementary = True
+
+    return yaml_parser.load(content)
 
 
 def read_yaml_file(filename):
@@ -357,8 +362,9 @@ def create_temporary_file(data, suffix="", mode="w+"):
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
     if PY3:
+        encoding = None if 'b' in mode else 'utf-8'
         f = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
-                                        delete=False)
+                                        delete=False, encoding=encoding)
         f.write(data)
     else:
         f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
