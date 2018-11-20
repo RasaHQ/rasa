@@ -26,6 +26,14 @@ Fixed
 - fix error during interactive learning which was caused by actions which
   dispatched messages using ``dispatcher.utter_custom_message``
 
+[0.12.2] - 2018-11-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- argument handling on evaluate script
+- added basic sanitization during visualization
+
 [0.12.1] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^
 
