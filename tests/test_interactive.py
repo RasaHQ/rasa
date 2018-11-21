@@ -1,4 +1,3 @@
-import yaml
 import json
 import pytest
 import uuid
