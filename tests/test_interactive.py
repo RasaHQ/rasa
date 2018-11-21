@@ -208,7 +208,7 @@ def test_undo_latest_msg(mock_endpoint):
     assert replaced_evts == evts[:6]
 
 
-def test_interactive_domain_persistance(mock_endpoint, tmpdir):
+def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
@@ -216,7 +216,7 @@ def test_interactive_domain_persistance(mock_endpoint, tmpdir):
 
     events = tracker_json.get("events", [])
 
-    domain_path = tmpdir.join("interactive_domain_save.yml")
+    domain_path = tmpdir.join("interactive_domain_save.yml").strpath
 
     url = '{}/domain'.format(mock_endpoint.url)
     httpretty.register_uri(httpretty.GET, url, body='{}')
