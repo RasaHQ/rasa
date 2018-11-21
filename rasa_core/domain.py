@@ -297,7 +297,7 @@ class Domain(object):
 
         if self.num_actions <= index or index < 0:
             raise IndexError(
-                    "Can not access action at index {}. "
+                    "Cannot access action at index {}. "
                     "Domain has {} actions.".format(index, self.num_actions))
         return self.action_for_name(self.action_names[index],
                                     action_endpoint)
@@ -319,7 +319,7 @@ class Domain(object):
         action_names = "\n".join(["\t - {}".format(a)
                                   for a in self.action_names])
         raise NameError(
-                "Can not access action '{}', "
+                "Cannot access action '{}', "
                 "as that name is not a registered action for this domain. "
                 "Available actions are: \n{}"
                 "".format(action_name, action_names))
