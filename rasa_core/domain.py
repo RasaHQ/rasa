@@ -583,7 +583,7 @@ class Domain(object):
         for slot in data["slots"].values():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
-            if slot["auto_fill"] is True:
+            if slot["auto_fill"]:
                 del slot["auto_fill"]
             if slot["type"].startswith('rasa_core.slots'):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
@@ -592,7 +592,9 @@ class Domain(object):
             del data["config"]["store_entities_as_slots"]
 
         # clean empty keys
-        data = {k: v for k, v in data.items() if v == {} or v == [] or v is None}
+        data = {k: v
+                for k, v in data.items()
+                if v == {} or v == [] or v is None}
 
         utils.dump_obj_as_yaml_to_file(filename, data)
 
