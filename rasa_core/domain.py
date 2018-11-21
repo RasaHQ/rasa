@@ -588,7 +588,7 @@ class Domain(object):
             if slot["type"].startswith('rasa_core.slots'):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
-        if data["config"]["store_entities_as_slots"] is True:
+        if data["config"]["store_entities_as_slots"]:
             del data["config"]["store_entities_as_slots"]
 
         # clean empty keys
