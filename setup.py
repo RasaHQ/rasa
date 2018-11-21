@@ -39,7 +39,7 @@ install_requires = [
     "matplotlib~=2.0",
     "numpy>=1.13",
     "simplejson",
-    "pyyaml",
+    "ruamel.yaml~=0.15",
     'coloredlogs',
 ]
 
