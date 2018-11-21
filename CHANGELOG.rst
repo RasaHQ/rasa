@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 
+[0.13.8] - 2018-11-21
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pinned spacy version to ``spacy<=2.0.12,>2.0`` to avoid dependency conflicts
+  with tensorflow
+
 [0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^
 
