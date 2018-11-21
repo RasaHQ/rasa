@@ -144,7 +144,12 @@ class Domain(object):
         merged_intents = merge_dicts(intents_1, intents_2, override)
         combined['intents'] = list(merged_intents.values())
 
-        for key in ['entities', 'actions']:
+        # remove existing forms from new actions
+        for form in combined['forms']:
+            if form in domain_dict['actions']:
+                domain_dict['actions'].remove(form)
+
+        for key in ['entities', 'actions', 'forms']:
             combined[key] = merge_lists(combined[key],
                                         domain_dict[key])
 
@@ -575,9 +580,13 @@ class Domain(object):
                 if intent.get("use_entities"):
                     data["intents"][idx] = name
 
-        for name, slot in data["slots"].items():
+        for _, slot in data["slots"].items():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
+            if slot["auto_fill"]:
+                del slot["auto_fill"]
+            if slot["type"].startswith('rasa_core.slots'):
+                slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
         utils.dump_obj_as_yaml_to_file(filename, data)
 

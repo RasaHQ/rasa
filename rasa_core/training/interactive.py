@@ -19,7 +19,7 @@ from colorclass import Color
 from flask import Flask, send_from_directory, send_file, abort
 from gevent.pywsgi import WSGIServer
 from rasa_core import utils, server, events, constants
-from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
@@ -176,14 +176,19 @@ def send_action(endpoint,  # type: EndpointConfig
         return _response_as_json(r)
     except requests.exceptions.HTTPError:
         if is_new_action:
-            logger.warning("You have created a new action: {} "
-                           "which was not successfully executed. \n"
+            warning_questions = [{
+                "name": "warning",
+                "type": "input",
+                "message": "WARNING: You have created a new action: '{}', "
+                           "which was not successfully executed. "
                            "If this action does not return any events, "
-                           "you do not need to do anything. \n"
+                           "you do not need to do anything. "
                            "If this is a custom action which returns events, "
                            "you are recommended to implement this action "
                            "in your action server and try again."
-                           "".format(action_name))
+                           "".format(action_name)
+            }]
+            _ask_questions(warning_questions, sender_id, endpoint)
 
             payload = ActionExecuted(action_name).as_dict()
 
@@ -728,7 +733,9 @@ def _collect_actions(evts):
     # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
     """Collect all the `ActionExecuted` events into a list."""
 
-    return [evt for evt in evts if evt.get("event") == ActionExecuted.type_name]
+    return [evt
+            for evt in evts
+            if evt.get("event") == ActionExecuted.type_name]
 
 
 def _write_stories_to_file(export_story_path, evts):
@@ -784,7 +791,7 @@ def _entities_from_messages(messages):
 
 
 def _intents_from_messages(messages):
-    """Return all intents that occur in atleast one of the messages."""
+    """Return all intents that occur in at least one of the messages."""
 
     # set of distinct intents
     intents = {m.data["intent"]
@@ -809,7 +816,10 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     domain_dict["forms"] = []
     domain_dict["intents"] = _intents_from_messages(messages)
     domain_dict["entities"] = _entities_from_messages(messages)
-    domain_dict["actions"] = list({e["name"] for e in actions})
+    # do not automatically add default actions to the domain dict
+    domain_dict["actions"] = list({e["name"]
+                                   for e in actions
+                                   if e["name"] not in default_action_names()})
 
     new_domain = Domain.from_dict(domain_dict)
 
@@ -1298,8 +1308,8 @@ def _start_interactive_learning_io(endpoint, stories, on_finish,
                                    finetune=False,
                                    skip_visualization=False):
     # type: (EndpointConfig, Text, Callable[[], None], bool, bool) -> None
-    """Start the interactive learning message recording in a separate thread."""
-
+    """Start the interactive learning message recording in a separate thread.
+    """
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
