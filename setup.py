@@ -33,7 +33,7 @@ install_requires = [
     "pymongo~=3.5",
     "future~=0.16",
     "numpy~=1.14",
-    "scipy~=1.1"
+    "scipy==1.1.0"
     "typing~=3.0",
     "requests~=2.20",
     "tensorflow==1.10.0",
