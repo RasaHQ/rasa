@@ -35,7 +35,6 @@ install_requires = [
     "numpy~=1.14",
     "typing~=3.0",
     "requests~=2.20",
-    "keras~=2.0",
     "tensorflow==1.10.0",
     "h5py~=2.0",
     "apscheduler~=3.0",
