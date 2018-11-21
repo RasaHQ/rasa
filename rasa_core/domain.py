@@ -580,7 +580,7 @@ class Domain(object):
                 if intent.get("use_entities"):
                     data["intents"][idx] = name
 
-        for _, slot in data["slots"].items():
+        for slot in data["slots"].values():
             if slot["initial_value"] is None:
                 del slot["initial_value"]
             if slot["auto_fill"] is True:
