@@ -9,14 +9,13 @@ import io
 import logging
 import numpy as np
 import os
-import pkg_resources
 import requests
 import six
 import textwrap
 import uuid
 from PyInquirer import prompt
 from colorclass import Color
-from flask import Flask, send_from_directory, send_file, abort
+from flask import Flask, send_file, abort
 from gevent.pywsgi import WSGIServer
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
@@ -813,6 +812,7 @@ def _write_domain_to_file(domain_path, evts, endpoint):
 
     domain_dict = dict.fromkeys(domain.keys(), {})  # type: Dict[Text, Any]
 
+    # TODO for now there is no way to distinguish between action and form
     domain_dict["forms"] = []
     domain_dict["intents"] = _intents_from_messages(messages)
     domain_dict["entities"] = _entities_from_messages(messages)
