@@ -594,7 +594,7 @@ class Domain(object):
         # clean empty keys
         data = {k: v
                 for k, v in data.items()
-                if v == {} or v == [] or v is None}
+                if v != {} and v != [] and v is not None}
 
         utils.dump_obj_as_yaml_to_file(filename, data)
 
