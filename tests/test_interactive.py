@@ -6,7 +6,7 @@ from httpretty import httpretty
 from rasa_core import utils
 from rasa_core.training import interactive
 from rasa_core.utils import EndpointConfig
-from rasa_core.actions import action
+from rasa_core.actions.action import default_actions
 
 
 @pytest.fixture
@@ -226,5 +226,5 @@ def test_interactive_domain_persistance(mock_endpoint, tmpdir):
     saved_domain = utils.read_yaml_file(domain_path)
 
     httpretty.disable()
-    for default_action in action.default_actions():
+    for default_action in default_actions():
         assert default_action.name() not in saved_domain["actions"]
