@@ -6,6 +6,7 @@ from httpretty import httpretty
 from rasa_core import utils
 from rasa_core.training import interactive
 from rasa_core.utils import EndpointConfig
+from rasa_core.actions.action import default_actions
 
 
 @pytest.fixture
@@ -205,3 +206,25 @@ def test_undo_latest_msg(mock_endpoint):
     replaced_evts = json.loads(b)
     assert len(replaced_evts) == 6
     assert replaced_evts == evts[:6]
+
+
+def test_interactive_domain_persistance(mock_endpoint, tmpdir):
+    # Test method interactive._write_domain_to_file
+
+    url = '{}/domain'.format(mock_endpoint.url)
+    httpretty.register_uri(httpretty.GET, url, body='{}')
+    httpretty.enable()
+
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = utils.read_json_file(tracker_dump)
+
+    events = tracker_json.get("events", [])
+
+    domain_path = tmpdir.join("interactive_domain_save.yml")
+    interactive._write_domain_to_file(domain_path, events, mock_endpoint)
+
+    saved_domain = utils.read_yaml_file(domain_path)
+
+    httpretty.disable()
+    for default_action in default_actions():
+        assert default_action.name() not in saved_domain["actions"]
