@@ -211,20 +211,21 @@ def test_undo_latest_msg(mock_endpoint):
 def test_interactive_domain_persistance(mock_endpoint, tmpdir):
     # Test method interactive._write_domain_to_file
 
-    url = '{}/domain'.format(mock_endpoint.url)
-    httpretty.register_uri(httpretty.GET, url, body='{}')
-    httpretty.enable()
-
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = utils.read_json_file(tracker_dump)
 
     events = tracker_json.get("events", [])
 
     domain_path = tmpdir.join("interactive_domain_save.yml")
+
+    url = '{}/domain'.format(mock_endpoint.url)
+    httpretty.register_uri(httpretty.GET, url, body='{}')
+
+    httpretty.enable()
     interactive._write_domain_to_file(domain_path, events, mock_endpoint)
+    httpretty.disable()
 
     saved_domain = utils.read_yaml_file(domain_path)
 
-    httpretty.disable()
     for default_action in default_actions():
         assert default_action.name() not in saved_domain["actions"]
