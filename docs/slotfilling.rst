@@ -22,6 +22,22 @@ You can take a look at the FormAction base class by clicking this link:
 
 .. _section_form_basics:
 
+Domain Format
+-------------
+
+To add your forms to the domain file, reference their **name**
+under ``forms:`` section:
+
+.. code-block:: yaml
+
+   actions:
+     - my_custom_action
+     ...
+
+   forms:
+     - my_form
+     ...
+
 Basics
 ------
 
