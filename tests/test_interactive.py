@@ -226,4 +226,3 @@ def test_interactive_domain_persistance(mock_endpoint, tmpdir):
 
     httpretty.disable()
     assert "action_listen" not in saved_domain["actions"]
-
