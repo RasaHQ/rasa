@@ -7,8 +7,6 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 [Unreleased 0.14.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. note:: This version is not yet released and is under active development.
-
 Added
 -----
 - environment variables specified with ``${env_variable}`` in a yaml
@@ -32,6 +30,14 @@ Fixed
 - Should loading jieba custom dictionaries only once.
 - Set attributes of custom components correctly if they defer from the default
 - NLU Server can now handle training data mit emojis in it
+
+[0.13.8] - 2018-11-21
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pinned spacy version to ``spacy<=2.0.12,>2.0`` to avoid dependency conflicts
+  with tensorflow
 
 [0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^
