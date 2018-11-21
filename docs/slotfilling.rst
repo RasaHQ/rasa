@@ -20,8 +20,6 @@ You can take a look at the FormAction base class by clicking this link:
 
 .. autoclass:: rasa_core_sdk.forms.FormAction
 
-.. _section_form_basics:
-
 Domain Format
 -------------
 
@@ -30,13 +28,11 @@ under ``forms:`` section:
 
 .. code-block:: yaml
 
-   actions:
-     - my_custom_action
-     ...
-
    forms:
      - my_form
      ...
+
+.. _section_form_basics:
 
 Basics
 ------
