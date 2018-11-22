@@ -37,7 +37,14 @@ class CountVectorsFeaturizer(Featurizer):
         # the parameters are taken from
         # sklearn's CountVectorizer
 
+        # whether to use word- or character n-grams
+        # 'char_wb' creates character n-grams only
+        # from text inside word boundaries
+        # n-grams at the edges of words are padded with space.
+        "analyzer": 'word',  # use 'char' or 'char_wb' for character
+
         # regular expression for tokens
+        # only used if analyzer == 'word'
         "token_pattern": r'(?u)\b\w\w+\b',
 
         # remove accents during the preprocessing step
@@ -78,6 +85,9 @@ class CountVectorsFeaturizer(Featurizer):
         return ["sklearn"]
 
     def _load_count_vect_params(self):
+        # set analyzer
+        self.analyzer = self.component_config['analyzer']
+
         # regular expression for tokens
         self.token_pattern = self.component_config['token_pattern']
 
@@ -132,6 +142,14 @@ class CountVectorsFeaturizer(Featurizer):
         # handling Out-Of-Vacabulary (OOV) words
         self._load_OOV_params()
 
+        if self.analyzer != 'word':
+            if self.OOV_token is not None:
+                logger.warning("Analyzer is set to character, "
+                               "provided OOV word token will be ignored")
+            if self.stop_words is not None:
+                logger.warning("Analyzer is set to character, "
+                               "provided stop words will be ignored")
+
         # declare class instance for CountVectorizer
         self.vect = None
 
@@ -181,7 +199,7 @@ class CountVectorsFeaturizer(Featurizer):
                            "".format(self.OOV_token))
 
     def train(self, training_data, cfg=None, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
         """Take parameters from config and
             construct a new count vectorizer using the sklearn framework."""
         from sklearn.feature_extraction.text import CountVectorizer
@@ -202,7 +220,8 @@ class CountVectorsFeaturizer(Featurizer):
                                     max_df=self.max_df,
                                     min_df=self.min_df,
                                     max_features=self.max_features,
-                                    tokenizer=self._tokenizer)
+                                    tokenizer=self._tokenizer,
+                                    analyzer=self.analyzer)
 
         lem_exs = [self._get_message_text(example)
                    for example in training_data.intent_examples]
@@ -250,7 +269,7 @@ class CountVectorsFeaturizer(Featurizer):
              model_dir=None,  # type: Text
              model_metadata=None,  # type: Metadata
              cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> CountVectorsFeaturizer
 
