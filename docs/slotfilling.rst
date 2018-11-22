@@ -20,6 +20,18 @@ You can take a look at the FormAction base class by clicking this link:
 
 .. autoclass:: rasa_core_sdk.forms.FormAction
 
+Domain Format
+-------------
+
+To add your forms to the domain file, reference their **name**
+under ``forms:`` section:
+
+.. code-block:: yaml
+
+   forms:
+     - my_form
+     ...
+
 .. _section_form_basics:
 
 Basics
