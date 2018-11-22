@@ -46,6 +46,11 @@ from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
 # automatically. If you change anything in here, please make sure to
