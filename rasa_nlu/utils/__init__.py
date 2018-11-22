@@ -497,12 +497,8 @@ class EndpointConfig(object):
     @classmethod
     def from_dict(cls, data):
         return EndpointConfig(
-                data.get("url"),
-                data.get("params"),
-                data.get("headers"),
-                data.get("basic_auth"),
-                data.get("token"),
-                data.get("token_name"))
+                data.pop("url"),
+                **data)
 
     def __eq__(self, other):
         if isinstance(self, type(other)):
