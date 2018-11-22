@@ -68,3 +68,13 @@ def test_set_attr_on_component(default_config):
 
     assert cfg.for_component("intent_classifier_sklearn") == expected
     assert cfg.for_component("tokenizer_spacy") == {"name": "tokenizer_spacy"}
+
+
+def test_override_defaults():
+    cfg = config.load("sample_configs/embedding_advanced.yml")
+
+    config1 = cfg.for_component("intent_featurizer_count_vectors")
+    assert config1.max_ngram == 3
+
+    config2 = cfg.for_component("intent_classifier_tensorflow_embedding") == {}
+    assert config2.epochs == 10
