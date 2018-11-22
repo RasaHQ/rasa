@@ -121,8 +121,6 @@ class CRFEntityExtractor(EntityExtractor):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
-        self.component_config = config.for_component(self.name, self.defaults)
-
         self._validate_configuration()
 
         # checks whether there is at least one
