@@ -145,10 +145,15 @@ class CountVectorsFeaturizer(Featurizer):
         if self.analyzer != 'word':
             if self.OOV_token is not None:
                 logger.warning("Analyzer is set to character, "
-                               "provided OOV word token will be ignored")
+                               "provided OOV word token will be ignored.")
             if self.stop_words is not None:
                 logger.warning("Analyzer is set to character, "
-                               "provided stop words will be ignored")
+                               "provided stop words will be ignored.")
+            if self.max_ngram == 1:
+                logger.warning("Analyzer is set to character, "
+                               "but max n-gram is set to 1. "
+                               "It means the vocabulary will "
+                               "contain single letters only.")
 
         # declare class instance for CountVectorizer
         self.vect = None
