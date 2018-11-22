@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from rasa_nlu import training_data, config
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
@@ -169,7 +170,6 @@ def test_count_vector_featurizer(sentence, expected):
 
     ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b'})
     train_message = Message(sentence)
-    # this is needed for a valid training example
     train_message.set("intent", "bla")
     data = TrainingData([train_message])
     ftr.train(data)
@@ -193,7 +193,6 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
     ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b',
                                   "OOV_token": '__oov__'})
     train_message = Message(sentence)
-    # this is needed for a valid training example
     train_message.set("intent", "bla")
     data = TrainingData([train_message])
     ftr.train(data)
@@ -218,7 +217,6 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
                                   "OOV_token": '__oov__',
                                   "OOV_words": ['oov_word0', 'OOV_word1']})
     train_message = Message(sentence)
-    # this is needed for a valid training example
     train_message.set("intent", "bla")
     data = TrainingData([train_message])
     ftr.train(data)
@@ -253,8 +251,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     train_message = Message("")
     train_message.set("tokens", tokens_feature)
-    # this is needed for a valid training example
-    train_message.set("intent", "bla")
+    train_message.set("intent", "bla")  # this is needed for a valid training example
     data = TrainingData([train_message])
 
     ftr.train(data)
@@ -262,30 +259,6 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     test_message = Message("")
     test_message.set("tokens", tokens_feature)
 
-    ftr.process(test_message)
-
-    assert np.all(test_message.get("text_features") == expected)
-
-
-@pytest.mark.parametrize("sentence, expected", [
-     ("ababab", [3, 3, 3, 2]),
-     ("ab ab ab", [2, 2, 3, 3, 3, 2]),
-     ("abc", [1, 1, 1, 1, 1])
- ])
-def test_count_vector_featurizer(sentence, expected):
-    from rasa_nlu.featurizers.count_vectors_featurizer import \
-        CountVectorsFeaturizer
-
-    ftr = CountVectorsFeaturizer({"min_ngram": 1,
-                                  "max_ngram": 2,
-                                  "analyzer": 'char'})
-    train_message = Message(sentence)
-    # this is needed for a valid training example
-    train_message.set("intent", "bla")
-    data = TrainingData([train_message])
-    ftr.train(data)
-
-    test_message = Message(sentence)
     ftr.process(test_message)
 
     assert np.all(test_message.get("text_features") == expected)
