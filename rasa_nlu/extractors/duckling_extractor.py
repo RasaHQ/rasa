@@ -13,7 +13,7 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import override_defaults
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
@@ -110,11 +110,11 @@ class DucklingExtractor(EntityExtractor):
             raise Exception("Duckling error. {}".format(e))
 
     @classmethod
-    def create(cls, config):
-        # type: (RasaNLUModelConfig) -> DucklingExtractor
+    def create(cls, component_config):
+        # type: (Dict[Text, Any]) -> DucklingExtractor
 
-        component_config = config.for_component(cls.name, cls.defaults)
-        dims = component_config.get("dimensions")
+        component_conf = override_defaults(cls.defaults, component_config)
+        dims = component_conf.get("dimensions")
         if dims:
             unknown_dimensions = [dim
                                   for dim in dims
@@ -125,8 +125,8 @@ class DucklingExtractor(EntityExtractor):
                         "".format(", ".join(unknown_dimensions),
                                   ", ".join(cls.available_dimensions())))
 
-        wrapper = cls.create_duckling_wrapper(config["language"])
-        return DucklingExtractor(component_config, wrapper)
+        wrapper = cls.create_duckling_wrapper(component_conf["language"])
+        return DucklingExtractor(component_conf, wrapper)
 
     @classmethod
     def cache_key(cls, model_metadata):

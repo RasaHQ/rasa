@@ -17,7 +17,7 @@ from typing import Tuple
 from typing import Hashable
 
 from rasa_nlu import config
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import RasaNLUModelConfig, override_defaults
 from rasa_nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
@@ -178,6 +178,7 @@ class Component(object):
     language_list = None
 
     def __init__(self, component_config=None):
+        # type: (Dict[Text, Any]) -> None
         if not component_config:
             component_config = {}
 
@@ -206,7 +207,7 @@ class Component(object):
              model_dir=None,   # type: Optional[Text]
              model_metadata=None,   # type: Optional[Metadata]
              cached_component=None,   # type: Optional[Component]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> Component
         """Load this component from file.
@@ -225,19 +226,19 @@ class Component(object):
             return cls(component_config)
 
     @classmethod
-    def create(cls, cfg):
-        # type: (RasaNLUModelConfig) -> Component
+    def create(cls, component_config):
+        # type: (Dict[Text, Any]) -> Component
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
 
         # Check language supporting
-        language = cfg.language
+        language = component_config.get('language')
         if not cls.can_handle_language(language):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
 
-        return cls(cfg.for_component(cls.name, cls.defaults))
+        return cls(override_defaults(cls.defaults, component_config))
 
     def provide_context(self):
         # type: () -> Optional[Dict[Text, Any]]
@@ -427,7 +428,7 @@ class ComponentBuilder(object):
                             "{}".format(component_name, e))
 
     def create_component(self, component_name, cfg):
-        # type: (Text, RasaNLUModelConfig) -> Component
+        # type: (Text, Dict) -> Component
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
         from rasa_nlu import registry
@@ -435,7 +436,7 @@ class ComponentBuilder(object):
 
         try:
             component, cache_key = self.__get_cached_component(
-                    component_name, Metadata(cfg.as_dict(), None))
+                    component_name, Metadata(cfg, None))
             if component is None:
                 component = registry.create_component_by_name(component_name,
                                                               cfg)

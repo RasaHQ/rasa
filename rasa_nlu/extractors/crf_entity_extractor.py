@@ -119,7 +119,7 @@ class CRFEntityExtractor(EntityExtractor):
         return ["sklearn_crfsuite", "sklearn"]
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         self.component_config = config.for_component(self.name, self.defaults)
 

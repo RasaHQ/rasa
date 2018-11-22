@@ -14,7 +14,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import RasaNLUModelConfig, override_defaults
 from rasa_nlu.model import Metadata
 
 if typing.TYPE_CHECKING:
@@ -49,11 +49,11 @@ class MitieNLP(Component):
         return ["mitie"]
 
     @classmethod
-    def create(cls, cfg):
-        # type: (RasaNLUModelConfig) -> MitieNLP
+    def create(cls, component_config):
+        # type: (Dict[Text, Any]) -> MitieNLP
         import mitie
 
-        component_conf = cfg.for_component(cls.name, cls.defaults)
+        component_conf = override_defaults(cls.defaults, component_config)
         model_file = component_conf.get("model")
         if not model_file:
             raise Exception("The MITIE component 'nlp_mitie' needs "

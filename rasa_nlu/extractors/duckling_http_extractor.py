@@ -9,12 +9,9 @@ import time
 
 import requests
 import simplejson
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, List, Optional, Text, Dict
 
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import override_defaults
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.extractors.duckling_extractor import (
     filter_irrelevant_matches, convert_duckling_format_to_rasa)
@@ -49,18 +46,17 @@ class DucklingHTTPExtractor(EntityExtractor):
     }
 
     def __init__(self, component_config=None, language=None):
-        # type: (Text, Optional[List[Text]]) -> None
+        # type: (Dict[Text, Any], Optional[List[Text]]) -> None
 
         super(DucklingHTTPExtractor, self).__init__(component_config)
         self.language = language
 
     @classmethod
-    def create(cls, config):
-        # type: (RasaNLUModelConfig) -> DucklingHTTPExtractor
+    def create(cls, component_config):
+        # type: (Dict[Text, Any]) -> DucklingHTTPExtractor
 
-        return cls(config.for_component(cls.name,
-                                        cls.defaults),
-                   config.language)
+        return cls(override_defaults(cls.defaults, component_config),
+                   component_config.get('language'))
 
     def _locale(self):
         if not self.component_config.get("locale"):

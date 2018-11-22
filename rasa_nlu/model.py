@@ -157,19 +157,22 @@ class Trainer(object):
     @staticmethod
     def _build_pipeline(cfg, component_builder):
         # type: (RasaNLUModelConfig, ComponentBuilder) -> List
-        """Transform the passed names of the pipeline components into classes"""
+        """Transform the passed names of the pipeline components into classes
+        """
         pipeline = []
-
         # Transform the passed names of the pipeline components into classes
-        for component_name in cfg.component_names:
+        for component in cfg.pipeline:
+            component_config = component.copy()
+            component_name = component_config.pop('name')
+            component_config['language'] = cfg.language
             component = component_builder.create_component(
-                    component_name, cfg)
+                component_name, component_config)
             pipeline.append(component)
 
         return pipeline
 
     def train(self, data, **kwargs):
-        # type: (TrainingData) -> Interpreter
+        # type: (TrainingData, Any) -> Interpreter
         """Trains the underlying pipeline using the provided training data."""
 
         self.training_data = data
@@ -200,9 +203,13 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context)
 
-    def persist(self, path, persistor=None, project_name=None,
-                fixed_model_name=None):
-        # type: (Text, Optional[Persistor], Text) -> Text
+    def persist(self,
+                path,  # type: Text
+                persistor=None,  # type: Optional[Persistor]
+                project_name=None,  # type: Optional[Text]
+                fixed_model_name=None  # type: Optional[Text]
+                ):
+        # type: (...) -> Text
         """Persist all components of the pipeline to the passed path.
 
         Returns the directory of the persisted model."""

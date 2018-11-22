@@ -235,6 +235,10 @@ class CountVectorsFeaturizer(Featurizer):
             self.vect = None
             return
 
+        print('---')
+        print(list(self.vect.vocabulary_.keys())[:3])
+        print('---')
+
         for i, example in enumerate(training_data.intent_examples):
             # create bag for each example
             example.set("text_features",

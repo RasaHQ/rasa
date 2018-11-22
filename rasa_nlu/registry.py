@@ -10,10 +10,7 @@ from __future__ import absolute_import
 
 import typing
 from rasa_nlu import utils
-from typing import Any
-from typing import Optional
-from typing import Text
-from typing import Type
+from typing import Any, Optional, Text, Type, Dict
 
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
@@ -124,7 +121,7 @@ def load_component_by_name(component_name,  # type: Text
                            model_dir,  # type: Text
                            metadata,  # type: Metadata
                            cached_component,  # type: Optional[Component]
-                           **kwargs  # type: **Any
+                           **kwargs  # type: Any
                            ):
     # type: (...) -> Optional[Component]
     """Resolves a component and calls its load method to init it based on a
@@ -134,10 +131,10 @@ def load_component_by_name(component_name,  # type: Text
     return component_clz.load(model_dir, metadata, cached_component, **kwargs)
 
 
-def create_component_by_name(component_name, config):
-    # type: (Text, RasaNLUModelConfig) -> Optional[Component]
+def create_component_by_name(component_name, component_config):
+    # type: (Text, Dict) -> Optional[Component]
     """Resolves a component and calls it's create method to init it based on a
     previously persisted model."""
 
-    component_clz = get_component_class(component_name)
-    return component_clz.create(config)
+    component_cls = get_component_class(component_name)
+    return component_cls.create(component_config)
