@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import tempfile
 
 import pytest
-import yaml
+import ruamel.yaml as yaml
 from builtins import object
 
 from rasa_nlu.config import RasaNLUModelConfig
