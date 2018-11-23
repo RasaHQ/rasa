@@ -152,7 +152,7 @@ class CountVectorsFeaturizer(Featurizer):
             if self.max_ngram == 1:
                 logger.warning("Analyzer is set to character, "
                                "but max n-gram is set to 1. "
-                               "It means that vocabulary will "
+                               "It means that the vocabulary will "
                                "contain single letters only.")
 
         # declare class instance for CountVectorizer
