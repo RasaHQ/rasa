@@ -18,7 +18,8 @@ from rasa_nlu.extractors import EntityExtractor
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc
 
-PATTERN_NER_FILE= 'pattern_ner.pkl'
+PATTERN_NER_FILE = 'pattern_ner.pkl'
+
 
 class SpacyEntityMatcher(EntityExtractor):
     name = "pattern_ner_spacy"
@@ -27,7 +28,7 @@ class SpacyEntityMatcher(EntityExtractor):
 
     requires = ["tokens"]
 
-    def __init__(self, component_config=None, matcher = None):
+    def __init__(self, component_config=None, matcher=None):
         super(SpacyPatternNER, self).__init__(component_config)
         if matcher:
             self.matcher = matcher
@@ -42,7 +43,7 @@ class SpacyEntityMatcher(EntityExtractor):
             key = lookup_table['name']
             pattern = []
             for element in lookup_table['elements']:
-                tokens = [ {'LOWER': token.lower()}  for token in str(element).split() ]
+                tokens = [{'LOWER': token.lower()} for token in str(element).split()]
                 pattern.append(tokens)
             self.matcher.add(key, None, *pattern)
 
@@ -59,19 +60,25 @@ class SpacyEntityMatcher(EntityExtractor):
                 'confidence': None,
                 'extractor': self.name
             })
-        message.set("entities", message.get("entities", []) + entities, add_to_output=True)
+        message.set("entities", message.get("entities", []) + entities,
+                    add_to_output=True)
 
     def persist(self, model_dir):
         if self.matcher:
-            modelFile = os.path.join(model_dir,PATTERN_NER_FILE)
+            modelFile = os.path.join(model_dir, PATTERN_NER_FILE)
             self.saveModel(modelFile)
         return {"pattern_ner_file": PATTERN_NER_FILE}
 
     @classmethod
-    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+    def load(cls,
+             model_dir=None,
+             model_metadata=None,
+             cached_component=None,
+             **kwargs
+            ):
         meta = model_metadata.for_component(cls.name)
         file_name = meta.get("pattern_ner_file", PATTERN_NER_FILE)
-        modelFile = os.path.join(model_dir,file_name)
+        modelFile = os.path.join(model_dir, file_name)
         if os.path.exists(modelFile):
             modelLoad = open(modelFile, "rb")
             matcher = pickle.load(modelLoad)
