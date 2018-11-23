@@ -178,7 +178,7 @@ class SklearnIntentClassifier(Component):
         else:
             X = message.get("text_features").reshape(1, -1)
             intent_ids, probabilities = self.predict(X)
-            intents = self.transform_labels_num2str(intent_ids)
+            intents = self.transform_labels_num2str(intent_ids[0])
             # `predict` returns a matrix as it is supposed
             # to work for multiple examples as well, hence we need to flatten
             intents, probabilities = intents.flatten(), probabilities.flatten()
