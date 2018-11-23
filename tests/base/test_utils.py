@@ -236,3 +236,26 @@ def test_bool_str():
     assert actual["one"] == "yes"
     assert actual["two"] == "true"
     assert actual["three"] == "True"
+
+
+def test_default_token_name():
+    test_data = {
+        'url': 'http://test',
+        'token': 'token'
+    }
+
+    actual = EndpointConfig.from_dict(test_data)
+
+    assert actual.token_name == 'token'
+
+
+def test_custom_token_name():
+    test_data = {
+        'url': 'http://test',
+        'token': 'token',
+        'token_name': 'test_token'
+    }
+
+    actual = EndpointConfig.from_dict(test_data)
+
+    assert actual.token_name == 'test_token'
