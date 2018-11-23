@@ -43,7 +43,8 @@ class SpacyEntityMatcher(EntityExtractor):
             key = lookup_table['name']
             pattern = []
             for element in lookup_table['elements']:
-                tokens = [{'LOWER': token.lower()} for token in str(element).split()]
+                tokens = [{'LOWER': token.lower()}
+                          for token in str(element).split()]
                 pattern.append(tokens)
             self.matcher.add(key, None, *pattern)
 
@@ -75,7 +76,7 @@ class SpacyEntityMatcher(EntityExtractor):
              model_metadata=None,
              cached_component=None,
              **kwargs
-            ):
+             ):
         meta = model_metadata.for_component(cls.name)
         file_name = meta.get("pattern_ner_file", PATTERN_NER_FILE)
         modelFile = os.path.join(model_dir, file_name)
