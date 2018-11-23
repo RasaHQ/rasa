@@ -358,8 +358,8 @@ class MessageProcessor(object):
             logger.error("Encountered an exception while running action '{}'. "
                          "Bot will continue, but the actions events are lost. "
                          "Make sure to fix the exception in your custom "
-                         "code.".format(action.name()), )
-            logger.error(e, exc_info=True)
+                         "code.".format(action.name()))
+            logger.debug(e, exc_info=True)
             events = []
 
         self._log_action_on_tracker(tracker, action.name(), events, policy,

@@ -232,7 +232,11 @@ def create_app(agent,
         except ValueError as e:
             return error(400, "ValueError", e)
         except Exception as e:
-            logger.exception(e)
+            logger.error("Encountered an exception while running action '{}'. "
+                         "Bot will continue, but the actions events are lost. "
+                         "Make sure to fix the exception in your custom "
+                         "code.".format(action_to_execute))
+            logger.debug(e, exc_info=True)
             return error(500, "ValueError",
                          "Server failure. Error: {}".format(e))
 
