@@ -177,7 +177,7 @@ def send_action(endpoint,  # type: EndpointConfig
         if is_new_action:
             warning_questions = [{
                 "name": "warning",
-                "type": "input",
+                "type": "confirm",
                 "message": "WARNING: You have created a new action: '{}', "
                            "which was not successfully executed. "
                            "If this action does not return any events, "
@@ -932,7 +932,7 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
         # handle contradiction with learned behaviour
         warning_questions = [{
             "name": "warning",
-            "type": "input",
+            "type": "confirm",
             "message": "ERROR: FormPolicy predicted no form validation "
                        "based on previous training stories. "
                        "Make sure to remove contradictory stories "
