@@ -39,7 +39,7 @@ install_requires = [
     "matplotlib~=2.0",
     "numpy>=1.13",
     "simplejson",
-    "pyyaml",
+    "ruamel.yaml~=0.15",
     'coloredlogs',
 ]
 
@@ -48,7 +48,7 @@ extras_requires = {
     'spacy': ["scikit-learn<0.20",
               "sklearn-crfsuite",
               "scipy",
-              "spacy>2.0",
+              "spacy<=2.0.12,>2.0",
               ],
     'tensorflow': ["scikit-learn<0.20",
                    "sklearn-crfsuite",
