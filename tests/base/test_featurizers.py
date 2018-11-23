@@ -271,7 +271,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
      ("ababab", [3, 3, 3, 2]),
      ("ab ab ab", [2, 2, 3, 3, 3, 2]),
      ("abc", [1, 1, 1, 1, 1])
- ])
+])
 def test_count_vector_featurizer(sentence, expected):
     from rasa_nlu.featurizers.count_vectors_featurizer import \
         CountVectorsFeaturizer
