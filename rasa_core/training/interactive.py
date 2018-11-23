@@ -241,8 +241,11 @@ def format_bot_output(
 
     output = message.get("text") or ""
 
-    # Append all additional items
+    # Append all additional items if data is not None
     data = message.get("data", {})
+    if not data:
+        return output
+
     if data.get("image"):
         output += "\nImage: " + data.get("image")
 
