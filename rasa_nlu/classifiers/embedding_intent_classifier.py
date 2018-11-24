@@ -136,7 +136,7 @@ class EmbeddingIntentClassifier(Component):
         self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
-        self._load_params()
+        self._load_params(**component_config)
 
         # transform numbers to intents
         self.inv_intent_dict = inv_intent_dict
