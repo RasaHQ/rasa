@@ -12,6 +12,7 @@ import rasa_nlu
 from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa_nlu.registry import registered_pipeline_templates
+from rasa_nlu.components import ComponentBuilder
 from tests.conftest import CONFIG_DEFAULTS_PATH
 from tests.utilities import write_file_config
 
@@ -72,9 +73,13 @@ def test_set_attr_on_component(default_config):
 
 def test_override_defaults():
     cfg = config.load("sample_configs/embedding_advanced.yml")
+    builder = ComponentBuilder()
 
-    config1 = cfg.for_component("intent_featurizer_count_vectors")
-    assert config1.max_ngram == 3
+    name1 = "intent_featurizer_count_vectors"
 
-    config2 = cfg.for_component("intent_classifier_tensorflow_embedding") == {}
-    assert config2.epochs == 10
+    component1 = builder.create_component(name1, cfg)
+    assert component1.max_ngram == 3
+
+    name2 = "intent_classifier_tensorflow_embedding"
+    component2 = builder.create_component(name2, cfg)
+    assert component2.epochs == 10
