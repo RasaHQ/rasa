@@ -209,9 +209,9 @@ class MessageProcessor(object):
                                                  reminder_event) or not
                 self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
-                         "(event: {} id: {})".format(
-                reminder_event.action_name,
-                reminder_event.name))
+                         "(event: {} id: {})"
+                         "".format(reminder_event.action_name,
+                                   reminder_event.name))
         else:
             # necessary for proper featurization, otherwise the previous
             # unrelated message would influence featurization
