@@ -193,7 +193,7 @@ class RedisTrackerStore(TrackerStore):
                  ) -> Optional[DialogueStateTracker]:
         stored = self.red.get(sender_id)
         if stored is not None and self._metadata_matches(stored, metadata):
-            return stored
+            return self.deserialise_tracker(sender_id, stored)
 
         return None
 
