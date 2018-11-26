@@ -1,9 +1,8 @@
-import typing
-from collections import deque
-
 import copy
 import io
 import logging
+import typing
+from collections import deque
 from enum import Enum
 from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
@@ -73,7 +72,8 @@ class DialogueStateTracker(object):
         return tracker
 
     def __init__(self, sender_id, slots,
-                 max_event_history=None):
+                 max_event_history=None,
+                 metadata: Optional[Dict[Text, Any]] = None):
         """Initialize the tracker.
 
         A set of events can be stored externally, and we will run through all
@@ -104,6 +104,7 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = {}
+        self.metadata = metadata
 
     ###
     # Public tracker interface
@@ -136,7 +137,8 @@ class DialogueStateTracker(object):
             "events": evts,
             "latest_input_channel": self.get_latest_input_channel(),
             "active_form": self.active_form,
-            "latest_action_name": self.latest_action_name
+            "latest_action_name": self.latest_action_name,
+            "metadata": self.metadata
         }
 
     def past_states(self, domain: 'Domain') -> deque:
@@ -390,7 +392,7 @@ class DialogueStateTracker(object):
         This can be serialised and later used to recover the state
         of this tracker exactly."""
 
-        return Dialogue(self.sender_id, list(self.events))
+        return Dialogue(self.sender_id, list(self.events), self.metadata)
 
     def update(self, event: Event) -> None:
         """Modify the state of the tracker according to an ``Event``. """

@@ -27,7 +27,8 @@ class UserMessage(object):
                  output_channel: Optional['OutputChannel'] = None,
                  sender_id: Text = None,
                  parse_data: Dict[Text, Any] = None,
-                 input_channel: Text = None
+                 input_channel: Text = None,
+                 metadata: Optional[Dict[Text, Any]] = None
                  ) -> None:
 
         self.text = text
@@ -45,6 +46,8 @@ class UserMessage(object):
         self.input_channel = input_channel
 
         self.parse_data = parse_data
+
+        self.metadata = metadata
 
 
 def register(input_channels: List['InputChannel'],
@@ -276,7 +279,8 @@ class RestInput(InputChannel):
         collector = QueueOutputChannel(queue)
 
         message = UserMessage(text, collector, sender_id,
-                              input_channel=RestInput.name())
+                              input_channel=RestInput.name(),
+                              metadata=metadata)
         on_new_message(message)
 
         queue.put("DONE")
@@ -284,17 +288,20 @@ class RestInput(InputChannel):
     def _extract_sender(self, req):
         return req.json.get("sender", None)
 
+    def _extract_metadata(self, req):
+        return req.json.get("metadata", None)
+
     # noinspection PyMethodMayBeStatic
     def _extract_message(self, req):
         return req.json.get("message", None)
 
-    def stream_response(self, on_new_message, text, sender_id):
+    def stream_response(self, on_new_message, text, sender_id, metadata):
         from multiprocessing import Queue
 
         q = Queue()
 
         t = Thread(target=self.on_message_wrapper,
-                   args=(on_new_message, text, q, sender_id))
+                   args=(on_new_message, text, q, sender_id, metadata))
         t.start()
         while True:
             response = q.get()
@@ -316,16 +323,19 @@ class RestInput(InputChannel):
         def receive():
             sender_id = self._extract_sender(request)
             text = self._extract_message(request)
+            metadata = self._extract_metadata(request)
             should_use_stream = utils.bool_arg("stream", default=False)
 
             if should_use_stream:
                 return Response(
-                    self.stream_response(on_new_message, text, sender_id),
+                    self.stream_response(on_new_message, text,
+                                         sender_id, metadata),
                     content_type='text/event-stream')
             else:
                 collector = CollectingOutputChannel()
                 on_new_message(UserMessage(text, collector, sender_id,
-                                           input_channel=self.name()))
+                                           input_channel=self.name(),
+                                           metadata=metadata))
                 return jsonify(collector.messages)
 
         return custom_webhook

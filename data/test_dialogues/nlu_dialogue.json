@@ -31,5 +31,6 @@
       "unpredictable": false
     }
   ],
-  "name": "nlu dialogue"
+  "name": "nlu dialogue",
+  "metadata": null
 }

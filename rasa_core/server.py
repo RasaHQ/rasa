@@ -3,6 +3,7 @@ import os
 import tempfile
 import zipfile
 from functools import wraps
+from json import JSONDecodeError
 from typing import List, Text, Optional, Union, Callable, Any
 
 from flask import Flask, request, abort, Response, jsonify, json
@@ -316,8 +317,15 @@ def create_app(agent,
 
         verbosity = event_verbosity_parameter(default_verbosity)
 
+        try:
+            request_params = request_parameters()
+            metadata = json.loads(request_params["metadata"])
+        except (KeyError, TypeError, JSONDecodeError):
+            metadata = None
+
         # retrieve tracker and set to requested state
-        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        tracker = agent.tracker_store.get_or_create_tracker(sender_id,
+                                                            metadata)
         if not tracker:
             return error(503,
                          "NoDomain",

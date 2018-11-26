@@ -1,13 +1,13 @@
-import time
-
 import json
 import logging
-import numpy as np
-from apscheduler.schedulers.background import BackgroundScheduler
-from pytz import UnknownTimeZoneError
 from types import LambdaType
 from typing import Optional, List, Dict, Any, Tuple
 from typing import Text
+
+import numpy as np
+import time
+from apscheduler.schedulers.background import BackgroundScheduler
+from pytz import UnknownTimeZoneError
 
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
@@ -116,7 +116,7 @@ class MessageProcessor(object):
             message.text = self.message_preprocessor(message.text)
         # we have a Tracker instance for each user
         # which maintains conversation state
-        tracker = self._get_tracker(message.sender_id)
+        tracker = self._get_tracker(message.sender_id, message.metadata)
         if tracker:
             self._handle_message_with_tracker(message, tracker)
             # save tracker state to continue conversation from this state
@@ -205,11 +205,13 @@ class MessageProcessor(object):
             return None
 
         if (reminder_event.kill_on_user_message and
-                self._has_message_after_reminder(tracker, reminder_event) or not
+                self._has_message_after_reminder(tracker,
+                                                 reminder_event) or not
                 self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
-                         "(event: {} id: {})".format(reminder_event.action_name,
-                                                     reminder_event.name))
+                         "(event: {} id: {})".format(
+                reminder_event.action_name,
+                reminder_event.name))
         else:
             # necessary for proper featurization, otherwise the previous
             # unrelated message would influence featurization
@@ -424,10 +426,12 @@ class MessageProcessor(object):
             e.timestamp = time.time()
             tracker.update(e)
 
-    def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
+    def _get_tracker(self, sender_id: Text,
+                     metadata: Optional[Dict[Text, Any]] = None
+                     ) -> Optional[DialogueStateTracker]:
 
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        tracker = self.tracker_store.get_or_create_tracker(sender_id)
+        tracker = self.tracker_store.get_or_create_tracker(sender_id, metadata)
         return tracker
 
     def _save_tracker(self, tracker):
@@ -445,8 +449,8 @@ class MessageProcessor(object):
             return None, None
 
     def _get_next_action_probabilities(
-        self,
-        tracker: DialogueStateTracker
+            self,
+            tracker: DialogueStateTracker
     ) -> Tuple[Optional[List[float]], Optional[Text]]:
 
         followup_action = tracker.followup_action

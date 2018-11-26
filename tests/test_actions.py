@@ -112,7 +112,8 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
             'followup_action': 'action_listen',
             'slots': {'name': None},
             'events': [],
-            'latest_input_channel': None
+            'latest_input_channel': None,
+            'metadata': None
         }
     }
 
@@ -167,7 +168,8 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
             'latest_event_time': None,
             'slots': {'name': None},
             'events': [],
-            'latest_input_channel': None
+            'latest_input_channel': None,
+            'metadata': None
         }
     }
 
