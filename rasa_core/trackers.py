@@ -495,6 +495,17 @@ class DialogueStateTracker(object):
                            event_type: Any,
                            to_exclude: List[Text] = None,
                            skip: int = 0) -> Optional[Any]:
+        """Gets the last event of a given type.
+
+        Args:
+            event_type: The type of event you want to filter for.
+            to_exclude: Events of type 'ActionExecuted' which should be excluded
+                from the results. Can be used to skip `action_listen` events.
+            skip: Skips n possible results before return an event.
+
+        Returns:
+            event which matched the query or `None` if no event matched.
+        """
         to_exclude = to_exclude or []
 
         def filter_function(e):
@@ -511,6 +522,16 @@ class DialogueStateTracker(object):
         return next(filtered, None)
 
     def last_executed_has(self, name: Text, skip=0) -> bool:
+        """Returns whether last event of type `ActionExecuted` had a specific
+        name.
+
+        Args:
+            name: Name of the event which should be matched.
+            skip: Skips n possible results in between.
+
+        Returns:
+            `True` if last executed event had name `name`, otherwise `False`.
+        """
         last = self.get_last_event_for(ActionExecuted,
                                        to_exclude=['action_listen'],
                                        skip=skip)

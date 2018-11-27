@@ -16,6 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 class TwoStageFallbackPolicy(FallbackPolicy):
+    """ Policy which handles low NLU confidence in multiple stages.
+
+        If a NLU prediction has a low confidence store,
+        the user is asked to confirm whether they really had this intent.
+        If they confirm, the story continues as if the intent was recognized
+        with high confidence from the beginning.
+        If they deny, the user is asked to restate his intent.
+        If the recognition for this clarification was confident the story
+        continues as if the user had this intent from the beginning.
+        If the clarification was not recognised with high confidence, the user
+        is asked to confirm the recognized intent.
+        If the user confirms the intent, the story continues as if the user had
+        this intent from the beginning.
+        If the user denies, an ultimate fallback action is triggered
+        (e.g. a handoff to a human).
+    """
 
     def __init__(self,
                  nlu_threshold: float = 0.3,
@@ -26,7 +42,27 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                  confirm_intent_name: Text = "confirm",
                  deny_intent_name: Text = "deny",
                  ) -> None:
+        """Create a new Two Stage Fallback policy.
 
+                Args:
+                    nlu_threshold: minimum threshold for NLU confidence.
+                        If intent prediction confidence is lower than this,
+                        predict fallback action with confidence 1.0.
+                    core_threshold: if NLU confidence threshold is met,
+                        predict fallback action with confidence `core_threshold`.
+                        If this is the highest confidence in the ensemble,
+                        the fallback action will be executed.
+                    confirmation_action_name: This action is executed if the
+                        user to confirm their intent.
+                    clarification_action_name: This action is executed if the
+                        user should clarify / restate their intent.
+                    fallback_action_name: This action is executed if the user
+                        denies the recognised intent for the second time.
+                    confirm_intent_name: If NLU recognises this intent, the
+                        user has agreed to the suggested intent.
+                    deny_intent_name: If NLU recognises this intent, the user
+                        has denied the suggested intent.
+                """
         super(TwoStageFallbackPolicy, self).__init__()
 
         self.nlu_threshold = nlu_threshold
@@ -121,8 +157,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     def predict_action_probabilities(self,
                                      tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
-        """Predicts a fallback action if NLU confidence is low
-            or no other policy has a high-confidence prediction"""
+        """Predicts the next action if NLU confidence is low.
+        """
 
         nlu_data = tracker.latest_message.parse_data
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
@@ -131,6 +167,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                                                tracker.latest_action_name)
 
         if self.__is_user_input_expected(tracker):
+            logger.debug(tracker.events)
             result = confidence_scores_for('action_listen', FALLBACK_SCORE,
                                            domain)
         elif self.__user_confirmed(last_intent_name, tracker):
