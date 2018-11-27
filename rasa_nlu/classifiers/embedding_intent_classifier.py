@@ -136,8 +136,6 @@ class EmbeddingIntentClassifier(Component):
         self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
-        self._load_params(self.component_config)
-
         # transform numbers to intents
         self.inv_intent_dict = inv_intent_dict
         # encode all intents with numbers
@@ -157,10 +155,6 @@ class EmbeddingIntentClassifier(Component):
     # init helpers
     def _load_nn_architecture_params(self, config):
         # type: (Dict[Text, Any]) -> None
-        self.hidden_layer_sizes = {'a': config['hidden_layers_sizes_a'],
-                                   'b': config['hidden_layers_sizes_b']}
-
-        self.batch_size = config['batch_size']
         self.epochs = config['epochs']
 
     def _load_embedding_params(self, config):
@@ -401,15 +395,16 @@ class EmbeddingIntentClassifier(Component):
         # type: (int) -> int
         """Linearly increase batch size with every epoch.
             The idea comes from https://arxiv.org/abs/1711.00489"""
-        if not isinstance(self.batch_size, list):
-            return int(self.batch_size)
+        batch_size = config['batch_size']
+        if not isinstance(batch_size, list):
+            return int(batch_size)
 
         if self.epochs > 1:
-            return int(self.batch_size[0] +
-                       epoch * (self.batch_size[1] -
-                                self.batch_size[0]) / (self.epochs - 1))
+            return int(batch_size[0] +
+                       epoch * (batch_size[1] -
+                                batch_size[0]) / (self.epochs - 1))
         else:
-            return int(self.batch_size[0])
+            return int(batch_size[0])
 
     # noinspection PyPep8Naming
     def _train_tf(self,
