@@ -157,7 +157,7 @@ class EmbeddingIntentClassifier(Component):
     def _load_params(self):
         # type: () -> None
         self.num_neg = self.component_config['num_neg']
-        
+
         self.intent_tokenization_flag = self.component_config['intent_tokenization_flag']
         if self.intent_tokenization_flag and not self.component_config['intent_split_symbol']:
             logger.warning("intent_split_symbol was not specified, "
@@ -261,7 +261,11 @@ class EmbeddingIntentClassifier(Component):
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg,
                                 name='hidden_layer_{}_{}'.format(name, i))
-            x = tf.layers.dropout(x, rate=self.component_config['droprate'], training=is_training)
+            x = tf.layers.dropout(
+                x,
+                rate=self.component_config['droprate'],
+                training=is_training
+            )
 
         x = tf.layers.dense(inputs=x,
                             units=self.component_config['embed_dim'],
@@ -292,7 +296,7 @@ class EmbeddingIntentClassifier(Component):
             sim_emb: between individual embedded intent labels only"""
 
         similarity_type = self.component_config['similarity_type']
-        
+
         if similarity_type == 'cosine':
             # normalize embedding vectors for cosine similarity
             a = tf.nn.l2_normalize(a, -1)
