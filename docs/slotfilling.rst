@@ -116,7 +116,7 @@ Here's an example for the restaurant bot:
 
 .. code-block:: python
 
-    def slot_mapping(self):
+    def slot_mappings(self):
         # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
         """A dictionary to map required slots to
             - an extracted entity
