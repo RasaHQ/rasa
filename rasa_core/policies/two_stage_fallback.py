@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class TwoStageFallbackPolicy(FallbackPolicy):
-    """ Policy which handles low NLU confidence in multiple stages.
+    """ This policy handles low NLU confidence in multiple stages.
 
         If a NLU prediction has a low confidence store,
         the user is asked to confirm whether they really had this intent.
@@ -53,7 +53,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                         If this is the highest confidence in the ensemble,
                         the fallback action will be executed.
                     confirmation_action_name: This action is executed if the
-                        user to confirm their intent.
+                        user has to confirm their intent.
                     clarification_action_name: This action is executed if the
                         user should clarify / restate their intent.
                     fallback_action_name: This action is executed if the user
