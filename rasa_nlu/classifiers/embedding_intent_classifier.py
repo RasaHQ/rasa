@@ -136,6 +136,8 @@ class EmbeddingIntentClassifier(Component):
         self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
+        self._load_params()
+
         # transform numbers to intents
         self.inv_intent_dict = inv_intent_dict
         # encode all intents with numbers
@@ -152,15 +154,6 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
-    def _load_flag_if_tokenize_intents(self, config):
-        # type: (Dict[Text, Any]) -> None
-        self.intent_tokenization_flag = config['intent_tokenization_flag']
-        self.intent_split_symbol = config['intent_split_symbol']
-        if self.intent_tokenization_flag and not self.intent_split_symbol:
-            logger.warning("intent_split_symbol was not specified, "
-                           "so intent tokenization will be ignored")
-            self.intent_tokenization_flag = False
-
     def _load_visual_params(self, config):
         # type: (Dict[Text, Any]) -> None
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
@@ -169,14 +162,15 @@ class EmbeddingIntentClassifier(Component):
 
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
-    def _load_params(self, **kwargs):
+    def _load_params(self):
         # type: (Dict[Text, Any]) -> None
         self.num_neg = self.component_config['num_neg']
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
         
-        self._load_flag_if_tokenize_intents(config)
-        self._load_visual_params(config)
+        self.intent_tokenization_flag = self.component_config['intent_tokenization_flag']
+        if self.intent_tokenization_flag and not self.component_config['intent_split_symbol']:
+            logger.warning("intent_split_symbol was not specified, "
+                           "so intent tokenization will be ignored")
+            self.intent_tokenization_flag = False
 
     # package safety checks
     @classmethod
@@ -222,12 +216,12 @@ class EmbeddingIntentClassifier(Component):
 
         if self.intent_tokenization_flag:
             intent_token_dict = self._create_intent_token_dict(
-                list(intent_dict.keys()), self.intent_split_symbol)
+                list(intent_dict.keys()), self.component_config['intent_split_symbol'])
 
             encoded_all_intents = np.zeros((len(intent_dict),
                                             len(intent_token_dict)))
             for key, idx in intent_dict.items():
-                for t in key.split(self.intent_split_symbol):
+                for t in key.split(self.component_config['intent_split_symbol']):
                     encoded_all_intents[idx, intent_token_dict[t]] = 1
 
             return encoded_all_intents
