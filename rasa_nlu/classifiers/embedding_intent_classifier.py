@@ -152,16 +152,6 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
-    def _load_embedding_params(self, config):
-        # type: (Dict[Text, Any]) -> None
-        self.embed_dim = config['embed_dim']
-        self.mu_pos = config['mu_pos']
-        self.mu_neg = config['mu_neg']
-        self.similarity_type = config['similarity_type']
-        self.num_neg = config['num_neg']
-        self.use_max_sim_neg = config['use_max_sim_neg']
-        self.random_seed = self.component_config['random_seed']
-
     def _load_regularization_params(self, config):
         # type: (Dict[Text, Any]) -> None
         self.C2 = config['C2']
@@ -187,10 +177,10 @@ class EmbeddingIntentClassifier(Component):
 
     def _load_params(self, **kwargs):
         # type: (Dict[Text, Any]) -> None
+        self.num_neg = self.component_config['num_neg']
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
-
-        self._load_embedding_params(config)
+        
         self._load_regularization_params(config)
         self._load_flag_if_tokenize_intents(config)
         self._load_visual_params(config)
@@ -295,7 +285,7 @@ class EmbeddingIntentClassifier(Component):
             x = tf.layers.dropout(x, rate=self.droprate, training=is_training)
 
         x = tf.layers.dense(inputs=x,
-                            units=self.embed_dim,
+                            units=self.component_config['embed_dim'],
                             kernel_regularizer=reg,
                             name='embed_layer_{}'.format(name))
         return x
@@ -322,12 +312,14 @@ class EmbeddingIntentClassifier(Component):
             sim: between embedded words and embedded intent labels
             sim_emb: between individual embedded intent labels only"""
 
-        if self.similarity_type == 'cosine':
+        similarity_type = self.component_config['similarity_type']
+        
+        if similarity_type == 'cosine':
             # normalize embedding vectors for cosine similarity
             a = tf.nn.l2_normalize(a, -1)
             b = tf.nn.l2_normalize(b, -1)
 
-        if self.similarity_type in {'cosine', 'inner'}:
+        if similarity_type in {'cosine', 'inner'}:
             sim = tf.reduce_sum(tf.expand_dims(a, 1) * b, -1)
             sim_emb = tf.reduce_sum(b[:, 0:1, :] * b[:, 1:, :], -1)
 
@@ -336,22 +328,22 @@ class EmbeddingIntentClassifier(Component):
         else:
             raise ValueError("Wrong similarity type {}, "
                              "should be 'cosine' or 'inner'"
-                             "".format(self.similarity_type))
+                             "".format(similarity_type))
 
     def _tf_loss(self, sim, sim_emb):
         # type: (tf.Tensor, tf.Tensor) -> tf.Tensor
         """Define loss"""
 
         # loss for maximizing similarity with correct action
-        loss = tf.maximum(0., self.mu_pos - sim[:, 0])
+        loss = tf.maximum(0., self.component_config['mu_pos'] - sim[:, 0])
 
-        if self.use_max_sim_neg:
+        if self.component_config['use_max_sim_neg']:
             # minimize only maximum similarity over incorrect actions
             max_sim_neg = tf.reduce_max(sim[:, 1:], -1)
-            loss += tf.maximum(0., self.mu_neg + max_sim_neg)
+            loss += tf.maximum(0., self.component_config['mu_neg'] + max_sim_neg)
         else:
             # minimize all similarities with incorrect actions
-            max_margin = tf.maximum(0., self.mu_neg + sim[:, 1:])
+            max_margin = tf.maximum(0., self.component_config['mu_neg'] + sim[:, 1:])
             loss += tf.reduce_sum(max_margin, -1)
 
         # penalize max similarity between intent embeddings
@@ -516,8 +508,9 @@ class EmbeddingIntentClassifier(Component):
         self.graph = tf.Graph()
         with self.graph.as_default():
             # set random seed
-            np.random.seed(self.random_seed)
-            tf.set_random_seed(self.random_seed)
+            random_seed = self.component_config['random_seed']
+            np.random.seed(random_seed)
+            tf.set_random_seed(random_seed)
 
             self.a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
                                        name='a')
@@ -559,10 +552,11 @@ class EmbeddingIntentClassifier(Component):
         intent_ids = message_sim.argsort()[::-1]
         message_sim[::-1].sort()
 
-        if self.similarity_type == 'cosine':
+        similarity_type = self.component_config['similarity_type']
+        if similarity_type == 'cosine':
             # clip negative values to zero
             message_sim[message_sim < 0] = 0
-        elif self.similarity_type == 'inner':
+        elif similarity_type == 'inner':
             # normalize result to [0, 1] with softmax
             message_sim = np.exp(message_sim)
             message_sim /= np.sum(message_sim)
