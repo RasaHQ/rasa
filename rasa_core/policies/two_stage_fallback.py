@@ -49,9 +49,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                         If intent prediction confidence is lower than this,
                         predict fallback action with confidence 1.0.
                     core_threshold: if NLU confidence threshold is met,
-                        predict fallback action with confidence `core_threshold`.
-                        If this is the highest confidence in the ensemble,
-                        the fallback action will be executed.
+                        predict fallback action with confidence
+                        `core_threshold`. If this is the highest confidence in
+                        the ensemble, the fallback action will be executed.
                     confirmation_action_name: This action is executed if the
                         user has to confirm their intent.
                     clarification_action_name: This action is executed if the
@@ -101,7 +101,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         elif tracker.last_executed_has(name=self.confirmation_action_name):
             logger.debug("User tried to clarify instead of confirming.")
             result = self.__results_for_early_clarification(should_fallback,
-                                                                tracker, domain)
+                                                            tracker, domain)
         elif should_fallback:
             logger.debug("User has to confirm intent.")
             result = confidence_scores_for(self.confirmation_action_name,
@@ -120,12 +120,12 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     def __user_confirmed(self, last_intent: Text,
                          tracker: DialogueStateTracker) -> bool:
         return tracker.last_executed_has(name=self.confirmation_action_name) \
-               and last_intent == self.confirm_intent_name
+            and last_intent == self.confirm_intent_name
 
     def __user_denied(self, last_intent: Text,
                       tracker: DialogueStateTracker) -> bool:
         return tracker.last_executed_has(name=self.confirmation_action_name) \
-               and last_intent == self.deny_intent_name
+            and last_intent == self.deny_intent_name
 
     def __results_for_user_confirmed(self, tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
@@ -219,8 +219,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
 
 def _revert_clarification_actions(last_intent: UserUttered,
-                                   tracker: DialogueStateTracker) \
-    -> None:
+                                  tracker: DialogueStateTracker) -> None:
     from rasa_core.actions.action import ACTION_LISTEN_NAME
     revert_events = [UserUtteranceReverted(),  # remove clarification
                      ActionReverted(),  # remove clarification request

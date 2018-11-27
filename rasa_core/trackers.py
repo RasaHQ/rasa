@@ -511,7 +511,7 @@ class DialogueStateTracker(object):
         def filter_function(e):
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and \
-                       e.action_name in to_exclude
+                e.action_name in to_exclude
 
             return has_instance and not excluded
 

@@ -453,7 +453,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
           - action_ask_clarification
           - action_default_fallback
           - utter_hello
-        
+
         intents:
           - greet
           - bye
