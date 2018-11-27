@@ -1,12 +1,8 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import typing
 from collections import defaultdict, deque
 
 import random
+import re
+import typing
 from typing import Any, Text, List, Dict, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -35,8 +31,9 @@ class UserMessageGenerator(object):
         self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
     @staticmethod
-    def _create_reverse_mapping(data):
-        # type: (TrainingData) -> Dict[Dict[Text, Any], List[Message]]
+    def _create_reverse_mapping(
+        data: TrainingData
+    ) -> Dict[Dict[Text, Any], List[Message]]:
         """Create a mapping from intent to messages
 
         This allows a faster intent lookup."""
@@ -197,10 +194,10 @@ def _merge_equivalent_nodes(graph, max_history):
         remaining_node_ids = [n for n in graph.nodes() if n > 0]
         for idx, i in enumerate(remaining_node_ids):
             if graph.has_node(i):
-                for j in remaining_node_ids[
-                         idx + 1:]:  # assumes node equivalence is cumulative
-                    if graph.has_node(j) and \
-                            _nodes_are_equivalent(graph, i, j, max_history):
+                # assumes node equivalence is cumulative
+                for j in remaining_node_ids[idx + 1:]:
+                    if (graph.has_node(j) and
+                            _nodes_are_equivalent(graph, i, j, max_history)):
                         # make sure we keep special styles
                         _transfer_style(graph.nodes(data=True)[j],
                                         graph.nodes(data=True)[i])
@@ -260,17 +257,20 @@ def _replace_edge_labels_with_nodes(graph,
             graph.add_edge(next_id, e, **{"class": d.get("class", "")})
 
 
+def visualization_html_path():
+    import pkg_resources
+    return pkg_resources.resource_filename(__name__,
+                                           VISUALIZATION_TEMPLATE_PATH)
+
+
 def persist_graph(graph, output_file):
     """Plots the graph and persists it into a html file."""
     import networkx as nx
     import io
-    import pkg_resources
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    template_path = pkg_resources.resource_filename(__name__,
-                                                    VISUALIZATION_TEMPLATE_PATH)
-    with io.open(template_path, 'r') as file:
+    with io.open(visualization_html_path(), 'r') as file:
         template = file.read()
 
     # customize content of template by replacing tags
@@ -282,8 +282,8 @@ def persist_graph(graph, output_file):
         file.write(template)
 
 
-def _length_of_common_action_prefix(this, other):
-    # type: (List[Event], List[Event]) -> int
+def _length_of_common_action_prefix(this: List[Event],
+                                    other: List[Event]) -> int:
     """Calculate number of actions that two conversations have in common."""
 
     num_common_actions = 0
@@ -296,16 +296,16 @@ def _length_of_common_action_prefix(this, other):
         elif e.type_name == "user" and o_cleaned[i].type_name == "user":
             continue
         elif (e.type_name == "action" and
-              o_cleaned[i].type_name == "action" and
-              o_cleaned[i].action_name == e.action_name):
+                o_cleaned[i].type_name == "action" and
+                o_cleaned[i].action_name == e.action_name):
             num_common_actions += 1
         else:
             break
     return num_common_actions
 
 
-def _add_default_nodes(graph, fontsize=12):
-    # type: (networkx.MultiDiGraph, int) -> None
+def _add_default_nodes(graph: 'networkx.MultiDiGraph',
+                       fontsize: int = 12) -> None:
     """Add the standard nodes we need."""
 
     graph.add_node(START_NODE_ID,
@@ -322,8 +322,7 @@ def _add_default_nodes(graph, fontsize=12):
                    **{"class": "invisible"})
 
 
-def _create_graph(fontsize=12):
-    # type: (int) -> networkx.MultiDiGraph
+def _create_graph(fontsize: int = 12) -> 'networkx.MultiDiGraph':
     """Create a graph and adds the default nodes."""
 
     import networkx as nx
@@ -332,17 +331,24 @@ def _create_graph(fontsize=12):
     return graph
 
 
-def _add_message_edge(graph,  # type: networkx.MultiDiGraph
-                      message,  # type: Dict[Text, Any]
-                      current_node,  # type: int
-                      next_node_idx,  # type: int
-                      is_current  # type: bool
+def sanitize(s):
+    if s:
+        return re.sub(r"[^a-zA-Z0-9\s_-]", "", s)
+    else:
+        return s
+
+
+def _add_message_edge(graph: 'networkx.MultiDiGraph',
+                      message: Dict[Text, Any],
+                      current_node: int,
+                      next_node_idx: int,
+                      is_current: bool
                       ):
     """Create an edge based on the user message."""
 
     if message:
-        message_key = message.get("intent", {}).get("name", None)
-        message_label = message.get("text", None)
+        message_key = sanitize(message.get("intent", {}).get("name", None))
+        message_label = sanitize(message.get("text", None))
     else:
         message_key = None
         message_label = None
@@ -353,15 +359,15 @@ def _add_message_edge(graph,  # type: networkx.MultiDiGraph
 
 
 def visualize_neighborhood(
-        current,  # type: Optional[List[Event]]
-        event_sequences,  # type: List[List[Event]]
-        output_file=None,  # type: Optional[Text]
-        max_history=2,  # type: int
-        interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
-        nlu_training_data=None,  # type: Optional[TrainingData]
-        should_merge_nodes=True,  # type: bool
-        max_distance=1,  # type: int
-        fontsize=12  # type: int
+    current: Optional[List[Event]],
+    event_sequences: List[List[Event]],
+    output_file: Optional[Text] = None,
+    max_history: int = 2,
+    interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+    nlu_training_data: Optional[TrainingData] = None,
+    should_merge_nodes: bool = True,
+    max_distance: int = 1,
+    fontsize: int = 12
 ):
     """Given a set of event lists, visualizing the flows."""
 
@@ -450,8 +456,8 @@ def visualize_neighborhood(
     return graph
 
 
-def _remove_auxiliary_nodes(graph, special_node_idx):
-    # type: (networkx.MultiDiGraph, int) -> None
+def _remove_auxiliary_nodes(graph: 'networkx.MultiDiGraph',
+                            special_node_idx: int) -> None:
     """Remove any temporary or unused nodes."""
 
     graph.remove_node(TMP_NODE_ID)
@@ -470,15 +476,15 @@ def _remove_auxiliary_nodes(graph, special_node_idx):
 
 
 def visualize_stories(
-        story_steps,  # type: List[StoryStep]
-        domain,  # type: Domain
-        output_file,  # type: Optional[Text]
-        max_history,  # type: int
-        interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
-        nlu_training_data=None,  # type: Optional[TrainingData]
-        should_merge_nodes=True,  # type: bool
-        fontsize=12,  # type: int
-        silent=False  # type: bool
+    story_steps: List[StoryStep],
+    domain: Domain,
+    output_file: Optional[Text],
+    max_history: int,
+    interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
+    nlu_training_data: Optional[TrainingData] = None,
+    should_merge_nodes: bool = True,
+    fontsize: int = 12,
+    silent: bool = False
 ):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.

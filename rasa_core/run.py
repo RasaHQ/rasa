@@ -1,18 +1,10 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from builtins import str
-from collections import namedtuple
-import os
 import argparse
 import logging
 from flask import Flask
 from flask_cors import CORS
 from gevent.pywsgi import WSGIServer
 from threading import Thread
-from typing import Text, Optional, Union, List
+from typing import Text, Optional, List
 
 import rasa_core
 from rasa_core import constants, agent
@@ -20,12 +12,13 @@ from rasa_core import utils, server
 from rasa_core.agent import Agent
 from rasa_core.broker import PikaProducer
 from rasa_core.channels import (
-    console, RestInput, InputChannel,
+    console, InputChannel,
     BUILTIN_CHANNELS)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.utils import read_yaml_file, AvailableEndpoints
+
 logger = logging.getLogger()  # get the root logger
 
 
@@ -33,75 +26,77 @@ def create_argument_parser():
     """Parse all the command line arguments for the run script."""
 
     parser = argparse.ArgumentParser(
-            description='starts the bot')
+        description='starts the bot')
     parser.add_argument(
-            '-d', '--core',
-            required=True,
-            type=str,
-            help="core model to run")
+        '-d', '--core',
+        required=True,
+        type=str,
+        help="core model to run")
     parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            help="nlu model to run")
+        '-u', '--nlu',
+        type=str,
+        help="nlu model to run")
     parser.add_argument(
-            '-p', '--port',
-            default=constants.DEFAULT_SERVER_PORT,
-            type=int,
-            help="port to run the server at")
+        '-p', '--port',
+        default=constants.DEFAULT_SERVER_PORT,
+        type=int,
+        help="port to run the server at")
     parser.add_argument(
-            '--auth_token',
-            type=str,
-            help="Enable token based authentication. Requests need to provide "
-                 "the token to be accepted.")
+        '--auth_token',
+        type=str,
+        help="Enable token based authentication. Requests need to provide "
+             "the token to be accepted.")
     parser.add_argument(
-            '--cors',
-            nargs='*',
-            type=str,
-            help="enable CORS for the passed origin. "
-                 "Use * to whitelist all origins")
+        '--cors',
+        nargs='*',
+        type=str,
+        help="enable CORS for the passed origin. "
+             "Use * to whitelist all origins")
     parser.add_argument(
-            '-o', '--log_file',
-            type=str,
-            default="rasa_core.log",
-            help="store log file in specified file")
+        '-o', '--log_file',
+        type=str,
+        default="rasa_core.log",
+        help="store log file in specified file")
     parser.add_argument(
-            '--credentials',
-            default=None,
-            help="authentication credentials for the connector as a yml file")
+        '--credentials',
+        default=None,
+        help="authentication credentials for the connector as a yml file")
     parser.add_argument(
-            '--endpoints',
-            default=None,
-            help="Configuration file for the connectors as a yml file")
+        '--endpoints',
+        default=None,
+        help="Configuration file for the connectors as a yml file")
     parser.add_argument(
-            '-c', '--connector',
-            type=str,
-            help="service to connect to")
+        '-c', '--connector',
+        type=str,
+        help="service to connect to")
     parser.add_argument(
-            '--enable_api',
-            action="store_true",
-            help="Start the web server api in addition to the input channel")
+        '--enable_api',
+        action="store_true",
+        help="Start the web server api in addition to the input channel")
 
     jwt_auth = parser.add_argument_group('JWT Authentication')
     jwt_auth.add_argument(
-            '--jwt_secret',
-            type=str,
-            help="Public key for asymmetric JWT methods or shared secret"
-                 "for symmetric methods. Please also make sure to use "
-                 "--jwt_method to select the method of the signature, "
-                 "otherwise this argument will be ignored.")
+        '--jwt_secret',
+        type=str,
+        help="Public key for asymmetric JWT methods or shared secret"
+             "for symmetric methods. Please also make sure to use "
+             "--jwt_method to select the method of the signature, "
+             "otherwise this argument will be ignored.")
     jwt_auth.add_argument(
-            '--jwt_method',
-            type=str,
-            default="HS256",
-            help="Method used for the signature of the JWT authentication "
-                 "payload.")
+        '--jwt_method',
+        type=str,
+        default="HS256",
+        help="Method used for the signature of the JWT authentication "
+             "payload.")
 
     utils.add_logging_option_arguments(parser)
     return parser
 
 
-def create_http_input_channels(channel, credentials_file):
-    # type: (Optional[Text], Optional[Text]) -> List[InputChannel]
+def create_http_input_channels(
+    channel: Optional[Text],
+    credentials_file: Optional[Text]
+) -> List[InputChannel]:
     """Instantiate the chosen input channel."""
 
     if credentials_file:
@@ -126,11 +121,11 @@ def _create_single_channel(channel, credentials):
             return input_channel_class.from_credentials(credentials)
         except (AttributeError, ImportError):
             raise Exception(
-                    "Failed to find input channel class for '{}'. Unknown "
-                    "input channel. Check your credentials configuration to "
-                    "make sure the mentioned channel is not misspelled. "
-                    "If you are creating your own channel, make sure it "
-                    "is a proper name of a class in a module.".format(channel))
+                "Failed to find input channel class for '{}'. Unknown "
+                "input channel. Check your credentials configuration to "
+                "make sure the mentioned channel is not misspelled. "
+                "If you are creating your own channel, make sure it "
+                "is a proper name of a class in a module.".format(channel))
 
 
 def start_cmdline_io(server_url, on_finish, **kwargs):
@@ -189,7 +184,6 @@ def serve_application(initial_agent,
                       jwt_secret=None,
                       jwt_method=None,
                       ):
-
     if not channel and not credentials_file:
         channel = "cmdline"
 
@@ -213,11 +207,11 @@ def load_agent(core_model, interpreter, endpoints,
                tracker_store=None):
     if endpoints.model:
         return agent.load_from_server(
-                interpreter=interpreter,
-                generator=endpoints.nlg,
-                action_endpoint=endpoints.action,
-                model_server=endpoints.model,
-                tracker_store=tracker_store
+            interpreter=interpreter,
+            generator=endpoints.nlg,
+            action_endpoint=endpoints.action,
+            model_server=endpoints.model,
+            tracker_store=tracker_store
         )
     else:
         return Agent.load(core_model,

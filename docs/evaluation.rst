@@ -19,8 +19,8 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.evaluate -d models/dialogue \
-      -s test_stories.md -o results
+    $ python -m rasa_core.evaluate --core models/dialogue \
+      --stories test_stories.md -o results
 
 
 This will print the failed stories to ``results/failed_stories.md``.
@@ -34,7 +34,7 @@ incorrect action was predicted instead.
 
 The full list of options for the script is:
 
-.. program-output:: python -m rasa_core.evaluate default -h
+.. program-output:: python -m rasa_core.evaluate default --help
 
 .. _end_to_end_evaluation:
 
@@ -77,8 +77,9 @@ the full end-to-end evaluation command is this:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.evaluate default -d models/dialogue --nlu models/nlu/current \
-    -s e2e_stories.md --e2e
+  $ python -m rasa_core.evaluate default --core models/dialogue \
+    --nlu models/nlu/current \
+    --stories e2e_stories.md --e2e
 
 .. note::
 
@@ -118,7 +119,8 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.evaluate compare -s stories_folder -d comparison_models \
+  $ python -m rasa_core.evaluate compare --stories stories_folder \
+    --core comparison_models \
     -o comparison_results
 
 This will evaluate each of the models on the training set, and plot some graphs

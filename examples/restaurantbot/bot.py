@@ -1,11 +1,5 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import argparse
 import logging
-import warnings
 
 from policy import RestaurantPolicy
 from rasa_core import utils
@@ -30,7 +24,7 @@ def train_dialogue(domain_file="restaurant_domain.yml",
 
     training_data = agent.load_data(training_data_file)
     agent.train(
-            training_data
+        training_data
     )
 
     agent.persist(model_path)
@@ -55,12 +49,12 @@ if __name__ == '__main__':
     utils.configure_colored_logging(loglevel="INFO")
 
     parser = argparse.ArgumentParser(
-            description='starts the bot')
+        description='starts the bot')
 
     parser.add_argument(
-            'task',
-            choices=["train-nlu", "train-dialogue", "run"],
-            help="what the bot should do - e.g. run or train?")
+        'task',
+        choices=["train-nlu", "train-dialogue", "run"],
+        help="what the bot should do - e.g. run or train?")
     task = parser.parse_args().task
 
     # decide what to do based on first parameter of the script

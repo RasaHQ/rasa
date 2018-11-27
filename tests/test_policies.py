@@ -1,22 +1,14 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from rasa_core import training
 
-try:  # py3
-    from unittest.mock import patch
-except ImportError:  # py2
-    from mock import patch
+from unittest.mock import patch
 import numpy as np
 import pytest
 
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain
 from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import \
-    MemoizationPolicy, AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import (
+    MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.embedding_policy import EmbeddingPolicy
@@ -209,12 +201,12 @@ class TestSklearnPolicy(PolicyTestCollection):
     def trackers(self, default_domain):
         return train_trackers(default_domain)
 
-    def test_cv_none_does_not_trigger_search(
-            self, mock_search, default_domain, trackers, featurizer):
-        policy = self.create_policy(
-            featurizer=featurizer,
-            cv=None
-        )
+    def test_cv_none_does_not_trigger_search(self,
+                                             mock_search,
+                                             default_domain,
+                                             trackers,
+                                             featurizer):
+        policy = self.create_policy(featurizer=featurizer, cv=None)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count == 0
@@ -222,10 +214,8 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     def test_cv_not_none_param_grid_none_triggers_search_without_params(
             self, mock_search, default_domain, trackers, featurizer):
-        policy = self.create_policy(
-            featurizer=featurizer,
-            cv=3,
-        )
+
+        policy = self.create_policy(featurizer=featurizer, cv=3)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count > 0
@@ -263,7 +253,8 @@ class TestSklearnPolicy(PolicyTestCollection):
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
-                        np.random.choice(classes), action_endpoint=None).name()
+                        np.random.choice(classes),
+                        action_endpoint=None).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
                     new_tracker.update(e)
@@ -405,14 +396,14 @@ class TestFormPolicy(PolicyTestCollection):
                 # which FormPolicy should not predict a form action and
                 # should add FormValidation(False) event
                 is_no_validation = (
-                        ('prev_some_form' in states[0].keys() and
-                         'intent_default' in states[-1].keys()) or
-                        ('prev_some_form' in states[0].keys() and
-                         'intent_stop' in states[-1].keys()) or
-                        ('prev_utter_ask_continue' in states[0].keys() and
-                         'intent_affirm' in states[-1].keys()) or
-                        ('prev_utter_ask_continue' in states[0].keys() and
-                         'intent_deny' in states[-1].keys())
+                    ('prev_some_form' in states[0].keys() and
+                     'intent_default' in states[-1].keys()) or
+                    ('prev_some_form' in states[0].keys() and
+                     'intent_stop' in states[-1].keys()) or
+                    ('prev_utter_ask_continue' in states[0].keys() and
+                     'intent_affirm' in states[-1].keys()) or
+                    ('prev_utter_ask_continue' in states[0].keys() and
+                     'intent_deny' in states[-1].keys())
                 )
             else:
                 is_no_validation = False

@@ -3,6 +3,7 @@
 Quickstart
 ==========
 
+.. start-shared-content
 
 .. note::
 
@@ -424,6 +425,7 @@ Why not play around with the code above?
 2. Add some more stories to provide more examples of how your bot should behave. Then retrain the Rasa Core model to try it!
 3. Edit the response templates in the domain, retrain your model and see the results!
 
+.. end-shared-content
 
 There is a lot more you can do with Rasa Core, so go and read the sections
 in the User Guide next.

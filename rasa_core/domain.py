@@ -1,7 +1,4 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import typing
 
 import collections
 import json
@@ -14,10 +11,9 @@ from rasa_core import utils
 from rasa_core.actions import Action, action
 from rasa_core.constants import REQUESTED_SLOT
 from rasa_core.slots import Slot, UnfeaturizedSlot
-from rasa_core.trackers import DialogueStateTracker, SlotSet
+from rasa_core.trackers import SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from six import string_types
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from typing import List
 from typing import Optional
 from typing import Text
@@ -27,6 +23,9 @@ logger = logging.getLogger(__name__)
 PREV_PREFIX = 'prev_'
 ACTIVE_FORM_PREFIX = 'active_form_'
 
+if typing.TYPE_CHECKING:
+    from rasa_core.trackers import DialogueStateTracker
+
 
 class InvalidDomain(Exception):
     """Exception that can be raised when domain is not valid."""
@@ -34,7 +33,7 @@ class InvalidDomain(Exception):
 
 
 def check_domain_sanity(domain):
-    """Makes sure the domain is properly configured.
+    """Make sure the domain is properly configured.
 
     Checks the settings and checks if there are duplicate actions,
     intents, slots and entities."""
@@ -45,12 +44,10 @@ def check_domain_sanity(domain):
                 for item, count in collections.Counter(my_items).items()
                 if count > 1]
 
-    def get_exception_message(duplicates):
-        """Returns a message given a list of error locations.
-
-        Duplicates has the format of (duplicate_actions [List], name [Text]).
-        :param duplicates:
-        :return: """
+    def get_exception_message(
+        duplicates: List[Tuple[List[Text], Text]]
+    ) -> Text:
+        """Return a message given a list of error locations."""
 
         msg = ""
         for d, name in duplicates:
@@ -67,15 +64,13 @@ def check_domain_sanity(domain):
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
     duplicate_entities = get_duplicates(domain.entities[:])
 
-    if duplicate_actions or \
-            duplicate_intents or \
-            duplicate_slots or \
-            duplicate_entities:
+    if (duplicate_actions or duplicate_intents or
+            duplicate_slots or duplicate_entities):
         raise InvalidDomain(get_exception_message([
-                (duplicate_actions, "actions"),
-                (duplicate_intents, "intents"),
-                (duplicate_slots, "slots"),
-                (duplicate_entities, "entities")]))
+            (duplicate_actions, "actions"),
+            (duplicate_intents, "intents"),
+            (duplicate_slots, "slots"),
+            (duplicate_entities, "entities")]))
 
 
 class Domain(object):
@@ -88,8 +83,8 @@ class Domain(object):
     def load(cls, filename):
         if not os.path.isfile(filename):
             raise Exception(
-                    "Failed to load domain specification from '{}'. "
-                    "File not found!".format(os.path.abspath(filename)))
+                "Failed to load domain specification from '{}'. "
+                "File not found!".format(os.path.abspath(filename)))
         return cls.from_yaml(read_file(filename))
 
     @classmethod
@@ -106,17 +101,16 @@ class Domain(object):
         intent_properties = cls.collect_intent_properties(data.get("intents",
                                                                    {}))
         return cls(
-                intent_properties,
-                data.get("entities", []),
-                slots,
-                utter_templates,
-                data.get("actions", []),
-                data.get("forms", []),
-                **additional_arguments
+            intent_properties,
+            data.get("entities", []),
+            slots,
+            utter_templates,
+            data.get("actions", []),
+            data.get("forms", []),
+            **additional_arguments
         )
 
-    def merge(self, domain, override=False):
-        # type: (Domain, bool) -> Domain
+    def merge(self, domain: 'Domain', override: bool = False) -> 'Domain':
         """Merge this domain with another one, combining their attributes.
 
         List attributes like ``intents`` and ``actions`` will be deduped
@@ -203,8 +197,9 @@ class Domain(object):
         return intent_properties
 
     @staticmethod
-    def collect_templates(yml_templates):
-        # type: (Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
+    def collect_templates(
+        yml_templates: Dict[Text, List[Any]]
+    ) -> Dict[Text, List[Dict[Text, Any]]]:
         """Go through the templates and make sure they are all in dict format
         """
         templates = {}
@@ -213,7 +208,7 @@ class Domain(object):
             for t in template_variations:
                 # templates can either directly be strings or a dict with
                 # options we will always create a dict out of them
-                if isinstance(t, string_types):
+                if isinstance(t, str):
                     validated_variations.append({"text": t})
                 elif "text" not in t:
                     raise InvalidDomain("Utter template '{}' needs to contain"
@@ -225,16 +220,15 @@ class Domain(object):
         return templates
 
     def __init__(self,
-                 intent_properties,  # type: Dict[Text, Any]
-                 entities,  # type: List[Text]
-                 slots,  # type: List[Slot]
-                 templates,  # type: Dict[Text, Any]
-                 action_names,  # type: List[Text]
-                 form_names,  # type: List[Text]
-                 store_entities_as_slots=True,  # type: bool
+                 intent_properties: Dict[Text, Any],
+                 entities: List[Text],
+                 slots: List[Slot],
+                 templates: Dict[Text, Any],
+                 action_names: List[Text],
+                 form_names: List[Text],
+                 store_entities_as_slots: bool = True,
                  restart_intent="restart"  # type: Text
-                 ):
-        # type: (...) -> None
+                 ) -> None:
 
         self.intent_properties = intent_properties
         self.entities = entities
@@ -246,7 +240,7 @@ class Domain(object):
         self.user_actions = action_names
         # includes all actions (custom, utterance, default actions and forms)
         self.action_names = action.combine_user_with_default_actions(
-                action_names) + form_names
+            action_names) + form_names
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
@@ -276,8 +270,10 @@ class Domain(object):
                                                       s in self.slots]:
             self.slots.append(UnfeaturizedSlot(REQUESTED_SLOT))
 
-    def action_for_name(self, action_name, action_endpoint):
-        # type: (Text, Optional[EndpointConfig]) -> Optional[Action]
+    def action_for_name(self,
+                        action_name: Text,
+                        action_endpoint: Optional[EndpointConfig]
+                        ) -> Optional[Action]:
         """Looks up which action corresponds to this action name."""
 
         if action_name not in self.action_names:
@@ -287,16 +283,18 @@ class Domain(object):
                                        action_endpoint,
                                        self.user_actions_and_forms)
 
-    def action_for_index(self, index, action_endpoint):
-        # type: (int, Optional[EndpointConfig]) -> Optional[Action]
+    def action_for_index(self,
+                         index: int,
+                         action_endpoint: Optional[EndpointConfig]
+                         ) -> Optional[Action]:
         """Integer index corresponding to an actions index in the action list.
 
         This method resolves the index to the actions name."""
 
         if self.num_actions <= index or index < 0:
             raise IndexError(
-                    "Can not access action at index {}. "
-                    "Domain has {} actions.".format(index, self.num_actions))
+                "Can not access action at index {}. "
+                "Domain has {} actions.".format(index, self.num_actions))
         return self.action_for_name(self.action_names[index],
                                     action_endpoint)
 
@@ -304,8 +302,7 @@ class Domain(object):
         return [self.action_for_name(name, action_endpoint)
                 for name in self.action_names]
 
-    def index_for_action(self, action_name):
-        # type: (Text) -> Optional[int]
+    def index_for_action(self, action_name: Text) -> Optional[int]:
         """Looks up which action index corresponds to this action name"""
 
         try:
@@ -317,10 +314,10 @@ class Domain(object):
         action_names = "\n".join(["\t - {}".format(a)
                                   for a in self.action_names])
         raise NameError(
-                "Can not access action '{}', "
-                "as that name is not a registered action for this domain. "
-                "Available actions are: \n{}"
-                "".format(action_name, action_names))
+            "Can not access action '{}', "
+            "as that name is not a registered action for this domain. "
+            "Available actions are: \n{}"
+            "".format(action_name, action_names))
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
@@ -370,8 +367,7 @@ class Domain(object):
         # type: () -> List[Text]
         return ["active_form_{0}".format(f) for f in self.form_names]
 
-    def index_of_state(self, state_name):
-        # type: (Text) -> Optional[int]
+    def index_of_state(self, state_name: Text) -> Optional[int]:
         """Provides the index of a state."""
 
         return self.input_state_map.get(state_name)
@@ -394,8 +390,9 @@ class Domain(object):
             self.prev_action_states + \
             self.form_states
 
-    def get_parsing_states(self, tracker):
-        # type: (DialogueStateTracker) -> Dict[Text, float]
+    def get_parsing_states(self,
+                           tracker: 'DialogueStateTracker'
+                           ) -> Dict[Text, float]:
 
         state_dict = {}
 
@@ -432,8 +429,9 @@ class Domain(object):
 
         return state_dict
 
-    def get_prev_action_states(self, tracker):
-        # type: (DialogueStateTracker) -> Dict[Text, float]
+    def get_prev_action_states(self,
+                               tracker: 'DialogueStateTracker'
+                               ) -> Dict[Text, float]:
         """Turns the previous taken action into a state name."""
 
         latest_action = tracker.latest_action_name
@@ -443,19 +441,18 @@ class Domain(object):
                 return {prev_action_name: 1.0}
             else:
                 logger.warning(
-                        "Failed to use action '{}' in history. "
-                        "Please make sure all actions are listed in the "
-                        "domains action list. If you recently removed an "
-                        "action, don't worry about this warning. It "
-                        "should stop appearing after a while. "
-                        "".format(latest_action))
+                    "Failed to use action '{}' in history. "
+                    "Please make sure all actions are listed in the "
+                    "domains action list. If you recently removed an "
+                    "action, don't worry about this warning. It "
+                    "should stop appearing after a while. "
+                    "".format(latest_action))
                 return {}
         else:
             return {}
 
     @staticmethod
-    def get_active_form(tracker):
-        # type: (DialogueStateTracker) -> Dict[Text, float]
+    def get_active_form(tracker: 'DialogueStateTracker') -> Dict[Text, float]:
         """Turns tracker's active form into a state name."""
         form = tracker.active_form.get('name')
         if form is not None:
@@ -463,16 +460,18 @@ class Domain(object):
         else:
             return {}
 
-    def get_active_states(self, tracker):
-        # type: (DialogueStateTracker) -> Dict[Text, float]
+    def get_active_states(self,
+                          tracker: 'DialogueStateTracker'
+                          ) -> Dict[Text, float]:
         """Return a bag of active states from the tracker state"""
         state_dict = self.get_parsing_states(tracker)
         state_dict.update(self.get_prev_action_states(tracker))
         state_dict.update(self.get_active_form(tracker))
         return state_dict
 
-    def states_for_tracker_history(self, tracker):
-        # type: (DialogueStateTracker) -> List[Dict[Text, float]]
+    def states_for_tracker_history(self,
+                                   tracker: 'DialogueStateTracker'
+                                   ) -> List[Dict[Text, float]]:
         """Array of states for each state of the trackers history."""
         return [self.get_active_states(tr) for tr in
                 tracker.generate_all_prior_trackers()]
@@ -496,8 +495,7 @@ class Domain(object):
         else:
             return []
 
-    def persist_specification(self, model_path):
-        # type: (Text) -> None
+    def persist_specification(self, model_path: Text) -> None:
         """Persists the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, 'domain.json')
@@ -509,16 +507,14 @@ class Domain(object):
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
     @classmethod
-    def load_specification(cls, path):
-        # type: (Text) -> Dict[Text, Any]
+    def load_specification(cls, path: Text) -> Dict[Text, Any]:
         """Load a domains specification from a dumped model directory."""
 
         metadata_path = os.path.join(path, 'domain.json')
         specification = json.loads(utils.read_file(metadata_path))
         return specification
 
-    def compare_with_specification(self, path):
-        # type: (Text) -> bool
+    def compare_with_specification(self, path: Text) -> bool:
         """Compares the domain spec of the current and the loaded domain.
 
         Throws exception if the loaded domain specification is different
@@ -530,12 +526,12 @@ class Domain(object):
             missing = ",".join(set(states) - set(self.input_states))
             additional = ",".join(set(self.input_states) - set(states))
             raise InvalidDomain(
-                    "Domain specification has changed. "
-                    "You MUST retrain the policy. " +
-                    "Detected mismatch in domain specification. " +
-                    "The following states have been \n"
-                    "\t - removed: {} \n"
-                    "\t - added:   {} ".format(missing, additional))
+                "Domain specification has changed. "
+                "You MUST retrain the policy. " +
+                "Detected mismatch in domain specification. " +
+                "The following states have been \n"
+                "\t - removed: {} \n"
+                "\t - added:   {} ".format(missing, additional))
         else:
             return True
 
@@ -558,15 +554,13 @@ class Domain(object):
             "forms": self.form_names
         }
 
-    def persist(self, filename):
-        # type: (Text) -> None
+    def persist(self, filename: Text) -> None:
         """Write domain to a file."""
 
         domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    def persist_clean(self, filename):
-        # type: (Text) -> None
+    def persist_clean(self, filename: Text) -> None:
         """Write domain to a file.
 
          Strips redundant keys with default values."""
@@ -588,8 +582,7 @@ class Domain(object):
         domain_data = self.as_dict()
         return utils.dump_obj_as_yaml_to_string(domain_data)
 
-    def intent_config(self, intent_name):
-        # type: (Text) -> Dict[Text, Any]
+    def intent_config(self, intent_name: Text) -> Dict[Text, Any]:
         """Return the configuration for an intent."""
         return self.intent_properties.get(intent_name, {})
 
