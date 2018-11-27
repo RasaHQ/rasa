@@ -152,11 +152,6 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
-    # init helpers
-    def _load_nn_architecture_params(self, config):
-        # type: (Dict[Text, Any]) -> None
-        self.epochs = config['epochs']
-
     def _load_embedding_params(self, config):
         # type: (Dict[Text, Any]) -> None
         self.embed_dim = config['embed_dim']
@@ -195,7 +190,6 @@ class EmbeddingIntentClassifier(Component):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
-        self._load_nn_architecture_params(config)
         self._load_embedding_params(config)
         self._load_regularization_params(config)
         self._load_flag_if_tokenize_intents(config)
@@ -395,14 +389,15 @@ class EmbeddingIntentClassifier(Component):
         # type: (int) -> int
         """Linearly increase batch size with every epoch.
             The idea comes from https://arxiv.org/abs/1711.00489"""
-        batch_size = config['batch_size']
+        batch_size = self.component_config['batch_size']
         if not isinstance(batch_size, list):
             return int(batch_size)
 
-        if self.epochs > 1:
+        epochs = self.component_config['epochs']
+        if epochs > 1:
             return int(batch_size[0] +
                        epoch * (batch_size[1] -
-                                batch_size[0]) / (self.epochs - 1))
+                                batch_size[0]) / (epochs - 1))
         else:
             return int(batch_size[0])
 
@@ -423,7 +418,8 @@ class EmbeddingIntentClassifier(Component):
             logger.info("Accuracy is updated every {} epochs"
                         "".format(self.evaluate_every_num_epochs))
 
-        pbar = tqdm(range(self.epochs), desc="Epochs")
+        epochs = self.component_config['epochs']
+        pbar = tqdm(range(epochs), desc="Epochs")
         train_acc = 0
         last_loss = 0
         for ep in pbar:
@@ -454,7 +450,7 @@ class EmbeddingIntentClassifier(Component):
             if self.evaluate_on_num_examples:
                 if (ep == 0 or
                         (ep + 1) % self.evaluate_every_num_epochs == 0 or
-                        (ep + 1) == self.epochs):
+                        (ep + 1) == epochs):
                     train_acc = self._output_training_stat(X, intents_for_X,
                                                            is_training)
                     last_loss = ep_loss
