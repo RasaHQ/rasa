@@ -73,6 +73,45 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         self.confirm_intent_name = confirm_intent_name
         self.deny_intent_name = deny_intent_name
 
+    def predict_action_probabilities(self,
+                                     tracker: DialogueStateTracker,
+                                     domain: Domain) -> List[float]:
+        """Predicts the next action if NLU confidence is low.
+        """
+
+        nlu_data = tracker.latest_message.parse_data
+        nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
+        last_intent_name = nlu_data['intent'].get('name', None)
+        should_fallback = self.should_fallback(nlu_confidence,
+                                               tracker.latest_action_name)
+
+        if self.__is_user_input_expected(tracker):
+            result = confidence_scores_for('action_listen', FALLBACK_SCORE,
+                                           domain)
+        elif self.__user_confirmed(last_intent_name, tracker):
+            logger.debug("User confirmed suggested intent.")
+            result = self.__results_for_user_confirmed(tracker, domain)
+        elif self.__user_denied(last_intent_name, tracker):
+            logger.debug("User denied suggested intent.")
+            result = self.__results_for_user_denied(tracker, domain)
+        elif self.__user_clarified(tracker):
+            logger.debug("User clarified intent.")
+            result = self.__results_for_clarification(tracker, domain,
+                                                      should_fallback)
+        elif tracker.last_executed_has(name=self.confirmation_action_name):
+            logger.debug("User tried to clarify instead of confirming.")
+            result = self.__results_for_early_clarification(should_fallback,
+                                                                tracker, domain)
+        elif should_fallback:
+            logger.debug("User has to confirm intent.")
+            result = confidence_scores_for(self.confirmation_action_name,
+                                           FALLBACK_SCORE,
+                                           domain)
+        else:
+            result = self.fallback_scores(domain, self.core_threshold)
+
+        return result
+
     def __is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         return tracker.latest_action_name in [self.confirmation_action_name,
                                               self.clarification_action_name,
@@ -88,28 +127,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         return tracker.last_executed_has(name=self.confirmation_action_name) \
                and last_intent == self.deny_intent_name
 
-    def __revert_clarification_actions(self, last_intent: UserUttered,
-                                       tracker: DialogueStateTracker) \
-        -> None:
-        from rasa_core.actions.action import ACTION_LISTEN_NAME
-        revert_events = [UserUtteranceReverted(),  # remove clarification
-                         ActionReverted(),  # remove clarification request
-                         UserUtteranceReverted(),  # remove feedback
-                         ActionReverted(),  # remove confirmation request
-                         UserUtteranceReverted(),  # remove false intent
-                         ActionReverted(),
-                         # replace action with action listen
-                         ActionExecuted(action_name=ACTION_LISTEN_NAME),
-                         last_intent,  # add right intent
-                         ]
-        [tracker.update(e) for e in revert_events]
-
     def __results_for_user_confirmed(self, tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
-        # remove user confirmation
-        tracker.update(UserUtteranceReverted())
-        # remove actions
-        tracker.update(ActionReverted())
+        _revert_confirmation_actions(tracker)
 
         intent = tracker.get_last_event_for(UserUttered, skip=1)
         intent.parse_data['intent']['confidence'] = FALLBACK_SCORE
@@ -118,7 +138,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             self.clarification_action_name,
             skip=1)
         if clarification:
-            self.__revert_clarification_actions(intent, tracker)
+            _revert_clarification_actions(intent, tracker)
 
         return self.fallback_scores(domain, self.core_threshold)
 
@@ -129,6 +149,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             skip=1)
 
         if has_denied_before:
+            # TODO: Revert old events here?
             return confidence_scores_for(self.fallback_action_name,
                                          FALLBACK_SCORE, domain)
         else:
@@ -150,45 +171,26 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         else:
             logger.debug('User clarified intent successfully.')
             last_intent = tracker.get_last_event_for(UserUttered)
-            self.__revert_clarification_actions(last_intent, tracker)
+            _revert_clarification_actions(last_intent, tracker)
 
             return self.fallback_scores(domain, self.core_threshold)
 
-    def predict_action_probabilities(self,
-                                     tracker: DialogueStateTracker,
-                                     domain: Domain) -> List[float]:
-        """Predicts the next action if NLU confidence is low.
-        """
+    def __results_for_early_clarification(self, should_fallback: bool,
+                                          tracker: DialogueStateTracker,
+                                          domain: Domain) -> List[float]:
+        # keep clarification intent separate
+        clarification = tracker.get_last_event_for(UserUttered)
+        # remove utterances and confirmation requests
+        tracker.update(UserUtteranceReverted())
+        _revert_confirmation_actions(tracker)
+        # re-add clarification
+        tracker.update(clarification)
 
-        nlu_data = tracker.latest_message.parse_data
-        nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
-        last_intent_name = nlu_data['intent'].get('name', None)
-        should_fallback = self.should_fallback(nlu_confidence,
-                                               tracker.latest_action_name)
-
-        if self.__is_user_input_expected(tracker):
-            logger.debug(tracker.events)
-            result = confidence_scores_for('action_listen', FALLBACK_SCORE,
-                                           domain)
-        elif self.__user_confirmed(last_intent_name, tracker):
-            logger.debug("User confirmed suggested intent.")
-            result = self.__results_for_user_confirmed(tracker, domain)
-        elif self.__user_denied(last_intent_name, tracker):
-            logger.debug("User denied suggested intent.")
-            result = self.__results_for_user_denied(tracker, domain)
-        elif self.__user_clarified(tracker):
-            logger.debug("User clarified intent.")
-            result = self.__results_for_clarification(tracker, domain,
-                                                      should_fallback)
-        elif should_fallback:
-            logger.debug("User has to confirm intent.")
-            result = confidence_scores_for(self.confirmation_action_name,
-                                           FALLBACK_SCORE,
-                                           domain)
+        if should_fallback:
+            return confidence_scores_for(self.fallback_action_name,
+                                         FALLBACK_SCORE, domain)
         else:
-            result = self.fallback_scores(domain, self.core_threshold)
-
-        return result
+            return self.fallback_scores(domain, self.core_threshold)
 
     def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
@@ -214,3 +216,27 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 meta = json.loads(utils.read_file(meta_path))
 
         return cls(**meta)
+
+
+def _revert_clarification_actions(last_intent: UserUttered,
+                                   tracker: DialogueStateTracker) \
+    -> None:
+    from rasa_core.actions.action import ACTION_LISTEN_NAME
+    revert_events = [UserUtteranceReverted(),  # remove clarification
+                     ActionReverted(),  # remove clarification request
+                     UserUtteranceReverted(),  # remove feedback
+                     ActionReverted(),  # remove confirmation request
+                     UserUtteranceReverted(),  # remove false intent
+                     ActionReverted(),
+                     # replace action with action listen
+                     ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                     last_intent,  # add right intent
+                     ]
+    [tracker.update(e) for e in revert_events]
+
+
+def _revert_confirmation_actions(tracker):
+    # remove user confirmation
+    tracker.update(UserUtteranceReverted())
+    # remove actions
+    tracker.update(ActionReverted())

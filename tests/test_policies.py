@@ -435,7 +435,7 @@ def user_uttered(text: Text, confidence: float) -> UserUttered:
 
 
 def get_tracker(events: List[Event]) -> DialogueStateTracker:
-    return DialogueStateTracker.from_events("sender", events, [], 6)
+    return DialogueStateTracker.from_events("sender", events, [], 10)
 
 
 class TestTwoStageFallbackPolicy(PolicyTestCollection):
@@ -562,6 +562,32 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered("bye", 0.2),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("deny", 1)
+                  ]
+
+        tracker = get_tracker(events)
+        scores = trained_policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        assert domain.action_names[index] == 'action_default_fallback'
+
+    def test_clarification_instead_confirmation(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 1),
+                  ]
+
+        tracker = get_tracker(events)
+        trained_policy.predict_action_probabilities(tracker, domain)
+
+        assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+
+    def test_unknown_instead_confirmation(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 0.2),
                   ]
 
         tracker = get_tracker(events)
