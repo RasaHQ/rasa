@@ -155,7 +155,7 @@ class EmbeddingIntentClassifier(Component):
         self.intent_embed = intent_embed
 
     def _load_params(self):
-        # type: (Dict[Text, Any]) -> None
+        # type: () -> None
         self.num_neg = self.component_config['num_neg']
         
         self.intent_tokenization_flag = self.component_config['intent_tokenization_flag']
