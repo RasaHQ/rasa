@@ -154,14 +154,6 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
-    def _load_visual_params(self, config):
-        # type: (Dict[Text, Any]) -> None
-        self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
-        if self.evaluate_every_num_epochs < 1:
-            self.evaluate_every_num_epochs = self.epochs
-
-        self.evaluate_on_num_examples = config['evaluate_on_num_examples']
-
     def _load_params(self):
         # type: (Dict[Text, Any]) -> None
         self.num_neg = self.component_config['num_neg']
@@ -393,11 +385,14 @@ class EmbeddingIntentClassifier(Component):
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
-        if self.evaluate_on_num_examples:
-            logger.info("Accuracy is updated every {} epochs"
-                        "".format(self.evaluate_every_num_epochs))
-
         epochs = self.component_config['epochs']
+        evaluate_every_num_epochs = self.component_config['evaluate_every_num_epochs']
+        if evaluate_every_num_epochs < 1:
+            evaluate_every_num_epochs = epchos
+        if self.component_config['evaluate_on_num_examples']:
+            logger.info("Accuracy is updated every {} epochs"
+                        "".format(evaluate_every_num_epochs))
+
         pbar = tqdm(range(epochs), desc="Epochs")
         train_acc = 0
         last_loss = 0
@@ -426,9 +421,9 @@ class EmbeddingIntentClassifier(Component):
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
-            if self.evaluate_on_num_examples:
+            if self.component_config['evaluate_on_num_examples']:
                 if (ep == 0 or
-                        (ep + 1) % self.evaluate_every_num_epochs == 0 or
+                        (ep + 1) % evaluate_every_num_epochs == 0 or
                         (ep + 1) == epochs):
                     train_acc = self._output_training_stat(X, intents_for_X,
                                                            is_training)
@@ -443,7 +438,7 @@ class EmbeddingIntentClassifier(Component):
                     "loss": "{:.3f}".format(ep_loss)
                 })
 
-        if self.evaluate_on_num_examples:
+        if self.component_config['evaluate_on_num_examples']:
             logger.info("Finished training embedding classifier, "
                         "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
@@ -452,7 +447,7 @@ class EmbeddingIntentClassifier(Component):
     def _output_training_stat(self, X, intents_for_X, is_training):
         # type: (np.ndarray, np.ndarray, tf.Tensor) -> np.ndarray
         """Output training statistics"""
-        n = self.evaluate_on_num_examples
+        n = self.component_config['evaluate_on_num_examples']
         ids = np.random.permutation(len(X))[:n]
         all_Y = self._create_all_Y(X[ids].shape[0])
 
