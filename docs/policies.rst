@@ -5,6 +5,7 @@
 Training and Policies
 =====================
 
+.. contents::
 
 Training
 --------
@@ -218,8 +219,8 @@ or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
 .. _embedding_policy:
 
-Embedding policy
-----------------
+Embedding Policy
+^^^^^^^^^^^^^^^^
 
 The Recurrent Embedding Dialogue Policy (REDP)
 described in our paper: `<https://arxiv.org/abs/1811.11707>`_
@@ -393,5 +394,71 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
+Two Stage Fallback Policy
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This policy handles low NLU confidence in multiple stages.
+
+- If a NLU prediction has a low confidence store, the user is asked to confirm
+  whether they really had this intent.
+
+    - If they confirm, the story continues as if the intent was recognized
+      with high confidence from the beginning.
+    - If they deny, the user is asked to restate his intent. It is recommended
+      do this with a custom action which offers the user two buttons for
+      ``Yes`` and ``No`` to make their confirmation distinct
+
+- Clarification
+
+    - If the recognition for this clarification was confident the story
+      continues as if the user had this intent from the beginning.
+    - If the clarification was not recognised with high confidence, the user
+      is asked to confirm the recognized intent.
+
+- Second confirmation
+
+    - If the user confirms the intent, the story continues as if the user had
+      this intent from the beginning.
+    - If the user denies, an ultimate fallback action is triggered
+      (e.g. a handoff to a human).
+
+To use this policy, include the following in your policy configuration.
+Note that you cannot use this together with the default fallback policy.
+
+.. code-block:: yaml
+
+    policies:
+      - name: TwoStageFallbackPolicy
+        nlu_threshold: 0.3
+        core_threshold: 0.3
+        confirmation_action_name: "action_ask_confirmation"
+        clarification_action_name: "action_ask_clarification"
+        fallback_action_name: "action_default_fallback"
+        confirm_intent_name: "confirm"
+        deny_intent_name: "deny"
+
++-------------------------------+---------------------------------------------+
+| ``nlu_threshold``             | Min confidence needed to accept an NLU      |
+|                               | prediction                                  |
++-------------------------------+---------------------------------------------+
+| ``core_threshold``            | Min confidence needed to accept an action   |
+|                               | prediction from Rasa Core                   |
++-------------------------------+---------------------------------------------+
+| ``fallback_action_name``      | Name of the action to be called if the      |
+|                               | confidence of intent / action prediction    |
+|                               | is below the threshold                      |
++-------------------------------+---------------------------------------------+
+| ``confirmation_action_name``  | This action is executed if the user has     |
+|                               | to confirm their intent                     |
++-------------------------------+---------------------------------------------+
+| ``clarification_action_name`` | This action is executed if the user should  |
+|                               | clarify / restate their intent              |
++-------------------------------+---------------------------------------------+
+| ``confirm_intent_name``       | If NLU recognises this intent, the user     |
+|                               | has agreed to the suggested intent          |
++-------------------------------+---------------------------------------------+
+| ``deny_intent_name``          | If NLU recognises this intent, the user     |
+|                               | has denied the suggested intent             |
++-------------------------------+---------------------------------------------+
 
 .. include:: feedback.inc
