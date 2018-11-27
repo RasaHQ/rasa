@@ -152,12 +152,6 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
-    def _load_regularization_params(self, config):
-        # type: (Dict[Text, Any]) -> None
-        self.C2 = config['C2']
-        self.C_emb = config['C_emb']
-        self.droprate = config['droprate']
-
     def _load_flag_if_tokenize_intents(self, config):
         # type: (Dict[Text, Any]) -> None
         self.intent_tokenization_flag = config['intent_tokenization_flag']
@@ -181,7 +175,6 @@ class EmbeddingIntentClassifier(Component):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
         
-        self._load_regularization_params(config)
         self._load_flag_if_tokenize_intents(config)
         self._load_visual_params(config)
 
@@ -274,7 +267,7 @@ class EmbeddingIntentClassifier(Component):
         # type: (tf.Tensor, tf.Tensor, List[int], Text) -> tf.Tensor
         """Create nn with hidden layers and name"""
 
-        reg = tf.contrib.layers.l2_regularizer(self.C2)
+        reg = tf.contrib.layers.l2_regularizer(self.component_config['C2'])
         x = x_in
         for i, layer_size in enumerate(layer_sizes):
             x = tf.layers.dense(inputs=x,
@@ -282,7 +275,7 @@ class EmbeddingIntentClassifier(Component):
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg,
                                 name='hidden_layer_{}_{}'.format(name, i))
-            x = tf.layers.dropout(x, rate=self.droprate, training=is_training)
+            x = tf.layers.dropout(x, rate=self.component_config['droprate'], training=is_training)
 
         x = tf.layers.dense(inputs=x,
                             units=self.component_config['embed_dim'],
@@ -348,7 +341,7 @@ class EmbeddingIntentClassifier(Component):
 
         # penalize max similarity between intent embeddings
         max_sim_emb = tf.maximum(0., tf.reduce_max(sim_emb, -1))
-        loss += max_sim_emb * self.C_emb
+        loss += max_sim_emb * self.component_config['C_emb']
 
         # average the loss over the batch and add regularization losses
         loss = (tf.reduce_mean(loss) + tf.losses.get_regularization_loss())
