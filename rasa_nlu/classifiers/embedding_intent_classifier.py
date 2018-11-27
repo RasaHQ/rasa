@@ -136,7 +136,7 @@ class EmbeddingIntentClassifier(Component):
         self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
-        self._load_params()
+        self._load_params(self.component_config)
 
         # transform numbers to intents
         self.inv_intent_dict = inv_intent_dict
@@ -321,10 +321,10 @@ class EmbeddingIntentClassifier(Component):
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(a_in, is_training,
-                                         self.hidden_layer_sizes['a'],
+                                         self.component_config['hidden_layers_sizes_a'],
                                          name='a')
         emb_b = self._create_tf_embed_nn(b_in, is_training,
-                                         self.hidden_layer_sizes['b'],
+                                         self.component_config['hidden_layers_sizes_b'],
                                          name='b')
         return emb_a, emb_b
 
