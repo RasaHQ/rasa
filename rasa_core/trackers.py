@@ -394,7 +394,7 @@ class DialogueStateTracker(object):
 
     def update(self, event: Event) -> None:
         """Modify the state of the tracker according to an ``Event``. """
-
+        logger.debug(event)
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance "
                              "of a subclass of Event.")
@@ -490,3 +490,28 @@ class DialogueStateTracker(object):
         new_slots = [SlotSet(e["entity"], e["value"]) for e in entities if
                      e["entity"] in self.slots.keys()]
         return new_slots
+
+    def get_last_event_for(self,
+                           event_type: Any,
+                           to_exclude: List[Text] = None,
+                           skip: int = 0) -> Optional[Any]:
+        to_exclude = to_exclude or []
+
+        def filter_function(e):
+            has_instance = isinstance(e, event_type)
+            excluded = isinstance(e, ActionExecuted) and \
+                       e.action_name in to_exclude
+
+            return has_instance and not excluded
+
+        filtered = filter(filter_function, reversed(self.events))
+        for i in range(skip):
+            next(filtered, None)
+
+        return next(filtered, None)
+
+    def last_executed_has(self, name: Text, skip=0) -> bool:
+        last = self.get_last_event_for(ActionExecuted,
+                                       to_exclude=['action_listen'],
+                                       skip=skip)
+        return last is not None and last.action_name == name

@@ -73,6 +73,7 @@ def class_from_module_path(module_path: Text) -> Any:
     # load the module, will raise ImportError if module cannot be loaded
     from rasa_core.policies.keras_policy import KerasPolicy
     from rasa_core.policies.fallback import FallbackPolicy
+    from rasa_core.policies.two_stage_fallback import TwoStageFallbackPolicy
     from rasa_core.policies.memoization import (
         MemoizationPolicy,
         AugmentedMemoizationPolicy)

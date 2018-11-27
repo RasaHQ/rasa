@@ -1,3 +1,7 @@
+from typing import Text, List
+
+from rasa_core.actions.action import ACTION_LISTEN_NAME
+
 from rasa_core import training
 
 from unittest.mock import patch
@@ -6,6 +10,7 @@ import pytest
 
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain
+from rasa_core.policies import TwoStageFallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import (
     MemoizationPolicy, AugmentedMemoizationPolicy)
@@ -18,7 +23,7 @@ from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer, FullDialogueTrackerFeaturizer)
-from rasa_core.events import ActionExecuted
+from rasa_core.events import ActionExecuted, UserUttered, Event
 from tests.utilities import read_dialogue_file
 
 
@@ -422,3 +427,144 @@ class TestFormPolicy(PolicyTestCollection):
                           for f, num in
                           zip(domain.input_states, nums)}]
         assert trained_policy.recall(random_states, None, domain) is None
+
+
+def user_uttered(text: Text, confidence: float) -> UserUttered:
+    parse_data = {'intent': {'name': text, 'confidence': confidence}}
+    return UserUttered(text='Random', intent=text, parse_data=parse_data)
+
+
+def get_tracker(events: List[Event]) -> DialogueStateTracker:
+    return DialogueStateTracker.from_events("sender", events, [], 6)
+
+
+class TestTwoStageFallbackPolicy(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        p = TwoStageFallbackPolicy()
+        return p
+
+    @pytest.fixture(scope="module")
+    def domain(self):
+        content = """
+        actions:
+          - action_ask_confirmation
+          - action_ask_clarification
+          - action_default_fallback
+          - utter_hello
+        
+        intents:
+          - greet
+          - bye
+          - confirm
+          - deny
+        """
+        return Domain.from_yaml(content)
+
+    def test_ask_confirmation(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("Hi", 0.2)]
+
+        tracker = get_tracker(events)
+
+        scores = trained_policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        assert domain.action_names[index] == 'action_ask_confirmation'
+
+    def test_confirmation(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("confirm", 1)]
+
+        tracker = get_tracker(events)
+        trained_policy.predict_action_probabilities(tracker, domain)
+
+        assert 'greet' == tracker.latest_message.parse_data['intent']['name']
+
+    def test_deny(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("deny", 1)]
+
+        tracker = get_tracker(events)
+
+        assert tracker.latest_message.parse_data['intent']['name'] == 'deny'
+
+        scores = trained_policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        assert domain.action_names[index] == 'action_ask_clarification'
+
+    def test_successful_clarification(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("deny", 1),
+                  ActionExecuted('action_ask_clarification'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 1),
+                  ]
+
+        tracker = get_tracker(events)
+        trained_policy.predict_action_probabilities(tracker, domain)
+
+        assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+
+    def test_confirm_clarification(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("deny", 1),
+                  ActionExecuted('action_ask_clarification'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ]
+
+        tracker = get_tracker(events)
+
+        scores = trained_policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        assert domain.action_names[index] == 'action_ask_confirmation'
+
+    def test_confirmed_clarification(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("deny", 1),
+                  ActionExecuted('action_ask_clarification'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("confirm", 1)
+                  ]
+
+        tracker = get_tracker(events)
+        trained_policy.predict_action_probabilities(tracker, domain)
+
+        assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+
+    def test_denied_clarification_confirmation(self, trained_policy, domain):
+        events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted('action_ask_confirmation'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("deny", 1),
+                  ActionExecuted('action_ask_clarification'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 0.2),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("deny", 1)
+                  ]
+
+        tracker = get_tracker(events)
+        scores = trained_policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        assert domain.action_names[index] == 'action_default_fallback'

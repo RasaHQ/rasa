@@ -137,3 +137,12 @@ class Policy(object):
             Needs to load its featurizer"""
         raise NotImplementedError("Policy must have the capacity "
                                   "to load itself.")
+
+
+def confidence_scores_for(action_name, value, domain, results=None):
+    if results is None:
+        results = [0.0] * domain.num_actions
+    idx = domain.index_for_action(action_name)
+    results[idx] = value
+
+    return results
