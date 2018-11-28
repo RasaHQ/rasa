@@ -232,8 +232,8 @@ def save_nlu_errors(errors, filename):
 def collect_nlu_successes(intent_results):  # pragma: no cover
     """Log messages which result in successful predictions and save them to file"""
 
-    # it could be interesting to include entity-errors later
-    # therefore we start with a "intent_errors" key
+    # it could be interesting to include entity-successes later
+    # therefore we start with a "intent_successes" key
     intent_successes = [{"text": r.message,
                       "intent": r.target,
                       "intent_prediction": {
