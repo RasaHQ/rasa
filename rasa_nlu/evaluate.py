@@ -242,21 +242,10 @@ def collect_nlu_successes(intent_results):  # pragma: no cover
                       }}
                      for r in intent_results if r.target == r.prediction]
 
-    return {'intent_successes': intent_successes}
-
-    """
-    if intent_errors:
-        logger.info("There were some nlu intent classification errors. "
-                    "Use `--verbose` to show them in the log.")
-        logger.debug("\n\nThese intent examples could not be classified "
-                     "correctly \n{}".format(intent_errors))
-
-        return {'intent_errors': intent_errors}
+    if intent_successes:
+        return {'intent_successes': intent_successes}
     else:
-        logger.info("No prediction errors were found. You are AWESOME!")
         return None
-    """
-
 
 def collect_nlu_errors(intent_results):  # pragma: no cover
     """Log messages which result in wrong predictions and save them to file"""
