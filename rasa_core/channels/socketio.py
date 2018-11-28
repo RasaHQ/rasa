@@ -43,7 +43,6 @@ class SocketIOOutput(OutputChannel):
     def _send_message(self, socket_id, response):
         # type: (Text, Any) -> None
         """Sends a message to the recipient using the bot event."""
-        print (response)
         self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
     def send_text_message(self, recipient_id, message):
@@ -107,15 +106,20 @@ class SocketIOInput(InputChannel):
         credentials = credentials or {}
         return cls(credentials.get("user_message_evt", "user_uttered"),
                    credentials.get("bot_message_evt", "bot_uttered"),
-                   credentials.get("namespace"))
+                   credentials.get("namespace"),
+                   credentials.get("session_persistence", False),
+                   credentials.get("socketio_path", "/socket.io"),
+                   )
 
     def __init__(self,
                  user_message_evt="user_uttered",  # type: Text
                  bot_message_evt="bot_uttered",  # type: Text
                  namespace=None,  # type: Optional[Text]
+                 session_persistence=False,
                  socketio_path='/socket.io'  # type: Optional[Text]
                  ):
         self.bot_message_evt = bot_message_evt
+        self.session_persistence = session_persistence
         self.user_message_evt = user_message_evt
         self.namespace = namespace
         self.socketio_path = socketio_path
@@ -124,7 +128,7 @@ class SocketIOInput(InputChannel):
         sio = socketio.Server()
         socketio_webhook = SocketBlueprint(sio, self.socketio_path, 'socketio_webhook', __name__)
 
-        @socketio_webhook.route("/health", methods=['GET'])
+        @socketio_webhook.route("/", methods=['GET'])
         def health():
             return jsonify({"status": "ok"})
 
@@ -142,18 +146,20 @@ class SocketIOInput(InputChannel):
             if data is None:
                 data = {}
             if 'session_id' not in data or data['session_id'] is None:
-                data['session_id'] = str(uuid.uuid4())
+                data['session_id'] = uuid.uuid4().hex
             sio.emit("session_confirm", data['session_id'])
-            logger.debug("User {} disconnected from socketio endpoint."
+            logger.debug("User {} connected to socketio endpoint."
                          "".format(sid))
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
         def handle_message(sid, data):
             output_channel = SocketIOOutput(sio, sid, self.bot_message_evt)
-            if "session_id" not in data or data["session_id"] is None:
-                logger.warning("A message without a valid sender_id was received")
+
+            if self.session_persistence and ("session_id" not in data or data["session_id"] is None):
+                logger.debug("A message without a valid sender_id was received")
             else:
-                message = UserMessage(data['message'], output_channel, data['session_id'],
+                sender_id = data['session_id'] if self.session_persistence else sid
+                message = UserMessage(data['message'], output_channel, sender_id,
                                       input_channel=self.name())
                 on_new_message(message)
 
