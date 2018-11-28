@@ -461,4 +461,35 @@ Note that you cannot use this together with the default fallback policy.
 |                               | has denied the suggested intent             |
 +-------------------------------+---------------------------------------------+
 
+This is an example how a custom action ``confirm_action_name`` could look
+like:
+
+.. code-block:: python
+
+    from rasa_core_sdk import Action
+
+
+    class ActionConfirm(Action):
+        def name(self):
+            return "action_confirm"
+
+        def run(self, dispatcher, tracker, domain):
+            intent_to_confirm = tracker.latest_message['intent']['name']
+            confirmation_message = 'Did you had this intent: {}'.format(
+                intent_to_confirm)
+
+            dispatcher.utter_button_message(text=confirmation_message,
+                                            buttons=[{'title': 'Yes',
+                                                      'payload': '/confirm'},
+                                                     {'title': 'No',
+                                                      'payload': '/deny'}])
+
+        return []
+
+Whenever triggered, it asks the user whether they really had the intent
+``intent_to_confirm``. The example does this with the plane name of the intent,
+but it is suggested to define some mapping from the intent identification name
+to a more self-explanatory text. The action then offers the user to buttons
+to either confirm or deny the suggested intent.
+
 .. include:: feedback.inc
