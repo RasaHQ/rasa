@@ -16,6 +16,10 @@ Added
 - A support for session persistence mechanism in the ``SocketIOInput``
   compatible with the example SocketIO WebChat + short explanation on
   how session persistence should be implemented in a frontend
+- `TwoStageFallbackPolicy` which asks the user for confirmation if the NLU
+  confidence is low for an intent, for clarification if they deny the suggested
+  intent, and does finally an ultimate fallback if it does not get the intent
+  right
 
 Removed
 -------
