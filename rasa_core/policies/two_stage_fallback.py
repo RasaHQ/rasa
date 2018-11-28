@@ -115,7 +115,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     def __is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         return tracker.latest_action_name in [self.confirmation_action_name,
                                               self.clarification_action_name,
-                                              ]
+                                              self.fallback_action_name]
 
     def __user_confirmed(self, last_intent: Text,
                          tracker: DialogueStateTracker) -> bool:
@@ -149,7 +149,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             skip=1)
 
         if has_denied_before:
-            # TODO: Revert old events here?
             return confidence_scores_for(self.fallback_action_name,
                                          FALLBACK_SCORE, domain)
         else:

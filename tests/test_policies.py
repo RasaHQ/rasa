@@ -590,3 +590,11 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         scores = trained_policy.predict_action_probabilities(tracker, domain)
         index = scores.index(max(scores))
         assert domain.action_names[index] == 'action_default_fallback'
+
+    def test_listen_after_hand_off(self, trained_policy, domain):
+        events = [ActionExecuted('action_default_fallback')]
+
+        tracker = get_tracker(events)
+        scores = trained_policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        assert domain.action_names[index] == ACTION_LISTEN_NAME
