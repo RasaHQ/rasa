@@ -1,3 +1,4 @@
+import textwrap
 from typing import Text, List
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -22,9 +23,9 @@ from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer, FullDialogueTrackerFeaturizer)
-from rasa_core.events import ActionExecuted, UserUttered, Event
-from tests.utilities import read_dialogue_file
+    BinarySingleStateFeaturizer)
+from rasa_core.events import ActionExecuted
+from tests.utilities import read_dialogue_file, user_uttered, get_tracker
 
 
 def train_trackers(domain):
@@ -429,15 +430,6 @@ class TestFormPolicy(PolicyTestCollection):
         assert trained_policy.recall(random_states, None, domain) is None
 
 
-def user_uttered(text: Text, confidence: float) -> UserUttered:
-    parse_data = {'intent': {'name': text, 'confidence': confidence}}
-    return UserUttered(text='Random', intent=text, parse_data=parse_data)
-
-
-def get_tracker(events: List[Event]) -> DialogueStateTracker:
-    return DialogueStateTracker.from_events("sender", events, [], 10)
-
-
 class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
@@ -483,6 +475,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         trained_policy.predict_action_probabilities(tracker, domain)
 
         assert 'greet' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == "## sender\n* greet\n"
 
     def test_deny(self, trained_policy, domain):
         events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
@@ -514,6 +507,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         trained_policy.predict_action_probabilities(tracker, domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_confirm_clarification(self, trained_policy, domain):
         events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
@@ -550,6 +544,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         trained_policy.predict_action_probabilities(tracker, domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_denied_clarification_confirmation(self, trained_policy, domain):
         events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
@@ -581,6 +576,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         trained_policy.predict_action_probabilities(tracker, domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == "## sender\n* bye\n"
 
     def test_unknown_instead_confirmation(self, trained_policy, domain):
         events = [ActionExecuted(action_name=ACTION_LISTEN_NAME),
