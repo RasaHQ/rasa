@@ -62,6 +62,9 @@ def create_argument_parser():
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
 
+    parser.add_argument('--successes', required=False, default="successes.json",
+                        help="output path for the json with successful predictions")
+
     parser.add_argument('--errors', required=False, default="errors.json",
                         help="output path for the json with wrong predictions")
 
@@ -211,6 +214,13 @@ def drop_intents_below_freq(td, cutoff=5):
 
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
+def save_nlu_successes(successes, filename):
+    """Write out nlu classification successes to a file."""
+
+    utils.write_to_file(filename,
+                        json.dumps(successes, indent=4, ensure_ascii=False))
+    logger.info("Model prediction successes saved to {}.".format(filename))
+
 
 def save_nlu_errors(errors, filename):
     """Write out nlu classification errors to a file."""
@@ -218,6 +228,34 @@ def save_nlu_errors(errors, filename):
     utils.write_to_file(filename,
                         json.dumps(errors, indent=4, ensure_ascii=False))
     logger.info("Model prediction errors saved to {}.".format(filename))
+
+def collect_nlu_successes(intent_results):  # pragma: no cover
+    """Log messages which result in successful predictions and save them to file"""
+
+    # it could be interesting to include entity-errors later
+    # therefore we start with a "intent_errors" key
+    intent_successes = [{"text": r.message,
+                      "intent": r.target,
+                      "intent_prediction": {
+                          "name": r.prediction,
+                          "confidence": r.confidence
+                      }}
+                     for r in intent_results if r.target == r.prediction]
+
+    return {'intent_successes': intent_successes}
+
+    """
+    if intent_errors:
+        logger.info("There were some nlu intent classification errors. "
+                    "Use `--verbose` to show them in the log.")
+        logger.debug("\n\nThese intent examples could not be classified "
+                     "correctly \n{}".format(intent_errors))
+
+        return {'intent_errors': intent_errors}
+    else:
+        logger.info("No prediction errors were found. You are AWESOME!")
+        return None
+    """
 
 
 def collect_nlu_errors(intent_results):  # pragma: no cover
@@ -261,6 +299,7 @@ def plot_intent_confidences(intent_results, intent_hist_filename):
 
 
 def evaluate_intents(intent_results,
+                     successes_filename,
                      errors_filename,
                      confmat_filename,
                      intent_hist_filename):  # pragma: no cover
@@ -288,8 +327,14 @@ def evaluate_intents(intent_results,
 
     log_evaluation_table(report, precision, f1, accuracy)
 
+    # log and save classified samples to file for debugging
+    successes = collect_nlu_successes(intent_results)
+
     # log and save misclassified samples to file for debugging
     errors = collect_nlu_errors(intent_results)
+
+    if successes and successes_filename:
+        save_nlu_successes(successes, successes_filename)
 
     if errors and errors_filename:
         save_nlu_errors(errors, errors_filename)
@@ -663,6 +708,7 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model,
+                   successes_filename='successes.json',
                    errors_filename='errors.json',
                    confmat_filename=None,
                    intent_hist_filename=None,
@@ -696,6 +742,7 @@ def run_evaluation(data_path, model,
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
+                                                       successes_filename,
                                                        errors_filename,
                                                        confmat_filename,
                                                        intent_hist_filename)
@@ -909,6 +956,7 @@ def main():
     elif cmdline_args.mode == "evaluation":
         run_evaluation(cmdline_args.data,
                        cmdline_args.model,
+                       cmdline_args.successes,
                        cmdline_args.errors,
                        cmdline_args.confmat,
                        cmdline_args.histogram)
@@ -918,3 +966,4 @@ def main():
 
 if __name__ == '__main__':  # pragma: no cover
     main()
+
