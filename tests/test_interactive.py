@@ -17,7 +17,7 @@ def test_send_message(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/messages'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     httpretty.register_uri(httpretty.POST, url, body='{}')
 
     httpretty.enable()
@@ -36,7 +36,7 @@ def test_request_prediction(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/predict'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     httpretty.register_uri(httpretty.POST, url, body='{}')
 
     httpretty.enable()
@@ -100,12 +100,12 @@ def test_all_events_before_user_msg_on_no_events():
 
 def test_print_history(mock_endpoint):
     tracker_dump = utils.read_file(
-            "data/test_trackers/tracker_moodbot.json")
+        "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
 
     httpretty.enable()
@@ -121,12 +121,12 @@ def test_print_history(mock_endpoint):
 
 def test_is_listening_for_messages(mock_endpoint):
     tracker_dump = utils.read_file(
-            "data/test_trackers/tracker_moodbot.json")
+        "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
 
     httpretty.enable()
@@ -181,16 +181,16 @@ def test_validate_user_message():
 
 def test_undo_latest_msg(mock_endpoint):
     tracker_dump = utils.read_file(
-            "data/test_trackers/tracker_moodbot.json")
+        "data/test_trackers/tracker_moodbot.json")
     tracker_json = json.loads(tracker_dump)
     evts = tracker_json.get("events")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     replace_url = '{}/conversations/{}/tracker/events'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
     httpretty.register_uri(httpretty.PUT, replace_url)
 
@@ -205,3 +205,25 @@ def test_undo_latest_msg(mock_endpoint):
     replaced_evts = json.loads(b)
     assert len(replaced_evts) == 6
     assert replaced_evts == evts[:6]
+
+
+def test_utter_custom_message():
+    test_event = """
+      {
+      "data": {
+        "attachment": null,
+        "buttons": null,
+        "elements": [
+          {
+            "a": "b"
+          }
+        ]
+      },
+      "event": "bot",
+      "text": null,
+      "timestamp": 1542649219.331037
+    }
+    """
+    actual = interactive._chat_history_table([json.loads(test_event)])
+
+    assert json.dumps({'a': 'b'}) in actual

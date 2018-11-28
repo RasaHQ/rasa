@@ -1,12 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import json
 
 import pytest
-from builtins import str
 from httpretty import httpretty
 
 from rasa_core.actions import action
@@ -37,7 +31,7 @@ def test_text_format():
 
 def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
-            ["random_name", "utter_test"], None, ["random_name", "utter_test"])
+        ["random_name", "utter_test"], None, ["random_name", "utter_test"])
     assert len(instantiated_actions) == 2
     assert isinstance(instantiated_actions[0], RemoteAction)
     assert instantiated_actions[0].name() == "random_name"
@@ -48,12 +42,12 @@ def test_action_instantiation_from_names():
 
 def test_domain_action_instantiation():
     domain = Domain(
-            intent_properties={},
-            entities=[],
-            slots=[],
-            templates={},
-            action_names=["my_module.ActionTest", "utter_test"],
-            form_names=[])
+        intent_properties={},
+        entities=[],
+        slots=[],
+        templates={},
+        action_names=["my_module.ActionTest", "utter_test"],
+        form_names=[])
 
     instantiated_actions = domain.actions(None)
 
@@ -85,9 +79,9 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
                                         endpoint)
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            body='{"events": [], "responses": []}')
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        body='{"events": [], "responses": []}')
 
     httpretty.enable()
     remote_action.run(default_dispatcher_collecting,
@@ -140,9 +134,9 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
                       {"template": "utter_greet"}]}
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            body=json.dumps(response))
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        body=json.dumps(response))
 
     httpretty.enable()
     events = remote_action.run(default_dispatcher_collecting,
@@ -224,10 +218,10 @@ def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
     remote_action = action.RemoteAction("my_action", endpoint)
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            status=500,
-            body='')
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        status=500,
+        body='')
 
     httpretty.enable()
     with pytest.raises(Exception) as execinfo:
@@ -247,10 +241,10 @@ def test_remote_action_endpoint_responds_400(default_dispatcher_collecting,
     remote_action = action.RemoteAction("my_action", endpoint)
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            status=400,
-            body='{"action_name": "my_action"}')
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        status=400,
+        body='{"action_name": "my_action"}')
 
     httpretty.enable()
 

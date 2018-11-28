@@ -654,7 +654,7 @@ configuration ``config/endpoints.yml``:
   tracker_store:
     store_type: mongod
     url: mongodb://mongo:27017
-    user: rasa
+    username: rasa
     password: example
 
 Then start all components with ``docker-compose up``.

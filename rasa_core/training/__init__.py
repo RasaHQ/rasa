@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import typing
 from typing import Text, List, Optional
 
@@ -14,13 +9,12 @@ if typing.TYPE_CHECKING:
 
 
 def extract_story_graph(
-        resource_name,  # type: Text
-        domain,  # type: Domain
-        interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
-        use_e2e=False,  # type: bool
-        exclusion_percentage=None  # type: int
-):
-    # type: (...) -> StoryGraph
+    resource_name: Text,
+    domain: 'Domain',
+    interpreter: Optional['NaturalLanguageInterpreter'] = None,
+    use_e2e: bool = False,
+    exclusion_percentage: int = None
+) -> 'StoryGraph':
     from rasa_core.interpreter import RegexInterpreter
     from rasa_core.training.dsl import StoryFileReader
     from rasa_core.training.structures import StoryGraph
@@ -28,25 +22,24 @@ def extract_story_graph(
     if not interpreter:
         interpreter = RegexInterpreter()
     story_steps = StoryFileReader.read_from_folder(
-                                    resource_name,
-                                    domain, interpreter,
-                                    use_e2e=use_e2e,
-                                    exclusion_percentage=exclusion_percentage)
+        resource_name,
+        domain, interpreter,
+        use_e2e=use_e2e,
+        exclusion_percentage=exclusion_percentage)
     return StoryGraph(story_steps)
 
 
 def load_data(
-        resource_name,  # type: Text
-        domain,  # type: Domain
-        remove_duplicates=True,  # type: bool
-        unique_last_num_states=None,  # type: Optional[int]
-        augmentation_factor=20,  # type: int
-        tracker_limit=None,  # type: Optional[int]
-        use_story_concatenation=True,  # type: bool
-        debug_plots=False,
-        exclusion_percentage=None  # type: int
-):
-    # type: (...) -> List[DialogueStateTracker]
+    resource_name: Text,
+    domain: 'Domain',
+    remove_duplicates: bool = True,
+    unique_last_num_states: Optional[int] = None,
+    augmentation_factor: int = 20,
+    tracker_limit: Optional[int] = None,
+    use_story_concatenation: bool = True,
+    debug_plots=False,
+    exclusion_percentage: int = None
+) -> List['DialogueStateTracker']:
     from rasa_core.training import extract_story_graph
     from rasa_core.training.generator import TrainingDataGenerator
 
@@ -66,8 +59,7 @@ def load_data(
         return []
 
 
-def persist_data(trackers, path):
-    # type: (List[DialogueStateTracker], Text) -> None
+def persist_data(trackers: List['DialogueStateTracker'], path: Text) -> None:
     """Dump a list of dialogue trackers in the story format to disk."""
 
     for t in trackers:

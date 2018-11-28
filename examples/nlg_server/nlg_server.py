@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import argparse
 import logging
 
@@ -22,17 +17,17 @@ def create_argument_parser():
     """Parse all the command line arguments for the nlg server script."""
 
     parser = argparse.ArgumentParser(
-            description='starts the nlg endpoint')
+        description='starts the nlg endpoint')
     parser.add_argument(
-            '-p', '--port',
-            default=DEFAULT_SERVER_PORT,
-            type=int,
-            help="port to run the server at")
+        '-p', '--port',
+        default=DEFAULT_SERVER_PORT,
+        type=int,
+        help="port to run the server at")
     parser.add_argument(
-            '-d', '--domain',
-            type=str,
-            default=None,
-            help="path of the domain file to load utterances from"
+        '-d', '--domain',
+        type=str,
+        default=None,
+        help="path of the domain file to load utterances from"
     )
 
     return parser
@@ -44,11 +39,11 @@ def generate_response(nlg_call, domain):
     sender_id = nlg_call.get("tracker", {}).get("sender_id")
     events = nlg_call.get("tracker", {}).get("events")
     tracker = DialogueStateTracker.from_dict(
-                    sender_id, events, domain.slots)
+        sender_id, events, domain.slots)
     channel_name = nlg_call.get("channel")
 
     return TemplatedNaturalLanguageGenerator(domain.templates).generate(
-            template, tracker, channel_name, **kwargs)
+        template, tracker, channel_name, **kwargs)
 
 
 def create_app(domain):

@@ -1,16 +1,9 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import itertools
 
 import contextlib
 import io
-import itertools
-import os
-import sys
-
 import jsonpickle
-import six
+import os
 
 from rasa_core import utils
 from rasa_core.domain import Domain
@@ -54,7 +47,7 @@ def cwd(path):
 
 @contextlib.contextmanager
 def mocked_cmd_input(package, text):
-    if isinstance(text, six.string_types):
+    if isinstance(text, str):
         text = [text]
 
     text_generator = itertools.cycle(text)

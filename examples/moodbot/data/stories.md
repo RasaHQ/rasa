@@ -1,7 +1,7 @@
 ## happy path               <!-- name of the story - just for debugging -->
 * greet
   - utter_greet
-* mood_great               <!-- user utterance, in format _intent[entities] -->
+* mood_great               <!-- user utterance, in the following format: * intent{"entity_name": value} -->
   - utter_happy
 
 ## sad path 1               <!-- this is already the start of the next story -->

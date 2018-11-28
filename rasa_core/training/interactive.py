@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import sys
 
 import io
@@ -10,13 +5,16 @@ import logging
 import numpy as np
 import os
 import requests
-import six
 import textwrap
 import uuid
 from PyInquirer import prompt
 from colorclass import Color
-from flask import Flask, send_from_directory, send_file, abort
+from flask import Flask, send_file, abort
 from gevent.pywsgi import WSGIServer
+from terminaltables import SingleTable, AsciiTable
+from threading import Thread
+from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
+
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
@@ -30,14 +28,11 @@ from rasa_core.events import (
     BotUttered)
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
+from rasa_core.training import visualization
 from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
     visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
 from rasa_core.utils import EndpointConfig
-from terminaltables import SingleTable, AsciiTable
-from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable, Union
-
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
@@ -85,8 +80,7 @@ class UndoLastStep(Exception):
     pass
 
 
-def _response_as_json(response):
-    # type: (requests.Response) -> Dict[Text, Any]
+def _response_as_json(response: requests.Response) -> Dict[Text, Any]:
     """Convert a HTTP response to json, raise exception if response failed."""
 
     response.raise_for_status()
@@ -97,12 +91,12 @@ def _response_as_json(response):
     return response.json()
 
 
-def send_message(endpoint,  # type: EndpointConfig
-                 sender_id,  # type: Text
-                 message,  # type: Text
-                 parse_data=None  # type: Optional[Dict[Text, Any]]
-                 ):
-    # type: (...) -> Dict[Text, Any]
+def send_message(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    message: Text,
+    parse_data: Optional[Dict[Text, Any]] = None
+) -> Dict[Text, Any]:
     """Send a user message to a conversation."""
 
     payload = {
@@ -119,8 +113,10 @@ def send_message(endpoint,  # type: EndpointConfig
     return _response_as_json(r)
 
 
-def request_prediction(endpoint, sender_id):
-    # type: (EndpointConfig, Text) -> Dict[Text, Any]
+def request_prediction(
+    endpoint: EndpointConfig,
+    sender_id: Text
+) -> Dict[Text, Any]:
     """Request the next action prediction from core."""
 
     r = endpoint.request(method="post",
@@ -129,8 +125,7 @@ def request_prediction(endpoint, sender_id):
     return _response_as_json(r)
 
 
-def retrieve_domain(endpoint):
-    # type: (EndpointConfig) -> Dict[Text, Any]
+def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
     """Retrieve the domain from core."""
 
     r = endpoint.request(method="get",
@@ -140,12 +135,15 @@ def retrieve_domain(endpoint):
     return _response_as_json(r)
 
 
-def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
-    # type: (EndpointConfig, Text, EventVerbosity) -> Dict[Text, Any]
+def retrieve_tracker(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    verbosity: EventVerbosity = EventVerbosity.ALL
+) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
 
     path = "/conversations/{}/tracker?include_events={}".format(
-            sender_id, verbosity.name)
+        sender_id, verbosity.name)
     r = endpoint.request(method="get",
                          subpath=path,
                          headers={"Accept": "application/json"})
@@ -153,14 +151,14 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint,  # type: EndpointConfig
-                sender_id,  # type: Text
-                action_name,  # type: Text
-                policy=None,  # type: Optional[Text]
-                confidence=None,  # type: Optional[float]
-                is_new_action=False  # bool
-                ):
-    # type: (...) -> Dict[Text, Any]
+def send_action(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    action_name: Text,
+    policy: Optional[Text] = None,
+    confidence: Optional[float] = None,
+    is_new_action: bool = False
+) -> Dict[Text, Any]:
     """Log an action to a conversation."""
 
     payload = ActionExecuted(action_name, policy, confidence).as_dict()
@@ -191,8 +189,11 @@ def send_action(endpoint,  # type: EndpointConfig
             raise
 
 
-def send_event(endpoint, sender_id, evt):
-    # type: (EndpointConfig, Text, Dict[Text, Any]) -> Dict[Text, Any]
+def send_event(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    evt: Dict[Text, Any]
+) -> Dict[Text, Any]:
     """Log an event to a conversation."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
@@ -204,8 +205,11 @@ def send_event(endpoint, sender_id, evt):
     return _response_as_json(r)
 
 
-def replace_events(endpoint, sender_id, evts):
-    # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
+def replace_events(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    evts: List[Dict[Text, Any]]
+) -> Dict[Text, Any]:
     """Replace all the events of a conversation with the provided ones."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
@@ -217,8 +221,10 @@ def replace_events(endpoint, sender_id, evts):
     return _response_as_json(r)
 
 
-def send_finetune(endpoint, evts):
-    # type: (EndpointConfig, List[Dict[Text, Any]]) -> Dict[Text, Any]
+def send_finetune(
+    endpoint: EndpointConfig,
+    evts: List[Dict[Text, Any]]
+) -> Dict[Text, Any]:
     """Finetune a core model on the provided additional training samples."""
 
     r = endpoint.request(json=evts,
@@ -228,17 +234,18 @@ def send_finetune(endpoint, evts):
     return _response_as_json(r)
 
 
-def format_bot_output(message):
-    # type: (Dict[Text, Any]) -> Text
+def format_bot_output(
+    message: Dict[Text, Any]
+) -> Text:
     """Format a bot response to be displayed in the history table."""
 
-    if "text" in message:
-        output = message.get("text")
-    else:
-        output = ""
+    output = message.get("text") or ""
 
-    # Append all additional items
+    # Append all additional items if data is not None
     data = message.get("data", {})
+    if not data:
+        return output
+
     if data.get("image"):
         output += "\nImage: " + data.get("image")
 
@@ -249,11 +256,18 @@ def format_bot_output(message):
         for idx, button in enumerate(data.get("buttons")):
             button_str = button_to_string(button, idx)
             output += "\n" + button_str
+
+    if data.get("elements"):
+        for element in data.get('elements'):
+            import json
+            output += "\nElements: "
+            output += "\n" + json.dumps(element)
     return output
 
 
-def latest_user_message(evts):
-    # type: (List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
+def latest_user_message(
+    evts: List[Dict[Text, Any]]
+) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
 
     for i, e in enumerate(reversed(evts)):
@@ -262,8 +276,9 @@ def latest_user_message(evts):
     return None
 
 
-def all_events_before_latest_user_msg(evts):
-    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+def all_events_before_latest_user_msg(
+    evts: List[Dict[Text, Any]]
+) -> List[Dict[Text, Any]]:
     """Return all events that happened before the most recent user message."""
 
     for i, e in enumerate(reversed(evts)):
@@ -273,12 +288,11 @@ def all_events_before_latest_user_msg(evts):
 
 
 def _ask_questions(
-        questions,  # type: List[Dict[Text, Any]]
-        sender_id,  # type: Text
-        endpoint,  # type: EndpointConfig
-        is_abort=lambda x: False  # type: Callable[[Dict[Text, Any]], bool]
-):
-    # type: (...) -> Dict[Text, Any]
+    questions: List[Dict[Text, Any]],
+    sender_id: Text,
+    endpoint: EndpointConfig,
+    is_abort: Callable[[Dict[Text, Any]], bool] = lambda x: False
+) -> Dict[Text, Any]:
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
 
     should_retry = True
@@ -293,8 +307,9 @@ def _ask_questions(
     return answers
 
 
-def _selection_choices_from_intent_prediction(predictions):
-    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Text]]
+def _selection_choices_from_intent_prediction(
+    predictions: List[Dict[Text, Any]]
+) -> List[Dict[Text, Text]]:
     """"Given a list of ML predictions create a UI choice list."""
 
     sorted_intents = sorted(predictions,
@@ -313,8 +328,10 @@ def _selection_choices_from_intent_prediction(predictions):
     return choices
 
 
-def _request_free_text_intent(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> Text
+def _request_free_text_intent(
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
     questions = [
         {
             "type": "input",
@@ -326,8 +343,10 @@ def _request_free_text_intent(sender_id, endpoint):
     return answers["intent"]
 
 
-def _request_free_text_action(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> Text
+def _request_free_text_action(
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
     questions = [
         {
             "type": "input",
@@ -339,8 +358,11 @@ def _request_free_text_action(sender_id, endpoint):
     return answers["action"]
 
 
-def _request_selection_from_intent_list(intent_list, sender_id, endpoint):
-    # type: (List[Dict[Text, Text]], Text, EndpointConfig) -> Text
+def _request_selection_from_intent_list(
+    intent_list: List[Dict[Text, Text]],
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
     questions = [
         {
             "type": "list",
@@ -352,8 +374,11 @@ def _request_selection_from_intent_list(intent_list, sender_id, endpoint):
     return _ask_questions(questions, sender_id, endpoint)["intent"]
 
 
-def _request_fork_point_from_list(forks, sender_id, endpoint):
-    # type: (List[Dict[Text, Text]], Text, EndpointConfig) -> Text
+def _request_fork_point_from_list(
+    forks: List[Dict[Text, Text]],
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
     questions = [
         {
             "type": "list",
@@ -365,10 +390,10 @@ def _request_fork_point_from_list(forks, sender_id, endpoint):
     return _ask_questions(questions, sender_id, endpoint)["fork"]
 
 
-def _request_fork_from_user(sender_id,
-                            endpoint
-                            ):
-    # type: (...) -> Optional[List[Dict[Text, Any]]]
+def _request_fork_from_user(
+    sender_id,
+    endpoint
+) -> Optional[List[Dict[Text, Any]]]:
     """Take in a conversation and ask at which point to fork the conversation.
 
     Returns the list of events that should be kept. Forking means, the
@@ -392,12 +417,12 @@ def _request_fork_from_user(sender_id,
         return None
 
 
-def _request_intent_from_user(latest_message,
-                              intents,
-                              sender_id,
-                              endpoint
-                              ):
-    # type: (...) -> Dict[Text, Any]
+def _request_intent_from_user(
+    latest_message,
+    intents,
+    sender_id,
+    endpoint
+) -> Dict[Text, Any]:
     """Take in latest message and ask which intent it should have been.
 
     Returns the intent dict that has been selected by the user."""
@@ -426,8 +451,7 @@ def _request_intent_from_user(latest_message,
     return next((x for x in predictions if x["name"] == intent_name), None)
 
 
-def _print_history(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> None
+def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     """Print information about the conversation for the user."""
 
     tracker_dump = retrieve_tracker(endpoint, sender_id,
@@ -448,8 +472,7 @@ def _print_history(sender_id, endpoint):
     print("------")
 
 
-def _chat_history_table(evts):
-    # type: (List[Dict[Text, Any]]) -> Text
+def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
     """Create a table containing bot and user messages.
 
     Also includes additional information, like any events and
@@ -474,12 +497,10 @@ def _chat_history_table(evts):
         ]
         return "\n".join(_lines)
 
-    def bot_width(_table):
-        # type: (AsciiTable) -> int
+    def bot_width(_table: AsciiTable) -> int:
         return _table.column_max_width(1)
 
-    def user_width(_table):
-        # type: (AsciiTable) -> int
+    def user_width(_table: AsciiTable) -> int:
         return _table.column_max_width(3)
 
     def add_bot_cell(data, cell):
@@ -538,8 +559,7 @@ def _chat_history_table(evts):
     return table.table
 
 
-def _slot_history(tracker_dump):
-    # type: (Dict[Text, Any]) -> List[Text]
+def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     """Create an array of slot representations to be displayed."""
 
     slot_strs = []
@@ -550,8 +570,7 @@ def _slot_history(tracker_dump):
     return slot_strs
 
 
-def _ask_if_quit(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> bool
+def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
     Return `True` if the previous question should be retried."""
@@ -610,8 +629,10 @@ def _ask_if_quit(sender_id, endpoint):
         raise RestartConversation()
 
 
-def _request_action_from_user(predictions, sender_id, endpoint):
-    # type: (List[Dict[Text, Any]],Text, EndpointConfig) -> (Text, bool)
+def _request_action_from_user(
+    predictions: List[Dict[Text, Any]],
+    sender_id: Text, endpoint: EndpointConfig
+) -> (Text, bool):
     """Ask the user to correct an action prediction."""
 
     _print_history(sender_id, endpoint)
@@ -640,8 +661,7 @@ def _request_action_from_user(predictions, sender_id, endpoint):
     return action_name, is_new_action
 
 
-def _request_export_info():
-    # type: () -> (Text, Text)
+def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
 
     def validate_path(path):
@@ -683,8 +703,9 @@ def _request_export_info():
             answers["export domain"])
 
 
-def _split_conversation_at_restarts(evts):
-    # type: (List[Dict[Text, Any]]) -> List[List[Dict[Text, Any]]]
+def _split_conversation_at_restarts(
+    evts: List[Dict[Text, Any]]
+) -> List[List[Dict[Text, Any]]]:
     """Split a conversation at restart events.
 
     Returns an array of event lists, without the restart events."""
@@ -705,8 +726,7 @@ def _split_conversation_at_restarts(evts):
     return sub_conversations
 
 
-def _collect_messages(evts):
-    # type: (List[Dict[Text, Any]]) -> List[Message]
+def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
 
@@ -722,15 +742,16 @@ def _collect_messages(evts):
     return msgs
 
 
-def _collect_actions(evts):
-    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+def _collect_actions(evts: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
     """Collect all the `ActionExecuted` events into a list."""
 
     return [evt for evt in evts if evt.get("event") == ActionExecuted.type_name]
 
 
-def _write_stories_to_file(export_story_path, evts):
-    # type: (Text, List[Dict[Text, Any]]) -> None
+def _write_stories_to_file(
+    export_story_path: Text,
+    evts: List[Dict[Text, Any]]
+) -> None:
     """Write the conversation of the sender_id to the file paths."""
 
     sub_conversations = _split_conversation_at_restarts(evts)
@@ -742,8 +763,10 @@ def _write_stories_to_file(export_story_path, evts):
             f.write(s.as_story_string(flat=True) + "\n")
 
 
-def _write_nlu_to_file(export_nlu_path, evts):
-    # type: (Text, List[Dict[Text, Any]]) -> None
+def _write_nlu_to_file(
+    export_nlu_path: Text,
+    evts: List[Dict[Text, Any]]
+) -> None:
     """Write the nlu data of the sender_id to the file paths."""
 
     msgs = _collect_messages(evts)
@@ -792,8 +815,11 @@ def _intents_from_messages(messages):
     return [{i: {"use_entities": True}} for i in intents]
 
 
-def _write_domain_to_file(domain_path, evts, endpoint):
-    # type: (Text, List[Dict[Text, Any]], EndpointConfig) -> None
+def _write_domain_to_file(
+    domain_path: Text,
+    evts: List[Dict[Text, Any]],
+    endpoint: EndpointConfig
+) -> None:
     """Write an updated domain file to the file path."""
 
     domain = retrieve_domain(endpoint)
@@ -802,8 +828,9 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     messages = _collect_messages(evts)
     actions = _collect_actions(evts)
 
-    domain_dict = dict.fromkeys(domain.keys(), {})  # type: Dict[Text, Any]
+    domain_dict = dict.fromkeys(domain.keys(), {})
 
+    domain_dict["forms"] = []
     domain_dict["intents"] = _intents_from_messages(messages)
     domain_dict["entities"] = _entities_from_messages(messages)
     domain_dict["actions"] = list({e["name"] for e in actions})
@@ -813,13 +840,12 @@ def _write_domain_to_file(domain_path, evts, endpoint):
     old_domain.merge(new_domain).persist_clean(domain_path)
 
 
-def _predict_till_next_listen(endpoint,  # type: EndpointConfig
-                              sender_id,  # type: Text
-                              finetune,  # type: bool
-                              sender_ids,  # type: List[Text]
-                              plot_file  # type: Optional[Text]
-                              ):
-    # type: (...) -> None
+def _predict_till_next_listen(endpoint: EndpointConfig,
+                              sender_id: Text,
+                              finetune: bool,
+                              sender_ids: List[Text],
+                              plot_file: Optional[Text]
+                              ) -> None:
     """Predict and validate actions until we need to wait for a user msg."""
 
     listen = False
@@ -843,12 +869,11 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         _plot_trackers(sender_ids, plot_file, endpoint)
 
 
-def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
-                       evts,  # type: List[Dict[Text, Any]]
-                       endpoint,  # type: EndpointConfig
-                       sender_id  # type: Text
-                       ):
-    # type: (...) -> None
+def _correct_wrong_nlu(corrected_nlu: Dict[Text, Any],
+                       evts: List[Dict[Text, Any]],
+                       endpoint: EndpointConfig,
+                       sender_id: Text
+                       ) -> None:
     """A wrong NLU prediction got corrected, update core's tracker."""
 
     latest_message = latest_user_message(evts)
@@ -862,13 +887,12 @@ def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
                  latest_message.get("parse_data"))
 
 
-def _correct_wrong_action(corrected_action,  # type: Text
-                          endpoint,  # type: EndpointConfig
-                          sender_id,  # type: Text
-                          finetune=False,  # type: bool
-                          is_new_action=False  # type: bool
-                          ):
-    # type: (...) -> None
+def _correct_wrong_action(corrected_action: Text,
+                          endpoint: EndpointConfig,
+                          sender_id: Text,
+                          finetune: bool = False,
+                          is_new_action: bool = False
+                          ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
 
     response = send_action(endpoint,
@@ -933,15 +957,14 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
                    {"event": "form_validation", "validate": True})
 
 
-def _validate_action(action_name,  # type: Text
-                     policy,  # type: Text
-                     confidence,  # type: float
-                     predictions,  # type: List[Dict[Text, Any]]
-                     endpoint,  # type: EndpointConfig
-                     sender_id,  # type: Text
-                     finetune=False  # type: bool
-                     ):
-    # type: (...) -> bool
+def _validate_action(action_name: Text,
+                     policy: Text,
+                     confidence: float,
+                     predictions: List[Dict[Text, Any]],
+                     endpoint: EndpointConfig,
+                     sender_id: Text,
+                     finetune: bool = False
+                     ) -> bool:
     """Query the user to validate if an action prediction is correct.
 
     Returns `True` if the prediction is correct, `False` otherwise."""
@@ -958,7 +981,7 @@ def _validate_action(action_name,  # type: Text
 
     if not answers["action"]:
         action_name, is_new_action = _request_action_from_user(
-                predictions, sender_id, endpoint)
+            predictions, sender_id, endpoint)
     else:
         is_new_action = False
 
@@ -984,8 +1007,7 @@ def _validate_action(action_name,  # type: Text
     return action_name == ACTION_LISTEN_NAME
 
 
-def _as_md_message(parse_data):
-    # type: (Dict[Text, Any]) -> Text
+def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
@@ -997,8 +1019,8 @@ def _as_md_message(parse_data):
     return MarkdownWriter()._generate_message_md(parse_data)
 
 
-def _validate_user_regex(latest_message, intents):
-    # type: (Dict[Text, Any], List[Text]) -> bool
+def _validate_user_regex(latest_message: Dict[Text, Any],
+                         intents: List[Text]) -> bool:
     """Validate if a users message input is correct.
 
     This assumes the user entered an intent directly, e.g. using
@@ -1013,8 +1035,8 @@ def _validate_user_regex(latest_message, intents):
         return False
 
 
-def _validate_user_text(latest_message, endpoint, sender_id):
-    # type: (Dict[Text, Any], EndpointConfig, Text) -> bool
+def _validate_user_text(latest_message: Dict[Text, Any],
+                        endpoint: EndpointConfig, sender_id: Text) -> bool:
     """Validate a user message input as free text.
 
     This assumes the user message is a text message (so NOT `/greet`)."""
@@ -1037,8 +1059,9 @@ def _validate_user_text(latest_message, endpoint, sender_id):
     return answers["nlu"]
 
 
-def _validate_nlu(intents, endpoint, sender_id):
-    # type: (List[Text], EndpointConfig, Text) -> None
+def _validate_nlu(intents: List[Text],
+                  endpoint: EndpointConfig,
+                  sender_id: Text) -> None:
     """Validate if a user message, either text or intent is correct.
 
     If the prediction of the latest user message is incorrect,
@@ -1069,8 +1092,9 @@ def _validate_nlu(intents, endpoint, sender_id):
         _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id)
 
 
-def _correct_entities(latest_message, endpoint, sender_id):
-    # type: (Dict[Text, Any], EndpointConfig, Text) -> Dict[Text, Any]
+def _correct_entities(latest_message: Dict[Text, Any],
+                      endpoint: EndpointConfig,
+                      sender_id: Text) -> Dict[Text, Any]:
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
@@ -1091,8 +1115,8 @@ def _correct_entities(latest_message, endpoint, sender_id):
     return parsed.get("entities", [])
 
 
-def _enter_user_message(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> None
+def _enter_user_message(sender_id: Text,
+                        endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
     questions = [{
@@ -1110,8 +1134,8 @@ def _enter_user_message(sender_id, endpoint):
     send_message(endpoint, sender_id, answers["message"])
 
 
-def is_listening_for_message(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> bool
+def is_listening_for_message(sender_id: Text,
+                             endpoint: EndpointConfig) -> bool:
     """Check if the conversation is in need for a user message."""
 
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.APPLIED)
@@ -1124,8 +1148,8 @@ def is_listening_for_message(sender_id, endpoint):
     return False
 
 
-def _undo_latest(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> None
+def _undo_latest(sender_id: Text,
+                 endpoint: EndpointConfig) -> None:
     """Undo either the latest bot action or user message, whatever is last."""
 
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
@@ -1146,15 +1170,14 @@ def _undo_latest(sender_id, endpoint):
         replace_events(endpoint, sender_id, events_to_keep)
 
 
-def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
-                  endpoint  # type: EndpointConfig
-                  ):
-    # type: (...) -> List[List[Event]]
+def _fetch_events(sender_ids: List[Union[Text, List[Event]]],
+                  endpoint: EndpointConfig
+                  ) -> List[List[Event]]:
     """Retrieve all event trackers from the endpoint for all sender ids."""
 
     event_sequences = []
     for sender_id in sender_ids:
-        if isinstance(sender_id, six.string_types):
+        if isinstance(sender_id, str):
             tracker = retrieve_tracker(endpoint, sender_id)
             evts = tracker.get("events", [])
 
@@ -1166,10 +1189,10 @@ def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
     return event_sequences
 
 
-def _plot_trackers(sender_ids,  # type: List[Union[Text, List[Event]]]
-                   output_file,  # type: Optional[Text]
-                   endpoint,  # type: EndpointConfig
-                   unconfirmed=None  # type: Optional[List[Event]]
+def _plot_trackers(sender_ids: List[Union[Text, List[Event]]],
+                   output_file: Optional[Text],
+                   endpoint: EndpointConfig,
+                   unconfirmed: Optional[List[Event]] = None
                    ):
     """Create a plot of the trackers of the passed sender ids.
 
@@ -1197,8 +1220,7 @@ def _plot_trackers(sender_ids,  # type: List[Union[Text, List[Event]]]
     write_dot(graph, output_file)
 
 
-def _print_help(skip_visualization):
-    # type: (bool) -> None
+def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
@@ -1213,13 +1235,13 @@ def _print_help(skip_visualization):
                       "".format(visualization_help), utils.bcolors.OKGREEN)
 
 
-def record_messages(endpoint,  # type: EndpointConfig
-                    sender_id=UserMessage.DEFAULT_SENDER_ID,  # type: Text
-                    max_message_limit=None,  # type: Optional[int]
-                    on_finish=None,  # type: Optional[Callable[[], None]]
-                    finetune=False,  # type: bool
-                    stories=None,  # type: Optional[Text]
-                    skip_visualization=False  # type: bool
+def record_messages(endpoint: EndpointConfig,
+                    sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
+                    max_message_limit: Optional[int] = None,
+                    on_finish: Optional[Callable[[], None]] = None,
+                    finetune: bool = False,
+                    stories: Optional[Text] = None,
+                    skip_visualization: bool = False
                     ):
     """Read messages from the command line and print bot responses."""
 
@@ -1291,10 +1313,11 @@ def record_messages(endpoint,  # type: EndpointConfig
             on_finish()
 
 
-def _start_interactive_learning_io(endpoint, stories, on_finish,
-                                   finetune=False,
-                                   skip_visualization=False):
-    # type: (EndpointConfig, Text, Callable[[], None], bool, bool) -> None
+def _start_interactive_learning_io(endpoint: EndpointConfig,
+                                   stories: Text,
+                                   on_finish: Callable[[], None],
+                                   finetune: bool = False,
+                                   skip_visualization: bool = False) -> None:
     """Start the interactive learning message recording in a separate thread."""
 
     p = Thread(target=record_messages,
@@ -1308,11 +1331,10 @@ def _start_interactive_learning_io(endpoint, stories, on_finish,
     p.start()
 
 
-def _serve_application(app, stories,
-                       finetune=False,
-                       serve_forever=True,
-                       skip_visualization=False):
-    # type: (Flask, Text, bool, bool, bool) -> WSGIServer
+def _serve_application(app: Flask, stories: Text,
+                       finetune: bool = False,
+                       serve_forever: bool = True,
+                       skip_visualization: bool = False) -> WSGIServer:
     """Start a core server and attach the interactive learning IO."""
 
     if not skip_visualization:
@@ -1338,14 +1360,12 @@ def _serve_application(app, stories,
     return http_server
 
 
-def _add_visualization_routes(app, image_path=None):
-    # type: (Flask, Text) -> None
+def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
     """Add routes to serve the conversation visualization files."""
 
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
     def visualisation_html():
-        return send_from_directory(os.path.dirname(__file__),
-                                   'visualization.html')
+        return send_file(visualization.visualization_html_path())
 
     @app.route("/visualization.dot", methods=["GET"])
     def visualisation_png():
@@ -1357,11 +1377,11 @@ def _add_visualization_routes(app, image_path=None):
             abort(404)
 
 
-def run_interactive_learning(agent, stories,
-                             finetune=False,
-                             serve_forever=True,
-                             skip_visualization=False):
-    # type: (Agent, Text, bool, bool, bool) -> WSGIServer
+def run_interactive_learning(agent: Agent,
+                             stories: Text = None,
+                             finetune: bool = False,
+                             serve_forever: bool = True,
+                             skip_visualization: bool = False) -> WSGIServer:
     """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)

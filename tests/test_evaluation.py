@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 
 from rasa_core import evaluate
@@ -17,11 +12,11 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     img_path = os.path.join(tmpdir.strpath, "story_confmat.pdf")
 
     run_story_evaluation(
-            resource_name=DEFAULT_STORIES_FILE,
-            agent=default_agent,
-            out_directory=tmpdir.strpath,
-            max_stories=None,
-            use_e2e=False
+        resource_name=DEFAULT_STORIES_FILE,
+        agent=default_agent,
+        out_directory=tmpdir.strpath,
+        max_stories=None,
+        use_e2e=False
     )
 
     assert os.path.isfile(img_path)
@@ -30,11 +25,11 @@ def test_evaluation_image_creation(tmpdir, default_agent):
 
 def test_action_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-            DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
+        DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
     story_evaluation, num_stories = collect_story_predictions(
-                                            completed_trackers,
-                                            default_agent,
-                                            use_e2e=False)
+        completed_trackers,
+        default_agent,
+        use_e2e=False)
 
     assert not story_evaluation.evaluation_store. \
         has_prediction_target_mismatch()
@@ -44,12 +39,12 @@ def test_action_evaluation_script(tmpdir, default_agent):
 
 def test_end_to_end_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-            END_TO_END_STORY_FILE, default_agent, use_e2e=True)
+        END_TO_END_STORY_FILE, default_agent, use_e2e=True)
 
     story_evaluation, num_stories = collect_story_predictions(
-                                            completed_trackers,
-                                            default_agent,
-                                            use_e2e=True)
+        completed_trackers,
+        default_agent,
+        use_e2e=True)
 
     assert not story_evaluation.evaluation_store. \
         has_prediction_target_mismatch()

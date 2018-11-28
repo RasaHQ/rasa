@@ -1,8 +1,9 @@
 # Rasa Core
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
+[![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa_core.svg)](https://pypi.python.org/pypi/rasa_core)
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
-[![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/core)
 
 
@@ -21,6 +22,11 @@
 - **I would like to contribute 🤗**
   [How to contribute](#how-to-contribute)
 
+### Important Note
+
+Current github master version does NOT support python 2.7 anymore (neither
+will the next major release). If you want to use Rasa Core with python 
+2.7, please install the most recent version from pypi.
 
 ## Introduction
 

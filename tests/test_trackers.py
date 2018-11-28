@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import glob
 import json
 
@@ -99,15 +94,15 @@ def test_tracker_store(filename, store):
 
 def test_tracker_write_to_story(tmpdir, default_domain):
     tracker = tracker_from_dialogue_file(
-            "data/test_dialogues/enter_name.json", default_domain)
+        "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
     trackers = training.load_data(
-            p.strpath,
-            default_domain,
-            use_story_concatenation=False,
-            tracker_limit=1000,
-            remove_duplicates=False
+        p.strpath,
+        default_domain,
+        use_story_concatenation=False,
+        tracker_limit=1000,
+        remove_duplicates=False
     )
     assert len(trackers) == 1
     recovered = trackers[0]
@@ -351,7 +346,7 @@ def test_read_json_dump(default_agent):
     assert restored_tracker.events[-1].timestamp == 1517821726.211042
 
     restored_state = restored_tracker.current_state(
-            EventVerbosity.AFTER_RESTART)
+        EventVerbosity.AFTER_RESTART)
     assert restored_state == tracker_json
 
 

@@ -1,11 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 import uuid
 from typing import Optional, Text
+from typing import Optional, Text, Any, List, Dict
 
 import socketio
 from flask import Blueprint, jsonify
@@ -45,14 +41,12 @@ class SocketIOOutput(OutputChannel):
         """Sends a message to the recipient using the bot event."""
         self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
-    def send_text_message(self, recipient_id, message):
-        # type: (Text, Text) -> None
+    def send_text_message(self, recipient_id: Text, message: Text) -> None:
         """Send a message through this channel."""
 
         self._send_message(self.sid, {"text": message})
 
-    def send_image_url(self, recipient_id, image_url):
-        # type: (Text, Text) -> None
+    def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
         """Sends an image. Default will just post the url as a string."""
         message = {
             "attachment": {
@@ -62,8 +56,9 @@ class SocketIOOutput(OutputChannel):
         }
         self._send_message(self.sid, message)
 
-    def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
+    def send_text_with_buttons(self, recipient_id: Text, text: Text,
+                               buttons: List[Dict[Text, Any]],
+                               **kwargs: Any) -> None:
         """Sends buttons to the output."""
 
         message = {
@@ -80,8 +75,8 @@ class SocketIOOutput(OutputChannel):
 
         self._send_message(self.sid, message)
 
-    def send_custom_message(self, recipient_id, elements):
-        # type: (Text, List[Dict[Text, Any]]) -> None
+    def send_custom_message(self, recipient_id: Text,
+                            elements: List[Dict[Text, Any]]) -> None:
         """Sends elements to the output."""
 
         message = {"attachment": {

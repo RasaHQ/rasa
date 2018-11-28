@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import time
 
 import io
@@ -25,8 +20,7 @@ class RasaCoreClient(object):
 
     Used to retrieve information about models and conversations."""
 
-    def __init__(self, core_endpoint):
-        # type: (EndpointConfig) -> None
+    def __init__(self, core_endpoint: EndpointConfig) -> None:
 
         self.core_endpoint = core_endpoint
 
@@ -46,29 +40,29 @@ class RasaCoreClient(object):
         return result.json()
 
     def tracker(self,
-                sender_id,  # type: Text
-                domain,  # type: Domain
-                event_verbosity=EventVerbosity.ALL,  # type: EventVerbosity
-                until=None  # type: Optional[int]
+                sender_id: Text,
+                domain: Domain,
+                event_verbosity: EventVerbosity = EventVerbosity.ALL,
+                until: Optional[int] = None
                 ):
         """Retrieve and recreate a tracker fetched from the remote instance."""
 
         tracker_json = self.tracker_json(
-                sender_id, event_verbosity, until)
+            sender_id, event_verbosity, until)
 
         tracker = DialogueStateTracker.from_dict(
-                sender_id, tracker_json.get("events", []), domain.slots)
+            sender_id, tracker_json.get("events", []), domain.slots)
         return tracker
 
     def tracker_json(self,
-                     sender_id,  # type: Text
-                     event_verbosity=EventVerbosity.ALL,  # type: EventVerbosity
-                     until=None  # type: Optional[int]
+                     sender_id: Text,
+                     event_verbosity: EventVerbosity = EventVerbosity.ALL,
+                     until: Optional[int] = None
                      ):
         """Retrieve a tracker's json representation from remote instance."""
 
         url = "/conversations/{}/tracker?include_events={}".format(
-                sender_id, event_verbosity.name)
+            sender_id, event_verbosity.name)
         if until:
             url += "&until={}".format(until)
 
@@ -77,8 +71,7 @@ class RasaCoreClient(object):
         result.raise_for_status()
         return result.json()
 
-    def append_event_to_tracker(self, sender_id, event):
-        # type: (Text, Event) -> None
+    def append_event_to_tracker(self, sender_id: Text, event: Event) -> None:
         """Add some more events to the tracker of a conversation."""
 
         url = "/conversations/{}/tracker/events".format(sender_id)
@@ -88,8 +81,9 @@ class RasaCoreClient(object):
         result.raise_for_status()
         return result.json()
 
-    def respond(self, message, sender_id):
-        # type: (Text, Text) -> Optional[Dict[Text, Any]]
+    def respond(self,
+                message: Text,
+                sender_id: Text) -> Optional[Dict[Text, Any]]:
         """Send a parse request to a rasa core server."""
 
         url = "/conversations/{}/respond".format(sender_id)
@@ -97,10 +91,10 @@ class RasaCoreClient(object):
         data = json.dumps({"query": message}, ensure_ascii=False)
 
         response = self.core_endpoint.request(
-                subpath=url,
-                method="post",
-                data=data.encode("utf-8"),
-                headers={'Content-Type': 'application/json; charset=utf-8'}
+            subpath=url,
+            method="post",
+            data=data.encode("utf-8"),
+            headers={'Content-Type': 'application/json; charset=utf-8'}
         )
         if response.status_code == 200:
             return response.json()
@@ -110,8 +104,9 @@ class RasaCoreClient(object):
                                                  response.text))
             return None
 
-    def upload_model(self, model_dir, max_retries=1):
-        # type: (Text, int) -> Optional[Dict[Text, Any]]
+    def upload_model(self,
+                     model_dir: Text,
+                     max_retries: int = 1) -> Optional[Dict[Text, Any]]:
         """Upload a Rasa core model to the remote instance."""
 
         logger.debug("Uploading model to rasa core server.")
@@ -125,10 +120,10 @@ class RasaCoreClient(object):
             try:
                 with io.open(model_zip, "rb") as f:
                     response = self.core_endpoint.request(
-                            method="post",
-                            subpath="/load",
-                            files={"model": f},
-                            content_type=None)
+                        method="post",
+                        subpath="/load",
+                        files={"model": f},
+                        content_type=None)
 
                 if response.status_code == 200:
                     logger.debug("Finished uploading")

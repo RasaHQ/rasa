@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 from typing import Text, Any, Dict, Optional
 
@@ -71,8 +66,10 @@ def nlg_request_format_spec():
     }
 
 
-def nlg_request_format(template_name, tracker, output_channel, **kwargs):
-    # type: (Text, DialogueStateTracker, Text, Any) -> Dict[Text, Any]
+def nlg_request_format(template_name: Text,
+                       tracker: DialogueStateTracker,
+                       output_channel: Text,
+                       **kwargs: Any) -> Dict[Text, Any]:
     """Create the json body for the NLG json body for the request."""
 
     tracker_state = tracker.current_state(EventVerbosity.ALL)
@@ -95,13 +92,12 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
     json. The generator will use this message to create a response for
     the bot."""
 
-    def __init__(self, endpoint_config):
-        # type: (EndpointConfig) -> None
+    def __init__(self, endpoint_config: EndpointConfig) -> None:
 
         self.nlg_endpoint = endpoint_config
 
-    def generate(self, template_name, tracker, output_channel, **kwargs):
-        # type: (Text, DialogueStateTracker, Text, Any) -> Dict[Text, Any]
+    def generate(self, template_name: Text, tracker: DialogueStateTracker,
+                 output_channel: Text, **kwargs: Any) -> Dict[Text, Any]:
         """Retrieve a named template from the domain using an endpoint."""
 
         body = nlg_request_format(template_name,
@@ -123,8 +119,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
             raise Exception("NLG web endpoint returned an invalid response.")
 
     @staticmethod
-    def validate_response(content):
-        # type: (Optional[Dict[Text, Any]]) -> bool
+    def validate_response(content: Optional[Dict[Text, Any]]) -> bool:
         """Validate the NLG response. Raises exception on failure."""
 
         from jsonschema import validate

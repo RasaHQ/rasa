@@ -334,11 +334,6 @@ doctest_path = [os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))]
 
 # Make sure we are using the project root as the working directory instead of /docs
 doctest_global_setup = r'''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import logging
 import pprint
