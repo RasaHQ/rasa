@@ -12,20 +12,20 @@ help:
 
 
 train-core:
-	python3 -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 100 --debug
+	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 100 --debug
 
 run-core:
-	python3 -m rasa_core.run --core models/dialogue --nlu models/nlu/current --debug --endpoints endpoints.yml
+	python -m rasa_core.run --core models/dialogue --nlu models/nlu/current --debug --endpoints endpoints.yml
 
 run-actions:
-	python3 -m rasa_core_sdk.endpoint --actions actions
+	python -m rasa_core_sdk.endpoint --actions actions
 
 run:
 	make run-actions&
 	make run-core
 
 train-interactive:
-	python3 -m rasa_core.train interactive -s data/stories.md -d domain.yml -o models/dialogue --endpoints endpoints.yml
+	python -m rasa_core.train interactive -s data/stories.md -d domain.yml -o models/dialogue --debug --endpoints endpoints.yml
 
 visualize:
 	python -m rasa_core.visualize -s data/stories.md -d domain.yml -o story_graph.html
