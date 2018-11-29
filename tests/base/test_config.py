@@ -71,7 +71,7 @@ def test_set_attr_on_component(default_config):
     assert cfg.for_component("tokenizer_spacy") == {"name": "tokenizer_spacy"}
 
 
-def test_override_defaults():
+def test_override_defaults_tensorflow_embedding_pipeline():
     cfg = config.load("sample_configs/embedding_advanced.yml")
     builder = ComponentBuilder()
 
