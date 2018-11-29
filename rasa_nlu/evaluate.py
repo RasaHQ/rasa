@@ -62,8 +62,10 @@ def create_argument_parser():
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
 
-    parser.add_argument('--successes', required=False, default="successes.json",
-                        help="output path for the json with successful predictions")
+    parser.add_argument('--successes', required=False,
+                        default="successes.json",
+                        help="output path for the json with successful \
+                        predictions")
 
     parser.add_argument('--errors', required=False, default="errors.json",
                         help="output path for the json with wrong predictions")
@@ -214,33 +216,27 @@ def drop_intents_below_freq(td, cutoff=5):
 
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
-def save_nlu_successes(successes, filename):
-    """Write out nlu classification successes to a file."""
+
+def save_json(data, filename):
+    """Write out nlu classification to a file."""
 
     utils.write_to_file(filename,
-                        json.dumps(successes, indent=4, ensure_ascii=False))
-    logger.info("Model prediction successes saved to {}.".format(filename))
+                        json.dumps(data, indent=4, ensure_ascii=False))
 
-
-def save_nlu_errors(errors, filename):
-    """Write out nlu classification errors to a file."""
-
-    utils.write_to_file(filename,
-                        json.dumps(errors, indent=4, ensure_ascii=False))
-    logger.info("Model prediction errors saved to {}.".format(filename))
 
 def collect_nlu_successes(intent_results):  # pragma: no cover
-    """Log messages which result in successful predictions and save them to file"""
+    """Log messages which result in successful predictions
+    and save them to file"""
 
     # it could be interesting to include entity-successes later
     # therefore we start with a "intent_successes" key
     intent_successes = [{"text": r.message,
-                      "intent": r.target,
-                      "intent_prediction": {
-                          "name": r.prediction,
-                          "confidence": r.confidence
-                      }}
-                     for r in intent_results if r.target == r.prediction]
+                        "intent": r.target,
+                        "intent_prediction": {
+                            "name": r.prediction,
+                            "confidence": r.confidence
+                        }}
+                        for r in intent_results if r.target == r.prediction]
 
     if intent_successes:
         return {'intent_successes': intent_successes}
@@ -323,10 +319,12 @@ def evaluate_intents(intent_results,
     errors = collect_nlu_errors(intent_results)
 
     if successes and successes_filename:
-        save_nlu_successes(successes, successes_filename)
+        save_json(successes, successes_filename)
+        logger.info("Model prediction successes saved to {}.".format(successes_filename))
 
     if errors and errors_filename:
-        save_nlu_errors(errors, errors_filename)
+        save_json(errors, errors_filename)
+        logger.info("Model prediction errors saved to {}.".format(errors_filename))
 
     if confmat_filename:
         from sklearn.metrics import confusion_matrix
@@ -955,4 +953,3 @@ def main():
 
 if __name__ == '__main__':  # pragma: no cover
     main()
-
