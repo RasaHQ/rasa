@@ -26,6 +26,18 @@ Fixed
 - fix error during interactive learning which was caused by actions which
   dispatched messages using ``dispatcher.utter_custom_message``
 
+
+[0.12.3]
+^^^^^^^^
+
+Added
+-----
+- added scipy dependency
+
+Removed
+-------
+- removed keras dependency, since keras_policy uses tf.keras
+
 [0.12.2] - 2018-11-20
 ^^^^^^^^^^^^^^^^^^^^^
 
