@@ -154,7 +154,7 @@ def add_general_args(parser):
         action='store_true',
         help="If enabled, will create plots showing checkpoints "
              "and their connections between story blocks in a  "
-             "file called `story_blocks_connections.pdf`.")
+             "file called `story_blocks_connections.html`.")
 
     utils.add_logging_option_arguments(parser)
 

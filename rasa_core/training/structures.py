@@ -708,7 +708,7 @@ class StoryGraph(object):
                            label=utils.cap_length(step.block_name),
                            style="filled",
                            fillcolor="lightblue",
-                           shape="box")
+                           shape="rect")
 
             for c in step.start_checkpoints:
                 ensure_checkpoint_is_drawn(c)
