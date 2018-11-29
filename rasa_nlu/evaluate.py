@@ -231,17 +231,18 @@ def collect_nlu_successes(intent_results):  # pragma: no cover
     # it could be interesting to include entity-successes later
     # therefore we start with a "intent_successes" key
     intent_successes = [{"text": r.message,
-                        "intent": r.target,
-                        "intent_prediction": {
+                         "intent": r.target,
+                         "intent_prediction": {
                             "name": r.prediction,
                             "confidence": r.confidence
-                        }}
+                         }}
                         for r in intent_results if r.target == r.prediction]
 
     if intent_successes:
         return {'intent_successes': intent_successes}
     else:
         return None
+
 
 def collect_nlu_errors(intent_results):  # pragma: no cover
     """Log messages which result in wrong predictions and save them to file"""
@@ -320,11 +321,13 @@ def evaluate_intents(intent_results,
 
     if successes and successes_filename:
         save_json(successes, successes_filename)
-        logger.info("Model prediction successes saved to {}.".format(successes_filename))
+        logger.info("Model prediction successes saved to {}." \
+        .format(successes_filename))
 
     if errors and errors_filename:
         save_json(errors, errors_filename)
-        logger.info("Model prediction errors saved to {}.".format(errors_filename))
+        logger.info("Model prediction errors saved to {}." \
+        .format(errors_filename))
 
     if confmat_filename:
         from sklearn.metrics import confusion_matrix
