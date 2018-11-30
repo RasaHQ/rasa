@@ -48,7 +48,8 @@ SessionData = namedtuple("SessionData", ("X", "Y", "slots",
 
 class EmbeddingPolicy(Policy):
     """Recurrent Embedding Dialogue Policy (REDP)
-        from our paper https://arxiv.org/abs/1811.11707
+
+    The policy that is used in our paper https://arxiv.org/abs/1811.11707
     """
 
     SUPPORTS_ONLINE_TRAINING = True
@@ -287,8 +288,11 @@ class EmbeddingPolicy(Policy):
         self,
         data_X: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Extract feature vectors for user input (X), slots and
-            previously executed actions from training data."""
+        """Extract feature vectors
+
+        for user input (X), slots and
+        previously executed actions from training data.
+        """
 
         featurizer = self.featurizer.state_featurizer
         slot_start = featurizer.user_feature_len
@@ -309,6 +313,7 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _action_features_for_Y(self, actions_for_Y: np.ndarray) -> np.ndarray:
         """Prepare Y data for training: features for action labels."""
+
         return np.stack([np.stack([self.encoded_all_actions[action_idx]
                                    for action_idx in action_ids])
                          for action_ids in actions_for_Y])
@@ -316,7 +321,8 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     @staticmethod
     def _create_zero_vector(X: np.ndarray) -> np.ndarray:
-        """Create zero vector of shape (1, X.shape[-1])"""
+        """Create zero vector of shape (1, X.shape[-1])."""
+
         return np.zeros((1, X.shape[-1]), X.dtype)
 
     def _create_y_for_action_listen(self, domain: 'Domain') -> np.ndarray:
@@ -328,8 +334,11 @@ class EmbeddingPolicy(Policy):
     # noinspection PyPep8Naming
     def _create_all_Y_d(self, dialogue_len: int) -> np.ndarray:
         """Stack encoded_all_intents on top of each other
-            to create candidates for training examples
-            to calculate training accuracy"""
+
+        to create candidates for training examples and
+        to calculate training accuracy.
+        """
+
         return np.stack([self.encoded_all_actions] * dialogue_len)
 
     # noinspection PyPep8Naming
@@ -376,7 +385,7 @@ class EmbeddingPolicy(Policy):
                       layer_sizes: List,
                       droprate: float,
                       layer_name_suffix: Text) -> tf.Tensor:
-        """Create nn with hidden layers and name suffix"""
+        """Create nn with hidden layers and name suffix."""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         x = tf.nn.relu(x_in)
@@ -408,7 +417,7 @@ class EmbeddingPolicy(Policy):
         return embed_x
 
     def _create_tf_user_embed(self, a_in: tf.Tensor) -> tf.Tensor:
-        """Create embedding user vector"""
+        """Create embedding user vector."""
 
         layer_name_suffix = 'a_and_b' if self.share_embedding else 'a'
 
@@ -421,7 +430,7 @@ class EmbeddingPolicy(Policy):
         return self._create_embed(a, layer_name_suffix=layer_name_suffix)
 
     def _create_tf_bot_embed(self, b_in: tf.Tensor) -> tf.Tensor:
-        """Create embedding bot vector"""
+        """Create embedding bot vector."""
 
         layer_name_suffix = 'a_and_b' if self.share_embedding else 'b'
 
@@ -435,7 +444,7 @@ class EmbeddingPolicy(Policy):
 
     def _create_tf_no_intent_embed(self,
                                    x_for_no_intent_i: tf.Tensor) -> tf.Tensor:
-        """Create embedding user vector for empty intent"""
+        """Create embedding user vector for empty intent."""
 
         layer_name_suffix = 'a_and_b' if self.share_embedding else 'a'
 
@@ -451,7 +460,7 @@ class EmbeddingPolicy(Policy):
 
     def _create_tf_no_action_embed(self,
                                    y_for_no_action_in: tf.Tensor) -> tf.Tensor:
-        """Create embedding bot vector for empty action and action_listen"""
+        """Create embedding bot vector for empty action and action_listen."""
 
         layer_name_suffix = 'a_and_b' if self.share_embedding else 'b'
 
@@ -467,7 +476,7 @@ class EmbeddingPolicy(Policy):
 
     def _create_rnn_cell(self):
         # type: () -> tf.contrib.rnn.RNNCell
-        """Create one rnn cell"""
+        """Create one rnn cell."""
 
         # chrono initialization for forget bias
         # assuming that characteristic time is max dialogue length
@@ -520,7 +529,7 @@ class EmbeddingPolicy(Policy):
 
     def cell_input_fn(self, rnn_inputs: tf.Tensor, attention: tf.Tensor,
                       num_cell_input_memory_units: int) -> tf.Tensor:
-        """Combine rnn inputs and attention into cell input
+        """Combine rnn inputs and attention into cell input.
 
         Args:
           rnn_inputs: Tensor, first output from `rnn_and_attn_inputs_fn`.
@@ -532,7 +541,7 @@ class EmbeddingPolicy(Policy):
                                        enhancing cell input.
 
         Returns:
-          A Tensor `cell_inputs` to feed to an rnn cell
+          A Tensor `cell_inputs` to feed to an rnn cell.
         """
 
         if num_cell_input_memory_units:
@@ -562,17 +571,17 @@ class EmbeddingPolicy(Policy):
                                inputs: tf.Tensor,
                                cell_state: tf.Tensor
                                ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Construct rnn input and attention mechanism input
+        """Construct rnn input and attention mechanism input.
 
         Args:
           inputs: Tensor, concatenated all embeddings for one time step:
                   [embed_utter, embed_slots, embed_prev_action].
 
-          cell_state: Tensor, state of an rnn cell
+          cell_state: Tensor, state of an rnn cell.
 
         Returns:
           Tuple of Tensors `rnn_inputs, attn_inputs` to feed to
-          rnn and attention mechanisms
+          rnn and attention mechanisms.
         """
 
         # the hidden state c and slots are not included,
@@ -601,7 +610,7 @@ class EmbeddingPolicy(Policy):
                           embed_for_no_action: tf.Tensor,
                           embed_for_action_listen: tf.Tensor
                           ) -> tf.contrib.rnn.RNNCell:  # type:
-        """Wrap cell in attention wrapper with given memory"""
+        """Wrap cell in attention wrapper with given memory."""
 
         if self.attn_before_rnn:
             # create attention over previous user input
@@ -686,7 +695,7 @@ class EmbeddingPolicy(Policy):
             embed_for_no_action: tf.Tensor,
             embed_for_action_listen: tf.Tensor
     ) -> Tuple[tf.Tensor, Union[tf.Tensor, 'TimeAttentionWrapperState']]:
-        """Create rnn for dialogue level embedding"""
+        """Create rnn for dialogue level embedding."""
 
         cell_input = tf.concat([embed_utter, embed_slots,
                                 embed_prev_action], -1)
@@ -713,7 +722,7 @@ class EmbeddingPolicy(Policy):
     def _alignments_history_from(
         final_state: 'TimeAttentionWrapperState'
     ) -> tf.Tensor:
-        """Extract alignments history form final rnn cell state"""
+        """Extract alignments history form final rnn cell state."""
 
         alignments_from_state = final_state.alignment_history
         if not isinstance(alignments_from_state, tuple):
@@ -731,7 +740,7 @@ class EmbeddingPolicy(Policy):
     def _all_time_masks_from(
         final_state: 'TimeAttentionWrapperState'
     ) -> tf.Tensor:
-        """Extract all time masks form final rnn cell state"""
+        """Extract all time masks form final rnn cell state."""
 
         # reshape to (batch, time, memory_time) and ignore last time
         # because time_mask is created for the next time step
@@ -739,7 +748,7 @@ class EmbeddingPolicy(Policy):
                             [1, 0, 2])[:, :-1, :]
 
     def _sims_rnn_to_max_from(self, cell_output: tf.Tensor) -> List[tf.Tensor]:
-        """Save intermediate tensors for debug purposes"""
+        """Save intermediate tensors for debug purposes."""
 
         if self.attn_after_rnn:
             # extract additional debug tensors
@@ -755,7 +764,7 @@ class EmbeddingPolicy(Policy):
 
     def _embed_dialogue_from(self,
                              cell_output: tf.Tensor) -> tf.Tensor:
-        """Extract or calculate dialogue level embedding from cell_output"""
+        """Extract or calculate dialogue level embedding from cell_output."""
 
         if self.attn_after_rnn:
             # embedding layer is inside rnn cell
@@ -788,17 +797,18 @@ class EmbeddingPolicy(Policy):
                 embed_action: tf.Tensor,
                 mask: Optional[tf.Tensor]
                 ) -> Tuple[tf.Tensor, tf.Tensor]:
-        """Define similarity
-            this method has two roles:
-            - calculate similarity between
-                two embedding vectors of the same size
-                and output binary mask and similarity
-            - calculate similarity with several embedded actions for the loss
-                and output similarities between user input and bot actions
-                and similarities between bot actions
+        """Define similarity.
 
-            They are kept in the same helper method,
-            because it is necessary for them to be mathematically identical
+        This method has two roles:
+        - calculate similarity between
+            two embedding vectors of the same size
+            and output binary mask and similarity;
+        - calculate similarity with several embedded actions for the loss
+            and output similarities between user input and bot actions
+            and similarities between bot actions.
+
+        They are kept in the same helper method,
+        because it is necessary for them to be mathematically identical.
         """
 
         if self.similarity_type == 'cosine':
@@ -842,7 +852,8 @@ class EmbeddingPolicy(Policy):
 
     def _regularization_loss(self):
         # type: () -> Union[tf.Tensor, int]
-        """Add regularization to the embed layer inside rnn cell"""
+        """Add regularization to the embed layer inside rnn cell."""
+
         if self.attn_after_rnn:
             return self.C2 * tf.add_n(
                 [tf.nn.l2_loss(tf_var)
@@ -858,7 +869,7 @@ class EmbeddingPolicy(Policy):
                  sims_rnn_to_max: List[tf.Tensor],
                  mask: tf.Tensor
                  ) -> tf.Tensor:
-        """Define loss"""
+        """Define loss."""
 
         # loss for maximizing similarity with correct action
         loss = tf.maximum(0., self.mu_pos - sim[:, :, 0])
@@ -904,7 +915,7 @@ class EmbeddingPolicy(Policy):
               domain: Domain,
               **kwargs: Any
               ) -> None:
-        """Trains the policy on given training trackers."""
+        """Train the policy on given training trackers."""
 
         logger.debug('Started training embedding policy.')
 
@@ -1039,7 +1050,10 @@ class EmbeddingPolicy(Policy):
     # training helpers
     def _linearly_increasing_batch_size(self, epoch: int) -> int:
         """Linearly increase batch size with every epoch.
-            The idea comes from https://arxiv.org/abs/1711.00489"""
+
+        The idea comes from https://arxiv.org/abs/1711.00489.
+        """
+
         if not isinstance(self.batch_size, list):
             return int(self.batch_size)
 
@@ -1054,8 +1068,11 @@ class EmbeddingPolicy(Policy):
                         batch_pos_b: np.ndarray,
                         intent_ids: np.ndarray
                         ) -> np.ndarray:
-        """Create batch of actions, where the first is correct action
-            and the rest are wrong actions sampled randomly"""
+        """Create batch of actions.
+
+        The first is correct action
+        and the rest are wrong actions sampled randomly.
+        """
 
         batch_pos_b = batch_pos_b[:, :, np.newaxis, :]
 
@@ -1088,8 +1105,8 @@ class EmbeddingPolicy(Policy):
                                      previous_actions: np.ndarray,
                                      actions_for_Y: np.ndarray
                                      ) -> Union[np.ndarray, List[List]]:
-        """Count number of repeated actions and
-            output inverse proportionality"""
+        """Calculate inverse proportionality of repeated actions."""
+
         if self.scale_loss_by_action_counts:
             full_X = np.concatenate([X, slots, previous_actions,
                                      actions_for_Y[:, :, np.newaxis]], -1)
@@ -1110,7 +1127,7 @@ class EmbeddingPolicy(Policy):
                   session_data: SessionData,
                   loss: tf.Tensor,
                   mask: tf.Tensor) -> None:
-        """Train tf graph"""
+        """Train tf graph."""
 
         self.session.run(tf.global_variables_initializer())
 
@@ -1201,7 +1218,7 @@ class EmbeddingPolicy(Policy):
     def _calc_train_acc(self,
                         session_data: SessionData,
                         mask: tf.Tensor) -> np.float32:
-        """Calculate training accuracy"""
+        """Calculate training accuracy."""
 
         # choose n examples to calculate train accuracy
         n = self.evaluate_on_num_examples
@@ -1234,7 +1251,7 @@ class EmbeddingPolicy(Policy):
                           training_trackers: List[DialogueStateTracker],
                           domain: Domain,
                           **kwargs: Any) -> None:
-        """Continues training an already trained policy."""
+        """Continue training an already trained policy."""
 
         batch_size = kwargs.get("batch_size", 5)
         epochs = kwargs.get("epochs", 50)
@@ -1280,10 +1297,10 @@ class EmbeddingPolicy(Policy):
     def predict_action_probabilities(self,
                                      tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
-        """Predicts the next action the bot should take
-            after seeing the tracker.
+        """Predict the next action the bot should take.
 
-            Returns the list of probabilities for the next actions"""
+        Return the list of probabilities for the next actions.
+        """
 
         if self.session is None:
             logger.error("There is no trained tf.session: "
