@@ -6,11 +6,8 @@ from __future__ import unicode_literals
 import tempfile
 
 import pytest
-from typing import Text
 
-import rasa_nlu
 from rasa_nlu import config, utils
-from rasa_nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa_nlu.registry import registered_pipeline_templates
 from rasa_nlu.components import ComponentBuilder
 from tests.conftest import CONFIG_DEFAULTS_PATH
@@ -32,17 +29,18 @@ def test_blank_config():
 
 def test_invalid_config_json():
     file_config = """pipeline: [spacy_sklearn"""  # invalid yaml
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json") as f:
+    with tempfile.NamedTemporaryFile("w+",
+                                     suffix="_tmp_config_file.json") as f:
         f.write(file_config)
         f.flush()
-        with pytest.raises(rasa_nlu.config.InvalidConfigError):
+        with pytest.raises(config.InvalidConfigError):
             config.load(f.name)
 
 
 def test_invalid_pipeline_template():
     args = {"pipeline": "my_made_up_name"}
     f = write_file_config(args)
-    with pytest.raises(InvalidConfigError) as execinfo:
+    with pytest.raises(config.InvalidConfigError) as execinfo:
         config.load(f.name)
     assert "unknown pipeline template" in str(execinfo.value)
 
@@ -57,7 +55,7 @@ def test_pipeline_looksup_registry():
 
 
 def test_default_config_file():
-    final_config = RasaNLUModelConfig()
+    final_config = config.RasaNLUModelConfig()
     assert len(final_config) > 1
 
 

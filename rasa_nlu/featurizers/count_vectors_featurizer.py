@@ -27,7 +27,7 @@ class CountVectorsFeaturizer(Featurizer):
         All tokens which consist only of digits (e.g. 123 and 99
         but not ab12d) will be represented by a single feature.
 
-        Set analyzer` to `char_wb`
+        Set `analyzer` to 'char_wb'
         to use the idea of Subword Semantic Hashing
         from https://arxiv.org/abs/1810.07150.
     """
