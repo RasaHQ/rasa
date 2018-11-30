@@ -22,14 +22,14 @@ logger = logging.getLogger(__name__)
 class CountVectorsFeaturizer(Featurizer):
     """Bag of words featurizer
 
-        Creates bag-of-words representation of intent features
-        using sklearn's `CountVectorizer`.
-        All tokens which consist only of digits (e.g. 123 and 99
-        but not ab12d) will be represented by a single feature.
+    Creates bag-of-words representation of intent features
+    using sklearn's `CountVectorizer`.
+    All tokens which consist only of digits (e.g. 123 and 99
+    but not ab12d) will be represented by a single feature.
 
-        Set `analyzer` to 'char_wb'
-        to use the idea of Subword Semantic Hashing
-        from https://arxiv.org/abs/1810.07150.
+    Set `analyzer` to 'char_wb'
+    to use the idea of Subword Semantic Hashing
+    from https://arxiv.org/abs/1810.07150.
     """
 
     name = "intent_featurizer_count_vectors"
@@ -135,17 +135,7 @@ class CountVectorsFeaturizer(Featurizer):
             if self.OOV_words:
                 self.OOV_words = [w.lower() for w in self.OOV_words]
 
-    def __init__(self, component_config=None):
-        """Construct a new count vectorizer using the sklearn framework."""
-
-        super(CountVectorsFeaturizer, self).__init__(component_config)
-
-        # parameters for sklearn's CountVectorizer
-        self._load_count_vect_params()
-
-        # handling Out-Of-Vacabulary (OOV) words
-        self._load_OOV_params()
-
+    def _check_analyzer(self):
         if self.analyzer != 'word':
             if self.OOV_token is not None:
                 logger.warning("Analyzer is set to character, "
@@ -159,11 +149,26 @@ class CountVectorsFeaturizer(Featurizer):
                                "It means that the vocabulary will "
                                "contain single letters only.")
 
+    def __init__(self, component_config=None):
+        """Construct a new count vectorizer using the sklearn framework."""
+
+        super(CountVectorsFeaturizer, self).__init__(component_config)
+
+        # parameters for sklearn's CountVectorizer
+        self._load_count_vect_params()
+
+        # handling Out-Of-Vacabulary (OOV) words
+        self._load_OOV_params()
+
+        # warn that some of config parameters might be ignored
+        self._check_analyzer()
+
         # declare class instance for CountVectorizer
         self.vect = None
 
     def _tokenizer(self, text):
-        """Override tokenizer in CountVectorizer"""
+        """Override tokenizer in CountVectorizer."""
+
         text = re.sub(r'\b[0-9]+\b', '__NUMBER__', text)
 
         token_pattern = re.compile(self.token_pattern)
@@ -209,8 +214,12 @@ class CountVectorsFeaturizer(Featurizer):
 
     def train(self, training_data, cfg=None, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, Any) -> None
-        """Take parameters from config and
-            construct a new count vectorizer using the sklearn framework."""
+        """Train the featurizer.
+
+        Take parameters from config and
+        construct a new count vectorizer using the sklearn framework.
+        """
+
         from sklearn.feature_extraction.text import CountVectorizer
 
         spacy_nlp = kwargs.get("spacy_nlp")
@@ -267,7 +276,9 @@ class CountVectorsFeaturizer(Featurizer):
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory.
-        Returns the metadata necessary to load the model again."""
+
+        Returns the metadata necessary to load the model again.
+        """
 
         featurizer_file = os.path.join(model_dir, self.name + ".pkl")
         utils.pycloud_pickle(featurizer_file, self)

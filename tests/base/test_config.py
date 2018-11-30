@@ -70,7 +70,7 @@ def test_set_attr_on_component(default_config):
 
 
 def test_override_defaults_tensorflow_embedding_pipeline():
-    cfg = config.load("sample_configs/embedding_advanced.yml")
+    cfg = config.load("data/test/config_embedding_test.yml")
     builder = ComponentBuilder()
 
     name1 = "intent_featurizer_count_vectors"
