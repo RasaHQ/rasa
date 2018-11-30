@@ -98,7 +98,7 @@ class TwilioInput(InputChannel):
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))
-                    logger.error(e, exc_info=True)
+                    logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise
                     pass

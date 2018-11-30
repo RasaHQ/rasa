@@ -16,7 +16,7 @@ from threading import Thread
 from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
 
 from rasa_core import utils, server, events, constants
-from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string
@@ -38,6 +38,11 @@ from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
+
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
@@ -172,14 +177,19 @@ def send_action(
         return _response_as_json(r)
     except requests.exceptions.HTTPError:
         if is_new_action:
-            logger.warning("You have created a new action: {} "
-                           "which was not successfully executed. \n"
+            warning_questions = [{
+                "name": "warning",
+                "type": "confirm",
+                "message": "WARNING: You have created a new action: '{}', "
+                           "which was not successfully executed. "
                            "If this action does not return any events, "
-                           "you do not need to do anything. \n"
+                           "you do not need to do anything. "
                            "If this is a custom action which returns events, "
                            "you are recommended to implement this action "
                            "in your action server and try again."
-                           "".format(action_name))
+                           "".format(action_name)
+            }]
+            _ask_questions(warning_questions, sender_id, endpoint)
 
             payload = ActionExecuted(action_name).as_dict()
 
@@ -745,7 +755,9 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
 def _collect_actions(evts: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
     """Collect all the `ActionExecuted` events into a list."""
 
-    return [evt for evt in evts if evt.get("event") == ActionExecuted.type_name]
+    return [evt
+            for evt in evts
+            if evt.get("event") == ActionExecuted.type_name]
 
 
 def _write_stories_to_file(
@@ -805,7 +817,7 @@ def _entities_from_messages(messages):
 
 
 def _intents_from_messages(messages):
-    """Return all intents that occur in atleast one of the messages."""
+    """Return all intents that occur in at least one of the messages."""
 
     # set of distinct intents
     intents = {m.data["intent"]
@@ -828,12 +840,16 @@ def _write_domain_to_file(
     messages = _collect_messages(evts)
     actions = _collect_actions(evts)
 
-    domain_dict = dict.fromkeys(domain.keys(), {})
+    domain_dict = dict.fromkeys(domain.keys(), [])
 
+    # TODO for now there is no way to distinguish between action and form
     domain_dict["forms"] = []
     domain_dict["intents"] = _intents_from_messages(messages)
     domain_dict["entities"] = _entities_from_messages(messages)
-    domain_dict["actions"] = list({e["name"] for e in actions})
+    # do not automatically add default actions to the domain dict
+    domain_dict["actions"] = list({e["name"]
+                                   for e in actions
+                                   if e["name"] not in default_action_names()})
 
     new_domain = Domain.from_dict(domain_dict)
 
@@ -943,7 +959,7 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
         # handle contradiction with learned behaviour
         warning_questions = [{
             "name": "warning",
-            "type": "input",
+            "type": "confirm",
             "message": "ERROR: FormPolicy predicted no form validation "
                        "based on previous training stories. "
                        "Make sure to remove contradictory stories "
@@ -1318,8 +1334,8 @@ def _start_interactive_learning_io(endpoint: EndpointConfig,
                                    on_finish: Callable[[], None],
                                    finetune: bool = False,
                                    skip_visualization: bool = False) -> None:
-    """Start the interactive learning message recording in a separate thread."""
-
+    """Start the interactive learning message recording in a separate thread.
+    """
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
