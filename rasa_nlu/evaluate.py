@@ -321,13 +321,13 @@ def evaluate_intents(intent_results,
 
     if successes and successes_filename:
         save_json(successes, successes_filename)
-        logger.info("Model prediction successes saved to {}." \
-        .format(successes_filename))
+        logger.info("Model prediction successes saved to {}."
+                    .format(successes_filename))
 
     if errors and errors_filename:
         save_json(errors, errors_filename)
-        logger.info("Model prediction errors saved to {}." \
-        .format(errors_filename))
+        logger.info("Model prediction errors saved to {}."
+                    .format(errors_filename))
 
     if confmat_filename:
         from sklearn.metrics import confusion_matrix
