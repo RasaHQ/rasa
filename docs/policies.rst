@@ -221,6 +221,9 @@ or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 Embedding policy
 ----------------
 
+The Recurrent Embedding Dialogue Policy (REDP)
+described in our paper: `<https://arxiv.org/abs/1811.11707>`_
+
 This policy has a pre-defined architecture, which comprises the
 following steps:
 
@@ -251,8 +254,8 @@ following steps:
       state with the one from the time when this action happened;
     - for each LSTM time step, calculate the similarity between the
       dialogue embedding and embedded system actions.
-      This step is based on the starspace idea from:
-      `<https://arxiv.org/abs/1709.03856>`_.
+      This step is based on the
+      `starspace idea <https://arxiv.org/abs/1709.03856>`_.
 
 .. note::
 
