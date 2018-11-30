@@ -297,9 +297,9 @@ class Domain(object):
         This method resolves the index to the actions name."""
 
         if self.num_actions <= index or index < 0:
-            raise IndexError(
-                    "Cannot access action at index {}. "
-                    "Domain has {} actions.".format(index, self.num_actions))
+            raise IndexError("Cannot access action at index {}. "
+                             "Domain has {} actions."
+                             "".format(index, self.num_actions))
 
         return self.action_for_name(self.action_names[index],
                                     action_endpoint)
@@ -319,11 +319,11 @@ class Domain(object):
     def _raise_action_not_found_exception(self, action_name):
         action_names = "\n".join(["\t - {}".format(a)
                                   for a in self.action_names])
-        raise NameError(
-                "Cannot access action '{}', "
-                "as that name is not a registered action for this domain. "
-                "Available actions are: \n{}"
-                "".format(action_name, action_names))
+        raise NameError("Cannot access action '{}', "
+                        "as that name is not a registered "
+                        "action for this domain. "
+                        "Available actions are: \n{}"
+                        "".format(action_name, action_names))
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
