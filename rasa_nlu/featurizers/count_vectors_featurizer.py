@@ -22,10 +22,15 @@ logger = logging.getLogger(__name__)
 class CountVectorsFeaturizer(Featurizer):
     """Bag of words featurizer
 
-    Creates bag-of-words representation of intent features
-    using sklearn's `CountVectorizer`.
-    All tokens which consist only of digits (e.g. 123 and 99
-    but not ab12d) will be represented by a single feature."""
+        Creates bag-of-words representation of intent features
+        using sklearn's `CountVectorizer`.
+        All tokens which consist only of digits (e.g. 123 and 99
+        but not ab12d) will be represented by a single feature.
+
+        To use the idea of Subword Semantic Hashing
+        from https://arxiv.org/abs/1810.07150
+        set analyzer` to `char_wb`.
+    """
 
     name = "intent_featurizer_count_vectors"
 

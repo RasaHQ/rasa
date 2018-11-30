@@ -142,6 +142,7 @@ intent_featurizer_count_vectors
     .. note::
         Option ‘char_wb’ creates character n-grams only from text inside word boundaries;
         n-grams at the edges of words are padded with space.
+        This option can be used to create `Subword Semantic Hashing <https://arxiv.org/abs/1810.07150>`_
 
     .. note::
         For character n-grams do not forget to increase ``min_ngram`` and ``max_ngram`` parameters.
