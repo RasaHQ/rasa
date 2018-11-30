@@ -47,6 +47,10 @@ SessionData = namedtuple("SessionData", ("X", "Y", "slots",
 
 
 class EmbeddingPolicy(Policy):
+    """Recurrent Embedding Dialogue Policy (REDP)
+        from our paper https://arxiv.org/abs/1811.11707
+    """
+
     SUPPORTS_ONLINE_TRAINING = True
 
     # default properties (DOC MARKER - don't remove)
@@ -672,15 +676,16 @@ class EmbeddingPolicy(Policy):
             alignment_history=True
         )
 
-    def _create_tf_dial_embed(self,
-                              embed_utter: tf.Tensor,
-                              embed_slots: tf.Tensor,
-                              embed_prev_action: tf.Tensor,
-                              mask: tf.Tensor,
-                              embed_for_no_intent: tf.Tensor,
-                              embed_for_no_action: tf.Tensor,
-                              embed_for_action_listen: tf.Tensor
-                              ) -> Tuple[tf.Tensor, tf.Tensor]:
+    def _create_tf_dial_embed(
+            self,
+            embed_utter: tf.Tensor,
+            embed_slots: tf.Tensor,
+            embed_prev_action: tf.Tensor,
+            mask: tf.Tensor,
+            embed_for_no_intent: tf.Tensor,
+            embed_for_no_action: tf.Tensor,
+            embed_for_action_listen: tf.Tensor
+    ) -> Tuple[tf.Tensor, Union[tf.Tensor, 'TimeAttentionWrapperState']]:
         """Create rnn for dialogue level embedding"""
 
         cell_input = tf.concat([embed_utter, embed_slots,
@@ -706,7 +711,7 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _alignments_history_from(
-        final_state: tf.contrib.seq2seq.AttentionWrapperState
+        final_state: 'TimeAttentionWrapperState'
     ) -> tf.Tensor:
         """Extract alignments history form final rnn cell state"""
 
@@ -733,7 +738,7 @@ class EmbeddingPolicy(Policy):
         return tf.transpose(final_state.all_time_masks.stack(),
                             [1, 0, 2])[:, :-1, :]
 
-    def _sim_rnn_to_max_from(self, cell_output: tf.Tensor) -> List[tf.Tensor]:
+    def _sims_rnn_to_max_from(self, cell_output: tf.Tensor) -> List[tf.Tensor]:
         """Save intermediate tensors for debug purposes"""
 
         if self.attn_after_rnn:
@@ -781,7 +786,7 @@ class EmbeddingPolicy(Policy):
     def _tf_sim(self,
                 embed_dialogue: tf.Tensor,
                 embed_action: tf.Tensor,
-                mask: tf.Tensor
+                mask: Optional[tf.Tensor]
                 ) -> Tuple[tf.Tensor, tf.Tensor]:
         """Define similarity
             this method has two roles:
@@ -850,7 +855,7 @@ class EmbeddingPolicy(Policy):
     def _tf_loss(self,
                  sim: tf.Tensor,
                  sim_act: tf.Tensor,
-                 sim_rnn_to_max: tf.Tensor,
+                 sims_rnn_to_max: List[tf.Tensor],
                  mask: tf.Tensor
                  ) -> tf.Tensor:
         """Define loss"""
@@ -877,8 +882,8 @@ class EmbeddingPolicy(Policy):
         loss += loss_act * self.C_emb
 
         # maximize similarity returned by time attention wrapper
-        for sim_to_add in sim_rnn_to_max:
-            loss += tf.maximum(0., 1. - sim_to_add)
+        for sim_to_add in sims_rnn_to_max:
+            loss += tf.maximum(0., - sim_to_add + 1.)
 
         # mask loss for different length sequences
         loss *= mask
@@ -1014,14 +1019,14 @@ class EmbeddingPolicy(Policy):
 
                 self.all_time_masks = self._all_time_masks_from(final_state)
 
-            sim_rnn_to_max = self._sim_rnn_to_max_from(cell_output)
+            sims_rnn_to_max = self._sims_rnn_to_max_from(cell_output)
             self.dial_embed = self._embed_dialogue_from(cell_output)
 
             # calculate similarities
             self.sim_op, sim_act = self._tf_sim(self.dial_embed,
                                                 self.bot_embed, mask)
             # construct loss
-            loss = self._tf_loss(self.sim_op, sim_act, sim_rnn_to_max, mask)
+            loss = self._tf_loss(self.sim_op, sim_act, sims_rnn_to_max, mask)
 
             # define which optimizer to use
             self._train_op = tf.train.AdamOptimizer(

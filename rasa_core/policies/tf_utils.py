@@ -5,10 +5,12 @@ import tensorflow as tf
 class TimedNTM(object):
     """Timed Neural Turing Machine
 
-    inspired by paper:
+    Inspired by paper:
         https://arxiv.org/pdf/1410.5401.pdf
-    implementation inspired by:
+    Implementation inspired by:
         https://github.com/carpedm20/NTM-tensorflow/blob/master/ntm_cell.py
+
+    See our paper for details: https://arxiv.org/abs/1811.11707
     """
 
     def __init__(self, attn_shift_range, sparse_attention, name):
@@ -256,6 +258,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         Attention is calculated before calling rnn cell.
 
         Modified from tensorflow's tf.contrib.seq2seq.AttentionWrapper.
+
+        See our paper for details: https://arxiv.org/abs/1811.11707
     """
 
     def __init__(self, cell,
@@ -835,7 +839,11 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
     """Custom LayerNormBasicLSTMCell that allows chrono initialization
         of gate biases.
 
-        See super class for description."""
+        See super class for description.
+
+        See https://arxiv.org/abs/1804.11188
+        for details about chrono initialization
+    """
 
     def __init__(self,
                  num_units,
