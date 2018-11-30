@@ -11,6 +11,8 @@ Added
 -----
 - environment variables specified with ``${env_variable}`` in a yaml
   configuration file are now replaced with the value of the environment variable
+- ``analyzer`` parameter to ``intent_featurizer_count_vectors`` featurizer to
+  configure whether to use word or character n-grams
 
 Changed
 -------

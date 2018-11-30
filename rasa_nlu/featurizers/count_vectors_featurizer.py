@@ -37,9 +37,8 @@ class CountVectorsFeaturizer(Featurizer):
         # the parameters are taken from
         # sklearn's CountVectorizer
 
-        # whether to use word- or character n-grams
-        # 'char_wb' creates character n-grams only
-        # from text inside word boundaries
+        # whether to use word or character n-grams
+        # 'char_wb' creates character n-grams inside word boundaries
         # n-grams at the edges of words are padded with space.
         "analyzer": 'word',  # use 'char' or 'char_wb' for character
 

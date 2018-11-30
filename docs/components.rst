@@ -126,7 +126,8 @@ intent_featurizer_count_vectors
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. 
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
-    .. note:: If the words in the model language cannot be split by whitespace, 
+    .. note::
+        If the words in the model language cannot be split by whitespace,
         a language-specific tokenizer is required in the pipeline before this component
         (e.g. using ``tokenizer_jieba`` for Chinese).
 
@@ -134,7 +135,21 @@ intent_featurizer_count_vectors
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters
 
+    This featurizer can be configured to use word or character n-grams, using ``analyzer`` config parameter.
+    By default ``analyzer`` is set to ``word`` so word token counts are used as features.
+    If you want to use character n-grams, set ``analyzer`` to ``char`` or ``char_wb``.
+
+    .. note::
+        Option ‘char_wb’ creates character n-grams only from text inside word boundaries;
+        n-grams at the edges of words are padded with space.
+
+    .. note::
+        For character n-grams do not forget to increase ``min_ngram`` and ``max_ngram`` parameters.
+        Otherwise the vocabulary will contain only single letters
+
     Handling Out-Of-Vacabulary (OOV) words:
+
+        .. note:: Enabled only if ``analyzer`` is ``word``.
 
         Since the training is performed on limited vocabulary data, it cannot be guaranteed that during prediction
         an algorithm will not encounter an unknown word (a word that were not seen during training).
@@ -145,9 +160,8 @@ intent_featurizer_count_vectors
         maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
 
         .. note::
-        
             This featurizer creates a bag-of-words representation by **counting** words,
-            so the number of ``OOV_token`` s might be important.
+            so the number of ``OOV_token`` in the sentence might be important.
 
             - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some messages,
               during prediction the words that were not seen during training will be substituted with provided ``OOV_token``;
@@ -163,6 +177,10 @@ intent_featurizer_count_vectors
 
         pipeline:
         - name: "intent_featurizer_count_vectors"
+          # whether to use word or character n-grams
+          # 'char_wb' creates character n-grams only inside word boundaries
+          # n-grams at the edges of words are padded with space.
+          "analyzer": 'word',  # use 'char' or 'char_wb' for character
           # the parameters are taken from
           # sklearn's CountVectorizer
           # regular expression for tokens
