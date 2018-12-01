@@ -187,10 +187,10 @@ def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     return report, precision, f1, accuracy
 
 
-def report_json(report, f1, precision, accuracy):
-    """Convert sklearn metrics report into json"""
+def report_to_dict(report, f1, precision, accuracy):
+    """Convert sklearn metrics report into dict"""
 
-    report_json = {
+    report_dict = {
         'f1': f1,
         'precision': precision,
         'accuracy': accuracy,
@@ -201,14 +201,14 @@ def report_json(report, f1, precision, accuracy):
     lines = list(filter(None, report.split('\n')))
     labels = lines[0].split()
 
-    report_json['intents'] = report_row_to_dict(report_json, labels, lines[2:-5])
-    report_json['results'] = report_row_to_dict(report_json, labels, lines[-3:])
+    report_dict['intents'] = report_row_to_dict(labels, lines[2:-5])
+    report_dict['results'] = report_row_to_dict(labels, lines[-3:])
 
-    return report_json
+    return report_dict
 
 
-def report_json_row_to_dict(report_json, labels, lines):
-    """Convert row from report to dict"""
+def report_row_to_dict(labels, lines):
+    """Convert sklearn metrics report row to dict"""
     import re
 
     array = []
@@ -358,7 +358,7 @@ def evaluate_intents(intent_results,
     log_evaluation_table(report, precision, f1, accuracy)
 
     # save report
-    save_json(report_json(report, f1, precision, accuracy), report_filename)
+    save_json(report_to_dict(report, f1, precision, accuracy), report_filename)
 
     # save classified samples to file for debugging
     successes = collect_nlu_successes(intent_results)
