@@ -62,6 +62,10 @@ def create_argument_parser():
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
 
+    parser.add_argument('--report', required=False,
+                        default="report.json",
+                        help="output path for the json with metrics report")
+
     parser.add_argument('--successes', required=False,
                         default="successes.json",
                         help="output path for the json with successful \
@@ -183,6 +187,45 @@ def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     return report, precision, f1, accuracy
 
 
+def report_json(report, f1, precision, accuracy):
+    """Convert sklearn metrics report into json"""
+
+    report_json = {
+        'f1': f1,
+        'precision': precision,
+        'accuracy': accuracy,
+        'intents': [],
+        'results': []
+    }
+
+    lines = list(filter(None, report.split('\n')))
+    labels = lines[0].split()
+
+    report_json['intents'] = report_row_to_dict(report_json, labels, lines[2:-5])
+    report_json['results'] = report_row_to_dict(report_json, labels, lines[-3:])
+
+    return report_json
+
+
+def report_json_row_to_dict(report_json, labels, lines):
+    """Convert row from report to dict"""
+    import re
+
+    array = []
+    for line in lines:
+        row_data = re.split('\s{2,}', line.strip())
+        name = row_data[0]
+        values = row_data[1:]
+        r = {
+            'name': name
+        }
+        for i in range(len(values)):
+            r[labels[i]] = values[i]
+        array.append(r)
+
+    return array
+
+
 def remove_empty_intent_examples(intent_results):
     """Remove those examples without an intent."""
 
@@ -285,6 +328,7 @@ def plot_intent_confidences(intent_results, intent_hist_filename):
 
 
 def evaluate_intents(intent_results,
+                     report_filename,
                      successes_filename,
                      errors_filename,
                      confmat_filename,
@@ -313,7 +357,10 @@ def evaluate_intents(intent_results,
 
     log_evaluation_table(report, precision, f1, accuracy)
 
-    # log and save classified samples to file for debugging
+    # save report
+    save_json(report_json(report, f1, precision, accuracy), report_filename)
+
+    # save classified samples to file for debugging
     successes = collect_nlu_successes(intent_results)
 
     # log and save misclassified samples to file for debugging
@@ -698,6 +745,7 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model,
+                   report_filename='report.json',
                    successes_filename='successes.json',
                    errors_filename='errors.json',
                    confmat_filename=None,
@@ -732,6 +780,7 @@ def run_evaluation(data_path, model,
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
+                                                       report_filename,
                                                        successes_filename,
                                                        errors_filename,
                                                        confmat_filename,
@@ -946,6 +995,7 @@ def main():
     elif cmdline_args.mode == "evaluation":
         run_evaluation(cmdline_args.data,
                        cmdline_args.model,
+                       cmdline_args.report,
                        cmdline_args.successes,
                        cmdline_args.errors,
                        cmdline_args.confmat,
