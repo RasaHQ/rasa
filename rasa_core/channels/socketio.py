@@ -1,6 +1,5 @@
 import logging
 import uuid
-from typing import Optional, Text
 from typing import Optional, Text, Any, List, Dict
 
 import socketio
