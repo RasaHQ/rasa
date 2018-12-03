@@ -186,7 +186,7 @@ class MessengerBot(OutputChannel):
         """Make sure every button has a type. Modifications happen in place."""
         for button in buttons:
             if 'type' not in button:
-               button['type'] = "postback"
+                button['type'] = "postback"
 
     @staticmethod
     def _recipient_json(recipient_id: Text) -> Dict[Text, Dict[Text, Text]]:
