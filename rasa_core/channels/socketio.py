@@ -151,8 +151,8 @@ class SocketIOInput(InputChannel):
         def handle_message(sid, data):
             output_channel = SocketIOOutput(sio, sid, self.bot_message_evt)
 
-            if self.session_persistence and ("session_id" not in data
-                                             or data["session_id"] is None):
+            if self.session_persistence and ("session_id" not in data or
+                                             data["session_id"] is None):
                 logger.debug("A message without a valid sender_id was received")
             else:
                 sender_id = data['session_id'] if self.session_persistence \
