@@ -35,10 +35,21 @@ Fixed
 Added
 -----
 - added scipy dependency
+- added element representation for command-line output
+
+Changed
+-------
+- improved button representation for custom buttons in command-line
+
+Changed
+-------
+- randomized initial sender_id during interactive training to avoid loading
+  previous sessions from persistent tracker stores
 
 Removed
 -------
 - removed keras dependency, since keras_policy uses tf.keras
+
 
 [0.12.2] - 2018-11-20
 ^^^^^^^^^^^^^^^^^^^^^
@@ -47,6 +58,7 @@ Fixed
 -----
 - argument handling on evaluate script
 - added basic sanitization during visualization
+
 
 [0.12.1] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^

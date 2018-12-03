@@ -19,7 +19,7 @@ from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string
+from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
     DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
 from rasa_core.domain import Domain
@@ -249,9 +249,10 @@ def format_bot_output(
 ) -> Text:
     """Format a bot response to be displayed in the history table."""
 
+    # First, add text to output
     output = message.get("text") or ""
 
-    # Append all additional items if data is not None
+    # Then, append all additional items
     data = message.get("data", {})
     if not data:
         return output
@@ -263,15 +264,16 @@ def format_bot_output(
         output += "\nAttachment: " + data.get("attachment")
 
     if data.get("buttons"):
+        output += "\nButtons:"
         for idx, button in enumerate(data.get("buttons")):
             button_str = button_to_string(button, idx)
             output += "\n" + button_str
 
     if data.get("elements"):
-        for element in data.get('elements'):
-            import json
-            output += "\nElements: "
-            output += "\n" + json.dumps(element)
+        output += "\nElements:"
+        for idx, element in enumerate(data.get("elements")):
+            element_str = element_to_string(element, idx)
+            output += "\n" + element_str
     return output
 
 
@@ -1342,7 +1344,8 @@ def _start_interactive_learning_io(endpoint: EndpointConfig,
                    "on_finish": on_finish,
                    "stories": stories,
                    "finetune": finetune,
-                   "skip_visualization": skip_visualization})
+                   "skip_visualization": skip_visualization,
+                   "sender_id": uuid.uuid4().hex})
     p.setDaemon(True)
     p.start()
 

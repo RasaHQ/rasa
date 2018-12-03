@@ -138,8 +138,8 @@ After you have created the bot through Cisco Webex Teams, you need to create a
 room in Cisco Webex Teams. Then add the bot in the room the same way you would
 add a person in the room.
 
-You need to note down the room ID for the room you created. This room ID will be
-used in ``room`` variable in the ``credentials.yml`` file.
+You need to note down the room ID for the room you created. This room ID will
+be used in ``room`` variable in the ``credentials.yml`` file.
 
 Please follow this link below to find the room ID
 ``https://developer.webex.com/endpoint-rooms-get.html``
@@ -610,11 +610,15 @@ you need to supply a ``credentials.yml`` with the following content:
 The first two configuration values define the event names used by Rasa Core
 when sending or receiving messages over socket.io.
 
-By default, the socketio channel uses the socket id as sender_id which causes the session to restart at every page reload.
-``session_persistence`` can be set to ``true`` to avoid that. In that case, the frontend is responsible for generating a
-session id and sending it to the Rasa Core server by emitting the event ``session_request`` with ``{session_id: [session_id]}`` immediately after the ``connect`` event.
+By default, the socketio channel uses the socket id as sender_id which causes
+the session to restart at every page reload. ``session_persistence`` can be
+set to ``true`` to avoid that. In that case, the frontend is responsible
+for generating a session id and sending it to the Rasa Core server by
+emitting the event ``session_request`` with ``{session_id: [session_id]}``
+immediately after the ``connect`` event.
 
-The `Rasa Webchat <https://github.com/mrbot-ai/rasa-webchat>`_ already implements this session creation mechanism (version >= 0.5.0)
+The example `Webchat <https://github.com/mrbot-ai/rasa-webchat>`_
+implements this session creation mechanism (version >= 0.5.0).
 
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
