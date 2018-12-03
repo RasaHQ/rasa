@@ -12,6 +12,11 @@ Added
 
 - added scipy dependency
 
+Changed
+-------
+- randomized initial sender_id during interactive training to avoid loading
+  previous sessions from persistent tracker stores
+
 Removed
 -------
 - removed keras dependency, since keras_policy uses tf.keras
