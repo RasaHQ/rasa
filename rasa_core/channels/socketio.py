@@ -20,7 +20,8 @@ class SocketBlueprint(Blueprint):
         super(SocketBlueprint, self).__init__(*args, **kwargs)
 
     def register(self, app, options, first_registration=False):
-        app.wsgi_app = socketio.Middleware(self.sio, app.wsgi_app, self.socketio_path)
+        app.wsgi_app = socketio.Middleware(self.sio, app.wsgi_app,
+                                           self.socketio_path)
         super(SocketBlueprint, self).register(app, options, first_registration)
 
 
@@ -120,7 +121,8 @@ class SocketIOInput(InputChannel):
 
     def blueprint(self, on_new_message):
         sio = socketio.Server()
-        socketio_webhook = SocketBlueprint(sio, self.socketio_path, 'socketio_webhook', __name__)
+        socketio_webhook = SocketBlueprint(sio, self.socketio_path,
+                                           'socketio_webhook', __name__)
 
         @socketio_webhook.route("/", methods=['GET'])
         def health():
@@ -149,12 +151,14 @@ class SocketIOInput(InputChannel):
         def handle_message(sid, data):
             output_channel = SocketIOOutput(sio, sid, self.bot_message_evt)
 
-            if self.session_persistence and ("session_id" not in data or data["session_id"] is None):
+            if self.session_persistence and ("session_id" not in data
+                                             or data["session_id"] is None):
                 logger.debug("A message without a valid sender_id was received")
             else:
-                sender_id = data['session_id'] if self.session_persistence else sid
-                message = UserMessage(data['message'], output_channel, sender_id,
-                                      input_channel=self.name())
+                sender_id = data['session_id'] if self.session_persistence \
+                    else sid
+                message = UserMessage(data['message'], output_channel,
+                                      sender_id, input_channel=self.name())
                 on_new_message(message)
 
         return socketio_webhook
