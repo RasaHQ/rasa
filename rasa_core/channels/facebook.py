@@ -183,7 +183,7 @@ class MessengerBot(OutputChannel):
 
     @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
-        """Set the button type to postback (if not provided) for all buttons. Happens in place."""
+        """Make sure every button has a type. Modifications happen in place."""
         for button in buttons:
             if 'type' not in button:
                button['type'] = "postback"
