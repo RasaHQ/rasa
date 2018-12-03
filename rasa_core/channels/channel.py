@@ -69,18 +69,23 @@ def button_to_string(button, idx=0):
     """Create a string representation of a button."""
 
     title = button.pop('title', '')
-    payload = button.pop('payload', '')
-    if payload:
-        payload = "({})".format(payload)
 
-    button_string = "{idx}: {title} {payload}".format(
-                     idx=idx + 1,
-                     title=title,
-                     payload=payload)
+    if 'payload' in button:
+        payload = " ({})".format(button.pop('payload'))
+    else:
+        payload = ""
 
+    # if there are any additional attributes, we append them to the output
     if button:
-        button_string += " - {button}".format(
-            button=json.dumps(button, sort_keys=True))
+        details = " - {}".format(json.dumps(button, sort_keys=True))
+    else:
+        details = ""
+
+    button_string = "{idx}: {title}{payload}{details}".format(
+        idx=idx + 1,
+        title=title,
+        payload=payload,
+        details=details)
 
     return button_string
 
@@ -91,9 +96,9 @@ def element_to_string(element, idx=0):
     title = element.pop('title', '')
 
     element_string = "{idx}: {title} - {element}".format(
-                      idx=idx + 1,
-                      title=title,
-                      element=json.dumps(element, sort_keys=True))
+        idx=idx + 1,
+        title=title,
+        element=json.dumps(element, sort_keys=True))
 
     return element_string
 
