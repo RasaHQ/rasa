@@ -13,6 +13,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- A support for session persistence mechanism in the ``SocketIOInput`` compatible with the Rasa WebChat
+  + short explanation on how session persistence should be implemented in another frontend
 
 Removed
 -------
