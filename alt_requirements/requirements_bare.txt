@@ -15,3 +15,4 @@ msgpack-python==0.5.4
 packaging==17.1
 ruamel.yaml==0.15.78
 coloredlogs==9.0
+msgpack==0.5.6
