@@ -11,7 +11,8 @@ import six
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string, RestInput
+from rasa_core.channels.channel import button_to_string, element_to_string,\
+    RestInput
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
@@ -28,8 +29,13 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
 
     if "buttons" in message:
         for idx, button in enumerate(message.get("buttons")):
-            button_str = button_to_string(button, idx)
+            button_str = "Buttons:\n" + button_to_string(button, idx)
             utils.print_color(button_str, color)
+
+    if "elements" in message:
+        for idx, element in enumerate(message.get("elements")):
+            element_str = "Elements:\n" + element_to_string(element, idx)
+            utils.print_color(element_str, color)
 
 
 def get_cmd_input():

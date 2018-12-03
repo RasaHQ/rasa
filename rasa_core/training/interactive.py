@@ -21,7 +21,7 @@ from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string
+from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
     DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
 from rasa_core.domain import Domain
@@ -243,12 +243,13 @@ def format_bot_output(message):
     # type: (Dict[Text, Any]) -> Text
     """Format a bot response to be displayed in the history table."""
 
-    if "text" in message:
-        output = message.get("text")
-    else:
-        output = ""
+    output = ""
 
-    # Append all additional items
+    # First, add text to output
+    if message.get("text"):
+        output += message.get("text")
+
+    # Then, append all additional items
     data = message.get("data", {})
     if data.get("image"):
         output += "\nImage: " + data.get("image")
@@ -257,9 +258,16 @@ def format_bot_output(message):
         output += "\nAttachment: " + data.get("attachment")
 
     if data.get("buttons"):
+        output += "\nButtons:"
         for idx, button in enumerate(data.get("buttons")):
             button_str = button_to_string(button, idx)
             output += "\n" + button_str
+
+    if data.get("elements"):
+        output += "\nElements:"
+        for idx, element in enumerate(data.get("elements")):
+            element_str = element_to_string(element, idx)
+            output += "\n" + element_str
     return output
 
 

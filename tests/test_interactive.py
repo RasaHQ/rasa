@@ -56,15 +56,28 @@ def test_bot_output_format():
             "attachment": "My Attachment",
             "buttons": [
                 {"title": "yes", "payload": "/yes"},
-                {"title": "no", "payload": "/no"}]
+                {"title": "no", "payload": "/no", "extra": "extra"}],
+            "elements": [
+                {"title": "element1", "buttons": [
+                    {"title": "button1", "payload": "/button1"}]},
+                {"title": "element2", "buttons": [
+                    {"title": "button2", "payload": "/button2"}]}]
         }
     }
     formatted = interactive.format_bot_output(message)
     assert formatted == ("Hello!\n"
                          "Image: http://example.com/myimage.png\n"
                          "Attachment: My Attachment\n"
+                         "Buttons:\n"
                          "1: yes (/yes)\n"
-                         "2: no (/no)")
+                         "2: no (/no) - {\"extra\": \"extra\"}\n"
+                         "Elements:\n"
+                         "1: element1 - {\"buttons\": "
+                         "[{\"payload\": \"/button1\", \"title\": \"button1\"}"
+                         "]}\n"
+                         "2: element2 - {\"buttons\": "
+                         "[{\"payload\": \"/button2\", \"title\": \"button2\"}"
+                         "]}")
 
 
 def test_latest_user_message():
