@@ -1321,7 +1321,8 @@ def _start_interactive_learning_io(endpoint, stories, on_finish,
                    "on_finish": on_finish,
                    "stories": stories,
                    "finetune": finetune,
-                   "skip_visualization": skip_visualization})
+                   "skip_visualization": skip_visualization,
+                   "sender_id": uuid.uuid4().hex})
     p.setDaemon(True)
     p.start()
 
