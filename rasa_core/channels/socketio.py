@@ -151,14 +151,19 @@ class SocketIOInput(InputChannel):
         def handle_message(sid, data):
             output_channel = SocketIOOutput(sio, sid, self.bot_message_evt)
 
-            if self.session_persistence and ("session_id" not in data or
-                                             data["session_id"] is None):
-                logger.debug("A message without a valid sender_id was received")
+            if self.session_persistence:
+                if not data.get("session_id"):
+                    logger.warning("A message without a valid sender_id was received. "
+                                   "This message will be ignored. Make sure to set a "
+                                   "proper session id using the `session_request` "
+                                   "event.")
+                    return
+                sender_id = data['session_id']    
             else:
-                sender_id = data['session_id'] if self.session_persistence \
-                    else sid
-                message = UserMessage(data['message'], output_channel,
-                                      sender_id, input_channel=self.name())
-                on_new_message(message)
+                sender_id = sid
+            
+            message = UserMessage(data['message'], output_channel, sender_id, 
+                                  input_channel=self.name())
+            on_new_message(message)
 
         return socketio_webhook
