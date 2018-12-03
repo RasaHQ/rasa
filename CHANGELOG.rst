@@ -4,12 +4,12 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[0.12.3]
-^^^^^^^^
+[0.12.3] - 2018-12-03
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- added scipy dependency
+- added ``scipy`` dependency (previously pulled in through keras)
 - added element representation for command-line output
 
 Changed
@@ -18,12 +18,12 @@ Changed
 
 Changed
 -------
-- randomized initial sender_id during interactive training to avoid loading
-  previous sessions from persistent tracker stores
+- randomized initial sender_id during interactive training to avoid
+  loading previous sessions from persistent tracker stores
 
 Removed
 -------
-- removed keras dependency, since keras_policy uses tf.keras
+- removed keras dependency, since ``keras_policy`` uses ``tf.keras``
 
 
 [0.12.2] - 2018-11-20
