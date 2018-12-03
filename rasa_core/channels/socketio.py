@@ -153,10 +153,11 @@ class SocketIOInput(InputChannel):
 
             if self.session_persistence:
                 if not data.get("session_id"):
-                    logger.warning("A message without a valid sender_id was received. "
-                                   "This message will be ignored. Make sure to set a "
-                                   "proper session id using the `session_request` "
-                                   "event.")
+                    logger.warning("A message without a valid sender_id "
+                                   "was received. This message will be "
+                                   "ignored. Make sure to set a proper "
+                                   "session id using the "
+                                   "`session_request` event.")
                     return
                 sender_id = data['session_id']    
             else:
