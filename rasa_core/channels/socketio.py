@@ -130,11 +130,11 @@ class SocketIOInput(InputChannel):
 
         @sio.on('connect', namespace=self.namespace)
         def connect(sid, environ):
-            logger.debug("User {} connected to socketio endpoint.".format(sid))
+            logger.debug("User {} connected to socketIO endpoint.".format(sid))
 
         @sio.on('disconnect', namespace=self.namespace)
         def disconnect(sid):
-            logger.debug("User {} disconnected from socketio endpoint."
+            logger.debug("User {} disconnected from socketIO endpoint."
                          "".format(sid))
 
         @sio.on('session_request', namespace=self.namespace)
@@ -144,7 +144,7 @@ class SocketIOInput(InputChannel):
             if 'session_id' not in data or data['session_id'] is None:
                 data['session_id'] = uuid.uuid4().hex
             sio.emit("session_confirm", data['session_id'])
-            logger.debug("User {} connected to socketio endpoint."
+            logger.debug("User {} connected to socketIO endpoint."
                          "".format(sid))
 
         @sio.on(self.user_message_evt, namespace=self.namespace)
@@ -157,13 +157,13 @@ class SocketIOInput(InputChannel):
                                    "was received. This message will be "
                                    "ignored. Make sure to set a proper "
                                    "session id using the "
-                                   "`session_request` event.")
+                                   "`session_request` socketIO event.")
                     return
-                sender_id = data['session_id']    
+                sender_id = data['session_id']
             else:
                 sender_id = sid
-            
-            message = UserMessage(data['message'], output_channel, sender_id, 
+
+            message = UserMessage(data['message'], output_channel, sender_id,
                                   input_channel=self.name())
             on_new_message(message)
 
