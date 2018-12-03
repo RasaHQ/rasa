@@ -107,11 +107,11 @@ class SocketIOInput(InputChannel):
                    )
 
     def __init__(self,
-                 user_message_evt="user_uttered",  # type: Text
-                 bot_message_evt="bot_uttered",  # type: Text
-                 namespace=None,  # type: Optional[Text]
-                 session_persistence=False,
-                 socketio_path='/socket.io'  # type: Optional[Text]
+                 user_message_evt: Text = "user_uttered",
+                 bot_message_evt: Text = "bot_uttered",
+                 namespace: Optional[Text] = None,
+                 session_persistence: bool = False,
+                 socketio_path: Optional[Text] = '/socket.io'
                  ):
         self.bot_message_evt = bot_message_evt
         self.session_persistence = session_persistence
