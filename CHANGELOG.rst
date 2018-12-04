@@ -11,6 +11,7 @@ Added
 -----
 - environment variables specified with ``${env_variable}`` in a yaml
   configuration file are now replaced with the value of the environment variable
+- more documentation on how to run NLU with Docker
 
 Changed
 -------
