@@ -180,6 +180,16 @@ class PolicyEnsemble(object):
             dir_name = 'policy_{}_{}'.format(i, policy_cls.__name__)
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
+            if policy is None:
+                raise Exception(
+                    "Failed to load policy {}: "
+                    "load returned None"
+                    .format(policy_name))
+            elif not isinstance(policy, Policy):
+                raise Exception(
+                    "Failed to load policy {}: "
+                    "load returned object that is not instance of {}"
+                    .format(policy_name, Policy))
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(
             metadata["ensemble_name"])
