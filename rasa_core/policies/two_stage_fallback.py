@@ -4,11 +4,12 @@ import os
 from typing import List, Text
 
 from rasa_core import utils
-from rasa_core.actions.action import ACTION_REVERT_FALLBACK_EVENTS, \
-    ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEFAULT_ASK_CLARIFICATION, \
-    ACTION_DEFAULT_ASK_CONFIRMATION
-from rasa_core.constants import FALLBACK_SCORE, USER_INTENT_CONFIRM, \
-    USER_INTENT_DENY
+from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS,
+                                      ACTION_DEFAULT_FALLBACK_NAME,
+                                      ACTION_DEFAULT_ASK_CLARIFICATION,
+                                      ACTION_DEFAULT_ASK_CONFIRMATION)
+from rasa_core.constants import (FALLBACK_SCORE, USER_INTENT_CONFIRM,
+                                 USER_INTENT_DENY)
 from rasa_core.domain import Domain, InvalidDomain
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.policy import confidence_scores_for
@@ -65,8 +66,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         """Predicts the next action if NLU confidence is low.
         """
 
-        if USER_INTENT_CONFIRM not in domain.intents or \
-                USER_INTENT_DENY not in domain.intents:
+        if (USER_INTENT_CONFIRM not in domain.intents or
+                USER_INTENT_DENY not in domain.intents):
             raise InvalidDomain('The intents {} and {} must be present in the '
                                 'domain file to use this policy.'.format(
                                     USER_INTENT_CONFIRM, USER_INTENT_CONFIRM))

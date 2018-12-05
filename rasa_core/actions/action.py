@@ -9,8 +9,8 @@ from rasa_core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_CONFIRM, USER_INTENT_DENY)
-from rasa_core.events import UserUtteranceReverted, UserUttered, \
-    ActionExecuted, Event
+from rasa_core.events import (UserUtteranceReverted, UserUttered,
+                              ActionExecuted, Event)
 from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -399,10 +399,11 @@ class ActionRevertFallbackEvents(Action):
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
-        from rasa_core.policies.two_stage_fallback import has_user_clarified, \
-            has_user_confirmed
+        from rasa_core.policies.two_stage_fallback import (has_user_clarified,
+                                                           has_user_confirmed)
 
         last_intent = tracker.latest_message.intent.get('name')
+        revert_events = []
 
         # User confirmed
         if has_user_confirmed(last_intent, tracker):
@@ -416,19 +417,19 @@ class ActionRevertFallbackEvents(Action):
                 name=ACTION_DEFAULT_ASK_CLARIFICATION,
                 skip=1)
             if clarification:
-                return revert_events + _revert_clarification_events(intent)
-
-            return revert_events + [intent]
+                revert_events += _revert_clarification_events(intent)
+            else:
+                revert_events += [intent]
         # User clarified
         elif has_user_clarified(tracker):
             last_intent = tracker.get_last_event_for(UserUttered)
-            return _revert_clarification_events(last_intent)
+            revert_events = _revert_clarification_events(last_intent)
         # User clarified instead of confirmation
         elif tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION):
             last_intent = tracker.get_last_event_for(UserUttered)
-            return _revert_confirmation_events() + [last_intent]
+            revert_events = _revert_confirmation_events() + [last_intent]
 
-        return []
+        return revert_events
 
 
 def _revert_clarification_events(last_intent: UserUttered) -> List[Event]:

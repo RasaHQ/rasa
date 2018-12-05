@@ -16,8 +16,8 @@ from rasa_core.tracker_store import (
     TrackerStore)
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from tests.conftest import DEFAULT_STORIES_FILE
-from tests.utilities import tracker_from_dialogue_file, read_dialogue_file, \
-    user_uttered, get_tracker
+from tests.utilities import (tracker_from_dialogue_file, read_dialogue_file,
+                             user_uttered, get_tracker)
 
 domain = Domain.load("data/test_domains/default.yml")
 

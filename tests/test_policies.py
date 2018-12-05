@@ -4,9 +4,11 @@ import numpy as np
 import pytest
 
 from rasa_core import training
-from rasa_core.actions.action import ACTION_LISTEN_NAME, \
-    ActionRevertFallbackEvents, ACTION_DEFAULT_ASK_CONFIRMATION, \
-    ACTION_DEFAULT_ASK_CLARIFICATION, ACTION_DEFAULT_FALLBACK_NAME
+from rasa_core.actions.action import (ACTION_LISTEN_NAME,
+                                      ActionRevertFallbackEvents,
+                                      ACTION_DEFAULT_ASK_CONFIRMATION,
+                                      ACTION_DEFAULT_ASK_CLARIFICATION,
+                                      ACTION_DEFAULT_FALLBACK_NAME)
 from rasa_core.channels import UserMessage
 from rasa_core.constants import USER_INTENT_CONFIRM, USER_INTENT_DENY
 from rasa_core.domain import Domain, InvalidDomain
