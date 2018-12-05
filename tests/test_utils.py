@@ -67,8 +67,8 @@ def test_cap_length_with_short_string():
 
 
 def test_pad_list_to_size():
-    assert (utils.pad_list_to_size(["e1", "e2"], 4, "other")
-            == ["e1", "e2", "other", "other"])
+    assert (utils.pad_list_to_size(["e1", "e2"], 4, "other") ==
+            ["e1", "e2", "other", "other"])
 
 
 def test_read_lines():

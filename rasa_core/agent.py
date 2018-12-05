@@ -270,9 +270,9 @@ class Agent(object):
 
     def is_ready(self):
         """Check if all necessary components are instantiated to use agent."""
-        return (self.interpreter is not None
-                and self.tracker_store is not None
-                and self.policy_ensemble is not None)
+        return (self.interpreter is not None and
+                self.tracker_store is not None and
+                self.policy_ensemble is not None)
 
     def handle_message(
         self,
@@ -429,9 +429,9 @@ class Agent(object):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         for policy in self.policy_ensemble.policies:
-            if (policy.featurizer
-                    and not hasattr(policy.featurizer, 'max_history')):
-                return False
+            if (policy.featurizer and not
+                    hasattr(policy.featurizer, 'max_history')):
+                        return False
         return True
 
     def load_data(self,
@@ -676,6 +676,6 @@ class Agent(object):
         """Check whether form policy is not present
             if there is a form action in the domain
         """
-        return (self.domain and self.domain.form_names
-                and not any(isinstance(p, FormPolicy)
-                            for p in self.policy_ensemble.policies))
+        return (self.domain and self.domain.form_names and not
+                any(isinstance(p, FormPolicy)
+                    for p in self.policy_ensemble.policies))
