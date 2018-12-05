@@ -1,4 +1,4 @@
-# Rasa Core
+# Rasa Core 
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa_core.svg)](https://pypi.python.org/pypi/rasa_core)
