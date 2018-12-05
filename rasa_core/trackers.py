@@ -5,7 +5,7 @@ import copy
 import io
 import logging
 from enum import Enum
-from typing import Generator, Dict, Text, Any, Optional, Iterator
+from typing import Generator, Dict, Text, Any, Optional, Iterator, Type
 from typing import List
 
 from rasa_core import events
@@ -488,21 +488,22 @@ class DialogueStateTracker(object):
         return new_slots
 
     def get_last_event_for(self,
-                           event_type: Any,
-                           to_exclude: List[Text] = None,
+                           event_type: Type[Event],
+                           action_names_to_exclude: List[Text] = None,
                            skip: int = 0) -> Optional[Any]:
         """Gets the last event of a given type which was actually applied.
 
         Args:
-            event_type: The type of event you want to filter for.
-            to_exclude: Events of type 'ActionExecuted' which should be excluded
-                from the results. Can be used to skip `action_listen` events.
+            event_type: The type of event you want to find.
+            action_names_to_exclude: Events of type `ActionExecuted` which
+                should be excluded from the results. Can be used to skip
+                `action_listen` events.
             skip: Skips n possible results before return an event.
 
         Returns:
             event which matched the query or `None` if no event matched.
         """
-        to_exclude = to_exclude or []
+        to_exclude = action_names_to_exclude or []
 
         def filter_function(e: Event):
             has_instance = isinstance(e, event_type)
@@ -517,18 +518,18 @@ class DialogueStateTracker(object):
 
         return next(filtered, None)
 
-    def last_executed_has(self, name: Text, skip=0) -> bool:
-        """Returns whether last event of type `ActionExecuted` had a specific
-        name.
+    def last_executed_action_has(self, name: Text, skip=0) -> bool:
+        """Returns whether last `ActionExecuted` event had a specific name.
 
         Args:
             name: Name of the event which should be matched.
             skip: Skips n possible results in between.
 
         Returns:
-            `True` if last executed event had name `name`, otherwise `False`.
+            `True` if last executed action had name `name`, otherwise `False`.
         """
         last = self.get_last_event_for(ActionExecuted,
-                                       to_exclude=['action_listen'],
+                                       action_names_to_exclude=[
+                                           'action_listen'],
                                        skip=skip)
         return last is not None and last.action_name == name

@@ -1,7 +1,3 @@
-from rasa_core.actions.action import ACTION_LISTEN_NAME, \
-    ActionRevertFallbackEvents, ACTION_DEFAULT_ASK_CONFIRMATION, \
-    ACTION_DEFAULT_ASK_CLARIFICATION, ACTION_DEFAULT_FALLBACK_NAME
-
 from unittest.mock import patch
 
 import numpy as np
@@ -492,10 +488,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                                                   default_domain)
 
         assert 'greet' == tracker.latest_message.parse_data['intent']['name']
-        assert tracker.export_stories() == "## sender\n" \
-                                           "* greet\n" \
-                                           "    - utter_hello\n" \
-                                           "* greet\n"
+        assert tracker.export_stories() == ("## sender\n"
+                                            "* greet\n"
+                                            "    - utter_hello\n"
+                                            "* greet\n")
 
     def test_ask_clarification(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
@@ -606,10 +602,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                                                   default_domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
-        assert tracker.export_stories() == "## sender\n" \
-                                           "* greet\n" \
-                                           "    - utter_hello\n" \
-                                           "* bye\n"
+        assert tracker.export_stories() == ("## sender\n"
+                                            "* greet\n"
+                                            "    - utter_hello\n"
+                                            "* bye\n")
 
     def test_unknown_instead_confirmation(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),

@@ -14,7 +14,7 @@ from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH
 
 
-def tracker_from_dialogue_file(filename: Text, domain: Domain=None):
+def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
     dialogue = read_dialogue_file(filename)
 
     if domain is not None:

@@ -94,7 +94,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                          "clarification.")
             result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS,
                                            FALLBACK_SCORE, domain)
-        elif tracker.last_executed_has(name=ACTION_DEFAULT_ASK_CONFIRMATION):
+        elif tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION):
             if not should_fallback:
                 logger.debug("User clarified instead of confirming.")
                 result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS,
@@ -119,7 +119,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
     def __results_for_user_denied(self, tracker: DialogueStateTracker,
                                   domain: Domain) -> List[float]:
-        has_denied_before = tracker.last_executed_has(
+        has_denied_before = tracker.last_executed_action_has(
             ACTION_DEFAULT_ASK_CLARIFICATION,
             skip=1)
 
@@ -154,15 +154,17 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
 def has_user_confirmed(last_intent: Text,
                        tracker: DialogueStateTracker) -> bool:
-    return tracker.last_executed_has(name=ACTION_DEFAULT_ASK_CONFIRMATION) \
-        and last_intent == USER_INTENT_CONFIRM
+    return (
+        tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION) and
+        last_intent == USER_INTENT_CONFIRM)
 
 
 def _has_user_denied(last_intent: Text,
                      tracker: DialogueStateTracker) -> bool:
-    return tracker.last_executed_has(name=ACTION_DEFAULT_ASK_CONFIRMATION) \
-        and last_intent == USER_INTENT_DENY
+    return (
+        tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION) and
+        last_intent == USER_INTENT_DENY)
 
 
 def has_user_clarified(tracker: DialogueStateTracker) -> bool:
-    return tracker.last_executed_has(name=ACTION_DEFAULT_ASK_CLARIFICATION)
+    return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CLARIFICATION)

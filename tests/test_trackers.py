@@ -455,8 +455,8 @@ def test_get_last_event_for_with_skip():
 
     tracker = get_tracker(events)
 
-    assert tracker.get_last_event_for(ActionExecuted, skip=1).\
-        action_name == 'one'
+    assert (
+        tracker.get_last_event_for(ActionExecuted, skip=1).action_name == 'one')
 
 
 def test_get_last_event_for_with_exclude():
@@ -466,8 +466,9 @@ def test_get_last_event_for_with_exclude():
 
     tracker = get_tracker(events)
 
-    assert tracker.get_last_event_for(ActionExecuted, to_exclude=['three']).\
-        action_name == 'one'
+    assert (tracker.get_last_event_for(ActionExecuted,
+                                       action_names_to_exclude=['three']).
+            action_name == 'one')
 
 
 def test_last_executed_has():
@@ -477,7 +478,7 @@ def test_last_executed_has():
 
     tracker = get_tracker(events)
 
-    assert tracker.last_executed_has('one') is True
+    assert tracker.last_executed_action_has('one') is True
 
 
 def test_last_executed_has_not_name():
@@ -487,4 +488,4 @@ def test_last_executed_has_not_name():
 
     tracker = get_tracker(events)
 
-    assert tracker.last_executed_has('another') is False
+    assert tracker.last_executed_action_has('another') is False

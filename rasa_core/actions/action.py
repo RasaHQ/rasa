@@ -386,9 +386,12 @@ class ActionExecutionRejection(Exception):
 
 
 class ActionRevertFallbackEvents(Action):
-    """This action reverts any utterances and user messages which were done
-       during the stages of the `TwoStageFallbackPolicy` to have clean
-       stories.
+    """Reverts events which were done during the `TwoStageFallbackPolicy`.
+
+       This reverts user messages and bot utterances were done as part of the
+       of the `TwoStageFallbackPolicy`. By doing so it is not necessary to
+       write custom stories for the different paths, but only of the happy
+       path.
     """
 
     def name(self) -> Text:
@@ -403,32 +406,32 @@ class ActionRevertFallbackEvents(Action):
 
         # User confirmed
         if has_user_confirmed(last_intent, tracker):
-            revert_actions = _revert_confirmation_actions()
+            revert_events = _revert_confirmation_events()
 
             intent = tracker.get_last_event_for(UserUttered, skip=1)
             intent.parse_data['intent']['confidence'] = FALLBACK_SCORE
 
             # User confirms clarification
-            clarification = tracker.last_executed_has(
+            clarification = tracker.last_executed_action_has(
                 name=ACTION_DEFAULT_ASK_CLARIFICATION,
                 skip=1)
             if clarification:
-                return revert_actions + _revert_clarification_actions(intent)
+                return revert_events + _revert_clarification_events(intent)
 
-            return revert_actions + [intent]
+            return revert_events + [intent]
         # User clarified
         elif has_user_clarified(tracker):
             last_intent = tracker.get_last_event_for(UserUttered)
-            return _revert_clarification_actions(last_intent)
+            return _revert_clarification_events(last_intent)
         # User clarified instead of confirmation
-        elif tracker.last_executed_has(name=ACTION_DEFAULT_ASK_CONFIRMATION):
+        elif tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION):
             last_intent = tracker.get_last_event_for(UserUttered)
-            return _revert_confirmation_actions() + [last_intent]
+            return _revert_confirmation_events() + [last_intent]
 
         return []
 
 
-def _revert_clarification_actions(last_intent: UserUttered) -> List[Event]:
+def _revert_clarification_events(last_intent: UserUttered) -> List[Event]:
     return [UserUtteranceReverted(),  # remove clarification
             # remove feedback and clarification request
             UserUtteranceReverted(),
@@ -440,14 +443,19 @@ def _revert_clarification_actions(last_intent: UserUttered) -> List[Event]:
             ]
 
 
-def _revert_confirmation_actions() -> List[Event]:
-    return [UserUtteranceReverted(), UserUtteranceReverted(),
+def _revert_confirmation_events() -> List[Event]:
+    return [UserUtteranceReverted(),  # revert confirmation and request
+            # revert original intent (has to be re-added later)
+            UserUtteranceReverted(),
+            # add action listen intent
             ActionExecuted(action_name=ACTION_LISTEN_NAME)]
 
 
 class ActionDefaultAskConfirmation(Action):
-    """This is the default implementation of an action which asks the user to
-       confirm their intent.
+    """Default implementation which asks the user to confirm his intent.
+
+       It is suggested to overwrite this default action with a custom action
+       to have nicer prompts for the confirmations.
     """
 
     def name(self) -> Text:
@@ -471,9 +479,7 @@ class ActionDefaultAskConfirmation(Action):
 
 
 class ActionDefaultAskClarification(Action):
-    """This is the default implementation of an action which asks the user to
-       clarify their intent.
-    """
+    """Default implementation which asks the user to clarify his intent."""
 
     def name(self) -> Text:
         return ACTION_DEFAULT_ASK_CLARIFICATION
