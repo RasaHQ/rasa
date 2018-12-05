@@ -223,8 +223,8 @@ def _compute_time_attention(attention_mechanism, attn_inputs, attention_state,
 # noinspection PyProtectedMember
 class TimeAttentionWrapperState(
     namedtuple("TimeAttentionWrapperState",
-               tf.contrib.seq2seq.AttentionWrapperState._fields +
-               ("all_time_masks", "all_cell_states"))):  # added
+               tf.contrib.seq2seq.AttentionWrapperState._fields
+               + ("all_time_masks", "all_cell_states"))):  # added
     """Modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
         see there for description of the parameters
 
@@ -400,9 +400,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 # cell_output with copied attention
                 # together with attention vector itself
                 # and additional output
-                return (2 * self._cell.output_size +
-                        self._attention_layer_size +
-                        self.additional_output_size())
+                return (2 * self._cell.output_size
+                        + self._attention_layer_size
+                        + self.additional_output_size())
             else:
                 return self._cell.output_size + self._attention_layer_size
         else:
@@ -532,19 +532,19 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                                                                cell_state)
 
         cell_batch_size = (
-            attn_inputs.shape[0].value or
-            tf.shape(attn_inputs)[0])
+            attn_inputs.shape[0].value
+            or tf.shape(attn_inputs)[0])
         error_message = (
-            "When applying AttentionWrapper %s: " % self.name +
-            "Non-matching batch sizes between the memory "
-            "(encoder output) and the query (decoder output).  "
-            "Are you using "
-            "the BeamSearchDecoder?  "
-            "You may need to tile your memory input via "
-            "the tf.contrib.seq2seq.tile_batch function with argument "
-            "multiple=beam_width.")
-        with tf.control_dependencies(
-            self._batch_size_checks(cell_batch_size, error_message)):
+            "When applying AttentionWrapper %s: " % self.name
+            + "Non-matching batch sizes between the memory "
+              "(encoder output) and the query (decoder output).  "
+              "Are you using "
+              "the BeamSearchDecoder?  "
+              "You may need to tile your memory input via "
+              "the tf.contrib.seq2seq.tile_batch function with argument "
+              "multiple=beam_width.")
+        with tf.control_dependencies(self._batch_size_checks(cell_batch_size,
+                                                             error_message)):
             attn_inputs = tf.identity(
                 attn_inputs, name="checked_attn_inputs")
 
@@ -717,9 +717,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     def _get_memory_probs(self, all_alignments, time):
         """Helper method to get memory_probs from all_alignments"""
 
-        memory_probs = tf.stop_gradient(all_alignments[
-                                            self._index_of_attn_to_copy][:,
-                                        :time])
+        memory_probs = tf.stop_gradient(
+            all_alignments[self._index_of_attn_to_copy][:, :time])
 
         # binarize memory_probs only if max value is larger than margin=0.1
         memory_probs_max = tf.reduce_max(memory_probs, axis=1, keepdims=True)
@@ -765,9 +764,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         # get all previous outputs from appropriate
         # attention mechanism's memory limited by current time
-        prev_outputs = tf.stop_gradient(self._attention_mechanisms[
-                                            self._index_of_attn_to_copy].values[
-                                        :, :time, :])
+        prev_outputs = tf.stop_gradient(
+            self._attention_mechanisms[self._index_of_attn_to_copy].values[
+                :, :time, :])
 
         # multiply by alignments to get one vector from one time step
         return self._apply_alignments_to_history(alignments,
@@ -919,8 +918,8 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         if (not isinstance(self._keep_prob, float)) or self._keep_prob < 1:
             g = tf.nn.dropout(g, self._keep_prob, seed=self._seed)
 
-        new_c = (c * tf.sigmoid(f + self._forget_bias) +
-                 g * tf.sigmoid(i + self._input_bias))  # added input_bias
+        new_c = (c * tf.sigmoid(f + self._forget_bias)
+                 + g * tf.sigmoid(i + self._input_bias))  # added input_bias
 
         # do not do layer normalization on the new c,
         # because there are no trainable weights

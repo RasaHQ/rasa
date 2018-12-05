@@ -118,7 +118,7 @@ class TrackerStore(object):
 class InMemoryTrackerStore(TrackerStore):
     def __init__(self,
                  domain: Domain,
-                 event_broker: Optional[EventChannel]=None
+                 event_broker: Optional[EventChannel] = None
                  ) -> None:
         self.store = {}
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
