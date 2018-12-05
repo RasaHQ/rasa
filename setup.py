@@ -69,6 +69,7 @@ install_requires = [
     "prompt_toolkit==1.0.14",
     "flask-jwt-simple~=0.0.3",
     "python-socketio~=2.0",
+    "python-engineio~=2.0",  # needs to be pinned, because socketio didn't ...
     "pydot~=1.2",
 ]
 
