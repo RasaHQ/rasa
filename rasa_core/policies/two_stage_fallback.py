@@ -69,7 +69,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 USER_INTENT_DENY not in domain.intents:
             raise InvalidDomain('The intents {} and {} must be present in the '
                                 'domain file to use this policy.'.format(
-                                 USER_INTENT_CONFIRM, USER_INTENT_CONFIRM))
+                                    USER_INTENT_CONFIRM, USER_INTENT_CONFIRM))
 
         nlu_data = tracker.latest_message.parse_data
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)

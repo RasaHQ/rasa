@@ -477,4 +477,14 @@ def test_last_executed_has():
 
     tracker = get_tracker(events)
 
-    assert tracker.last_executed_has('one') == True
+    assert tracker.last_executed_has('one') is True
+
+
+def test_last_executed_has_not_name():
+    events = [ActionExecuted('one'),
+              user_uttered('two', 1),
+              ActionExecuted('action_listen')]
+
+    tracker = get_tracker(events)
+
+    assert tracker.last_executed_has('another') is False

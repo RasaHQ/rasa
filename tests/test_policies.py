@@ -647,4 +647,3 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         tracker = get_tracker(events)
         with pytest.raises(InvalidDomain):
             trained_policy.predict_action_probabilities(tracker, domain)
-
