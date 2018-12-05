@@ -75,4 +75,4 @@ def user_uttered(text: Text, confidence: float) -> UserUttered:
 
 
 def get_tracker(events: List[Event]) -> DialogueStateTracker:
-    return DialogueStateTracker.from_events("sender", events, [], 10)
+    return DialogueStateTracker.from_events("sender", events, [], 20)

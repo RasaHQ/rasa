@@ -1,20 +1,21 @@
 import logging
-
-import requests
 import typing
 from typing import List, Text, Optional, Dict, Any
+
+import requests
 
 from rasa_core import events
 from rasa_core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT)
+    REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_CONFIRM, USER_INTENT_DENY)
+from rasa_core.events import UserUtteranceReverted, UserUttered, \
+    ActionExecuted, Event
 from rasa_core.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.dispatcher import Dispatcher
-    from rasa_core.events import Event
     from rasa_core.domain import Domain
 
 logger = logging.getLogger(__name__)
@@ -27,16 +28,22 @@ ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
 ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
 
+ACTION_REVERT_FALLBACK_EVENTS = 'action_revert_fallback_events'
 
-def default_actions():
-    # type: () -> List[Action]
+ACTION_DEFAULT_ASK_CONFIRMATION = 'action_default_ask_confirmation'
+
+ACTION_DEFAULT_ASK_CLARIFICATION = 'action_default_ask_clarification'
+
+
+def default_actions() -> List['Action']:
     """List default actions."""
     return [ActionListen(), ActionRestart(),
-            ActionDefaultFallback(), ActionDeactivateForm()]
+            ActionDefaultFallback(), ActionDeactivateForm(),
+            ActionRevertFallbackEvents(), ActionDefaultAskConfirmation(),
+            ActionDefaultAskClarification()]
 
 
-def default_action_names():
-    # type: () -> List[Text]
+def default_action_names() -> List[Text]:
     """List default action names."""
     return [a.name() for a in default_actions()]
 
@@ -94,8 +101,7 @@ def actions_from_names(action_names: List[Text],
 class Action(object):
     """Next action to be taken in response to a dialogue state."""
 
-    def name(self):
-        # type: () -> Text
+    def name(self) -> Text:
         """Unique identifier of this simple action."""
 
         raise NotImplementedError
@@ -121,7 +127,7 @@ class Action(object):
 
         raise NotImplementedError
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return "Action('{}')".format(self.name())
 
 
@@ -141,10 +147,10 @@ class UtterAction(Action):
                                   tracker)
         return []
 
-    def name(self):
+    def name(self) -> Text:
         return self._name
 
-    def __str__(self):
+    def __str__(self) -> Text:
         return "UtterAction('{}')".format(self.name())
 
 
@@ -154,7 +160,7 @@ class ActionListen(Action):
     The bot should stop taking further actions and wait for the user to say
     something."""
 
-    def name(self):
+    def name(self) -> Text:
         return ACTION_LISTEN_NAME
 
     def run(self, dispatcher, tracker, domain):
@@ -166,7 +172,7 @@ class ActionRestart(Action):
 
     Utters the restart template if available."""
 
-    def name(self):
+    def name(self) -> Text:
         return ACTION_RESTART_NAME
 
     def run(self, dispatcher, tracker, domain):
@@ -182,7 +188,7 @@ class ActionDefaultFallback(Action):
     """Executes the fallback action and goes back to the previous state
     of the dialogue"""
 
-    def name(self):
+    def name(self) -> Text:
         return ACTION_DEFAULT_FALLBACK_NAME
 
     def run(self, dispatcher, tracker, domain):
@@ -197,7 +203,7 @@ class ActionDefaultFallback(Action):
 class ActionDeactivateForm(Action):
     """Deactivates a form"""
 
-    def name(self):
+    def name(self) -> Text:
         return ACTION_DEACTIVATE_FORM_NAME
 
     def run(self, dispatcher, tracker, domain):
@@ -361,7 +367,7 @@ class RemoteAction(Action):
 
         return evts
 
-    def name(self):
+    def name(self) -> Text:
         return self._name
 
 
@@ -377,3 +383,104 @@ class ActionExecutionRejection(Exception):
 
     def __str__(self):
         return self.message
+
+
+class ActionRevertFallbackEvents(Action):
+    """This action reverts any utterances and user messages which were done
+       during the stages of the `TwoStageFallbackPolicy` to have clean
+       stories.
+    """
+
+    def name(self) -> Text:
+        return ACTION_REVERT_FALLBACK_EVENTS
+
+    def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
+            domain: 'Domain') -> List[Event]:
+        from rasa_core.policies.two_stage_fallback import has_user_clarified, \
+            has_user_confirmed
+
+        last_intent = tracker.latest_message.intent.get('name')
+
+        # User confirmed
+        if has_user_confirmed(last_intent, tracker):
+            revert_actions = _revert_confirmation_actions()
+
+            intent = tracker.get_last_event_for(UserUttered, skip=1)
+            intent.parse_data['intent']['confidence'] = FALLBACK_SCORE
+
+            # User confirms clarification
+            clarification = tracker.last_executed_has(
+                name=ACTION_DEFAULT_ASK_CLARIFICATION,
+                skip=1)
+            if clarification:
+                return revert_actions + _revert_clarification_actions(intent)
+
+            return revert_actions + [intent]
+        # User clarified
+        elif has_user_clarified(tracker):
+            last_intent = tracker.get_last_event_for(UserUttered)
+            return _revert_clarification_actions(last_intent)
+        # User clarified instead of confirmation
+        elif tracker.last_executed_has(name=ACTION_DEFAULT_ASK_CONFIRMATION):
+            last_intent = tracker.get_last_event_for(UserUttered)
+            return _revert_confirmation_actions() + [last_intent]
+
+        return []
+
+
+def _revert_clarification_actions(last_intent: UserUttered) -> List[Event]:
+    return [UserUtteranceReverted(),  # remove clarification
+            # remove feedback and clarification request
+            UserUtteranceReverted(),
+            # remove confirmation request and false intent
+            UserUtteranceReverted(),
+            # replace action with action listen
+            ActionExecuted(action_name=ACTION_LISTEN_NAME),
+            last_intent,  # add right intent
+            ]
+
+
+def _revert_confirmation_actions() -> List[Event]:
+    return [UserUtteranceReverted(), UserUtteranceReverted(),
+            ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+
+
+class ActionDefaultAskConfirmation(Action):
+    """This is the default implementation of an action which asks the user to
+       confirm their intent.
+    """
+
+    def name(self) -> Text:
+        return ACTION_DEFAULT_ASK_CONFIRMATION
+
+    def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
+            domain: 'Domain') -> List[Event]:
+        intent_to_confirm = tracker.latest_message.intent.get('name')
+        confirmation_message = 'Did you have this intent: {}'.format(
+            intent_to_confirm)
+
+        dispatcher.utter_button_message(text=confirmation_message,
+                                        buttons=[{'title': 'Yes',
+                                                  'payload': '/{}'.format(
+                                                      USER_INTENT_CONFIRM)},
+                                                 {'title': 'No',
+                                                  'payload': '/{}'.format(
+                                                      USER_INTENT_DENY)}])
+
+        return []
+
+
+class ActionDefaultAskClarification(Action):
+    """This is the default implementation of an action which asks the user to
+       clarify their intent.
+    """
+
+    def name(self) -> Text:
+        return ACTION_DEFAULT_ASK_CLARIFICATION
+
+    def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
+            domain: 'Domain') -> List[Event]:
+        dispatcher.utter_template("utter_ask_clarification", tracker,
+                                  silent_fail=True)
+
+        return []

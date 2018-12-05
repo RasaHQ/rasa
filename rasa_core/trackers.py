@@ -95,13 +95,13 @@ class DialogueStateTracker(object):
         # `reset()`
         ###
         # if tracker is paused, no actions should be taken
-        self._paused = None
+        self._paused: bool = False
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME  # type: Optional[Text]
+        self.followup_action: Optional[Text] = ACTION_LISTEN_NAME
         self.latest_action_name = None
         # Stores the most recent message sent by the user
-        self.latest_message = None
-        self.latest_bot_utterance = None
+        self.latest_message: Optional[UserUttered] = None
+        self.latest_bot_utterance: Optional[BotUttered] = None
         self._reset()
         self.active_form = {}
 
@@ -200,16 +200,14 @@ class DialogueStateTracker(object):
                 for x in self.latest_message.entities
                 if x.get("entity") == entity_type)
 
-    def get_latest_input_channel(self):
-        # type: () -> Optional[Text]
+    def get_latest_input_channel(self) -> Optional[Text]:
         """Get the name of the input_channel of the latest UserUttered event"""
 
         for e in reversed(self.events):
             if isinstance(e, UserUttered):
                 return e.input_channel
 
-    def is_paused(self):
-        # type: () -> bool
+    def is_paused(self) -> bool:
         """State whether the tracker is currently paused."""
         return self._paused
 
@@ -309,8 +307,7 @@ class DialogueStateTracker(object):
                 yield tr
             yield tracker
 
-    def applied_events(self):
-        # type: () -> List[Event]
+    def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
 
         def undo_till_previous(event_type, done_events):
@@ -394,7 +391,6 @@ class DialogueStateTracker(object):
 
     def update(self, event: Event) -> None:
         """Modify the state of the tracker according to an ``Event``. """
-        logger.debug(event)
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance "
                              "of a subclass of Event.")
@@ -495,7 +491,7 @@ class DialogueStateTracker(object):
                            event_type: Any,
                            to_exclude: List[Text] = None,
                            skip: int = 0) -> Optional[Any]:
-        """Gets the last event of a given type.
+        """Gets the last event of a given type which was actually applied.
 
         Args:
             event_type: The type of event you want to filter for.
@@ -508,14 +504,14 @@ class DialogueStateTracker(object):
         """
         to_exclude = to_exclude or []
 
-        def filter_function(e):
+        def filter_function(e: Event):
             has_instance = isinstance(e, event_type)
             excluded = isinstance(e, ActionExecuted) and \
                 e.action_name in to_exclude
 
             return has_instance and not excluded
 
-        filtered = filter(filter_function, reversed(self.events))
+        filtered = filter(filter_function, reversed(self.applied_events()))
         for i in range(skip):
             next(filtered, None)
 
