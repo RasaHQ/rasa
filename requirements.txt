@@ -41,5 +41,6 @@ terminaltables==3.1.0
 PyInquirer==1.0.3
 flask-jwt-simple==0.0.3
 python-socketio==2.0.0
+python-engineio==2.3.2
 prompt_toolkit==1.0.14
 pydot==1.2.4
