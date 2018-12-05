@@ -52,7 +52,7 @@ To train a NLU model you need to mount two directories into the Docker container
 Running NLU with Rasa Core
 --------------------------
 
-Please see this `guide <https://rasa.com/docs/core/docker_walkthrough/>`_ which
+See this `guide <https://rasa.com/docs/core/docker_walkthrough/>`_ which
 describes how to set up all Rasa components as Docker containers and how to
 connect them.
 
