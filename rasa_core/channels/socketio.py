@@ -20,8 +20,9 @@ class SocketBlueprint(Blueprint):
         super(SocketBlueprint, self).__init__(*args, **kwargs)
 
     def register(self, app, options, first_registration=False):
-        app.wsgi_app = socketio.Middleware(self.sio, app.wsgi_app,
-                                           self.socketio_path)
+        app.wsgi_app = socketio.Middleware(socketio_app=self.sio,
+                                           wsgi_app=app.wsgi_app,
+                                           socketio_path=self.socketio_path)
         super(SocketBlueprint, self).register(app, options, first_registration)
 
 
