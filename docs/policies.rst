@@ -452,20 +452,20 @@ Note that you cannot use this together with the default fallback policy.
     domain of the bot. These are used to identify whether the user confirmed
     to a suggestion or denied it.
 
-Asking the User for Confirmation
-""""""""""""""""""""""""""""""""
+Default Actions for Confirmation and Clarification
+""""""""""""""""""""""""""""""""""""""""""""""""""
 
-By default the action ``action_default_ask_confirmation`` is triggered which
-asks the users whether they actually had the recognized intent. It is suggested
-to overwrite the behavior of this default implementation to have more
-meaningful prompts. This is done with :ref:`customactions`.
+Rasa Core provides the default implementations
+``action_default_ask_confirmation`` and ``action_default_ask_clarification``
+which are triggered when the bot should ask the user to confirm
+or to clarify their intent. In case of ``action_default_ask_confirmation`` it
+is suggested to overwrite the behavior of its default implementation to have
+more meaningful prompts. This is done with :ref:`customactions`.
+Since the default ``action_default_ask_clarification`` action utters the
+response template ``utter_ask_clarification``, it should be sufficient to add
+a appropriate template for that in the domain.
 
-Asking the User for Clarification
-"""""""""""""""""""""""""""""""""
 
-By default the action ``action_default_ask_clarification`` is triggered to
-ask the user for a clarification of their request. This action utter the
-message for the response template ``utter_ask_clarification``.
-The behavior can be customized by implementing a :ref:`customactions`.
+
 
 .. include:: feedback.inc
