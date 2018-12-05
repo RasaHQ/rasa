@@ -23,6 +23,7 @@ Removed
 
 Changed
 -------
+- replaced ``pytest-pep8`` with ``pytest-pycodestyle``
 
 Fixed
 -----

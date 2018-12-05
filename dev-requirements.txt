@@ -3,7 +3,7 @@
 
 # test
 pytest==3.5.1
-pytest-pep8==1.0.6
+pytest-pycodestyle==1.3.1
 pytest-cov==2.5.1
 pytest_localserver==0.4.1
 treq==17.8.0
