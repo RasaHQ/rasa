@@ -68,8 +68,7 @@ install_requires = [
     "PyInquirer~=1.0",
     "prompt_toolkit==1.0.14",
     "flask-jwt-simple~=0.0.3",
-    "python-socketio~=2.0",
-    "python-engineio~=2.2",  # needs to be pinned, because socketio didn't ...
+    "python-socketio>=2.1.1,<3",
     "pydot~=1.2",
 ]
 
