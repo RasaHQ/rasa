@@ -399,18 +399,16 @@ Two Stage Fallback Policy
 
 This policy handles low NLU confidence in multiple stages.
 
-- If a NLU prediction has a low confidence store, the user is asked to confirm
+- If a NLU prediction has a low confidence score, the user is asked to confirm
   whether they really had this intent.
 
     - If they confirm, the story continues as if the intent was recognized
       with high confidence from the beginning.
-    - If they deny, the user is asked to restate his intent. It is recommended
-      do this with a custom action which offers the user two buttons for
-      ``Yes`` and ``No`` to make their confirmation distinct
+    - If they deny, the user is asked to restate his intent.
 
 - Clarification
 
-    - If the recognition for this clarification was confident the story
+    - If the recognition of the clarification was confident, the story
       continues as if the user had this intent from the beginning.
     - If the clarification was not recognised with high confidence, the user
       is asked to confirm the recognized intent.
@@ -422,6 +420,9 @@ This policy handles low NLU confidence in multiple stages.
     - If the user denies, an ultimate fallback action is triggered
       (e.g. a handoff to a human).
 
+Configuration
+"""""""""""""
+
 To use this policy, include the following in your policy configuration.
 Note that you cannot use this together with the default fallback policy.
 
@@ -431,11 +432,7 @@ Note that you cannot use this together with the default fallback policy.
       - name: TwoStageFallbackPolicy
         nlu_threshold: 0.3
         core_threshold: 0.3
-        confirmation_action_name: "action_ask_confirmation"
-        clarification_action_name: "action_ask_clarification"
         fallback_action_name: "action_default_fallback"
-        confirm_intent_name: "confirm"
-        deny_intent_name: "deny"
 
 +-------------------------------+---------------------------------------------+
 | ``nlu_threshold``             | Min confidence needed to accept an NLU      |
@@ -448,48 +445,27 @@ Note that you cannot use this together with the default fallback policy.
 |                               | confidence of intent / action prediction    |
 |                               | is below the threshold                      |
 +-------------------------------+---------------------------------------------+
-| ``confirmation_action_name``  | This action is executed if the user has     |
-|                               | to confirm their intent                     |
-+-------------------------------+---------------------------------------------+
-| ``clarification_action_name`` | This action is executed if the user should  |
-|                               | clarify / restate their intent              |
-+-------------------------------+---------------------------------------------+
-| ``confirm_intent_name``       | If NLU recognises this intent, the user     |
-|                               | has agreed to the suggested intent          |
-+-------------------------------+---------------------------------------------+
-| ``deny_intent_name``          | If NLU recognises this intent, the user     |
-|                               | has denied the suggested intent             |
-+-------------------------------+---------------------------------------------+
 
-This is an example how a custom action ``confirm_action_name`` could look
-like:
+.. note::
 
-.. code-block:: python
+    It is required to have the two intents ``confirm`` and ``deny`` in the
+    domain of the bot. These are used to identify whether the user confirmed
+    to a suggestion or denied it.
 
-    from rasa_core_sdk import Action
+Asking the User for Confirmation
+""""""""""""""""""""""""""""""""
 
+By default the action ``action_default_ask_confirmation`` is triggered which
+asks the users whether they actually had the recognized intent. It is suggested
+to overwrite the behavior of this default implementation to have more
+meaningful prompts. This is done with :ref:`customactions`.
 
-    class ActionConfirm(Action):
-        def name(self):
-            return "action_confirm"
+Asking the User for Clarification
+"""""""""""""""""""""""""""""""""
 
-        def run(self, dispatcher, tracker, domain):
-            intent_to_confirm = tracker.latest_message['intent']['name']
-            confirmation_message = 'Did you had this intent: {}'.format(
-                intent_to_confirm)
-
-            dispatcher.utter_button_message(text=confirmation_message,
-                                            buttons=[{'title': 'Yes',
-                                                      'payload': '/confirm'},
-                                                     {'title': 'No',
-                                                      'payload': '/deny'}])
-
-        return []
-
-Whenever triggered, it asks the user whether they really had the intent
-``intent_to_confirm``. The example does this with the plane name of the intent,
-but it is suggested to define some mapping from the intent identification name
-to a more self-explanatory text. The action then offers the user to buttons
-to either confirm or deny the suggested intent.
+By default the action ``action_default_ask_clarification`` is triggered to
+ask the user for a clarification of their request. This action utter the
+message for the response template ``utter_ask_clarification``.
+The behavior can be customized by implementing a :ref:`customactions`.
 
 .. include:: feedback.inc
