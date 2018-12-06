@@ -95,13 +95,13 @@ class DialogueStateTracker(object):
         # `reset()`
         ###
         # if tracker is paused, no actions should be taken
-        self._paused: bool = False
+        self._paused = False
         # A deterministically scheduled action to be executed next
-        self.followup_action: Optional[Text] = ACTION_LISTEN_NAME
+        self.followup_action = ACTION_LISTEN_NAME
         self.latest_action_name = None
         # Stores the most recent message sent by the user
-        self.latest_message: Optional[UserUttered] = None
-        self.latest_bot_utterance: Optional[BotUttered] = None
+        self.latest_message = None
+        self.latest_bot_utterance = None
         self._reset()
         self.active_form = {}
 
