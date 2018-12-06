@@ -40,7 +40,8 @@ install_requires = [
     "numpy>=1.13",
     "simplejson",
     "ruamel.yaml~=0.15",
-    'coloredlogs',
+    "coloredlogs",
+    "msgpack>=0.3.0,<0.6"
 ]
 
 extras_requires = {
