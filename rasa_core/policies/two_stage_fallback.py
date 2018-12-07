@@ -84,12 +84,13 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             result = confidence_scores_for(ACTION_LISTEN_NAME, FALLBACK_SCORE,
                                            domain)
         elif _has_user_denied(last_intent_name, tracker):
-            logger.debug("User '{}' denied suggested intent.".format(
+            logger.debug("User '{}' denied suggested intents.".format(
                 tracker.sender_id))
             result = self._results_for_user_denied(tracker, domain)
         elif user_clarified and should_fallback:
-            logger.debug("Ambiguous clarification of user '{}'".format(
-                tracker.sender_id))
+            logger.debug("Ambiguous clarification of user '{}' "
+                         "for intent '{}'".format(tracker.sender_id,
+                                                  last_intent_name))
             result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
                                            FALLBACK_SCORE,
                                            domain)
@@ -101,8 +102,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         elif tracker.last_executed_action_has(
                 ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
             if not should_fallback:
-                logger.debug("User '{}' clarified instead "
-                             "of confirming.".format(tracker.sender_id))
+                logger.debug("User '{}' clarified with intent '{}' instead "
+                             "of confirming.".format(tracker.sender_id,
+                                                     last_intent_name))
                 result = confidence_scores_for(
                     ACTION_REVERT_FALLBACK_EVENTS_NAME,
                     FALLBACK_SCORE, domain)
@@ -110,8 +112,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 result = confidence_scores_for(self.fallback_action_name,
                                                FALLBACK_SCORE, domain)
         elif should_fallback:
-            logger.debug("User '{}' has to confirm intent.".format(
-                tracker.sender_id))
+            logger.debug("User '{}' has to confirm intent '{}'.".format(
+                tracker.sender_id, last_intent_name))
             result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
                                            FALLBACK_SCORE,
                                            domain)
