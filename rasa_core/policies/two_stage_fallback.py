@@ -4,10 +4,11 @@ import os
 from typing import List, Text
 
 from rasa_core import utils
-from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS,
+from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME,
-                                      ACTION_DEFAULT_ASK_CLARIFICATION,
-                                      ACTION_DEFAULT_ASK_CONFIRMATION)
+                                      ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+                                      ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+                                      ACTION_LISTEN_NAME)
 from rasa_core.constants import (FALLBACK_SCORE, USER_INTENT_CONFIRM,
                                  USER_INTENT_DENY)
 from rasa_core.domain import Domain, InvalidDomain
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 class TwoStageFallbackPolicy(FallbackPolicy):
     """ This policy handles low NLU confidence in multiple stages.
 
-        If a NLU prediction has a low confidence store,
+        If a NLU prediction has a low confidence score,
         the user is asked to confirm whether they really had this intent.
         If they confirm, the story continues as if the intent was recognized
         with high confidence from the beginning.
@@ -43,17 +44,17 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                  ) -> None:
         """Create a new Two Stage Fallback policy.
 
-                Args:
-                    nlu_threshold: minimum threshold for NLU confidence.
-                        If intent prediction confidence is lower than this,
-                        predict fallback action with confidence 1.0.
-                    core_threshold: if NLU confidence threshold is met,
-                        predict fallback action with confidence
-                        `core_threshold`. If this is the highest confidence in
-                        the ensemble, the fallback action will be executed.
-                    fallback_action_name: This action is executed if the user
-                        denies the recognised intent for the second time.
-                """
+        Args:
+            nlu_threshold: minimum threshold for NLU confidence.
+                If intent prediction confidence is lower than this,
+                predict fallback action with confidence 1.0.
+            core_threshold: if NLU confidence threshold is met,
+                predict fallback action with confidence
+                `core_threshold`. If this is the highest confidence in
+                the ensemble, the fallback action will be executed.
+            fallback_action_name: This action is executed if the user
+                denies the recognised intent for the second time.
+        """
         super(TwoStageFallbackPolicy, self).__init__()
 
         self.nlu_threshold = nlu_threshold
@@ -79,33 +80,39 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                                                tracker.latest_action_name)
         user_clarified = has_user_clarified(tracker)
 
-        if self.__is_user_input_expected(tracker):
-            result = confidence_scores_for('action_listen', FALLBACK_SCORE,
+        if self._is_user_input_expected(tracker):
+            result = confidence_scores_for(ACTION_LISTEN_NAME, FALLBACK_SCORE,
                                            domain)
         elif _has_user_denied(last_intent_name, tracker):
-            logger.debug("User denied suggested intent.")
-            result = self.__results_for_user_denied(tracker, domain)
+            logger.debug("User '{}' denied suggested intent.".format(
+                tracker.sender_id))
+            result = self._results_for_user_denied(tracker, domain)
         elif user_clarified and should_fallback:
-            logger.debug("Clarification of intent was not clear enough.")
-            result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION,
+            logger.debug("Ambiguous clarification of user '{}'".format(
+                tracker.sender_id))
+            result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
                                            FALLBACK_SCORE,
                                            domain)
         elif has_user_confirmed(last_intent_name, tracker) or user_clarified:
-            logger.debug("User intent confirmed by confirmation or "
-                         "clarification.")
-            result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS,
+            logger.debug("User '{}' confirmed intent by confirmation or "
+                         "clarification.".format(tracker.sender_id))
+            result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                            FALLBACK_SCORE, domain)
-        elif tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION):
+        elif tracker.last_executed_action_has(
+                ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
             if not should_fallback:
-                logger.debug("User clarified instead of confirming.")
-                result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS,
-                                               FALLBACK_SCORE, domain)
+                logger.debug("User '{}' clarified instead "
+                             "of confirming.".format(tracker.sender_id))
+                result = confidence_scores_for(
+                    ACTION_REVERT_FALLBACK_EVENTS_NAME,
+                    FALLBACK_SCORE, domain)
             else:
                 result = confidence_scores_for(self.fallback_action_name,
                                                FALLBACK_SCORE, domain)
         elif should_fallback:
-            logger.debug("User has to confirm intent.")
-            result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION,
+            logger.debug("User '{}' has to confirm intent.".format(
+                tracker.sender_id))
+            result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
                                            FALLBACK_SCORE,
                                            domain)
         else:
@@ -113,22 +120,23 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
         return result
 
-    def __is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
-        return tracker.latest_action_name in [ACTION_DEFAULT_ASK_CONFIRMATION,
-                                              ACTION_DEFAULT_ASK_CLARIFICATION,
-                                              self.fallback_action_name]
+    def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
+        return tracker.latest_action_name in [
+            ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+            ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+            self.fallback_action_name]
 
-    def __results_for_user_denied(self, tracker: DialogueStateTracker,
-                                  domain: Domain) -> List[float]:
+    def _results_for_user_denied(self, tracker: DialogueStateTracker,
+                                 domain: Domain) -> List[float]:
         has_denied_before = tracker.last_executed_action_has(
-            ACTION_DEFAULT_ASK_CLARIFICATION,
+            ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
             skip=1)
 
         if has_denied_before:
             return confidence_scores_for(self.fallback_action_name,
                                          FALLBACK_SCORE, domain)
         else:
-            return confidence_scores_for(ACTION_DEFAULT_ASK_CLARIFICATION,
+            return confidence_scores_for(ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
                                          FALLBACK_SCORE, domain)
 
     def persist(self, path: Text) -> None:
@@ -156,16 +164,19 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 def has_user_confirmed(last_intent: Text,
                        tracker: DialogueStateTracker) -> bool:
     return (
-        tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION) and
+        tracker.last_executed_action_has(
+            ACTION_DEFAULT_ASK_CONFIRMATION_NAME) and
         last_intent == USER_INTENT_CONFIRM)
 
 
 def _has_user_denied(last_intent: Text,
                      tracker: DialogueStateTracker) -> bool:
     return (
-        tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION) and
+        tracker.last_executed_action_has(
+            ACTION_DEFAULT_ASK_CONFIRMATION_NAME) and
         last_intent == USER_INTENT_DENY)
 
 
 def has_user_clarified(tracker: DialogueStateTracker) -> bool:
-    return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CLARIFICATION)
+    return tracker.last_executed_action_has(
+        ACTION_DEFAULT_ASK_CLARIFICATION_NAME)

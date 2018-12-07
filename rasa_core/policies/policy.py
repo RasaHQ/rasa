@@ -139,9 +139,18 @@ class Policy(object):
                                   "to load itself.")
 
 
-def confidence_scores_for(action_name, value, domain, results=None):
-    if results is None:
-        results = [0.0] * domain.num_actions
+def confidence_scores_for(action_name, value, domain):
+    """Returns confidence scores if a single action is predicted.
+
+    Args:
+        action_name: Name of action for which the score should be set.
+        value: Confidence for `action_name`.
+        domain: Domain which contains all actions.
+
+    Returns: List of length `len(nr_actions)`.
+
+    """
+    results = [0.0] * domain.num_actions
     idx = domain.index_for_action(action_name)
     results[idx] = value
 

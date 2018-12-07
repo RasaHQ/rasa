@@ -530,6 +530,6 @@ class DialogueStateTracker(object):
         """
         last = self.get_last_event_for(ActionExecuted,
                                        action_names_to_exclude=[
-                                           'action_listen'],
+                                           ACTION_LISTEN_NAME],
                                        skip=skip)
         return last is not None and last.action_name == name

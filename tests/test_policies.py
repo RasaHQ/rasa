@@ -6,8 +6,8 @@ import pytest
 from rasa_core import training
 from rasa_core.actions.action import (ACTION_LISTEN_NAME,
                                       ActionRevertFallbackEvents,
-                                      ACTION_DEFAULT_ASK_CONFIRMATION,
-                                      ACTION_DEFAULT_ASK_CLARIFICATION,
+                                      ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+                                      ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME)
 from rasa_core.channels import UserMessage
 from rasa_core.constants import USER_INTENT_CONFIRM, USER_INTENT_DENY
@@ -473,7 +473,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         next_action = self._get_next_action(trained_policy, events,
                                             default_domain)
 
-        assert next_action == ACTION_DEFAULT_ASK_CONFIRMATION
+        assert next_action == ACTION_DEFAULT_ASK_CONFIRMATION_NAME
 
     def test_confirmation(self, default_dispatcher_collecting, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
@@ -481,7 +481,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ActionExecuted('utter_hello'),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered('greet', 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_CONFIRM, 1)]
 
@@ -498,24 +498,24 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
     def test_ask_clarification(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1)]
 
         next_action = self._get_next_action(trained_policy, events,
                                             default_domain)
 
-        assert next_action == ACTION_DEFAULT_ASK_CLARIFICATION
+        assert next_action == ACTION_DEFAULT_ASK_CLARIFICATION_NAME
 
     def test_successful_clarification(self, trained_policy,
                                       default_dispatcher_collecting,
                                       default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("bye", 1),
                   ]
@@ -530,10 +530,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
     def test_confirm_clarification(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ]
@@ -541,20 +541,20 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         next_action = self._get_next_action(trained_policy, events,
                                             default_domain)
 
-        assert next_action == ACTION_DEFAULT_ASK_CONFIRMATION
+        assert next_action == ACTION_DEFAULT_ASK_CONFIRMATION_NAME
 
     def test_confirmed_clarification(self, trained_policy,
                                      default_dispatcher_collecting,
                                      default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("bye", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_CONFIRM, 1)
                   ]
@@ -570,13 +570,13 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                                                default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CLARIFICATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("bye", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1)
                   ]
@@ -594,7 +594,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ActionExecuted("utter_hello"),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("bye", 1),
                   ]
@@ -612,7 +612,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
     def test_unknown_instead_confirmation(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION),
+                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ]

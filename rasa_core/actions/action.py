@@ -28,11 +28,11 @@ ACTION_DEFAULT_FALLBACK_NAME = "action_default_fallback"
 
 ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
 
-ACTION_REVERT_FALLBACK_EVENTS = 'action_revert_fallback_events'
+ACTION_REVERT_FALLBACK_EVENTS_NAME = 'action_revert_fallback_events'
 
-ACTION_DEFAULT_ASK_CONFIRMATION = 'action_default_ask_confirmation'
+ACTION_DEFAULT_ASK_CONFIRMATION_NAME = 'action_default_ask_confirmation'
 
-ACTION_DEFAULT_ASK_CLARIFICATION = 'action_default_ask_clarification'
+ACTION_DEFAULT_ASK_CLARIFICATION_NAME = 'action_default_ask_clarification'
 
 
 def default_actions() -> List['Action']:
@@ -388,46 +388,49 @@ class ActionExecutionRejection(Exception):
 class ActionRevertFallbackEvents(Action):
     """Reverts events which were done during the `TwoStageFallbackPolicy`.
 
-       This reverts user messages and bot utterances were done as part of the
-       of the `TwoStageFallbackPolicy`. By doing so it is not necessary to
+       This reverts user messages and bot utterances done during a fallback.
+       By doing so it is not necessary to
        write custom stories for the different paths, but only of the happy
        path.
     """
 
     def name(self) -> Text:
-        return ACTION_REVERT_FALLBACK_EVENTS
+        return ACTION_REVERT_FALLBACK_EVENTS_NAME
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
         from rasa_core.policies.two_stage_fallback import (has_user_clarified,
                                                            has_user_confirmed)
+        import copy
 
-        last_intent = tracker.latest_message.intent.get('name')
+        last_user_event = tracker.latest_message.intent.get('name')
         revert_events = []
 
         # User confirmed
-        if has_user_confirmed(last_intent, tracker):
+        if has_user_confirmed(last_user_event, tracker):
             revert_events = _revert_confirmation_events()
 
-            intent = tracker.get_last_event_for(UserUttered, skip=1)
-            intent.parse_data['intent']['confidence'] = FALLBACK_SCORE
+            last_user_event = tracker.get_last_event_for(UserUttered, skip=1)
+            last_user_event = copy.deepcopy(last_user_event)
+            last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
 
             # User confirms clarification
             clarification = tracker.last_executed_action_has(
-                name=ACTION_DEFAULT_ASK_CLARIFICATION,
+                name=ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
                 skip=1)
             if clarification:
-                revert_events += _revert_clarification_events(intent)
+                revert_events += _revert_clarification_events(last_user_event)
             else:
-                revert_events += [intent]
+                revert_events += [last_user_event]
         # User clarified
         elif has_user_clarified(tracker):
-            last_intent = tracker.get_last_event_for(UserUttered)
-            revert_events = _revert_clarification_events(last_intent)
+            last_user_event = tracker.get_last_event_for(UserUttered)
+            revert_events = _revert_clarification_events(last_user_event)
         # User clarified instead of confirmation
-        elif tracker.last_executed_action_has(ACTION_DEFAULT_ASK_CONFIRMATION):
-            last_intent = tracker.get_last_event_for(UserUttered)
-            revert_events = _revert_confirmation_events() + [last_intent]
+        elif tracker.last_executed_action_has(
+                ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
+            last_user_event = tracker.get_last_event_for(UserUttered)
+            revert_events = _revert_confirmation_events() + [last_user_event]
 
         return revert_events
 
@@ -460,13 +463,12 @@ class ActionDefaultAskConfirmation(Action):
     """
 
     def name(self) -> Text:
-        return ACTION_DEFAULT_ASK_CONFIRMATION
+        return ACTION_DEFAULT_ASK_CONFIRMATION_NAME
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
         intent_to_confirm = tracker.latest_message.intent.get('name')
-        confirmation_message = 'Did you have this intent: {}'.format(
-            intent_to_confirm)
+        confirmation_message = "Did you mean '{}'?".format(intent_to_confirm)
 
         dispatcher.utter_button_message(text=confirmation_message,
                                         buttons=[{'title': 'Yes',
@@ -483,7 +485,7 @@ class ActionDefaultAskClarification(Action):
     """Default implementation which asks the user to clarify his intent."""
 
     def name(self) -> Text:
-        return ACTION_DEFAULT_ASK_CLARIFICATION
+        return ACTION_DEFAULT_ASK_CLARIFICATION_NAME
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:

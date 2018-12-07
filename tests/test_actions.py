@@ -9,8 +9,8 @@ from rasa_core.actions.action import (
     ActionListen, RemoteAction,
     ActionExecutionRejection, ACTION_LISTEN_NAME, ACTION_RESTART_NAME,
     ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEACTIVATE_FORM_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS, ACTION_DEFAULT_ASK_CONFIRMATION,
-    ACTION_DEFAULT_ASK_CLARIFICATION)
+    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_CLARIFICATION_NAME)
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
@@ -59,9 +59,11 @@ def test_domain_action_instantiation():
     assert instantiated_actions[1].name() == ACTION_RESTART_NAME
     assert instantiated_actions[2].name() == ACTION_DEFAULT_FALLBACK_NAME
     assert instantiated_actions[3].name() == ACTION_DEACTIVATE_FORM_NAME
-    assert instantiated_actions[4].name() == ACTION_REVERT_FALLBACK_EVENTS
-    assert instantiated_actions[5].name() == ACTION_DEFAULT_ASK_CONFIRMATION
-    assert instantiated_actions[6].name() == ACTION_DEFAULT_ASK_CLARIFICATION
+    assert instantiated_actions[4].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
+    assert instantiated_actions[5].name() == (
+        ACTION_DEFAULT_ASK_CONFIRMATION_NAME)
+    assert instantiated_actions[6].name() == (
+        ACTION_DEFAULT_ASK_CLARIFICATION_NAME)
     assert instantiated_actions[7].name() == "my_module.ActionTest"
     assert instantiated_actions[8].name() == "utter_test"
 

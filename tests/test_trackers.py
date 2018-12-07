@@ -474,7 +474,7 @@ def test_get_last_event_for_with_exclude():
 def test_last_executed_has():
     events = [ActionExecuted('one'),
               user_uttered('two', 1),
-              ActionExecuted('action_listen')]
+              ActionExecuted(ACTION_LISTEN_NAME)]
 
     tracker = get_tracker(events)
 
@@ -484,7 +484,7 @@ def test_last_executed_has():
 def test_last_executed_has_not_name():
     events = [ActionExecuted('one'),
               user_uttered('two', 1),
-              ActionExecuted('action_listen')]
+              ActionExecuted(ACTION_LISTEN_NAME)]
 
     tracker = get_tracker(events)
 
