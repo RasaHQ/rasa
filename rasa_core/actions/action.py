@@ -401,57 +401,67 @@ class ActionRevertFallbackEvents(Action):
             domain: 'Domain') -> List[Event]:
         from rasa_core.policies.two_stage_fallback import (has_user_clarified,
                                                            has_user_confirmed)
-        import copy
 
         last_user_event = tracker.latest_message.intent.get('name')
         revert_events = []
 
         # User confirmed
         if has_user_confirmed(last_user_event, tracker):
-            revert_events = _revert_confirmation_events()
-
-            last_user_event = tracker.get_last_event_for(UserUttered, skip=1)
-            last_user_event = copy.deepcopy(last_user_event)
-            last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
-
-            # User confirms clarification
-            clarification = tracker.last_executed_action_has(
-                name=ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
-                skip=1)
-            if clarification:
-                revert_events += _revert_clarification_events(last_user_event)
-            else:
-                revert_events += [last_user_event]
+            revert_events = _revert_confirmation_events(tracker)
         # User clarified
         elif has_user_clarified(tracker):
-            last_user_event = tracker.get_last_event_for(UserUttered)
-            revert_events = _revert_clarification_events(last_user_event)
+            revert_events = _revert_successful_confirmation(tracker)
         # User clarified instead of confirmation
         elif tracker.last_executed_action_has(
                 ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
-            last_user_event = tracker.get_last_event_for(UserUttered)
-            revert_events = _revert_confirmation_events() + [last_user_event]
+            revert_events = _revert_early_clarification(tracker)
 
         return revert_events
 
 
-def _revert_clarification_events(last_intent: UserUttered) -> List[Event]:
+def _revert_confirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
+    import copy
+    revert_events = _revert_single_confirmation_events()
+
+    last_user_event = tracker.get_last_event_for(UserUttered, skip=1)
+    last_user_event = copy.deepcopy(last_user_event)
+    last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
+
+    # User confirms clarification
+    clarification = tracker.last_executed_action_has(
+        name=ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+        skip=1)
+    if clarification:
+        revert_events += _revert_clarification_events()
+
+    return revert_events + [last_user_event]
+
+
+def _revert_single_confirmation_events() -> List[Event]:
+    return [UserUtteranceReverted(),  # revert confirmation and request
+            # revert original intent (has to be re-added later)
+            UserUtteranceReverted(),
+            # add action listen intent
+            ActionExecuted(action_name=ACTION_LISTEN_NAME)]
+
+
+def _revert_successful_confirmation(tracker) -> List[Event]:
+    last_user_event = tracker.get_last_event_for(UserUttered)
+    return _revert_clarification_events() + [last_user_event]
+
+
+def _revert_early_clarification(tracker: 'DialogueStateTracker') -> List[Event]:
+    last_user_event = tracker.get_last_event_for(UserUttered)
+    return _revert_single_confirmation_events() + [last_user_event]
+
+
+def _revert_clarification_events() -> List[Event]:
     return [UserUtteranceReverted(),  # remove clarification
             # remove feedback and clarification request
             UserUtteranceReverted(),
             # remove confirmation request and false intent
             UserUtteranceReverted(),
             # replace action with action listen
-            ActionExecuted(action_name=ACTION_LISTEN_NAME),
-            last_intent,  # add right intent
-            ]
-
-
-def _revert_confirmation_events() -> List[Event]:
-    return [UserUtteranceReverted(),  # revert confirmation and request
-            # revert original intent (has to be re-added later)
-            UserUtteranceReverted(),
-            # add action listen intent
             ActionExecuted(action_name=ACTION_LISTEN_NAME)]
 
 
