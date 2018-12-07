@@ -388,7 +388,7 @@ class ActionExecutionRejection(Exception):
 class ActionRevertFallbackEvents(Action):
     """Reverts events which were done during the `TwoStageFallbackPolicy`.
 
-       This reverts user messages and bot utterances were done as part of the
+       This reverts user messages and bot utterances done during a fallback
        of the `TwoStageFallbackPolicy`. By doing so it is not necessary to
        write custom stories for the different paths, but only of the happy
        path.
