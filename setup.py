@@ -14,7 +14,7 @@ with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 
 tests_requires = [
     "pytest~=3.0",
-    "pytest-pep8~=1.0",
+    "pytest-pycodestyle~=1.3",
     "pytest-cov~=2.0",
     "pytest_localserver~=0.4.0",
     "treq~=17.0",
@@ -68,7 +68,7 @@ install_requires = [
     "PyInquirer~=1.0",
     "prompt_toolkit==1.0.14",
     "flask-jwt-simple~=0.0.3",
-    "python-socketio~=2.0",
+    "python-socketio>=2.1.1,<3",
     "pydot~=1.2",
 ]
 

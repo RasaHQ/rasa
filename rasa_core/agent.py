@@ -53,9 +53,9 @@ def load_from_server(interpreter: NaturalLanguageInterpreter = None,
 
     wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
                                                       100)
-    if wait_time_between_pulls is not None and \
-        (isinstance(wait_time_between_pulls, int) or
-         wait_time_between_pulls.isdigit()):
+    if wait_time_between_pulls is not None and (
+            isinstance(wait_time_between_pulls,
+                       int) or wait_time_between_pulls.isdigit()):
         # continuously pull the model every `wait_time_between_pulls` seconds
         start_model_pulling_in_worker(model_server,
                                       int(wait_time_between_pulls),
@@ -429,9 +429,9 @@ class Agent(object):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         for policy in self.policy_ensemble.policies:
-            if (policy.featurizer and
-                    not hasattr(policy.featurizer, 'max_history')):
-                return False
+            if (policy.featurizer and not
+                    hasattr(policy.featurizer, 'max_history')):
+                        return False
         return True
 
     def load_data(self,
@@ -676,6 +676,6 @@ class Agent(object):
         """Check whether form policy is not present
             if there is a form action in the domain
         """
-        return (self.domain and self.domain.form_names and
-                not any(isinstance(p, FormPolicy)
-                        for p in self.policy_ensemble.policies))
+        return (self.domain and self.domain.form_names and not
+                any(isinstance(p, FormPolicy)
+                    for p in self.policy_ensemble.policies))
