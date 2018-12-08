@@ -16,6 +16,8 @@ Added
 - A support for session persistence mechanism in the ``SocketIOInput``
   compatible with the example SocketIO WebChat + short explanation on
   how session persistence should be implemented in a frontend
+- Additional checks in PolicyEnsemble to ensure that custom Policy
+  classes' load function returns the correct type
 
 Removed
 -------
