@@ -23,12 +23,11 @@ class WorkingPolicy(Policy):
 
 
 def test_policy_loading_simple(tmpdir):
-
     original_policy_ensemble = PolicyEnsemble([WorkingPolicy()])
     original_policy_ensemble.train([], None)
-    original_policy_ensemble.persist(tmpdir)
+    original_policy_ensemble.persist(str(tmpdir))
 
-    loaded_policy_ensemble = PolicyEnsemble.load(tmpdir)
+    loaded_policy_ensemble = PolicyEnsemble.load(str(tmpdir))
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
 
 
@@ -50,10 +49,10 @@ class LoadReturnsNonePolicy(Policy):
 def test_policy_loading_load_returns_none(tmpdir):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsNonePolicy()])
     original_policy_ensemble.train([], None)
-    original_policy_ensemble.persist(tmpdir)
+    original_policy_ensemble.persist(str(tmpdir))
 
     with pytest.raises(Exception):
-        PolicyEnsemble.load(tmpdir)
+        PolicyEnsemble.load(str(tmpdir))
 
 
 class LoadReturnsWrongTypePolicy(Policy):
@@ -74,7 +73,7 @@ class LoadReturnsWrongTypePolicy(Policy):
 def test_policy_loading_load_returns_wrong_type(tmpdir):
     original_policy_ensemble = PolicyEnsemble([LoadReturnsWrongTypePolicy()])
     original_policy_ensemble.train([], None)
-    original_policy_ensemble.persist(tmpdir)
+    original_policy_ensemble.persist(str(tmpdir))
 
     with pytest.raises(Exception):
-        PolicyEnsemble.load(tmpdir)
+        PolicyEnsemble.load(str(tmpdir))
