@@ -394,7 +394,7 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-Two Stage Fallback Policy
+Two-stage Fallback Policy
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This policy handles low NLU confidence in multiple stages.
