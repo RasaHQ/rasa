@@ -404,7 +404,7 @@ This policy handles low NLU confidence in multiple stages.
 
     - If they affirm, the story continues as if the intent was classified
       with high confidence from the beginning.
-    - If they deny, the user is asked to rephrase their intent.
+    - If they deny, the user is asked to rephrase their message.
 
 - Rephrasing
 
