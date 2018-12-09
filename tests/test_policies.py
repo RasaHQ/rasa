@@ -6,11 +6,11 @@ import pytest
 from rasa_core import training
 from rasa_core.actions.action import (ACTION_LISTEN_NAME,
                                       ActionRevertFallbackEvents,
-                                      ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+                                      ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
                                       ACTION_DEFAULT_ASK_REPHRASE_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME)
 from rasa_core.channels import UserMessage
-from rasa_core.constants import USER_INTENT_CONFIRM, USER_INTENT_DENY
+from rasa_core.constants import USER_INTENT_AFFIRM, USER_INTENT_DENY
 from rasa_core.domain import Domain, InvalidDomain
 from rasa_core.events import ActionExecuted
 from rasa_core.featurizers import (
@@ -447,7 +447,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         intents:
           - greet
           - bye
-          - confirm
+          - affirm
           - deny
         """
         return Domain.from_yaml(content)
@@ -466,24 +466,24 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         return get_tracker(events)
 
-    def test_ask_confirmation(self, trained_policy, default_domain):
+    def test_ask_affirmation(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("Hi", 0.2)]
 
         next_action = self._get_next_action(trained_policy, events,
                                             default_domain)
 
-        assert next_action == ACTION_DEFAULT_ASK_CONFIRMATION_NAME
+        assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    def test_confirmation(self, default_dispatcher_collecting, default_domain):
+    def test_affirmation(self, default_dispatcher_collecting, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered('greet', 1),
                   ActionExecuted('utter_hello'),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered('greet', 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
-                  user_uttered(USER_INTENT_CONFIRM, 1)]
+                  user_uttered(USER_INTENT_AFFIRM, 1)]
 
         tracker = self._get_tracker_after_reverts(events,
                                                   default_dispatcher_collecting,
@@ -498,7 +498,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
     def test_ask_rephrase(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1)]
 
@@ -512,7 +512,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                                    default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
                   ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
@@ -527,10 +527,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
 
-    def test_confirm_rephrased_intent(self, trained_policy, default_domain):
+    def test_affirm_rephrased_intent(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
                   ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
@@ -541,22 +541,22 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         next_action = self._get_next_action(trained_policy, events,
                                             default_domain)
 
-        assert next_action == ACTION_DEFAULT_ASK_CONFIRMATION_NAME
+        assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    def test_confirmed_rephrasing(self, trained_policy,
-                                  default_dispatcher_collecting,
-                                  default_domain):
+    def test_affirmed_rephrasing(self, trained_policy,
+                                 default_dispatcher_collecting,
+                                 default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
                   ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("bye", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
-                  user_uttered(USER_INTENT_CONFIRM, 1)
+                  user_uttered(USER_INTENT_AFFIRM, 1)
                   ]
 
         tracker = self._get_tracker_after_reverts(events,
@@ -566,17 +566,17 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
 
-    def test_denied_rephrasing_confirmation(self, trained_policy,
-                                            default_domain):
+    def test_denied_rephrasing_affirmation(self, trained_policy,
+                                           default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1),
                   ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("bye", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_DENY, 1)
                   ]
@@ -586,15 +586,15 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_FALLBACK_NAME
 
-    def test_rephrasing_instead_confirmation(self, trained_policy,
-                                             default_dispatcher_collecting,
-                                             default_domain):
+    def test_rephrasing_instead_affirmation(self, trained_policy,
+                                            default_dispatcher_collecting,
+                                            default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 1),
                   ActionExecuted("utter_hello"),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("bye", 1),
                   ]
@@ -609,10 +609,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                                             "    - utter_hello\n"
                                             "* bye\n")
 
-    def test_unknown_instead_confirmation(self, trained_policy, default_domain):
+    def test_unknown_instead_affirmation(self, trained_policy, default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
-                  ActionExecuted(ACTION_DEFAULT_ASK_CONFIRMATION_NAME),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ]

@@ -7,9 +7,9 @@ from rasa_core import utils
 from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME,
                                       ACTION_DEFAULT_ASK_REPHRASE_NAME,
-                                      ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+                                      ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
                                       ACTION_LISTEN_NAME)
-from rasa_core.constants import (FALLBACK_SCORE, USER_INTENT_CONFIRM,
+from rasa_core.constants import (FALLBACK_SCORE, USER_INTENT_AFFIRM,
                                  USER_INTENT_DENY)
 from rasa_core.domain import Domain, InvalidDomain
 from rasa_core.policies.fallback import FallbackPolicy
@@ -23,15 +23,15 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     """ This policy handles low NLU confidence in multiple stages.
 
         If a NLU prediction has a low confidence score,
-        the user is asked to confirm whether they really had this intent.
-        If they confirm, the story continues as if the intent was classified
+        the user is asked to affirm whether they really had this intent.
+        If they affirm, the story continues as if the intent was classified
         with high confidence from the beginning.
         If they deny, the user is asked to rephrase his intent.
         If the classification for the rephrased intent was confident, the story
         continues as if the user had this intent from the beginning.
         If the rephrased intent was not classified with high confidence,
-        the user is asked to confirm the classified intent.
-        If the user confirms the intent, the story continues as if the user had
+        the user is asked to affirm the classified intent.
+        If the user affirm the intent, the story continues as if the user had
         this intent from the beginning.
         If the user denies, an ultimate fallback action is triggered
         (e.g. a handoff to a human).
@@ -67,11 +67,11 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         """Predicts the next action if NLU confidence is low.
         """
 
-        if (USER_INTENT_CONFIRM not in domain.intents or
+        if (USER_INTENT_AFFIRM not in domain.intents or
                 USER_INTENT_DENY not in domain.intents):
             raise InvalidDomain('The intents {} and {} must be present in the '
                                 'domain file to use this policy.'.format(
-                                    USER_INTENT_CONFIRM, USER_INTENT_CONFIRM))
+                                    USER_INTENT_AFFIRM, USER_INTENT_AFFIRM))
 
         nlu_data = tracker.latest_message.parse_data
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
@@ -91,20 +91,20 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             logger.debug("Ambiguous rephrasing of user '{}' "
                          "for intent '{}'".format(tracker.sender_id,
                                                   last_intent_name))
-            result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+            result = confidence_scores_for(ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
                                            FALLBACK_SCORE,
                                            domain)
-        elif has_user_confirmed(last_intent_name, tracker) or user_rephrased:
-            logger.debug("User '{}' confirmed intent by confirmation or "
+        elif has_user_affirmed(last_intent_name, tracker) or user_rephrased:
+            logger.debug("User '{}' affirmed intent by affirmation or "
                          "rephrasing.".format(tracker.sender_id))
             result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                            FALLBACK_SCORE, domain)
         elif tracker.last_executed_action_has(
-                ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
+                ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
             if not should_fallback:
                 logger.debug("User '{}' rephrased intent '{}' instead "
-                             "of confirming.".format(tracker.sender_id,
-                                                     last_intent_name))
+                             "of affirming.".format(tracker.sender_id,
+                                                    last_intent_name))
                 result = confidence_scores_for(
                     ACTION_REVERT_FALLBACK_EVENTS_NAME,
                     FALLBACK_SCORE, domain)
@@ -112,9 +112,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 result = confidence_scores_for(self.fallback_action_name,
                                                FALLBACK_SCORE, domain)
         elif should_fallback:
-            logger.debug("User '{}' has to confirm intent '{}'.".format(
+            logger.debug("User '{}' has to affirm intent '{}'.".format(
                 tracker.sender_id, last_intent_name))
-            result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+            result = confidence_scores_for(ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
                                            FALLBACK_SCORE,
                                            domain)
         else:
@@ -124,7 +124,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         return tracker.latest_action_name in [
-            ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+            ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
             ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name]
 
@@ -163,19 +163,17 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         return cls(**meta)
 
 
-def has_user_confirmed(last_intent: Text,
-                       tracker: DialogueStateTracker) -> bool:
-    return (
-        tracker.last_executed_action_has(
-            ACTION_DEFAULT_ASK_CONFIRMATION_NAME) and
-        last_intent == USER_INTENT_CONFIRM)
+def has_user_affirmed(last_intent: Text,
+                      tracker: DialogueStateTracker) -> bool:
+    return (tracker.last_executed_action_has(
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME) and
+        last_intent == USER_INTENT_AFFIRM)
 
 
 def _has_user_denied(last_intent: Text,
                      tracker: DialogueStateTracker) -> bool:
-    return (
-        tracker.last_executed_action_has(
-            ACTION_DEFAULT_ASK_CONFIRMATION_NAME) and
+    return (tracker.last_executed_action_has(
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME) and
         last_intent == USER_INTENT_DENY)
 
 

@@ -9,7 +9,7 @@ from rasa_core.actions.action import (
     ActionListen, RemoteAction,
     ActionExecutionRejection, ACTION_LISTEN_NAME, ACTION_RESTART_NAME,
     ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEACTIVATE_FORM_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
     ACTION_DEFAULT_ASK_REPHRASE_NAME)
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
@@ -61,7 +61,7 @@ def test_domain_action_instantiation():
     assert instantiated_actions[3].name() == ACTION_DEACTIVATE_FORM_NAME
     assert instantiated_actions[4].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
     assert instantiated_actions[5].name() == (
-        ACTION_DEFAULT_ASK_CONFIRMATION_NAME)
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
     assert instantiated_actions[6].name() == (
         ACTION_DEFAULT_ASK_REPHRASE_NAME)
     assert instantiated_actions[7].name() == "my_module.ActionTest"

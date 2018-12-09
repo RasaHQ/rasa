@@ -399,10 +399,10 @@ Two-stage Fallback Policy
 
 This policy handles low NLU confidence in multiple stages.
 
-- If a NLU prediction has a low confidence score, the user is asked to confirm
+- If a NLU prediction has a low confidence score, the user is asked to affirm
   the classification of the intent.
 
-    - If they confirm, the story continues as if the intent was classified
+    - If they affirm, the story continues as if the intent was classified
       with high confidence from the beginning.
     - If they deny, the user is asked to rephrase their intent.
 
@@ -411,11 +411,11 @@ This policy handles low NLU confidence in multiple stages.
     - If the classification of the rephrased intent was confident, the story
       continues as if the user had this intent from the beginning.
     - If the rephrased intent was not classified with high confidence, the user
-      is asked to confirm the classified intent.
+      is asked to affirm the classified intent.
 
-- Second confirmation
+- Second affirmation
 
-    - If the user confirms the intent, the story continues as if the user had
+    - If the user affirms the intent, the story continues as if the user had
       this intent from the beginning.
     - If the user denies, an ultimate fallback action is triggered
       (e.g. a handoff to a human).
@@ -448,16 +448,16 @@ Note that you cannot use this together with the default fallback policy.
 
 .. note::
 
-    It is required to have the two intents ``confirm`` and ``deny`` in the
-    domain of the bot, to determine whether the user confirms or
+    It is required to have the two intents ``affirm`` and ``deny`` in the
+    domain of the bot, to determine whether the user affirms or
     denies a suggestion.
 
-Default Actions for Confirmation and Rephrasing
-"""""""""""""""""""""""""""""""""""""""""""""""
+Default Actions for Affirmation and Rephrasing
+""""""""""""""""""""""""""""""""""""""""""""""
 
 Rasa Core provides the default implementations
-``action_default_ask_confirmation`` and ``action_default_ask_rephrase``
-which are triggered when the bot should ask the user to confirm
+``action_default_ask_affirmation`` and ``action_default_ask_rephrase``
+which are triggered when the bot should ask the user to affirm
 or to rephrase their intent.
 The default implementation of ``action_default_ask_rephrase`` action utters
 the response template ``utter_ask_rephrase``.

@@ -8,7 +8,7 @@ from rasa_core import events
 from rasa_core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_CONFIRM, USER_INTENT_DENY)
+    REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_AFFIRM, USER_INTENT_DENY)
 from rasa_core.events import (UserUtteranceReverted, UserUttered,
                               ActionExecuted, Event)
 from rasa_core.utils import EndpointConfig
@@ -30,7 +30,7 @@ ACTION_DEACTIVATE_FORM_NAME = "action_deactivate_form"
 
 ACTION_REVERT_FALLBACK_EVENTS_NAME = 'action_revert_fallback_events'
 
-ACTION_DEFAULT_ASK_CONFIRMATION_NAME = 'action_default_ask_confirmation'
+ACTION_DEFAULT_ASK_AFFIRMATION_NAME = 'action_default_ask_affirmation'
 
 ACTION_DEFAULT_ASK_REPHRASE_NAME = 'action_default_ask_rephrase'
 
@@ -39,7 +39,7 @@ def default_actions() -> List['Action']:
     """List default actions."""
     return [ActionListen(), ActionRestart(),
             ActionDefaultFallback(), ActionDeactivateForm(),
-            ActionRevertFallbackEvents(), ActionDefaultAskConfirmation(),
+            ActionRevertFallbackEvents(), ActionDefaultAskAffirmation(),
             ActionDefaultAskRephrase()]
 
 
@@ -400,34 +400,34 @@ class ActionRevertFallbackEvents(Action):
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
         from rasa_core.policies.two_stage_fallback import (has_user_rephrased,
-                                                           has_user_confirmed)
+                                                           has_user_affirmed)
 
         last_user_event = tracker.latest_message.intent.get('name')
         revert_events = []
 
-        # User confirmed
-        if has_user_confirmed(last_user_event, tracker):
-            revert_events = _revert_confirmation_events(tracker)
+        # User affirmed
+        if has_user_affirmed(last_user_event, tracker):
+            revert_events = _revert_affirmation_events(tracker)
         # User rephrased
         elif has_user_rephrased(tracker):
-            revert_events = _revert_successful_confirmation(tracker)
-        # User rephrased instead of confirmation
+            revert_events = _revert_successful_affirmation(tracker)
+        # User rephrased instead of affirming
         elif tracker.last_executed_action_has(
-                ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
+                ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
             revert_events = _revert_early_rephrasing(tracker)
 
         return revert_events
 
 
-def _revert_confirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
+def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
     import copy
-    revert_events = _revert_single_confirmation_events()
+    revert_events = _revert_single_affirmation_events()
 
     last_user_event = tracker.get_last_event_for(UserUttered, skip=1)
     last_user_event = copy.deepcopy(last_user_event)
     last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
 
-    # User confirms the rephrased intent
+    # User affirms the rephrased intent
     rephrased_intent = tracker.last_executed_action_has(
         name=ACTION_DEFAULT_ASK_REPHRASE_NAME,
         skip=1)
@@ -437,53 +437,54 @@ def _revert_confirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
     return revert_events + [last_user_event]
 
 
-def _revert_single_confirmation_events() -> List[Event]:
-    return [UserUtteranceReverted(),  # revert confirmation and request
+def _revert_single_affirmation_events() -> List[Event]:
+    return [UserUtteranceReverted(),  # revert affirmation and request
             # revert original intent (has to be re-added later)
             UserUtteranceReverted(),
             # add action listen intent
             ActionExecuted(action_name=ACTION_LISTEN_NAME)]
 
 
-def _revert_successful_confirmation(tracker) -> List[Event]:
+def _revert_successful_affirmation(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
     return _revert_rephrasing_events() + [last_user_event]
 
 
 def _revert_early_rephrasing(tracker: 'DialogueStateTracker') -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
-    return _revert_single_confirmation_events() + [last_user_event]
+    return _revert_single_affirmation_events() + [last_user_event]
 
 
 def _revert_rephrasing_events() -> List[Event]:
     return [UserUtteranceReverted(),  # remove rephrasing
             # remove feedback and rephrase request
             UserUtteranceReverted(),
-            # remove confirmation request and false intent
+            # remove affirmation request and false intent
             UserUtteranceReverted(),
             # replace action with action listen
             ActionExecuted(action_name=ACTION_LISTEN_NAME)]
 
 
-class ActionDefaultAskConfirmation(Action):
-    """Default implementation which asks the user to confirm his intent.
+class ActionDefaultAskAffirmation(Action):
+    """Default implementation which asks the user to affirm his intent.
 
        It is suggested to overwrite this default action with a custom action
-       to have nicer prompts for the confirmations.
+       to have more meaningful prompts for the affirmations. E.g. have a
+       description of the intent instead of its identifier name.
     """
 
     def name(self) -> Text:
-        return ACTION_DEFAULT_ASK_CONFIRMATION_NAME
+        return ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
-        intent_to_confirm = tracker.latest_message.intent.get('name')
-        confirmation_message = "Did you mean '{}'?".format(intent_to_confirm)
+        intent_to_affirm = tracker.latest_message.intent.get('name')
+        affirmation_message = "Did you mean '{}'?".format(intent_to_affirm)
 
-        dispatcher.utter_button_message(text=confirmation_message,
+        dispatcher.utter_button_message(text=affirmation_message,
                                         buttons=[{'title': 'Yes',
                                                   'payload': '/{}'.format(
-                                                      USER_INTENT_CONFIRM)},
+                                                      USER_INTENT_AFFIRM)},
                                                  {'title': 'No',
                                                   'payload': '/{}'.format(
                                                       USER_INTENT_DENY)}])
