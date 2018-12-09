@@ -400,18 +400,18 @@ Two-stage Fallback Policy
 This policy handles low NLU confidence in multiple stages.
 
 - If a NLU prediction has a low confidence score, the user is asked to confirm
-  whether they really had this intent.
+  the classification of the intent.
 
-    - If they confirm, the story continues as if the intent was recognized
+    - If they confirm, the story continues as if the intent was classified
       with high confidence from the beginning.
-    - If they deny, the user is asked to restate his intent.
+    - If they deny, the user is asked to restate their intent.
 
 - Clarification
 
-    - If the recognition of the clarification was confident, the story
+    - If the classification of the clarification was confident, the story
       continues as if the user had this intent from the beginning.
-    - If the clarification was not recognised with high confidence, the user
-      is asked to confirm the recognized intent.
+    - If the clarification was not classified with high confidence, the user
+      is asked to confirm the classified intent.
 
 - Second confirmation
 
@@ -449,8 +449,8 @@ Note that you cannot use this together with the default fallback policy.
 .. note::
 
     It is required to have the two intents ``confirm`` and ``deny`` in the
-    domain of the bot. These are used to identify whether the user confirmed
-    to a suggestion or denied it.
+    domain of the bot, to determine whether the user confirms or
+    denies a suggestion.
 
 Default Actions for Confirmation and Clarification
 """"""""""""""""""""""""""""""""""""""""""""""""""
@@ -458,9 +458,8 @@ Default Actions for Confirmation and Clarification
 Rasa Core provides the default implementations
 ``action_default_ask_confirmation`` and ``action_default_ask_clarification``
 which are triggered when the bot should ask the user to confirm
-or to clarify their intent. In case of ``action_default_ask_confirmation`` it
-is suggested to overwrite the behavior of its default implementation to have
-more meaningful prompts. This is done with :ref:`customactions`.
+or to clarify their intent. The implementation of both actions can be
+overwritten with :ref:`customactions`.
 Since the default ``action_default_ask_clarification`` action utters the
 response template ``utter_ask_clarification``, it should be sufficient to add
 a appropriate template for that in the domain.

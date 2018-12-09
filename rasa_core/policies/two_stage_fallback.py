@@ -42,7 +42,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                  core_threshold: float = 0.3,
                  fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
                  ) -> None:
-        """Create a new Two Stage Fallback policy.
+        """Create a new Two-stage Fallback policy.
 
         Args:
             nlu_threshold: minimum threshold for NLU confidence.
