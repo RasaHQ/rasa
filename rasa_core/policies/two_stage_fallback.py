@@ -6,7 +6,7 @@ from typing import List, Text
 from rasa_core import utils
 from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME,
-                                      ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+                                      ACTION_DEFAULT_ASK_REPHRASE_NAME,
                                       ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
                                       ACTION_LISTEN_NAME)
 from rasa_core.constants import (FALLBACK_SCORE, USER_INTENT_CONFIRM,
@@ -24,13 +24,13 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
         If a NLU prediction has a low confidence score,
         the user is asked to confirm whether they really had this intent.
-        If they confirm, the story continues as if the intent was recognized
+        If they confirm, the story continues as if the intent was classified
         with high confidence from the beginning.
-        If they deny, the user is asked to restate his intent.
-        If the recognition for this clarification was confident the story
+        If they deny, the user is asked to rephrase his intent.
+        If the classification for the rephrased intent was confident, the story
         continues as if the user had this intent from the beginning.
-        If the clarification was not recognised with high confidence, the user
-        is asked to confirm the recognized intent.
+        If the rephrased intent was not classified with high confidence,
+        the user is asked to confirm the classified intent.
         If the user confirms the intent, the story continues as if the user had
         this intent from the beginning.
         If the user denies, an ultimate fallback action is triggered
@@ -78,7 +78,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         last_intent_name = nlu_data['intent'].get('name', None)
         should_fallback = self.should_fallback(nlu_confidence,
                                                tracker.latest_action_name)
-        user_clarified = has_user_clarified(tracker)
+        user_rephrased = has_user_rephrased(tracker)
 
         if self._is_user_input_expected(tracker):
             result = confidence_scores_for(ACTION_LISTEN_NAME, FALLBACK_SCORE,
@@ -87,22 +87,22 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             logger.debug("User '{}' denied suggested intents.".format(
                 tracker.sender_id))
             result = self._results_for_user_denied(tracker, domain)
-        elif user_clarified and should_fallback:
-            logger.debug("Ambiguous clarification of user '{}' "
+        elif user_rephrased and should_fallback:
+            logger.debug("Ambiguous rephrasing of user '{}' "
                          "for intent '{}'".format(tracker.sender_id,
                                                   last_intent_name))
             result = confidence_scores_for(ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
                                            FALLBACK_SCORE,
                                            domain)
-        elif has_user_confirmed(last_intent_name, tracker) or user_clarified:
+        elif has_user_confirmed(last_intent_name, tracker) or user_rephrased:
             logger.debug("User '{}' confirmed intent by confirmation or "
-                         "clarification.".format(tracker.sender_id))
+                         "rephrasing.".format(tracker.sender_id))
             result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                            FALLBACK_SCORE, domain)
         elif tracker.last_executed_action_has(
                 ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
             if not should_fallback:
-                logger.debug("User '{}' clarified with intent '{}' instead "
+                logger.debug("User '{}' rephrased intent '{}' instead "
                              "of confirming.".format(tracker.sender_id,
                                                      last_intent_name))
                 result = confidence_scores_for(
@@ -125,20 +125,20 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     def _is_user_input_expected(self, tracker: DialogueStateTracker) -> bool:
         return tracker.latest_action_name in [
             ACTION_DEFAULT_ASK_CONFIRMATION_NAME,
-            ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+            ACTION_DEFAULT_ASK_REPHRASE_NAME,
             self.fallback_action_name]
 
     def _results_for_user_denied(self, tracker: DialogueStateTracker,
                                  domain: Domain) -> List[float]:
         has_denied_before = tracker.last_executed_action_has(
-            ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+            ACTION_DEFAULT_ASK_REPHRASE_NAME,
             skip=1)
 
         if has_denied_before:
             return confidence_scores_for(self.fallback_action_name,
                                          FALLBACK_SCORE, domain)
         else:
-            return confidence_scores_for(ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+            return confidence_scores_for(ACTION_DEFAULT_ASK_REPHRASE_NAME,
                                          FALLBACK_SCORE, domain)
 
     def persist(self, path: Text) -> None:
@@ -179,6 +179,6 @@ def _has_user_denied(last_intent: Text,
         last_intent == USER_INTENT_DENY)
 
 
-def has_user_clarified(tracker: DialogueStateTracker) -> bool:
+def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
     return tracker.last_executed_action_has(
-        ACTION_DEFAULT_ASK_CLARIFICATION_NAME)
+        ACTION_DEFAULT_ASK_REPHRASE_NAME)

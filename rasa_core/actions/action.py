@@ -32,7 +32,7 @@ ACTION_REVERT_FALLBACK_EVENTS_NAME = 'action_revert_fallback_events'
 
 ACTION_DEFAULT_ASK_CONFIRMATION_NAME = 'action_default_ask_confirmation'
 
-ACTION_DEFAULT_ASK_CLARIFICATION_NAME = 'action_default_ask_clarification'
+ACTION_DEFAULT_ASK_REPHRASE_NAME = 'action_default_ask_rephrase'
 
 
 def default_actions() -> List['Action']:
@@ -40,7 +40,7 @@ def default_actions() -> List['Action']:
     return [ActionListen(), ActionRestart(),
             ActionDefaultFallback(), ActionDeactivateForm(),
             ActionRevertFallbackEvents(), ActionDefaultAskConfirmation(),
-            ActionDefaultAskClarification()]
+            ActionDefaultAskRephrase()]
 
 
 def default_action_names() -> List[Text]:
@@ -399,7 +399,7 @@ class ActionRevertFallbackEvents(Action):
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
-        from rasa_core.policies.two_stage_fallback import (has_user_clarified,
+        from rasa_core.policies.two_stage_fallback import (has_user_rephrased,
                                                            has_user_confirmed)
 
         last_user_event = tracker.latest_message.intent.get('name')
@@ -408,13 +408,13 @@ class ActionRevertFallbackEvents(Action):
         # User confirmed
         if has_user_confirmed(last_user_event, tracker):
             revert_events = _revert_confirmation_events(tracker)
-        # User clarified
-        elif has_user_clarified(tracker):
+        # User rephrased
+        elif has_user_rephrased(tracker):
             revert_events = _revert_successful_confirmation(tracker)
-        # User clarified instead of confirmation
+        # User rephrased instead of confirmation
         elif tracker.last_executed_action_has(
                 ACTION_DEFAULT_ASK_CONFIRMATION_NAME):
-            revert_events = _revert_early_clarification(tracker)
+            revert_events = _revert_early_rephrasing(tracker)
 
         return revert_events
 
@@ -427,12 +427,12 @@ def _revert_confirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
     last_user_event = copy.deepcopy(last_user_event)
     last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
 
-    # User confirms clarification
-    clarification = tracker.last_executed_action_has(
-        name=ACTION_DEFAULT_ASK_CLARIFICATION_NAME,
+    # User confirms the rephrased intent
+    rephrased_intent = tracker.last_executed_action_has(
+        name=ACTION_DEFAULT_ASK_REPHRASE_NAME,
         skip=1)
-    if clarification:
-        revert_events += _revert_clarification_events()
+    if rephrased_intent:
+        revert_events += _revert_rephrasing_events()
 
     return revert_events + [last_user_event]
 
@@ -447,17 +447,17 @@ def _revert_single_confirmation_events() -> List[Event]:
 
 def _revert_successful_confirmation(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
-    return _revert_clarification_events() + [last_user_event]
+    return _revert_rephrasing_events() + [last_user_event]
 
 
-def _revert_early_clarification(tracker: 'DialogueStateTracker') -> List[Event]:
+def _revert_early_rephrasing(tracker: 'DialogueStateTracker') -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
     return _revert_single_confirmation_events() + [last_user_event]
 
 
-def _revert_clarification_events() -> List[Event]:
-    return [UserUtteranceReverted(),  # remove clarification
-            # remove feedback and clarification request
+def _revert_rephrasing_events() -> List[Event]:
+    return [UserUtteranceReverted(),  # remove rephrasing
+            # remove feedback and rephrase request
             UserUtteranceReverted(),
             # remove confirmation request and false intent
             UserUtteranceReverted(),
@@ -491,15 +491,15 @@ class ActionDefaultAskConfirmation(Action):
         return []
 
 
-class ActionDefaultAskClarification(Action):
-    """Default implementation which asks the user to clarify his intent."""
+class ActionDefaultAskRephrase(Action):
+    """Default implementation which asks the user to rephrase his intent."""
 
     def name(self) -> Text:
-        return ACTION_DEFAULT_ASK_CLARIFICATION_NAME
+        return ACTION_DEFAULT_ASK_REPHRASE_NAME
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
-        dispatcher.utter_template("utter_ask_clarification", tracker,
+        dispatcher.utter_template("utter_ask_rephrase", tracker,
                                   silent_fail=True)
 
         return []

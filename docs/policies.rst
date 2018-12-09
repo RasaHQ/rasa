@@ -404,13 +404,13 @@ This policy handles low NLU confidence in multiple stages.
 
     - If they confirm, the story continues as if the intent was classified
       with high confidence from the beginning.
-    - If they deny, the user is asked to restate their intent.
+    - If they deny, the user is asked to rephrase their intent.
 
-- Clarification
+- Rephrasing
 
-    - If the classification of the clarification was confident, the story
+    - If the classification of the rephrased intent was confident, the story
       continues as if the user had this intent from the beginning.
-    - If the clarification was not classified with high confidence, the user
+    - If the rephrased intent was not classified with high confidence, the user
       is asked to confirm the classified intent.
 
 - Second confirmation
@@ -452,17 +452,17 @@ Note that you cannot use this together with the default fallback policy.
     domain of the bot, to determine whether the user confirms or
     denies a suggestion.
 
-Default Actions for Confirmation and Clarification
-""""""""""""""""""""""""""""""""""""""""""""""""""
+Default Actions for Confirmation and Rephrasing
+"""""""""""""""""""""""""""""""""""""""""""""""
 
 Rasa Core provides the default implementations
-``action_default_ask_confirmation`` and ``action_default_ask_clarification``
+``action_default_ask_confirmation`` and ``action_default_ask_rephrase``
 which are triggered when the bot should ask the user to confirm
-or to clarify their intent. The implementation of both actions can be
-overwritten with :ref:`customactions`.
-Since the default ``action_default_ask_clarification`` action utters the
-response template ``utter_ask_clarification``, it should be sufficient to add
-an appropriate template for that in the domain.
+or to rephrase their intent.
+The default implementation of ``action_default_ask_rephrase`` action utters
+the response template ``utter_ask_rephrase``.
+The implementation of both actions can be overwritten with :ref:`customactions`.
+
 
 
 
