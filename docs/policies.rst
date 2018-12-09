@@ -463,7 +463,7 @@ is suggested to overwrite the behavior of its default implementation to have
 more meaningful prompts. This is done with :ref:`customactions`.
 Since the default ``action_default_ask_clarification`` action utters the
 response template ``utter_ask_clarification``, it should be sufficient to add
-a appropriate template for that in the domain.
+an appropriate template for that in the domain.
 
 
 
