@@ -462,7 +462,7 @@ or to clarify their intent. The implementation of both actions can be
 overwritten with :ref:`customactions`.
 Since the default ``action_default_ask_clarification`` action utters the
 response template ``utter_ask_clarification``, it should be sufficient to add
-a appropriate template for that in the domain.
+an appropriate template for that in the domain.
 
 
 
