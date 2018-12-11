@@ -24,6 +24,8 @@ Removed
 Changed
 -------
 - replaced ``pytest-pep8`` with ``pytest-pycodestyle``
+- switch from ``PyInquierer`` to ``questionary`` for the display of
+  commandline interface (to avoid prompt toolkit 2 version issues)
 
 Fixed
 -----
