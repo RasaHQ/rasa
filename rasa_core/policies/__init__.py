@@ -6,3 +6,4 @@ from rasa_core.policies.memoization import (
     MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.form_policy import FormPolicy
+from rasa_core.policies.two_stage_fallback import TwoStageFallbackPolicy
