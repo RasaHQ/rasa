@@ -10,7 +10,7 @@ import os
 from tqdm import tqdm
 
 import typing
-from typing import List, Text, Any, Optional, Dict
+from typing import List, Text, Any, Optional, Dict, Tuple
 
 from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa_nlu.components import Component
@@ -52,7 +52,8 @@ class EmbeddingIntentClassifier(Component):
 
     Based on the starspace idea from: https://arxiv.org/abs/1709.03856.
     However, in this implementation the `mu` parameter is treated differently
-    and additional hidden layers are added together with dropout."""
+    and additional hidden layers are added together with dropout.
+    """
 
     name = "intent_classifier_tensorflow_embedding"
 
@@ -133,6 +134,7 @@ class EmbeddingIntentClassifier(Component):
                  ):
         # type: (...) -> None
         """Declare instant variables with default values"""
+
         self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
@@ -196,16 +198,14 @@ class EmbeddingIntentClassifier(Component):
 
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
-    def _load_params(self, **kwargs):
-        # type: (Dict[Text, Any]) -> None
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
+    def _load_params(self):
+        # type: () -> None
 
-        self._load_nn_architecture_params(config)
-        self._load_embedding_params(config)
-        self._load_regularization_params(config)
-        self._load_flag_if_tokenize_intents(config)
-        self._load_visual_params(config)
+        self._load_nn_architecture_params(self.component_config)
+        self._load_embedding_params(self.component_config)
+        self._load_regularization_params(self.component_config)
+        self._load_flag_if_tokenize_intents(self.component_config)
+        self._load_visual_params(self.component_config)
 
     # package safety checks
     @classmethod
@@ -224,7 +224,7 @@ class EmbeddingIntentClassifier(Component):
     # training data helpers:
     @staticmethod
     def _create_intent_dict(training_data):
-        # type: (TrainingData) -> Dict[Text, Int]
+        # type: (TrainingData) -> Dict[Text, int]
         """Create intent dictionary"""
 
         distinct_intents = set([example.get("intent")
@@ -234,7 +234,7 @@ class EmbeddingIntentClassifier(Component):
 
     @staticmethod
     def _create_intent_token_dict(intents, intent_split_symbol):
-        # type: (List[Text], Text) -> Dict[Text, Int]
+        # type: (List[Text], Text) -> Dict[Text, int]
         """Create intent token dictionary"""
 
         distinct_tokens = set([token
@@ -245,9 +245,11 @@ class EmbeddingIntentClassifier(Component):
                 for idx, token in enumerate(sorted(distinct_tokens))}
 
     def _create_encoded_intents(self, intent_dict):
-        # type: (Dict[Text, Int]) -> np.ndarray
+        # type: (Dict[Text, int]) -> np.ndarray
         """Create matrix with intents encoded in rows as bag of words.
-           If intent_tokenization_flag is off, returns identity matrix"""
+
+        If intent_tokenization_flag is off, returns identity matrix.
+        """
 
         if self.intent_tokenization_flag:
             intent_token_dict = self._create_intent_token_dict(
@@ -263,15 +265,23 @@ class EmbeddingIntentClassifier(Component):
         else:
             return np.eye(len(intent_dict))
 
+    # noinspection PyPep8Naming
     def _create_all_Y(self, size):
-        # type: (Int) -> np.ndarray
+        # type: (int) -> np.ndarray
         """Stack encoded_all_intents on top of each other
-            to create candidates for training examples
-            to calculate training accuracy"""
+
+        to create candidates for training examples and
+        to calculate training accuracy
+        """
+
         return np.stack([self.encoded_all_intents] * size)
 
-    def _prepare_data_for_training(self, training_data, intent_dict):
-        # type: (TrainingData, Dict[Text, Int]) -> Tuple
+    # noinspection PyPep8Naming
+    def _prepare_data_for_training(self,
+                                   training_data,  # type: TrainingData
+                                   intent_dict  # type: Dict[Text, int]
+                                   ):
+        # type: (...) -> Tuple[np.ndarray, np.ndarray, np.ndarray]
         """Prepare data for training"""
 
         X = np.stack([e.get("text_features")
@@ -288,7 +298,7 @@ class EmbeddingIntentClassifier(Component):
     # tf helpers:
     def _create_tf_embed_nn(self, x_in, is_training,
                             layer_sizes, name):
-        # type: (tf.Tensor, tf.Tensor, List[Int], Text) -> tf.Tensor
+        # type: (tf.Tensor, tf.Tensor, List[int], Text) -> tf.Tensor
         """Create nn with hidden layers and name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
@@ -307,8 +317,12 @@ class EmbeddingIntentClassifier(Component):
                             name='embed_layer_{}'.format(name))
         return x
 
-    def _create_tf_embed(self, a_in, b_in, is_training):
-        # type: (tf.Tensor, tf.Tensor, tf.Tensor) -> tf.Tensor
+    def _create_tf_embed(self,
+                         a_in,  # type: tf.Tensor
+                         b_in,  # type: tf.Tensor
+                         is_training  # type: tf.Tensor
+                         ):
+        # type: (...) -> Tuple[tf.Tensor, tf.Tensor]
         """Create tf graph for training"""
 
         emb_a = self._create_tf_embed_nn(a_in, is_training,
@@ -321,9 +335,12 @@ class EmbeddingIntentClassifier(Component):
 
     def _tf_sim(self, a, b):
         # type: (tf.Tensor, tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]
-        """Define similarity in two cases:
+        """Define similarity
+
+        in two cases:
             sim: between embedded words and embedded intent labels
-            sim_emb: between individual embedded intent labels only"""
+            sim_emb: between individual embedded intent labels only
+        """
 
         if self.similarity_type == 'cosine':
             # normalize embedding vectors for cosine similarity
@@ -368,8 +385,11 @@ class EmbeddingIntentClassifier(Component):
     # training helpers:
     def _create_batch_b(self, batch_pos_b, intent_ids):
         # type: (np.ndarray, np.ndarray) -> np.ndarray
-        """Create batch of intents, where the first is correct intent
-            and the rest are wrong intents sampled randomly"""
+        """Create batch of intents.
+
+        Where the first is correct intent
+        and the rest are wrong intents sampled randomly
+        """
 
         batch_pos_b = batch_pos_b[:, np.newaxis, :]
 
@@ -389,9 +409,12 @@ class EmbeddingIntentClassifier(Component):
         return np.concatenate([batch_pos_b, batch_neg_b], 1)
 
     def _linearly_increasing_batch_size(self, epoch):
-        # type: (Int) -> Int
+        # type: (int) -> int
         """Linearly increase batch size with every epoch.
-            The idea comes from https://arxiv.org/abs/1711.00489"""
+
+        The idea comes from https://arxiv.org/abs/1711.00489
+        """
+
         if not isinstance(self.batch_size, list):
             return int(self.batch_size)
 
@@ -402,6 +425,7 @@ class EmbeddingIntentClassifier(Component):
         else:
             return int(self.batch_size[0])
 
+    # noinspection PyPep8Naming
     def _train_tf(self,
                   X,  # type: np.ndarray
                   Y,  # type: np.ndarray
@@ -412,6 +436,7 @@ class EmbeddingIntentClassifier(Component):
                   ):
         # type: (...) -> None
         """Train tf graph"""
+
         self.session.run(tf.global_variables_initializer())
 
         if self.evaluate_on_num_examples:
@@ -468,9 +493,11 @@ class EmbeddingIntentClassifier(Component):
                         "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
 
+    # noinspection PyPep8Naming
     def _output_training_stat(self, X, intents_for_X, is_training):
-        # type: (np.ndarray, np.ndarray, tf.Tensor) -> Float
+        # type: (np.ndarray, np.ndarray, tf.Tensor) -> np.ndarray
         """Output training statistics"""
+
         n = self.evaluate_on_num_examples
         ids = np.random.permutation(len(X))[:n]
         all_Y = self._create_all_Y(X[ids].shape[0])
@@ -483,8 +510,9 @@ class EmbeddingIntentClassifier(Component):
         train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X[ids])
         return train_acc
 
+    # noinspection PyPep8Naming
     def train(self, training_data, cfg=None, **kwargs):
-        # type: (TrainingData, Optional[RasaNLUModelConfig], **Any) -> None
+        # type: (TrainingData, Optional[RasaNLUModelConfig], Any) -> None
         """Train the embedding intent classifier on a data set."""
 
         intent_dict = self._create_intent_dict(training_data)
@@ -540,8 +568,12 @@ class EmbeddingIntentClassifier(Component):
                            loss, is_training, train_op)
 
     # process helpers
-    def _calculate_message_sim(self, X, all_Y):
-        # type: (np.ndarray, np.ndarray) -> Tuple[List[Int], List[Int]]
+    # noinspection PyPep8Naming
+    def _calculate_message_sim(self,
+                               X,  # type: np.ndarray
+                               all_Y  # type: np.ndarray
+                               ):
+        # type: (...) -> Tuple[np.ndarray, List[float]]
         """Load tf graph and calculate message similarities"""
 
         message_sim = self.session.run(self.sim_op,
@@ -563,8 +595,9 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return intent_ids, message_sim.tolist()
 
+    # noinspection PyPep8Naming
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
         """Return the most likely intent and its similarity to the input."""
 
         intent = {"name": None, "confidence": 0.0}
@@ -603,7 +636,10 @@ class EmbeddingIntentClassifier(Component):
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
+
+        Return the metadata necessary to load the model again.
+        """
+
         if self.session is None:
             return {"classifier_file": None}
 
@@ -655,7 +691,7 @@ class EmbeddingIntentClassifier(Component):
              model_dir=None,  # type: Text
              model_metadata=None,  # type: Metadata
              cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> EmbeddingIntentClassifier
 
