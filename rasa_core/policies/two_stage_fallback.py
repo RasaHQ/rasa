@@ -55,11 +55,10 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             fallback_action_name: This action is executed if the user
                 denies the recognised intent for the second time.
         """
-        super(TwoStageFallbackPolicy, self).__init__()
-
-        self.nlu_threshold = nlu_threshold
-        self.core_threshold = core_threshold
-        self.fallback_action_name = fallback_action_name
+        super(TwoStageFallbackPolicy, self).__init__(
+            nlu_threshold,
+            core_threshold,
+            fallback_action_name)
 
     def predict_action_probabilities(self,
                                      tracker: DialogueStateTracker,
