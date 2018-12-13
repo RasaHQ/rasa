@@ -229,6 +229,7 @@ if __name__ == '__main__':
     logging.getLogger('werkzeug').setLevel(logging.WARN)
     logging.getLogger('engineio').setLevel(logging.WARN)
     logging.getLogger('matplotlib').setLevel(logging.WARN)
+    logging.getLogger('socketio').setLevel(logging.ERROR)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
