@@ -144,7 +144,7 @@ class SocketIOInput(InputChannel):
                 data = {}
             if 'session_id' not in data or data['session_id'] is None:
                 data['session_id'] = uuid.uuid4().hex
-            sio.emit("session_confirm", data['session_id'])
+            sio.emit("session_confirm", data['session_id'], room=sid)
             logger.debug("User {} connected to socketIO endpoint."
                          "".format(sid))
 
