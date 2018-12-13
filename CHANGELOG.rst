@@ -13,6 +13,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- A support for session persistence mechanism in the ``SocketIOInput``
+  compatible with the example SocketIO WebChat + short explanation on
+  how session persistence should be implemented in a frontend
+- `TwoStageFallbackPolicy` which asks the user for their affirmation if the NLU
+  confidence is low for an intent, for rephrasing the intent if they deny the
+  suggested intent, and does finally an ultimate fallback if it does not get
+  the intent right
 
 Removed
 -------
@@ -20,11 +27,35 @@ Removed
 
 Changed
 -------
+- replaced ``pytest-pep8`` with ``pytest-pycodestyle``
 
 Fixed
 -----
 - fix error during interactive learning which was caused by actions which
   dispatched messages using ``dispatcher.utter_custom_message``
+
+
+[0.12.3] - 2018-12-03
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added ``scipy`` dependency (previously pulled in through keras)
+- added element representation for command-line output
+
+Changed
+-------
+- improved button representation for custom buttons in command-line
+
+Changed
+-------
+- randomized initial sender_id during interactive training to avoid
+  loading previous sessions from persistent tracker stores
+
+Removed
+-------
+- removed keras dependency, since ``keras_policy`` uses ``tf.keras``
+
 
 [0.12.2] - 2018-11-20
 ^^^^^^^^^^^^^^^^^^^^^
@@ -33,6 +64,7 @@ Fixed
 -----
 - argument handling on evaluate script
 - added basic sanitization during visualization
+
 
 [0.12.1] - 2018-11-11
 ^^^^^^^^^^^^^^^^^^^^^

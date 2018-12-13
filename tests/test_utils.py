@@ -74,7 +74,7 @@ def test_pad_list_to_size():
 def test_read_lines():
     lines = utils.read_lines("data/test_stories/stories.md",
                              max_line_limit=2,
-                             line_pattern="\*.*")
+                             line_pattern=r"\*.*")
 
     lines = list(lines)
 

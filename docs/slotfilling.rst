@@ -20,6 +20,18 @@ You can take a look at the FormAction base class by clicking this link:
 
 .. autoclass:: rasa_core_sdk.forms.FormAction
 
+Domain Format
+-------------
+
+To add your forms to the domain file, reference their **name**
+under ``forms:`` section:
+
+.. code-block:: yaml
+
+   forms:
+     - my_form
+     ...
+
 .. _section_form_basics:
 
 Basics
@@ -110,13 +122,13 @@ Custom slot mappings
 
 Some slots (like ``cuisine``) can be picked up using a single entity, but a 
 ``FormAction`` can also support yes/no questions and free-text input.
-The ``slot_mapping`` method defines how to extract slot values from user responses.
+The ``slot_mappings`` method defines how to extract slot values from user responses.
 
 Here's an example for the restaurant bot:
 
 .. code-block:: python
 
-    def slot_mapping(self):
+    def slot_mappings(self):
         # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
         """A dictionary to map required slots to
             - an extracted entity
@@ -180,7 +192,7 @@ list of supported cuisines.
         """"Validate extracted requested slot else raise an error"""
         slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
 
-        # extract requested slot from a user input by using `slot_mapping`
+        # extract requested slot from a user input by using `slot_mappings`
         events = self.extract(dispatcher, tracker, domain)
         if events is None:
             # raise an error if nothing was extracted
