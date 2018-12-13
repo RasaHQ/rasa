@@ -218,7 +218,8 @@ class MessengerBot(OutputChannel):
     @staticmethod
     def _add_text_info(quick_replies):
         # type: (List[Dict[Text, Any]]) -> None
-        """Set the quick reply type to text for all buttons without content type. Happens in place."""
+        """Set the quick reply type to text for all buttons without content type.
+        Happens in place."""
         for quick_reply in quick_replies:
             if not quick_reply.get('type'):
                 quick_reply['content_type'] = "text"
