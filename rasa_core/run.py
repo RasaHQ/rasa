@@ -227,6 +227,7 @@ if __name__ == '__main__':
     cmdline_args = arg_parser.parse_args()
 
     logging.getLogger('werkzeug').setLevel(logging.WARN)
+    logging.getLogger('engineio').setLevel(logging.WARN)
     logging.getLogger('matplotlib').setLevel(logging.WARN)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
