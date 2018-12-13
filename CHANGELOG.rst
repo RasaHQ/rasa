@@ -10,6 +10,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 Added
 -----
 - added quick reply representation for command-line output
+- added option to specify custom button type for Facebook buttons
 
 Changed
 -------

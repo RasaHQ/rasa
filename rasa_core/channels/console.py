@@ -39,7 +39,7 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
 
     if "quick_replies" in message:
         for idx, element in enumerate(message.get("quick_replies")):
-            element_str = "Quick Replies:\n" + element_to_string(element, idx)
+            element_str = "Quick Replies:\n" + button_to_string(element, idx)
             utils.print_color(element_str, color)
 
 
