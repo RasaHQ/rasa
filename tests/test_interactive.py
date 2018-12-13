@@ -66,7 +66,7 @@ def test_bot_output_format():
                 {"title": "quick_reply1", "buttons": [
                     {"title": "button3", "payload": "/button3"}]},
                 {"title": "quick_reply2", "buttons": [
-                    {"title": "button4", "payload": "/button4"}]}],
+                    {"title": "button4", "payload": "/button4"}]}]
         }
     }
     formatted = interactive.format_bot_output(message)
@@ -78,15 +78,13 @@ def test_bot_output_format():
                          "2: no (/no) - {\"extra\": \"extra\"}\n"
                          "Elements:\n"
                          "1: element1 - {\"buttons\": "
-                         "[{\"payload\": \"/button1\", \"title\": \"button1\"}"
-                         "]}\n"
-                         "2: element2 - {\"buttons\": "
-                         "[{\"payload\": \"/button2\", \"title\": \"button2\"}\n"
-                         "Quick replies:\n"
+                         "[{\"payload\": \"/button1\", \"title\": \"button1\"}]"
+                         "}\n2: element2 - {\"buttons\": "
+                         "[{\"payload\": \"/button2\", \"title\": \"button2\"}]"
+                         "}\nQuick replies:\n"
                          "1: quick_reply1 - {\"buttons\": "
                          "[{\"payload\": \"/button3\", \"title\": \"button3\"}"
-                         "]}\n"
-                         "2: quick_reply2 - {\"buttons\": "
+                         "]}\n2: quick_reply2 - {\"buttons\": "
                          "[{\"payload\": \"/button4\", \"title\": \"button4\"}"
                          "]}")
 
