@@ -144,7 +144,7 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
 
     # if we have 4 trackers, there is going to be one example more for label 4
     num_threes = len(training_trackers) - 1
-    assert Counter(y) == {0: 6, 1: 2, 4: num_threes, 5: 1, 6: 3}
+    assert Counter(y) == {0: 6, 1: 2, 7: num_threes, 8: 1, 9: 3}
 
 
 def test_generate_training_data_with_unused_checkpoints(tmpdir,

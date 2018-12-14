@@ -3,6 +3,8 @@ import logging
 import os
 from typing import Any, List, Text
 
+from rasa_core.actions.action import ACTION_LISTEN_NAME
+
 from rasa_core import utils
 from rasa_core.constants import FALLBACK_SCORE
 from rasa_core.domain import Domain
@@ -90,7 +92,7 @@ class FallbackPolicy(Policy):
 
         if tracker.latest_action_name == self.fallback_action_name:
             result = [0.0] * domain.num_actions
-            idx = domain.index_for_action('action_listen')
+            idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = FALLBACK_SCORE
 
         elif self.should_fallback(nlu_confidence, tracker.latest_action_name):

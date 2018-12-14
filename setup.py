@@ -68,6 +68,7 @@ install_requires = [
     "questionary~=1.0",
     "flask-jwt-simple~=0.0.3",
     "python-socketio>=2.1.1,<3",
+    "python-engineio~=3.0",
     "pydot~=1.2",
 ]
 

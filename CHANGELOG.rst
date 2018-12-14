@@ -16,6 +16,10 @@ Added
 - A support for session persistence mechanism in the ``SocketIOInput``
   compatible with the example SocketIO WebChat + short explanation on
   how session persistence should be implemented in a frontend
+- `TwoStageFallbackPolicy` which asks the user for their affirmation if the NLU
+  confidence is low for an intent, for rephrasing the intent if they deny the
+  suggested intent, and does finally an ultimate fallback if it does not get
+  the intent right
 
 Removed
 -------
@@ -31,6 +35,7 @@ Fixed
 -----
 - fix error during interactive learning which was caused by actions which
   dispatched messages using ``dispatcher.utter_custom_message``
+- re-added missing ``python-engineio`` dependency
 
 
 [0.12.3] - 2018-12-03
