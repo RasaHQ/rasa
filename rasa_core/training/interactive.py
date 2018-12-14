@@ -311,7 +311,7 @@ def _ask_or_abort(
 
     while should_retry:
         answers = questions.ask()
-        if not answers or is_abort(answers):
+        if answers is None or is_abort(answers):
             should_retry = _ask_if_quit(sender_id, endpoint)
         else:
             should_retry = False
