@@ -125,27 +125,43 @@ def test_duckling_entity_extractor(component_builder):
     httpretty.register_uri(
         httpretty.POST,
         "http://localhost:8000/parse",
-        body='[{"body":"Today","start":0,"value":{"values":[{"value":"2018-11-13T00:00:00.000-08:00","grain":"day",'
-             '"type":"value"}],"value":"2018-11-13T00:00:00.000-08:00","grain":"day","type":"value"},"end":5,'
-             '"dim":"time","latent":false},{"body":"the 5th","start":9,"value":{"values":[{'
-             '"value":"2018-12-05T00:00:00.000-08:00","grain":"day","type":"value"},'
-             '{"value":"2019-01-05T00:00:00.000-08:00","grain":"day","type":"value"},'
-             '{"value":"2019-02-05T00:00:00.000-08:00","grain":"day","type":"value"}],'
-             '"value":"2018-12-05T00:00:00.000-08:00","grain":"day","type":"value"},"end":16,"dim":"time",'
-             '"latent":false},{"body":"5th of May","start":13,"value":{"values":[{'
-             '"value":"2019-05-05T00:00:00.000-07:00","grain":"day","type":"value"},'
-             '{"value":"2020-05-05T00:00:00.000-07:00","grain":"day","type":"value"},'
-             '{"value":"2021-05-05T00:00:00.000-07:00","grain":"day","type":"value"}],'
-             '"value":"2019-05-05T00:00:00.000-07:00","grain":"day","type":"value"},"end":23,"dim":"time",'
-             '"latent":false},{"body":"tomorrow","start":37,"value":{"values":[{'
-             '"value":"2018-11-14T00:00:00.000-08:00","grain":"day","type":"value"}],'
-             '"value":"2018-11-14T00:00:00.000-08:00","grain":"day","type":"value"},"end":45,"dim":"time",'
+        body='[{"body":"Today","start":0,"value":{"values":[{'
+             '"value":"2018-11-13T00:00:00.000-08:00","grain":"day", '
+             '"type":"value"}],"value":"2018-11-13T00:00:00.000-08:00",'
+             '"grain":"day","type":"value"},"end":5, '
+             '"dim":"time","latent":false},{"body":"the 5th","start":9,'
+             '"value":{"values":[{ '
+             '"value":"2018-12-05T00:00:00.000-08:00","grain":"day",'
+             '"type":"value"}, '
+             '{"value":"2019-01-05T00:00:00.000-08:00","grain":"day",'
+             '"type":"value"}, '
+             '{"value":"2019-02-05T00:00:00.000-08:00","grain":"day",'
+             '"type":"value"}], '
+             '"value":"2018-12-05T00:00:00.000-08:00","grain":"day",'
+             '"type":"value"},"end":16,"dim":"time", '
+             '"latent":false},{"body":"5th of May","start":13,"value":{'
+             '"values":[{ '
+             '"value":"2019-05-05T00:00:00.000-07:00","grain":"day",'
+             '"type":"value"}, '
+             '{"value":"2020-05-05T00:00:00.000-07:00","grain":"day",'
+             '"type":"value"}, '
+             '{"value":"2021-05-05T00:00:00.000-07:00","grain":"day",'
+             '"type":"value"}], '
+             '"value":"2019-05-05T00:00:00.000-07:00","grain":"day",'
+             '"type":"value"},"end":23,"dim":"time", '
+             '"latent":false},{"body":"tomorrow","start":37,"value":{'
+             '"values":[{ '
+             '"value":"2018-11-14T00:00:00.000-08:00","grain":"day",'
+             '"type":"value"}], '
+             '"value":"2018-11-14T00:00:00.000-08:00","grain":"day",'
+             '"type":"value"},"end":45,"dim":"time", '
              '"latent":false}] '
     )
     httpretty.enable()
 
     _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
-    _config.set_component_attr("ner_duckling_http", dimensions=["time"], timezone="UTC", url="http://localhost:8000")
+    _config.set_component_attr("ner_duckling_http", dimensions=["time"],
+                               timezone="UTC", url="http://localhost:8000")
     duckling = component_builder.create_component("ner_duckling_http", _config)
     message = Message("Today is the 5th of May. Let us meet tomorrow.")
     duckling.process(message)
@@ -157,12 +173,14 @@ def test_duckling_entity_extractor(component_builder):
     httpretty.register_uri(
         httpretty.POST,
         "http://localhost:8000/parse",
-        body='[{"body":"tomorrow","start":12,"value":{"values":[{"value":"2013-10-13T00:00:00.000Z","grain":"day",'
-             '"type":"value"}],"value":"2013-10-13T00:00:00.000Z","grain":"day","type":"value"},"end":20,'
+        body='[{"body":"tomorrow","start":12,"value":{"values":[{'
+             '"value":"2013-10-13T00:00:00.000Z","grain":"day", '
+             '"type":"value"}],"value":"2013-10-13T00:00:00.000Z",'
+             '"grain":"day","type":"value"},"end":20, '
              '"dim":"time","latent":false}] '
     )
 
-    # 1381536182000 == 2013/10/12 02:03:02
+    # 1381536182 == 2013/10/12 02:03:02
     message = Message("Let us meet tomorrow.", time="1381536182")
     duckling.process(message)
     entities = message.get("entities")

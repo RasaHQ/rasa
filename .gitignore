@@ -42,3 +42,5 @@ docs/key
 docs/key.pub
 secrets.tar
 .pytest_cache
+src
+
