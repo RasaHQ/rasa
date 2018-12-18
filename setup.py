@@ -27,7 +27,6 @@ tests_requires = [
 ]
 
 install_requires = [
-    "attrs>=18",
     "jsonpickle~=0.9.0",
     "redis~=2.0",
     "fakeredis~=0.10.0",
