@@ -10,8 +10,9 @@ requests==2.20.0
 tqdm==4.19.5
 numpy==1.14.5
 simplejson==3.13.2
-cloudpickle==0.5.2
+cloudpickle==0.6.1
 msgpack-python==0.5.4
 packaging==17.1
-pyyaml==3.12
+ruamel.yaml==0.15.78
 coloredlogs==9.0
+msgpack==0.5.6

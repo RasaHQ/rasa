@@ -6,12 +6,10 @@ from __future__ import unicode_literals
 import tempfile
 
 import pytest
-from typing import Text
 
-import rasa_nlu
 from rasa_nlu import config, utils
-from rasa_nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa_nlu.registry import registered_pipeline_templates
+from rasa_nlu.components import ComponentBuilder
 from tests.conftest import CONFIG_DEFAULTS_PATH
 from tests.utilities import write_file_config
 
@@ -31,17 +29,18 @@ def test_blank_config():
 
 def test_invalid_config_json():
     file_config = """pipeline: [spacy_sklearn"""  # invalid yaml
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json") as f:
+    with tempfile.NamedTemporaryFile("w+",
+                                     suffix="_tmp_config_file.json") as f:
         f.write(file_config)
         f.flush()
-        with pytest.raises(rasa_nlu.config.InvalidConfigError):
+        with pytest.raises(config.InvalidConfigError):
             config.load(f.name)
 
 
 def test_invalid_pipeline_template():
     args = {"pipeline": "my_made_up_name"}
     f = write_file_config(args)
-    with pytest.raises(InvalidConfigError) as execinfo:
+    with pytest.raises(config.InvalidConfigError) as execinfo:
         config.load(f.name)
     assert "unknown pipeline template" in str(execinfo.value)
 
@@ -56,7 +55,7 @@ def test_pipeline_looksup_registry():
 
 
 def test_default_config_file():
-    final_config = RasaNLUModelConfig()
+    final_config = config.RasaNLUModelConfig()
     assert len(final_config) > 1
 
 
@@ -68,3 +67,17 @@ def test_set_attr_on_component(default_config):
 
     assert cfg.for_component("intent_classifier_sklearn") == expected
     assert cfg.for_component("tokenizer_spacy") == {"name": "tokenizer_spacy"}
+
+
+def test_override_defaults_tensorflow_embedding_pipeline():
+    cfg = config.load("data/test/config_embedding_test.yml")
+    builder = ComponentBuilder()
+
+    name1 = "intent_featurizer_count_vectors"
+
+    component1 = builder.create_component(name1, cfg)
+    assert component1.max_ngram == 3
+
+    name2 = "intent_classifier_tensorflow_embedding"
+    component2 = builder.create_component(name2, cfg)
+    assert component2.epochs == 10
