@@ -20,7 +20,9 @@ Added
   confidence is low for an intent, for rephrasing the intent if they deny the
   suggested intent, and does finally an ultimate fallback if it does not get
   the intent right
-
+- Additional checks in PolicyEnsemble to ensure that custom Policy
+  classes' load function returns the correct type
+  
 Removed
 -------
 - support for deprecated intents/entities format
