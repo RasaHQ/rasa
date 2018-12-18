@@ -1,4 +1,5 @@
 ## Setup py requirements
+attrs==18.1.0
 jsonpickle==0.9.6
 redis==2.10.6
 fakeredis==0.10.3
