@@ -169,6 +169,19 @@ class PolicyEnsemble(object):
                 model_version)
 
     @classmethod
+    def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
+        if policy is None:
+            raise Exception(
+                "Failed to load policy {}: "
+                "load returned None"
+                .format(policy_name))
+        elif not isinstance(policy, policy_cls):
+            raise Exception(
+                "Failed to load policy {}: "
+                "load returned object that is not instance of its own class"
+                .format(policy_name))
+
+    @classmethod
     def load(cls, path: Text) -> 'PolicyEnsemble':
         """Loads policy and domain specification from storage"""
 
@@ -180,6 +193,7 @@ class PolicyEnsemble(object):
             dir_name = 'policy_{}_{}'.format(i, policy_cls.__name__)
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
+            cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(
             metadata["ensemble_name"])
