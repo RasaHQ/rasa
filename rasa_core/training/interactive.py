@@ -7,7 +7,6 @@ import os
 import requests
 import textwrap
 import uuid
-from PyInquirer import prompt
 from colorclass import Color
 from flask import Flask, send_file, abort
 from gevent.pywsgi import WSGIServer
@@ -33,6 +32,9 @@ from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
     visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
 from rasa_core.utils import EndpointConfig
+
+import questionary
+from questionary import Choice, Form, Question
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
@@ -177,19 +179,16 @@ def send_action(
         return _response_as_json(r)
     except requests.exceptions.HTTPError:
         if is_new_action:
-            warning_questions = [{
-                "name": "warning",
-                "type": "confirm",
-                "message": "WARNING: You have created a new action: '{}', "
-                           "which was not successfully executed. "
-                           "If this action does not return any events, "
-                           "you do not need to do anything. "
-                           "If this is a custom action which returns events, "
-                           "you are recommended to implement this action "
-                           "in your action server and try again."
-                           "".format(action_name)
-            }]
-            _ask_questions(warning_questions, sender_id, endpoint)
+            warning_questions = questionary.confirm(
+                "WARNING: You have created a new action: '{}', "
+                "which was not successfully executed. "
+                "If this action does not return any events, "
+                "you do not need to do anything. "
+                "If this is a custom action which returns events, "
+                "you are recommended to implement this action "
+                "in your action server and try again."
+                "".format(action_name))
+            _ask_or_abort(warning_questions, sender_id, endpoint)
 
             payload = ActionExecuted(action_name).as_dict()
 
@@ -299,20 +298,20 @@ def all_events_before_latest_user_msg(
     return evts
 
 
-def _ask_questions(
-    questions: List[Dict[Text, Any]],
+def _ask_or_abort(
+    questions: Union[Form, Question],
     sender_id: Text,
     endpoint: EndpointConfig,
     is_abort: Callable[[Dict[Text, Any]], bool] = lambda x: False
-) -> Dict[Text, Any]:
+) -> Any:
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
 
     should_retry = True
     answers = {}
 
     while should_retry:
-        answers = prompt(questions)
-        if not answers or is_abort(answers):
+        answers = questions.ask()
+        if answers is None or is_abort(answers):
             should_retry = _ask_if_quit(sender_id, endpoint)
         else:
             should_retry = False
@@ -344,30 +343,16 @@ def _request_free_text_intent(
     sender_id: Text,
     endpoint: EndpointConfig
 ) -> Text:
-    questions = [
-        {
-            "type": "input",
-            "name": "intent",
-            "message": "Please type the intent name",
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    return answers["intent"]
+    question = questionary.text("Please type the intent name")
+    return _ask_or_abort(question, sender_id, endpoint)
 
 
 def _request_free_text_action(
     sender_id: Text,
     endpoint: EndpointConfig
 ) -> Text:
-    questions = [
-        {
-            "type": "input",
-            "name": "action",
-            "message": "Please type the action name",
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    return answers["action"]
+    question = questionary.text("Please type the action name")
+    return _ask_or_abort(question, sender_id, endpoint)
 
 
 def _request_selection_from_intent_list(
@@ -375,15 +360,8 @@ def _request_selection_from_intent_list(
     sender_id: Text,
     endpoint: EndpointConfig
 ) -> Text:
-    questions = [
-        {
-            "type": "list",
-            "name": "intent",
-            "message": "What intent is it?",
-            "choices": intent_list
-        }
-    ]
-    return _ask_questions(questions, sender_id, endpoint)["intent"]
+    question = questionary.select("What intent is it?", choices=intent_list)
+    return _ask_or_abort(question, sender_id, endpoint)
 
 
 def _request_fork_point_from_list(
@@ -391,15 +369,10 @@ def _request_fork_point_from_list(
     sender_id: Text,
     endpoint: EndpointConfig
 ) -> Text:
-    questions = [
-        {
-            "type": "list",
-            "name": "fork",
-            "message": "Before which user message do you want to fork?",
-            "choices": forks
-        }
-    ]
-    return _ask_questions(questions, sender_id, endpoint)["fork"]
+    question = questionary.select(
+        "Before which user message do you want to fork?",
+        choices=forks)
+    return _ask_or_abort(question, sender_id, endpoint)
 
 
 def _request_fork_from_user(
@@ -587,36 +560,15 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
 
     Return `True` if the previous question should be retried."""
 
-    questions = [{
-        "name": "abort",
-        "type": "list",
-        "message": "Do you want to stop?",
-        "choices": [
-            {
-                "name": "Continue",
-                "value": "continue",
-            },
-            {
-                "name": "Undo Last",
-                "value": "undo",
-            },
-            {
-                "name": "Fork",
-                "value": "fork",
-            },
-            {
-                "name": "Start Fresh",
-                "value": "restart",
-            },
-            {
-                "name": "Export & Quit",
-                "value": "quit",
-            },
-        ]
-    }]
-    answers = prompt(questions)
+    answer = questionary.select(
+        message="Do you want to stop?",
+        choices=[Choice("Continue", "continue"),
+                 Choice("Undo Last", "undo"),
+                 Choice("Fork", "fork"),
+                 Choice("Start Fresh", "restart"),
+                 Choice("Export & Quit", "quit")]).ask()
 
-    if not answers or answers["abort"] == "quit":
+    if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
         story_path, nlu_path, domain_path = _request_export_info()
 
@@ -629,15 +581,15 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
 
         logger.info("Successfully wrote stories and NLU data")
         sys.exit()
-    elif answers["abort"] == "continue":
+    elif answer == "continue":
         # in this case we will just return, and the original
         # question will get asked again
         return True
-    elif answers["abort"] == "undo":
+    elif answer == "undo":
         raise UndoLastStep()
-    elif answers["abort"] == "fork":
+    elif answer == "fork":
         raise ForkTracker()
-    elif answers["abort"] == "restart":
+    elif answer == "restart":
         raise RestartConversation()
 
 
@@ -656,15 +608,12 @@ def _request_action_from_user(
                                                 a.get("action")),
                 "value": a.get("action")}
                for a in sorted_actions]
+
     choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
-    questions = [{
-        "name": "action",
-        "type": "list",
-        "message": "What is the next action of the bot?",
-        "choices": choices
-    }]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    action_name = answers["action"]
+    question = questionary.select("What is the next action of the bot?",
+                                  choices)
+
+    action_name = _ask_or_abort(question, sender_id, endpoint)
     is_new_action = action_name == OTHER_ACTION
 
     if is_new_action:
@@ -676,43 +625,29 @@ def _request_action_from_user(
 def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
 
-    def validate_path(path):
-        try:
-            with io.open(path, "a", encoding="utf-8"):
-                return True
-        except Exception as e:
-            return "Failed to open file. {}".format(e)
-
     # export training data and quit
-    questions = [{
-        "name": "export stories",
-        "type": "input",
-        "message": "Export stories to (if file exists, this "
-                   "will append the stories)",
-        "default": PATHS["stories"],
-        "validate": validate_path
-    }, {
-        "name": "export nlu",
-        "type": "input",
-        "message": "Export NLU data to (if file exists, this "
-                   "will merge learned data with previous training examples)",
-        "default": PATHS["nlu"],
-        "validate": validate_path
-    }, {
-        "name": "export domain",
-        "type": "input",
-        "message": "Export domain file to (if file exists, this "
-                   "will be overwritten)",
-        "default": PATHS["domain"],
-        "validate": validate_path}]
+    questions = questionary.form(
+        export_stories=questionary.text(
+            message="Export stories to (if file exists, this "
+                    "will append the stories)",
+            default=PATHS["stories"]),
+        export_nlu=questionary.text(
+            message="Export NLU data to (if file exists, this will "
+                    "merge learned data with previous training examples)",
+            default=PATHS["nlu"]),
+        export_domain=questionary.text(
+            message="Export domain file to (if file exists, this "
+                    "will be overwritten)",
+            default=PATHS["domain"]),
+    )
 
-    answers = prompt(questions)
+    answers = questions.ask()
     if not answers:
         sys.exit()
 
-    return (answers["export stories"],
-            answers["export nlu"],
-            answers["export domain"])
+    return (answers["export_stories"],
+            answers["export_nlu"],
+            answers["export_domain"])
 
 
 def _split_conversation_at_restarts(
@@ -788,18 +723,20 @@ def _write_nlu_to_file(
     # noinspection PyBroadException
     try:
         previous_examples = load_data(export_nlu_path)
+    except Exception as e:
+        logger.exception("An exception occurred while trying to load the "
+                         "NLU data.")
 
-    except Exception:
-        questions = [{"name": "export nlu",
-                      "type": "input",
-                      "message": "Could not load existing NLU data, please "
-                                 "specify where to store NLU data learned in "
-                                 "this session (this will overwrite any "
-                                 "existing file)",
-                      "default": PATHS["backup"]}]
+        export_nlu_path = questionary.text(
+            message="Could not load existing NLU data, please "
+                    "specify where to store NLU data learned in "
+                    "this session (this will overwrite any "
+                    "existing file). {}".format(str(e)),
+            default=PATHS["backup"]).ask()
 
-        answers = prompt(questions)
-        export_nlu_path = answers["export nlu"]
+        if export_nlu_path is None:
+            return
+
         previous_examples = TrainingData()
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
@@ -944,13 +881,10 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
 
     requested_slot = tracker.get("slots", {}).get(REQUESTED_SLOT)
 
-    validation_questions = [{
-        "name": "validation",
-        "type": "confirm",
-        "message": "Should '{}' validate user input to fill "
-                   "the slot '{}'?".format(action_name, requested_slot)
-    }]
-    form_answers = _ask_questions(validation_questions, sender_id, endpoint)
+    validation_questions = questionary.confirm(
+        "Should '{}' validate user input to fill "
+        "the slot '{}'?".format(action_name, requested_slot))
+    form_answers = _ask_or_abort(validation_questions, sender_id, endpoint)
 
     if not form_answers["validation"]:
         # notify form action to skip validation
@@ -959,17 +893,15 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
 
     elif not tracker.get('active_form', {}).get('validate'):
         # handle contradiction with learned behaviour
-        warning_questions = [{
-            "name": "warning",
-            "type": "confirm",
-            "message": "ERROR: FormPolicy predicted no form validation "
-                       "based on previous training stories. "
-                       "Make sure to remove contradictory stories "
-                       "from training data. "
-                       "Otherwise predicting no form validation "
-                       "will not work as expected."
-        }]
-        _ask_questions(warning_questions, sender_id, endpoint)
+        warning_question = questionary.confirm(
+            "ERROR: FormPolicy predicted no form validation "
+            "based on previous training stories. "
+            "Make sure to remove contradictory stories "
+            "from training data. "
+            "Otherwise predicting no form validation "
+            "will not work as expected.")
+
+        _ask_or_abort(warning_question, sender_id, endpoint)
         # notify form action to validate an input
         send_event(endpoint, sender_id,
                    {"event": "form_validation", "validate": True})
@@ -987,17 +919,12 @@ def _validate_action(action_name: Text,
 
     Returns `True` if the prediction is correct, `False` otherwise."""
 
-    q = "The bot wants to run '{}', correct?".format(action_name)
-    questions = [
-        {
-            "type": "confirm",
-            "name": "action",
-            "message": q,
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    question = questionary.confirm(
+        "The bot wants to run '{}', correct?".format(action_name))
 
-    if not answers["action"]:
+    is_correct = _ask_or_abort(question, sender_id, endpoint)
+
+    if not is_correct:
         action_name, is_new_action = _request_action_from_user(
             predictions, sender_id, endpoint)
     else:
@@ -1015,7 +942,7 @@ def _validate_action(action_name: Text,
     elif _form_is_restored(action_name, tracker):
         _confirm_form_validation(action_name, tracker, endpoint, sender_id)
 
-    if not answers["action"]:
+    if not is_correct:
         _correct_wrong_action(action_name, endpoint, sender_id,
                               finetune=finetune,
                               is_new_action=is_new_action)
@@ -1068,18 +995,11 @@ def _validate_user_text(latest_message: Dict[Text, Any],
               "".format(text, intent))
         return False
     else:
-        q = ("Is the NLU classification for '{}' with intent "
-             "'{}' correct?".format(text, intent))
+        question = questionary.confirm(
+            "Is the NLU classification for '{}' with intent '{}' correct?"
+            "".format(text, intent))
 
-        questions = [
-            {
-                "type": "confirm",
-                "name": "nlu",
-                "message": q,
-            }
-        ]
-        answers = _ask_questions(questions, sender_id, endpoint)
-        return answers["nlu"]
+        return _ask_or_abort(question, sender_id, endpoint)
 
 
 def _validate_nlu(intents: List[Text],
@@ -1122,19 +1042,14 @@ def _correct_entities(latest_message: Dict[Text, Any],
 
     Returns the corrected entities"""
 
-    q = "Please mark the entities using [value](type) notation"
     entity_str = _as_md_message(latest_message.get("parse_data", {}))
-    questions = [
-        {
-            "type": "input",
-            "name": "annotation",
-            "default": entity_str,
-            "message": q,
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    question = questionary.text(
+        "Please mark the entities using [value](type) notation",
+        default=entity_str)
+
+    annotation = _ask_or_abort(question, sender_id, endpoint)
     # noinspection PyProtectedMember
-    parsed = MarkdownReader()._parse_training_example(answers["annotation"])
+    parsed = MarkdownReader()._parse_training_example(annotation)
     return parsed.get("entities", [])
 
 
@@ -1142,19 +1057,15 @@ def _enter_user_message(sender_id: Text,
                         endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
-    questions = [{
-        "name": "message",
-        "type": "input",
-        "message": "Next user input (Ctr-c to abort):"
-    }]
+    question = questionary.text("Next user input (Ctr-c to abort):")
 
-    answers = _ask_questions(questions, sender_id, endpoint,
-                             lambda a: not a["message"])
+    message = _ask_or_abort(question, sender_id, endpoint,
+                            lambda a: not a)
 
-    if answers["message"] == constants.USER_INTENT_RESTART:
+    if message == constants.USER_INTENT_RESTART:
         raise RestartConversation()
 
-    send_message(endpoint, sender_id, answers["message"])
+    send_message(endpoint, sender_id, message)
 
 
 def is_listening_for_message(sender_id: Text,
