@@ -690,7 +690,9 @@ class Agent(object):
     def _is_form_policy_present(self) -> bool:
         """Check whether form policy is present and used."""
 
-        has_form_policy = any(isinstance(p, FormPolicy)
-                              for p in self.policy_ensemble.policies)
+        has_form_policy = (
+            self.policy_ensemble and
+            any(isinstance(p, FormPolicy)
+                for p in self.policy_ensemble.policies))
 
         return not self.domain or not self.domain.form_names or has_form_policy
