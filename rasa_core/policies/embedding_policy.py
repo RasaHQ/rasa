@@ -8,6 +8,7 @@ import warnings
 import numpy as np
 import typing
 from tqdm import tqdm
+from multiprocessing import cpu_count
 from typing import (
     Any, List, Optional, Text, Dict, Tuple, Union)
 
@@ -124,7 +125,18 @@ class EmbeddingPolicy(Policy):
         # how often calculate train accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of train accuracy
-        "evaluate_on_num_examples": 100  # large values may hurt performance
+        "evaluate_on_num_examples": 100,  # large values may hurt performance
+        "device_count": cpu_count(),  # tell tf.Session to use CPU limit
+        # if you have more CPU, you can increase this value appropriately
+        "inter_op_threads": 0,
+        "intra_op_threads": 0,  # tells the degree of thread
+        # parallelism of the tf.Session operation.
+        # the smaller the value, the less reuse the thread will have
+        # and the more likely it will use more CPU cores.
+        # if the value is 0,
+        # tensorflow will automatically select an appropriate value.
+        "allow_growth": True  # if set True, will try to allocate
+        # as much GPU memory as possible to support running
     }
 
     # end default properties (DOC MARKER - don't remove)
@@ -269,13 +281,22 @@ class EmbeddingPolicy(Policy):
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
         if self.evaluate_every_num_epochs < 1:
             self.evaluate_every_num_epochs = self.epochs
-
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
+
+    @staticmethod
+    def _load_tf_config(config: Dict[Text, Any]) -> None:
+        """Prepare tf.ConfigProto for training"""
+        return tf.ConfigProto(
+            device_count={'CPU': config['device_count']},
+            inter_op_parallelism_threads=config['inter_op_threads'],
+            intra_op_parallelism_threads=config['intra_op_threads'],
+            gpu_options={'allow_growth': config['allow_growth']}
+        )
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
-
+        self.config = config
         self._load_nn_architecture_params(config)
         self._load_embedding_params(config)
         self._load_regularization_params(config)
@@ -1043,7 +1064,7 @@ class EmbeddingPolicy(Policy):
             self._train_op = tf.train.AdamOptimizer(
                 learning_rate=0.001, epsilon=1e-16).minimize(loss)
             # train tensorflow graph
-            self.session = tf.Session()
+            self.session = tf.Session(config=self._load_tf_config(self.config))
 
             self._train_tf(session_data, loss, mask)
 
@@ -1404,6 +1425,10 @@ class EmbeddingPolicy(Policy):
         with io.open(dump_path, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
 
+        dump_config_path = os.path.join(path, file_name + ".config.pkl")
+        with io.open(dump_config_path, 'wb') as f:
+            pickle.dump(self.config, f)
+
     @staticmethod
     def load_tensor(name: Text) -> Optional[tf.Tensor]:
         tensor_list = tf.get_collection(name)
@@ -1427,9 +1452,15 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(checkpoint + '.meta'):
             return cls(featurizer=featurizer)
 
+        config_file = os.path.join(path, "{}.config.pkl".format(file_name))
+
+        with io.open(config_file, 'rb') as f:
+            config = pickle.load(f)
+        tf_config = cls._load_tf_config(config)
+
         graph = tf.Graph()
         with graph.as_default():
-            sess = tf.Session()
+            sess = tf.Session(config=tf_config)
             saver = tf.train.import_meta_graph(checkpoint + '.meta')
 
             saver.restore(sess, checkpoint)
