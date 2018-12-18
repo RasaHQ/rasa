@@ -30,6 +30,8 @@ Removed
 Changed
 -------
 - replaced ``pytest-pep8`` with ``pytest-pycodestyle``
+- switch from ``PyInquirer`` to ``questionary`` for the display of
+  commandline interface (to avoid prompt toolkit 2 version issues)
 - if NLU classification returned ``None`` in interactive training,
   directly ask a user for a correct intent
 - replaced flask server with async sanic
