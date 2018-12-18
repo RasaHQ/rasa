@@ -11,6 +11,9 @@ import tempfile
 import argparse
 from hashlib import sha1
 from random import Random
+from sanic import Sanic
+from sanic.request import Request
+from sanic.views import CompositionView
 from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
@@ -363,27 +366,32 @@ def read_json_file(filename):
         return json.load(f)
 
 
-def list_routes(app):
-    """List all available routes of a flask web server."""
-    from flask import url_for
+def list_routes(app: Sanic):
+    """List all the routes of a sanic application.
 
+    Mainly used for debugging."""
+    from urllib.parse import unquote
     output = {}
-    with app.test_request_context():
-        for rule in app.url_map.iter_rules():
+    for endpoint, route in app.router.routes_all.items():
+        if endpoint[:-1] in app.router.routes_all and endpoint[-1] == "/":
+            continue
 
-            options = {}
-            for arg in rule.arguments:
-                options[arg] = "[{0}]".format(arg)
+        options = {}
+        for arg in route.parameters:
+            options[arg] = "[{0}]".format(arg)
 
-            methods = ', '.join(rule.methods)
+        methods = ','.join(route.methods)
+        if not isinstance(route.handler, CompositionView):
+            handlers = [route.name]
+        else:
+            handlers = {v.__name__ for v in route.handler.handlers.values()}
+        name = ", ".join(handlers)
+        line = unquote(
+            "{:50s} {:30s} {}".format(endpoint, methods, name))
+        output[name] = line
 
-            url = url_for(rule.endpoint, **options)
-            line = unquote(
-                "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
-            output[url] = line
-
-        url_table = "\n".join(output[url] for url in sorted(output))
-        logger.debug("Available web server routes: \n{}".format(url_table))
+    url_table = "\n".join(output[url] for url in sorted(output))
+    logger.debug("Available web server routes: \n{}".format(url_table))
 
     return output
 
@@ -435,28 +443,47 @@ def wait_for_threads(threads: List[Thread]) -> None:
                 "Stopping to serve forever.")
 
 
-def bool_arg(name: Text, default: bool = True) -> bool:
+def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     """Return a passed boolean argument of the request or a default.
 
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
-    from flask import request
 
-    return request.args.get(name, str(default)).lower() == 'true'
+    return default_arg(request, name, str(default)).lower() == 'true'
 
 
-def float_arg(name: Text) -> Optional[float]:
+def float_arg(request: Request,
+              key: Text,
+              default: Optional[float] = None) -> Optional[float]:
     """Return a passed argument cast as a float or None.
 
     Checks the `name` parameter of the request if it contains a valid
     float value. If not, `None` is returned."""
-    from flask import request
 
-    arg = request.args.get(name)
+    arg = default_arg(request, key, default)
+
+    if arg is default:
+        return arg
+
     try:
         return float(arg)
-    except TypeError:
-        return None
+    except (ValueError, TypeError):
+        logger.warning("Failed to convert '{}' to float.".format(arg))
+        return default
+
+
+def default_arg(request: Request,
+                key: Text,
+                default: Any = None) -> Optional[Any]:
+    """Return an argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a value.
+    If not, `default` is returned."""
+    found = request.raw_args.get(key)
+    if found is not None:
+        return found
+    else:
+        return default
 
 
 def extract_args(kwargs: Dict[Text, Any],
@@ -620,12 +647,12 @@ class EndpointConfig(object):
         self.store_type = kwargs.pop('store_type', None)
         self.kwargs = kwargs
 
-    def request(self,
-                method: Text = "post",
-                subpath: Optional[Text] = None,
-                content_type: Optional[Text] = "application/json",
-                **kwargs: Any
-                ) -> requests.Response:
+    async def request(self,
+                      method: Text = "post",
+                      subpath: Optional[Text] = None,
+                      content_type: Optional[Text] = "application/json",
+                      **kwargs: Any
+                      ) -> requests.Response:
         """Send a HTTP request to the endpoint.
 
         All additional arguments will get passed through

@@ -1,7 +1,8 @@
 import logging
 
 import requests
-from flask import request, abort
+from sanic import request
+from sanic.exceptions import abort
 
 from rasa_core.channels.channel import RestInput
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT

@@ -81,7 +81,7 @@ def test_read_lines():
     assert len(lines) == 2
 
 
-def test_endpoint_config():
+def test_endpoint_config(loop):
     endpoint = EndpointConfig(
         "https://abc.defg/",
         params={"A": "B"},
@@ -104,10 +104,10 @@ def test_endpoint_config():
         body='')
 
     httpretty.enable()
-    endpoint.request("post", subpath="test",
+    loop.run_until_complete(endpoint.request("post", subpath="test",
                      content_type="application/text",
                      json={"c": "d"},
-                     params={"P": "1"})
+                     params={"P": "1"}))
     httpretty.disable()
 
     r = httpretty.latest_requests[-1]

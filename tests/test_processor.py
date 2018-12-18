@@ -1,4 +1,5 @@
 import datetime
+import pytest
 import uuid
 
 from rasa_core.channels import CollectingOutputChannel
@@ -10,9 +11,10 @@ from rasa_core.events import (
 from rasa_nlu.training_data import Message
 
 
-def test_message_processor(default_processor):
+def test_message_processor(loop, default_processor):
     out = CollectingOutputChannel()
-    default_processor.handle_message(UserMessage('/greet{"name":"Core"}', out))
+    loop.run_until_complete(default_processor.handle_message(
+        UserMessage('/greet{"name":"Core"}', out)))
     assert {'recipient_id': 'default',
             'text': 'hey there Core!'} == out.latest_output()
 
@@ -24,7 +26,7 @@ def test_parsing(default_processor):
     assert parsed["entities"][0]["entity"] == 'name'
 
 
-def test_reminder_scheduled(default_processor):
+def test_reminder_scheduled(loop, default_processor):
     out = CollectingOutputChannel()
     sender_id = uuid.uuid4().hex
 
@@ -37,7 +39,7 @@ def test_reminder_scheduled(default_processor):
     t.update(r)
 
     default_processor.tracker_store.save(t)
-    default_processor.handle_reminder(r, d)
+    loop.run_until_complete(default_processor.handle_reminder(r, d))
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
@@ -49,7 +51,7 @@ def test_reminder_scheduled(default_processor):
     assert t.events[-1] == ActionExecuted("action_listen")
 
 
-def test_reminder_aborted(default_processor):
+def test_reminder_aborted(loop, default_processor):
     out = CollectingOutputChannel()
     sender_id = uuid.uuid4().hex
 
@@ -62,14 +64,14 @@ def test_reminder_aborted(default_processor):
     t.update(UserUttered("test"))  # cancels the reminder
 
     default_processor.tracker_store.save(t)
-    default_processor.handle_reminder(r, d)
+    loop.run_until_complete(default_processor.handle_reminder(r, d))
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 3  # nothing should have been executed
 
 
-def test_reminder_restart(default_processor):
+def test_reminder_restart(loop, default_processor):
     out = CollectingOutputChannel()
     sender_id = uuid.uuid4().hex
 
@@ -83,14 +85,14 @@ def test_reminder_restart(default_processor):
     t.update(UserUttered("test"))
 
     default_processor.tracker_store.save(t)
-    default_processor.handle_reminder(r, d)
+    loop.run_until_complete(default_processor.handle_reminder(r, d))
 
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 4  # nothing should have been executed
 
 
-def test_logging_of_bot_utterances_on_tracker(default_processor,
+def test_logging_of_bot_utterances_on_tracker(loop, default_processor,
                                               default_dispatcher_collecting,
                                               default_agent):
     sender_id = "test_logging_of_bot_utterances_on_tracker"
@@ -100,10 +102,15 @@ def test_logging_of_bot_utterances_on_tracker(default_processor,
         Button(title="Btn2", payload="_btn2")
     ]
 
-    default_dispatcher_collecting.utter_template("utter_goodbye", tracker)
-    default_dispatcher_collecting.utter_attachment("http://my-attachment")
-    default_dispatcher_collecting.utter_message("my test message")
-    default_dispatcher_collecting.utter_button_message("my message", buttons)
+    loop.run_until_complete(
+        default_dispatcher_collecting.utter_template("utter_goodbye", tracker))
+    loop.run_until_complete(
+        default_dispatcher_collecting.utter_attachment("http://my-attachment"))
+    loop.run_until_complete(
+        default_dispatcher_collecting.utter_message("my test message"))
+    loop.run_until_complete(
+        default_dispatcher_collecting.utter_button_message("my message",
+                                                           buttons))
 
     assert len(default_dispatcher_collecting.latest_bot_messages) == 4
 

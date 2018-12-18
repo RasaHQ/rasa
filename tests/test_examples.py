@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import pytest
 from httpretty import httpretty
 
 from rasa_core.train import train_dialogue_model
@@ -8,20 +9,21 @@ from rasa_core.agent import Agent
 from rasa_core.utils import EndpointConfig, AvailableEndpoints
 
 
-def test_moodbot_example(trained_moodbot_path):
+def test_moodbot_example(loop, trained_moodbot_path):
     agent = Agent.load(trained_moodbot_path)
 
-    responses = agent.handle_text("/greet")
+    responses = loop.run_until_complete(agent.handle_text("/greet"))
     assert responses[0]['text'] == 'Hey! How are you?'
 
-    responses.extend(agent.handle_text("/mood_unhappy"))
+    responses.extend(
+        loop.run_until_complete(agent.handle_text("/mood_unhappy")))
     assert responses[-1]['text'] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
     assert len(responses) == 4
 
 
-def test_restaurantbot_example():
+def test_restaurantbot_example(loop):
     sys.path.append("examples/restaurantbot/")
     from bot import train_dialogue
 
@@ -31,11 +33,11 @@ def test_restaurantbot_example():
                            os.path.join(p, "models", "dialogue"),
                            stories)
 
-    responses = agent.handle_text("/greet")
+    responses = loop.run_until_complete(agent.handle_text("/greet"))
     assert responses[0]['text'] == 'how can I help you?'
 
 
-def test_formbot_example():
+def test_formbot_example(loop):
     sys.path.append("examples/formbot/")
 
     p = "examples/formbot/"
@@ -65,7 +67,8 @@ def test_formbot_example():
 
     httpretty.enable()
 
-    responses = agent.handle_text("/request_restaurant")
+    responses = loop.run_until_complete(
+        agent.handle_text("/request_restaurant"))
 
     httpretty.disable()
 
@@ -84,7 +87,7 @@ def test_formbot_example():
 
     httpretty.enable()
 
-    responses = agent.handle_text("/chitchat")
+    responses = loop.run_until_complete(agent.handle_text("/chitchat"))
 
     httpretty.disable()
 

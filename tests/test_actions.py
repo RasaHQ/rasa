@@ -17,11 +17,12 @@ from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import EndpointConfig
 
 
-def test_restart(default_dispatcher_collecting, default_domain):
+def test_restart(loop, default_dispatcher_collecting, default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
-    events = ActionRestart().run(default_dispatcher_collecting, tracker,
-                                 default_domain)
+    events = loop.run_until_complete(
+        ActionRestart().run(default_dispatcher_collecting, tracker,
+                            default_domain))
     assert events == [Restarted()]
 
 
@@ -78,7 +79,9 @@ def test_domain_fails_on_duplicated_actions():
                form_names=[])
 
 
-def test_remote_action_runs(default_dispatcher_collecting, default_domain):
+def test_remote_action_runs(loop,
+                            default_dispatcher_collecting,
+                            default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
@@ -92,9 +95,9 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
         body='{"events": [], "responses": []}')
 
     httpretty.enable()
-    remote_action.run(default_dispatcher_collecting,
-                      tracker,
-                      default_domain)
+    loop.run_until_complete(remote_action.run(default_dispatcher_collecting,
+                                              tracker,
+                                              default_domain))
     httpretty.disable()
 
     assert (httpretty.latest_requests[-1].path ==
@@ -125,7 +128,8 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
     }
 
 
-def test_remote_action_logs_events(default_dispatcher_collecting,
+def test_remote_action_logs_events(loop,
+                                   default_dispatcher_collecting,
                                    default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
@@ -147,9 +151,10 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
         body=json.dumps(response))
 
     httpretty.enable()
-    events = remote_action.run(default_dispatcher_collecting,
-                               tracker,
-                               default_domain)
+    events = loop.run_until_complete(
+        remote_action.run(default_dispatcher_collecting,
+                          tracker,
+                          default_domain))
     httpretty.disable()
 
     assert (httpretty.latest_requests[-1].path ==
@@ -188,7 +193,8 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
         {"text": "hey there None!", "recipient_id": "my-sender"}]
 
 
-def test_remote_action_wo_endpoint(default_dispatcher_collecting,
+def test_remote_action_wo_endpoint(loop,
+                                   default_dispatcher_collecting,
                                    default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
@@ -196,13 +202,14 @@ def test_remote_action_wo_endpoint(default_dispatcher_collecting,
     remote_action = action.RemoteAction("my_action", None)
 
     with pytest.raises(Exception) as execinfo:
-        remote_action.run(default_dispatcher_collecting,
-                          tracker,
-                          default_domain)
+        loop.run_until_complete(remote_action.run(default_dispatcher_collecting,
+                                                  tracker,
+                                                  default_domain))
     assert "you didn't configure an endpoint" in str(execinfo.value)
 
 
-def test_remote_action_endpoint_not_running(default_dispatcher_collecting,
+def test_remote_action_endpoint_not_running(loop,
+                                            default_dispatcher_collecting,
                                             default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
@@ -211,13 +218,14 @@ def test_remote_action_endpoint_not_running(default_dispatcher_collecting,
     remote_action = action.RemoteAction("my_action", endpoint)
 
     with pytest.raises(Exception) as execinfo:
-        remote_action.run(default_dispatcher_collecting,
-                          tracker,
-                          default_domain)
+        loop.run_until_complete(remote_action.run(default_dispatcher_collecting,
+                                                  tracker,
+                                                  default_domain))
     assert "Failed to execute custom action." in str(execinfo.value)
 
 
-def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
+def test_remote_action_endpoint_responds_500(loop,
+                                             default_dispatcher_collecting,
                                              default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
@@ -233,14 +241,15 @@ def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
 
     httpretty.enable()
     with pytest.raises(Exception) as execinfo:
-        remote_action.run(default_dispatcher_collecting,
-                          tracker,
-                          default_domain)
+        loop.run_until_complete(remote_action.run(default_dispatcher_collecting,
+                                                  tracker,
+                                                  default_domain))
     httpretty.disable()
     assert "Failed to execute custom action." in str(execinfo.value)
 
 
-def test_remote_action_endpoint_responds_400(default_dispatcher_collecting,
+def test_remote_action_endpoint_responds_400(loop,
+                                             default_dispatcher_collecting,
                                              default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
@@ -257,24 +266,27 @@ def test_remote_action_endpoint_responds_400(default_dispatcher_collecting,
     httpretty.enable()
 
     with pytest.raises(Exception) as execinfo:
-        remote_action.run(default_dispatcher_collecting,
-                          tracker,
-                          default_domain)
+        loop.run_until_complete(
+            remote_action.run(default_dispatcher_collecting,
+                              tracker,
+                              default_domain))
     httpretty.disable()
     assert execinfo.type == ActionExecutionRejection
     assert "Custom action 'my_action' rejected to run" in str(execinfo.value)
 
 
-def test_default_action(default_dispatcher_collecting,
+def test_default_action(loop,
+                        default_dispatcher_collecting,
                         default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
     fallback_action = action.ActionDefaultFallback()
 
-    events = fallback_action.run(default_dispatcher_collecting,
-                                 tracker,
-                                 default_domain)
+    events = loop.run_until_complete(
+        fallback_action.run(default_dispatcher_collecting,
+                            tracker,
+                            default_domain))
 
     channel = default_dispatcher_collecting.output_channel
     assert channel.messages == [

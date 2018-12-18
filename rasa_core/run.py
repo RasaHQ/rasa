@@ -1,8 +1,12 @@
+from _signal import SIGINT
+
 import argparse
+import asyncio
 import logging
-from flask import Flask
-from flask_cors import CORS
 from gevent.pywsgi import WSGIServer
+from sanic import Sanic
+from sanic_cors import CORS
+from signal import signal
 from threading import Thread
 from typing import Text, Optional, List
 
@@ -155,8 +159,10 @@ def start_server(input_channels,
                                 jwt_secret=jwt_secret,
                                 jwt_method=jwt_method)
     else:
-        app = Flask(__name__)
-        CORS(app, resources={r"/*": {"origins": cors or ""}})
+        app = Sanic(__name__)
+        CORS(app,
+             resources={r"/*": {"origins": cors or ""}},
+             automatic_options=True)
 
     if input_channels:
         rasa_core.channels.channel.register(input_channels,
@@ -167,10 +173,9 @@ def start_server(input_channels,
     if logger.isEnabledFor(logging.DEBUG):
         utils.list_routes(app)
 
-    http_server = WSGIServer(('0.0.0.0', port), app)
+    http_server = app.create_server(host='0.0.0.0', port=port)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
-    http_server.start()
     return http_server
 
 
@@ -193,20 +198,25 @@ def serve_application(initial_agent,
                                port, initial_agent, enable_api,
                                jwt_secret, jwt_method)
 
+    loop = asyncio.get_event_loop()
+    task = asyncio.ensure_future(http_server)
+    signal(SIGINT, lambda s, f: loop.stop())
+
     if channel == "cmdline":
         start_cmdline_io(constants.DEFAULT_SERVER_FORMAT.format(port),
-                         http_server.stop)
+                         loop.stop)
 
     try:
-        http_server.serve_forever()
+        loop.run_forever()
     except Exception as exc:
         logger.exception(exc)
+        loop.stop()
 
 
-def load_agent(core_model, interpreter, endpoints,
-               tracker_store=None):
+async def load_agent(core_model, interpreter, endpoints,
+                     tracker_store=None):
     if endpoints.model:
-        return agent.load_from_server(
+        return await agent.load_from_server(
             interpreter=interpreter,
             generator=endpoints.nlg,
             action_endpoint=endpoints.action,
@@ -245,10 +255,12 @@ if __name__ == '__main__':
 
     _tracker_store = TrackerStore.find_tracker_store(
         None, _endpoints.tracker_store, _broker)
-    _agent = load_agent(cmdline_args.core,
-                        interpreter=_interpreter,
-                        tracker_store=_tracker_store,
-                        endpoints=_endpoints)
+
+    loop = asyncio.get_event_loop()
+    _agent = loop.run_until_complete(load_agent(cmdline_args.core,
+                                                interpreter=_interpreter,
+                                                tracker_store=_tracker_store,
+                                                endpoints=_endpoints))
     serve_application(_agent,
                       cmdline_args.connector,
                       cmdline_args.port,

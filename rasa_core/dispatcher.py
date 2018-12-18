@@ -46,7 +46,7 @@ class Dispatcher(object):
         self.nlg = nlg
         self.latest_bot_messages = []
 
-    def utter_response(self, message: Dict[Text, Any]) -> None:
+    async def utter_response(self, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
         bot_message = BotMessage(text=message.get("text"),
@@ -55,62 +55,62 @@ class Dispatcher(object):
                                        "attachment": message.get("image")})
 
         self.latest_bot_messages.append(bot_message)
-        self.output_channel.send_response(self.sender_id, message)
+        await self.output_channel.send_response(self.sender_id, message)
 
-    def utter_message(self, text: Text) -> None:
+    async def utter_message(self, text: Text) -> None:
         """"Send a text to the output channel"""
         # Adding the text to the latest bot messages (with no data)
         bot_message = BotMessage(text=text,
                                  data=None)
 
         self.latest_bot_messages.append(bot_message)
-        self.output_channel.send_text_message(self.sender_id, text)
+        await self.output_channel.send_text_message(self.sender_id, text)
 
-    def utter_custom_message(self, *elements: Dict[Text, Any]) -> None:
+    async def utter_custom_message(self, *elements: Dict[Text, Any]) -> None:
         """Sends a message with custom elements to the output channel."""
 
         bot_message = BotMessage(text=None,
                                  data={"elements": elements})
 
         self.latest_bot_messages.append(bot_message)
-        self.output_channel.send_custom_message(self.sender_id, elements)
+        await self.output_channel.send_custom_message(self.sender_id, elements)
 
-    def utter_button_message(self,
-                             text: Text,
-                             buttons: List[Dict[Text, Any]],
-                             **kwargs: Any) -> None:
+    async def utter_button_message(self,
+                                   text: Text,
+                                   buttons: List[Dict[Text, Any]],
+                                   **kwargs: Any) -> None:
         """Sends a message with buttons to the output channel."""
         # Adding the text and data (buttons) to the latest bot messages
         bot_message = BotMessage(text=text,
                                  data={"buttons": buttons})
 
         self.latest_bot_messages.append(bot_message)
-        self.output_channel.send_text_with_buttons(self.sender_id, text,
-                                                   buttons,
-                                                   **kwargs)
+        await self.output_channel.send_text_with_buttons(self.sender_id, text,
+                                                         buttons,
+                                                         **kwargs)
 
-    def utter_attachment(self, attachment: Text) -> None:
+    async def utter_attachment(self, attachment: Text) -> None:
         """Send a message to the client with attachments."""
         bot_message = BotMessage(text=None,
                                  data={"attachment": attachment})
 
         self.latest_bot_messages.append(bot_message)
-        self.output_channel.send_image_url(self.sender_id, attachment)
+        await self.output_channel.send_image_url(self.sender_id, attachment)
 
     # TODO: deprecate this function
-    def utter_button_template(self,
-                              template: Text,
-                              buttons: List[Dict[Text, Any]],
-                              tracker: 'DialogueStateTracker',
-                              silent_fail: bool = False,
-                              **kwargs: Any
-                              ) -> None:
+    async def utter_button_template(self,
+                                    template: Text,
+                                    buttons: List[Dict[Text, Any]],
+                                    tracker: 'DialogueStateTracker',
+                                    silent_fail: bool = False,
+                                    **kwargs: Any
+                                    ) -> None:
         """Sends a message template with buttons to the output channel."""
 
-        message = self._generate_response(template,
-                                          tracker,
-                                          silent_fail,
-                                          **kwargs)
+        message = await self._generate_response(template,
+                                                tracker,
+                                                silent_fail,
+                                                **kwargs)
         if not message:
             return
 
@@ -118,37 +118,37 @@ class Dispatcher(object):
             message["buttons"] = buttons
         else:
             message["buttons"].extend(buttons)
-        self.utter_response(message)
+        await self.utter_response(message)
 
-    def utter_template(self,
-                       template: Text,
-                       tracker: 'DialogueStateTracker',
-                       silent_fail: bool = False,
-                       **kwargs: Any
-                       ) -> None:
+    async def utter_template(self,
+                             template: Text,
+                             tracker: 'DialogueStateTracker',
+                             silent_fail: bool = False,
+                             **kwargs: Any
+                             ) -> None:
         """"Send a message to the client based on a template."""
 
-        message = self._generate_response(template,
-                                          tracker,
-                                          silent_fail,
-                                          **kwargs)
+        message = await self._generate_response(template,
+                                                tracker,
+                                                silent_fail,
+                                                **kwargs)
 
         if not message:
             return
 
-        self.utter_response(message)
+        await self.utter_response(message)
 
-    def _generate_response(self,
-                           template: Text,
-                           tracker: 'DialogueStateTracker',
-                           silent_fail: bool = False,
-                           **kwargs: Any
-                           ) -> Dict[Text, Any]:
+    async def _generate_response(self,
+                                 template: Text,
+                                 tracker: 'DialogueStateTracker',
+                                 silent_fail: bool = False,
+                                 **kwargs: Any
+                                 ) -> Dict[Text, Any]:
         """"Generate a response."""
 
-        message = self.nlg.generate(template, tracker,
-                                    self.output_channel.name(),
-                                    **kwargs)
+        message = await self.nlg.generate(template, tracker,
+                                          self.output_channel.name(),
+                                          **kwargs)
 
         if message is None and not silent_fail:
             logger.error("Couldn't create message for template '{}'."

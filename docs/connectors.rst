@@ -104,7 +104,7 @@ you should add in the configuration of the webhook.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``FacebookInput`` instance provides a flask blueprint for creating
+A ``FacebookInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -177,7 +177,7 @@ you should add in the OAuth & Permissions section.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``WebexTeamsInput`` instance provides a flask blueprint for creating
+A ``WebexTeamsInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -251,7 +251,7 @@ you should add in the OAuth & Permissions section.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``SlackInput`` instance provides a flask blueprint for creating
+A ``SlackInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -318,7 +318,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``MattermostInput`` instance provides a flask blueprint for creating
+A ``MattermostInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -383,7 +383,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``TelegramInput`` instance provides a flask blueprint for creating
+A ``TelegramInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -451,7 +451,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``TwilioInput`` instance provides a flask blueprint for creating
+A ``TwilioInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -520,7 +520,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``RocketChatInput`` instance provides a flask blueprint for creating
+A ``RocketChatInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -562,7 +562,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``BotFrameworkInput`` instance provides a flask blueprint for creating
+A ``BotFrameworkInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you seperate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -765,7 +765,7 @@ Creating a new Channel
 You can also implement your own, custom channel. You can
 use the ``rasa_core.channels.channel.RestInput`` class as a template.
 The methods you need to implement are ``blueprint`` and ``name``. The method
-needs to create a Flask blueprint that can be attached to a flask server.
+needs to create a sanic blueprint that can be attached to a sanic server.
 
 This allows you to add `REST` endpoints to the server, the external
 messaging service can call to deliver messages.

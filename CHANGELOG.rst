@@ -32,6 +32,7 @@ Changed
 - replaced ``pytest-pep8`` with ``pytest-pycodestyle``
 - if NLU classification returned ``None`` in interactive training,
   directly ask a user for a correct intent
+- replaced flask server with async sanic
 
 Fixed
 -----

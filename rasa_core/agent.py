@@ -1,4 +1,5 @@
-import time
+import asyncio
+
 import logging
 import os
 import shutil
@@ -6,9 +7,12 @@ import tempfile
 import typing
 import uuid
 import zipfile
+from asyncio import Task, Future
 from gevent.pywsgi import WSGIServer
 from io import BytesIO as IOReader
 from requests.exceptions import InvalidURL, RequestException
+from signal import SIGINT
+from signal import signal
 from threading import Thread
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -38,12 +42,12 @@ if typing.TYPE_CHECKING:
     from rasa_core.tracker_store import TrackerStore
 
 
-def load_from_server(interpreter: NaturalLanguageInterpreter = None,
-                     generator: Union[EndpointConfig, 'NLG'] = None,
-                     tracker_store: Optional['TrackerStore'] = None,
-                     action_endpoint: Optional[EndpointConfig] = None,
-                     model_server: Optional[EndpointConfig] = None,
-                     ) -> 'Agent':
+async def load_from_server(interpreter: NaturalLanguageInterpreter = None,
+                           generator: Union[EndpointConfig, 'NLG'] = None,
+                           tracker_store: Optional['TrackerStore'] = None,
+                           action_endpoint: Optional[EndpointConfig] = None,
+                           model_server: Optional[EndpointConfig] = None,
+                           ) -> 'Agent':
     """Load a persisted model from a server."""
 
     agent = Agent(interpreter=interpreter,
@@ -54,21 +58,21 @@ def load_from_server(interpreter: NaturalLanguageInterpreter = None,
     wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
                                                       100)
     if wait_time_between_pulls is not None and (
-            isinstance(wait_time_between_pulls,
-                       int) or wait_time_between_pulls.isdigit()):
+        isinstance(wait_time_between_pulls,
+                   int) or wait_time_between_pulls.isdigit()):
         # continuously pull the model every `wait_time_between_pulls` seconds
         start_model_pulling_in_worker(model_server,
                                       int(wait_time_between_pulls),
                                       agent)
     else:
         # just pull the model once
-        _update_model_from_server(model_server, agent)
+        await _update_model_from_server(model_server, agent)
 
     return agent
 
 
-def _init_model_from_server(model_server: EndpointConfig
-                            ) -> Optional[typing.Tuple[Text, Text]]:
+async def _init_model_from_server(model_server: EndpointConfig
+                                  ) -> Optional[typing.Tuple[Text, Text]]:
     """Initialise a Rasa Core model from a URL."""
 
     if not is_url(model_server.url):
@@ -76,16 +80,16 @@ def _init_model_from_server(model_server: EndpointConfig
 
     model_directory = tempfile.mkdtemp()
 
-    fingerprint = _pull_model_and_fingerprint(model_server,
-                                              model_directory,
-                                              fingerprint=None)
+    fingerprint = await _pull_model_and_fingerprint(model_server,
+                                                    model_directory,
+                                                    fingerprint=None)
 
     return fingerprint, model_directory
 
 
-def _update_model_from_server(model_server: EndpointConfig,
-                              agent: 'Agent'
-                              ) -> None:
+async def _update_model_from_server(model_server: EndpointConfig,
+                                    agent: 'Agent'
+                                    ) -> None:
     """Load a zipped Rasa Core model from a URL and update the passed agent."""
 
     if not is_url(model_server.url):
@@ -93,7 +97,7 @@ def _update_model_from_server(model_server: EndpointConfig,
 
     model_directory = tempfile.mkdtemp()
 
-    new_model_fingerprint = _pull_model_and_fingerprint(
+    new_model_fingerprint = await _pull_model_and_fingerprint(
         model_server, model_directory, agent.fingerprint)
     if new_model_fingerprint:
         domain_path = os.path.join(os.path.abspath(model_directory),
@@ -106,10 +110,10 @@ def _update_model_from_server(model_server: EndpointConfig,
                      "URL {}".format(model_server.url))
 
 
-def _pull_model_and_fingerprint(model_server: EndpointConfig,
-                                model_directory: Text,
-                                fingerprint: Optional[Text]
-                                ) -> Optional[Text]:
+async def _pull_model_and_fingerprint(model_server: EndpointConfig,
+                                      model_directory: Text,
+                                      fingerprint: Optional[Text]
+                                      ) -> Optional[Text]:
     """Queries the model server and returns the value of the response's
 
     <ETag> header which contains the model hash."""
@@ -117,9 +121,9 @@ def _pull_model_and_fingerprint(model_server: EndpointConfig,
     try:
         logger.debug("Requesting model from server {}..."
                      "".format(model_server.url))
-        response = model_server.request(method="GET",
-                                        headers=header,
-                                        timeout=DEFAULT_REQUEST_TIMEOUT)
+        response = await model_server.request(method="GET",
+                                              headers=header,
+                                              timeout=DEFAULT_REQUEST_TIMEOUT)
     except RequestException as e:
         logger.warning("Tried to fetch model from server, but couldn't reach "
                        "server. We'll retry later... Error: {}."
@@ -152,17 +156,18 @@ def _pull_model_and_fingerprint(model_server: EndpointConfig,
     return response.headers.get("ETag")
 
 
-def _run_model_pulling_worker(model_server: EndpointConfig,
-                              wait_time_between_pulls: int,
-                              agent: 'Agent') -> None:
+async def _run_model_pulling_worker(model_server: EndpointConfig,
+                                    wait_time_between_pulls: int,
+                                    agent: 'Agent') -> None:
     while True:
-        _update_model_from_server(model_server, agent)
-        time.sleep(wait_time_between_pulls)
+        await _update_model_from_server(model_server, agent)
+        await asyncio.sleep(wait_time_between_pulls)
 
 
 def start_model_pulling_in_worker(model_server: EndpointConfig,
                                   wait_time_between_pulls: int,
                                   agent: 'Agent') -> None:
+    # TODO AS adapt to use asyncio loop
     worker = Thread(target=_run_model_pulling_worker,
                     args=(model_server, wait_time_between_pulls, agent))
     worker.setDaemon(True)
@@ -274,7 +279,8 @@ class Agent(object):
                 self.tracker_store is not None and
                 self.policy_ensemble is not None)
 
-    def handle_message(
+    # todo follow
+    async def handle_message(
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
@@ -285,9 +291,10 @@ class Agent(object):
         if not isinstance(message, UserMessage):
             logger.warning("Passing a text to `agent.handle_message(...)` is "
                            "deprecated. Rather use `agent.handle_text(...)`.")
-            return self.handle_text(message,
-                                    message_preprocessor=message_preprocessor,
-                                    **kwargs)
+            return await self.handle_text(
+                message,
+                message_preprocessor=message_preprocessor,
+                **kwargs)
 
         def noop(_):
             logger.info("Ignoring message as there is no agent to handle it.")
@@ -297,7 +304,7 @@ class Agent(object):
             return noop(message)  #
 
         processor = self.create_processor(message_preprocessor)
-        return processor.handle_message(message)
+        return await processor.handle_message(message)
 
     # noinspection PyUnusedLocal
     def predict_next(
@@ -322,7 +329,7 @@ class Agent(object):
         processor = self.create_processor(message_preprocessor)
         return processor.log_message(message)
 
-    def execute_action(
+    async def execute_action(
         self,
         sender_id: Text,
         action: Text,
@@ -336,10 +343,11 @@ class Agent(object):
         dispatcher = Dispatcher(sender_id,
                                 output_channel,
                                 self.nlg)
-        return processor.execute_action(sender_id, action, dispatcher, policy,
-                                        confidence)
+        return await processor.execute_action(sender_id, action, dispatcher,
+                                              policy,
+                                              confidence)
 
-    def handle_text(
+    async def handle_text(
         self,
         text_message: Union[Text, Dict[Text, Any]],
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
@@ -377,7 +385,7 @@ class Agent(object):
                           output_channel,
                           sender_id)
 
-        return self.handle_message(msg, message_preprocessor)
+        return await self.handle_message(msg, message_preprocessor)
 
     def toggle_memoization(
         self,
@@ -430,8 +438,8 @@ class Agent(object):
 
         for policy in self.policy_ensemble.policies:
             if (policy.featurizer and not
-                    hasattr(policy.featurizer, 'max_history')):
-                        return False
+            hasattr(policy.featurizer, 'max_history')):
+                return False
         return True
 
     def load_data(self,
@@ -514,26 +522,32 @@ class Agent(object):
     def handle_channels(self, channels: List[InputChannel],
                         http_port: int = constants.DEFAULT_SERVER_PORT,
                         serve_forever: bool = True,
-                        route: Text = "/webhooks/") -> WSGIServer:
+                        route: Text = "/webhooks/") -> Future:
         """Start a webserver attaching the input channels and handling msgs.
 
         If ``serve_forever`` is set to ``True``, this call will be blocking.
         Otherwise the webserver will be started, and the method will
         return afterwards."""
-        from flask import Flask
+        from sanic import Sanic
 
-        app = Flask(__name__)
+        app = Sanic(__name__)
         rasa_core.channels.channel.register(channels,
                                             app,
                                             self.handle_message,
                                             route=route)
 
-        http_server = WSGIServer(('0.0.0.0', http_port), app)
-        http_server.start()
+        http_server = app.create_server(host='0.0.0.0', port=http_port)
+        loop = asyncio.get_event_loop()
+        task = asyncio.ensure_future(http_server)
+        signal(SIGINT, lambda s, f: loop.stop())
 
         if serve_forever:
-            http_server.serve_forever()
-        return http_server
+            try:
+                loop.run_forever()
+            except Exception as exc:
+                logger.exception(exc)
+                loop.stop()
+        return task
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
 
@@ -677,5 +691,5 @@ class Agent(object):
             if there is a form action in the domain
         """
         return (self.domain and self.domain.form_names and not
-                any(isinstance(p, FormPolicy)
-                    for p in self.policy_ensemble.policies))
+        any(isinstance(p, FormPolicy)
+            for p in self.policy_ensemble.policies))

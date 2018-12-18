@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import logging
 import warnings
@@ -95,7 +96,7 @@ def actions_since_last_utterance(tracker: DialogueStateTracker) -> List[Text]:
     return actions
 
 
-def replay_events(tracker: DialogueStateTracker, agent: Agent) -> None:
+async def replay_events(tracker: DialogueStateTracker, agent: Agent) -> None:
     """Take a tracker and replay the logged user utterances against an agent.
 
     During replaying of the user utterances, the executed actions and events
@@ -117,8 +118,9 @@ def replay_events(tracker: DialogueStateTracker, agent: Agent) -> None:
             actions_between_utterances = []
             print(utils.wrap_with_color(event.text, utils.bcolors.OKGREEN))
             out = CollectingOutputChannel()
-            agent.handle_message(event.text, sender_id=tracker.sender_id,
-                                 output_channel=out)
+            await agent.handle_message(event.text,
+                                       sender_id=tracker.sender_id,
+                                       output_channel=out)
             for m in out.messages:
                 console.print_bot_output(m)
 
@@ -143,13 +145,13 @@ def load_tracker_from_json(tracker_dump: Text,
                                           domain.slots)
 
 
-def serve_application(model_directory: Text,
-                      nlu_model: Optional[Text] = None,
-                      tracker_dump: Optional[Text] = None,
-                      port: int = constants.DEFAULT_SERVER_PORT,
-                      endpoints: Optional[Text] = None,
-                      enable_api: bool = True
-                      ):
+async def serve_application(model_directory: Text,
+                            nlu_model: Optional[Text] = None,
+                            tracker_dump: Optional[Text] = None,
+                            port: int = constants.DEFAULT_SERVER_PORT,
+                            endpoints: Optional[Text] = None,
+                            enable_api: bool = True
+                            ):
     from rasa_core import run
 
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
@@ -158,7 +160,9 @@ def serve_application(model_directory: Text,
 
     input_channels = run.create_http_input_channels("cmdline", None)
 
-    agent = load_agent(model_directory, interpreter=nlu, endpoints=_endpoints)
+    agent = await load_agent(model_directory,
+                             interpreter=nlu,
+                             endpoints=_endpoints)
 
     http_server = run.start_server(input_channels,
                                    None,
@@ -173,7 +177,7 @@ def serve_application(model_directory: Text,
     run.start_cmdline_io(constants.DEFAULT_SERVER_FORMAT.format(port),
                          http_server.stop, sender_id=tracker.sender_id)
 
-    replay_events(tracker, agent)
+    await replay_events(tracker, agent)
 
     try:
         http_server.serve_forever()
@@ -193,8 +197,9 @@ if __name__ == '__main__':
         "with the bot, continuing the input conversation.",
         utils.bcolors.OKGREEN + utils.bcolors.UNDERLINE))
 
-    serve_application(cmdline_args.core,
-                      cmdline_args.nlu,
-                      cmdline_args.port,
-                      cmdline_args.endpoints,
-                      cmdline_args.enable_api)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(serve_application(cmdline_args.core,
+                                              cmdline_args.nlu,
+                                              cmdline_args.port,
+                                              cmdline_args.endpoints,
+                                              cmdline_args.enable_api))

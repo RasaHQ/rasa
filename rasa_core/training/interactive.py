@@ -1,5 +1,8 @@
 import sys
 
+import asyncio
+from signal import SIGINT
+
 import io
 import logging
 import numpy as np
@@ -9,8 +12,9 @@ import textwrap
 import uuid
 from PyInquirer import prompt
 from colorclass import Color
-from flask import Flask, send_file, abort
+from sanic import Sanic, response
 from gevent.pywsgi import WSGIServer
+from signal import signal
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
 from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
@@ -96,7 +100,7 @@ def _response_as_json(response: requests.Response) -> Dict[Text, Any]:
     return response.json()
 
 
-def send_message(
+async def send_message(
     endpoint: EndpointConfig,
     sender_id: Text,
     message: Text,
@@ -110,37 +114,38 @@ def send_message(
         "parse_data": parse_data
     }
 
-    r = endpoint.request(json=payload,
-                         method="post",
-                         subpath="/conversations/{}/messages"
-                                 "".format(sender_id))
+    r = await endpoint.request(json=payload,
+                               method="post",
+                               subpath="/conversations/{}/messages"
+                                       "".format(sender_id))
 
     return _response_as_json(r)
 
 
-def request_prediction(
+async def request_prediction(
     endpoint: EndpointConfig,
     sender_id: Text
 ) -> Dict[Text, Any]:
     """Request the next action prediction from core."""
 
-    r = endpoint.request(method="post",
-                         subpath="/conversations/{}/predict".format(sender_id))
+    r = await endpoint.request(method="post",
+                               subpath="/conversations/{}/predict".format(
+                                   sender_id))
 
     return _response_as_json(r)
 
 
-def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
+async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
     """Retrieve the domain from core."""
 
-    r = endpoint.request(method="get",
-                         subpath="/domain",
-                         headers={"Accept": "application/json"})
+    r = await endpoint.request(method="get",
+                               subpath="/domain",
+                               headers={"Accept": "application/json"})
 
     return _response_as_json(r)
 
 
-def retrieve_tracker(
+async def retrieve_tracker(
     endpoint: EndpointConfig,
     sender_id: Text,
     verbosity: EventVerbosity = EventVerbosity.ALL
@@ -149,14 +154,14 @@ def retrieve_tracker(
 
     path = "/conversations/{}/tracker?include_events={}".format(
         sender_id, verbosity.name)
-    r = endpoint.request(method="get",
-                         subpath=path,
-                         headers={"Accept": "application/json"})
+    r = await endpoint.request(method="get",
+                               subpath=path,
+                               headers={"Accept": "application/json"})
 
     return _response_as_json(r)
 
 
-def send_action(
+async def send_action(
     endpoint: EndpointConfig,
     sender_id: Text,
     action_name: Text,
@@ -171,9 +176,9 @@ def send_action(
     subpath = "/conversations/{}/execute".format(sender_id)
 
     try:
-        r = endpoint.request(json=payload,
-                             method="post",
-                             subpath=subpath)
+        r = await endpoint.request(json=payload,
+                                   method="post",
+                                   subpath=subpath)
         return _response_as_json(r)
     except requests.exceptions.HTTPError:
         if is_new_action:
@@ -189,17 +194,17 @@ def send_action(
                            "in your action server and try again."
                            "".format(action_name)
             }]
-            _ask_questions(warning_questions, sender_id, endpoint)
+            await _ask_questions(warning_questions, sender_id, endpoint)
 
             payload = ActionExecuted(action_name).as_dict()
 
-            return send_event(endpoint, sender_id, payload)
+            return await send_event(endpoint, sender_id, payload)
         else:
             logger.error("failed to execute action!")
             raise
 
 
-def send_event(
+async def send_event(
     endpoint: EndpointConfig,
     sender_id: Text,
     evt: Dict[Text, Any]
@@ -208,14 +213,14 @@ def send_event(
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
-    r = endpoint.request(json=evt,
-                         method="post",
-                         subpath=subpath)
+    r = await endpoint.request(json=evt,
+                               method="post",
+                               subpath=subpath)
 
     return _response_as_json(r)
 
 
-def replace_events(
+async def replace_events(
     endpoint: EndpointConfig,
     sender_id: Text,
     evts: List[Dict[Text, Any]]
@@ -224,22 +229,22 @@ def replace_events(
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
-    r = endpoint.request(json=evts,
-                         method="put",
-                         subpath=subpath)
+    r = await endpoint.request(json=evts,
+                               method="put",
+                               subpath=subpath)
 
     return _response_as_json(r)
 
 
-def send_finetune(
+async def send_finetune(
     endpoint: EndpointConfig,
     evts: List[Dict[Text, Any]]
 ) -> Dict[Text, Any]:
     """Finetune a core model on the provided additional training samples."""
 
-    r = endpoint.request(json=evts,
-                         method="post",
-                         subpath="/finetune")
+    r = await endpoint.request(json=evts,
+                               method="post",
+                               subpath="/finetune")
 
     return _response_as_json(r)
 
@@ -299,7 +304,7 @@ def all_events_before_latest_user_msg(
     return evts
 
 
-def _ask_questions(
+async def _ask_questions(
     questions: List[Dict[Text, Any]],
     sender_id: Text,
     endpoint: EndpointConfig,
@@ -313,7 +318,7 @@ def _ask_questions(
     while should_retry:
         answers = prompt(questions)
         if not answers or is_abort(answers):
-            should_retry = _ask_if_quit(sender_id, endpoint)
+            should_retry = await _ask_if_quit(sender_id, endpoint)
         else:
             should_retry = False
     return answers
@@ -340,7 +345,7 @@ def _selection_choices_from_intent_prediction(
     return choices
 
 
-def _request_free_text_intent(
+async def _request_free_text_intent(
     sender_id: Text,
     endpoint: EndpointConfig
 ) -> Text:
@@ -351,11 +356,11 @@ def _request_free_text_intent(
             "message": "Please type the intent name",
         }
     ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    answers = await _ask_questions(questions, sender_id, endpoint)
     return answers["intent"]
 
 
-def _request_free_text_action(
+async def _request_free_text_action(
     sender_id: Text,
     endpoint: EndpointConfig
 ) -> Text:
@@ -366,11 +371,11 @@ def _request_free_text_action(
             "message": "Please type the action name",
         }
     ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    answers = await _ask_questions(questions, sender_id, endpoint)
     return answers["action"]
 
 
-def _request_selection_from_intent_list(
+async def _request_selection_from_intent_list(
     intent_list: List[Dict[Text, Text]],
     sender_id: Text,
     endpoint: EndpointConfig
@@ -383,10 +388,10 @@ def _request_selection_from_intent_list(
             "choices": intent_list
         }
     ]
-    return _ask_questions(questions, sender_id, endpoint)["intent"]
+    return (await _ask_questions(questions, sender_id, endpoint))["intent"]
 
 
-def _request_fork_point_from_list(
+async def _request_fork_point_from_list(
     forks: List[Dict[Text, Text]],
     sender_id: Text,
     endpoint: EndpointConfig
@@ -399,10 +404,10 @@ def _request_fork_point_from_list(
             "choices": forks
         }
     ]
-    return _ask_questions(questions, sender_id, endpoint)["fork"]
+    return (await _ask_questions(questions, sender_id, endpoint))["fork"]
 
 
-def _request_fork_from_user(
+async def _request_fork_from_user(
     sender_id,
     endpoint
 ) -> Optional[List[Dict[Text, Any]]]:
@@ -411,17 +416,17 @@ def _request_fork_from_user(
     Returns the list of events that should be kept. Forking means, the
     conversation will be reset and continued from this previous point."""
 
-    tracker = retrieve_tracker(endpoint, sender_id,
-                               EventVerbosity.AFTER_RESTART)
+    tracker = await retrieve_tracker(endpoint, sender_id,
+                                     EventVerbosity.AFTER_RESTART)
 
     choices = []
     for i, e in enumerate(tracker.get("events", [])):
         if e.get("event") == UserUttered.type_name:
             choices.append({"name": e.get("text"), "value": i})
 
-    fork_idx = _request_fork_point_from_list(list(reversed(choices)),
-                                             sender_id,
-                                             endpoint)
+    fork_idx = await _request_fork_point_from_list(list(reversed(choices)),
+                                                   sender_id,
+                                                   endpoint)
 
     if fork_idx is not None:
         return tracker.get("events", [])[:int(fork_idx)]
@@ -429,7 +434,7 @@ def _request_fork_from_user(
         return None
 
 
-def _request_intent_from_user(
+async def _request_intent_from_user(
     latest_message,
     intents,
     sender_id,
@@ -452,22 +457,22 @@ def _request_intent_from_user(
     choices = ([{"name": "<create_new_intent>", "value": OTHER_INTENT}] +
                _selection_choices_from_intent_prediction(predictions))
 
-    intent_name = _request_selection_from_intent_list(choices,
-                                                      sender_id,
-                                                      endpoint)
+    intent_name = await _request_selection_from_intent_list(choices,
+                                                            sender_id,
+                                                            endpoint)
 
     if intent_name == OTHER_INTENT:
-        intent_name = _request_free_text_intent(sender_id, endpoint)
+        intent_name = await _request_free_text_intent(sender_id, endpoint)
         return {"name": intent_name, "confidence": 1.0}
     # returns the selected intent with the original probability value
     return next((x for x in predictions if x["name"] == intent_name), None)
 
 
-def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
+async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     """Print information about the conversation for the user."""
 
-    tracker_dump = retrieve_tracker(endpoint, sender_id,
-                                    EventVerbosity.AFTER_RESTART)
+    tracker_dump = await retrieve_tracker(endpoint, sender_id,
+                                          EventVerbosity.AFTER_RESTART)
     evts = tracker_dump.get("events", [])
 
     table = _chat_history_table(evts)
@@ -582,7 +587,7 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strs
 
 
-def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
+async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
     Return `True` if the previous question should be retried."""
@@ -620,12 +625,12 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
         # this is also the default answer if the user presses Ctrl-C
         story_path, nlu_path, domain_path = _request_export_info()
 
-        tracker = retrieve_tracker(endpoint, sender_id)
+        tracker = await retrieve_tracker(endpoint, sender_id)
         evts = tracker.get("events", [])
 
-        _write_stories_to_file(story_path, evts)
-        _write_nlu_to_file(nlu_path, evts)
-        _write_domain_to_file(domain_path, evts, endpoint)
+        await _write_stories_to_file(story_path, evts)
+        await _write_nlu_to_file(nlu_path, evts)
+        await _write_domain_to_file(domain_path, evts, endpoint)
 
         logger.info("Successfully wrote stories and NLU data")
         sys.exit()
@@ -641,13 +646,13 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
         raise RestartConversation()
 
 
-def _request_action_from_user(
+async def _request_action_from_user(
     predictions: List[Dict[Text, Any]],
     sender_id: Text, endpoint: EndpointConfig
 ) -> (Text, bool):
     """Ask the user to correct an action prediction."""
 
-    _print_history(sender_id, endpoint)
+    await _print_history(sender_id, endpoint)
 
     sorted_actions = sorted(predictions,
                             key=lambda k: (-k['score'], k['action']))
@@ -663,12 +668,12 @@ def _request_action_from_user(
         "message": "What is the next action of the bot?",
         "choices": choices
     }]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    answers = await _ask_questions(questions, sender_id, endpoint)
     action_name = answers["action"]
     is_new_action = action_name == OTHER_ACTION
 
     if is_new_action:
-        action_name = _request_free_text_action(sender_id, endpoint)
+        action_name = await _request_free_text_action(sender_id, endpoint)
     print("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name, is_new_action
 
@@ -762,7 +767,7 @@ def _collect_actions(evts: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
             if evt.get("event") == ActionExecuted.type_name]
 
 
-def _write_stories_to_file(
+async def _write_stories_to_file(
     export_story_path: Text,
     evts: List[Dict[Text, Any]]
 ) -> None:
@@ -777,7 +782,7 @@ def _write_stories_to_file(
             f.write(s.as_story_string(flat=True) + "\n")
 
 
-def _write_nlu_to_file(
+async def _write_nlu_to_file(
     export_nlu_path: Text,
     evts: List[Dict[Text, Any]]
 ) -> None:
@@ -829,14 +834,14 @@ def _intents_from_messages(messages):
     return [{i: {"use_entities": True}} for i in intents]
 
 
-def _write_domain_to_file(
+async def _write_domain_to_file(
     domain_path: Text,
     evts: List[Dict[Text, Any]],
     endpoint: EndpointConfig
 ) -> None:
     """Write an updated domain file to the file path."""
 
-    domain = retrieve_domain(endpoint)
+    domain = await retrieve_domain(endpoint)
     old_domain = Domain.from_dict(domain)
 
     messages = _collect_messages(evts)
@@ -858,17 +863,17 @@ def _write_domain_to_file(
     old_domain.merge(new_domain).persist_clean(domain_path)
 
 
-def _predict_till_next_listen(endpoint: EndpointConfig,
-                              sender_id: Text,
-                              finetune: bool,
-                              sender_ids: List[Text],
-                              plot_file: Optional[Text]
-                              ) -> None:
+async def _predict_till_next_listen(endpoint: EndpointConfig,
+                                    sender_id: Text,
+                                    finetune: bool,
+                                    sender_ids: List[Text],
+                                    plot_file: Optional[Text]
+                                    ) -> None:
     """Predict and validate actions until we need to wait for a user msg."""
 
     listen = False
     while not listen:
-        response = request_prediction(endpoint, sender_id)
+        response = await request_prediction(endpoint, sender_id)
         predictions = response.get("scores")
         probabilities = [prediction["score"] for prediction in predictions]
         pred_out = int(np.argmax(probabilities))
@@ -876,22 +881,22 @@ def _predict_till_next_listen(endpoint: EndpointConfig,
         policy = response.get("policy")
         confidence = response.get("confidence")
 
-        _print_history(sender_id, endpoint)
-        _plot_trackers(sender_ids, plot_file, endpoint,
-                       unconfirmed=[ActionExecuted(action_name)])
+        await _print_history(sender_id, endpoint)
+        await _plot_trackers(sender_ids, plot_file, endpoint,
+                             unconfirmed=[ActionExecuted(action_name)])
 
-        listen = _validate_action(action_name, policy, confidence,
-                                  predictions, endpoint, sender_id,
-                                  finetune=finetune)
+        listen = await _validate_action(action_name, policy, confidence,
+                                        predictions, endpoint, sender_id,
+                                        finetune=finetune)
 
-        _plot_trackers(sender_ids, plot_file, endpoint)
+        await _plot_trackers(sender_ids, plot_file, endpoint)
 
 
-def _correct_wrong_nlu(corrected_nlu: Dict[Text, Any],
-                       evts: List[Dict[Text, Any]],
-                       endpoint: EndpointConfig,
-                       sender_id: Text
-                       ) -> None:
+async def _correct_wrong_nlu(corrected_nlu: Dict[Text, Any],
+                             evts: List[Dict[Text, Any]],
+                             endpoint: EndpointConfig,
+                             sender_id: Text
+                             ) -> None:
     """A wrong NLU prediction got corrected, update core's tracker."""
 
     latest_message = latest_user_message(evts)
@@ -899,28 +904,28 @@ def _correct_wrong_nlu(corrected_nlu: Dict[Text, Any],
 
     latest_message["parse_data"] = corrected_nlu
 
-    replace_events(endpoint, sender_id, corrected_events)
+    await replace_events(endpoint, sender_id, corrected_events)
 
-    send_message(endpoint, sender_id, latest_message.get("text"),
-                 latest_message.get("parse_data"))
+    await send_message(endpoint, sender_id, latest_message.get("text"),
+                       latest_message.get("parse_data"))
 
 
-def _correct_wrong_action(corrected_action: Text,
-                          endpoint: EndpointConfig,
-                          sender_id: Text,
-                          finetune: bool = False,
-                          is_new_action: bool = False
-                          ) -> None:
+async def _correct_wrong_action(corrected_action: Text,
+                                endpoint: EndpointConfig,
+                                sender_id: Text,
+                                finetune: bool = False,
+                                is_new_action: bool = False
+                                ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
 
-    response = send_action(endpoint,
-                           sender_id,
-                           corrected_action,
-                           is_new_action=is_new_action)
+    response = await send_action(endpoint,
+                                 sender_id,
+                                 corrected_action,
+                                 is_new_action=is_new_action)
 
     if finetune:
-        send_finetune(endpoint,
-                      response.get("tracker", {}).get("events", []))
+        await send_finetune(endpoint,
+                            response.get("tracker", {}).get("events", []))
 
 
 def _form_is_rejected(action_name, tracker):
@@ -937,7 +942,7 @@ def _form_is_restored(action_name, tracker):
             action_name == tracker.get('active_form', {}).get('name'))
 
 
-def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
+async def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
     """Ask a user whether an input for a form should be validated.
 
     Previous to this call, the active form was chosen after it was rejected."""
@@ -950,12 +955,13 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
         "message": "Should '{}' validate user input to fill "
                    "the slot '{}'?".format(action_name, requested_slot)
     }]
-    form_answers = _ask_questions(validation_questions, sender_id, endpoint)
+    form_answers = await _ask_questions(validation_questions, sender_id,
+                                        endpoint)
 
     if not form_answers["validation"]:
         # notify form action to skip validation
-        send_event(endpoint, sender_id,
-                   {"event": "form_validation", "validate": False})
+        await send_event(endpoint, sender_id,
+                         {"event": "form_validation", "validate": False})
 
     elif not tracker.get('active_form', {}).get('validate'):
         # handle contradiction with learned behaviour
@@ -969,20 +975,20 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
                        "Otherwise predicting no form validation "
                        "will not work as expected."
         }]
-        _ask_questions(warning_questions, sender_id, endpoint)
+        await _ask_questions(warning_questions, sender_id, endpoint)
         # notify form action to validate an input
-        send_event(endpoint, sender_id,
-                   {"event": "form_validation", "validate": True})
+        await send_event(endpoint, sender_id,
+                         {"event": "form_validation", "validate": True})
 
 
-def _validate_action(action_name: Text,
-                     policy: Text,
-                     confidence: float,
-                     predictions: List[Dict[Text, Any]],
-                     endpoint: EndpointConfig,
-                     sender_id: Text,
-                     finetune: bool = False
-                     ) -> bool:
+async def _validate_action(action_name: Text,
+                           policy: Text,
+                           confidence: float,
+                           predictions: List[Dict[Text, Any]],
+                           endpoint: EndpointConfig,
+                           sender_id: Text,
+                           finetune: bool = False
+                           ) -> bool:
     """Query the user to validate if an action prediction is correct.
 
     Returns `True` if the prediction is correct, `False` otherwise."""
@@ -995,32 +1001,33 @@ def _validate_action(action_name: Text,
             "message": q,
         }
     ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    answers = await _ask_questions(questions, sender_id, endpoint)
 
     if not answers["action"]:
-        action_name, is_new_action = _request_action_from_user(
+        action_name, is_new_action = await _request_action_from_user(
             predictions, sender_id, endpoint)
     else:
         is_new_action = False
 
-    tracker = retrieve_tracker(endpoint, sender_id,
-                               EventVerbosity.AFTER_RESTART)
+    tracker = await retrieve_tracker(endpoint, sender_id,
+                                     EventVerbosity.AFTER_RESTART)
 
     if _form_is_rejected(action_name, tracker):
         # notify the tracker that form was rejected
-        send_event(endpoint, sender_id,
-                   {"event": "action_execution_rejected",
-                    "name": tracker['active_form']['name']})
+        await send_event(endpoint, sender_id,
+                         {"event": "action_execution_rejected",
+                          "name": tracker['active_form']['name']})
 
     elif _form_is_restored(action_name, tracker):
-        _confirm_form_validation(action_name, tracker, endpoint, sender_id)
+        await _confirm_form_validation(action_name, tracker, endpoint,
+                                       sender_id)
 
     if not answers["action"]:
-        _correct_wrong_action(action_name, endpoint, sender_id,
-                              finetune=finetune,
-                              is_new_action=is_new_action)
+        await _correct_wrong_action(action_name, endpoint, sender_id,
+                                    finetune=finetune,
+                                    is_new_action=is_new_action)
     else:
-        send_action(endpoint, sender_id, action_name, policy, confidence)
+        await send_action(endpoint, sender_id, action_name, policy, confidence)
 
     return action_name == ACTION_LISTEN_NAME
 
@@ -1053,8 +1060,9 @@ def _validate_user_regex(latest_message: Dict[Text, Any],
         return False
 
 
-def _validate_user_text(latest_message: Dict[Text, Any],
-                        endpoint: EndpointConfig, sender_id: Text) -> bool:
+async def _validate_user_text(latest_message: Dict[Text, Any],
+                              endpoint: EndpointConfig, sender_id: Text
+                              ) -> bool:
     """Validate a user message input as free text.
 
     This assumes the user message is a text message (so NOT `/greet`)."""
@@ -1078,46 +1086,47 @@ def _validate_user_text(latest_message: Dict[Text, Any],
                 "message": q,
             }
         ]
-        answers = _ask_questions(questions, sender_id, endpoint)
+        answers = await _ask_questions(questions, sender_id, endpoint)
         return answers["nlu"]
 
 
-def _validate_nlu(intents: List[Text],
-                  endpoint: EndpointConfig,
-                  sender_id: Text) -> None:
+async def _validate_nlu(intents: List[Text],
+                        endpoint: EndpointConfig,
+                        sender_id: Text) -> None:
     """Validate if a user message, either text or intent is correct.
 
     If the prediction of the latest user message is incorrect,
     the tracker will be corrected with the correct intent / entities."""
 
-    tracker = retrieve_tracker(endpoint, sender_id,
-                               EventVerbosity.AFTER_RESTART)
+    tracker = await retrieve_tracker(endpoint, sender_id,
+                                     EventVerbosity.AFTER_RESTART)
 
     latest_message = latest_user_message(tracker.get("events", []))
 
     if latest_message.get("text").startswith(INTENT_MESSAGE_PREFIX):
         valid = _validate_user_regex(latest_message, intents)
     else:
-        valid = _validate_user_text(latest_message, endpoint, sender_id)
+        valid = await _validate_user_text(latest_message, endpoint, sender_id)
 
     if not valid:
-        corrected_intent = _request_intent_from_user(latest_message, intents,
-                                                     sender_id, endpoint)
+        corrected_intent = await _request_intent_from_user(latest_message,
+                                                           intents,
+                                                           sender_id, endpoint)
         evts = tracker.get("events", [])
 
-        entities = _correct_entities(latest_message, endpoint, sender_id)
+        entities = await _correct_entities(latest_message, endpoint, sender_id)
         corrected_nlu = {
             "intent": corrected_intent,
             "entities": entities,
             "text": latest_message.get("text")
         }
 
-        _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id)
+        await _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id)
 
 
-def _correct_entities(latest_message: Dict[Text, Any],
-                      endpoint: EndpointConfig,
-                      sender_id: Text) -> Dict[Text, Any]:
+async def _correct_entities(latest_message: Dict[Text, Any],
+                            endpoint: EndpointConfig,
+                            sender_id: Text) -> Dict[Text, Any]:
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
@@ -1132,14 +1141,14 @@ def _correct_entities(latest_message: Dict[Text, Any],
             "message": q,
         }
     ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    answers = await _ask_questions(questions, sender_id, endpoint)
     # noinspection PyProtectedMember
     parsed = MarkdownReader()._parse_training_example(answers["annotation"])
     return parsed.get("entities", [])
 
 
-def _enter_user_message(sender_id: Text,
-                        endpoint: EndpointConfig) -> None:
+async def _enter_user_message(sender_id: Text,
+                              endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
     questions = [{
@@ -1148,20 +1157,21 @@ def _enter_user_message(sender_id: Text,
         "message": "Next user input (Ctr-c to abort):"
     }]
 
-    answers = _ask_questions(questions, sender_id, endpoint,
-                             lambda a: not a["message"])
+    answers = await _ask_questions(questions, sender_id, endpoint,
+                                   lambda a: not a["message"])
 
     if answers["message"] == constants.USER_INTENT_RESTART:
         raise RestartConversation()
 
-    send_message(endpoint, sender_id, answers["message"])
+    await send_message(endpoint, sender_id, answers["message"])
 
 
-def is_listening_for_message(sender_id: Text,
-                             endpoint: EndpointConfig) -> bool:
+async def is_listening_for_message(sender_id: Text,
+                                   endpoint: EndpointConfig) -> bool:
     """Check if the conversation is in need for a user message."""
 
-    tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.APPLIED)
+    tracker = await retrieve_tracker(endpoint, sender_id,
+                                     EventVerbosity.APPLIED)
 
     for i, e in enumerate(reversed(tracker.get("events", []))):
         if e.get("event") == UserUttered.type_name:
@@ -1171,11 +1181,11 @@ def is_listening_for_message(sender_id: Text,
     return False
 
 
-def _undo_latest(sender_id: Text,
-                 endpoint: EndpointConfig) -> None:
+async def _undo_latest(sender_id: Text,
+                       endpoint: EndpointConfig) -> None:
     """Undo either the latest bot action or user message, whatever is last."""
 
-    tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
+    tracker = await retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
 
     cutoff_index = None
     for i, e in enumerate(reversed(tracker.get("events", []))):
@@ -1190,18 +1200,18 @@ def _undo_latest(sender_id: Text,
 
         # reset the events of the conversation to the events before
         # the most recent bot or user event
-        replace_events(endpoint, sender_id, events_to_keep)
+        await replace_events(endpoint, sender_id, events_to_keep)
 
 
-def _fetch_events(sender_ids: List[Union[Text, List[Event]]],
-                  endpoint: EndpointConfig
-                  ) -> List[List[Event]]:
+async def _fetch_events(sender_ids: List[Union[Text, List[Event]]],
+                        endpoint: EndpointConfig
+                        ) -> List[List[Event]]:
     """Retrieve all event trackers from the endpoint for all sender ids."""
 
     event_sequences = []
     for sender_id in sender_ids:
         if isinstance(sender_id, str):
-            tracker = retrieve_tracker(endpoint, sender_id)
+            tracker = await retrieve_tracker(endpoint, sender_id)
             evts = tracker.get("events", [])
 
             for conversation in _split_conversation_at_restarts(evts):
@@ -1212,11 +1222,11 @@ def _fetch_events(sender_ids: List[Union[Text, List[Event]]],
     return event_sequences
 
 
-def _plot_trackers(sender_ids: List[Union[Text, List[Event]]],
-                   output_file: Optional[Text],
-                   endpoint: EndpointConfig,
-                   unconfirmed: Optional[List[Event]] = None
-                   ):
+async def _plot_trackers(sender_ids: List[Union[Text, List[Event]]],
+                         output_file: Optional[Text],
+                         endpoint: EndpointConfig,
+                         unconfirmed: Optional[List[Event]] = None
+                         ):
     """Create a plot of the trackers of the passed sender ids.
 
     This assumes that the last sender id is the conversation we are currently
@@ -1229,7 +1239,7 @@ def _plot_trackers(sender_ids: List[Union[Text, List[Event]]],
         # same happens if there are no sender ids
         return None
 
-    event_sequences = _fetch_events(sender_ids, endpoint)
+    event_sequences = await _fetch_events(sender_ids, endpoint)
 
     if unconfirmed:
         event_sequences[-1].extend(unconfirmed)
@@ -1258,14 +1268,14 @@ def _print_help(skip_visualization: bool) -> None:
                       "".format(visualization_help), utils.bcolors.OKGREEN)
 
 
-def record_messages(endpoint: EndpointConfig,
-                    sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
-                    max_message_limit: Optional[int] = None,
-                    on_finish: Optional[Callable[[], None]] = None,
-                    finetune: bool = False,
-                    stories: Optional[Text] = None,
-                    skip_visualization: bool = False
-                    ):
+async def record_messages(endpoint: EndpointConfig,
+                          sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
+                          max_message_limit: Optional[int] = None,
+                          on_finish: Optional[Callable[[], None]] = None,
+                          finetune: bool = False,
+                          stories: Optional[Text] = None,
+                          skip_visualization: bool = False
+                          ):
     """Read messages from the command line and print bot responses."""
 
     from rasa_core import training
@@ -1274,7 +1284,7 @@ def record_messages(endpoint: EndpointConfig,
         _print_help(skip_visualization)
 
         try:
-            domain = retrieve_domain(endpoint)
+            domain = await retrieve_domain(endpoint)
         except requests.exceptions.ConnectionError:
             logger.exception("Failed to connect to rasa core server at '{}'. "
                              "Is the server running?".format(endpoint.url))
@@ -1292,41 +1302,41 @@ def record_messages(endpoint: EndpointConfig,
 
         if not skip_visualization:
             plot_file = "story_graph.dot"
-            _plot_trackers(sender_ids, plot_file, endpoint)
+            await _plot_trackers(sender_ids, plot_file, endpoint)
         else:
             plot_file = None
 
         while not utils.is_limit_reached(num_messages, max_message_limit):
             try:
-                if is_listening_for_message(sender_id, endpoint):
-                    _enter_user_message(sender_id, endpoint)
-                    _validate_nlu(intents, endpoint, sender_id)
-                _predict_till_next_listen(endpoint, sender_id,
-                                          finetune, sender_ids, plot_file)
+                if await is_listening_for_message(sender_id, endpoint):
+                    await _enter_user_message(sender_id, endpoint)
+                    await _validate_nlu(intents, endpoint, sender_id)
+                await _predict_till_next_listen(endpoint, sender_id,
+                                                finetune, sender_ids, plot_file)
 
                 num_messages += 1
             except RestartConversation:
-                send_event(endpoint, sender_id,
-                           Restarted().as_dict())
+                await send_event(endpoint, sender_id,
+                                 Restarted().as_dict())
 
-                send_event(endpoint, sender_id,
-                           ActionExecuted(ACTION_LISTEN_NAME).as_dict())
+                await send_event(endpoint, sender_id,
+                                 ActionExecuted(ACTION_LISTEN_NAME).as_dict())
 
                 logger.info("Restarted conversation, starting a new one.")
             except UndoLastStep:
-                _undo_latest(sender_id, endpoint)
-                _print_history(sender_id, endpoint)
+                await _undo_latest(sender_id, endpoint)
+                await _print_history(sender_id, endpoint)
             except ForkTracker:
-                _print_history(sender_id, endpoint)
+                await _print_history(sender_id, endpoint)
 
-                evts = _request_fork_from_user(sender_id, endpoint)
+                evts = await _request_fork_from_user(sender_id, endpoint)
                 sender_id = uuid.uuid4().hex
 
                 if evts is not None:
-                    replace_events(endpoint, sender_id, evts)
+                    await replace_events(endpoint, sender_id, evts)
                     sender_ids.append(sender_id)
-                    _print_history(sender_id, endpoint)
-                    _plot_trackers(sender_ids, plot_file, endpoint)
+                    await _print_history(sender_id, endpoint)
+                    await _plot_trackers(sender_ids, plot_file, endpoint)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")
@@ -1343,6 +1353,7 @@ def _start_interactive_learning_io(endpoint: EndpointConfig,
                                    skip_visualization: bool = False) -> None:
     """Start the interactive learning message recording in a separate thread.
     """
+    # TODO AS adapt to asyncio loop
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
@@ -1355,7 +1366,7 @@ def _start_interactive_learning_io(endpoint: EndpointConfig,
     p.start()
 
 
-def _serve_application(app: Flask, stories: Text,
+def _serve_application(app: Sanic, stories: Text,
                        finetune: bool = False,
                        serve_forever: bool = True,
                        skip_visualization: bool = False) -> WSGIServer:
@@ -1364,41 +1375,44 @@ def _serve_application(app: Flask, stories: Text,
     if not skip_visualization:
         _add_visualization_routes(app, "story_graph.dot")
 
-    http_server = WSGIServer(('0.0.0.0', DEFAULT_SERVER_PORT), app, log=None)
+    http_server = app.create_server(host='0.0.0.0', port=DEFAULT_SERVER_PORT)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
-    http_server.start()
+
+    loop = asyncio.get_event_loop()
+    task = asyncio.ensure_future(http_server)
+    signal(SIGINT, lambda s, f: loop.stop())
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
     _start_interactive_learning_io(endpoint, stories,
-                                   http_server.stop,
+                                   loop.stop,
                                    finetune=finetune,
                                    skip_visualization=skip_visualization)
 
     if serve_forever:
         try:
-            http_server.serve_forever()
+            loop.run_forever()
         except Exception as exc:
             logger.exception(exc)
+            loop.stop()
 
-    return http_server
+    return task
 
 
-def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
+def _add_visualization_routes(app: Sanic, image_path: Text = None) -> None:
     """Add routes to serve the conversation visualization files."""
 
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
     def visualisation_html():
-        return send_file(visualization.visualization_html_path())
+        return response.file(visualization.visualization_html_path())
 
     @app.route("/visualization.dot", methods=["GET"])
     def visualisation_png():
         try:
-            response = send_file(os.path.abspath(image_path))
-            response.headers['Cache-Control'] = "no-cache"
-            return response
+            headers = {'Cache-Control': "no-cache"}
+            return response.file(os.path.abspath(image_path), headers=headers)
         except FileNotFoundError:
-            abort(404)
+            return response.text("", 404)
 
 
 def run_interactive_learning(agent: Agent,

@@ -17,8 +17,10 @@ networkx==2.1
 fbmessenger==5.2.0
 pykwalify<=1.6.0
 coloredlogs==10.0
-flask==1.0.2
-flask_cors==3.0.4
+sanic==0.8.3
+sanic-cors==0.9.6
+sanic-jwt==1.2.1
+aiohttp==3.3.2
 scikit-learn==0.19.2
 rasa_nlu~=0.13.0
 slackclient==1.2.1
@@ -39,7 +41,6 @@ rocketchat_API==0.6.22
 colorclass==2.2.0
 terminaltables==3.1.0
 PyInquirer==1.0.3
-flask-jwt-simple==0.0.3
 python-socketio==2.1.1
 python-engineio==3.0.0
 prompt_toolkit==1.0.14

@@ -4,11 +4,12 @@ import numpy as np
 import pytest
 
 from rasa_core import training
-from rasa_core.actions.action import (ACTION_LISTEN_NAME,
-                                      ActionRevertFallbackEvents,
-                                      ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-                                      ACTION_DEFAULT_ASK_REPHRASE_NAME,
-                                      ACTION_DEFAULT_FALLBACK_NAME)
+from rasa_core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ActionRevertFallbackEvents,
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME)
 from rasa_core.channels import UserMessage
 from rasa_core.constants import USER_INTENT_AFFIRM, USER_INTENT_DENY
 from rasa_core.domain import Domain, InvalidDomain
@@ -43,6 +44,7 @@ def train_trackers(domain):
 # fixtures of the different policies for the functional tests). Therefore, we
 # are going to reverse this and train the policy within a class and collect the
 # tests in a base class.
+# noinspection PyMethodMayBeStatic
 class PolicyTestCollection(object):
     """Tests every policy needs to fulfill.
 
@@ -219,8 +221,11 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert mock_search.call_count == 0
         assert policy.model != 'mockmodel'
 
-    def test_cv_not_none_param_grid_none_triggers_search_without_params(
-            self, mock_search, default_domain, trackers, featurizer):
+    def test_cv_param_grid_none_triggers_search_without_params(self,
+                                                               mock_search,
+                                                               default_domain,
+                                                               trackers,
+                                                               featurizer):
 
         policy = self.create_policy(featurizer=featurizer, cv=3)
         policy.train(trackers, domain=default_domain)
@@ -230,8 +235,11 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert mock_search.call_args_list[0][1]['param_grid'] == {}
         assert policy.model == 'mockmodel'
 
-    def test_cv_not_none_param_grid_none_triggers_search_with_params(
-            self, mock_search, default_domain, trackers, featurizer):
+    def test_cv_param_grid_triggers_search_with_params(self,
+                                                       mock_search,
+                                                       default_domain,
+                                                       trackers,
+                                                       featurizer):
         param_grid = {'n_estimators': 50}
         policy = self.create_policy(
             featurizer=featurizer,
@@ -245,8 +253,8 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert mock_search.call_args_list[0][1]['param_grid'] == param_grid
         assert policy.model == 'mockmodel'
 
-    def test_missing_classes_filled_correctly(
-            self, default_domain, trackers, tracker, featurizer):
+    def test_missing_classes_filled_correctly(self, default_domain, trackers,
+                                              tracker, featurizer):
         # Pretend that a couple of classes are missing and check that
         # those classes are predicted as 0, while the other class
         # probabilities are predicted normally.
@@ -280,14 +288,15 @@ class TestSklearnPolicy(PolicyTestCollection):
             else:
                 assert prob == 0.0
 
-    def test_train_kwargs_are_set_on_model(
-            self, default_domain, trackers, featurizer):
+    def test_train_kwargs_are_set_on_model(self,
+                                           default_domain, trackers,
+                                           featurizer):
         policy = self.create_policy(featurizer=featurizer, cv=None)
         policy.train(trackers, domain=default_domain, C=123)
         assert policy.model.C == 123
 
-    def test_train_with_shuffle_false(
-            self, default_domain, trackers, featurizer):
+    def test_train_with_shuffle_false(self,
+                                      default_domain, trackers, featurizer):
         policy = self.create_policy(featurizer=featurizer, shuffle=False)
         # does not raise
         policy.train(trackers, domain=default_domain)
@@ -452,17 +461,19 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         """
         return Domain.from_yaml(content)
 
-    def _get_next_action(self, policy, events, domain):
+    @staticmethod
+    def _get_next_action(policy, events, domain):
         tracker = get_tracker(events)
 
         scores = policy.predict_action_probabilities(tracker, domain)
         index = scores.index(max(scores))
         return domain.action_names[index]
 
-    def _get_tracker_after_reverts(self, events, dispatcher, domain):
+    @staticmethod
+    async def _get_tracker_after_reverts(events, dispatcher, domain):
         tracker = get_tracker(events)
         action = ActionRevertFallbackEvents()
-        events += action.run(dispatcher, tracker, domain)
+        events += await action.run(dispatcher, tracker, domain)
 
         return get_tracker(events)
 
@@ -475,7 +486,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    def test_affirmation(self, default_dispatcher_collecting, default_domain):
+    def test_affirmation(self, loop, default_dispatcher_collecting,
+                               default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered('greet', 1),
                   ActionExecuted('utter_hello'),
@@ -485,9 +497,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_AFFIRM, 1)]
 
-        tracker = self._get_tracker_after_reverts(events,
-                                                  default_dispatcher_collecting,
-                                                  default_domain)
+        tracker = loop.run_until_complete( self._get_tracker_after_reverts(
+            events,
+            default_dispatcher_collecting,
+            default_domain))
 
         assert 'greet' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == ("## sender\n"
@@ -507,9 +520,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_ASK_REPHRASE_NAME
 
-    def test_successful_rephrasing(self, trained_policy,
-                                   default_dispatcher_collecting,
-                                   default_domain):
+    def test_successful_rephrasing(self, loop,
+                                   trained_policy,
+                                         default_dispatcher_collecting,
+                                         default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
@@ -520,9 +534,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered("bye", 1),
                   ]
 
-        tracker = self._get_tracker_after_reverts(events,
-                                                  default_dispatcher_collecting,
-                                                  default_domain)
+        tracker = loop.run_until_complete( self._get_tracker_after_reverts(
+            events,
+            default_dispatcher_collecting,
+            default_domain))
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
@@ -543,9 +558,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    def test_affirmed_rephrasing(self, trained_policy,
-                                 default_dispatcher_collecting,
-                                 default_domain):
+    def test_affirmed_rephrasing(self, loop,
+                                 trained_policy,
+                                       default_dispatcher_collecting,
+                                       default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
@@ -559,9 +575,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered(USER_INTENT_AFFIRM, 1)
                   ]
 
-        tracker = self._get_tracker_after_reverts(events,
-                                                  default_dispatcher_collecting,
-                                                  default_domain)
+        tracker = loop.run_until_complete( self._get_tracker_after_reverts(
+            events,
+            default_dispatcher_collecting,
+            default_domain))
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
@@ -586,9 +603,9 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_FALLBACK_NAME
 
-    def test_rephrasing_instead_affirmation(self, trained_policy,
-                                            default_dispatcher_collecting,
-                                            default_domain):
+    async def test_rephrasing_instead_affirmation(self, trained_policy,
+                                                  default_dispatcher_collecting,
+                                                  default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 1),
                   ActionExecuted("utter_hello"),
@@ -599,9 +616,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered("bye", 1),
                   ]
 
-        tracker = self._get_tracker_after_reverts(events,
-                                                  default_dispatcher_collecting,
-                                                  default_domain)
+        tracker = await self._get_tracker_after_reverts(
+            events,
+            default_dispatcher_collecting,
+            default_domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == ("## sender\n"

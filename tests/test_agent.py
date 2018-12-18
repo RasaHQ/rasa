@@ -37,10 +37,11 @@ def test_agent_train(tmpdir, default_domain):
            [type(p) for p in agent.policy_ensemble.policies]
 
 
-def test_agent_handle_message(default_agent):
+def test_agent_handle_message(loop, default_agent):
     message = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
-    result = default_agent.handle_message(message,
-                                          sender_id="test_agent_handle_message")
+    result = loop.run_until_complete(default_agent.handle_message(
+        message,
+        sender_id="test_agent_handle_message"))
     assert result == [{'recipient_id': 'test_agent_handle_message',
                        'text': 'hey there Rasa!'}]
 
@@ -57,7 +58,8 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
 
 
 @responses.activate
-def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
+def test_agent_with_model_server(loop,
+                                 tmpdir, zipped_moodbot_model,
                                  moodbot_domain, moodbot_metadata):
     fingerprint = 'somehash'
     model_endpoint_config = EndpointConfig.from_dict(
@@ -73,8 +75,8 @@ def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
                       body=f.read(),
                       content_type='application/zip',
                       stream=True)
-    agent = rasa_core.agent.load_from_server(
-        model_server=model_endpoint_config)
+    agent = loop.run_until_complete(rasa_core.agent.load_from_server(
+        model_server=model_endpoint_config))
     assert agent.fingerprint == fingerprint
 
     assert agent.domain.as_dict() == moodbot_domain.as_dict()

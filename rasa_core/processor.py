@@ -68,7 +68,8 @@ class MessageProcessor(object):
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
 
-    def handle_message(self, message: UserMessage) -> Optional[List[Text]]:
+    # todo: follow
+    async def handle_message(self, message: UserMessage) -> Optional[List[Text]]:
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
@@ -76,7 +77,7 @@ class MessageProcessor(object):
         if not tracker:
             return None
 
-        self._predict_and_execute_next_action(message, tracker)
+        await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
 
@@ -126,21 +127,22 @@ class MessageProcessor(object):
                            "'{}'.".format(message.sender_id))
         return tracker
 
-    def execute_action(self,
-                       sender_id: Text,
-                       action_name: Text,
-                       dispatcher: Dispatcher,
-                       policy: Text,
-                       confidence: float
-                       ) -> Optional[DialogueStateTracker]:
+    # TODO: follow
+    async def execute_action(self,
+                             sender_id: Text,
+                             action_name: Text,
+                             dispatcher: Dispatcher,
+                             policy: Text,
+                             confidence: float
+                             ) -> Optional[DialogueStateTracker]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(sender_id)
         if tracker:
             action = self._get_action(action_name)
-            self._run_action(action, tracker, dispatcher, policy,
-                             confidence)
+            await self._run_action(action, tracker, dispatcher, policy,
+                                   confidence)
 
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -173,7 +175,7 @@ class MessageProcessor(object):
 
         for e in reversed(tracker.applied_events()):
             if (isinstance(e, ReminderScheduled) and
-                    e.name == reminder_event.name):
+                e.name == reminder_event.name):
                 return True
         return False  # not found in applied events --> has been restarted
 
@@ -185,16 +187,16 @@ class MessageProcessor(object):
 
         for e in reversed(tracker.events):
             if (isinstance(e, ReminderScheduled) and
-                    e.name == reminder_event.name):
+                e.name == reminder_event.name):
                 return False
             elif isinstance(e, UserUttered) and e.text:
                 return True
         return True  # tracker has probably been restarted
 
-    def handle_reminder(self,
-                        reminder_event: ReminderScheduled,
-                        dispatcher: Dispatcher
-                        ) -> None:
+    async def handle_reminder(self,
+                              reminder_event: ReminderScheduled,
+                              dispatcher: Dispatcher
+                              ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
         tracker = self._get_tracker(dispatcher.sender_id)
@@ -205,8 +207,8 @@ class MessageProcessor(object):
             return None
 
         if (reminder_event.kill_on_user_message and
-                self._has_message_after_reminder(tracker, reminder_event) or not
-                self._is_reminder_still_valid(tracker, reminder_event)):
+            self._has_message_after_reminder(tracker, reminder_event) or not
+            self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -215,12 +217,13 @@ class MessageProcessor(object):
             # unrelated message would influence featurization
             tracker.update(UserUttered.empty())
             action = self._get_action(reminder_event.action_name)
-            should_continue = self._run_action(action, tracker, dispatcher)
+            should_continue = await self._run_action(action, tracker,
+                                                     dispatcher)
             if should_continue:
                 user_msg = UserMessage(None,
                                        dispatcher.output_channel,
                                        dispatcher.sender_id)
-                self._predict_and_execute_next_action(user_msg, tracker)
+                await self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
 
@@ -275,7 +278,7 @@ class MessageProcessor(object):
                 tracker.latest_message.intent.get("name") ==
                 self.domain.restart_intent)
 
-    def _predict_and_execute_next_action(self, message, tracker):
+    async def _predict_and_execute_next_action(self, message, tracker):
         # this will actually send the response to the user
 
         dispatcher = Dispatcher(message.sender_id,
@@ -294,15 +297,15 @@ class MessageProcessor(object):
             # this actually just calls the policy's method by the same name
             action, policy, confidence = self.predict_next_action(tracker)
 
-            should_predict_another_action = self._run_action(action,
-                                                             tracker,
-                                                             dispatcher,
-                                                             policy,
-                                                             confidence)
+            should_predict_another_action = await self._run_action(action,
+                                                                   tracker,
+                                                                   dispatcher,
+                                                                   policy,
+                                                                   confidence)
             num_predicted_actions += 1
 
         if (num_predicted_actions == self.max_number_of_predictions and
-                should_predict_another_action):
+            should_predict_another_action):
             # circuit breaker was tripped
             logger.warning(
                 "Circuit breaker tripped. Stopped predicting "
@@ -327,18 +330,19 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderScheduled):
+                    # todo: AS handle reminder is async
                     scheduler.add_job(self.handle_reminder, "date",
                                       run_date=e.trigger_date_time,
                                       args=[e, dispatcher],
                                       id=e.name,
                                       replace_existing=True)
 
-    def _run_action(self, action, tracker, dispatcher, policy=None,
-                    confidence=None):
+    async def _run_action(self, action, tracker, dispatcher, policy=None,
+                          confidence=None):
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
-            events = action.run(dispatcher, tracker, self.domain)
+            events = await action.run(dispatcher, tracker, self.domain)
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(),
                                               policy, confidence)]
@@ -462,7 +466,7 @@ class MessageProcessor(object):
                     "and predict the next action.".format(followup_action))
 
         if (tracker.latest_message.intent.get("name") ==
-                self.domain.restart_intent):
+            self.domain.restart_intent):
             return self._prob_array_for_action(ACTION_RESTART_NAME)
         return self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain)

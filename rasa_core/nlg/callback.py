@@ -96,8 +96,8 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         self.nlg_endpoint = endpoint_config
 
-    def generate(self, template_name: Text, tracker: DialogueStateTracker,
-                 output_channel: Text, **kwargs: Any) -> Dict[Text, Any]:
+    async def generate(self, template_name: Text, tracker: DialogueStateTracker,
+                       output_channel: Text, **kwargs: Any) -> Dict[Text, Any]:
         """Retrieve a named template from the domain using an endpoint."""
 
         body = nlg_request_format(template_name,
@@ -107,9 +107,8 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         logger.debug("Requesting NLG for {} from {}."
                      "".format(template_name, self.nlg_endpoint.url))
-        response = self.nlg_endpoint.request(method="post",
-                                             json=body,
-                                             timeout=DEFAULT_REQUEST_TIMEOUT)
+        response = await self.nlg_endpoint.request(
+            method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT)
         response.raise_for_status()
 
         content = response.json()

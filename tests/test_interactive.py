@@ -14,7 +14,7 @@ def mock_endpoint():
     return EndpointConfig("https://abc.defg")
 
 
-def test_send_message(mock_endpoint):
+def test_send_message(loop, mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/messages'.format(
@@ -22,7 +22,8 @@ def test_send_message(mock_endpoint):
     httpretty.register_uri(httpretty.POST, url, body='{}')
 
     httpretty.enable()
-    interactive.send_message(mock_endpoint, sender_id, "Hello")
+    loop.run_until_complete(
+        interactive.send_message(mock_endpoint, sender_id, "Hello"))
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
@@ -33,7 +34,7 @@ def test_send_message(mock_endpoint):
     }
 
 
-def test_request_prediction(mock_endpoint):
+def test_request_prediction(loop, mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/predict'.format(
@@ -41,7 +42,8 @@ def test_request_prediction(mock_endpoint):
     httpretty.register_uri(httpretty.POST, url, body='{}')
 
     httpretty.enable()
-    interactive.request_prediction(mock_endpoint, sender_id)
+    loop.run_until_complete(
+        interactive.request_prediction(mock_endpoint, sender_id))
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
@@ -112,7 +114,7 @@ def test_all_events_before_user_msg_on_no_events():
     assert interactive.all_events_before_latest_user_msg([]) == []
 
 
-def test_print_history(mock_endpoint):
+def test_print_history(loop, mock_endpoint):
     tracker_dump = utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
 
@@ -123,7 +125,8 @@ def test_print_history(mock_endpoint):
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
 
     httpretty.enable()
-    interactive._print_history(sender_id, mock_endpoint)
+    loop.run_until_complete(
+        interactive._print_history(sender_id, mock_endpoint))
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
@@ -133,7 +136,7 @@ def test_print_history(mock_endpoint):
             "".format(sender_id))
 
 
-def test_is_listening_for_messages(mock_endpoint):
+def test_is_listening_for_messages(loop, mock_endpoint):
     tracker_dump = utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
 
@@ -144,8 +147,9 @@ def test_is_listening_for_messages(mock_endpoint):
     httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
 
     httpretty.enable()
-    is_listening = interactive.is_listening_for_message(sender_id,
-                                                        mock_endpoint)
+    is_listening = loop.run_until_complete(
+        interactive.is_listening_for_message(sender_id,
+                                             mock_endpoint))
     httpretty.disable()
 
     assert is_listening
@@ -193,7 +197,7 @@ def test_validate_user_message():
     assert not interactive._validate_user_regex(parse_data, ["goodbye"])
 
 
-def test_undo_latest_msg(mock_endpoint):
+def test_undo_latest_msg(loop, mock_endpoint):
     tracker_dump = utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
     tracker_json = json.loads(tracker_dump)
@@ -209,7 +213,7 @@ def test_undo_latest_msg(mock_endpoint):
     httpretty.register_uri(httpretty.PUT, replace_url)
 
     httpretty.enable()
-    interactive._undo_latest(sender_id, mock_endpoint)
+    loop.run_until_complete(interactive._undo_latest(sender_id, mock_endpoint))
     httpretty.disable()
 
     b = httpretty.latest_requests[-1].body.decode("utf-8")
@@ -243,7 +247,7 @@ def test_utter_custom_message():
     assert json.dumps({'a': 'b'}) in actual
 
 
-def test_interactive_domain_persistence(mock_endpoint, tmpdir):
+def test_interactive_domain_persistence(loop, mock_endpoint, tmpdir):
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
@@ -257,7 +261,8 @@ def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     httpretty.register_uri(httpretty.GET, url, body='{}')
 
     httpretty.enable()
-    interactive._write_domain_to_file(domain_path, events, mock_endpoint)
+    loop.run_until_complete(
+        interactive._write_domain_to_file(domain_path, events, mock_endpoint))
     httpretty.disable()
 
     saved_domain = utils.read_yaml_file(domain_path)

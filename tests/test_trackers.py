@@ -16,8 +16,9 @@ from rasa_core.tracker_store import (
     TrackerStore)
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from tests.conftest import DEFAULT_STORIES_FILE
-from tests.utilities import (tracker_from_dialogue_file, read_dialogue_file,
-                             user_uttered, get_tracker)
+from tests.utilities import (
+    tracker_from_dialogue_file, read_dialogue_file,
+    user_uttered, get_tracker)
 
 domain = Domain.load("data/test_domains/default.yml")
 
@@ -112,10 +113,11 @@ def test_tracker_write_to_story(tmpdir, default_domain):
     assert recovered.events[5].value == "holger"
 
 
-def test_tracker_state_regression_without_bot_utterance(default_agent):
+def test_tracker_state_regression_without_bot_utterance(loop, default_agent):
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
-        default_agent.handle_message("/greet", sender_id=sender_id)
+        loop.run_until_complete(
+            default_agent.handle_message("/greet", sender_id=sender_id))
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
@@ -127,10 +129,11 @@ def test_tracker_state_regression_without_bot_utterance(default_agent):
                      tracker.events if e.as_story_string()]) == expected
 
 
-def test_tracker_state_regression_with_bot_utterance(default_agent):
+def test_tracker_state_regression_with_bot_utterance(loop, default_agent):
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
-        default_agent.handle_message("/greet", sender_id=sender_id)
+        loop.run_until_complete(
+            default_agent.handle_message("/greet", sender_id=sender_id))
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = ["action_listen", "greet", "utter_greet", None,
@@ -139,10 +142,11 @@ def test_tracker_state_regression_with_bot_utterance(default_agent):
     assert [e.as_story_string() for e in tracker.events] == expected
 
 
-def test_bot_utterance_comes_after_action_event(default_agent):
+def test_bot_utterance_comes_after_action_event(loop, default_agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
-    default_agent.handle_message("/greet", sender_id=sender_id)
+    loop.run_until_complete(
+        default_agent.handle_message("/greet", sender_id=sender_id))
 
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
@@ -414,11 +418,13 @@ def test_current_state_applied_events(default_agent):
     assert state.get("events") == applied_events
 
 
-def test_tracker_dump_e2e_story(default_agent):
+def test_tracker_dump_e2e_story(loop, default_agent):
     sender_id = "test_tracker_dump_e2e_story"
 
-    default_agent.handle_message("/greet", sender_id=sender_id)
-    default_agent.handle_message("/goodbye", sender_id=sender_id)
+    loop.run_until_complete(
+        default_agent.handle_message("/greet", sender_id=sender_id))
+    loop.run_until_complete(
+        default_agent.handle_message("/goodbye", sender_id=sender_id))
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     story = tracker.export_stories(e2e=True)

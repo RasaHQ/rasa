@@ -4,7 +4,8 @@ import datetime
 import json
 import logging
 import requests
-from flask import Blueprint, request, jsonify
+from sanic import Blueprint, response
+from sanic.request import Request
 from typing import Text, Dict, Any
 
 from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
@@ -40,7 +41,7 @@ class BotFramework(OutputChannel):
         self.global_uri = "{}v3/".format(service_url)
         self.bot_id = bot_id
 
-    def _get_headers(self):
+    async def _get_headers(self):
         if BotFramework.token_expiration_date < datetime.datetime.now():
             uri = "{}/{}".format(MICROSOFT_OAUTH2_URL, MICROSOFT_OAUTH2_PATH)
             grant_type = 'client_credentials'
@@ -70,7 +71,8 @@ class BotFramework(OutputChannel):
         else:
             return BotFramework.headers
 
-    def send(self, recipient_id: Text, message_data: Dict[Text, Any]) -> None:
+    async def send(self, recipient_id: Text,
+                   message_data: Dict[Text, Any]) -> None:
 
         post_message_uri = ('{}conversations/{}/activities'
                             ''.format(self.global_uri, self.conversation['id']))
@@ -87,7 +89,7 @@ class BotFramework(OutputChannel):
                 "text": ""}
 
         data.update(message_data)
-        headers = self._get_headers()
+        headers = await self._get_headers()
         send_response = requests.post(post_message_uri,
                                       headers=headers,
                                       data=json.dumps(data))
@@ -96,12 +98,12 @@ class BotFramework(OutputChannel):
             logger.error("Error trying to send botframework messge. "
                          "Response: %s", send_response.text)
 
-    def send_text_message(self, recipient_id, message):
+    async def send_text_message(self, recipient_id, message):
         for message_part in message.split("\n\n"):
             text_message = {"text": message_part}
-            self.send(recipient_id, text_message)
+            await self.send(recipient_id, text_message)
 
-    def send_image_url(self, recipient_id, image_url):
+    async def send_image_url(self, recipient_id, image_url):
         hero_content = {
             'contentType': 'application/vnd.microsoft.card.hero',
             'content': {
@@ -110,9 +112,10 @@ class BotFramework(OutputChannel):
         }
 
         image_message = {"attachments": [hero_content]}
-        self.send(recipient_id, image_message)
+        await self.send(recipient_id, image_message)
 
-    def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
+    async def send_text_with_buttons(self, recipient_id, message, buttons,
+                                     **kwargs):
         hero_content = {
             'contentType': 'application/vnd.microsoft.card.hero',
             'content': {
@@ -122,10 +125,10 @@ class BotFramework(OutputChannel):
         }
 
         buttons_message = {"attachments": [hero_content]}
-        self.send(recipient_id, buttons_message)
+        await self.send(recipient_id, buttons_message)
 
-    def send_custom_message(self, recipient_id, elements):
-        self.send(recipient_id, elements[0])
+    async def send_custom_message(self, recipient_id, elements):
+        await self.send(recipient_id, elements[0])
 
 
 class BotFrameworkInput(InputChannel):
@@ -158,12 +161,12 @@ class BotFrameworkInput(InputChannel):
         botframework_webhook = Blueprint('botframework_webhook', __name__)
 
         @botframework_webhook.route("/", methods=['GET'])
-        def health():
-            return jsonify({"status": "ok"})
+        async def health(request):
+            return response.json({"status": "ok"})
 
         @botframework_webhook.route("/webhook", methods=['POST'])
-        def webhook():
-            postdata = request.get_json(force=True)
+        async def webhook(request: Request):
+            postdata = request.json
 
             try:
                 if postdata["type"] == "message":
@@ -175,7 +178,7 @@ class BotFrameworkInput(InputChannel):
                     user_msg = UserMessage(postdata["text"], out_channel,
                                            postdata["from"]["id"],
                                            input_channel=self.name())
-                    on_new_message(user_msg)
+                    await on_new_message(user_msg)
                 else:
                     logger.info("Not received message type")
             except Exception as e:
@@ -184,6 +187,6 @@ class BotFrameworkInput(InputChannel):
                 logger.debug(e, exc_info=True)
                 pass
 
-            return "success"
+            return response.text("success")
 
         return botframework_webhook

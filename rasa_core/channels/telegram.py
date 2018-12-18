@@ -1,6 +1,5 @@
 import logging
-
-from flask import Blueprint, request, jsonify
+from sanic import Blueprint, response
 from telegram import (
     Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
     KeyboardButton, ReplyKeyboardMarkup)
@@ -22,15 +21,15 @@ class TelegramOutput(Bot, OutputChannel):
     def __init__(self, access_token):
         super(TelegramOutput, self).__init__(access_token)
 
-    def send_text_message(self, recipient_id, message):
+    async def send_text_message(self, recipient_id, message):
         for message_part in message.split("\n\n"):
             self.send_message(recipient_id, message_part)
 
-    def send_image_url(self, recipient_id, image_url):
+    async def send_image_url(self, recipient_id, image_url):
         self.send_photo(recipient_id, image_url)
 
-    def send_text_with_buttons(self, recipient_id, text,
-                               buttons, button_type="inline", **kwargs):
+    async def send_text_with_buttons(self, recipient_id, text,
+                                     buttons, button_type="inline", **kwargs):
         """Sends a message with keyboard.
 
         For more information: https://core.telegram.org/bots#keyboards
@@ -111,30 +110,29 @@ class TelegramInput(InputChannel):
         out_channel = TelegramOutput(self.access_token)
 
         @telegram_webhook.route("/", methods=['GET'])
-        def health():
-            return jsonify({"status": "ok"})
+        async def health(request):
+            return response.json({"status": "ok"})
 
         @telegram_webhook.route("/set_webhook", methods=['GET', 'POST'])
-        def set_webhook():
+        async def set_webhook(request):
             s = out_channel.setWebhook(self.webhook_url)
             if s:
                 logger.info("Webhook Setup Successful")
-                return "Webhook setup successful"
+                return response.text("Webhook setup successful")
             else:
                 logger.warning("Webhook Setup Failed")
-                return "Invalid webhook"
+                return response.text("Invalid webhook")
 
         @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
-        def message():
+        async def message(request):
             if request.method == 'POST':
 
                 if not out_channel.get_me()['username'] == self.verify:
                     logger.debug("Invalid access token, check it "
                                  "matches Telegram")
-                    return "failed"
+                    return response.text("failed")
 
-                update = Update.de_json(request.get_json(force=True),
-                                        out_channel)
+                update = Update.de_json(request.json, out_channel)
                 if self._is_button(update):
                     msg = update.callback_query.message
                     text = update.callback_query.data
@@ -147,20 +145,20 @@ class TelegramInput(InputChannel):
                                 ''.format(msg.location.longitude,
                                           msg.location.latitude))
                     else:
-                        return "success"
+                        return response.text("success")
                 sender_id = msg.chat.id
                 try:
                     if (text == '_restart' or
-                            text == constants.USER_INTENT_RESTART):
+                        text == constants.USER_INTENT_RESTART):
 
-                        on_new_message(UserMessage(
+                        await on_new_message(UserMessage(
                             text, out_channel, sender_id,
                             input_channel=self.name()))
-                        on_new_message(UserMessage(
+                        await on_new_message(UserMessage(
                             '/start', out_channel, sender_id,
                             input_channel=self.name()))
                     else:
-                        on_new_message(UserMessage(
+                        await on_new_message(UserMessage(
                             text, out_channel, sender_id,
                             input_channel=self.name()))
                 except Exception as e:
@@ -171,7 +169,7 @@ class TelegramInput(InputChannel):
                         raise
                     pass
 
-                return "success"
+                return response.text("success")
 
-        set_webhook()
+        set_webhook(None)
         return telegram_webhook
