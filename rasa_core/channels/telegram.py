@@ -148,9 +148,7 @@ class TelegramInput(InputChannel):
                         return response.text("success")
                 sender_id = msg.chat.id
                 try:
-                    if (text == '_restart' or
-                        text == constants.USER_INTENT_RESTART):
-
+                    if text in {'_restart', constants.USER_INTENT_RESTART}:
                         await on_new_message(UserMessage(
                             text, out_channel, sender_id,
                             input_channel=self.name()))

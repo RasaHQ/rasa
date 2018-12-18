@@ -69,7 +69,8 @@ class MessageProcessor(object):
         self.action_endpoint = action_endpoint
 
     # todo: follow
-    async def handle_message(self, message: UserMessage) -> Optional[List[Text]]:
+    async def handle_message(self,
+                             message: UserMessage) -> Optional[List[Text]]:
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
@@ -168,14 +169,17 @@ class MessageProcessor(object):
         return action, policy, probabilities[max_index]
 
     @staticmethod
+    def _is_reminder(e: Event, name: Text) -> bool:
+        return isinstance(e, ReminderScheduled) and e.name == name
+
+    @staticmethod
     def _is_reminder_still_valid(tracker: DialogueStateTracker,
                                  reminder_event: ReminderScheduled
                                  ) -> bool:
         """Check if the conversation has been restarted after reminder."""
 
         for e in reversed(tracker.applied_events()):
-            if (isinstance(e, ReminderScheduled) and
-                e.name == reminder_event.name):
+            if MessageProcessor._is_reminder(e, reminder_event.name):
                 return True
         return False  # not found in applied events --> has been restarted
 
@@ -186,8 +190,7 @@ class MessageProcessor(object):
         """Check if the user sent a message after the reminder."""
 
         for e in reversed(tracker.events):
-            if (isinstance(e, ReminderScheduled) and
-                e.name == reminder_event.name):
+            if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
             elif isinstance(e, UserUttered) and e.text:
                 return True
@@ -207,8 +210,8 @@ class MessageProcessor(object):
             return None
 
         if (reminder_event.kill_on_user_message and
-            self._has_message_after_reminder(tracker, reminder_event) or not
-            self._is_reminder_still_valid(tracker, reminder_event)):
+                self._has_message_after_reminder(tracker, reminder_event) or
+                not self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -279,14 +282,18 @@ class MessageProcessor(object):
                 self.domain.restart_intent)
 
     async def _predict_and_execute_next_action(self, message, tracker):
-        # this will actually send the response to the user
-
-        dispatcher = Dispatcher(message.sender_id,
-                                message.output_channel,
-                                self.nlg)
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
+
+        def is_action_limit_reached():
+            return (num_predicted_actions == self.max_number_of_predictions and
+                    should_predict_another_action)
+
+        # this will actually send the response to the user
+        dispatcher = Dispatcher(message.sender_id,
+                                message.output_channel,
+                                self.nlg)
 
         self._log_slots(tracker)
 
@@ -304,8 +311,7 @@ class MessageProcessor(object):
                                                                    confidence)
             num_predicted_actions += 1
 
-        if (num_predicted_actions == self.max_number_of_predictions and
-            should_predict_another_action):
+        if is_action_limit_reached():
             # circuit breaker was tripped
             logger.warning(
                 "Circuit breaker tripped. Stopped predicting "
@@ -465,8 +471,9 @@ class MessageProcessor(object):
                     "Instead of running that, we will ignore the action "
                     "and predict the next action.".format(followup_action))
 
-        if (tracker.latest_message.intent.get("name") ==
-            self.domain.restart_intent):
+        latest_intent = tracker.latest_message.intent.get("name")
+        if latest_intent == self.domain.restart_intent:
             return self._prob_array_for_action(ACTION_RESTART_NAME)
-        return self.policy_ensemble.probabilities_using_best_policy(
-            tracker, self.domain)
+        else:
+            return self.policy_ensemble.probabilities_using_best_policy(
+                tracker, self.domain)

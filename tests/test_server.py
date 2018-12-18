@@ -7,11 +7,8 @@ from freezegun import freeze_time
 
 import rasa_core
 from rasa_core import events, constants
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.domain import Domain
 from rasa_core.events import (
-    UserUttered, BotUttered, SlotSet, Event, ActionExecuted)
-from rasa_core.utils import EndpointConfig
+    UserUttered, BotUttered, SlotSet, Event)
 from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 # a couple of event instances that we can use for testing
@@ -117,8 +114,8 @@ def test_pushing_event(app, event):
     assert (response.json is not None)
     assert response.status == 200
 
-    _,tracker_response = app.get("/conversations/{}/tracker"
-                               "".format(cid))
+    _, tracker_response = app.get("/conversations/{}/tracker"
+                                  "".format(cid))
     tracker = tracker_response.json
     assert tracker is not None
     assert len(tracker.get("events")) == 6
@@ -137,7 +134,7 @@ def test_put_tracker(app):
     assert len(content["events"]) == len(test_events)
     assert content["sender_id"] == "pushtracker"
 
-    _,tracker_response = app.get(
+    _, tracker_response = app.get(
         "/conversations/pushtracker/tracker")
     tracker = tracker_response.json
     assert tracker is not None
@@ -215,8 +212,8 @@ def test_list_conversations_with_jwt(secured_app):
                          "m9sZSI6ImFkbWluIn19.NAQr0kbtSrY7d28XTqRzawq2u"
                          "QRre7IWTuIDrCn5AIw"
     }
-    _,response = secured_app.get("/conversations",
-                               headers=jwt_header)
+    _, response = secured_app.get("/conversations",
+                                  headers=jwt_header)
     assert response.status == 200
 
     # {"user": {"username": "testuser", "role": "user"}}

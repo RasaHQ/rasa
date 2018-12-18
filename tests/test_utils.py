@@ -105,9 +105,9 @@ def test_endpoint_config(loop):
 
     httpretty.enable()
     loop.run_until_complete(endpoint.request("post", subpath="test",
-                     content_type="application/text",
-                     json={"c": "d"},
-                     params={"P": "1"}))
+                                             content_type="application/text",
+                                             json={"c": "d"},
+                                             params={"P": "1"}))
     httpretty.disable()
 
     r = httpretty.latest_requests[-1]
@@ -175,4 +175,4 @@ def test_read_yaml_string_with_env_var_not_exist():
     password: ${PASSWORD}
     """
     with pytest.raises(KeyError):
-        r = utils.read_yaml_string(config_with_env_var_not_exist)
+        utils.read_yaml_string(config_with_env_var_not_exist)

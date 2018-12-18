@@ -487,7 +487,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
     def test_affirmation(self, loop, default_dispatcher_collecting,
-                               default_domain):
+                         default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered('greet', 1),
                   ActionExecuted('utter_hello'),
@@ -497,7 +497,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered(USER_INTENT_AFFIRM, 1)]
 
-        tracker = loop.run_until_complete( self._get_tracker_after_reverts(
+        tracker = loop.run_until_complete(self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
             default_domain))
@@ -522,8 +522,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
     def test_successful_rephrasing(self, loop,
                                    trained_policy,
-                                         default_dispatcher_collecting,
-                                         default_domain):
+                                   default_dispatcher_collecting,
+                                   default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
@@ -534,7 +534,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered("bye", 1),
                   ]
 
-        tracker = loop.run_until_complete( self._get_tracker_after_reverts(
+        tracker = loop.run_until_complete(self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
             default_domain))
@@ -560,8 +560,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
     def test_affirmed_rephrasing(self, loop,
                                  trained_policy,
-                                       default_dispatcher_collecting,
-                                       default_domain):
+                                 default_dispatcher_collecting,
+                                 default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
@@ -575,7 +575,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered(USER_INTENT_AFFIRM, 1)
                   ]
 
-        tracker = loop.run_until_complete( self._get_tracker_after_reverts(
+        tracker = loop.run_until_complete(self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
             default_domain))

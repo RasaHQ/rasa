@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import Future
 
 import logging
 import os
@@ -7,8 +8,6 @@ import tempfile
 import typing
 import uuid
 import zipfile
-from asyncio import Task, Future
-from gevent.pywsgi import WSGIServer
 from io import BytesIO as IOReader
 from requests.exceptions import InvalidURL, RequestException
 from signal import SIGINT
@@ -196,7 +195,7 @@ class Agent(object):
         if self.domain:
             self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
-        if self._form_policy_not_present():
+        if not self._is_form_policy_present():
             raise InvalidDomain(
                 "You have defined a form action, but haven't added the "
                 "FormPolicy to your policy ensemble."
@@ -291,6 +290,7 @@ class Agent(object):
         if not isinstance(message, UserMessage):
             logger.warning("Passing a text to `agent.handle_message(...)` is "
                            "deprecated. Rather use `agent.handle_text(...)`.")
+            # noinspection PyTypeChecker
             return await self.handle_text(
                 message,
                 message_preprocessor=message_preprocessor,
@@ -436,9 +436,12 @@ class Agent(object):
     def _are_all_featurizers_using_a_max_history(self):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
-        for policy in self.policy_ensemble.policies:
-            if (policy.featurizer and not
-            hasattr(policy.featurizer, 'max_history')):
+        def has_max_history_featurizer(policy):
+            return (not policy.featurizer or
+                    hasattr(policy.featurizer, 'max_history'))
+
+        for p in self.policy_ensemble.policies:
+            if not has_max_history_featurizer(p):
                 return False
         return True
 
@@ -618,8 +621,7 @@ class Agent(object):
                           max_history, self.interpreter,
                           nlu_training_data, should_merge_nodes, fontsize)
 
-    def _ensure_agent_is_ready(self):
-        # type: () -> None
+    def _ensure_agent_is_ready(self) -> None:
         """Checks that an interpreter and a tracker store are set.
 
         Necessary before a processor can be instantiated from this agent.
@@ -685,11 +687,10 @@ class Agent(object):
                 "of type '{}', but should be policy, an array of "
                 "policies, or a policy ensemble".format(passed_type))
 
-    def _form_policy_not_present(self):
-        # type: () -> bool
-        """Check whether form policy is not present
-            if there is a form action in the domain
-        """
-        return (self.domain and self.domain.form_names and not
-        any(isinstance(p, FormPolicy)
-            for p in self.policy_ensemble.policies))
+    def _is_form_policy_present(self) -> bool:
+        """Check whether form policy is present and used."""
+
+        has_form_policy = all(not isinstance(p, FormPolicy)
+                              for p in self.policy_ensemble.policies)
+
+        return self.domain and self.domain.form_names and has_form_policy

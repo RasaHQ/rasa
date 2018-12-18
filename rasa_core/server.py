@@ -533,12 +533,12 @@ def create_app(agent,
         else:
             raise ErrorResponse(406,
                                 "InvalidHeader",
-                                """Invalid accept header. Domain can be 
-                                   provided as json 
-                                   ("Accept: application/json")
-                                   or yml ("Accept: application/x-yml").
-                                   Make sure you've set the appropriate Accept
-                                   header.""")
+                                "Invalid accept header. Domain can be "
+                                "provided as "
+                                "json (\"Accept: application/json\") or"
+                                "yml (\"Accept: application/x-yml\"). "
+                                "Make sure you've set the appropriate Accept "
+                                "header.")
 
     @app.post("/finetune")
     @requires_auth(app, auth_token)
