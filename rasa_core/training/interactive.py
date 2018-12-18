@@ -625,30 +625,20 @@ def _request_action_from_user(
 def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
 
-    def validate_path(path):
-        try:
-            with io.open(path, "a", encoding="utf-8"):
-                return True
-        except Exception as e:
-            return "Failed to open file. {}".format(e)
-
     # export training data and quit
     questions = questionary.form(
         export_stories=questionary.text(
             message="Export stories to (if file exists, this "
                     "will append the stories)",
-            default=PATHS["stories"],
-            validate=validate_path),
+            default=PATHS["stories"]),
         export_nlu=questionary.text(
             message="Export NLU data to (if file exists, this will "
                     "merge learned data with previous training examples)",
-            default=PATHS["nlu"],
-            validate=validate_path),
+            default=PATHS["nlu"]),
         export_domain=questionary.text(
             message="Export domain file to (if file exists, this "
                     "will be overwritten)",
-            default=PATHS["domain"],
-            validate=validate_path),
+            default=PATHS["domain"]),
     )
 
     answers = questions.ask()
