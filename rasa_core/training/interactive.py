@@ -1060,21 +1060,26 @@ def _validate_user_text(latest_message: Dict[Text, Any],
     This assumes the user message is a text message (so NOT `/greet`)."""
 
     parse_data = latest_message.get("parse_data", {})
-    entities = _as_md_message(parse_data)
+    text = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get("name")
 
-    q = ("Is the NLU classification for '{}' with intent "
-         "'{}' correct?".format(entities, intent))
+    if intent is None:
+        print("The NLU classification for '{}' returned '{}'"
+              "".format(text, intent))
+        return False
+    else:
+        q = ("Is the NLU classification for '{}' with intent "
+             "'{}' correct?".format(text, intent))
 
-    questions = [
-        {
-            "type": "confirm",
-            "name": "nlu",
-            "message": q,
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    return answers["nlu"]
+        questions = [
+            {
+                "type": "confirm",
+                "name": "nlu",
+                "message": q,
+            }
+        ]
+        answers = _ask_questions(questions, sender_id, endpoint)
+        return answers["nlu"]
 
 
 def _validate_nlu(intents: List[Text],
