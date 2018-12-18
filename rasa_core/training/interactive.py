@@ -723,13 +723,15 @@ def _write_nlu_to_file(
     # noinspection PyBroadException
     try:
         previous_examples = load_data(export_nlu_path)
+    except Exception as e:
+        logger.exception("An exception occurred while trying to load the "
+                         "NLU data.")
 
-    except Exception:
         export_nlu_path = questionary.text(
             message="Could not load existing NLU data, please "
                     "specify where to store NLU data learned in "
                     "this session (this will overwrite any "
-                    "existing file)",
+                    "existing file). {}".format(str(e)),
             default=PATHS["backup"]).ask()
 
         if export_nlu_path is None:
