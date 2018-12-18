@@ -1,8 +1,7 @@
 import logging
+import requests
 import typing
 from typing import List, Text, Optional, Dict, Any
-
-import requests
 
 from rasa_core import events
 from rasa_core.constants import (
@@ -404,7 +403,8 @@ class ActionRevertFallbackEvents(Action):
                   domain: 'Domain') -> List[Event]:
         from rasa_core.policies.two_stage_fallback import (
             has_user_rephrased,
-            has_user_affirmed)
+            has_user_affirmed,
+            has_asked_for_affirmation)
 
         last_user_event = tracker.latest_message.intent.get('name')
         revert_events = []
@@ -416,8 +416,7 @@ class ActionRevertFallbackEvents(Action):
         elif has_user_rephrased(tracker):
             revert_events = _revert_successful_affirmation(tracker)
         # User rephrased instead of affirming
-        elif tracker.last_executed_action_has(
-            ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
+        elif has_asked_for_affirmation(tracker):
             revert_events = _revert_early_rephrasing(tracker)
 
         return revert_events

@@ -169,13 +169,18 @@ def has_user_affirmed(last_intent: Text,
         last_intent == USER_INTENT_AFFIRM)
 
 
+def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
+    return tracker.last_executed_action_has(
+        ACTION_DEFAULT_ASK_REPHRASE_NAME)
+
+
+def has_asked_for_affirmation(tracker: DialogueStateTracker) -> bool:
+    return tracker.last_executed_action_has(
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
+
+
 def _has_user_denied(last_intent: Text,
                      tracker: DialogueStateTracker) -> bool:
     return (tracker.last_executed_action_has(
         ACTION_DEFAULT_ASK_AFFIRMATION_NAME) and
         last_intent == USER_INTENT_DENY)
-
-
-def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
-    return tracker.last_executed_action_has(
-        ACTION_DEFAULT_ASK_REPHRASE_NAME)
