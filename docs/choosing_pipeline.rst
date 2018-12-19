@@ -206,7 +206,7 @@ Below is a list of all the pre-configured pipeline templates.
 Pretrained_embeddings
 ~~~~~~~~~~~~~~~~~~~~~
 
-To use spacy as a template:
+To use the ``pretrained_embeddings`` template:
 
 .. literalinclude:: ../sample_configs/config_pretrained_embeddings.yml
     :language: yaml

@@ -26,7 +26,7 @@ One way to define the pipeline configuration is to use a template configuration:
     pipeline: "supervised_embeddings"
 	
 Another way is to define a custom configuration by listing all components you would like your pipeline to use.
-The supervised embeddings pipeline supports any language that can be tokenized. The default is to use a simple 
+The ``supervised_embeddings`` pipeline supports any language that can be tokenized. The default is to use a simple 
 whitespace tokenizer:
 
 .. code-block:: yaml
@@ -76,7 +76,7 @@ Once the training is finished, you can test your model's Norwegian language skil
 Pre-trained Word Vectors
 ------------------------
 
-With the pretrained embeddings pipline you can also load fastText vectors, which are available 
+With the ``pretrained_embeddings`` pipeline you can also load fastText vectors, which are available 
 for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md>`_.
 
 
