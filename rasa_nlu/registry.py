@@ -67,6 +67,15 @@ registered_components = {c.name: c for c in component_classes}
 # necessary components in the right order. They also implement
 # the preexisting `backends`.
 registered_pipeline_templates = {
+    "pretrained_embeddings": [
+        "nlp_spacy",
+        "tokenizer_spacy",
+        "intent_featurizer_spacy",
+        "intent_entity_featurizer_regex",
+        "ner_crf",
+        "ner_synonyms",
+        "intent_classifier_sklearn",
+    ],
     "spacy_sklearn": [
         "nlp_spacy",
         "tokenizer_spacy",
@@ -78,6 +87,13 @@ registered_pipeline_templates = {
     ],
     "keyword": [
         "intent_classifier_keyword",
+    ],
+    "supervised_embeddings": [
+        "tokenizer_whitespace",
+        "ner_crf",
+        "ner_synonyms",
+        "intent_featurizer_count_vectors",
+        "intent_classifier_tensorflow_embedding"
     ],
     "tensorflow_embedding": [
         "tokenizer_whitespace",
