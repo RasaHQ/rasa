@@ -17,6 +17,8 @@ Added
 
 Changed
 -------
+- ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
+- ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings``
 - ``EmbeddingIntentClassifier`` has been refactored, including changes to the
   config parameters as well as comments and types for all class functions.
 - the http server's ``POST /evaluate`` endpoint returns evaluation results
