@@ -11,7 +11,7 @@ The Short Answer
 If you have less than 1000 total training examples, and there is a spaCy model for your 
 language, use the ``pretrained_embeddings`` pipeline:
 
-.. literalinclude:: ../sample_configs/config_spacy.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings.yml
     :language: yaml
 
 
@@ -80,7 +80,7 @@ Here's an example configuration:
 
     pipeline:
     - name: "intent_featurizer_count_vectors"
-    - name: "intent_classifier_supervised_embeddings"
+    - name: "intent_classifier_tensorflow_embedding"
       intent_tokenization_flag: true
       intent_split_symbol: "+"
 

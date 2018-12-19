@@ -83,7 +83,7 @@ for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/ma
 =====================   =================================
 backend        		supported languages
 =====================   =================================
-supervised-embeddings   english (``en``),
+pretrained-embeddings   english (``en``),
                		german (``de``),
                		spanish (``es``),
                		portuguese (``pt``),
@@ -92,7 +92,7 @@ supervised-embeddings   english (``en``),
                		french (``fr``)
 MITIE          		english (``en``)
 Jieba-MITIE    		chinese (``zh``) :ref:`* <jieba>`
-=============  		=================================
+=====================   =================================
 
 These languages can be set as part of the :ref:`section_configuration`.
 
