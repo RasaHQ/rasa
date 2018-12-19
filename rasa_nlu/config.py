@@ -125,6 +125,15 @@ class RasaNLUModelConfig(object):
             pipeline = registry.pipeline_template(template_name)
 
             if pipeline:
+                new_names = {"spacy_sklearn": "pretrained_embeddings",
+                             "tensorflow_embedding": "supervised_embeddings"}
+                if template_name in new_names:
+                    logger.warn("You have specified the pipeline template {} "
+                                "which has been renamed to {} ."
+                                "Please update your code as it will no longer work "
+                                "with future versions of Rasa NLU."
+                                "".format(template_name,
+                                          new_names[template_name]))
                 # replaces the template with the actual components
                 self.__dict__['pipeline'] = pipeline
             else:

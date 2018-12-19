@@ -90,7 +90,7 @@ def test_train_model(pipeline_template, component_builder, tmpdir):
 def test_random_seed(component_builder, tmpdir):
     '''test if train result is the same for two runs of tf embedding'''
 
-    _config = utilities.base_test_conf("tensorflow_embedding")
+    _config = utilities.base_test_conf("supervised_embeddings")
     # set fixed random seed to 1
     _config.set_component_attr("intent_classifier_tensorflow_embedding", random_seed=1)
     # first run
