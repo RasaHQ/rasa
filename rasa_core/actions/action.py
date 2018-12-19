@@ -1,3 +1,6 @@
+import aiohttp
+import json
+
 import logging
 import requests
 import typing
@@ -11,7 +14,7 @@ from rasa_core.constants import (
 from rasa_core.events import (
     UserUtteranceReverted, UserUttered,
     ActionExecuted, Event)
-from rasa_core.utils import EndpointConfig
+from rasa_core.utils import EndpointConfig, ClientResponseError
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -312,7 +315,7 @@ class RemoteAction(Action):
             await dispatcher.utter_response(draft)
 
     async def run(self, dispatcher, tracker, domain):
-        json = self._action_call_format(tracker, domain)
+        json_body = self._action_call_format(tracker, domain)
 
         if not self.action_endpoint:
             raise Exception("The model predicted the custom action '{}' "
@@ -326,47 +329,45 @@ class RemoteAction(Action):
             logger.debug("Calling action endpoint to run action '{}'."
                          "".format(self.name()))
             response = await self.action_endpoint.request(
-                json=json, method="post", timeout=DEFAULT_REQUEST_TIMEOUT)
+                json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT)
+            self._validate_action_result(response)
 
-            if response.status_code == 400:
-                response_data = response.json()
+            events_json = response.get("events", [])
+            responses = response.get("responses", [])
+            await self._utter_responses(responses, dispatcher, tracker)
+
+            evts = events.deserialise_events(events_json)
+            return evts
+
+        except ClientResponseError as e:
+            if e.status == 400:
+                response_data = json.loads(e.text)
                 exception = ActionExecutionRejection(
                     response_data["action_name"],
                     response_data.get("error")
                 )
                 logger.debug(exception.message)
                 raise exception
+            else:
+                raise
 
-            response.raise_for_status()
-            response_data = response.json()
-            self._validate_action_result(response_data)
-        except requests.exceptions.ConnectionError as e:
-
+        except aiohttp.client_exceptions.ClientConnectionError as e:
             logger.error("Failed to run custom action '{}'. Couldn't connect "
                          "to the server at '{}'. Is the server running? "
                          "Error: {}".format(self.name(),
                                             self.action_endpoint.url,
                                             e))
             raise Exception("Failed to execute custom action.")
-        except requests.exceptions.HTTPError as e:
 
+        except aiohttp.client_exceptions.ClientError as e:
+            # noinspection PyUnresolvedReferences
+            status = e.status if hasattr(e.__class__, "status") else None
             logger.error("Failed to run custom action '{}'. Action server "
                          "responded with a non 200 status code of {}. "
                          "Make sure your action server properly runs actions "
                          "and returns a 200 once the action is executed. "
-                         "Error: {}".format(self.name(),
-                                            e.response.status_code,
-                                            e))
+                         "Error: {}".format(self.name(), status, e))
             raise Exception("Failed to execute custom action.")
-
-        events_json = response_data.get("events", [])
-        responses = response_data.get("responses", [])
-
-        await self._utter_responses(responses, dispatcher, tracker)
-
-        evts = events.deserialise_events(events_json)
-
-        return evts
 
     def name(self) -> Text:
         return self._name

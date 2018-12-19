@@ -107,13 +107,12 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
         logger.debug("Requesting NLG for {} from {}."
                      "".format(template_name, self.nlg_endpoint.url))
+
         response = await self.nlg_endpoint.request(
             method="post", json=body, timeout=DEFAULT_REQUEST_TIMEOUT)
-        response.raise_for_status()
 
-        content = response.json()
-        if self.validate_response(content):
-            return content
+        if self.validate_response(response):
+            return response
         else:
             raise Exception("NLG web endpoint returned an invalid response.")
 

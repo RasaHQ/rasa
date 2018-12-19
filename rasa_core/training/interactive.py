@@ -86,17 +86,6 @@ class UndoLastStep(Exception):
     pass
 
 
-def _response_as_json(result: requests.Response) -> Dict[Text, Any]:
-    """Convert a HTTP response to json, raise exception if response failed."""
-
-    result.raise_for_status()
-
-    if result.encoding is None:
-        result.encoding = 'utf-8'
-
-    return result.json()
-
-
 async def send_message(
     endpoint: EndpointConfig,
     sender_id: Text,
@@ -111,12 +100,10 @@ async def send_message(
         "parse_data": parse_data
     }
 
-    r = await endpoint.request(json=payload,
-                               method="post",
-                               subpath="/conversations/{}/messages"
-                                       "".format(sender_id))
-
-    return _response_as_json(r)
+    return await endpoint.request(json=payload,
+                                  method="post",
+                                  subpath="/conversations/{}/messages"
+                                          "".format(sender_id))
 
 
 async def request_prediction(
@@ -125,21 +112,17 @@ async def request_prediction(
 ) -> Dict[Text, Any]:
     """Request the next action prediction from core."""
 
-    r = await endpoint.request(method="post",
-                               subpath="/conversations/{}/predict".format(
-                                   sender_id))
-
-    return _response_as_json(r)
+    return await endpoint.request(method="post",
+                                  subpath="/conversations/{}/predict".format(
+                                      sender_id))
 
 
 async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
     """Retrieve the domain from core."""
 
-    r = await endpoint.request(method="get",
-                               subpath="/domain",
-                               headers={"Accept": "application/json"})
-
-    return _response_as_json(r)
+    return await endpoint.request(method="get",
+                                  subpath="/domain",
+                                  headers={"Accept": "application/json"})
 
 
 async def retrieve_tracker(
@@ -151,11 +134,9 @@ async def retrieve_tracker(
 
     path = "/conversations/{}/tracker?include_events={}".format(
         sender_id, verbosity.name)
-    r = await endpoint.request(method="get",
-                               subpath=path,
-                               headers={"Accept": "application/json"})
-
-    return _response_as_json(r)
+    return await endpoint.request(method="get",
+                                  subpath=path,
+                                  headers={"Accept": "application/json"})
 
 
 async def send_action(
@@ -173,10 +154,9 @@ async def send_action(
     subpath = "/conversations/{}/execute".format(sender_id)
 
     try:
-        r = await endpoint.request(json=payload,
-                                   method="post",
-                                   subpath=subpath)
-        return _response_as_json(r)
+        return await endpoint.request(json=payload,
+                                      method="post",
+                                      subpath=subpath)
     except requests.exceptions.HTTPError:
         if is_new_action:
             warning_questions = questionary.confirm(
@@ -207,11 +187,9 @@ async def send_event(
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
-    r = await endpoint.request(json=evt,
-                               method="post",
-                               subpath=subpath)
-
-    return _response_as_json(r)
+    return await endpoint.request(json=evt,
+                                  method="post",
+                                  subpath=subpath)
 
 
 async def replace_events(
@@ -223,11 +201,9 @@ async def replace_events(
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
 
-    r = await endpoint.request(json=evts,
-                               method="put",
-                               subpath=subpath)
-
-    return _response_as_json(r)
+    return await endpoint.request(json=evts,
+                                  method="put",
+                                  subpath=subpath)
 
 
 async def send_finetune(
@@ -236,11 +212,9 @@ async def send_finetune(
 ) -> Dict[Text, Any]:
     """Finetune a core model on the provided additional training samples."""
 
-    r = await endpoint.request(json=evts,
-                               method="post",
-                               subpath="/finetune")
-
-    return _response_as_json(r)
+    return await endpoint.request(json=evts,
+                                  method="post",
+                                  subpath="/finetune")
 
 
 def format_bot_output(

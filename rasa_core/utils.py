@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import aiohttp
 import errno
 import inspect
 import io
@@ -20,10 +21,11 @@ from typing import Text, Any, List, Optional, Tuple, Dict, Set
 import requests
 from numpy import all, array
 from requests.auth import HTTPBasicAuth
-from requests.exceptions import InvalidURL
+from requests.exceptions import InvalidURL, HTTPError
 from io import StringIO
 from urllib.parse import unquote
 
+from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_nlu import utils as nlu_utils
 
 logger = logging.getLogger(__name__)
@@ -633,6 +635,14 @@ class AvailableEndpoints(object):
         self.event_broker = event_broker
 
 
+class ClientResponseError(aiohttp.client_exceptions.ClientResponseError):
+    def __init__(self, error, text):
+        super(ClientResponseError, self).__init__(
+            error.request_info, error.history,
+            status=error.status, message=error.message, headers=error.headers)
+        self.text = text
+
+
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
@@ -646,35 +656,27 @@ class EndpointConfig(object):
         self.token_name = token_name
         self.store_type = kwargs.pop('store_type', None)
         self.kwargs = kwargs
+        self.session = self._create_session()
 
-    async def request(self,
-                      method: Text = "post",
-                      subpath: Optional[Text] = None,
-                      content_type: Optional[Text] = "application/json",
-                      **kwargs: Any
-                      ) -> requests.Response:
-        """Send a HTTP request to the endpoint.
-
-        All additional arguments will get passed through
-        to `requests.request`."""
-
-        # create the appropriate headers
-        headers = self.headers.copy()
-        if content_type:
-            headers["Content-Type"] = content_type
-        if "headers" in kwargs:
-            headers.update(kwargs["headers"])
-            del kwargs["headers"]
-
+    def _create_session(self):
         # create authentication parameters
         if self.basic_auth:
-            auth = HTTPBasicAuth(self.basic_auth["username"],
-                                 self.basic_auth["password"])
+            auth = aiohttp.BasicAuth(self.basic_auth["username"],
+                                     self.basic_auth["password"])
         else:
             auth = None
 
-        url = concat_url(self.url, subpath)
+        return aiohttp.ClientSession(
+            headers=self.headers,
+            auth=auth,
+            timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT),
+        )
 
+    def __del__(self):
+        if self.session and not self.session.closed:
+            self.session.close()
+
+    def combine_parameters(self, kwargs=None):
         # construct GET parameters
         params = self.params.copy()
 
@@ -682,16 +684,44 @@ class EndpointConfig(object):
         if self.token:
             params[self.token_name] = self.token
 
-        if "params" in kwargs:
+        if kwargs and "params" in kwargs:
             params.update(kwargs["params"])
             del kwargs["params"]
+        return params
 
-        return requests.request(method,
-                                url,
-                                headers=headers,
-                                params=params,
-                                auth=auth,
-                                **kwargs)
+    async def request(self,
+                      method: Text = "post",
+                      subpath: Optional[Text] = None,
+                      content_type: Optional[Text] = "application/json",
+                      **kwargs: Any
+                      ):
+        """Send a HTTP request to the endpoint.
+
+        All additional arguments will get passed through
+        to aiohttp's `session.request`."""
+
+        # create the appropriate headers
+        headers = {}
+        if content_type:
+            headers["Content-Type"] = content_type
+
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
+
+        url = concat_url(self.url, subpath)
+
+        async with self.session.request(
+                method,
+                url,
+                headers=headers,
+                params=self.combine_parameters(kwargs),
+                **kwargs) as resp:
+            try:
+                resp.raise_for_status()
+                return await resp.json()
+            except aiohttp.client_exceptions.ClientResponseError as e:
+                raise ClientResponseError(e, await resp.text())
 
     @classmethod
     def from_dict(cls, data):

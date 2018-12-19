@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import Future
 
+import aiohttp
 import logging
 import os
 import shutil
@@ -9,7 +10,7 @@ import typing
 import uuid
 import zipfile
 from io import BytesIO as IOReader
-from requests.exceptions import InvalidURL, RequestException
+from requests.exceptions import InvalidURL
 from signal import SIGINT
 from signal import signal
 from threading import Thread
@@ -116,43 +117,53 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
     """Queries the model server and returns the value of the response's
 
     <ETag> header which contains the model hash."""
-    header = {"If-None-Match": fingerprint}
+    headers = {"If-None-Match": fingerprint}
+
+    logger.debug("Requesting model from server {}..."
+                 "".format(model_server.url))
+
     try:
-        logger.debug("Requesting model from server {}..."
-                     "".format(model_server.url))
-        response = await model_server.request(method="GET",
-                                              headers=header,
-                                              timeout=DEFAULT_REQUEST_TIMEOUT)
-    except RequestException as e:
-        logger.warning("Tried to fetch model from server, but couldn't reach "
-                       "server. We'll retry later... Error: {}."
-                       "".format(e))
-        return None
+        async with model_server.session.request(
+                "GET",
+                model_server.url,
+                timeout=DEFAULT_REQUEST_TIMEOUT,
+                headers=headers,
+                params=model_server.combine_parameters()) as resp:
 
-    if response.status_code in [204, 304]:
-        logger.debug("Model server returned {} status code, indicating "
-                     "that no new model is available. "
-                     "Current fingerprint: {}"
-                     "".format(response.status_code, fingerprint))
-        return response.headers.get("ETag")
-    elif response.status_code == 404:
-        logger.debug("Model server didn't find a model for our request. "
-                     "Probably no one did train a model for the project "
-                     "and tag combination yet.")
-        return None
-    elif response.status_code != 200:
-        logger.warning("Tried to fetch model from server, but server response "
-                       "status code is {}. We'll retry later..."
-                       "".format(response.status_code))
-        return None
+            resp.raise_for_status()
 
-    zip_ref = zipfile.ZipFile(IOReader(response.content))
-    zip_ref.extractall(model_directory)
-    logger.debug("Unzipped model to {}"
-                 "".format(os.path.abspath(model_directory)))
+            if resp.status in [204, 304]:
+                logger.debug("Model server returned {} status code, indicating "
+                             "that no new model is available. "
+                             "Current fingerprint: {}"
+                             "".format(resp.status, fingerprint))
+                return resp.headers.get("ETag")
+            elif resp.status == 404:
+                logger.debug(
+                    "Model server didn't find a model for our request. "
+                    "Probably no one did train a model for the project "
+                    "and tag combination yet.")
+                return None
+            elif resp.status != 200:
+                logger.warning(
+                    "Tried to fetch model from server, but server response "
+                    "status code is {}. We'll retry later..."
+                    "".format(resp.status))
+                return None
 
-    # get the new fingerprint
-    return response.headers.get("ETag")
+            zip_ref = zipfile.ZipFile(IOReader(resp.read()))
+            zip_ref.extractall(model_directory)
+            logger.debug("Unzipped model to {}"
+                         "".format(os.path.abspath(model_directory)))
+
+            # get the new fingerprint
+            return resp.headers.get("ETag")
+
+    except aiohttp.client_exceptions.ClientResponseError as e:
+        logger.warning("Tried to fetch model from server, but "
+                       "couldn't reach server. We'll retry later... "
+                       "Error: {}.".format(e))
+        return None
 
 
 async def _run_model_pulling_worker(model_server: EndpointConfig,

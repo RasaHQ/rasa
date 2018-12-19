@@ -4,7 +4,7 @@ from sanic import Blueprint, response
 from rasa_core.channels import (
     CollectingOutputChannel,
     UserMessage, RestInput)
-from rasa_core.utils import EndpointConfig
+from rasa_core.utils import EndpointConfig, ClientResponseError
 
 logger = logging.getLogger(__name__)
 
@@ -21,17 +21,17 @@ class CallbackOutput(CollectingOutputChannel):
         super(CallbackOutput, self).__init__()
 
     async def _persist_message(self, message):
-        super(CallbackOutput, self)._persist_message(message)
+        await super(CallbackOutput, self)._persist_message(message)
 
-        r = await self.callback_endpoint.request(
-            "post",
-            content_type="application/json",
-            json=message)
-
-        if not 200 <= r.status_code < 300:
+        try:
+            await self.callback_endpoint.request(
+                "post",
+                content_type="application/json",
+                json=message)
+        except ClientResponseError as e:
             logger.error("Failed to send output message to callback. "
                          "Status: {} Response: {}"
-                         "".format(r.status_code, r.text))
+                         "".format(e.status, e.text))
 
 
 class CallbackInput(RestInput):
