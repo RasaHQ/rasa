@@ -1,0 +1,7 @@
+# Minimum Install Requirements
+-r requirements_bare.txt
+
+scikit-learn==0.19.1
+tensorflow==1.10.0
+scipy==1.1.0
+sklearn-crfsuite==0.3.6
