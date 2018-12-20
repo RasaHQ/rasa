@@ -150,8 +150,10 @@ class SlackInput(InputChannel):
         :return text:
         """
         for uid_to_remove in uids_to_remove:
-            # the seeming duplication turns out to be an enough heuristic to format majority of cases OK
-            # can be adjusted to taste later on if needed, but is a good first approximation
+            # the seeming duplication turns out to be an enough heuristic
+            # to format majority of cases OK
+            # can be adjusted to taste later on if needed,
+            # but is a good first approximation
             text = re.sub(
                 r'<@{}>\s'.format(uid_to_remove),
                 '',
@@ -208,7 +210,9 @@ class SlackInput(InputChannel):
                 elif self._is_user_message(output):
                     return self.process_message(
                         on_new_message,
-                        text=self._sanitize_user_message(output['event']['text'], output['authed_users']),
+                        text=self._sanitize_user_message(
+                            output['event']['text'],
+                            output['authed_users']),
                         sender_id=output.get('event').get('user'))
             elif request.form:
                 output = dict(request.form)
