@@ -36,7 +36,7 @@ except ImportError:
     import pickle
 
 logger = logging.getLogger(__name__)
-import code
+
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "slots",
                                          "previous_actions",
