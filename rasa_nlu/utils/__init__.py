@@ -24,6 +24,10 @@ from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
 
+unicode_regex = re.compile(
+    u'[\u231A-\u231B\u2328\u23CF\23E9-\u23F3...\U0001F9C0]',
+    flags=re.UNICODE)
+
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
     """Add options to an argument parser to configure logging levels."""
@@ -253,6 +257,12 @@ def read_yaml(content):
     yaml_parser = yaml.YAML(typ="safe")
     yaml_parser.version = "1.2"
     yaml_parser.unicode_supplementary = True
+
+    if unicode_regex.match(content):
+        content = (content.encode('utf-8')
+                   .decode('unicode_escape')
+                   .encode("utf-16", 'surrogatepass')
+                   .decode('utf-16'))
 
     return yaml_parser.load(content)
 
