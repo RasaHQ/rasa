@@ -36,7 +36,7 @@ except ImportError:
     import pickle
 
 logger = logging.getLogger(__name__)
-
+import code
 # namedtuple for all tf session related data
 SessionData = namedtuple("SessionData", ("X", "Y", "slots",
                                          "previous_actions",
@@ -128,7 +128,9 @@ class EmbeddingPolicy(Policy):
         "evaluate_on_num_examples": 100,  # large values may hurt performance
         "device_count": cpu_count(),  # tell tf.Session to use CPU limit
         # if you have more CPU, you can increase this value appropriately
-        "inter_op_threads": 0,
+        "inter_op_threads": 0,  # the number of threads in the thread pool
+        # available for each process for blocking operation nodes
+        # set to 0 to allow the system to select the appropriate value.
         "intra_op_threads": 0,  # tells the degree of thread
         # parallelism of the tf.Session operation.
         # the smaller the value, the less reuse the thread will have
@@ -283,20 +285,11 @@ class EmbeddingPolicy(Policy):
             self.evaluate_every_num_epochs = self.epochs
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
-    @staticmethod
-    def _load_tf_config(config: Dict[Text, Any]) -> None:
-        """Prepare tf.ConfigProto for training"""
-        return tf.ConfigProto(
-            device_count={'CPU': config['device_count']},
-            inter_op_parallelism_threads=config['inter_op_threads'],
-            intra_op_parallelism_threads=config['intra_op_threads'],
-            gpu_options={'allow_growth': config['allow_growth']}
-        )
-
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
-        self.config = config
+
+        self._tf_config = self._load_tf_config(config)
         self._load_nn_architecture_params(config)
         self._load_embedding_params(config)
         self._load_regularization_params(config)
@@ -1064,7 +1057,7 @@ class EmbeddingPolicy(Policy):
             self._train_op = tf.train.AdamOptimizer(
                 learning_rate=0.001, epsilon=1e-16).minimize(loss)
             # train tensorflow graph
-            self.session = tf.Session(config=self._load_tf_config(self.config))
+            self.session = tf.Session(config=self._tf_config)
 
             self._train_tf(session_data, loss, mask)
 
@@ -1427,7 +1420,7 @@ class EmbeddingPolicy(Policy):
 
         dump_config_path = os.path.join(path, file_name + ".config.pkl")
         with io.open(dump_config_path, 'wb') as f:
-            pickle.dump(self.config, f)
+            pickle.dump(self._tf_config, f)
 
     @staticmethod
     def load_tensor(name: Text) -> Optional[tf.Tensor]:
@@ -1455,12 +1448,11 @@ class EmbeddingPolicy(Policy):
         config_file = os.path.join(path, "{}.config.pkl".format(file_name))
 
         with io.open(config_file, 'rb') as f:
-            config = pickle.load(f)
-        tf_config = cls._load_tf_config(config)
+            _tf_config = pickle.load(f)
 
         graph = tf.Graph()
         with graph.as_default():
-            sess = tf.Session(config=tf_config)
+            sess = tf.Session(config=_tf_config)
             saver = tf.train.import_meta_graph(checkpoint + '.meta')
 
             saver.restore(sess, checkpoint)

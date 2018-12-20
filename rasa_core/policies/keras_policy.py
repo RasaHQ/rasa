@@ -29,7 +29,9 @@ class KerasPolicy(Policy):
         "validation_split": 0.1,
         "device_count": cpu_count(),  # tell tf.Session to use CPU limit
         # if you have more CPU, you can increase this value appropriately
-        "inter_op_threads": 0,
+        "inter_op_threads": 0,  # the number of threads in the thread pool
+        # available for each process for blocking operation nodes
+        # set to 0 to allow the system to select the appropriate value.
         "intra_op_threads": 0,  # tells the degree of thread
         # parallelism of the tf.Session operation.
         # the smaller the value, the less reuse the thread will have
@@ -67,21 +69,11 @@ class KerasPolicy(Policy):
 
         self.current_epoch = current_epoch
 
-    @staticmethod
-    def _load_tf_config(config: Dict[Text, Any]) -> None:
-        tf_config = tf.ConfigProto(
-            device_count={'CPU': config['device_count']},
-            inter_op_parallelism_threads=config['inter_op_threads'],
-            intra_op_parallelism_threads=config['intra_op_threads'],
-            gpu_options={'allow_growth': config['allow_growth']}
-        )
-        return tf_config
-
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
-        self.config = config
+        self._tf_config = config
         self.rnn_size = config['rnn_size']
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
@@ -167,7 +159,8 @@ class KerasPolicy(Policy):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            self.session = tf.Session(config=self._load_tf_config(self.config))
+            self.session = tf.Session(
+                config=self._load_tf_config(self._tf_config))
             with self.session.as_default():
                 if self.model is None:
                     self.model = self.model_architecture(shuffled_X.shape[1:],
@@ -240,7 +233,7 @@ class KerasPolicy(Policy):
             meta = {"model": "keras_model.h5",
                     "epochs": self.current_epoch}
 
-            meta.update(self.config)
+            meta.update(self._tf_config)
             config_file = os.path.join(path, 'keras_policy.json')
             utils.dump_obj_as_json_to_file(config_file, meta)
 

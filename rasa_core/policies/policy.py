@@ -1,5 +1,6 @@
 import copy
 import logging
+import tensorflow as tf
 from typing import (
     Any, List, Optional, Text, Dict, Callable)
 
@@ -27,6 +28,16 @@ class Policy(object):
             return copy.deepcopy(featurizer)
         else:
             return cls._standard_featurizer()
+
+    @staticmethod
+    def _load_tf_config(config: Dict[Text, Any]) -> None:
+        """Prepare tf.ConfigProto for training"""
+        return tf.ConfigProto(
+            device_count={'CPU': config['device_count']},
+            inter_op_parallelism_threads=config['inter_op_threads'],
+            intra_op_parallelism_threads=config['intra_op_threads'],
+            gpu_options={'allow_growth': config['allow_growth']}
+        )
 
     def __init__(self, featurizer: Optional[TrackerFeaturizer] = None) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
