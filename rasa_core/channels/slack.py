@@ -121,7 +121,8 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_user_message(slack_event):
         return (slack_event.get('event') and
-                slack_event.get('event').get('type') == u'message' and
+                (slack_event.get('event').get('type') == u'message' or
+                 slack_event.get('event').get('type') == u'app_mention') and
                 slack_event.get('event').get('text') and not
                 slack_event.get('event').get('bot_id'))
 
