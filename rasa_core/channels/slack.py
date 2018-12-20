@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 from typing import Text, Optional, List
@@ -136,6 +137,34 @@ class SlackInput(InputChannel):
     def _get_button_reply(slack_event):
         return json.loads(slack_event['payload'][0])['actions'][0]['name']
 
+    @staticmethod
+    def _sanitize_user_message(text, uids_to_remove):
+        """
+        Probably a good starting point for pre-formatting of user-provided text,
+        to make NLUs life easier in case they go funky to the power of extreme.
+
+        In the current state will just drop self-mentions of bot itself
+
+        :param text: raw message
+        :param users_to_drop: a list of users to remove from the content
+        :return text:
+        """
+        for uid_to_remove in uids_to_remove:
+            # the seeming duplication turns out to be an enough heuristic to format majority of cases OK
+            # can be adjusted to taste later on if needed, but is a good first approximation
+            text = re.sub(
+                r'<@{}>\s'.format(uid_to_remove),
+                '',
+                text
+            )
+            text = re.sub(
+                r'\s<@{}>'.format(uid_to_remove),
+                '',
+                text
+            )
+
+        return text.rstrip()  # drop an optional extra space at the end
+
     def process_message(self, on_new_message, text, sender_id):
         """Slack retry to post messages up to 3 times based on
         failure conditions defined here:
@@ -179,7 +208,7 @@ class SlackInput(InputChannel):
                 elif self._is_user_message(output):
                     return self.process_message(
                         on_new_message,
-                        text=output['event']['text'],
+                        text=self._sanitize_user_message(output['event']['text'], output['authed_users']),
                         sender_id=output.get('event').get('user'))
             elif request.form:
                 output = dict(request.form)
