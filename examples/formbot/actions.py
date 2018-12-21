@@ -11,8 +11,7 @@ from rasa_core_sdk.forms import FormAction, REQUESTED_SLOT
 class RestaurantForm(FormAction):
     """Example of a custom form action"""
 
-    def name(self):
-        # type: () -> Text
+    def name(self) -> Text:
         """Unique identifier of the form"""
 
         return "restaurant_form"
@@ -24,8 +23,7 @@ class RestaurantForm(FormAction):
         return ["cuisine", "num_people", "outdoor_seating",
                 "preferences", "feedback"]
 
-    def slot_mappings(self):
-        # type: () -> Dict[Text: Union[Dict, List[Dict]]]
+    def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict]]]:
         """A dictionary to map required slots to
             - an extracted entity
             - intent: value pairs
@@ -51,8 +49,7 @@ class RestaurantForm(FormAction):
                              self.from_text()]}
 
     @staticmethod
-    def cuisine_db():
-        # type: () -> List[Text]
+    def cuisine_db() -> List[Text]:
         """Database of supported cuisines"""
         return ["caribbean",
                 "chinese",

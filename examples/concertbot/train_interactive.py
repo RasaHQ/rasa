@@ -10,10 +10,8 @@ def train_agent():
     return train.train_dialogue_model(domain_file="domain.yml",
                                       stories_file="data/stories.md",
                                       output_path="models/dialogue",
-                                      kwargs={"batch_size": 50,
-                                              "epochs": 200,
-                                              "max_training_samples": 300
-                                              })
+                                      policy_config='policy_config.yml'
+                                      )
 
 
 if __name__ == '__main__':

@@ -7,6 +7,10 @@ help:
 	@echo "        Runs the core server."
 	@echo "    run-actions"
 	@echo "        Runs the action server."
+	@echo "    train-interactive"
+	@echo "        Train the bot with interactive learning."
+	@echo "    visualize"
+	@echo "        Show your stories as a graph."
 
 run:
 	make run-actions&
@@ -21,6 +25,9 @@ run-actions:
 train-core:
 	python train.py
 
-run-interactive:
+train-interactive:
 	make run-actions&
 	python train_interactive.py
+
+visualize:
+	python visualize.py

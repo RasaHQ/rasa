@@ -7,12 +7,15 @@ help:
 	@echo "        Spin up the action server"
 	@echo "    run"
 	@echo "        Spin up both core and the action server"
+	@echo "    train-interactive"
+	@echo "        Train the bot with interactive learning."
 	@echo "    visualize"
-	@echo "        Show your stories as a graph"
-
+	@echo "        Show your stories as a graph."
+	@echo "    train-nlu"
+	@echo "        Train the natural language understanding using Rasa NLU."
 
 train-core:
-	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 100 --debug
+	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --debug
 
 run-core:
 	python -m rasa_core.run --core models/dialogue --nlu models/nlu/current --debug --endpoints endpoints.yml
