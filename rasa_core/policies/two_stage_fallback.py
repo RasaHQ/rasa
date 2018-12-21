@@ -134,7 +134,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                          tracker: DialogueStateTracker) -> bool:
         return (tracker.last_executed_action_has(
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME) and
-                last_intent == self.deny_suggestion_intent_name)
+            last_intent == self.deny_suggestion_intent_name)
 
     def _results_for_user_denied(self, tracker: DialogueStateTracker,
                                  domain: Domain) -> List[float]:
