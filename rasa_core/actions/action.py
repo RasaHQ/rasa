@@ -484,7 +484,7 @@ class ActionDefaultAskAffirmation(Action):
                                                       intent_to_affirm)},
                                                  {'title': 'No',
                                                   'payload': '/{}'.format(
-                                                      'deny')}])
+                                                      'out_of_scope')}])
 
         return []
 

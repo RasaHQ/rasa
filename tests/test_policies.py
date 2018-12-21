@@ -434,7 +434,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
-        p = TwoStageFallbackPolicy()
+        p = TwoStageFallbackPolicy(deny_suggestion_intent_name='deny')
         return p
 
     @pytest.fixture(scope="class")

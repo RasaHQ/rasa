@@ -40,7 +40,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                  nlu_threshold: float = 0.3,
                  core_threshold: float = 0.3,
                  fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
-                 deny_suggestion_intent_name: Text = 'deny',
+                 deny_suggestion_intent_name: Text = 'out_of_scope',
                  ) -> None:
         """Create a new Two-stage Fallback policy.
 
