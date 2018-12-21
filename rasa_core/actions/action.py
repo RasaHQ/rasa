@@ -8,7 +8,7 @@ from rasa_core import events
 from rasa_core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_AFFIRM, USER_INTENT_DENY)
+    REQUESTED_SLOT, FALLBACK_SCORE)
 from rasa_core.events import (UserUtteranceReverted, UserUttered,
                               ActionExecuted, Event)
 from rasa_core.utils import EndpointConfig
@@ -399,31 +399,28 @@ class ActionRevertFallbackEvents(Action):
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
-        from rasa_core.policies.two_stage_fallback import (has_user_rephrased,
-                                                           has_user_affirmed)
-
-        last_user_event = tracker.latest_message.intent.get('name')
+        from rasa_core.policies.two_stage_fallback import has_user_rephrased
         revert_events = []
 
-        # User affirmed
-        if has_user_affirmed(last_user_event, tracker):
-            revert_events = _revert_affirmation_events(tracker)
         # User rephrased
-        elif has_user_rephrased(tracker):
+        if has_user_rephrased(tracker):
             revert_events = _revert_successful_affirmation(tracker)
         # User rephrased instead of affirming
-        elif tracker.last_executed_action_has(
-                ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
-            revert_events = _revert_early_rephrasing(tracker)
+        elif has_user_affirmed(tracker):
+            revert_events = _revert_affirmation_events(tracker)
 
         return revert_events
+
+
+def has_user_affirmed(tracker: 'DialogueStateTracker') -> bool:
+    return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
 
 
 def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
     import copy
     revert_events = _revert_single_affirmation_events()
 
-    last_user_event = tracker.get_last_event_for(UserUttered, skip=1)
+    last_user_event = tracker.get_last_event_for(UserUttered)
     last_user_event = copy.deepcopy(last_user_event)
     last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
 
@@ -484,10 +481,10 @@ class ActionDefaultAskAffirmation(Action):
         dispatcher.utter_button_message(text=affirmation_message,
                                         buttons=[{'title': 'Yes',
                                                   'payload': '/{}'.format(
-                                                      USER_INTENT_AFFIRM)},
+                                                      intent_to_affirm)},
                                                  {'title': 'No',
                                                   'payload': '/{}'.format(
-                                                      USER_INTENT_DENY)}])
+                                                      'deny')}])
 
         return []
 
