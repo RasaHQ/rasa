@@ -10,7 +10,6 @@ help:
 	@echo "    train-core"
 	@echo "        Train a dialogue model using Rasa core."
 
-
 run:
 	make run-actions&
 	make run-core
