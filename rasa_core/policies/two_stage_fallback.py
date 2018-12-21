@@ -39,7 +39,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     def __init__(self,
                  nlu_threshold: float = 0.3,
                  core_threshold: float = 0.3,
-                 fallback_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
+                 fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
+                 fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
                  deny_suggestion_intent_name: Text = 'out_of_scope',
                  ) -> None:
         """Create a new Two-stage Fallback policy.
@@ -52,7 +53,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 predict fallback action with confidence
                 `core_threshold`. If this is the highest confidence in
                 the ensemble, the fallback action will be executed.
-            fallback_action_name: This action is executed if the user
+            fallback_core_action_name: This action is executed if the Core
+                threshold is not met.
+            fallback_nlu_action_name: This action is executed if the user
                 denies the recognised intent for the second time.
             deny_suggestion_intent_name: The intent which is used to detect
                 that the user denies the suggested intents.
@@ -60,8 +63,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         super(TwoStageFallbackPolicy, self).__init__(
             nlu_threshold,
             core_threshold,
-            fallback_action_name)
+            fallback_core_action_name)
 
+        self.fallback_nlu_action_name = fallback_nlu_action_name
         self.deny_suggestion_intent_name = deny_suggestion_intent_name
 
     def predict_action_probabilities(self,
@@ -110,7 +114,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                     ACTION_REVERT_FALLBACK_EVENTS_NAME,
                     FALLBACK_SCORE, domain)
             else:
-                result = confidence_scores_for(self.fallback_action_name,
+                result = confidence_scores_for(self.fallback_nlu_action_name,
                                                FALLBACK_SCORE, domain)
         elif should_fallback:
             logger.debug("User '{}' has to affirm intent '{}'.".format(
@@ -143,7 +147,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             skip=1)
 
         if has_denied_before:
-            return confidence_scores_for(self.fallback_action_name,
+            return confidence_scores_for(self.fallback_nlu_action_name,
                                          FALLBACK_SCORE, domain)
         else:
             return confidence_scores_for(ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -155,8 +159,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         meta = {
             "nlu_threshold": self.nlu_threshold,
             "core_threshold": self.core_threshold,
-            "fallback_action_name": self.fallback_action_name,
-            "deny_suggestion_intent_name": self.deny_suggestion_intent_name
+            "fallback_core_action_name": self.fallback_action_name,
+            "fallback_nlu_action_name": self.fallback_nlu_action_name,
+            "deny_suggestion_intent_name": self.deny_suggestion_intent_name,
         }
         utils.create_dir_for_file(config_file)
         utils.dump_obj_as_json_to_file(config_file, meta)
