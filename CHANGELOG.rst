@@ -41,6 +41,7 @@ Fixed
 - fix error during interactive learning which was caused by actions which
   dispatched messages using ``dispatcher.utter_custom_message``
 - re-added missing ``python-engineio`` dependency
+- fixed not working examples in ``examples/``
 
 
 [0.12.3] - 2018-12-03
