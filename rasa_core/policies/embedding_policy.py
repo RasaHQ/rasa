@@ -8,7 +8,6 @@ import warnings
 import numpy as np
 import typing
 from tqdm import tqdm
-from multiprocessing import cpu_count
 from typing import (
     Any, List, Optional, Text, Dict, Tuple, Union)
 
@@ -125,20 +124,7 @@ class EmbeddingPolicy(Policy):
         # how often calculate train accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
         # how many examples to use for calculation of train accuracy
-        "evaluate_on_num_examples": 100,  # large values may hurt performance
-        "device_count": cpu_count(),  # tell tf.Session to use CPU limit
-        # if you have more CPU, you can increase this value appropriately
-        "inter_op_threads": 0,  # the number of threads in the thread pool
-        # available for each process for blocking operation nodes
-        # set to 0 to allow the system to select the appropriate value.
-        "intra_op_threads": 0,  # tells the degree of thread
-        # parallelism of the tf.Session operation.
-        # the smaller the value, the less reuse the thread will have
-        # and the more likely it will use more CPU cores.
-        # if the value is 0,
-        # tensorflow will automatically select an appropriate value.
-        "allow_growth": True  # if set True, will try to allocate
-        # as much GPU memory as possible to support running
+        "evaluate_on_num_examples": 100  # large values may hurt performance
     }
 
     # end default properties (DOC MARKER - don't remove)
@@ -286,15 +272,15 @@ class EmbeddingPolicy(Policy):
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
+        self.config = copy.deepcopy(dict(self.defaults, **self.tf_defaults))
+        self.config.update(kwargs)
 
-        self._tf_config = self._load_tf_config(config)
-        self._load_nn_architecture_params(config)
-        self._load_embedding_params(config)
-        self._load_regularization_params(config)
-        self._load_attn_params(config)
-        self._load_visual_params(config)
+        self._tf_config = self._load_tf_config(self.config)
+        self._load_nn_architecture_params(self.config)
+        self._load_embedding_params(self.config)
+        self._load_regularization_params(self.config)
+        self._load_attn_params(self.config)
+        self._load_visual_params(self.config)
 
     # data helpers
     # noinspection PyPep8Naming

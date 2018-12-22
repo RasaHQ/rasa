@@ -1,10 +1,10 @@
 import copy
+import io
 import json
 import logging
 import os
 import tensorflow as tf
 import warnings
-from multiprocessing import cpu_count
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
@@ -14,6 +14,11 @@ from rasa_core.featurizers import (
 from rasa_core.featurizers import TrackerFeaturizer
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -26,20 +31,7 @@ class KerasPolicy(Policy):
         "rnn_size": 32,
         "epochs": 100,
         "batch_size": 32,
-        "validation_split": 0.1,
-        "device_count": cpu_count(),  # tell tf.Session to use CPU limit
-        # if you have more CPU, you can increase this value appropriately
-        "inter_op_threads": 0,  # the number of threads in the thread pool
-        # available for each process for blocking operation nodes
-        # set to 0 to allow the system to select the appropriate value.
-        "intra_op_threads": 0,  # tells the degree of thread
-        # parallelism of the tf.Session operation.
-        # the smaller the value, the less reuse the thread will have
-        # and the more likely it will use more CPU cores.
-        # if the value is 0,
-        # tensorflow will automatically select an appropriate value.
-        "allow_growth": True  # if set True, will try to allocate
-        # as much GPU memory as possible to support running
+        "validation_split": 0.1
     }
 
     @staticmethod
@@ -70,14 +62,14 @@ class KerasPolicy(Policy):
         self.current_epoch = current_epoch
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
+        self.config = copy.deepcopy(dict(self.defaults, **self.tf_defaults))
+        self.config.update(kwargs)
 
-        self._tf_config = config
-        self.rnn_size = config['rnn_size']
-        self.epochs = config['epochs']
-        self.batch_size = config['batch_size']
-        self.validation_split = config['validation_split']
+        self._tf_config = self._load_tf_config(self.config)
+        self.rnn_size = self.config['rnn_size']
+        self.epochs = self.config['epochs']
+        self.batch_size = self.config['batch_size']
+        self.validation_split = self.config['validation_split']
 
     @property
     def max_len(self):
@@ -159,8 +151,7 @@ class KerasPolicy(Policy):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            self.session = tf.Session(
-                config=self._load_tf_config(self._tf_config))
+            self.session = tf.Session(config=self._tf_config)
             with self.session.as_default():
                 if self.model is None:
                     self.model = self.model_architecture(shuffled_X.shape[1:],
@@ -233,7 +224,6 @@ class KerasPolicy(Policy):
             meta = {"model": "keras_model.h5",
                     "epochs": self.current_epoch}
 
-            meta.update(self._tf_config)
             config_file = os.path.join(path, 'keras_policy.json')
             utils.dump_obj_as_json_to_file(config_file, meta)
 
@@ -242,6 +232,10 @@ class KerasPolicy(Policy):
             utils.create_dir_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
+
+            dump_config_path = os.path.join(path, "keras_policy.config.pkl")
+            with io.open(dump_config_path, 'wb') as f:
+                pickle.dump(self._tf_config, f)
         else:
             warnings.warn("Persist called without a trained model present. "
                           "Nothing to persist then!")
@@ -257,11 +251,14 @@ class KerasPolicy(Policy):
                 meta = json.loads(utils.read_file(meta_path))
 
                 model_file = os.path.join(path, meta["model"])
-                tf_config = cls._load_tf_config(meta)
+                config_file = os.path.join(path, "keras_policy.config.pkl")
+
+                with io.open(config_file, 'rb') as f:
+                    _tf_config = pickle.load(f)
 
                 graph = tf.Graph()
                 with graph.as_default():
-                    session = tf.Session(config=tf_config)
+                    session = tf.Session(config=_tf_config)
                     with session.as_default():
                         model = load_model(model_file)
 

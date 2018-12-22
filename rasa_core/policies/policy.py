@@ -1,6 +1,7 @@
 import copy
 import logging
 import tensorflow as tf
+from multiprocessing import cpu_count
 from typing import (
     Any, List, Optional, Text, Dict, Callable)
 
@@ -45,6 +46,24 @@ class Policy(object):
     @property
     def featurizer(self):
         return self.__featurizer
+
+    @property
+    def tf_defaults(self):
+        return {
+            "device_count": cpu_count(),  # tell tf.Session to use CPU limit
+            # if you have more CPU, you can increase this value appropriately
+            "inter_op_threads": 0,  # the number of threads in the thread pool
+            # available for each process for blocking operation nodes
+            # set to 0 to allow the system to select the appropriate value.
+            "intra_op_threads": 0,  # tells the degree of thread
+            # parallelism of the tf.Session operation.
+            # the smaller the value, the less reuse the thread will have
+            # and the more likely it will use more CPU cores.
+            # if the value is 0,
+            # tensorflow will automatically select an appropriate value.
+            "allow_growth": True  # if set True, will try to allocate
+            # as much GPU memory as possible to support running
+        }
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
