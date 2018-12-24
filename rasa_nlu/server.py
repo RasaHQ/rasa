@@ -113,8 +113,10 @@ def check_cors(f):
         if origin:
             if '*' in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', '*')
-                request.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-                request.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
+                request.setHeader('Access-Control-Allow-Headers',
+                    'Content-Type')
+                request.setHeader('Access-Control-Allow-Methods',
+                    'POST, GET, OPTIONS, PUT, DELETE')
             elif origin in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', origin)
                 request.setHeader('Access-Control-Allow-Headers', 'Content-Type')
