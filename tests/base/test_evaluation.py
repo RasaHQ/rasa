@@ -18,6 +18,7 @@ from rasa_nlu.evaluate import (
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
+from rasa_nlu.evaluate import determine_token_labels
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu import training_data, config
@@ -30,10 +31,10 @@ logging.basicConfig(level="DEBUG")
 def duckling_interpreter(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
     return utilities.interpreter_for(
-            component_builder,
-            data="./data/examples/rasa/demo-rasa.json",
-            path=tmpdir_factory.mktemp("projects").strpath,
-            config=conf)
+        component_builder,
+        data="./data/examples/rasa/demo-rasa.json",
+        path=tmpdir_factory.mktemp("projects").strpath,
+        config=conf)
 
 
 # Chinese Example
@@ -165,6 +166,22 @@ def test_entity_overlap():
     assert not do_entities_overlap(EN_targets)
 
 
+def test_determine_token_labels_throws_error():
+    '''with ner_crf overlapping entities are not allow
+    should throw error'''
+    with pytest.raises(ValueError) as val_err:
+        determine_token_labels(CH_correct_segmentation,
+                               [CH_correct_entity, CH_wrong_entity], ["ner_crf"])
+
+
+def test_determin_token_labels_no_extractors():
+    determine_token_labels(CH_correct_segmentation[0],
+                           [CH_correct_entity, CH_wrong_entity], None)
+
+def test_determin_token_labels_with_extractors():
+    determine_token_labels(CH_correct_segmentation[0],
+                           [CH_correct_entity, CH_wrong_entity], ["A", "B"])
+
 def test_label_merging():
     aligned_predictions = [
         {"target_labels": ["O", "O"], "extractor_labels":
@@ -260,6 +277,7 @@ def test_evaluate_entities():
     mock_extractors = ["A", "B"]
     result = align_entity_predictions(EN_targets, EN_predicted,
                                       EN_tokens, mock_extractors)
+
     assert result == {
         "target_labels": ["O", "O", "O", "O", "O", "O", "O", "O", "food",
                           "location", "location", "datetime"],
