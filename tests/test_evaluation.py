@@ -5,7 +5,7 @@ from rasa_core.evaluate import (
     run_story_evaluation,
     collect_story_predictions)
 from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
-from tests.conftest import END_TO_END_STORY_FILE_UNKNOWN_ENTITY
+from tests.conftest import E2E_STORY_FILE_UNKNOWN_ENTITY
 
 
 def test_evaluation_image_creation(tmpdir, default_agent):
@@ -55,7 +55,7 @@ def test_end_to_end_evaluation_script(tmpdir, default_agent):
 
 def test_end_to_end_evaluation_script_unknow_entity(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-        END_TO_END_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True)
+        E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True)
 
     story_evaluation, num_stories = collect_story_predictions(
         completed_trackers,

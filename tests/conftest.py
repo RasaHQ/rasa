@@ -31,8 +31,7 @@ DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
-END_TO_END_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations" \
-                                       "/end_to_end_story_unknown_entity.md "
+E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
