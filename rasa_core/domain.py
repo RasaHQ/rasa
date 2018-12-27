@@ -409,8 +409,9 @@ class Domain(object):
             intent_config = self.intent_config(intent_name)
             should_use_entity = intent_config.get('use_entities', True)
             if should_use_entity:
-                key = "entity_{0}".format(entity["entity"])
-                state_dict[key] = 1.0
+                if "entity" in entity.keys():
+                    key = "entity_{0}".format(entity["entity"])
+                    state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
