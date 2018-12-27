@@ -167,20 +167,21 @@ def test_entity_overlap():
 
 
 def test_determine_token_labels_throws_error():
-    '''with ner_crf overlapping entities are not allow
-    should throw error'''
-    with pytest.raises(ValueError) as val_err:
+    with pytest.raises(ValueError):
         determine_token_labels(CH_correct_segmentation,
-                               [CH_correct_entity, CH_wrong_entity], ["ner_crf"])
+                               [CH_correct_entity,
+                                CH_wrong_entity], ["ner_crf"])
 
 
-def test_determin_token_labels_no_extractors():
+def test_determine_token_labels_no_extractors():
     determine_token_labels(CH_correct_segmentation[0],
                            [CH_correct_entity, CH_wrong_entity], None)
 
-def test_determin_token_labels_with_extractors():
+
+def test_determine_token_labels_with_extractors():
     determine_token_labels(CH_correct_segmentation[0],
                            [CH_correct_entity, CH_wrong_entity], ["A", "B"])
+
 
 def test_label_merging():
     aligned_predictions = [
