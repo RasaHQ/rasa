@@ -409,7 +409,7 @@ class Domain(object):
             intent_config = self.intent_config(intent_name)
             should_use_entity = intent_config.get('use_entities', True)
             if should_use_entity:
-                if "entity" in entity.keys():
+                if "entity" in entity:
                     key = "entity_{0}".format(entity["entity"])
                     state_dict[key] = 1.0
 
