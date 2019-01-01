@@ -126,35 +126,35 @@ def test_duckling_entity_extractor(component_builder):
         httpretty.POST,
         "http://localhost:8000/parse",
         body="""[{"body":"Today","start":0,"value":{"values":[{
-             "value":"2018-11-13T00:00:00.000-08:00","grain":"day", 
+             "value":"2018-11-13T00:00:00.000-08:00","grain":"day",
              "type":"value"}],"value":"2018-11-13T00:00:00.000-08:00",
-             "grain":"day","type":"value"},"end":5, 
+             "grain":"day","type":"value"},"end":5,
              "dim":"time","latent":false},{"body":"the 5th","start":9,
-             "value":{"values":[{ 
+             "value":{"values":[{
              "value":"2018-12-05T00:00:00.000-08:00","grain":"day",
-             "type":"value"}, 
+             "type":"value"},
              {"value":"2019-01-05T00:00:00.000-08:00","grain":"day",
-             "type":"value"}, 
+             "type":"value"},
              {"value":"2019-02-05T00:00:00.000-08:00","grain":"day",
-             "type":"value"}], 
+             "type":"value"}],
              "value":"2018-12-05T00:00:00.000-08:00","grain":"day",
              "type":"value"},"end":16,"dim":"time", 
              "latent":false},{"body":"5th of May","start":13,"value":{
-             "values":[{ 
+             "values":[{
              "value":"2019-05-05T00:00:00.000-07:00","grain":"day",
-             "type":"value"}, 
+             "type":"value"},
              {"value":"2020-05-05T00:00:00.000-07:00","grain":"day",
-             "type":"value"}, 
+             "type":"value"},
              {"value":"2021-05-05T00:00:00.000-07:00","grain":"day",
-             "type":"value"}], 
+             "type":"value"}],
              "value":"2019-05-05T00:00:00.000-07:00","grain":"day",
-             "type":"value"},"end":23,"dim":"time", 
+             "type":"value"},"end":23,"dim":"time",
              "latent":false},{"body":"tomorrow","start":37,"value":{
-             "values":[{ 
+             "values":[{
              "value":"2018-11-14T00:00:00.000-08:00","grain":"day",
-             "type":"value"}], 
+             "type":"value"}],
              "value":"2018-11-14T00:00:00.000-08:00","grain":"day",
-             "type":"value"},"end":45,"dim":"time", 
+             "type":"value"},"end":45,"dim":"time",
              "latent":false}]"""
     )
     httpretty.enable()
@@ -174,9 +174,9 @@ def test_duckling_entity_extractor(component_builder):
         httpretty.POST,
         "http://localhost:8000/parse",
         body="""[{"body":"tomorrow","start":12,"value":{"values":[{
-             "value":"2013-10-13T00:00:00.000Z","grain":"day", 
+             "value":"2013-10-13T00:00:00.000Z","grain":"day",
              "type":"value"}],"value":"2013-10-13T00:00:00.000Z",
-             "grain":"day","type":"value"},"end":20, 
+             "grain":"day","type":"value"},"end":20,
              "dim":"time","latent":false}]"""
     )
 
