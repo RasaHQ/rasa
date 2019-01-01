@@ -467,6 +467,7 @@ def determine_token_labels(token, entities, extractors):
 
     :param token: a single token
     :param entities: entities found by a single extractor
+    :param extractors: list of extractors
     :return: entity type
     """
 
