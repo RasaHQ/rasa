@@ -138,7 +138,7 @@ def test_duckling_entity_extractor(component_builder):
              {"value":"2019-02-05T00:00:00.000-08:00","grain":"day",
              "type":"value"}],
              "value":"2018-12-05T00:00:00.000-08:00","grain":"day",
-             "type":"value"},"end":16,"dim":"time", 
+             "type":"value"},"end":16,"dim":"time",
              "latent":false},{"body":"5th of May","start":13,"value":{
              "values":[{
              "value":"2019-05-05T00:00:00.000-07:00","grain":"day",
