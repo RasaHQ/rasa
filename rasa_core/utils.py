@@ -96,7 +96,7 @@ def class_from_module_path(module_path: Text) -> Any:
 
 
 def module_path_from_instance(inst: Any) -> Text:
-    """Return the module path of an instances class."""
+    """Return the module path of an instance's class."""
     return inst.__module__ + "." + inst.__class__.__name__
 
 
