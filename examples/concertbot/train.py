@@ -1,11 +1,17 @@
 from rasa_core import train, utils
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def train_dialogue(domain_file='domain.yml',
                    stories_file='data/stories.md',
                    model_path='models/dialogue',
                    policy_config='policy_config.yml'):
     utils.configure_colored_logging(loglevel="INFO")
+    logger.info("This example does not include NLU data."
+                "Please specify the desired intent with a preceding '/', e.g."
+                "'/greet' .")
 
     return train.train_dialogue_model(domain_file=domain_file,
                                       stories_file=stories_file,
