@@ -102,6 +102,7 @@ class PolicyEnsemble(object):
 
     def _add_package_version_info(self, metadata: Dict[Text, Any]) -> None:
         """Adds version info for self.versioned_packages to metadata."""
+
         for package_name in self.versioned_packages:
             try:
                 p = importlib.import_module(package_name)
