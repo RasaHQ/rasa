@@ -22,6 +22,7 @@ Added
   the intent right
 - Additional checks in PolicyEnsemble to ensure that custom Policy
   classes' load function returns the correct type
+- Entries for tensorflow and sklearn versions to the policy metadata
   
 Removed
 -------
