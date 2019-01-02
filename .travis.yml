@@ -81,6 +81,18 @@ jobs:
     - cd rasa-website
     - git commit --allow-empty -m "trigger core docs update"
     - git push origin master
+  - stage: Test stack starter pack
+    if: fork = false AND branch = "master"
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - py.test test_stack.py
+  - stage: Test NLU starter pack
+    if: fork = false AND branch = "master"
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
+    - cd starter-pack-rasa-nlu
+    - py.test test_nlu.py
   - stage: deploy
     python: 3.6
     install: skip
@@ -94,13 +106,3 @@ jobs:
         tags: true
       password:
         secure: "GEYe86FJaEg5W1P5G2FsATRaCAus8CzIwEvMLQtO8Y1zYKpUggOGgLu91fj0Z6zR8/lw2ZoAvMmrlOOwi9MyuAA3I5u7wOeiJZGzLAyyWGAG5oOqWYUF+zVjNmUqmYn/32VWdsRbnGVhcQBdswf/BHyAdD/s0ZWfI590u9xeR58hjHgD4vXXa6ep5RFo0Umv1IVivPTbmi3Q3Pf4Pmf1Lq0zlZJJEwyoXYeXwGIoxT//PtkYnakUY6JNmC7/CF7+ixF1jLwovNS6jjpJXDJEn/475LS90SuKKD4xvQ/z6486Qtn1P1dx6Uuw2p1zLY73tS3lZc2wBFPXME7ri4xtLn1bcxey3s/6f4fbuW+W+yXc7uTjNo/PEk/WKG89I98NHcfRlIsggpNSwVudRh27h3dI2Fa0QSlpKfd7mgj8sZb+gVE8er2frrrYhBVE+SFuKh36DCO1FHuVfxcPCtYcFqut/PhSQ062RIgT5MjOE3baS6F2cNwrSM7kYKPIRgMEp5/9p/I1iyjC0xreqGgw9Rthaaog9EcfZeUW1Y2XmqyQt391kO/w8WhFCsfhnj6BlI5hLzo/cr1lhoFT0/v4iKYcpCeaz1WoEeEqZ2KN0ImKPOhStViBPwO1F40SOeIj+sigtSN/6Pxvw+q2gfkSH3iSczik5ZkOfeSXl3Bvpkc="
-  - stage: trigger starter pack rebuild
-   jdk: oraclejdk8
-   script: |
-     echo "TRAVIS_BRANCH=$TRAVIS_BRANCH TRAVIS_PULL_REQUEST=$TRAVIS_PULL_REQUEST"
-     if [[ ($TRAVIS_BRANCH == master) &&
-           ($TRAVIS_PULL_REQUEST == false) ]] ; then
-       curl -LO --retry 3 https://raw.github.com/mernst/plume-lib/master/bin/trigger-travis.sh
-       sh trigger-travis.sh RasaHQ starter-pack-rasa-stack $TRAVIS_ACCESS_TOKEN
-       sh trigger-travis.sh RasaHQ starter-pack-rasa-nlu $TRAVIS_ACCESS_TOKEN
-     fi
