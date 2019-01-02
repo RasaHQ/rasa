@@ -188,13 +188,12 @@ class PolicyEnsemble(object):
         if policy is None:
             raise Exception(
                 "Failed to load policy {}: "
-                "load returned None"
-                    .format(policy_name))
+                "load returned None".format(policy_name))
         elif not isinstance(policy, policy_cls):
             raise Exception(
                 "Failed to load policy {}: "
                 "load returned object that is not instance of its own class"
-                    .format(policy_name))
+                "".format(policy_name))
 
     @classmethod
     def load(cls, path: Text) -> 'PolicyEnsemble':
