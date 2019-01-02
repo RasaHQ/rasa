@@ -36,7 +36,7 @@ RUN pip install https://github.com/explosion/spacy-models/releases/download/en_c
 
 COPY sample_configs/config_spacy_duckling.yml ${RASA_NLU_HOME}/config.yml
 
-#VOLUME ["/app/projects", "/app/logs", "/app/data"]
+VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 
