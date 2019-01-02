@@ -1,24 +1,20 @@
-from rasa_core import utils
-from rasa_core.agent import Agent
-from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core import train, utils
 
-if __name__ == '__main__':
+
+def train_dialogue(domain_file='domain.yml',
+                   stories_file='data/stories.md',
+                   model_path='models/dialogue',
+                   policy_config='policy_config.yml'):
     utils.configure_colored_logging(loglevel="INFO")
 
-    training_data_file = 'data/stories.md'
-    model_path = 'models/dialogue'
+    return train.train_dialogue_model(domain_file=domain_file,
+                                      stories_file=stories_file,
+                                      output_path=model_path,
+                                      policy_config=policy_config,
+                                      kwargs={'augmentation_factor': 50,
+                                              'validation_split': 0.2}
+                                      )
 
-    agent = Agent("domain.yml",
-                  policies=[MemoizationPolicy(), KerasPolicy(epochs=500,
-                                                             batch_size=10)])
 
-    training_data = agent.load_data(training_data_file)
-
-    agent.train(
-        training_data,
-        augmentation_factor=50,
-        validation_split=0.2
-    )
-
-    agent.persist(model_path)
+if __name__ == '__main__':
+    train_dialogue()
