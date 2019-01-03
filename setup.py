@@ -41,7 +41,6 @@ install_requires = [
     "simplejson",
     "ruamel.yaml~=0.15",
     "coloredlogs",
-    "msgpack>=0.3.0,<0.6"
 ]
 
 extras_requires = {
