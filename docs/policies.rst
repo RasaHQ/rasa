@@ -466,15 +466,11 @@ Default Actions for Affirmation and Rephrasing
 """"""""""""""""""""""""""""""""""""""""""""""
 
 Rasa Core provides the default implementations
-``action_default_ask_affirmation``, ``action_default_ask_rephrase``, and
-``action_default_fallback`` which are triggered when the bot should ask the
-user to affirm their intent, to rephrase it, or as ultimate fallback.
+``action_default_ask_affirmation`` and ``action_default_ask_rephrase``
+which are triggered when the bot asks the user to affirm
+or rephrase their intent.
 The default implementation of ``action_default_ask_rephrase`` action utters
 the response template ``utter_ask_rephrase``.
 The implementation of both actions can be overwritten with :ref:`customactions`.
-
-
-
-
 
 .. include:: feedback.inc
