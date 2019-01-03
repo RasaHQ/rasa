@@ -33,7 +33,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         If the user affirm the intent, the story continues as if the user had
         this intent from the beginning.
         If the user denies, an ultimate fallback action is triggered
-        (e.g. a handoff to a human).
+        (e.g. a hand-off to a human).
     """
 
     def __init__(self,
@@ -57,8 +57,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 threshold is not met.
             fallback_nlu_action_name: This action is executed if the user
                 denies the recognised intent for the second time.
-            deny_suggestion_intent_name: The intent which is used to detect
-                that the user denies the suggested intents.
+            deny_suggestion_intent_name: The name of the intent which is used to
+                 detect that the user denies the suggested intents.
         """
         super(TwoStageFallbackPolicy, self).__init__(
             nlu_threshold,
