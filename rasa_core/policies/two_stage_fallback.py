@@ -107,9 +107,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         elif tracker.last_executed_action_has(
                 ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
             if not should_fallback:
-                logger.debug("User '{}' rephrased intent '{}' instead "
-                             "of affirming.".format(tracker.sender_id,
-                                                    last_intent_name))
+                logger.debug("User '{}' affirmed intent '{}'"
+                             "".format(tracker.sender_id,
+                                       last_intent_name))
                 result = confidence_scores_for(
                     ACTION_REVERT_FALLBACK_EVENTS_NAME,
                     FALLBACK_SCORE, domain)
