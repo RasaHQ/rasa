@@ -252,6 +252,11 @@ def replace_environment_variables():
 
 
 def read_yaml(content):
+    """Parses yaml from a text.
+
+     Args:
+        content: A text containing yaml content.
+    """
     fix_yaml_loader()
     replace_environment_variables()
 
@@ -269,6 +274,11 @@ def read_yaml(content):
 
 
 def read_yaml_file(filename):
+    """Parses a yaml file.
+
+     Args:
+        filename: The path to the file which should be read.
+    """
     return read_yaml(read_file(filename, "utf-8"))
 
 
