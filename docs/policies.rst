@@ -455,6 +455,7 @@ Note that you cannot use this together with the default fallback policy.
 |                                | detect that the user denies the suggested   |
 |                                | intents                                     |
 +--------------------------------+---------------------------------------------+
+
 .. note::
 
     It is required to have the two intents ``affirm`` and ``deny`` in the
