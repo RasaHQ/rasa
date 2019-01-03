@@ -86,7 +86,7 @@ jobs:
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
-    - py.test test_stack.py -k test_agent_and_persist or test_action
+    - py.test test_stack.py -k "test_agent_and_persist or test_action"
   - stage: deploy
     python: 3.6
     install: skip
