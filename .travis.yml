@@ -82,7 +82,6 @@ jobs:
     - git commit --allow-empty -m "trigger core docs update"
     - git push origin master
   - stage: Test stack starter pack
-    #if: fork = false AND branch = "master"
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
