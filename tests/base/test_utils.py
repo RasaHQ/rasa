@@ -227,11 +227,12 @@ def test_emojis_in_tmp_file():
 def test_read_emojis_from_json():
     import json
     from rasa_nlu.utils import read_yaml
-    d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻"}
+    d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️"}
     json_string = json.dumps(d, indent=2)
 
     s = read_yaml(json_string)
-    assert s.get('text') == "hey 😁💯 👩🏿‍💻👨🏿‍💻"
+
+    assert s.get('text') == "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️"
 
 
 def test_bool_str():

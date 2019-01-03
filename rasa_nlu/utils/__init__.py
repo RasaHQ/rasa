@@ -24,6 +24,7 @@ from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
 
+# Regular expression to test if string contains emoji code
 unicode_regex = re.compile(
     u'[\u231A-\u231B\u2328\u23CF\23E9-\u23F3...\U0001F9C0]',
     flags=re.UNICODE)
