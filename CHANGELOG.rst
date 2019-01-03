@@ -23,10 +23,13 @@ Changed
   for both entities and intents
 - use cloudpickle version 0.6.1
 - replaced ``yaml`` with ``ruamel.yaml``
+- updated spacy version to 2.0.18
+- updated TensorFlow version to 1.12.0
 
 Removed
 -------
 - ``/config`` endpoint
+- removed pinning of ``msgpack`` and unused package ``python-msgpack``
 
 Fixed
 -----
