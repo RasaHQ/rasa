@@ -405,7 +405,7 @@ class ActionRevertFallbackEvents(Action):
         # User rephrased
         if has_user_rephrased(tracker):
             revert_events = _revert_successful_affirmation(tracker)
-        # User rephrased instead of affirming
+        # User affirmed
         elif has_user_affirmed(tracker):
             revert_events = _revert_affirmation_events(tracker)
 
@@ -445,11 +445,6 @@ def _revert_single_affirmation_events() -> List[Event]:
 def _revert_successful_affirmation(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
     return _revert_rephrasing_events() + [last_user_event]
-
-
-def _revert_early_rephrasing(tracker: 'DialogueStateTracker') -> List[Event]:
-    last_user_event = tracker.get_last_event_for(UserUttered)
-    return _revert_single_affirmation_events() + [last_user_event]
 
 
 def _revert_rephrasing_events() -> List[Event]:
