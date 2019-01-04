@@ -3,6 +3,7 @@ import typing
 from typing import List, Text, Optional, Dict, Any
 
 import requests
+import copy
 
 from rasa_core import events
 from rasa_core.constants import (
@@ -404,7 +405,7 @@ class ActionRevertFallbackEvents(Action):
 
         # User rephrased
         if has_user_rephrased(tracker):
-            revert_events = _revert_successful_affirmation(tracker)
+            revert_events = _revert_successful_rephrasing(tracker)
         # User affirmed
         elif has_user_affirmed(tracker):
             revert_events = _revert_affirmation_events(tracker)
@@ -417,7 +418,6 @@ def has_user_affirmed(tracker: 'DialogueStateTracker') -> bool:
 
 
 def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
-    import copy
     revert_events = _revert_single_affirmation_events()
 
     last_user_event = tracker.get_last_event_for(UserUttered)
@@ -442,8 +442,9 @@ def _revert_single_affirmation_events() -> List[Event]:
             ActionExecuted(action_name=ACTION_LISTEN_NAME)]
 
 
-def _revert_successful_affirmation(tracker) -> List[Event]:
+def _revert_successful_rephrasing(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
+    last_user_event = copy.deepcopy(last_user_event)
     return _revert_rephrasing_events() + [last_user_event]
 
 
