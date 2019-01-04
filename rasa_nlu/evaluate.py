@@ -482,6 +482,7 @@ def determine_token_labels(token, entities, extractors):
     candidates = find_intersecting_entites(token, entities)
     return pick_best_entity_fit(token, candidates)
 
+
 def do_extractors_support_overlap(extractors):
     """Checks if extractors support overlapping entities
     """
@@ -509,7 +510,8 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
         entities_by_extractors[p["extractor"]].append(p)
     extractor_labels = defaultdict(list)
     for t in tokens:
-        true_token_labels.append(determine_token_labels(t, targets, extractors))
+        true_token_labels.append(
+                determine_token_labels(t, targets, extractors))
         for extractor, entities in entities_by_extractors.items():
             extracted = determine_token_labels(t, entities, extractor)
             extractor_labels[extractor].append(extracted)
