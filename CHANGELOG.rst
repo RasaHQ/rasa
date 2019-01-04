@@ -38,6 +38,7 @@ Fixed
 - NLU Server can now handle training data mit emojis in it
 - If the ``token_name`` is not given in the endpoint configuration, the default
   value is ``token`` instead of ``None`
+- parsing of emojis which are sent within jsons
 
 [0.13.8] - 2018-11-21
 ^^^^^^^^^^^^^^^^^^^^^
