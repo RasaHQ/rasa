@@ -41,6 +41,8 @@ tmp/
 tokens.dat
 graph.png
 graph.html
+story_graph.html
+story_graph.dot
 debug.md
 examples/restaurantbot/models*
 examples/moodbot/*.png
