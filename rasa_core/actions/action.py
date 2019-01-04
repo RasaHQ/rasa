@@ -8,7 +8,7 @@ from rasa_core import events
 from rasa_core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT, FALLBACK_SCORE)
+    REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_OUT_OF_SCOPE)
 from rasa_core.events import (UserUtteranceReverted, UserUttered,
                               ActionExecuted, Event)
 from rasa_core.utils import EndpointConfig
@@ -479,7 +479,8 @@ class ActionDefaultAskAffirmation(Action):
                                                       intent_to_affirm)},
                                                  {'title': 'No',
                                                   'payload': '/{}'.format(
-                                                      'out_of_scope')}])
+                                                      USER_INTENT_OUT_OF_SCOPE)}
+                                                 ])
 
         return []
 

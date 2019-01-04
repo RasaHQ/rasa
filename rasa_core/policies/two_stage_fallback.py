@@ -9,7 +9,7 @@ from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_ASK_REPHRASE_NAME,
                                       ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
                                       ACTION_LISTEN_NAME)
-from rasa_core.constants import FALLBACK_SCORE
+from rasa_core.constants import FALLBACK_SCORE, USER_INTENT_OUT_OF_SCOPE
 from rasa_core.domain import Domain, InvalidDomain
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.policy import confidence_scores_for
@@ -41,7 +41,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                  core_threshold: float = 0.3,
                  fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
                  fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
-                 deny_suggestion_intent_name: Text = 'out_of_scope',
+                 deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
                  ) -> None:
         """Create a new Two-stage Fallback policy.
 
@@ -76,7 +76,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
         if self.deny_suggestion_intent_name not in domain.intents:
             raise InvalidDomain('The intent {} must be present in the '
-                                'domain file to use the `TwoStageFallbackPolicy`.'
+                                'domain file to use the '
+                                '`TwoStageFallbackPolicy`.'
                                 ''.format(self.deny_suggestion_intent_name))
 
         nlu_data = tracker.latest_message.parse_data
