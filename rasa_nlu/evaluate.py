@@ -15,6 +15,7 @@ import numpy as np
 
 from rasa_nlu import training_data, utils, config
 from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer, TrainingData
 
@@ -464,11 +465,12 @@ def pick_best_entity_fit(token, candidates):
 
 def determine_token_labels(token, entities, extractors):
     """Determines the token label given entities that do not overlap.
-
-    :param token: a single token
-    :param entities: entities found by a single extractor
-    :param extractors: list of extractors
-    :return: entity type
+    Args:
+        token: a single token
+        entities: entities found by a single extractor
+        extractors: list of extractors
+    Returns:
+        entity type
     """
 
     if len(entities) == 0:
@@ -479,6 +481,11 @@ def determine_token_labels(token, entities, extractors):
 
     candidates = find_intersecting_entites(token, entities)
     return pick_best_entity_fit(token, candidates)
+
+def do_extractors_support_overlap(extractors):
+    """Checks if extractors support overlapping entities
+    """
+    return extractors is not None and CRFEntityExtractor.name in extractors
 
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
