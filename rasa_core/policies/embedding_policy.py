@@ -272,15 +272,15 @@ class EmbeddingPolicy(Policy):
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        self.config = copy.deepcopy(dict(self.defaults, **self.tf_defaults))
-        self.config.update(kwargs)
+        config = copy.deepcopy(dict(self.defaults, **self.tf_defaults))
+        config.update(kwargs)
 
-        self._tf_config = self._load_tf_config(self.config)
-        self._load_nn_architecture_params(self.config)
-        self._load_embedding_params(self.config)
-        self._load_regularization_params(self.config)
-        self._load_attn_params(self.config)
-        self._load_visual_params(self.config)
+        self._tf_config = self._load_tf_config(config)
+        self._load_nn_architecture_params(config)
+        self._load_embedding_params(config)
+        self._load_regularization_params(config)
+        self._load_attn_params(config)
+        self._load_visual_params(config)
 
     # data helpers
     # noinspection PyPep8Naming
@@ -1404,8 +1404,8 @@ class EmbeddingPolicy(Policy):
         with io.open(dump_path, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
 
-        dump_config_path = os.path.join(path, file_name + ".config.pkl")
-        with io.open(dump_config_path, 'wb') as f:
+        dump_tf_config_path = os.path.join(path, file_name + ".tf_config.pkl")
+        with io.open(dump_tf_config_path, 'wb') as f:
             pickle.dump(self._tf_config, f)
 
     @staticmethod
@@ -1431,9 +1431,9 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(checkpoint + '.meta'):
             return cls(featurizer=featurizer)
 
-        config_file = os.path.join(path, "{}.config.pkl".format(file_name))
+        tf_config_file = os.path.join(path, "{}.tf_config.pkl".format(file_name))
 
-        with io.open(config_file, 'rb') as f:
+        with io.open(tf_config_file, 'rb') as f:
             _tf_config = pickle.load(f)
 
         graph = tf.Graph()

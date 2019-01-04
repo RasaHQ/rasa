@@ -62,14 +62,14 @@ class KerasPolicy(Policy):
         self.current_epoch = current_epoch
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        self.config = copy.deepcopy(dict(self.defaults, **self.tf_defaults))
-        self.config.update(kwargs)
+        config = copy.deepcopy(dict(self.defaults, **self.tf_defaults))
+        config.update(kwargs)
 
-        self._tf_config = self._load_tf_config(self.config)
-        self.rnn_size = self.config['rnn_size']
-        self.epochs = self.config['epochs']
-        self.batch_size = self.config['batch_size']
-        self.validation_split = self.config['validation_split']
+        self._tf_config = self._load_tf_config(config)
+        self.rnn_size = config['rnn_size']
+        self.epochs = config['epochs']
+        self.batch_size = config['batch_size']
+        self.validation_split = config['validation_split']
 
     @property
     def max_len(self):
@@ -233,8 +233,8 @@ class KerasPolicy(Policy):
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
 
-            dump_config_path = os.path.join(path, "keras_policy.config.pkl")
-            with io.open(dump_config_path, 'wb') as f:
+            dump_tf_config_path = os.path.join(path, "keras_policy.tf_config.pkl")
+            with io.open(dump_tf_config_path, 'wb') as f:
                 pickle.dump(self._tf_config, f)
         else:
             warnings.warn("Persist called without a trained model present. "
@@ -251,7 +251,7 @@ class KerasPolicy(Policy):
                 meta = json.loads(utils.read_file(meta_path))
 
                 model_file = os.path.join(path, meta["model"])
-                config_file = os.path.join(path, "keras_policy.config.pkl")
+                config_file = os.path.join(path, "keras_policy.tf_config.pkl")
 
                 with io.open(config_file, 'rb') as f:
                     _tf_config = pickle.load(f)
