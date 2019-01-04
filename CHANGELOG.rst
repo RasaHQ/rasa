@@ -22,6 +22,7 @@ Added
   the intent right
 - Additional checks in PolicyEnsemble to ensure that custom Policy
   classes' load function returns the correct type
+- Travis script now clones and tests the Rasa stack starter pack
   
 Removed
 -------
