@@ -23,10 +23,13 @@ Changed
   for both entities and intents
 - use cloudpickle version 0.6.1
 - replaced ``yaml`` with ``ruamel.yaml``
+- updated spacy version to 2.0.18
+- updated TensorFlow version to 1.12.0
 
 Removed
 -------
 - ``/config`` endpoint
+- removed pinning of ``msgpack`` and unused package ``python-msgpack``
 
 Fixed
 -----
@@ -37,6 +40,7 @@ Fixed
   value is ``token`` instead of ``None`
 - Updated CORS support for the server.
   Added the ``Access-Control-Allow-Headers`` and ``Content-Type`` headers for nlu server
+- parsing of emojis which are sent within jsons
 
 [0.13.8] - 2018-11-21
 ^^^^^^^^^^^^^^^^^^^^^
