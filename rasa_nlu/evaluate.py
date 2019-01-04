@@ -475,7 +475,7 @@ def determine_token_labels(token, entities, extractors):
 
     if len(entities) == 0:
         return "O"
-    if extractors is not None and "ner_crf" in extractors and \
+    if not do_extractors_support_overlap(extractors) and \
             do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")
 
@@ -486,7 +486,8 @@ def determine_token_labels(token, entities, extractors):
 def do_extractors_support_overlap(extractors):
     """Checks if extractors support overlapping entities
     """
-    return extractors is not None and CRFEntityExtractor.name in extractors
+    return extractors is not None and not (
+            CRFEntityExtractor.name in extractors)
 
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
