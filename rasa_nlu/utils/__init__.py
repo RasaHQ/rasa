@@ -24,6 +24,11 @@ from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
 
+# Regular expression to test if string contains emoji code
+unicode_regex = re.compile(
+    u'[\u231A-\u231B\u2328\u23CF\23E9-\u23F3...\U0001F9C0]',
+    flags=re.UNICODE)
+
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
     """Add options to an argument parser to configure logging levels."""
@@ -247,6 +252,11 @@ def replace_environment_variables():
 
 
 def read_yaml(content):
+    """Parses yaml from a text.
+
+     Args:
+        content: A text containing yaml content.
+    """
     fix_yaml_loader()
     replace_environment_variables()
 
@@ -254,10 +264,21 @@ def read_yaml(content):
     yaml_parser.version = "1.2"
     yaml_parser.unicode_supplementary = True
 
+    if unicode_regex.match(content):
+        content = (content.encode('utf-8')
+                   .decode('unicode_escape')
+                   .encode("utf-16", 'surrogatepass')
+                   .decode('utf-16'))
+
     return yaml_parser.load(content)
 
 
 def read_yaml_file(filename):
+    """Parses a yaml file.
+
+     Args:
+        filename: The path to the file which should be read.
+    """
     return read_yaml(read_file(filename, "utf-8"))
 
 
