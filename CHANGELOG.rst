@@ -14,6 +14,7 @@ Added
 - more documentation on how to run NLU with Docker
 - ``analyzer`` parameter to ``intent_featurizer_count_vectors`` featurizer to
   configure whether to use word or character n-grams
+- Travis script now clones and tests the Rasa NLU starter pack
 
 Changed
 -------
