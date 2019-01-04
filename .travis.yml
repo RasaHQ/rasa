@@ -35,7 +35,7 @@ jobs:
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
-    - py.test test_stack.py -k "test_agent_and_persist or test_action"
+    - python -m pytest tests/test_core.py
   - stage: integration
     name: "Test Docs"
     install:
