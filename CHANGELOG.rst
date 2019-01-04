@@ -39,6 +39,9 @@ Fixed
 - NLU Server can now handle training data mit emojis in it
 - If the ``token_name`` is not given in the endpoint configuration, the default
   value is ``token`` instead of ``None`
+- Updated CORS support for the server.
+  Added the ``Access-Control-Allow-Headers`` and ``Content-Type`` headers for nlu server
+- parsing of emojis which are sent within jsons
 
 [0.13.8] - 2018-11-21
 ^^^^^^^^^^^^^^^^^^^^^
