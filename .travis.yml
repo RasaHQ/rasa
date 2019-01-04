@@ -90,6 +90,7 @@ jobs:
   - stage: Test starter packs
     name: "Stack starter pack (NLU only)"
     python: 3.6
+    script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
     - python -m pytest tests/test_nlu.py
