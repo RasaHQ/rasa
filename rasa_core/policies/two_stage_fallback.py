@@ -76,7 +76,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
         if self.deny_suggestion_intent_name not in domain.intents:
             raise InvalidDomain('The intent {} must be present in the '
-                                'domain file to use this policy.'
+                                'domain file to use the `TwoStageFallbackPolicy`.'
                                 ''.format(self.deny_suggestion_intent_name))
 
         nlu_data = tracker.latest_message.parse_data
