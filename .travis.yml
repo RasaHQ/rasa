@@ -81,11 +81,13 @@ jobs:
     - git commit --allow-empty -m "trigger nlu docs update"
     - git push origin master
   - stage: Test NLU starter pack
+    python: 3.6
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
     - cd starter-pack-rasa-nlu
     - py.test test_nlu.py
   - stage: Test stack starter pack (NLU only)
+    python: 3.6
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
