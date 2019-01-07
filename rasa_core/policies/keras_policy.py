@@ -233,7 +233,8 @@ class KerasPolicy(Policy):
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
 
-            dump_tf_config_path = os.path.join(path, "keras_policy.tf_config.pkl")
+            dump_tf_config_path = os.path.join(
+                path, "keras_policy.tf_config.pkl")
             with io.open(dump_tf_config_path, 'wb') as f:
                 pickle.dump(self._tf_config, f)
         else:

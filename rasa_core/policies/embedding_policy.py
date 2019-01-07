@@ -1431,7 +1431,8 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(checkpoint + '.meta'):
             return cls(featurizer=featurizer)
 
-        tf_config_file = os.path.join(path, "{}.tf_config.pkl".format(file_name))
+        tf_config_file = os.path.join(
+            path, "{}.tf_config.pkl".format(file_name))
 
         with io.open(tf_config_file, 'rb') as f:
             _tf_config = pickle.load(f)
