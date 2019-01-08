@@ -432,19 +432,29 @@ Note that you cannot use this together with the default fallback policy.
       - name: TwoStageFallbackPolicy
         nlu_threshold: 0.3
         core_threshold: 0.3
-        fallback_action_name: "action_default_fallback"
+        fallback_core_action_name: "action_default_fallback"
+        fallback_nlu_action_name: "action_default_fallback"
+        deny_suggestion_intent_name: "out_of_scope"
 
-+-------------------------------+---------------------------------------------+
-| ``nlu_threshold``             | Min confidence needed to accept an NLU      |
-|                               | prediction                                  |
-+-------------------------------+---------------------------------------------+
-| ``core_threshold``            | Min confidence needed to accept an action   |
-|                               | prediction from Rasa Core                   |
-+-------------------------------+---------------------------------------------+
-| ``fallback_action_name``      | Name of the action to be called if the      |
-|                               | confidence of intent / action prediction    |
-|                               | is below the threshold                      |
-+-------------------------------+---------------------------------------------+
++--------------------------------+---------------------------------------------+
+| ``nlu_threshold``              | Min confidence needed to accept an NLU      |
+|                                | prediction                                  |
++--------------------------------+---------------------------------------------+
+| ``core_threshold``             | Min confidence needed to accept an action   |
+|                                | prediction from Rasa Core                   |
++--------------------------------+---------------------------------------------+
+| ``fallback_core_action_name``  | Name of the action to be called if the      |
+|                                | confidence of the Rasa Core action          |
+|                                | classification is below the threshold       |
++--------------------------------+---------------------------------------------+
+| ``fallback_nlu_action_name``   | Name of the action to be called if the      |
+|                                | confidence of Rasa NLU intent               |
+|                                | classification is below the threshold       |
++--------------------------------+---------------------------------------------+
+| ``deny_suggestion_intent_name``| The name of the intent which is used to     |
+|                                | detect that the user denies the suggested   |
+|                                | intents                                     |
++--------------------------------+---------------------------------------------+
 
 .. note::
 
@@ -457,14 +467,10 @@ Default Actions for Affirmation and Rephrasing
 
 Rasa Core provides the default implementations
 ``action_default_ask_affirmation`` and ``action_default_ask_rephrase``
-which are triggered when the bot should ask the user to affirm
-or to rephrase their intent.
+which are triggered when the bot asks the user to affirm
+or rephrase their intent.
 The default implementation of ``action_default_ask_rephrase`` action utters
 the response template ``utter_ask_rephrase``.
 The implementation of both actions can be overwritten with :ref:`customactions`.
-
-
-
-
 
 .. include:: feedback.inc
