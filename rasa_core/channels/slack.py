@@ -139,15 +139,17 @@ class SlackInput(InputChannel):
 
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
-        """
+        """Remove superfluous/wrong/problematic tokens from a message
         Probably a good starting point for pre-formatting of user-provided text,
-        to make NLUs life easier in case they go funky to the power of extreme.
+        to make NLU's life easier in case they go funky to the power of extreme.
 
         In the current state will just drop self-mentions of bot itself
 
-        :param text: raw message
-        :param users_to_drop: a list of users to remove from the content
-        :return text:
+        Args:
+            text: raw message as sent from slack
+            uids_to_remove: a list of user ids to remove from the content
+
+        Returns text: a parsed and cleaned string
         """
         for uid_to_remove in uids_to_remove:
             # the seeming duplication turns out to be an enough heuristic
