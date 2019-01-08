@@ -7,18 +7,9 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 [0.12.4]
 ^^^^^^^^
 
-Added
+Fixed
 -----
 - added ``python-engineio`` dependecy
-
-Changed
--------
-
-Changed
--------
-
-Removed
--------
 
 
 [0.12.3] - 2018-12-03
