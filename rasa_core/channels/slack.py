@@ -152,22 +152,16 @@ class SlackInput(InputChannel):
         Returns text: a parsed and cleaned string
         """
         for uid_to_remove in uids_to_remove:
-            # the seeming duplication turns out to be an enough heuristic
-            # to format majority of cases OK
-            # can be adjusted to taste later on if needed,
+            # c heuristic to format majority cases OK
+            # can be adjusted to taste later if needed,
             # but is a good first approximation
-            text = re.sub(
-                r'<@{}>\s'.format(uid_to_remove),
-                '',
-                text
-            )
-            text = re.sub(
-                r'\s<@{}>'.format(uid_to_remove),
-                '',
-                text
-            )
+            for regex, replacement in [(r'<@{}>\s'.format(uid_to_remove), ''),
+                                       (r'\s<@{}>'.format(uid_to_remove), ''),
+                                       # a bit arbitrary but probably OK
+                                       (r'<@{}>'.format(uid_to_remove), ' ')]:
+                text = re.sub(regex, replacement, text)
 
-        return text.rstrip()  # drop an optional extra space at the end
+        return text.rstrip().lstrip()  # drop an optional extra space at the end
 
     def process_message(self, on_new_message, text, sender_id):
         """Slack retry to post messages up to 3 times based on
