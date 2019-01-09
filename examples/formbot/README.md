@@ -1,4 +1,4 @@
-#Formbot - an example which demonstrates the implementation of FormAction
+# Formbot - an example which demonstrates the implementation of FormAction
 
 Formbot example is designed to help you understand how FormAction works and how
 to implement it in practice. Using the code and data files in this directory you
