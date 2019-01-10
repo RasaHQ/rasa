@@ -12,7 +12,7 @@ assistant on your local machine. The formbot consists of the following files:
 
 - **data/nlu_data.md** contains training examples for NLU model  
 - **data/stories.md** contains training stories for Core model  
-- **actions.py** contains the implementation of custom FormAction  
+- **actions.py** contains the implementation of a custom FormAction  
 - **domain.yml** contains the domain of the assistant  
 - **endpoints.yml** contains webhook configuration for the custom action  
 - **nlu_tensorflow.yml** contains the pipeline configuration of the NLU model  
