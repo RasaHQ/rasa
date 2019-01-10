@@ -1,16 +1,22 @@
 from setuptools import setup
 
+# Avoids IDE errors, but actual version is read from version.py
+__version__ = None
+exec(open('rasa/version.py').read())
+
 # Get the long description from the README file
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
-  "rasa-core",
-  "rasa-nlu",
+  "rasa-core>=0.13.0a5",
+  "rasa-nlu[tensorflow]",
+  "questionary~=1.0"
 ]
 
 setup(
     name="rasa",
+    scripts=['bin/rasa'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -22,7 +28,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",
     ],
-    version="0.1.0",
+    version=__version__,
     install_requires=install_requires,
     description="Rasa Stack - A package which includes Rasa Core and Rasa NLU",
     long_description=long_description,
