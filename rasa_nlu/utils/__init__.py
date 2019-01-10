@@ -24,11 +24,6 @@ from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
 
-# Regular expression to test if string contains emoji code
-unicode_regex = re.compile(
-    u'[\u231A-\u231B\u2328\u23CF\23E9-\u23F3...\U0001F9C0]',
-    flags=re.UNICODE)
-
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
     """Add options to an argument parser to configure logging levels."""
@@ -264,13 +259,18 @@ def read_yaml(content):
     yaml_parser.version = "1.2"
     yaml_parser.unicode_supplementary = True
 
-    if unicode_regex.match(content):
+    try:
+        return yaml_parser.load(content)
+    except yaml.scanner.ScannerError as _:
+        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
+        # unicode sequences that form surrogate pairs. Try converting the input
+        # to a parsable format based on
+        # https://stackoverflow.com/a/52187065/3429596.
         content = (content.encode('utf-8')
-                   .decode('unicode_escape')
+                   .decode('raw_unicode_escape')
                    .encode("utf-16", 'surrogatepass')
                    .decode('utf-16'))
-
-    return yaml_parser.load(content)
+        return yaml_parser.load(content)
 
 
 def read_yaml_file(filename):
