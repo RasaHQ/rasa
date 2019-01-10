@@ -1,6 +1,6 @@
 ## happy path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -11,7 +11,7 @@
 
 ## unhappy path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -25,7 +25,7 @@
 
 ## very unhappy path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -45,7 +45,7 @@
 
 ## stop but continue path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -60,7 +60,7 @@
 
 ## stop and really stop path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -88,7 +88,7 @@
 
 ## stop but continue and chitchat path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -106,7 +106,7 @@
 
 ## chitchat stop but continue and chitchat path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -127,7 +127,7 @@
 
 ## chitchat, stop and really stop path
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
@@ -142,7 +142,7 @@
 
 ## Generated Story 3490283781720101690 (example from interactive learning, "form: " will be excluded from training)
 * greet
-	- utter_greet
+    - utter_greet
 * request_restaurant
     - restaurant_form
     - form{"name": "restaurant_form"}
