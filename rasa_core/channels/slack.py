@@ -150,7 +150,8 @@ class SlackInput(InputChannel):
             text: raw message as sent from slack
             uids_to_remove: a list of user ids to remove from the content
 
-        Returns text: a parsed and cleaned string
+        Returns:
+            str: parsed and cleaned version of the input text 
         """
         for uid_to_remove in uids_to_remove:
             # heuristic to format majority cases OK
