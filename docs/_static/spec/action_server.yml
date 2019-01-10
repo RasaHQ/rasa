@@ -1,0 +1,365 @@
+openapi: "3.0.2"
+info:
+  title: "Rasa Core SDK - Action Server Endpoint"
+  version: "1.0.0"
+  description: >-
+    API of the action server which is used by Rasa Core 
+    to execute custom actions.
+paths:
+  /webhook:
+    post:
+      summary: Call a custom action
+      description: >-
+        Sends a request to the action server to execute a custom action.
+      operationId: call_action
+      requestBody:
+        description: >- 
+          Describes the action to be called and provides information on the 
+          current state of the conversation.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                next_action:
+                  description: The name of the action which should be executed.
+                  type: string
+                sender_id:
+                  description: >-
+                    Id of the user who is having the current conversation.
+                  type: string
+                tracker:
+                  $ref: "#/components/schemas/Tracker"
+                domain:
+                  $ref: "#/components/schemas/Domain"
+      responses:
+        200:
+          description: Action was executed succesfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    description: "Events returned by the action."
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Event"
+                  responses:
+                    description: >-
+                      "List of responses which should be sent to the user"
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Response"
+        400:
+          description: >-
+            Action execution was rejected. This is the same as returning
+            an `action_execution_rejected` event.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action_name:
+                    type: string
+                  error:
+                    type: string
+        500:
+          description: >-
+            The action server encountered an exception while running the action.
+components:
+  schemas:
+    Tracker:
+      description: >-
+        Conversation tracker which stores the information about
+        the conversation.
+      type: object
+      properties:
+        sender_id:
+          type: string
+          description: Username of client
+        latest_event_time:
+          type: integer
+          description: Timestamp of most recent event (in seconds)
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+        latest_message:
+          type: string #TODO
+          description: Latest user message
+        paused:
+          type: boolean
+          description: Conversation paused
+        followup_action:
+          type: string
+          description: Name of the followup action
+        slots:
+          type: array
+          description: Filled slots
+          items:
+            $ref: '#/components/schemas/Slot'
+        latest_input_channel:
+          type: string
+          description: Name of the input channel last used
+        latest_action_name:
+          type: string
+          description: Name of last bot action
+        active_form:
+          type: string
+          description: Name of the active form
+    Intent:
+      type: object
+      properties:
+        confidence:
+          type: integer
+        name:
+          type: string
+    ParseData:
+      type: object
+      nullable: true
+      properties:
+        entites:
+          type: array
+        intent:
+          $ref: '#/components/schemas/Intent'
+        intent_ranking:
+          type: array
+          items:
+            $ref: '#/components/schemas/Intent'
+        text:
+          type: string
+    Event:
+      type: object
+      properties:
+        event:
+          type: string
+          description: Event name
+        timestamp:
+          type: integer
+          description: Time of application
+      required: ["event"]
+      discriminator:
+        propertyName: event
+    undo:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    action_execution_rejected:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+          policy: 
+            type: string #todo
+            nullable: true
+          confidence:
+            type: float
+            nullable: true
+    form_validation:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          validate:
+            type: string #TODO
+    form:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+    agent:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          text:
+            type: string
+            description: Message
+          data:
+            type: object
+            description: Additional data
+        required: ["event", "text"]
+    action:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+            description: Action name
+          policy:
+            type: string
+            description: Policy that predicted the action
+          confidence:
+            type: number
+            description: Confidence of the prediction
+        required: ["event", "name"]
+    reset_slots:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    restart:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    resume:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    rewind:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    slot:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+            description: Name of slot
+          value:
+            type: string # fix
+            description: Value of slot
+    pause:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    reminder:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          action:
+            type: string
+            description: Action to be triggered
+          date_time:
+            type: string
+            description: Trigger date
+          name:
+            type: string
+            description: Name of the reminder
+          kill_on_user_msg:
+            default: true
+            type: boolean
+            description: Cancel the reminder if there is a user message
+        required: ["event", "action", "date_time"]
+    export:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+    followup:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          name:
+            type: string
+            description: Action to be triggered
+        required: ["event", "name"]
+    bot:
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          data:
+            type: object
+            nullable: true
+            description: Additional data
+          text:
+            type: string
+            description: Message
+        required: ["event", "text"]
+    user:
+      description: A message from a user
+      allOf:
+      - $ref: '#/components/schemas/Event'
+      - type: object
+        properties:
+          parse_data:
+            $ref: '#/components/schemas/ParseData'
+          text:
+            type: string
+        required: ["event", "text"]
+
+    Slot:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/SlotValue'
+      example:
+        slot_name: slot_value
+    SlotValue:
+      oneOf:
+      - type: string
+      - type: array
+        items:
+        - type: string
+    Response:
+      oneOf:
+        - $ref: '#/components/schemas/TextResponse'
+        - $ref: '#/components/schemas/TemplateResponse'
+        - $ref: '#/components/schemas/ButtonResponse'
+    TextResponse:
+      type: object
+      properties:
+        text:
+          type: string
+      required: ["text"]
+    TemplateResponse:
+      type: object
+      properties:
+        template:
+          type: string #TODO kwargs
+      required: ["template"]
+    ButtonResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        buttons:
+          type: array
+          items:
+            - type: object
+              properties:
+                title:
+                  type: string
+                payload:
+                  type: string
+    Domain:
+      type: object
+      properties:
+        config:
+          type: object
+          description: Addional option
+          properties:
+            store_entities_as_slots:
+              type: boolean
+              description: Store all entites as slot when found
+        intents:
+          type: array
+          description: All intent names and properties
+          items:
+            type: object
+        entities:
+          type: array
+          description: All entity names
+          items:
+            type: string
+        slots:
+          description: Slot names and configuration
+          type: object
+        templates:
+          description: Bot response templates
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              properties:
+                text:
+                  type: string
+
+        actions:
+          description: Available action names
+          type: array
+          items:
+            type: string
