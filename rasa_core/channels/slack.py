@@ -163,7 +163,7 @@ class SlackInput(InputChannel):
                                        (r'<@{}>'.format(uid_to_remove), ' ')]:
                 text = re.sub(regex, replacement, text)
 
-        return text.rstrip().lstrip()  # drop an optional extra space at the end
+        return text.rstrip().lstrip()  # drop extra spaces at beginning and end
 
     def process_message(self, on_new_message, text, sender_id):
         """Slack retry to post messages up to 3 times based on
