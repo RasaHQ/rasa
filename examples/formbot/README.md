@@ -1,6 +1,6 @@
 # Formbot - an example which demonstrates the implementation of FormAction
 
-Formbot example is designed to help you understand how FormAction works and how
+Formbot example is designed to help you understand how the FormAction works and how
 to implement it in practice. Using the code and data files in this directory you
 can build a simple restaurant search assistant capable of recommending
 restaurants based on user preferences.
