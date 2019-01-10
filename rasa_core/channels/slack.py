@@ -139,7 +139,8 @@ class SlackInput(InputChannel):
 
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
-        """Remove superfluous/wrong/problematic tokens from a message
+        """Remove superfluous/wrong/problematic tokens from a message.
+        
         Probably a good starting point for pre-formatting of user-provided text,
         to make NLU's life easier in case they go funky to the power of extreme.
 
