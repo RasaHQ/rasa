@@ -152,7 +152,7 @@ class SlackInput(InputChannel):
         Returns text: a parsed and cleaned string
         """
         for uid_to_remove in uids_to_remove:
-            # c heuristic to format majority cases OK
+            # heuristic to format majority cases OK
             # can be adjusted to taste later if needed,
             # but is a good first approximation
             for regex, replacement in [(r'<@{}>\s'.format(uid_to_remove), ''),
