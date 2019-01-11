@@ -201,19 +201,19 @@ def test_emojis_in_yaml():
     test_data = """
     data:
         - one 😁💯 👩🏿‍💻👨🏿‍💻
-        - two £
+        - two £ (?u)\\b\\w+\\b f\u00fcr
     """
     actual = utils.read_yaml(test_data)
 
     assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
-    assert actual["data"][1] == "two £"
+    assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
 
 def test_emojis_in_tmp_file():
     test_data = """
         data:
             - one 😁💯 👩🏿‍💻👨🏿‍💻
-            - two £
+            - two £ (?u)\\b\\w+\\b f\u00fcr
         """
     test_file = utils.create_temporary_file(test_data)
     with io.open(test_file, mode='r', encoding="utf-8") as f:
@@ -221,18 +221,19 @@ def test_emojis_in_tmp_file():
     actual = utils.read_yaml(content)
 
     assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
-    assert actual["data"][1] == "two £"
+    assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
 
 def test_read_emojis_from_json():
     import json
     from rasa_nlu.utils import read_yaml
-    d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️"}
+    d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} f\u00fcr"}
     json_string = json.dumps(d, indent=2)
 
     s = read_yaml(json_string)
 
-    assert s.get('text') == "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️"
+    expected = "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} für"
+    assert s.get('text') == expected
 
 
 def test_bool_str():
