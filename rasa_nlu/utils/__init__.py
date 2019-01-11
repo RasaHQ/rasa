@@ -247,6 +247,11 @@ def replace_environment_variables():
 
 
 def read_yaml(content):
+    """Parses yaml from a text.
+
+     Args:
+        content: A text containing yaml content.
+    """
     fix_yaml_loader()
     replace_environment_variables()
 
@@ -254,10 +259,26 @@ def read_yaml(content):
     yaml_parser.version = "1.2"
     yaml_parser.unicode_supplementary = True
 
-    return yaml_parser.load(content)
+    try:
+        return yaml_parser.load(content)
+    except yaml.scanner.ScannerError as _:
+        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
+        # unicode sequences that form surrogate pairs. Try converting the input
+        # to a parsable format based on
+        # https://stackoverflow.com/a/52187065/3429596.
+        content = (content.encode('utf-8')
+                   .decode('raw_unicode_escape')
+                   .encode("utf-16", 'surrogatepass')
+                   .decode('utf-16'))
+        return yaml_parser.load(content)
 
 
 def read_yaml_file(filename):
+    """Parses a yaml file.
+
+     Args:
+        filename: The path to the file which should be read.
+    """
     return read_yaml(read_file(filename, "utf-8"))
 
 
