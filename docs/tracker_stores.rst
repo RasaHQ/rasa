@@ -78,6 +78,9 @@ MongoTrackerStore
                 db: <name of the db within your mongo instance, e.g. rasa>
                 username: <username used for authentication>
                 password: <password used for authentication>
+        
+        You can also add more advanced configurations (like enabling ssl) by appending
+        a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true
 
     3. To start the Rasa Core server using your configured MongoDB instance,
            add the :code:`--endpoints` flag, e.g.:

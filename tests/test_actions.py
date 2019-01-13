@@ -1,19 +1,16 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import json
 
 import pytest
-from builtins import str
 from httpretty import httpretty
 
 from rasa_core.actions import action
 from rasa_core.actions.action import (
     ActionRestart, UtterAction,
     ActionListen, RemoteAction,
-    ActionExecutionRejection)
+    ActionExecutionRejection, ACTION_LISTEN_NAME, ACTION_RESTART_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEACTIVATE_FORM_NAME,
+    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME)
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
@@ -37,7 +34,7 @@ def test_text_format():
 
 def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
-            ["random_name", "utter_test"], None, ["random_name", "utter_test"])
+        ["random_name", "utter_test"], None, ["random_name", "utter_test"])
     assert len(instantiated_actions) == 2
     assert isinstance(instantiated_actions[0], RemoteAction)
     assert instantiated_actions[0].name() == "random_name"
@@ -48,22 +45,27 @@ def test_action_instantiation_from_names():
 
 def test_domain_action_instantiation():
     domain = Domain(
-            intent_properties={},
-            entities=[],
-            slots=[],
-            templates={},
-            action_names=["my_module.ActionTest", "utter_test"],
-            form_names=[])
+        intent_properties={},
+        entities=[],
+        slots=[],
+        templates={},
+        action_names=["my_module.ActionTest", "utter_test"],
+        form_names=[])
 
     instantiated_actions = domain.actions(None)
 
-    assert len(instantiated_actions) == 6
-    assert instantiated_actions[0].name() == "action_listen"
-    assert instantiated_actions[1].name() == "action_restart"
-    assert instantiated_actions[2].name() == "action_default_fallback"
-    assert instantiated_actions[3].name() == "action_deactivate_form"
-    assert instantiated_actions[4].name() == "my_module.ActionTest"
-    assert instantiated_actions[5].name() == "utter_test"
+    assert len(instantiated_actions) == 9
+    assert instantiated_actions[0].name() == ACTION_LISTEN_NAME
+    assert instantiated_actions[1].name() == ACTION_RESTART_NAME
+    assert instantiated_actions[2].name() == ACTION_DEFAULT_FALLBACK_NAME
+    assert instantiated_actions[3].name() == ACTION_DEACTIVATE_FORM_NAME
+    assert instantiated_actions[4].name() == ACTION_REVERT_FALLBACK_EVENTS_NAME
+    assert instantiated_actions[5].name() == (
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
+    assert instantiated_actions[6].name() == (
+        ACTION_DEFAULT_ASK_REPHRASE_NAME)
+    assert instantiated_actions[7].name() == "my_module.ActionTest"
+    assert instantiated_actions[8].name() == "utter_test"
 
 
 def test_domain_fails_on_duplicated_actions():
@@ -85,9 +87,9 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
                                         endpoint)
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            body='{"events": [], "responses": []}')
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        body='{"events": [], "responses": []}')
 
     httpretty.enable()
     remote_action.run(default_dispatcher_collecting,
@@ -140,9 +142,9 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
                       {"template": "utter_greet"}]}
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            body=json.dumps(response))
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        body=json.dumps(response))
 
     httpretty.enable()
     events = remote_action.run(default_dispatcher_collecting,
@@ -224,10 +226,10 @@ def test_remote_action_endpoint_responds_500(default_dispatcher_collecting,
     remote_action = action.RemoteAction("my_action", endpoint)
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            status=500,
-            body='')
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        status=500,
+        body='')
 
     httpretty.enable()
     with pytest.raises(Exception) as execinfo:
@@ -247,10 +249,10 @@ def test_remote_action_endpoint_responds_400(default_dispatcher_collecting,
     remote_action = action.RemoteAction("my_action", endpoint)
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/webhooks/actions',
-            status=400,
-            body='{"action_name": "my_action"}')
+        httpretty.POST,
+        'https://abc.defg/webhooks/actions',
+        status=400,
+        body='{"action_name": "my_action"}')
 
     httpretty.enable()
 

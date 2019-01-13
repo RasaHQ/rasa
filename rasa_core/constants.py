@@ -1,15 +1,10 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 DEFAULT_SERVER_PORT = 5005
 
 DEFAULT_SERVER_FORMAT = "http://localhost:{}"
 
 DEFAULT_SERVER_URL = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT)
 
-MINIMUM_COMPATIBLE_VERSION = "0.11.0"
+MINIMUM_COMPATIBLE_VERSION = "0.13.0a6"
 
 DOCS_BASE_URL = "https://rasa.com/docs/core"
 
@@ -31,3 +26,5 @@ REQUESTED_SLOT = 'requested_slot'
 INTENT_MESSAGE_PREFIX = "/"
 
 USER_INTENT_RESTART = INTENT_MESSAGE_PREFIX + "restart"
+
+USER_INTENT_OUT_OF_SCOPE = 'out_of_scope'

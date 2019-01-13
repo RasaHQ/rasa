@@ -5,6 +5,7 @@
 Training and Policies
 =====================
 
+.. contents::
 
 Training
 --------
@@ -18,7 +19,7 @@ You can run training from the command line like in the :ref:`quickstart`:
 .. code-block:: bash
 
    python -m rasa_core.train -d domain.yml -s data/stories.md \
-     -o models/current/dialogue -c default_config.yml
+     -o models/current/dialogue -c config.yml
 
 Or by creating an agent and running the train method yourself:
 
@@ -30,6 +31,17 @@ Or by creating an agent and running the train method yourself:
    data = agent.load_data("stories.md")
    agent.train(data)
 
+
+.. _default_config:
+
+Default configuration
+---------------------
+
+By default, we try to provide you with a good set of configuration values
+and policies that suit most people. But you are encouraged to modify
+these to your needs:
+
+.. literalinclude:: ../rasa_core/default_config.yml
 
 
 Data Augmentation
@@ -146,8 +158,8 @@ For example:
       arg1: "..."
 
 Pass the YAML file's name to the train script using the ``--config``
-argument (or just ``-c``). There is a default config file you can use in the
-github repository called ``default_config.yml``
+argument (or just ``-c``). There is a default config file you can use to
+get started: :ref:`default_config`.
 
 .. note::
 
@@ -207,8 +219,11 @@ or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
 .. _embedding_policy:
 
-Embedding policy
-----------------
+Embedding Policy
+^^^^^^^^^^^^^^^^
+
+The Recurrent Embedding Dialogue Policy (REDP)
+described in our paper: `<https://arxiv.org/abs/1811.11707>`_
 
 This policy has a pre-defined architecture, which comprises the
 following steps:
@@ -240,8 +255,8 @@ following steps:
       state with the one from the time when this action happened;
     - for each LSTM time step, calculate the similarity between the
       dialogue embedding and embedded system actions.
-      This step is based on the starspace idea from:
-      `<https://arxiv.org/abs/1709.03856>`_.
+      This step is based on the
+      `starspace idea <https://arxiv.org/abs/1709.03856>`_.
 
 .. note::
 
@@ -379,5 +394,83 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
+Two-stage Fallback Policy
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This policy handles low NLU confidence in multiple stages.
+
+- If a NLU prediction has a low confidence score, the user is asked to affirm
+  the classification of the intent.
+
+    - If they affirm, the story continues as if the intent was classified
+      with high confidence from the beginning.
+    - If they deny, the user is asked to rephrase their message.
+
+- Rephrasing
+
+    - If the classification of the rephrased intent was confident, the story
+      continues as if the user had this intent from the beginning.
+    - If the rephrased intent was not classified with high confidence, the user
+      is asked to affirm the classified intent.
+
+- Second affirmation
+
+    - If the user affirms the intent, the story continues as if the user had
+      this intent from the beginning.
+    - If the user denies, an ultimate fallback action is triggered
+      (e.g. a handoff to a human).
+
+Configuration
+"""""""""""""
+
+To use this policy, include the following in your policy configuration.
+Note that you cannot use this together with the default fallback policy.
+
+.. code-block:: yaml
+
+    policies:
+      - name: TwoStageFallbackPolicy
+        nlu_threshold: 0.3
+        core_threshold: 0.3
+        fallback_core_action_name: "action_default_fallback"
+        fallback_nlu_action_name: "action_default_fallback"
+        deny_suggestion_intent_name: "out_of_scope"
+
++--------------------------------+---------------------------------------------+
+| ``nlu_threshold``              | Min confidence needed to accept an NLU      |
+|                                | prediction                                  |
++--------------------------------+---------------------------------------------+
+| ``core_threshold``             | Min confidence needed to accept an action   |
+|                                | prediction from Rasa Core                   |
++--------------------------------+---------------------------------------------+
+| ``fallback_core_action_name``  | Name of the action to be called if the      |
+|                                | confidence of the Rasa Core action          |
+|                                | classification is below the threshold       |
++--------------------------------+---------------------------------------------+
+| ``fallback_nlu_action_name``   | Name of the action to be called if the      |
+|                                | confidence of Rasa NLU intent               |
+|                                | classification is below the threshold       |
++--------------------------------+---------------------------------------------+
+| ``deny_suggestion_intent_name``| The name of the intent which is used to     |
+|                                | detect that the user denies the suggested   |
+|                                | intents                                     |
++--------------------------------+---------------------------------------------+
+
+.. note::
+
+    It is required to have the two intents ``affirm`` and ``deny`` in the
+    domain of the bot, to determine whether the user affirms or
+    denies a suggestion.
+
+Default Actions for Affirmation and Rephrasing
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Rasa Core provides the default implementations
+``action_default_ask_affirmation`` and ``action_default_ask_rephrase``
+which are triggered when the bot asks the user to affirm
+or rephrase their intent.
+The default implementation of ``action_default_ask_rephrase`` action utters
+the response template ``utter_ask_rephrase``.
+The implementation of both actions can be overwritten with :ref:`customactions`.
 
 .. include:: feedback.inc

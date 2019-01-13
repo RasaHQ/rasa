@@ -1,33 +1,31 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from unittest.mock import patch
 
-from rasa_core import training
-
-try:  # py3
-    from unittest.mock import patch
-except ImportError:  # py2
-    from mock import patch
 import numpy as np
 import pytest
 
+from rasa_core import training
+from rasa_core.actions.action import (ACTION_LISTEN_NAME,
+                                      ActionRevertFallbackEvents,
+                                      ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+                                      ACTION_DEFAULT_ASK_REPHRASE_NAME,
+                                      ACTION_DEFAULT_FALLBACK_NAME)
 from rasa_core.channels import UserMessage
-from rasa_core.domain import Domain
-from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import \
-    MemoizationPolicy, AugmentedMemoizationPolicy
-from rasa_core.policies.sklearn_policy import SklearnPolicy
-from rasa_core.policies.fallback import FallbackPolicy
-from rasa_core.policies.embedding_policy import EmbeddingPolicy
-from rasa_core.policies.form_policy import FormPolicy
-from rasa_core.trackers import DialogueStateTracker
-from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+from rasa_core.domain import Domain, InvalidDomain
+from rasa_core.events import ActionExecuted
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer, FullDialogueTrackerFeaturizer)
-from rasa_core.events import ActionExecuted
-from tests.utilities import read_dialogue_file
+    BinarySingleStateFeaturizer)
+from rasa_core.policies import TwoStageFallbackPolicy
+from rasa_core.policies.embedding_policy import EmbeddingPolicy
+from rasa_core.policies.fallback import FallbackPolicy
+from rasa_core.policies.form_policy import FormPolicy
+from rasa_core.policies.keras_policy import KerasPolicy
+from rasa_core.policies.memoization import (
+    MemoizationPolicy, AugmentedMemoizationPolicy)
+from rasa_core.policies.sklearn_policy import SklearnPolicy
+from rasa_core.trackers import DialogueStateTracker
+from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+from tests.utilities import read_dialogue_file, user_uttered, get_tracker
 
 
 def train_trackers(domain):
@@ -209,12 +207,12 @@ class TestSklearnPolicy(PolicyTestCollection):
     def trackers(self, default_domain):
         return train_trackers(default_domain)
 
-    def test_cv_none_does_not_trigger_search(
-            self, mock_search, default_domain, trackers, featurizer):
-        policy = self.create_policy(
-            featurizer=featurizer,
-            cv=None
-        )
+    def test_cv_none_does_not_trigger_search(self,
+                                             mock_search,
+                                             default_domain,
+                                             trackers,
+                                             featurizer):
+        policy = self.create_policy(featurizer=featurizer, cv=None)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count == 0
@@ -222,10 +220,8 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     def test_cv_not_none_param_grid_none_triggers_search_without_params(
             self, mock_search, default_domain, trackers, featurizer):
-        policy = self.create_policy(
-            featurizer=featurizer,
-            cv=3,
-        )
+
+        policy = self.create_policy(featurizer=featurizer, cv=3)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count > 0
@@ -263,7 +259,8 @@ class TestSklearnPolicy(PolicyTestCollection):
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
-                        np.random.choice(classes), action_endpoint=None).name()
+                        np.random.choice(classes),
+                        action_endpoint=None).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
                     new_tracker.update(e)
@@ -405,14 +402,14 @@ class TestFormPolicy(PolicyTestCollection):
                 # which FormPolicy should not predict a form action and
                 # should add FormValidation(False) event
                 is_no_validation = (
-                        ('prev_some_form' in states[0].keys() and
-                         'intent_default' in states[-1].keys()) or
-                        ('prev_some_form' in states[0].keys() and
-                         'intent_stop' in states[-1].keys()) or
-                        ('prev_utter_ask_continue' in states[0].keys() and
-                         'intent_affirm' in states[-1].keys()) or
-                        ('prev_utter_ask_continue' in states[0].keys() and
-                         'intent_deny' in states[-1].keys())
+                    ('prev_some_form' in states[0].keys() and
+                     'intent_default' in states[-1].keys()) or
+                    ('prev_some_form' in states[0].keys() and
+                     'intent_stop' in states[-1].keys()) or
+                    ('prev_utter_ask_continue' in states[0].keys() and
+                     'intent_affirm' in states[-1].keys()) or
+                    ('prev_utter_ask_continue' in states[0].keys() and
+                     'intent_deny' in states[-1].keys())
                 )
             else:
                 is_no_validation = False
@@ -431,3 +428,219 @@ class TestFormPolicy(PolicyTestCollection):
                           for f, num in
                           zip(domain.input_states, nums)}]
         assert trained_policy.recall(random_states, None, domain) is None
+
+
+class TestTwoStageFallbackPolicy(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        p = TwoStageFallbackPolicy(deny_suggestion_intent_name='deny')
+        return p
+
+    @pytest.fixture(scope="class")
+    def default_domain(self):
+        content = """
+        actions:
+          - utter_hello
+
+        intents:
+          - greet
+          - bye
+          - affirm
+          - deny
+        """
+        return Domain.from_yaml(content)
+
+    def _get_next_action(self, policy, events, domain):
+        tracker = get_tracker(events)
+
+        scores = policy.predict_action_probabilities(tracker, domain)
+        index = scores.index(max(scores))
+        return domain.action_names[index]
+
+    def _get_tracker_after_reverts(self, events, dispatcher, domain):
+        tracker = get_tracker(events)
+        action = ActionRevertFallbackEvents()
+        events += action.run(dispatcher, tracker, domain)
+
+        return get_tracker(events)
+
+    def test_ask_affirmation(self, trained_policy, default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("Hi", 0.2)]
+
+        next_action = self._get_next_action(trained_policy, events,
+                                            default_domain)
+
+        assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
+
+    def test_affirmation(self, default_dispatcher_collecting, default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('greet', 1),
+                  ActionExecuted('utter_hello'),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('greet', 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('greet', 1)]
+
+        tracker = self._get_tracker_after_reverts(events,
+                                                  default_dispatcher_collecting,
+                                                  default_domain)
+
+        assert 'greet' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == ("## sender\n"
+                                            "* greet\n"
+                                            "    - utter_hello\n"
+                                            "* greet\n")
+
+    def test_ask_rephrase(self, trained_policy, default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('deny', 1)]
+
+        next_action = self._get_next_action(trained_policy, events,
+                                            default_domain)
+
+        assert next_action == ACTION_DEFAULT_ASK_REPHRASE_NAME
+
+    def test_successful_rephrasing(self, trained_policy,
+                                   default_dispatcher_collecting,
+                                   default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('deny', 1),
+                  ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 1),
+                  ]
+
+        tracker = self._get_tracker_after_reverts(events,
+                                                  default_dispatcher_collecting,
+                                                  default_domain)
+
+        assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == "## sender\n* bye\n"
+
+    def test_affirm_rephrased_intent(self, trained_policy, default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('deny', 1),
+                  ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ]
+
+        next_action = self._get_next_action(trained_policy, events,
+                                            default_domain)
+
+        assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
+
+    def test_affirmed_rephrasing(self, trained_policy,
+                                 default_dispatcher_collecting,
+                                 default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('deny', 1),
+                  ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('bye', 1)
+                  ]
+
+        tracker = self._get_tracker_after_reverts(events,
+                                                  default_dispatcher_collecting,
+                                                  default_domain)
+
+        assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == "## sender\n* bye\n"
+
+    def test_denied_rephrasing_affirmation(self, trained_policy,
+                                           default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('deny', 1),
+                  ActionExecuted(ACTION_DEFAULT_ASK_REPHRASE_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered('deny', 1)
+                  ]
+
+        next_action = self._get_next_action(trained_policy, events,
+                                            default_domain)
+
+        assert next_action == ACTION_DEFAULT_FALLBACK_NAME
+
+    def test_rephrasing_instead_affirmation(self, trained_policy,
+                                            default_dispatcher_collecting,
+                                            default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 1),
+                  ActionExecuted("utter_hello"),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("bye", 1),
+                  ]
+
+        tracker = self._get_tracker_after_reverts(events,
+                                                  default_dispatcher_collecting,
+                                                  default_domain)
+
+        assert 'bye' == tracker.latest_message.parse_data['intent']['name']
+        assert tracker.export_stories() == ("## sender\n"
+                                            "* greet\n"
+                                            "    - utter_hello\n"
+                                            "* bye\n")
+
+    def test_unknown_instead_affirmation(self, trained_policy, default_domain):
+        events = [ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
+                  ActionExecuted(ACTION_LISTEN_NAME),
+                  user_uttered("greet", 0.2),
+                  ]
+
+        next_action = self._get_next_action(trained_policy, events,
+                                            default_domain)
+
+        assert next_action == ACTION_DEFAULT_FALLBACK_NAME
+
+    def test_listen_after_hand_off(self, trained_policy, default_domain):
+        events = [ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME)]
+
+        next_action = self._get_next_action(trained_policy, events,
+                                            default_domain)
+
+        assert next_action == ACTION_LISTEN_NAME
+
+    def test_exception_if_intent_not_present(self, trained_policy):
+        content = """
+                actions:
+                  - utter_hello
+
+                intents:
+                  - greet
+                """
+        domain = Domain.from_yaml(content)
+
+        events = [ActionExecuted(ACTION_DEFAULT_FALLBACK_NAME)]
+
+        tracker = get_tracker(events)
+        with pytest.raises(InvalidDomain):
+            trained_policy.predict_action_probabilities(tracker, domain)

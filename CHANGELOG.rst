@@ -6,13 +6,109 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. _master-release:
 
-[Unreleased 0.12.0.aX] - `master`_
+[Unreleased 0.13.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
 
 Added
 -----
+- A support for session persistence mechanism in the ``SocketIOInput``
+  compatible with the example SocketIO WebChat + short explanation on
+  how session persistence should be implemented in a frontend
+- ``TwoStageFallbackPolicy`` which asks the user for their affirmation if the NLU
+  confidence is low for an intent, for rephrasing the intent if they deny the
+  suggested intent, and does finally an ultimate fallback if it does not get
+  the intent right
+- Additional checks in PolicyEnsemble to ensure that custom Policy
+  classes' load function returns the correct type
+- Travis script now clones and tests the Rasa stack starter pack
+- Entries for tensorflow and sklearn versions to the policy metadata
+  
+Removed
+-------
+- support for deprecated intents/entities format
+
+Changed
+-------
+- replaced ``pytest-pep8`` with ``pytest-pycodestyle``
+- switch from ``PyInquirer`` to ``questionary`` for the display of
+  commandline interface (to avoid prompt toolkit 2 version issues)
+- if NLU classification returned ``None`` in interactive training,
+  directly ask a user for a correct intent
+
+Fixed
+-----
+- fix error during interactive learning which was caused by actions which
+  dispatched messages using ``dispatcher.utter_custom_message``
+- re-added missing ``python-engineio`` dependency
+- fixed not working examples in ``examples/``
+
+
+[0.12.3] - 2018-12-03
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added ``scipy`` dependency (previously pulled in through keras)
+- added element representation for command-line output
+
+Changed
+-------
+- improved button representation for custom buttons in command-line
+
+Changed
+-------
+- randomized initial sender_id during interactive training to avoid
+  loading previous sessions from persistent tracker stores
+
+Removed
+-------
+- removed keras dependency, since ``keras_policy`` uses ``tf.keras``
+
+
+[0.12.2] - 2018-11-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- argument handling on evaluate script
+- added basic sanitization during visualization
+
+
+[0.12.1] - 2018-11-11
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed interactive learning to properly submit executed actions to the action
+  server
+- allow the specification of the policy configuration while using the
+  visualisation script
+- use default configuration if no policy configuration is passed
+- fixed html delivery from interactive server script (package compatible)
+- ``SlackBot`` when created in ``SlackInputChannel`` inherits the
+  ``slack_channel`` property, allowing Slack bots to post to any channel
+  instead of only back to the user
+- fix writing of new domain file from interactive learning
+- fix reading of state featurizers from yaml
+- fix reading of batch_size parameter in keras policy
+
+
+.. _v0-12-0:
+
+[0.12.0] - 2018-11-11
+^^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This is major new version with a lot of changes under the hood as well
+    as on the API level. Please take a careful look at the
+    :ref:`migration` guide before updating. **You need to retrain your models.**
+
+Added
+-----
+- new connector for the Cisco Webex Teams chat
 - openapi documentation of server API
 - NLU data learned through interactive learning will now be stored in a
   separate markdown-format file (any previous NLU data is merged)
@@ -28,27 +124,35 @@ Added
   ``evaluate.py`` script
 - `/conversations/{sender_id}/story` endpoint for returning
   the end-to-end story describing a conversation
-- docker-compose file to start a rasa core server together with nlu, an action server, and duckling
+- docker-compose file to start a rasa core server together with nlu,
+  an action server, and duckling
 - http server (``rasa_core.run --enable-api``) evaluation endpoint
 - ability to add tracker_store using endpoints.yml
 - ability load custom tracker store modules using the endpoints.yml
 - ability to add an event broker using an endpoint configuration file
-- raise an exception when ``server.py`` is used instead of ``rasa_core.run --enable-api``
+- raise an exception when ``server.py`` is used instead of
+  ``rasa_core.run --enable-api``
 - add documentation on how to configure endpoints within a configuration file
 - ``auth_source`` parameter in ``MongoTrackerStore`` defining the database to
   authenticate against
 - missing instructions on setting up the facebook connector
 - environment variables specified with ``${env_variable}`` in a yaml
-  configuration file are now replaced with the value of the environment variable
+  configuration file are now replaced with the value of the
+  environment variable
 - detailed documentation on how to deploy Rasa with Docker
+- make ``wait_time_between_pulls`` configurable through endpoint
+  configuration
 - add ``FormPolicy`` to handle form action prediction
-- add ``ActionExecutionRejection`` exception and ``ActionExecutionRejected`` event
+- add ``ActionExecutionRejection`` exception and
+  ``ActionExecutionRejected`` event
 - add default action ``ActionDeactivateForm()``
 - add ``formbot`` example
-- add ability to turn off auto slot filling with entity for each slot in domain.yml
+- add ability to turn off auto slot filling with entity for each
+  slot in domain.yml
 - add ``InvalidDomain`` exception
 - add ``active_form_...`` to state dictionary
-- add ``active_form`` and ``latest_action_name`` properties to ``DialogueStateTracker``
+- add ``active_form`` and ``latest_action_name`` properties to
+  ``DialogueStateTracker``
 - add ``Form`` and ``FormValidation`` events
 - add ``REQUESTED_SLOT`` constant
 - add ability to read ``action_listen`` from stories
@@ -62,7 +166,8 @@ Changed
 - the core container does not load the nlu model by default anymore.
   Instead it can be connected to a nlu server.
 - stories are now visualized as ``.html`` page instead of an image
-- move and deduplicate restaurantbot nlu data from ``franken_data.json`` to ``nlu_data.md``
+- move and deduplicate restaurantbot nlu data from ``franken_data.json``
+  to ``nlu_data.md``
 - forms were completely reworked, see changelog in ``rasa_core_sdk``
 - state featurization if some form is active changed
 - ``Domain`` raises ``InvalidDomain`` exception

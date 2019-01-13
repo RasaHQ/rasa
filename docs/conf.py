@@ -63,9 +63,15 @@ master_doc = 'index'
 
 nitpicky = True
 nitpick_ignore = [
+    ('py:class', 'CollectingDispatcher'),
+    ('py:class', 'Tracker'),
+    ('py:class', 'Dict'),
+    ('py:class', 'Text'),
+    ('py:class', 'Any'),
     ('py:class', 'List'),
-    # TODO: remove when https://github.com/sphinx-doc/sphinx/issues/5480 fixed
-    ('py:class', 'Domain'),
+    ('py:class', 'Dict'),
+    ('py:class', 'Text'),
+    ('py:class', 'Any'),
 ]
 
 # General information about the project.
@@ -328,11 +334,6 @@ doctest_path = [os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))]
 
 # Make sure we are using the project root as the working directory instead of /docs
 doctest_global_setup = r'''
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import logging
 import pprint
@@ -367,7 +368,8 @@ scv_overflow = ("-A", "html_theme=rasabaster")
 scv_whitelist_branches = (re.compile('^master$'),)
 scv_whitelist_tags = (re.compile(r'^[123456789]+\.\d+\.\d+$'),
                       re.compile(r'^0\.[23456789]\d+\.\d+$'),
-                      re.compile(r'^0\.1[123456789]+\.\d+$'),
+                      re.compile(r'^0\.1[23456789]+\.\d+$'),
+                      '0.11.12',
                       '0.10.4',
                       '0.9.8',
                       '0.8.6',

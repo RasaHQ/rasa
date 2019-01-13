@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 
 from flask import Blueprint, request, jsonify
@@ -28,20 +23,20 @@ class TwilioOutput(Client, OutputChannel):
         self.send_retry = 0
         self.max_retry = 5
 
-    def send_text_message(self, recipient_number, text):
+    def send_text_message(self, recipient_id, text):
         """Sends text message"""
 
         for message_part in text.split("\n\n"):
-            self._send_text(recipient_number, message_part)
+            self._send_text(recipient_id, message_part)
 
-    def _send_text(self, recipient_number, text):
+    def _send_text(self, recipient_id, text):
         from twilio.base.exceptions import TwilioRestException
 
         message = None
         try:
             while not message and self.send_retry < self.max_retry:
                 message = self.messages.create(body=text,
-                                               to=recipient_number,
+                                               to=recipient_id,
                                                from_=self.twilio_number)
                 self.send_retry += 1
         except TwilioRestException as e:
@@ -54,9 +49,6 @@ class TwilioOutput(Client, OutputChannel):
                          "retires exceeded.")
 
         return message
-
-    def send_image_url(self, recipient_number, image_url):
-        pass
 
 
 class TwilioInput(InputChannel):
@@ -106,7 +98,7 @@ class TwilioInput(InputChannel):
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))
-                    logger.error(e, exc_info=True)
+                    logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise
                     pass

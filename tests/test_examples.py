@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import sys
 import json
@@ -51,7 +46,7 @@ def test_formbot_example():
                                  stories,
                                  os.path.join(p, "models", "dialogue"),
                                  endpoints=endpoints,
-                                 policy_config="default_config.yml")
+                                 policy_config="rasa_core/default_config.yml")
     response = {
         'events': [
             {'event': 'form', 'name': 'restaurant_form', 'timestamp': None},
@@ -94,3 +89,13 @@ def test_formbot_example():
     httpretty.disable()
 
     assert responses[0]['text'] == 'chitchat'
+
+
+def test_concertbot_training():
+    from examples.concertbot.train import train_dialogue
+
+    assert train_dialogue(domain_file='examples/concertbot/domain.yml',
+                          stories_file='examples/concertbot/data/stories.md',
+                          model_path='examples/concertbot/models/dialogue',
+                          policy_config='examples/concertbot/'
+                                        'policy_config.yml')

@@ -1,11 +1,5 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 import os
-from builtins import str
 
 import matplotlib
 import pytest
@@ -36,6 +30,8 @@ DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
+
+E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
 
 MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
@@ -101,12 +97,12 @@ def default_processor(default_domain, default_nlg):
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
     train.train_dialogue_model(
-            domain_file="examples/moodbot/domain.yml",
-            stories_file="examples/moodbot/data/stories.md",
-            output_path=MOODBOT_MODEL_PATH,
-            interpreter=RegexInterpreter(),
-            policy_config='default_config.yml',
-            kwargs=None
+        domain_file="examples/moodbot/domain.yml",
+        stories_file="examples/moodbot/data/stories.md",
+        output_path=MOODBOT_MODEL_PATH,
+        interpreter=RegexInterpreter(),
+        policy_config='rasa_core/default_config.yml',
+        kwargs=None
     )
 
     return MOODBOT_MODEL_PATH

@@ -116,6 +116,79 @@ Code to create a Messenger-compatible webserver looks like this:
    :lines: 2-
    :end-before: END DOC INCLUDE
 
+
+.. _webexteams_connector:
+
+Cisco Webex Teams Setup
+-----------------------
+
+You first need to retrieve some credentials, once you have them you can
+**either** attach the input channel running the provided ``rasa_core.run``
+script, or you can attach it in your own code.
+
+Getting Credentials
+^^^^^^^^^^^^^^^^^^^
+
+**How to get the Cisco Webex Teams credentials:**
+
+You need to set up a bot. Please visit below link to create a bot
+`Webex Authentication <https://developer.webex.com/authentication.html>`_.
+
+After you have created the bot through Cisco Webex Teams, you need to create a
+room in Cisco Webex Teams. Then add the bot in the room the same way you would
+add a person in the room.
+
+You need to note down the room ID for the room you created. This room ID will
+be used in ``room`` variable in the ``credentials.yml`` file.
+
+Please follow this link below to find the room ID
+``https://developer.webex.com/endpoint-rooms-get.html``
+
+Using run script
+^^^^^^^^^^^^^^^^
+If you want to connect to the ``webexteams`` input channel using the run
+script, e.g. using:
+
+.. code-block:: bash
+
+  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+      --port 5002 --credentials credentials.yml
+
+you need to supply a ``credentials.yml`` with the following content:
+
+.. code-block:: yaml
+
+   webexteams:
+     access_token: "YOUR-BOT-ACCESS-TOKEN"
+     room: "YOUR-CISCOWEBEXTEAMS-ROOM-ID"
+
+
+The endpoint for receiving Cisco Webex Teams messages is
+``http://localhost:5005/webhooks/webexteams/webhook``, replacing
+the host and port with the appropriate values. This is the URL
+you should add in the OAuth & Permissions section.
+
+.. note::
+
+   If you do not set the ``room`` keyword
+   argument, messages will by delivered back to
+   the user who sent them.
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``WebexTeamsInput`` instance provides a flask blueprint for creating
+a webserver. This lets you separate the exact endpoints and implementation
+from your webserver creation logic.
+
+Code to create a WebexTeams-compatible webserver looks like this:
+
+
+.. literalinclude:: ../tests/test_channels.py
+   :pyobject: test_webexteams_channel
+   :lines: 2-
+   :end-before: END DOC INCLUDE
+
 .. _slack_connector:
 
 Slack Setup
@@ -532,9 +605,20 @@ you need to supply a ``credentials.yml`` with the following content:
    socketio:
      user_message_evt: user_uttered
      bot_message_evt: bot_uttered
+     session_persistence: true/false
 
-These two configuration values define the event names used by Rasa Core
+The first two configuration values define the event names used by Rasa Core
 when sending or receiving messages over socket.io.
+
+By default, the socketio channel uses the socket id as sender_id which causes
+the session to restart at every page reload. ``session_persistence`` can be
+set to ``true`` to avoid that. In that case, the frontend is responsible
+for generating a session id and sending it to the Rasa Core server by
+emitting the event ``session_request`` with ``{session_id: [session_id]}``
+immediately after the ``connect`` event.
+
+The example `Webchat <https://github.com/mrbot-ai/rasa-webchat>`_
+implements this session creation mechanism (version >= 0.5.0).
 
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^

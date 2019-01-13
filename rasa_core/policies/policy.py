@@ -1,25 +1,15 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from builtins import object
-
 import copy
 import logging
-import typing
 from typing import (
     Any, List, Optional, Text, Dict, Callable)
 
 from rasa_core import utils
+from rasa_core.domain import Domain
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
-
-if typing.TYPE_CHECKING:
-    from rasa_core.domain import Domain
-    from rasa_core.featurizers import TrackerFeaturizer
-    from rasa_core.trackers import DialogueStateTracker
-    from rasa_core.training.data import DialogueTrainingData
+from rasa_core.featurizers import TrackerFeaturizer
+from rasa_core.trackers import DialogueStateTracker
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +23,12 @@ class Policy(object):
 
     @classmethod
     def _create_featurizer(cls, featurizer=None):
-        return copy.deepcopy(featurizer) \
-            if featurizer else cls._standard_featurizer()
+        if featurizer:
+            return copy.deepcopy(featurizer)
+        else:
+            return cls._standard_featurizer()
 
-    def __init__(self, featurizer=None):
-        # type: (Optional[TrackerFeaturizer]) -> None
+    def __init__(self, featurizer: Optional[TrackerFeaturizer] = None) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
 
     @property
@@ -45,8 +36,7 @@ class Policy(object):
         return self.__featurizer
 
     @staticmethod
-    def _get_valid_params(func, **kwargs):
-        # type: (Callable, Any) -> Dict
+    def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
         # filter out kwargs that cannot be passed to func
         valid_keys = utils.arguments_of(func)
 
@@ -60,12 +50,11 @@ class Policy(object):
         return params
 
     def featurize_for_training(
-            self,
-            training_trackers,  # type: List[DialogueStateTracker]
-            domain,  # type: Domain
-            **kwargs  # type: Any
-    ):
-        # type: (...) -> DialogueTrainingData
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> DialogueTrainingData:
         """Transform training trackers into a vector representation.
         The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
@@ -82,23 +71,21 @@ class Policy(object):
         return training_data
 
     def train(self,
-              training_trackers,  # type: List[DialogueStateTracker]
-              domain,  # type: Domain
-              **kwargs  # type: Any
-              ):
-        # type: (...) -> None
+              training_trackers: List[DialogueStateTracker],
+              domain: Domain,
+              **kwargs: Any
+              ) -> None:
         """Trains the policy on given training trackers."""
 
         raise NotImplementedError("Policy must have the capacity "
                                   "to train.")
 
     def _training_data_for_continue_training(
-            self,
-            batch_size,  # type: int
-            training_trackers,  # type: List[DialogueStateTracker]
-            domain  # type: Domain
-    ):
-        # type: (...) -> DialogueTrainingData
+        self,
+        batch_size: int,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain
+    ) -> DialogueTrainingData:
         """Creates training_data for `continue_training` by
             taking the new labelled example training_trackers[-1:]
             and inserting it in batch_size-1 parts of the old training data,
@@ -116,8 +103,10 @@ class Policy(object):
                     for i in sampled_idx] + training_trackers[-1:]
         return self.featurize_for_training(trackers, domain)
 
-    def continue_training(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, Any) -> None
+    def continue_training(self,
+                          training_trackers: List[DialogueStateTracker],
+                          domain: Domain,
+                          **kwargs: Any) -> None:
         """Continues training an already trained policy.
 
         This doesn't need to be supported by every policy. If it is supported,
@@ -126,8 +115,9 @@ class Policy(object):
 
         pass
 
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
+    def predict_action_probabilities(self,
+                                     tracker: DialogueStateTracker,
+                                     domain: Domain) -> List[float]:
         """Predicts the next action the bot should take
         after seeing the tracker.
 
@@ -136,16 +126,32 @@ class Policy(object):
         raise NotImplementedError("Policy must have the capacity "
                                   "to predict.")
 
-    def persist(self, path):
-        # type: (Text) -> None
+    def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
         raise NotImplementedError("Policy must have the capacity "
                                   "to persist itself.")
 
     @classmethod
-    def load(cls, path):
-        # type: (Text) -> Policy
+    def load(cls, path: Text) -> 'Policy':
         """Loads a policy from the storage.
             Needs to load its featurizer"""
         raise NotImplementedError("Policy must have the capacity "
                                   "to load itself.")
+
+
+def confidence_scores_for(action_name, value, domain):
+    """Returns confidence scores if a single action is predicted.
+
+    Args:
+        action_name: Name of action for which the score should be set.
+        value: Confidence for `action_name`.
+        domain: Domain which contains all actions.
+
+    Returns: List of length `len(nr_actions)`.
+
+    """
+    results = [0.0] * domain.num_actions
+    idx = domain.index_for_action(action_name)
+    results[idx] = value
+
+    return results

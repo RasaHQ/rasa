@@ -12,7 +12,7 @@ help:
 
 
 train-core:
-	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 100 --debug
+	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --debug
 
 run-core:
 	python -m rasa_core.run --core models/dialogue --nlu models/nlu/current --debug --endpoints endpoints.yml
@@ -28,7 +28,7 @@ train-interactive:
 	python -m rasa_core.train interactive -s data/stories.md -d domain.yml -o models/dialogue --debug --endpoints endpoints.yml
 
 visualize:
-	python -m rasa_core.visualize -s data/stories.md -d domain.yml -o story_graph.png
+	python -m rasa_core.visualize -s data/stories.md -d domain.yml -o story_graph.html
 
 train-nlu:
 	python -m rasa_nlu.train -c nlu_tensorflow.yml --fixed_model_name current --data data/nlu_data.md -o models --project nlu --verbose

@@ -1,10 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from builtins import str
-
 import logging
 
 from rasa_core import utils
@@ -78,9 +71,9 @@ class Slot(object):
             return utils.class_from_module_path(type_name)
         except Exception:
             raise ValueError(
-                    "Failed to find slot type. Neither a known type nor. If "
-                    "you are creating your own slot type, make sure its "
-                    "module path is correct: {}.".format(type_name))
+                "Failed to find slot type. Neither a known type nor. If "
+                "you are creating your own slot type, make sure its "
+                "module path is correct: {}.".format(type_name))
 
     def persistence_info(self):
         return {"type": utils.module_path_from_instance(self),
@@ -106,10 +99,10 @@ class FloatSlot(Slot):
 
         if min_value >= max_value:
             raise ValueError(
-                    "Float slot ('{}') created with an invalid range "
-                    "using min ({}) and max ({}) values. Make sure "
-                    "min is smaller than max."
-                    "".format(self.name, self.min_value, self.max_value))
+                "Float slot ('{}') created with an invalid range "
+                "using min ({}) and max ({}) values. Make sure "
+                "min is smaller than max."
+                "".format(self.name, self.min_value, self.max_value))
 
         if (initial_value is not None and
                 not (min_value <= initial_value <= max_value)):
@@ -215,13 +208,13 @@ class CategoricalSlot(Slot):
             else:
                 if self.value is not None:
                     logger.warning(
-                            "Categorical slot '{}' is set to a value ('{}') "
-                            "that is not specified in the domain. "
-                            "Value will be ignored and the slot will "
-                            "behave as if no value is set. "
-                            "Make sure to add all values a categorical "
-                            "slot should store to the domain."
-                            "".format(self.name, self.value))
+                        "Categorical slot '{}' is set to a value ('{}') "
+                        "that is not specified in the domain. "
+                        "Value will be ignored and the slot will "
+                        "behave as if no value is set. "
+                        "Make sure to add all values a categorical "
+                        "slot should store to the domain."
+                        "".format(self.name, self.value))
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r

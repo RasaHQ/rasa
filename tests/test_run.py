@@ -5,12 +5,12 @@ CREDENTIALS_FILE = "examples/moodbot/credentials.yml"
 
 def test_create_http_input_channels():
     channels = run.create_http_input_channels(None, CREDENTIALS_FILE)
-    assert len(channels) == 5
+    assert len(channels) == 6
 
     # ensure correct order
     assert {c.name() for c in channels} == {"twilio", "slack",
                                             "telegram", "mattermost",
-                                            "facebook"}
+                                            "facebook", "webexteams"}
 
 
 def test_create_single_input_channels():
@@ -21,13 +21,13 @@ def test_create_single_input_channels():
 
 def test_create_single_input_channels_by_class():
     channels = run.create_http_input_channels(
-            "rasa_core.channels.channel.RestInput", CREDENTIALS_FILE)
+        "rasa_core.channels.channel.RestInput", CREDENTIALS_FILE)
     assert len(channels) == 1
     assert channels[0].name() == "rest"
 
 
 def test_create_single_input_channels_by_class_wo_credentials():
     channels = run.create_http_input_channels(
-            "rasa_core.channels.channel.RestInput", credentials_file=None)
+        "rasa_core.channels.channel.RestInput", credentials_file=None)
     assert len(channels) == 1
     assert channels[0].name() == "rest"

@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import json
 import logging
 from typing import Text, Optional, List
@@ -23,8 +18,9 @@ class SlackBot(SlackClient, OutputChannel):
     def name(cls):
         return "slack"
 
-    def __init__(self, token, slack_channel=None):
-        # type: (Text, Optional[Text]) -> None
+    def __init__(self,
+                 token: Text,
+                 slack_channel: Optional[Text] = None) -> None:
 
         self.slack_channel = slack_channel
         super(SlackBot, self).__init__(token)
@@ -70,7 +66,7 @@ class SlackBot(SlackClient, OutputChannel):
         button_attachment = [{"fallback": message,
                               "callback_id": message.replace(' ', '_')[:20],
                               "actions": self._convert_to_slack_buttons(
-                                      buttons)}]
+                                  buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
@@ -94,26 +90,29 @@ class SlackInput(InputChannel):
         return cls(credentials.get("slack_token"),
                    credentials.get("slack_channel"))
 
-    def __init__(self, slack_token, slack_channel=None,
-                 errors_ignore_retry=None):
-        # type: (Text, Optional[Text], Optional[List[Text]]) -> None
+    def __init__(self,
+                 slack_token: Text,
+                 slack_channel: Optional[Text] = None,
+                 errors_ignore_retry: Optional[List[Text]] = None) -> None:
         """Create a Slack input channel.
 
         Needs a couple of settings to properly authenticate and validate
         messages. Details to setup:
 
         https://github.com/slackapi/python-slackclient
-        :param slack_token: Your Slack Authentication token. You can find or
-            generate a test token
-             `here <https://api.slack.com/docs/oauth-test-tokens>`_.
-        :param slack_channel: the string identifier for a channel to which
-            the bot posts, or channel name
-            (e.g. 'C1234ABC', 'bot-test' or '#bot-test')
-            If unset, messages will be sent back to the user they came from.
-        :param errors_ignore_retry: If error code given by slack
-            included in this list then it will ignore the event.
-            The code is listed here:
-            https://api.slack.com/events-api#errors
+
+        Args:
+            slack_token: Your Slack Authentication token. You can find or
+                generate a test token
+                `here <https://api.slack.com/docs/oauth-test-tokens>`_.
+            slack_channel: the string identifier for a channel to which
+                the bot posts, or channel name (e.g. 'C1234ABC', 'bot-test'
+                or '#bot-test') If unset, messages will be sent back
+                to the user they came from.
+            errors_ignore_retry: If error code given by slack
+                included in this list then it will ignore the event.
+                The code is listed here:
+                https://api.slack.com/events-api#errors
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
@@ -150,7 +149,7 @@ class SlackInput(InputChannel):
             return Response(status=201, headers={'X-Slack-No-Retry': 1})
 
         try:
-            out_channel = SlackBot(self.slack_token)
+            out_channel = SlackBot(self.slack_token, self.slack_channel)
             user_msg = UserMessage(text, out_channel, sender_id,
                                    input_channel=self.name())
             on_new_message(user_msg)
@@ -178,18 +177,17 @@ class SlackInput(InputChannel):
                                          {"content_type": "application/json"})
                 elif self._is_user_message(output):
                     return self.process_message(
-                            on_new_message,
-                            text=output['event']['text'],
-                            sender_id=output.get('event').get('user'))
+                        on_new_message,
+                        text=output['event']['text'],
+                        sender_id=output.get('event').get('user'))
             elif request.form:
                 output = dict(request.form)
                 if self._is_button_reply(output):
+                    sender_id = json.loads(output['payload'][0])['user']['id']
                     return self.process_message(
-                            on_new_message,
-                            text=self._get_button_reply(output),
-                            sender_id=json.loads(
-                                    output['payload'][0]).get('user').get(
-                                'id'))
+                        on_new_message,
+                        text=self._get_button_reply(output),
+                        sender_id=sender_id)
 
             return make_response()
 

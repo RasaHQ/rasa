@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import sys
 
 import io
@@ -10,36 +5,46 @@ import logging
 import numpy as np
 import os
 import requests
-import six
 import textwrap
 import uuid
-from PyInquirer import prompt
 from colorclass import Color
-from flask import Flask, send_from_directory, send_file, abort
+from flask import Flask, send_file, abort
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable, Union
+from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
 
 from rasa_core import utils, server, events, constants
-from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string
+from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
     DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
 from rasa_core.domain import Domain
-from rasa_core.events import Event, ActionExecuted
+from rasa_core.events import (
+    Event, ActionExecuted, UserUttered, Restarted,
+    BotUttered)
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.trackers import EventVerbosity
+from rasa_core.training import visualization
 from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
     visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
 from rasa_core.utils import EndpointConfig
+
+import questionary
+from questionary import Choice, Form, Question
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+# noinspection PyProtectedMember
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
+
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
@@ -53,10 +58,12 @@ MAX_VISUAL_HISTORY = 3
 
 PATHS = {"stories": "data/stories.md",
          "nlu": "data/nlu.md",
-         "backup": "data/nlu_interactive.md"}
+         "backup": "data/nlu_interactive.md",
+         "domain": "domain.yml"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
+OTHER_ACTION = uuid.uuid4().hex
 
 
 class RestartConversation(Exception):
@@ -80,8 +87,7 @@ class UndoLastStep(Exception):
     pass
 
 
-def _response_as_json(response):
-    # type: (requests.Response) -> Dict[Text, Any]
+def _response_as_json(response: requests.Response) -> Dict[Text, Any]:
     """Convert a HTTP response to json, raise exception if response failed."""
 
     response.raise_for_status()
@@ -92,16 +98,16 @@ def _response_as_json(response):
     return response.json()
 
 
-def send_message(endpoint,  # type: EndpointConfig
-                 sender_id,  # type: Text
-                 message,  # type: Text
-                 parse_data=None  # type: Optional[Dict[Text, Any]]
-                 ):
-    # type: (...) -> Dict[Text, Any]
+def send_message(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    message: Text,
+    parse_data: Optional[Dict[Text, Any]] = None
+) -> Dict[Text, Any]:
     """Send a user message to a conversation."""
 
     payload = {
-        "sender": "user",
+        "sender": UserUttered.type_name,
         "message": message,
         "parse_data": parse_data
     }
@@ -114,8 +120,10 @@ def send_message(endpoint,  # type: EndpointConfig
     return _response_as_json(r)
 
 
-def request_prediction(endpoint, sender_id):
-    # type: (EndpointConfig, Text) -> Dict[Text, Any]
+def request_prediction(
+    endpoint: EndpointConfig,
+    sender_id: Text
+) -> Dict[Text, Any]:
     """Request the next action prediction from core."""
 
     r = endpoint.request(method="post",
@@ -124,8 +132,7 @@ def request_prediction(endpoint, sender_id):
     return _response_as_json(r)
 
 
-def retrieve_domain(endpoint):
-    # type: (EndpointConfig) -> Dict[Text, Any]
+def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
     """Retrieve the domain from core."""
 
     r = endpoint.request(method="get",
@@ -135,12 +142,15 @@ def retrieve_domain(endpoint):
     return _response_as_json(r)
 
 
-def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
-    # type: (EndpointConfig, Text, EventVerbosity) -> Dict[Text, Any]
+def retrieve_tracker(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    verbosity: EventVerbosity = EventVerbosity.ALL
+) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
 
     path = "/conversations/{}/tracker?include_events={}".format(
-            sender_id, verbosity.name)
+        sender_id, verbosity.name)
     r = endpoint.request(method="get",
                          subpath=path,
                          headers={"Accept": "application/json"})
@@ -148,28 +158,51 @@ def retrieve_tracker(endpoint, sender_id, verbosity=EventVerbosity.ALL):
     return _response_as_json(r)
 
 
-def send_action(endpoint,  # type: EndpointConfig
-                sender_id,  # type: Text
-                action_name,  # type: Text
-                policy=None,  # type: Optional[Text]
-                confidence=None  # type: Optional[float]
-                ):
-    # type: (...) -> Dict[Text, Any]
+def send_action(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    action_name: Text,
+    policy: Optional[Text] = None,
+    confidence: Optional[float] = None,
+    is_new_action: bool = False
+) -> Dict[Text, Any]:
     """Log an action to a conversation."""
 
-    payload = {"action": action_name, "policy": policy,
-               "confidence": confidence}
+    payload = ActionExecuted(action_name, policy, confidence).as_dict()
+
     subpath = "/conversations/{}/execute".format(sender_id)
 
-    r = endpoint.request(json=payload,
-                         method="post",
-                         subpath=subpath)
+    try:
+        r = endpoint.request(json=payload,
+                             method="post",
+                             subpath=subpath)
+        return _response_as_json(r)
+    except requests.exceptions.HTTPError:
+        if is_new_action:
+            warning_questions = questionary.confirm(
+                "WARNING: You have created a new action: '{}', "
+                "which was not successfully executed. "
+                "If this action does not return any events, "
+                "you do not need to do anything. "
+                "If this is a custom action which returns events, "
+                "you are recommended to implement this action "
+                "in your action server and try again."
+                "".format(action_name))
+            _ask_or_abort(warning_questions, sender_id, endpoint)
 
-    return _response_as_json(r)
+            payload = ActionExecuted(action_name).as_dict()
+
+            return send_event(endpoint, sender_id, payload)
+        else:
+            logger.error("failed to execute action!")
+            raise
 
 
-def send_event(endpoint, sender_id, evt):
-    # type: (EndpointConfig, Text, Dict[Text, Any]) -> Dict[Text, Any]
+def send_event(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    evt: Dict[Text, Any]
+) -> Dict[Text, Any]:
     """Log an event to a conversation."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
@@ -181,8 +214,11 @@ def send_event(endpoint, sender_id, evt):
     return _response_as_json(r)
 
 
-def replace_events(endpoint, sender_id, evts):
-    # type: (EndpointConfig, Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
+def replace_events(
+    endpoint: EndpointConfig,
+    sender_id: Text,
+    evts: List[Dict[Text, Any]]
+) -> Dict[Text, Any]:
     """Replace all the events of a conversation with the provided ones."""
 
     subpath = "/conversations/{}/tracker/events".format(sender_id)
@@ -194,8 +230,10 @@ def replace_events(endpoint, sender_id, evts):
     return _response_as_json(r)
 
 
-def send_finetune(endpoint, evts):
-    # type: (EndpointConfig, List[Dict[Text, Any]]) -> Dict[Text, Any]
+def send_finetune(
+    endpoint: EndpointConfig,
+    evts: List[Dict[Text, Any]]
+) -> Dict[Text, Any]:
     """Finetune a core model on the provided additional training samples."""
 
     r = endpoint.request(json=evts,
@@ -205,17 +243,19 @@ def send_finetune(endpoint, evts):
     return _response_as_json(r)
 
 
-def format_bot_output(message):
-    # type: (Dict[Text, Any]) -> Text
+def format_bot_output(
+    message: Dict[Text, Any]
+) -> Text:
     """Format a bot response to be displayed in the history table."""
 
-    if "text" in message:
-        output = message.get("text")
-    else:
-        output = ""
+    # First, add text to output
+    output = message.get("text") or ""
 
-    # Append all additional items
+    # Then, append all additional items
     data = message.get("data", {})
+    if not data:
+        return output
+
     if data.get("image"):
         output += "\nImage: " + data.get("image")
 
@@ -223,55 +263,64 @@ def format_bot_output(message):
         output += "\nAttachment: " + data.get("attachment")
 
     if data.get("buttons"):
+        output += "\nButtons:"
         for idx, button in enumerate(data.get("buttons")):
             button_str = button_to_string(button, idx)
             output += "\n" + button_str
+
+    if data.get("elements"):
+        output += "\nElements:"
+        for idx, element in enumerate(data.get("elements")):
+            element_str = element_to_string(element, idx)
+            output += "\n" + element_str
     return output
 
 
-def latest_user_message(evts):
-    # type: (List[Dict[Text, Any]]) -> Optional[Dict[Text, Any]]
+def latest_user_message(
+    evts: List[Dict[Text, Any]]
+) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
 
     for i, e in enumerate(reversed(evts)):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             return e
     return None
 
 
-def all_events_before_latest_user_msg(evts):
-    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Any]]
+def all_events_before_latest_user_msg(
+    evts: List[Dict[Text, Any]]
+) -> List[Dict[Text, Any]]:
     """Return all events that happened before the most recent user message."""
 
     for i, e in enumerate(reversed(evts)):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             return evts[:-(i + 1)]
     return evts
 
 
-def _ask_questions(
-        questions,  # type: List[Dict[Text, Any]]
-        sender_id,  # type: Text
-        endpoint,  # type: EndpointConfig
-        is_abort=lambda x: False  # type: Callable[[Dict[Text, Any]], bool]
-):
-    # type: (...) -> Dict[Text, Any]
+def _ask_or_abort(
+    questions: Union[Form, Question],
+    sender_id: Text,
+    endpoint: EndpointConfig,
+    is_abort: Callable[[Dict[Text, Any]], bool] = lambda x: False
+) -> Any:
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
 
     should_retry = True
     answers = {}
 
     while should_retry:
-        answers = prompt(questions)
-        if not answers or is_abort(answers):
+        answers = questions.ask()
+        if answers is None or is_abort(answers):
             should_retry = _ask_if_quit(sender_id, endpoint)
         else:
             should_retry = False
     return answers
 
 
-def _selection_choices_from_intent_prediction(predictions):
-    # type: (List[Dict[Text, Any]]) -> List[Dict[Text, Text]]
+def _selection_choices_from_intent_prediction(
+    predictions: List[Dict[Text, Any]]
+) -> List[Dict[Text, Text]]:
     """"Given a list of ML predictions create a UI choice list."""
 
     sorted_intents = sorted(predictions,
@@ -290,49 +339,46 @@ def _selection_choices_from_intent_prediction(predictions):
     return choices
 
 
-def _request_free_text_intent(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> Text
-    questions = [
-        {
-            "type": "input",
-            "name": "intent",
-            "message": "Please type the intent name",
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    return answers["intent"]
+def _request_free_text_intent(
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
+    question = questionary.text("Please type the intent name")
+    return _ask_or_abort(question, sender_id, endpoint)
 
 
-def _request_selection_from_intent_list(intent_list, sender_id, endpoint):
-    # type: (List[Dict[Text, Text]], Text, EndpointConfig) -> Text
-    questions = [
-        {
-            "type": "list",
-            "name": "intent",
-            "message": "What intent is it?",
-            "choices": intent_list
-        }
-    ]
-    return _ask_questions(questions, sender_id, endpoint)["intent"]
+def _request_free_text_action(
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
+    question = questionary.text("Please type the action name")
+    return _ask_or_abort(question, sender_id, endpoint)
 
 
-def _request_fork_point_from_list(forks, sender_id, endpoint):
-    # type: (List[Dict[Text, Text]], Text, EndpointConfig) -> Text
-    questions = [
-        {
-            "type": "list",
-            "name": "fork",
-            "message": "Before which user message do you want to fork?",
-            "choices": forks
-        }
-    ]
-    return _ask_questions(questions, sender_id, endpoint)["fork"]
+def _request_selection_from_intent_list(
+    intent_list: List[Dict[Text, Text]],
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
+    question = questionary.select("What intent is it?", choices=intent_list)
+    return _ask_or_abort(question, sender_id, endpoint)
 
 
-def _request_fork_from_user(sender_id,
-                            endpoint
-                            ):
-    # type: (...) -> Optional[List[Dict[Text, Any]]]
+def _request_fork_point_from_list(
+    forks: List[Dict[Text, Text]],
+    sender_id: Text,
+    endpoint: EndpointConfig
+) -> Text:
+    question = questionary.select(
+        "Before which user message do you want to fork?",
+        choices=forks)
+    return _ask_or_abort(question, sender_id, endpoint)
+
+
+def _request_fork_from_user(
+    sender_id,
+    endpoint
+) -> Optional[List[Dict[Text, Any]]]:
     """Take in a conversation and ask at which point to fork the conversation.
 
     Returns the list of events that should be kept. Forking means, the
@@ -343,7 +389,7 @@ def _request_fork_from_user(sender_id,
 
     choices = []
     for i, e in enumerate(tracker.get("events", [])):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             choices.append({"name": e.get("text"), "value": i})
 
     fork_idx = _request_fork_point_from_list(list(reversed(choices)),
@@ -356,12 +402,12 @@ def _request_fork_from_user(sender_id,
         return None
 
 
-def _request_intent_from_user(latest_message,
-                              intents,
-                              sender_id,
-                              endpoint
-                              ):
-    # type: (...) -> Dict[Text, Any]
+def _request_intent_from_user(
+    latest_message,
+    intents,
+    sender_id,
+    endpoint
+) -> Dict[Text, Any]:
     """Take in latest message and ask which intent it should have been.
 
     Returns the intent dict that has been selected by the user."""
@@ -376,8 +422,8 @@ def _request_intent_from_user(latest_message,
             predictions.append({"name": i, "confidence": 0.0})
 
     # convert intents to ui list and add <other> as a free text alternative
-    choices = (_selection_choices_from_intent_prediction(predictions) +
-               [{"name": "     <other>", "value": OTHER_INTENT}])
+    choices = ([{"name": "<create_new_intent>", "value": OTHER_INTENT}] +
+               _selection_choices_from_intent_prediction(predictions))
 
     intent_name = _request_selection_from_intent_list(choices,
                                                       sender_id,
@@ -385,13 +431,12 @@ def _request_intent_from_user(latest_message,
 
     if intent_name == OTHER_INTENT:
         intent_name = _request_free_text_intent(sender_id, endpoint)
-
+        return {"name": intent_name, "confidence": 1.0}
     # returns the selected intent with the original probability value
     return next((x for x in predictions if x["name"] == intent_name), None)
 
 
-def _print_history(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> None
+def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     """Print information about the conversation for the user."""
 
     tracker_dump = retrieve_tracker(endpoint, sender_id,
@@ -412,8 +457,7 @@ def _print_history(sender_id, endpoint):
     print("------")
 
 
-def _chat_history_table(evts):
-    # type: (List[Dict[Text, Any]]) -> Text
+def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
     """Create a table containing bot and user messages.
 
     Also includes additional information, like any events and
@@ -438,12 +482,10 @@ def _chat_history_table(evts):
         ]
         return "\n".join(_lines)
 
-    def bot_width(_table):
-        # type: (AsciiTable) -> int
+    def bot_width(_table: AsciiTable) -> int:
         return _table.column_max_width(1)
 
-    def user_width(_table):
-        # type: (AsciiTable) -> int
+    def user_width(_table: AsciiTable) -> int:
         return _table.column_max_width(3)
 
     def add_bot_cell(data, cell):
@@ -465,13 +507,13 @@ def _chat_history_table(evts):
 
     bot_column = []
     for idx, evt in enumerate(evts):
-        if evt.get("event") == "action":
+        if evt.get("event") == ActionExecuted.type_name:
             bot_column.append(colored(evt['name'], 'autocyan'))
             if evt['confidence'] is not None:
                 bot_column[-1] += (
                     colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
 
-        elif evt.get("event") == 'user':
+        elif evt.get("event") == UserUttered.type_name:
             if bot_column:
                 text = "\n".join(bot_column)
                 add_bot_cell(table_data, text)
@@ -480,11 +522,11 @@ def _chat_history_table(evts):
             msg = format_user_msg(evt, user_width(table))
             add_user_cell(table_data, msg)
 
-        elif evt.get("event") == "bot":
+        elif evt.get("event") == BotUttered.type_name:
             wrapped = wrap(format_bot_output(evt), bot_width(table))
             bot_column.append(colored(wrapped, 'autoblue'))
 
-        elif evt.get("event") != "bot":
+        else:
             e = Event.from_parameters(evt)
             if e.as_story_string():
                 bot_column.append(wrap(e.as_story_string(), bot_width(table)))
@@ -502,8 +544,7 @@ def _chat_history_table(evts):
     return table.table
 
 
-def _slot_history(tracker_dump):
-    # type: (Dict[Text, Any]) -> List[Text]
+def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     """Create an array of slot representations to be displayed."""
 
     slot_strs = []
@@ -514,67 +555,48 @@ def _slot_history(tracker_dump):
     return slot_strs
 
 
-def _ask_if_quit(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> bool
+def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
     Return `True` if the previous question should be retried."""
 
-    questions = [{
-        "name": "abort",
-        "type": "list",
-        "message": "Do you want to stop?",
-        "choices": [
-            {
-                "name": "Continue",
-                "value": "continue",
-            },
-            {
-                "name": "Undo Last",
-                "value": "undo",
-            },
-            {
-                "name": "Fork",
-                "value": "fork",
-            },
-            {
-                "name": "Start Fresh",
-                "value": "restart",
-            },
-            {
-                "name": "Export & Quit",
-                "value": "quit",
-            },
-        ]
-    }]
-    answers = prompt(questions)
+    answer = questionary.select(
+        message="Do you want to stop?",
+        choices=[Choice("Continue", "continue"),
+                 Choice("Undo Last", "undo"),
+                 Choice("Fork", "fork"),
+                 Choice("Start Fresh", "restart"),
+                 Choice("Export & Quit", "quit")]).ask()
 
-    if not answers or answers["abort"] == "quit":
+    if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        story_path, nlu_path = _request_export_info()
+        story_path, nlu_path, domain_path = _request_export_info()
 
         tracker = retrieve_tracker(endpoint, sender_id)
         evts = tracker.get("events", [])
 
         _write_stories_to_file(story_path, evts)
         _write_nlu_to_file(nlu_path, evts)
+        _write_domain_to_file(domain_path, evts, endpoint)
 
         logger.info("Successfully wrote stories and NLU data")
         sys.exit()
-    elif answers["abort"] == "continue":
+    elif answer == "continue":
         # in this case we will just return, and the original
         # question will get asked again
         return True
-    elif answers["abort"] == "undo":
+    elif answer == "undo":
         raise UndoLastStep()
-    elif answers["abort"] == "fork":
+    elif answer == "fork":
         raise ForkTracker()
-    elif answers["abort"] == "restart":
+    elif answer == "restart":
         raise RestartConversation()
 
 
-def _request_action_from_user(predictions, sender_id, endpoint):
-    # type: (List[Dict[Text, Any]],Text, EndpointConfig) -> Text
+def _request_action_from_user(
+    predictions: List[Dict[Text, Any]],
+    sender_id: Text, endpoint: EndpointConfig
+) -> (Text, bool):
     """Ask the user to correct an action prediction."""
 
     _print_history(sender_id, endpoint)
@@ -587,53 +609,50 @@ def _request_action_from_user(predictions, sender_id, endpoint):
                 "value": a.get("action")}
                for a in sorted_actions]
 
-    questions = [{
-        "name": "action",
-        "type": "list",
-        "message": "What is the next action of the bot?",
-        "choices": choices
-    }]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    action_name = answers["action"]
+    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
+    question = questionary.select("What is the next action of the bot?",
+                                  choices)
+
+    action_name = _ask_or_abort(question, sender_id, endpoint)
+    is_new_action = action_name == OTHER_ACTION
+
+    if is_new_action:
+        action_name = _request_free_text_action(sender_id, endpoint)
     print("Thanks! The bot will now run {}.\n".format(action_name))
-    return action_name
+    return action_name, is_new_action
 
 
-def _request_export_info():
-    # type: () -> (Text, Text)
+def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
 
-    def validate_path(path):
-        try:
-            with io.open(path, "a", encoding="utf-8"):
-                return True
-        except Exception as e:
-            return "Failed to open file. {}".format(e)
-
     # export training data and quit
-    questions = [{
-        "name": "export stories",
-        "type": "input",
-        "message": "Export stories to (if file exists, this "
-                   "will append the stories)",
-        "default": PATHS["stories"],
-        "validate": validate_path
-    }, {"name": "export nlu",
-        "type": "input",
-        "message": "Export NLU data to (if file exists, this "
-                   "will merge learned data with previous training examples)",
-        "default": PATHS["nlu"],
-        "validate": validate_path}]
+    questions = questionary.form(
+        export_stories=questionary.text(
+            message="Export stories to (if file exists, this "
+                    "will append the stories)",
+            default=PATHS["stories"]),
+        export_nlu=questionary.text(
+            message="Export NLU data to (if file exists, this will "
+                    "merge learned data with previous training examples)",
+            default=PATHS["nlu"]),
+        export_domain=questionary.text(
+            message="Export domain file to (if file exists, this "
+                    "will be overwritten)",
+            default=PATHS["domain"]),
+    )
 
-    answers = prompt(questions)
+    answers = questions.ask()
     if not answers:
         sys.exit()
 
-    return answers["export stories"], answers["export nlu"]
+    return (answers["export_stories"],
+            answers["export_nlu"],
+            answers["export_domain"])
 
 
-def _split_conversation_at_restarts(evts):
-    # type: (List[Dict[Text, Any]]) -> List[List[Dict[Text, Any]]]
+def _split_conversation_at_restarts(
+    evts: List[Dict[Text, Any]]
+) -> List[List[Dict[Text, Any]]]:
     """Split a conversation at restart events.
 
     Returns an array of event lists, without the restart events."""
@@ -654,15 +673,14 @@ def _split_conversation_at_restarts(evts):
     return sub_conversations
 
 
-def _collect_messages(evts):
-    # type: (List[Dict[Text, Any]]) -> List[Message]
+def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
 
     msgs = []
 
     for evt in evts:
-        if evt.get("event") == "user":
+        if evt.get("event") == UserUttered.type_name:
             data = evt.get("parse_data")
             msg = Message.build(data["text"], data["intent"]["name"],
                                 data["entities"])
@@ -671,8 +689,18 @@ def _collect_messages(evts):
     return msgs
 
 
-def _write_stories_to_file(export_story_path, evts):
-    # type: (Text, List[Dict[Text, Any]]) -> None
+def _collect_actions(evts: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
+    """Collect all the `ActionExecuted` events into a list."""
+
+    return [evt
+            for evt in evts
+            if evt.get("event") == ActionExecuted.type_name]
+
+
+def _write_stories_to_file(
+    export_story_path: Text,
+    evts: List[Dict[Text, Any]]
+) -> None:
     """Write the conversation of the sender_id to the file paths."""
 
     sub_conversations = _split_conversation_at_restarts(evts)
@@ -684,8 +712,10 @@ def _write_stories_to_file(export_story_path, evts):
             f.write(s.as_story_string(flat=True) + "\n")
 
 
-def _write_nlu_to_file(export_nlu_path, evts):
-    # type: (Text, List[Dict[Text, Any]]) -> None
+def _write_nlu_to_file(
+    export_nlu_path: Text,
+    evts: List[Dict[Text, Any]]
+) -> None:
     """Write the nlu data of the sender_id to the file paths."""
 
     msgs = _collect_messages(evts)
@@ -693,36 +723,84 @@ def _write_nlu_to_file(export_nlu_path, evts):
     # noinspection PyBroadException
     try:
         previous_examples = load_data(export_nlu_path)
+    except Exception as e:
+        logger.exception("An exception occurred while trying to load the "
+                         "NLU data.")
 
-    except Exception:
-        questions = [{"name": "export nlu",
-                      "type": "input",
-                      "message": "Could not load existing NLU data, please "
-                                 "specify where to store NLU data learned in "
-                                 "this session (this will overwrite any "
-                                 "existing file)",
-                      "default": PATHS["backup"]}]
+        export_nlu_path = questionary.text(
+            message="Could not load existing NLU data, please "
+                    "specify where to store NLU data learned in "
+                    "this session (this will overwrite any "
+                    "existing file). {}".format(str(e)),
+            default=PATHS["backup"]).ask()
 
-        answers = prompt(questions)
-        export_nlu_path = answers["export nlu"]
+        if export_nlu_path is None:
+            return
+
         previous_examples = TrainingData()
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
     with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
-        if _guess_format(export_nlu_path) in ["md", "unk"]:
+        if _guess_format(export_nlu_path) in {"md", "unk"}:
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
 
 
-def _predict_till_next_listen(endpoint,  # type: EndpointConfig
-                              sender_id,  # type: Text
-                              finetune,  # type: bool
-                              sender_ids,  # type: List[Text]
-                              plot_file  # type: Optional[Text]
-                              ):
-    # type: (...) -> None
+def _entities_from_messages(messages):
+    """Return all entities that occur in atleast one of the messages."""
+    return list({e["entity"]
+                 for m in messages
+                 for e in m.data.get("entities", [])})
+
+
+def _intents_from_messages(messages):
+    """Return all intents that occur in at least one of the messages."""
+
+    # set of distinct intents
+    intents = {m.data["intent"]
+               for m in messages
+               if "intent" in m.data}
+
+    return [{i: {"use_entities": True}} for i in intents]
+
+
+def _write_domain_to_file(
+    domain_path: Text,
+    evts: List[Dict[Text, Any]],
+    endpoint: EndpointConfig
+) -> None:
+    """Write an updated domain file to the file path."""
+
+    domain = retrieve_domain(endpoint)
+    old_domain = Domain.from_dict(domain)
+
+    messages = _collect_messages(evts)
+    actions = _collect_actions(evts)
+
+    domain_dict = dict.fromkeys(domain.keys(), [])
+
+    # TODO for now there is no way to distinguish between action and form
+    domain_dict["forms"] = []
+    domain_dict["intents"] = _intents_from_messages(messages)
+    domain_dict["entities"] = _entities_from_messages(messages)
+    # do not automatically add default actions to the domain dict
+    domain_dict["actions"] = list({e["name"]
+                                   for e in actions
+                                   if e["name"] not in default_action_names()})
+
+    new_domain = Domain.from_dict(domain_dict)
+
+    old_domain.merge(new_domain).persist_clean(domain_path)
+
+
+def _predict_till_next_listen(endpoint: EndpointConfig,
+                              sender_id: Text,
+                              finetune: bool,
+                              sender_ids: List[Text],
+                              plot_file: Optional[Text]
+                              ) -> None:
     """Predict and validate actions until we need to wait for a user msg."""
 
     listen = False
@@ -746,12 +824,11 @@ def _predict_till_next_listen(endpoint,  # type: EndpointConfig
         _plot_trackers(sender_ids, plot_file, endpoint)
 
 
-def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
-                       evts,  # type: List[Dict[Text, Any]]
-                       endpoint,  # type: EndpointConfig
-                       sender_id  # type: Text
-                       ):
-    # type: (...) -> None
+def _correct_wrong_nlu(corrected_nlu: Dict[Text, Any],
+                       evts: List[Dict[Text, Any]],
+                       endpoint: EndpointConfig,
+                       sender_id: Text
+                       ) -> None:
     """A wrong NLU prediction got corrected, update core's tracker."""
 
     latest_message = latest_user_message(evts)
@@ -765,115 +842,117 @@ def _correct_wrong_nlu(corrected_nlu,  # type: Dict[Text, Any]
                  latest_message.get("parse_data"))
 
 
-def _correct_wrong_action(corrected_action,  # type: Text
-                          endpoint,  # type: EndpointConfig
-                          sender_id,  # type: Text
-                          finetune=False  # type: bool
-                          ):
-    # type: (...) -> None
+def _correct_wrong_action(corrected_action: Text,
+                          endpoint: EndpointConfig,
+                          sender_id: Text,
+                          finetune: bool = False,
+                          is_new_action: bool = False
+                          ) -> None:
     """A wrong action prediction got corrected, update core's tracker."""
 
     response = send_action(endpoint,
                            sender_id,
-                           corrected_action)
+                           corrected_action,
+                           is_new_action=is_new_action)
 
     if finetune:
         send_finetune(endpoint,
                       response.get("tracker", {}).get("events", []))
 
 
-def _validate_action(action_name,  # type: Text
-                     policy,       # type: Text
-                     confidence,  # type: float
-                     predictions,  # type: List[Dict[Text, Any]]
-                     endpoint,  # type: EndpointConfig
-                     sender_id,  # type: Text
-                     finetune=False  # type: bool
-                     ):
-    # type: (...) -> bool
+def _form_is_rejected(action_name, tracker):
+    """Check if the form got rejected with the most recent action name."""
+    return (tracker.get('active_form', {}).get('name') and
+            action_name != tracker['active_form']['name'] and
+            action_name != ACTION_LISTEN_NAME)
+
+
+def _form_is_restored(action_name, tracker):
+    """Check whether the form is called again after it was rejected."""
+    return (tracker.get('active_form', {}).get('rejected') and
+            tracker.get('latest_action_name') == ACTION_LISTEN_NAME and
+            action_name == tracker.get('active_form', {}).get('name'))
+
+
+def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
+    """Ask a user whether an input for a form should be validated.
+
+    Previous to this call, the active form was chosen after it was rejected."""
+
+    requested_slot = tracker.get("slots", {}).get(REQUESTED_SLOT)
+
+    validation_questions = questionary.confirm(
+        "Should '{}' validate user input to fill "
+        "the slot '{}'?".format(action_name, requested_slot))
+    form_answers = _ask_or_abort(validation_questions, sender_id, endpoint)
+
+    if not form_answers["validation"]:
+        # notify form action to skip validation
+        send_event(endpoint, sender_id,
+                   {"event": "form_validation", "validate": False})
+
+    elif not tracker.get('active_form', {}).get('validate'):
+        # handle contradiction with learned behaviour
+        warning_question = questionary.confirm(
+            "ERROR: FormPolicy predicted no form validation "
+            "based on previous training stories. "
+            "Make sure to remove contradictory stories "
+            "from training data. "
+            "Otherwise predicting no form validation "
+            "will not work as expected.")
+
+        _ask_or_abort(warning_question, sender_id, endpoint)
+        # notify form action to validate an input
+        send_event(endpoint, sender_id,
+                   {"event": "form_validation", "validate": True})
+
+
+def _validate_action(action_name: Text,
+                     policy: Text,
+                     confidence: float,
+                     predictions: List[Dict[Text, Any]],
+                     endpoint: EndpointConfig,
+                     sender_id: Text,
+                     finetune: bool = False
+                     ) -> bool:
     """Query the user to validate if an action prediction is correct.
 
     Returns `True` if the prediction is correct, `False` otherwise."""
 
-    q = "The bot wants to run '{}', correct?".format(action_name)
-    questions = [
-        {
-            "type": "confirm",
-            "name": "action",
-            "message": q,
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    if not answers["action"]:
-        action_name = _request_action_from_user(predictions, sender_id,
-                                                endpoint)
+    question = questionary.confirm(
+        "The bot wants to run '{}', correct?".format(action_name))
+
+    is_correct = _ask_or_abort(question, sender_id, endpoint)
+
+    if not is_correct:
+        action_name, is_new_action = _request_action_from_user(
+            predictions, sender_id, endpoint)
+    else:
+        is_new_action = False
 
     tracker = retrieve_tracker(endpoint, sender_id,
                                EventVerbosity.AFTER_RESTART)
 
-    # check whether the form is rejected
-    form_is_rejected = (
-            tracker.get('active_form', {}).get('name') and
-            action_name not in {tracker['active_form']['name'],
-                                ACTION_LISTEN_NAME}
-    )
-    # check whether the form is called again after it was rejected
-    form_is_restored = (
-            tracker.get('active_form', {}).get('rejected') and
-            tracker.get('latest_action_name') == 'action_listen' and
-            action_name == tracker.get('active_form', {}).get('name')
-    )
-    if form_is_rejected:
+    if _form_is_rejected(action_name, tracker):
         # notify the tracker that form was rejected
         send_event(endpoint, sender_id,
                    {"event": "action_execution_rejected",
                     "name": tracker['active_form']['name']})
-    elif form_is_restored:
-        # active form was chosen after it was rejected
-        # ask a user whether an input should be validated
-        q = ("Should '{}' validate user input to fill the slot '{}'?"
-             "".format(action_name, tracker.get("slots",
-                                                {}).get(REQUESTED_SLOT)))
-        validation_questions = [{
-            "name": "validation",
-            "type": "confirm",
-            "message": q
-        }]
-        form_answers = _ask_questions(validation_questions, sender_id,
-                                      endpoint)
-        if not form_answers["validation"]:
-            # notify form action to skip validation
-            send_event(endpoint, sender_id, {"event": "form_validation",
-                                             "validate": False})
-        elif not tracker.get('active_form', {}).get('validate'):
-            # handle contradiction with learned behaviour
-            q = ("ERROR: FormPolicy predicted no form validation "
-                 "based on previous training stories. "
-                 "Make sure to remove contradictory stories "
-                 "from training data. "
-                 "Otherwise predicting no form validation "
-                 "will not work as expected.")
-            warning_questions = [{
-                "name": "warning",
-                "type": "input",
-                "message": q
-            }]
-            _ask_questions(warning_questions, sender_id, endpoint)
-            # notify form action to validate an input
-            send_event(endpoint, sender_id, {"event": "form_validation",
-                                             "validate": True})
 
-    if not answers["action"]:
+    elif _form_is_restored(action_name, tracker):
+        _confirm_form_validation(action_name, tracker, endpoint, sender_id)
+
+    if not is_correct:
         _correct_wrong_action(action_name, endpoint, sender_id,
-                              finetune=finetune)
+                              finetune=finetune,
+                              is_new_action=is_new_action)
     else:
         send_action(endpoint, sender_id, action_name, policy, confidence)
 
     return action_name == ACTION_LISTEN_NAME
 
 
-def _as_md_message(parse_data):
-    # type: (Dict[Text, Any]) -> Text
+def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
@@ -885,8 +964,8 @@ def _as_md_message(parse_data):
     return MarkdownWriter()._generate_message_md(parse_data)
 
 
-def _validate_user_regex(latest_message, intents):
-    # type: (Dict[Text, Any], List[Text]) -> bool
+def _validate_user_regex(latest_message: Dict[Text, Any],
+                         intents: List[Text]) -> bool:
     """Validate if a users message input is correct.
 
     This assumes the user entered an intent directly, e.g. using
@@ -901,32 +980,31 @@ def _validate_user_regex(latest_message, intents):
         return False
 
 
-def _validate_user_text(latest_message, endpoint, sender_id):
-    # type: (Dict[Text, Any], EndpointConfig, Text) -> bool
+def _validate_user_text(latest_message: Dict[Text, Any],
+                        endpoint: EndpointConfig, sender_id: Text) -> bool:
     """Validate a user message input as free text.
 
     This assumes the user message is a text message (so NOT `/greet`)."""
 
     parse_data = latest_message.get("parse_data", {})
-    entities = _as_md_message(parse_data)
+    text = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get("name")
 
-    q = ("Is the NLU classification for '{}' with intent "
-         "'{}' correct?".format(entities, intent))
+    if intent is None:
+        print("The NLU classification for '{}' returned '{}'"
+              "".format(text, intent))
+        return False
+    else:
+        question = questionary.confirm(
+            "Is the NLU classification for '{}' with intent '{}' correct?"
+            "".format(text, intent))
 
-    questions = [
-        {
-            "type": "confirm",
-            "name": "nlu",
-            "message": q,
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
-    return answers["nlu"]
+        return _ask_or_abort(question, sender_id, endpoint)
 
 
-def _validate_nlu(intents, endpoint, sender_id):
-    # type: (List[Text], EndpointConfig, Text) -> None
+def _validate_nlu(intents: List[Text],
+                  endpoint: EndpointConfig,
+                  sender_id: Text) -> None:
     """Validate if a user message, either text or intent is correct.
 
     If the prediction of the latest user message is incorrect,
@@ -957,73 +1035,65 @@ def _validate_nlu(intents, endpoint, sender_id):
         _correct_wrong_nlu(corrected_nlu, evts, endpoint, sender_id)
 
 
-def _correct_entities(latest_message, endpoint, sender_id):
-    # type: (Dict[Text, Any], EndpointConfig, Text) -> Dict[Text, Any]
+def _correct_entities(latest_message: Dict[Text, Any],
+                      endpoint: EndpointConfig,
+                      sender_id: Text) -> Dict[Text, Any]:
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
 
-    q = "Please mark the entities using [value](type) notation"
     entity_str = _as_md_message(latest_message.get("parse_data", {}))
-    questions = [
-        {
-            "type": "input",
-            "name": "annotation",
-            "default": entity_str,
-            "message": q,
-        }
-    ]
-    answers = _ask_questions(questions, sender_id, endpoint)
+    question = questionary.text(
+        "Please mark the entities using [value](type) notation",
+        default=entity_str)
+
+    annotation = _ask_or_abort(question, sender_id, endpoint)
     # noinspection PyProtectedMember
-    parsed = MarkdownReader()._parse_training_example(answers["annotation"])
+    parsed = MarkdownReader()._parse_training_example(annotation)
     return parsed.get("entities", [])
 
 
-def _enter_user_message(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> None
+def _enter_user_message(sender_id: Text,
+                        endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
-    questions = [{
-        "name": "message",
-        "type": "input",
-        "message": "Next user input (Ctr-c to abort):"
-    }]
+    question = questionary.text("Next user input (Ctr-c to abort):")
 
-    answers = _ask_questions(questions, sender_id, endpoint,
-                             lambda a: not a["message"])
+    message = _ask_or_abort(question, sender_id, endpoint,
+                            lambda a: not a)
 
-    if answers["message"] == constants.USER_INTENT_RESTART:
+    if message == constants.USER_INTENT_RESTART:
         raise RestartConversation()
 
-    send_message(endpoint, sender_id, answers["message"])
+    send_message(endpoint, sender_id, message)
 
 
-def is_listening_for_message(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> bool
+def is_listening_for_message(sender_id: Text,
+                             endpoint: EndpointConfig) -> bool:
     """Check if the conversation is in need for a user message."""
 
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.APPLIED)
 
     for i, e in enumerate(reversed(tracker.get("events", []))):
-        if e.get("event") == "user":
+        if e.get("event") == UserUttered.type_name:
             return False
-        elif e.get("event") == "action":
+        elif e.get("event") == ActionExecuted.type_name:
             return e.get("name") == ACTION_LISTEN_NAME
     return False
 
 
-def _undo_latest(sender_id, endpoint):
-    # type: (Text, EndpointConfig) -> None
+def _undo_latest(sender_id: Text,
+                 endpoint: EndpointConfig) -> None:
     """Undo either the latest bot action or user message, whatever is last."""
 
     tracker = retrieve_tracker(endpoint, sender_id, EventVerbosity.ALL)
 
     cutoff_index = None
     for i, e in enumerate(reversed(tracker.get("events", []))):
-        if e.get("event") in {"user", "action"}:
+        if e.get("event") in {ActionExecuted.type_name, UserUttered.type_name}:
             cutoff_index = i
             break
-        elif e.get("event") == "restart":
+        elif e.get("event") == Restarted.type_name:
             break
 
     if cutoff_index is not None:
@@ -1034,15 +1104,14 @@ def _undo_latest(sender_id, endpoint):
         replace_events(endpoint, sender_id, events_to_keep)
 
 
-def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
-                  endpoint  # type: EndpointConfig
-                  ):
-    # type: (...) -> List[List[Event]]
+def _fetch_events(sender_ids: List[Union[Text, List[Event]]],
+                  endpoint: EndpointConfig
+                  ) -> List[List[Event]]:
     """Retrieve all event trackers from the endpoint for all sender ids."""
 
     event_sequences = []
     for sender_id in sender_ids:
-        if isinstance(sender_id, six.string_types):
+        if isinstance(sender_id, str):
             tracker = retrieve_tracker(endpoint, sender_id)
             evts = tracker.get("events", [])
 
@@ -1054,10 +1123,10 @@ def _fetch_events(sender_ids,  # type: List[Union[Text, List[Event]]]
     return event_sequences
 
 
-def _plot_trackers(sender_ids,  # type: List[Union[Text, List[Event]]]
-                   output_file,  # type: Optional[Text]
-                   endpoint,  # type: EndpointConfig
-                   unconfirmed=None  # type: Optional[List[Event]]
+def _plot_trackers(sender_ids: List[Union[Text, List[Event]]],
+                   output_file: Optional[Text],
+                   endpoint: EndpointConfig,
+                   unconfirmed: Optional[List[Event]] = None
                    ):
     """Create a plot of the trackers of the passed sender ids.
 
@@ -1085,8 +1154,7 @@ def _plot_trackers(sender_ids,  # type: List[Union[Text, List[Event]]]
     write_dot(graph, output_file)
 
 
-def _print_help(skip_visualization):
-    # type: (bool) -> None
+def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
@@ -1101,13 +1169,13 @@ def _print_help(skip_visualization):
                       "".format(visualization_help), utils.bcolors.OKGREEN)
 
 
-def record_messages(endpoint,  # type: EndpointConfig
-                    sender_id=UserMessage.DEFAULT_SENDER_ID,  # type: Text
-                    max_message_limit=None,  # type: Optional[int]
-                    on_finish=None,  # type: Optional[Callable[[], None]]
-                    finetune=False,  # type: bool
-                    stories=None,  # type: Optional[Text]
-                    skip_visualization=False  # type: bool
+def record_messages(endpoint: EndpointConfig,
+                    sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
+                    max_message_limit: Optional[int] = None,
+                    on_finish: Optional[Callable[[], None]] = None,
+                    finetune: bool = False,
+                    stories: Optional[Text] = None,
+                    skip_visualization: bool = False
                     ):
     """Read messages from the command line and print bot responses."""
 
@@ -1149,9 +1217,11 @@ def record_messages(endpoint,  # type: EndpointConfig
 
                 num_messages += 1
             except RestartConversation:
-                send_event(endpoint, sender_id, {"event": "restart"})
-                send_event(endpoint, sender_id, {"event": "action",
-                                                 "name": ACTION_LISTEN_NAME})
+                send_event(endpoint, sender_id,
+                           Restarted().as_dict())
+
+                send_event(endpoint, sender_id,
+                           ActionExecuted(ACTION_LISTEN_NAME).as_dict())
 
                 logger.info("Restarted conversation, starting a new one.")
             except UndoLastStep:
@@ -1177,28 +1247,29 @@ def record_messages(endpoint,  # type: EndpointConfig
             on_finish()
 
 
-def _start_interactive_learning_io(endpoint, stories, on_finish,
-                                   finetune=False,
-                                   skip_visualization=False):
-    # type: (EndpointConfig, Text, Callable[[], None], bool, bool) -> None
-    """Start the interactive learning message recording in a separate thread."""
-
+def _start_interactive_learning_io(endpoint: EndpointConfig,
+                                   stories: Text,
+                                   on_finish: Callable[[], None],
+                                   finetune: bool = False,
+                                   skip_visualization: bool = False) -> None:
+    """Start the interactive learning message recording in a separate thread.
+    """
     p = Thread(target=record_messages,
                kwargs={
                    "endpoint": endpoint,
                    "on_finish": on_finish,
                    "stories": stories,
                    "finetune": finetune,
-                   "skip_visualization": skip_visualization})
+                   "skip_visualization": skip_visualization,
+                   "sender_id": uuid.uuid4().hex})
     p.setDaemon(True)
     p.start()
 
 
-def _serve_application(app, stories,
-                       finetune=False,
-                       serve_forever=True,
-                       skip_visualization=False):
-    # type: (Flask, Text, bool, bool, bool) -> WSGIServer
+def _serve_application(app: Flask, stories: Text,
+                       finetune: bool = False,
+                       serve_forever: bool = True,
+                       skip_visualization: bool = False) -> WSGIServer:
     """Start a core server and attach the interactive learning IO."""
 
     if not skip_visualization:
@@ -1224,14 +1295,12 @@ def _serve_application(app, stories,
     return http_server
 
 
-def _add_visualization_routes(app, image_path=None):
-    # type: (Flask, Text) -> None
+def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
     """Add routes to serve the conversation visualization files."""
 
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
     def visualisation_html():
-        return send_from_directory(os.path.dirname(__file__),
-                                   'visualization.html')
+        return send_file(visualization.visualization_html_path())
 
     @app.route("/visualization.dot", methods=["GET"])
     def visualisation_png():
@@ -1243,11 +1312,11 @@ def _add_visualization_routes(app, image_path=None):
             abort(404)
 
 
-def run_interactive_learning(agent, stories,
-                             finetune=False,
-                             serve_forever=True,
-                             skip_visualization=False):
-    # type: (Agent, Text, bool, bool, bool) -> WSGIServer
+def run_interactive_learning(agent: Agent,
+                             stories: Text = None,
+                             finetune: bool = False,
+                             serve_forever: bool = True,
+                             skip_visualization: bool = False) -> WSGIServer:
     """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)

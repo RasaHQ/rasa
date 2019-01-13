@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from typing import Text, Dict, List
 
 from rasa_core.channels.channel import (
@@ -27,11 +22,12 @@ from rasa_core.channels.rocketchat import RocketChatInput  # nopep8
 from rasa_core.channels.slack import SlackInput  # nopep8
 from rasa_core.channels.telegram import TelegramInput  # nopep8
 from rasa_core.channels.twilio import TwilioInput  # nopep8
+from rasa_core.channels.webexteams import WebexTeamsInput  # nopep8
 
 input_channel_classes = [
     CmdlineInput, FacebookInput, SlackInput, TelegramInput, MattermostInput,
     TwilioInput, RasaChatInput, BotFrameworkInput, RocketChatInput,
-    CallbackInput, RestInput, SocketIOInput
+    CallbackInput, RestInput, SocketIOInput, WebexTeamsInput
 ]  # type: List[InputChannel]
 
 # Mapping from a input channel name to its class to allow name based lookup.

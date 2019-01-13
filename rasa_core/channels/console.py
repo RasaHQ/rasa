@@ -1,17 +1,13 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
+# this builtin is needed so we can overwrite in test
 from builtins import input
 
 import json
 import requests
-import six
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string, RestInput
+from rasa_core.channels.channel import button_to_string, element_to_string,\
+    RestInput
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
@@ -28,18 +24,17 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
 
     if "buttons" in message:
         for idx, button in enumerate(message.get("buttons")):
-            button_str = button_to_string(button, idx)
+            button_str = "Buttons:\n" + button_to_string(button, idx)
             utils.print_color(button_str, color)
+
+    if "elements" in message:
+        for idx, element in enumerate(message.get("elements")):
+            element_str = "Elements:\n" + element_to_string(element, idx)
+            utils.print_color(element_str, color)
 
 
 def get_cmd_input():
-    text = input().strip()
-    if six.PY2:
-        # in python 2 input doesn't return unicode values
-        # noinspection PyUnresolvedReferences
-        return text.decode("utf-8")
-    else:
-        return text
+    return input().strip()
 
 
 def send_message_receive_block(server_url, auth_token, sender_id, message):
@@ -49,8 +44,8 @@ def send_message_receive_block(server_url, auth_token, sender_id, message):
     }
 
     response = requests.post("{}/webhooks/rest/webhook?token={}".format(
-            server_url, auth_token),
-            json=payload)
+        server_url, auth_token),
+        json=payload)
     response.raise_for_status()
     return response.json()
 
@@ -61,10 +56,10 @@ def send_message_receive_stream(server_url, auth_token, sender_id, message):
         "message": message
     }
 
-    with requests.post("{}/webhooks/rest/webhook?stream=true&token={}".format(
-            server_url, auth_token),
-            json=payload,
-            stream=True) as r:
+    url = "{}/webhooks/rest/webhook?stream=true&token={}".format(
+        server_url, auth_token)
+
+    with requests.post(url, json=payload, stream=True) as r:
 
         r.raise_for_status()
 

@@ -1,7 +1,9 @@
+:desc: Building Rasa with Docker
+
 .. _docker_walkthrough:
 
-Development with Docker
-=======================
+Building Rasa with Docker
+=========================
 
 This walkthrough provides a tutorial on how to set up Rasa Core, Rasa NLU,
 and an Action Server with Docker containers.
@@ -654,7 +656,7 @@ configuration ``config/endpoints.yml``:
   tracker_store:
     store_type: mongod
     url: mongodb://mongo:27017
-    user: rasa
+    username: rasa
     password: example
 
 Then start all components with ``docker-compose up``.

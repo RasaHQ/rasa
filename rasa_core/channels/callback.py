@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 
 from flask import Blueprint, jsonify, request
@@ -21,8 +16,7 @@ class CallbackOutput(CollectingOutputChannel):
     def name(cls):
         return "callback"
 
-    def __init__(self, endpoint):
-        # type: (EndpointConfig) -> None
+    def __init__(self, endpoint: EndpointConfig) -> None:
 
         self.callback_endpoint = endpoint
         super(CallbackOutput, self).__init__()

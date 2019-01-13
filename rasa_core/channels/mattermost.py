@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 
 from flask import Blueprint, request, jsonify, make_response
@@ -54,19 +49,17 @@ class MattermostInput(InputChannel):
                    credentials.get("user"),
                    credentials.get("pw"))
 
-    def __init__(self, url, team, user, pw):
-        # type: (Text, Text, Text, Text) -> None
+    def __init__(self, url: Text, team: Text, user: Text, pw: Text) -> None:
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.
-        :param url: Your Mattermost team url including /v4 example
-                    https://mysite.example.com/api/v4
 
-        :param team: Your mattermost team name
-
-        :param user: Your mattermost userid that will post messages
-
-        :param pw: Your mattermost password for your user
+        Args:
+            url: Your Mattermost team url including /v4 example
+                https://mysite.example.com/api/v4
+            team: Your mattermost team name
+            user: Your mattermost userid that will post messages
+            pw: Your mattermost password for your user
         """
         self.url = url
         self.team = team
@@ -103,7 +96,7 @@ class MattermostInput(InputChannel):
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))
-                    logger.error(e, exc_info=True)
+                    logger.debug(e, exc_info=True)
                     pass
             return make_response()
 
