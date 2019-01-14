@@ -1,13 +1,14 @@
 
-Language Understanding with rasa NLU
-====================================
+Rasa NLU: Language Understanding for chatbots and AI assistants
+===============================================================
 
 .. note::
-    This is the documentation for version |release| of rasa NLU. Make sure you select
-    the appropriate version of the documentation for your local installation!
+    This is the documentation for version |release| of Rasa NLU. Please make sure you are reading the documentation 
+    that matches the version you have installed.
 
 
-rasa NLU is an open source tool for intent classification and entity extraction. For example, taking a sentence like 
+
+Rasa NLU is an open-source natural language processing tool for intent classification and entity extraction in chatbots. For example, taking a sentence like
 
 .. code-block:: console
 
@@ -26,78 +27,62 @@ and returning structured data like
     }
 
 
-The intended audience is mainly people developing bots. 
-You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `Dialogflow <https://dialogflow.com>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details).
+The target audience is developers building chatbots and voice apps.
 
-Why might you use rasa instead of one of those services?
+The main reasons for using open source NLU are that:
 
-- you don't have to hand over your data to FB/MSFT/GOOG
-- you don't have to make a ``https`` call every time.
-- you can tune models to work well on your particular use case.
+- you don't have to hand over all your training data to Google, Microsoft, Amazon, or Facebook.
+- Machine Learning is not one-size-fits all. You can tweak and customize models for your training data.
+- Rasa NLU runs wherever you want, so you don't have to make an extra network request for every message that comes in.
 
-These points are laid out in more detail in a `blog post <https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
+You can read about the advantages of using open source NLU in this `blog post <https://medium.com/rasa-blog/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
+You can see an independent benchmark comparing Rasa NLU to closed source alternatives `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_. 
 
-
-The quickest quickstart in the west
------------------------------------
-
-
-.. code-block:: console
-
-    $ python setup.py install
-    $ python -m rasa_nlu.server -e wit &
-    $ curl 'http://localhost:5000/parse?q=hello'
-    [{"_text": "hello", "confidence": 1.0, "entities": {}, "intent": "greet"}]
-
-
-There you go! you just parsed some text. Next step, do the :ref:`section_tutorial`.
-
-.. note:: This demo uses a very limited ML model. To apply rasa NLU to your use case, you need to train your own model! Follow the tutorial to get to know how to apply rasa_nlu to your data.
-
-About 
------
-
-You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
-The setup process is designed to be as simple as possible. If you're currently using wit, LUIS, or Dialogflow, you just:
-
-1. download your app data from wit or LUIS and feed it into rasa NLU
-2. run rasa NLU on your machine and switch the URL of your wit/LUIS/Dialogflow api calls to ``localhost:5000/parse``.
-
-rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
-If your project *is* written in Python you can simply import the relevant classes.
-
-rasa is a set of tools for building more advanced bots, developed by `Rasa <https://rasa.ai>`_ . This is the natural language understanding module, and the first component to be open sourced.
-
+.. include:: feedback.inc
 
 .. toctree::
    :maxdepth: 1
    :caption: Getting Started
+   :hidden:
 
+   Try It Out <quickstart>
    installation
-   tutorial
+
 
 .. toctree::
    :maxdepth: 1
-   :caption: User Documentation
+   :caption: User Guide
+   :hidden:
 
-   config
-   migrating
+   choosing_pipeline
+   languages
+   entities
+   evaluation
+   fallback
+   faq
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: API Reference
+
    dataformat
+   components
+   config
    http
    python
-   entities
-   closeloop
    persist
-   languages
-   pipeline
-   faq
-   migrations
-   license
+   endpoint_configuration
+   docker
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
+   :hidden:
    :caption: Developer Documentation
 
-   Roadmap<https://github.com/RasaHQ/rasa_nlu/projects/2>
-   contribute
+   customcomponents
+   migrations
+   license
    changelog
+   support
+

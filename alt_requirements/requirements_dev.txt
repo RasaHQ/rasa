@@ -1,31 +1,19 @@
-# mitie
-git+https://github.com/mit-nlp/MITIE.git#egg=mitie
-# spacy
-spacy==1.8.2
-# sklearn
-scikit-learn==0.18.1
-scipy==0.19.0
-matplotlib==1.5.3
-# duckling
-duckling==1.7.1
-# sklearn_crfsuite
-sklearn-crfsuite==0.3.5
-# cloudpickle
-cloudpickle==0.2.2
+-r requirements_full.txt
+
+-r requirements_docs.txt
+
 # test
 python-coveralls==2.9.1
 pytest-pep8==1.0.6
-pytest-services==1.1.14
 pytest-cov==2.5.1
-pytest-twisted==1.5
-pytest==3.0.7
-requests==2.18.1
-treq==17.3.1
+pytest-twisted==1.6
+pytest==3.3.2
+treq==17.8.0
+moto==1.2.0
+mock==2.0.0
+responses==0.9.0
+httpretty==0.9.5
 # other
-google-cloud-storage==1.0.0
-# docs
-sphinx-autobuild==0.6.0
-sphinxcontrib-versioning==2.2.1
-nbsphinx==0.2.13
--e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
--e .
+google-cloud-storage==1.7.0
+azure-storage-blob==1.0.0
+boto3==1.5.20

@@ -1,0 +1,13 @@
+language: "en"
+
+pipeline: "spacy_sklearn"
+
+# data contains the same md, as described in the training data section
+data: |
+  ## intent:affirm
+  - yes
+  - yep
+
+  ## intent:goodbye
+  - bye
+  - goodbye

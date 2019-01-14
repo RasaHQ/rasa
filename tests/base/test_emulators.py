@@ -1,7 +1,7 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 
 def test_luis_request():
@@ -70,7 +70,7 @@ def test_luis_response():
                 "endIndex": None,
                 "score": None
             } for e in data["entities"]
-            ]
+        ]
     }
 
 
@@ -125,16 +125,13 @@ def test_dialogflow_response():
     assert norm == {
         "id": norm["id"],
         "result": {
-            "action": None,
-            "actionIncomplete": None,
+            "action": data["intent"]["name"],
+            "actionIncomplete": False,
             "contexts": [],
             "fulfillment": {},
             "metadata": {
                 "intentId": norm["result"]["metadata"]["intentId"],
-                "intentName": {
-                    "confidence": data["intent"]["confidence"],
-                    "name": data["intent"]["name"]
-                },
+                "intentName": data["intent"]["name"],
                 "webhookUsed": "false"
             },
             "parameters": {
@@ -143,7 +140,7 @@ def test_dialogflow_response():
                 ]
             },
             "resolvedQuery": data["text"],
-            "score": None,
+            "score": data["intent"]["confidence"],
             "source": "agent"
         },
         "sessionId": norm["sessionId"],

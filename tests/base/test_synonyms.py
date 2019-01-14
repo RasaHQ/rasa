@@ -1,8 +1,11 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa_nlu.model import Metadata
+import pytest
 
 
 def test_entity_synonyms():
@@ -23,8 +26,17 @@ def test_entity_synonyms():
         "end": 6
     }]
     ent_synonyms = {"chines": "chinese", "NYC": "New York City"}
-    EntitySynonymMapper(ent_synonyms).replace_synonyms(entities)
+    EntitySynonymMapper(synonyms=ent_synonyms).replace_synonyms(entities)
     assert len(entities) == 3
     assert entities[0]["value"] == "chinese"
     assert entities[1]["value"] == "chinese"
     assert entities[2]["value"] == "china"
+
+
+def test_loading_no_warning():
+    syn = EntitySynonymMapper(synonyms=None)
+    syn.persist("test")
+    meta = Metadata({"test": 1}, "test")
+    with pytest.warns(None) as warn:
+        syn.load("test", meta)
+    assert len(warn) == 0

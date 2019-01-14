@@ -1,7 +1,138 @@
+:desc: Updating your Rasa NLU Project to a New Version
 Migration Guide
 ===============
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
+
+0.13.x to Unreleased 0.14.0.aX  - `master`_
+----------------
+- ``/config`` endpoint removed, when training a new model, the user should
+  always post the configuration as part of the request instead of relying
+  on the servers config.
+
+0.13.x to 0.13.3
+----------------
+- ``rasa_nlu.server`` has to  be supplied with a ``yml`` file defining the
+  model endpoint from which to retrieve training data. The file location has
+  be passed with the ``--endpoints`` argument, e.g.
+  ``python rasa_nlu.server --path projects --endpoints endpoints.yml``
+  ``endpoints.yml`` needs to contain the ``model`` key
+  with a ``url`` and an optional ``token``. Here's an example:
+
+  .. code-block:: yaml
+
+    model:
+      url: http://my_model_server.com/models/default/nlu/tags/latest
+      token: my_model_server_token
+
+  .. note::
+
+    If you configure ``rasa_nlu.server`` to pull models from a remote server,
+    the default project name will be used. It is defined
+    ``RasaNLUModelConfig.DEFAULT_PROJECT_NAME``.
+
+
+- ``rasa_nlu.train`` can also be run with the ``--endpoints`` argument
+  if you want to pull training data from a URL. Alternatively, the
+  current ``--url`` syntax is still supported.
+
+  .. code-block:: yaml
+
+    data:
+      url: http://my_data_server.com/projects/default/data
+      token: my_data_server_token
+
+  .. note::
+
+    Your endpoint file may contain entries for both ``model`` and ``data``.
+    ``rasa_nlu.server`` and ``rasa_nlu.train`` will pick the relevant entry.
+
+- If you directly access the ``DataRouter`` class or ``rasa_nlu.train``'s
+  ``do_train()`` method, you can directly create instances of
+  ``EndpointConfig`` without creating a ``yml`` file. Example:
+
+  .. code-block:: python
+
+    from rasa_nlu.utils import EndpointConfig
+    from rasa_nlu.data_router import DataRouter
+
+    model_endpoint = EndpointConfig(
+        url="http://my_model_server.com/models/default/nlu/tags/latest",
+        token="my_model_server_token"
+    )
+
+    interpreter = DataRouter("projects", model_server=model_endpoint)
+
+
+0.12.x to 0.13.0
+----------------
+
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load previously trained models as
+  the parameters for the tensorflow and CRF models changed.
+
+CRF model configuration
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The feature names for the features of the entity CRF have changed:
+
++------------------+------------------+
+| old feature name | new feature name |
++==================+==================+
+| pre2             | prefix2          |
++------------------+------------------+
+| pre5             | prefix5          |
++------------------+------------------+
+| word2            | suffix2          |
++------------------+------------------+
+| word3            | suffix3          |
++------------------+------------------+
+| word5            | suffix5          |
++------------------+------------------+
+
+Please change these keys in your pipeline configuration of the ``ner_crf``
+components ``features`` attribute if you use them.
+
+0.11.x to 0.12.0
+----------------
+
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load
+  previously trained models (as the stored file formats have changed as
+  well as the configuration and metadata). Please make sure to retrain
+  a model before trying to use it with this improved version.
+
+model configuration
+~~~~~~~~~~~~~~~~~~~
+We have split the configuration in a model configuration and parameters used
+to configure the server, train, and evaluate scripts. The configuration
+file now only contains the ``pipeline`` as well as the ``language``
+parameters. Example:
+
+  .. code-block:: yaml
+
+      langauge: "en"
+
+      pipeline:
+      - name: "nlp_spacy"
+        model: "en"               # parameter of the spacy component
+      - name: "ner_synonyms"
+
+
+All other parameters have either been moved to the scripts
+for training (:ref:`train_parameters`), serving models
+(:ref:`server_parameters`), or put into the pipeline
+configuration (:ref:`section_pipeline`).
+
+persistors:
+~~~~~~~~~~~
+- renamed ``AWS_REGION`` to ``AWS_DEFAULT_REGION``
+- always make sure to specify the bucket using env ``BUCKET_NAME``
+- are now configured solely over environment variables
 
 0.9.x to 0.10.0
 ---------------
@@ -81,3 +212,9 @@ how you can migrate from one version to another.
           "feature_extractor": null,
           "backend": "spacy_sklearn"
       }
+
+
+.. include:: feedback.inc  
+	  
+
+   

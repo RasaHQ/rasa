@@ -1,2 +1,1 @@
--e .
 -r alt_requirements/requirements_bare.txt

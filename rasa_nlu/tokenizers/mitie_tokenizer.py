@@ -11,7 +11,7 @@ from typing import List
 from typing import Text
 from typing import Tuple
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu.tokenizers import Tokenizer
 from rasa_nlu.components import Component
@@ -24,16 +24,13 @@ class MitieTokenizer(Tokenizer, Component):
 
     provides = ["tokens"]
 
-    def __init__(self):
-        pass
-
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
         return ["mitie"]
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
@@ -43,14 +40,20 @@ class MitieTokenizer(Tokenizer, Component):
 
         message.set("tokens", self.tokenize(message.text))
 
+    def _token_from_offset(self, text, offset, encoded_sentence):
+        return Token(text.decode('utf-8'),
+                     self._byte_to_char_offset(encoded_sentence, offset))
+
     def tokenize(self, text):
         # type: (Text) -> List[Token]
         import mitie
 
-        _text = text.encode('utf-8')
-        tokenized = mitie.tokenize_with_offsets(_text)
-        tokens = [Token(token.decode('utf-8'), self._byte_to_char_offset(_text, offset)) for token, offset in tokenized]
+        encoded_sentence = text.encode('utf-8')
+        tokenized = mitie.tokenize_with_offsets(encoded_sentence)
+        tokens = [self._token_from_offset(token, offset, encoded_sentence)
+                  for token, offset in tokenized]
         return tokens
 
-    def _byte_to_char_offset(self, text, byte_offset):
+    @staticmethod
+    def _byte_to_char_offset(text, byte_offset):
         return len(text[:byte_offset].decode('utf-8'))

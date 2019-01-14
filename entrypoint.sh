@@ -15,7 +15,8 @@ function download_package {
     case $1 in
         mitie)
             echo "Downloading mitie model..."
-            python -m rasa_nlu.download -p mitie
+            wget https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+            tar jxf MITIE-models-v0.2.tar.bz2
             ;;
         spacy)
             case $2 in 

@@ -1,27 +1,19 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-import pytest
-import json
-import os
-import io
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import tempfile
 
-from typing import Text
+import pytest
 
-import rasa_nlu
-from tests.utilities import write_file_config
-from tests.conftest import CONFIG_DEFAULTS_PATH
-from rasa_nlu.config import RasaNLUConfig, InvalidConfigError
+from rasa_nlu import config, utils
 from rasa_nlu.registry import registered_pipeline_templates
+from rasa_nlu.components import ComponentBuilder
+from tests.conftest import CONFIG_DEFAULTS_PATH
+from tests.utilities import write_file_config
 
-
-with io.open(CONFIG_DEFAULTS_PATH, "r") as f:
-    defaults = json.load(f)
-    # Special treatment for these two, as they are absolute directories
-    defaults["path"] = os.path.join(os.getcwd(), defaults["path"])
-    defaults["response_log"] = os.path.join(os.getcwd(), defaults["response_log"])
+defaults = utils.read_yaml_file(CONFIG_DEFAULTS_PATH)
 
 
 def test_default_config(default_config):
@@ -30,100 +22,62 @@ def test_default_config(default_config):
 
 def test_blank_config():
     file_config = {}
-    cmdline_args = {}
-    env_vars = {}
     f = write_file_config(file_config)
-    final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
+    final_config = config.load(f.name)
     assert final_config.as_dict() == defaults
 
 
 def test_invalid_config_json():
-    file_config = """{"pipeline": [mitie]}"""   # invalid json
-    cmdline_args = {}
-    env_vars = {}
-    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json") as f:
+    file_config = """pipeline: [spacy_sklearn"""  # invalid yaml
+    with tempfile.NamedTemporaryFile("w+",
+                                     suffix="_tmp_config_file.json") as f:
         f.write(file_config)
         f.flush()
-        with pytest.raises(rasa_nlu.config.InvalidConfigError):
-            RasaNLUConfig(f.name, env_vars, cmdline_args)
-
-
-def test_automatically_converts_to_unicode():
-    env_args = {"RASA_some_test_key_u": str("some test value"), str("RASA_some_test_key_str"): str("some test value")}
-    cmd_args = {"some_other_test_key_str": str("some test value"), str("some_other_test_key_u"): str("some test value")}
-    final_config = RasaNLUConfig(CONFIG_DEFAULTS_PATH, env_args, cmd_args)
-
-    assert type(final_config["some_test_key_u"]) is Text
-    assert type(final_config["some_test_key_str"]) is Text
-    assert type(final_config["some_other_test_key_str"]) is Text
-    assert type(final_config["some_other_test_key_u"]) is Text
-
-
-def test_file_config_unchanged():
-    file_config = {"path": "/path/to/dir"}
-    cmdline_args = {}
-    env_vars = {}
-    f = write_file_config(file_config)
-    final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
-    assert final_config['path'] == "/path/to/dir"
-
-
-def test_cmdline_overrides_init():
-    file_config = {"path": "/path/to/dir"}
-    cmdline_args = {"path": "/alternate/path"}
-    env_vars = {}
-    f = write_file_config(file_config)
-    final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
-    assert final_config['path'] == "/alternate/path"
-
-
-def test_envvar_overrides_init():
-    file_config = {"path": "/path/to/dir"}
-    cmdline_args = {}
-    env_vars = {"RASA_PATH": "/alternate/path"}
-    f = write_file_config(file_config)
-    final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
-    assert final_config['path'] == "/alternate/path"
-
-
-def test_cmdline_overrides_envvar():
-    file_config = {"path": "/path/to/dir"}
-    cmdline_args = {"path": "/another/path"}
-    env_vars = {"RASA_PATH": "/alternate/path"}
-    f = write_file_config(file_config)
-    final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
-    assert final_config['path'] == "/another/path"
-
-
-def test_pipeline_splits_list():
-    file_config = {}
-    cmdline_args = {"pipeline": "nlp_spacy,ner_spacy"}
-    env_vars = {}
-    f = write_file_config(file_config)
-    final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
-    assert final_config['pipeline'] == ["nlp_spacy", "ner_spacy"]
+        with pytest.raises(config.InvalidConfigError):
+            config.load(f.name)
 
 
 def test_invalid_pipeline_template():
-    file_config = {}
-    cmdline_args = {"pipeline": "my_made_up_name"}
-    env_vars = {}
-    f = write_file_config(file_config)
-    with pytest.raises(InvalidConfigError) as execinfo:
-        RasaNLUConfig(f.name, env_vars, cmdline_args)
+    args = {"pipeline": "my_made_up_name"}
+    f = write_file_config(args)
+    with pytest.raises(config.InvalidConfigError) as execinfo:
+        config.load(f.name)
     assert "unknown pipeline template" in str(execinfo.value)
 
 
 def test_pipeline_looksup_registry():
     pipeline_template = list(registered_pipeline_templates)[0]
-    file_config = {}
-    cmdline_args = {"pipeline": pipeline_template}
-    env_vars = {}
-    f = write_file_config(file_config)
-    final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
-    assert final_config['pipeline'] == registered_pipeline_templates[pipeline_template]
+    args = {"pipeline": pipeline_template}
+    f = write_file_config(args)
+    final_config = config.load(f.name)
+    components = [c.get("name") for c in final_config.pipeline]
+    assert components == registered_pipeline_templates[pipeline_template]
 
 
 def test_default_config_file():
-    final_config = RasaNLUConfig()
+    final_config = config.RasaNLUModelConfig()
     assert len(final_config) > 1
+
+
+def test_set_attr_on_component(default_config):
+    cfg = config.load("sample_configs/config_spacy.yml")
+    cfg.set_component_attr("intent_classifier_sklearn", C=324)
+
+    expected = {"C": 324, "name": "intent_classifier_sklearn"}
+
+    assert cfg.for_component("intent_classifier_sklearn") == expected
+    assert cfg.for_component("tokenizer_spacy") == {"name": "tokenizer_spacy"}
+
+
+def test_override_defaults_tensorflow_embedding_pipeline():
+    cfg = config.load("data/test/config_embedding_test.yml")
+    builder = ComponentBuilder()
+
+    name1 = "intent_featurizer_count_vectors"
+
+    component1 = builder.create_component(name1, cfg)
+    assert component1.max_ngram == 3
+
+    name2 = "intent_classifier_tensorflow_embedding"
+    component2 = builder.create_component(name2, cfg)
+    assert component2.epochs == 10

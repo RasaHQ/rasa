@@ -1,50 +1,59 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import rasa_nlu
+
 import pytest
 
+from rasa_nlu import registry, training_data
+from rasa_nlu.model import Interpreter
 from tests import utilities
-from rasa_nlu import registry
 
 
 @utilities.slowtest
-@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
-def test_samples(pipeline_template, component_builder):
+@pytest.mark.parametrize("pipeline_template",
+                         list(registry.registered_pipeline_templates.keys()))
+def test_interpreter(pipeline_template, component_builder, tmpdir):
+    test_data = "data/examples/rasa/demo-rasa.json"
     _conf = utilities.base_test_conf(pipeline_template)
-    _conf["data"] = "./data/examples/rasa/demo-rasa.json"
+    _conf["data"] = test_data
+    td = training_data.load_data(test_data)
+    interpreter = utilities.interpreter_for(component_builder,
+                                            "data/examples/rasa/demo-rasa.json",
+                                            tmpdir.strpath,
+                                            _conf)
 
-    interpreter = utilities.interpreter_for(component_builder, _conf)
-    available_intents = ["greet", "restaurant_search", "affirm", "goodbye", "None"]
-    samples = [
-        (
-            "good bye",
-            {
-                'intent': 'goodbye',
-                'entities': []
-            }
-        ),
-        (
-            "i am looking for an indian spot",
-            {
-                'intent': 'restaurant_search',
-                'entities': [{"start": 20, "end": 26, "value": "indian", "entity": "cuisine"}]
-            }
-        )
-    ]
+    texts = ["good bye", "i am looking for an indian spot"]
 
-    for text, gold in samples:
+    for text in texts:
         result = interpreter.parse(text, time=None)
-        assert result['text'] == text, \
-            "Wrong text for sample '{}'".format(text)
-        assert result['intent']['name'] in available_intents, \
-            "Wrong intent for sample '{}'".format(text)
-        assert result['intent']['confidence'] >= 0, \
-            "Low confidence for sample '{}'".format(text)
-
-        # This ensures the model doesn't detect entities that are not present
-        # Models on our test data set are not stable enough to require the entities to be found
+        assert result['text'] == text
+        assert (not result['intent']['name']
+                or result['intent']['name'] in td.intents)
+        assert result['intent']['confidence'] >= 0
+        # Ensure the model doesn't detect entity types that are not present
+        # Models on our test data set are not stable enough to
+        # require the exact entities to be found
         for entity in result['entities']:
-            del entity["extractor"]
-            assert entity in gold['entities'], \
-                "Wrong entities for sample '{}'".format(text)
+            assert entity['entity'] in td.entities
+
+
+@pytest.mark.parametrize("metadata",
+                         [{"rasa_nlu_version": "0.11.0"},
+                          {"rasa_nlu_version": "0.10.2"},
+                          {"rasa_nlu_version": "0.12.0a1"},
+                          {"rasa_nlu_version": "0.12.2"},
+                          {"rasa_nlu_version": "0.12.3"}])
+def test_model_not_compatible(metadata):
+    with pytest.raises(rasa_nlu.model.UnsupportedModelError):
+        Interpreter.ensure_model_compatibility(metadata)
+
+
+@pytest.mark.parametrize("metadata",
+                         [{"rasa_nlu_version": "0.13.0a2"},
+                          {"rasa_nlu_version": "0.13.0"}])
+def test_model_is_compatible(metadata):
+    # should not raise an exception
+    assert Interpreter.ensure_model_compatibility(metadata) is None

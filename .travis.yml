@@ -1,72 +1,110 @@
 language: python
-sudo: required
+sudo: enabled
 cache:
   directories:
   - $HOME/.cache/pip
-  - $HOME/build/RasaHQ/rasa_nlu/data
-  - $HOME/google-cloud-sdk/
+  - /tmp/cached/
 python:
-- '2.7'
-- '3.5'
-- '3.6'
-install:
-- sudo apt-get update
-- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-  -O miniconda.sh; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-  -O miniconda.sh; fi
-- bash miniconda.sh -b -f -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- hash -r
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
-- conda info -a
-- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.13.1
-  scikit-learn=0.18.1
-- source activate test-environment
-- pip install git+https://github.com/tmbo/MITIE.git
-- pip install -r alt_requirements/requirements_dev.txt
-- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
-  --no-cache-dir > jnk
-- python -m spacy link en_core_web_sm en
-- pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_md-1.0.0/de_core_news_md-1.0.0.tar.gz
-  --no-cache-dir > jnk
-- python -m spacy link de_core_news_md de
-- if [[ ! -f data/total_word_feature_extractor.dat ]]; then wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
-  fi
-- pip list
+  - '2.7'
+  - '3.5'
+  - '3.6'
+env:
+  # needed to fix issues with boto during testing:
+  # https://github.com/travis-ci/travis-ci/issues/7940
+  global: BOTO_CONFIG=/dev/null
+install: 
+  - pip install git+https://github.com/tmbo/MITIE.git
+  - pip install -r alt_requirements/requirements_dev.txt
+  - pip install -e .
+  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > jnk
+  - python -m spacy link en_core_web_md en
+  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > jnk
+  - python -m spacy link de_core_news_sm de
+  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
+    fi
+  - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
+  - pip list
 before_script:
-- mkdir $HOME/tmp
-- export TMPDIR=$HOME/tmp
-script:
-- py.test tests/base --cov rasa_nlu --pep8 -v --cov-append
-- py.test tests/training --cov rasa_nlu --pep8 -v --cov-append
+  - mkdir $HOME/tmp
+  - export TMPDIR=$HOME/tmp
+script: 
+  - py.test --pep8 -m pep8
+  - py.test tests/base --cov rasa_nlu -v --cov-append
+  - py.test tests/training --cov rasa_nlu -v --cov-append
 after_success:
-- coveralls
+  - coveralls
 jobs:
   include:
   - stage: docs
-    if: fork = false
+    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
-    - sudo apt-get update
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1
-      nbsphinx==0.2.13
-    - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+    - RASABASTER=rasabaster-0.7.18.tar.gz
+    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
+    - pip install $RASABASTER
+    - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
+    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+    - pip install -e .
+    - pip list
     script:
-    - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
-    - openssl aes-256-cbc -K $encrypted_4a8a3f4b9c17_key -iv $encrypted_4a8a3f4b9c17_iv -in docs/key.enc -out docs/key -d && ssh-add docs/key
+    - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
+    - openssl aes-256-cbc
+      -K $encrypted_1708c37fe733_key
+      -iv $encrypted_1708c37fe733_iv
+      -in secrets.tar.enc
+      -out secrets.tar
+      -d
+    - tar -xvf secrets.tar
+    - ssh-add docs_key
     - git config --global user.email "builds@travis-ci.com"
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs gh-pages .
+    - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
+  - stage: trigger website rebuild
+    if: fork = false AND branch = "master" AND type != "pull_request"
+    script:
+    - eval "$(ssh-agent -s)";
+      touch nlu_docs_to_website_trigger_key;
+      chmod 0600 nlu_docs_to_website_trigger_key
+    - openssl aes-256-cbc
+      -K $encrypted_1708c37fe733_key
+      -iv $encrypted_1708c37fe733_iv
+      -in secrets.tar.enc
+      -out secrets.tar
+      -d
+    - tar xvf secrets.tar
+    - ssh-add nlu_docs_to_website_trigger_key
+    - git config --global user.email "builds@travis-ci.com"
+    - git config --global user.name "Travis CI"
+    - git clone -b master --single-branch git@github.com:RasaHQ/rasa-website.git
+    - cd rasa-website
+    - git commit --allow-empty -m "trigger nlu docs update"
+    - git push origin master
+  - stage: Test starter packs
+    name: "NLU starter pack"
+    python: 3.6
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
+    - cd starter-pack-rasa-nlu
+    - python -m pytest tests/test_nlu.py
+  - stage: Test starter packs
+    name: "Stack starter pack (NLU only)"
+    python: 3.6
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - python -m pytest tests/test_nlu.py
   - stage: deploy
+    python: 3.6
     install: skip
     script: skip
     deploy:
       provider: pypi
       user: amn41
+      # server: https://test.pypi.org/legacy/
+      distributions: "sdist bdist_wheel"
       on:
         branch: master
         tags: true
       password:
-        secure: K3JhIpxBBfu8SC8voAsIvgU9pdND9PayQi8Ep4Whg+RPKgnLWMzbFe2FfSTyxuEIkJGx4S6h0qORGz4ro6b/tCy72ruEYxLrx3vt8uNtWdYXSRnW+Knqk4QKn2q+WehmfSxhkvu2PQ3LACGWN13Nnc4OdlY9u843d0dSjD9INlAs/+m6X3Me0zdACmwd0V0l4U2hNMjJyvOPznrQj4HrMIGWfuags4NLySVkpnYMMzz5lnamUZKUUfyChAKTUPXuoO8s9U0Zxj2duOy+2yu9hcJwomFwBLiWR6nKZmEtzYrfgHFDkRtNyuJtmQn3pR4BzbMV5L6Td7DAey3fRYss8JxVZ+3mwjsRzbbMDRpqqI8b7L0KBFnWfS5qOecB6T9hT2SVQuGHqj4Y/CAHqzscBhiOlhKev65JXIc1JIJACKWaHVYASKeU24zprlcalkRsqXmUv/rvSgP1UQSEsE726hxr0gs/gyJVRSmg7dxm/BrFTVa4Pucpy0QW3ABfc7miaz9LuNzsY+7OBxmsOhPDZpQVez9TNr4agdh6enRTK2cg0zDqjSfzjXBPwXRlcsR67u1JZPqjN0cpT44xKUvuwzDFgcZjK74tDx9A7cV6yS325cKIz8KQ08saBIyrbDtbv/i9ry1Dvkxj+k3t+i7kyuzjzMdhj2yDF9WTAGTdOhY=
+        secure: "MeL1Ve97eBY+VbNWuQNuLzkPs0TPc+Zh8OfZkhw69ez5imsiWpvp0LrUOLVW3CcC0vNTANEBOVX/n1kHxfcqkf/cChNqAkZ6zTMmvR9zHDwQxXVGZ3jEQSQM+fHdQpjwtH7BwojyxaCIC/5iza7DFMcca/Q6Xr+atdTd0V8Q7Nc5jFHEQf3/4oIIm6YeCUiHcEu981LRdS04+jvuFUN0Ejy+KLukGVyIWyYDjjGjs880Mj4J1mgmCihvVkJ1ujB65rYBdTjls3JpP3eTk63+xH8aHilIuvqB8TDYih8ovE/Vv6YwLI+u2HoEHAtBD4Ez3r71Ju6JKJM7DhWb5aurN4M7K6DC8AvpUl+PsJbNP4ZeW2jXMH6lT6qXKVaSw7lhZ0XY3wunyVcAbArX4RS0B9pb1nHBYUBWZjxXtr8lhkpGFu7H43hw63Y19qb8z4+1cGnijgz1mqXSAssuc+3r0W0cSr+OsCjmOs7cwT6HMQvPEKxLohwBOS/I3EbuKQOYMjFN5BWP5JXbsG45awV9tquxEW8zxjMetR+AOcYoyrDeiR8sAnj1/F99DE0bL1KyW/G5VNu2Xi/c+0M3KvP3+F8XTCuUY/5zTvqh1Qz1jcdiwsiAhO4eBQzQnjeFlxdiVeue2kmD5qsh+VLKKuKLfyVoaV7b1kBlAtBDu7+hDpA="

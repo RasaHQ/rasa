@@ -1,46 +1,31 @@
-from __future__ import division
-from __future__ import unicode_literals
-from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+import numpy as np
 import typing
 from typing import Any
-from typing import List
-from typing import Text
 
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
-
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     from spacy.tokens import Doc
-    import numpy as np
 
 
 def ndim(spacy_nlp):
     """Number of features used to represent a document / sentence."""
-    # type: (Language) -> int
+    # type: Language -> int
     return spacy_nlp.vocab.vectors_length
 
 
 def features_for_doc(doc):
     """Feature vector for a single document / sentence."""
-    # type: (Doc) -> np.ndarray
+    # type: Doc -> np.ndarray
     return doc.vector
-
-
-def features_for_sentences(sentences, spacy_nlp):
-    """Return a feature matrix where each row represents one sentence."""
-    # type: (List[Text], Language, int) -> np.ndarray
-    import numpy as np
-
-    X = np.zeros((len(sentences), ndim(spacy_nlp)))
-    for idx, sentence in enumerate(sentences):
-        doc = spacy_nlp(sentence)
-        X[idx, :] = features_for_doc(doc)
-    return X
 
 
 class SpacyFeaturizer(Featurizer):

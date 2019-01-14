@@ -9,47 +9,47 @@ import os
 import shutil
 import tarfile
 
-import boto3
-import botocore
 from builtins import object
-from rasa_nlu.config import RasaNLUConfig
-from typing import Optional, Tuple, List
-from typing import Text
+from typing import Optional, Tuple, List, Text
+
+from rasa_nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 
 
-def get_persistor(config):
-    # type: (RasaNLUConfig) -> Optional[Persistor]
+def get_persistor(name):
+    # type: (Text) -> Optional[Persistor]
     """Returns an instance of the requested persistor.
 
-    Currently, `aws` and `gcs` are supported"""
+    Currently, `aws`, `gcs` and `azure` are supported"""
 
-    if 'storage' not in config:
-        raise KeyError("No persistent storage specified. Supported values "
-                       "are {}".format(", ".join(['aws', 'gcs'])))
+    if name == 'aws':
+        return AWSPersistor(os.environ.get("BUCKET_NAME"),
+                            os.environ.get("AWS_ENDPOINT_URL"))
+    if name == 'gcs':
+        return GCSPersistor(os.environ.get("BUCKET_NAME"))
 
-    if config['storage'] == 'aws':
-        return AWSPersistor(config['aws_region'], config['bucket_name'],
-                            config['aws_endpoint_url'])
-    elif config['storage'] == 'gcs':
-        return GCSPersistor(config['bucket_name'])
-    else:
-        return None
+    if name == 'azure':
+        return AzurePersistor(os.environ.get("AZURE_CONTAINER"),
+                              os.environ.get("AZURE_ACCOUNT_NAME"),
+                              os.environ.get("AZURE_ACCOUNT_KEY"))
+
+    return None
 
 
 class Persistor(object):
     """Store models in cloud and fetch them when needed"""
 
-    def persist(self, mode_directory, model_name, project):
+    def persist(self, model_directory, model_name, project):
         # type: (Text) -> None
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
-        if not os.path.isdir(mode_directory):
+        if not os.path.isdir(model_directory):
             raise ValueError("Target directory '{}' not "
-                             "found.".format(mode_directory))
+                             "found.".format(model_directory))
 
-        file_key, tar_path = self._compress(mode_directory, model_name, project)
+        file_key, tar_path = self._compress(
+                model_directory, model_name, project)
         self._persist_tar(file_key, tar_path)
 
     def retrieve(self, model_name, project, target_path):
@@ -64,6 +64,12 @@ class Persistor(object):
     def list_models(self, project):
         # type: (Text) -> List[Text]
         """Lists all the trained models of a project."""
+
+        raise NotImplementedError
+
+    def list_projects(self):
+        # type: () -> List[Text]
+        """Lists all projects."""
 
         raise NotImplementedError
 
@@ -82,9 +88,12 @@ class Persistor(object):
     def _compress(self, model_directory, model_name, project):
         # type: (Text) -> Tuple[Text, Text]
         """Creates a compressed archive and returns key and tar."""
+        import tempfile
 
+        dirpath = tempfile.mkdtemp()
         base_name = self._tar_name(model_name, project, include_extension=False)
-        tar_name = shutil.make_archive(base_name, 'gztar',
+        tar_name = shutil.make_archive(os.path.join(dirpath, base_name),
+                                       'gztar',
                                        root_dir=model_directory,
                                        base_dir=".")
         file_key = os.path.basename(tar_name)
@@ -94,11 +103,12 @@ class Persistor(object):
     def _project_prefix(project):
         # type: (Text) -> Text
 
-        return '{}___'.format(project or RasaNLUConfig.DEFAULT_PROJECT_NAME)
+        p = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
+        return '{}___'.format(p)
 
     @staticmethod
     def _project_and_model_from_filename(filename):
-        # type: (Text) -> Text
+        # type: (Text) -> (Text, Text)
 
         split = filename.split("___")
         if len(split) > 1:
@@ -120,7 +130,8 @@ class Persistor(object):
         # type: (Text, Text) -> None
 
         with tarfile.open(compressed_path, "r:gz") as tar:
-            tar.extractall(target_path)
+            tar.extractall(
+                target_path)  # project dir will be created if it not exists
 
 
 class AWSPersistor(Persistor):
@@ -128,15 +139,12 @@ class AWSPersistor(Persistor):
 
     Fetches them when needed, instead of storing them on the local disk."""
 
-    def __init__(self, aws_region, bucket_name, endpoint_url):
-        # type: (Text, Text, Text) -> None
-
+    def __init__(self, bucket_name, endpoint_url=None):
+        # type: (Text, Optional[Text]) -> None
+        import boto3
         super(AWSPersistor, self).__init__()
-        self.s3 = boto3.resource('s3',
-                                 region_name=aws_region,
-
-                                 endpoint_url=endpoint_url)
-        self._ensure_bucket_exists(bucket_name, aws_region)
+        self.s3 = boto3.resource('s3', endpoint_url=endpoint_url)
+        self._ensure_bucket_exists(bucket_name)
         self.bucket_name = bucket_name
         self.bucket = self.s3.Bucket(bucket_name)
 
@@ -151,8 +159,23 @@ class AWSPersistor(Persistor):
                         "AWS. {}".format(project, e))
             return []
 
-    def _ensure_bucket_exists(self, bucket_name, aws_region):
-        bucket_config = {'LocationConstraint': aws_region}
+    def list_projects(self):
+        # type: () -> List[Text]
+        try:
+            projects_set = {self._project_and_model_from_filename(obj.key)[0]
+                            for obj in self.bucket.objects.filter()}
+            return list(projects_set)
+        except Exception:
+            logger.exception("Failed to list projects in AWS bucket {}. "
+                             "Region: {}".format(self.bucket_name,
+                                                 self.aws_region))
+            return []
+
+    def _ensure_bucket_exists(self, bucket_name):
+        import boto3
+        import botocore
+        bucket_config = {
+            'LocationConstraint': boto3.DEFAULT_SESSION.region_name}
         try:
             self.s3.create_bucket(Bucket=bucket_name,
                                   CreateBucketConfiguration=bucket_config)
@@ -203,6 +226,19 @@ class GCSPersistor(Persistor):
                         "google cloud storage. {}".format(project, e))
             return []
 
+    def list_projects(self):
+        # type: () -> List[Text]
+
+        try:
+            blob_iterator = self.bucket.list_blobs()
+            projects_set = {self._project_and_model_from_filename(b.name)[0]
+                            for b in blob_iterator}
+            return list(projects_set)
+        except Exception as e:
+            logger.warning("Failed to list projects in "
+                           "google cloud storage. {}".format(e))
+            return []
+
     def _ensure_bucket_exists(self, bucket_name):
         from google.cloud import exceptions
 
@@ -225,3 +261,82 @@ class GCSPersistor(Persistor):
 
         blob = self.bucket.blob(target_filename)
         blob.download_to_filename(target_filename)
+
+
+class AzurePersistor(Persistor):
+    """Store models on Azure"""
+
+    def __init__(self,
+                 azure_container,
+                 azure_account_name,
+                 azure_account_key):
+        from azure.storage import blob as azureblob
+        from azure.storage.common import models as storageModel
+
+        super(AzurePersistor, self).__init__()
+
+        self.blob_client = azureblob.BlockBlobService(
+             account_name=azure_account_name,
+             account_key=azure_account_key,
+             endpoint_suffix="core.windows.net")
+
+        self._ensure_container_exists(azure_container)
+        self.container_name = azure_container
+
+    def _ensure_container_exists(self, container_name):
+        # type: (Text) -> None
+
+        exists = self.blob_client.exists(container_name)
+        if not exists:
+            self.blob_client.create_container(container_name)
+
+    def list_models(self, project):
+        # type: (Text) -> List[Text]
+
+        try:
+            blob_iterator = self.blob_client.list_blobs(
+                 self.container_name,
+                 prefix=self._project_prefix(project)
+            )
+            return [self._project_and_model_from_filename(b.name)[1]
+                    for b in blob_iterator]
+        except Exception as e:
+            logger.warning("Failed to list models for project {} in "
+                           "azure blob storage. {}".format(project, e))
+            return []
+
+    def list_projects(self):
+        # type: () -> List[Text]
+
+        try:
+            blob_iterator = self.blob_client.list_blobs(
+                self.container_name,
+                prefix=None
+            )
+            projects_set = {self._project_and_model_from_filename(b.name)[0]
+                            for b in blob_iterator}
+            return list(projects_set)
+        except Exception as e:
+            logger.warning("Failed to list projects in "
+                           "Azure. {}".format(e))
+            return []
+
+    def _persist_tar(self, file_key, tar_path):
+        # type: (Text, Text) -> None
+        """Uploads a model persisted in the `target_dir` to Azure."""
+
+        self.blob_client.create_blob_from_path(
+             self.container_name,
+             file_key,
+             tar_path
+        )
+
+    def _retrieve_tar(self, target_filename):
+        # type: (Text) -> None
+        """Downloads a model that has previously been persisted to Azure."""
+
+        self.blob_client.get_blob_to_path(
+             self.container_name,
+             target_filename,
+             target_filename
+        )
