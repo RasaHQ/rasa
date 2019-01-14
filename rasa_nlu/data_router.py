@@ -92,7 +92,8 @@ class DataRouter(object):
                  remote_storage=None,
                  component_builder=None,
                  model_server=None,
-                 wait_time_between_pulls=None):
+                 wait_time_between_pulls=None,
+                 single_process=None):
         self._training_processes = max(max_training_processes, 1)
         self._current_training_processes = 0
         self.responses = self._create_query_logger(response_log)
@@ -101,6 +102,7 @@ class DataRouter(object):
         self.remote_storage = remote_storage
         self.model_server = model_server
         self.wait_time_between_pulls = wait_time_between_pulls
+        self.single_process = single_process
 
         if component_builder:
             self.component_builder = component_builder
@@ -115,11 +117,13 @@ class DataRouter(object):
             # See https://github.com/tensorflow/tensorflow/issues/5448#issuecomment-258934405
             multiprocessing.set_start_method('spawn', force=True)
 
-        self.pool = ProcessPool(self._training_processes)
+        if not self.single_process:
+            self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
-        self.pool.shutdown()
+        if not self.single_process:
+            self.pool.shutdown()
 
     @staticmethod
     def _create_query_logger(response_log):
@@ -351,11 +355,14 @@ class DataRouter(object):
 
         # tensorflow training is not executed in a separate thread on python 2,
         # as this may cause training to freeze
-        if six.PY2 and self._tf_in_pipeline(train_config):
+        if self.single_process or (six.PY2 and self._tf_in_pipeline(train_config)):
             try:
-                logger.warning("Training a pipeline with a tensorflow "
-                               "component. This blocks the server during "
-                               "training.")
+                if self.single_process:
+                    logger.warning("Training using a single process")
+                if six.PY2 and self._tf_in_pipeline(train_config):
+                    logger.warning("Training a pipeline with a tensorflow "
+                                   "component")
+                logger.warning("This blocks the server during training.")
                 model_path = do_train_in_worker(
                         train_config,
                         data_file,

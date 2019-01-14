@@ -258,7 +258,7 @@ class RasaNLU(object):
                 request.setResponseCode(200)
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(
-                        self.data_router.parse, data))
+                    self.data_router.parse, data))
                 returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)
@@ -438,7 +438,8 @@ if __name__ == '__main__':
             cmdline_args.emulate,
             cmdline_args.storage,
             model_server=_endpoints.model,
-            wait_time_between_pulls=cmdline_args.wait_time_between_pulls
+            wait_time_between_pulls=cmdline_args.wait_time_between_pulls,
+            single_process=cmdline_args.single_process
     )
     if pre_load:
         logger.debug('Preloading....')
