@@ -5,7 +5,6 @@ import sys
 import json
 import logging
 import uuid
-import time
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa_core import utils
@@ -34,7 +33,7 @@ GENERATED_HASH_LENGTH = 5
 
 FORM_PREFIX = "form: "
 # prefix for storystep ID to get reproducible sorting results
-# will get increased with each newinstance
+# will get increased with each new instance
 STEP_COUNT = 1
 
 class StoryStringHelper(object):
