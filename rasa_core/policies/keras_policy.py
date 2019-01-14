@@ -142,7 +142,7 @@ class KerasPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
                                                     **kwargs)
-        #set random seed for shuffle
+        # set random seed for shuffle
         import numpy as np
         np.random.seed(self.random_seed)
         # noinspection PyPep8Naming

@@ -36,6 +36,7 @@ FORM_PREFIX = "form: "
 # will get increased with each new instance
 STEP_COUNT = 1
 
+
 class StoryStringHelper(object):
     """A helper class to mark story steps that are inside a form with `form: `
     """
@@ -101,7 +102,7 @@ class StoryStep(object):
         self.block_name = block_name
         # put a counter prefix to uuid to get reproducible sorting results
         global STEP_COUNT
-        self.id = str(STEP_COUNT)# + "_" + uuid.uuid4().hex
+        self.id = str(STEP_COUNT) + "_" + uuid.uuid4().hex
         STEP_COUNT += 1
 
         self.story_string_helper = StoryStringHelper()
@@ -426,7 +427,7 @@ class StoryGraph(object):
         # in a special end checkpoint
 
         # as in python 3.5, dict is not ordered, in order to generate
-        # reproducible result with random seed in python 3.5, we have 
+        # reproducible result with random seed in python 3.5, we have
         # to use OrderedDict
         if sys.version_info >= (3, 6):
             story_steps = {s.id: s for s in self.story_steps}
