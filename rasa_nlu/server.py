@@ -93,8 +93,12 @@ def create_argument_parser():
                              'server will only serve the models that are '
                              'on disk in the configured `path`.')
     parser.add_argument('-c', '--config',
-                        help="Default model configuration file used for "
-                             "training.")
+                        help='Default model configuration file used for '
+                             'training.')
+    parser.add_argument('--single_process',
+                        action='store_true',
+                        help='Whether to use a single process while running '
+                             'the server')
 
     utils.add_logging_option_arguments(parser)
 
