@@ -25,7 +25,10 @@ class KerasPolicy(Policy):
         "rnn_size": 32,
         "epochs": 100,
         "batch_size": 32,
-        "validation_split": 0.1
+        "validation_split": 0.1,
+        # set random seed to any int to get reproducible results
+        # try to change to another int if you are not getting good results
+        "random_seed": None  # set random seed
     }
 
     @staticmethod
@@ -63,6 +66,7 @@ class KerasPolicy(Policy):
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.validation_split = config['validation_split']
+        self.random_seed = config['random_seed']
 
     @property
     def max_len(self):
@@ -138,12 +142,16 @@ class KerasPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
                                                     **kwargs)
-
+        #set random seed for shuffle
+        import numpy as np
+        np.random.seed(self.random_seed)
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
         self.graph = tf.Graph()
         with self.graph.as_default():
+            # set random seed in tf
+            tf.set_random_seed(self.random_seed)
             self.session = tf.Session()
             with self.session.as_default():
                 if self.model is None:
@@ -160,6 +168,7 @@ class KerasPolicy(Policy):
                 self.model.fit(shuffled_X, shuffled_y,
                                epochs=self.epochs,
                                batch_size=self.batch_size,
+                               shuffle=False,
                                **params)
                 # the default parameter for epochs in keras fit is 1
                 self.current_epoch = self.defaults.get("epochs", 1)
