@@ -28,7 +28,7 @@ class KerasPolicy(Policy):
         "validation_split": 0.1,
         # set random seed to any int to get reproducible results
         # try to change to another int if you are not getting good results
-        "random_seed": None  # set random seed
+        "random_seed": None
     }
 
     @staticmethod
