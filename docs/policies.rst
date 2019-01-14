@@ -216,6 +216,10 @@ and the training is run here:
 You can implement the model of your choice by overriding these methods,
 or initialize ``KerasPolicy`` with pre-defined ``keras model``.
 
+In order to get reproducible training results for the same inputs you can
+set the ``random_seed`` attribute of the ``KerasPolicy`` to any integer. If
+the results are not good, try setting to another integer.
+
 
 .. _embedding_policy:
 
