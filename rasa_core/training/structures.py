@@ -33,6 +33,9 @@ CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 GENERATED_HASH_LENGTH = 5
 
 FORM_PREFIX = "form: "
+# prefix for storystep ID to get reproducible sorting results
+# will get increased with each newinstance
+STEP_COUNT = 1
 
 class StoryStringHelper(object):
     """A helper class to mark story steps that are inside a form with `form: `
@@ -97,9 +100,10 @@ class StoryStep(object):
         self.start_checkpoints = start_checkpoints if start_checkpoints else []
         self.events = events if events else []
         self.block_name = block_name
-        # the time prefix allows for reproducible sorting and training
-        self.id = str(time.time()) + uuid.uuid4().hex
-        time.sleep(0.01)
+        # put a counter prefix to uuid to get reproducible sorting results
+        global STEP_COUNT
+        self.id = str(STEP_COUNT)# + "_" + uuid.uuid4().hex
+        STEP_COUNT += 1
 
         self.story_string_helper = StoryStringHelper()
 
