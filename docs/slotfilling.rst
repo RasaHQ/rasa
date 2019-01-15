@@ -257,6 +257,26 @@ you could add a story like this:
         - utter_chitchat
         - restaurant_form
         - form{"name": null}
+		
+In some situations, users may change their mind in the middle of form action
+and decide not to go forward with their initial request. In cases like this, the
+assistant should stop asking for the requested slots. You can handle such situations
+gracefully using a default action ``action_deactivate_form`` which will deactivate
+the form and reset the requested slot. An example story of such conversation could
+look as follows:
+
+.. code-block:: story
+
+    ## chitchat
+    * request_restaurant
+        - restaurant_form
+        - form{"name": "restaurant_form"}
+    * stop
+        - utter_ask_continue
+    * deny
+        - action_deactivate_form
+        - form{"name": null}
+
 
 It is **strongly** recommended that you build these stories using interactive learning.
 If you write these stories by hand you will likely miss important things.
@@ -332,6 +352,17 @@ for example:
 
 This mechanism is quite general and you can use it to build many different 
 kinds of logic into your forms.
+
+Configuration
+-------------
+To use forms, make sure to include the ``FormPolicy`` in your policy
+configuration file. For exmple:
+
+.. code-block:: yaml
+
+  policies:
+    - name: "FormPolicy"
+
 
 Debugging
 ---------
