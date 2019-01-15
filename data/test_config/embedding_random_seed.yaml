@@ -1,0 +1,3 @@
+policies:
+- name: EmbeddingPolicy
+  random_seed: 42

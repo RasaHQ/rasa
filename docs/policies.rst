@@ -328,6 +328,9 @@ It is recommended to use
             - ``epochs`` sets the number of times the algorithm will see
               training data, where ``one epoch`` = one forward pass and
               one backward pass of all the training examples;
+            - ``random_seed`` if set to any int will get reproducible
+              training results for the same inputs, if the results are not
+              good, try setting to another integer;
 
         - embedding:
 

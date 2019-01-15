@@ -90,3 +90,54 @@ def test_training_script_with_restart_stories(tmpdir):
                          policy_config='data/test_config/max_hist_config.yml',
                          kwargs={})
     assert True
+
+
+def test_training_keras_with_random_seed(tmpdir):
+    # set random seed in config file to
+    # generate a reproducible training result
+    agent_1 = train_dialogue_model(
+        DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+        tmpdir.strpath + "1",
+        interpreter=RegexInterpreter(),
+        policy_config='data/test_config/keras_random_seed.yaml',
+        kwargs={})
+
+    agent_2 = train_dialogue_model(
+        DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+        tmpdir.strpath + "2",
+        interpreter=RegexInterpreter(),
+        policy_config='data/test_config/keras_random_seed.yaml',
+        kwargs={})
+        
+    processor_1 = agent_1.create_processor()
+    processor_2 = agent_2.create_processor()
+
+    probs_1 = processor_1.predict_next("1")
+    probs_2 = processor_2.predict_next("2")
+    assert probs_1["confidence"] == probs_2["confidence"]
+
+
+def test_training_embedding_with_random_seed(tmpdir):
+    # set random seed in config file to
+    # generate a reproducible training result
+    for i in range(50):
+        agent_1 = train_dialogue_model(
+            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+            tmpdir.strpath + "1",
+            interpreter=RegexInterpreter(),
+            policy_config='data/test_config/embedding_random_seed.yaml',
+            kwargs={})
+
+        agent_2 = train_dialogue_model(
+            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+            tmpdir.strpath + "2",
+            interpreter=RegexInterpreter(),
+            policy_config='data/test_config/embedding_random_seed.yaml',
+            kwargs={})
+            
+        processor_1 = agent_1.create_processor()
+        processor_2 = agent_2.create_processor()
+
+        probs_1 = processor_1.predict_next("1")
+        probs_2 = processor_2.predict_next("2")
+        assert probs_1["confidence"] == probs_2["confidence"]

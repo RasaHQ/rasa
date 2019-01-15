@@ -24,7 +24,8 @@ Added
   classes' load function returns the correct type
 - Travis script now clones and tests the Rasa stack starter pack
 - Entries for tensorflow and sklearn versions to the policy metadata
-- random seed option for KerasPolicy to allow for reproducible training results
+- random seed option for KerasPolicy and EmbeddingPolicy to allow for reproducible
+  training results
   
 Removed
 -------
