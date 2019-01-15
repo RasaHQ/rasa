@@ -76,15 +76,6 @@ registered_pipeline_templates = {
         "ner_synonyms",
         "intent_classifier_sklearn",
     ],
-    "spacy_sklearn": [
-        "nlp_spacy",
-        "tokenizer_spacy",
-        "intent_featurizer_spacy",
-        "intent_entity_featurizer_regex",
-        "ner_crf",
-        "ner_synonyms",
-        "intent_classifier_sklearn",
-    ],
     "keyword": [
         "intent_classifier_keyword",
     ],
@@ -95,12 +86,23 @@ registered_pipeline_templates = {
         "intent_featurizer_count_vectors",
         "intent_classifier_tensorflow_embedding"
     ],
+    # DEPRECATED: this pipeline is marked for removal after 0.14
     "tensorflow_embedding": [
         "tokenizer_whitespace",
         "ner_crf",
         "ner_synonyms",
         "intent_featurizer_count_vectors",
         "intent_classifier_tensorflow_embedding"
+    ],
+    # DEPRECATED: this pipeline is marked for removal after 0.14
+    "spacy_sklearn": [
+        "nlp_spacy",
+        "tokenizer_spacy",
+        "intent_featurizer_spacy",
+        "intent_entity_featurizer_regex",
+        "ner_crf",
+        "ner_synonyms",
+        "intent_classifier_sklearn",
     ]
 }
 

@@ -11,7 +11,8 @@ Prerequisites
 ~~~~~~~~~~~~~
 For windows
 -----------
-Make sure the Microsoft VC++ Compiler is installed, so python can compile any dependencies. You can get the compiler from: 
+Make sure the Microsoft VC++ Compiler is installed, so python can compile
+any dependencies. You can get the compiler from:
 https://visualstudio.microsoft.com/visual-cpp-build-tools/
 Download the installer and select VC++ Build tools in the list. 
 
@@ -20,7 +21,8 @@ Setting up Rasa NLU
 
 Stable (Recommended)
 --------------------
-The recommended way to install Rasa NLU is using pip which will install the latest stable version of Rasa NLU:
+The recommended way to install Rasa NLU is using pip which will install
+the latest stable version of Rasa NLU:
 
 .. copyable::
 
@@ -59,13 +61,15 @@ installed and tell you if any are missing.
 Installing Pipeline Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Section :ref:`section_pipeline` will help you choose which pipeline you want to use. 
+Section :ref:`section_pipeline` will help you choose which pipeline
+you want to use.
 
 Great for getting started: spaCy + sklearn
 ------------------------------------------
 
 
-The ``spacy_sklearn`` pipeline combines a few different libraries and is a popular option.
+The ``spacy_sklearn`` pipeline combines a few different libraries and
+is a popular option.
 
 You can install it with this command (for more information
 visit the `spacy docs <https://spacy.io/usage/models>`_):
@@ -87,7 +91,9 @@ memory to run, but will somewhat reduce intent classification performance.
 First Alternative: Tensorflow
 -----------------------------
 
-To use the ``tensorflow_embedding`` pipeline you will need to install tensorflow as well as the scikit-learn and sklearn-crfsuite libraries. To do this, run the following command:
+To use the ``supervised_embeddings`` pipeline you will need to install
+tensorflow as well as the scikit-learn and sklearn-crfsuite libraries.
+To do this, run the following command:
 
 .. code-block:: bash
 
@@ -97,7 +103,9 @@ To use the ``tensorflow_embedding`` pipeline you will need to install tensorflow
 Second Alternative: MITIE
 -------------------------
 
-The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend performs well for small datasets, but training can take very long if you have more than a couple of hundred examples. We may deprecate the MITIE backend in the future. 
+The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend performs well for
+small datasets, but training can take very long if you have more than a
+couple of hundred examples. We may deprecate the MITIE backend in the future.
 
 First, run
 
@@ -106,7 +114,8 @@ First, run
     pip install git+https://github.com/mit-nlp/MITIE.git
     pip install rasa_nlu[mitie]
 
-and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.
+and then download the
+`MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.
 The file you need is ``total_word_feature_extractor.dat``. Save this
 somewhere, if you want to use mitie, you need to tell it where to
 find this file.
@@ -150,7 +159,8 @@ Train your first custom Rasa NLU model!
 ---------------------------------------
 After following the quickstart and installing Rasa NLU, the next step is to 
 build something yourself! To get you started, we have prepared a 
-Rasa NLU starter-pack which has all the files you need to train your first custom Rasa NLU model.
+Rasa NLU starter-pack which has all the files you need to train your
+first custom Rasa NLU model.
 On top of that, the starter-pack includes a training dataset ready 
 for you to use.
 
@@ -158,8 +168,9 @@ Click the link below to get the Rasa NLU starter-pack:
 	
 `Rasa NLU starter-pack <https://github.com/RasaHQ/starter-pack-rasa-nlu>`_
 	
-Let us know how you are getting on! If you have any questions about the starter-pack or 
-using Rasa NLU in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!    
+Let us know how you are getting on! If you have any questions
+about the starter-pack or using Rasa NLU in general, post your questions on
+`Rasa Community Forum <https://forum.rasa.com>`_!
 
 
 .. include:: feedback.inc

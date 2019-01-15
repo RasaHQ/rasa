@@ -19,7 +19,7 @@ CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
-TEST_MODEL_PATH = "test_models/test_model_spacy_sklearn"
+TEST_MODEL_PATH = "test_models/test_model_pretrained_embeddings"
 
 # see `rasa_nlu.data_router` for details. avoids deadlock in
 # `deferred_from_future` function during tests
@@ -67,7 +67,8 @@ def zipped_nlu_model():
     td = training_data.load_data(DEFAULT_DATA_PATH)
 
     trainer.train(td)
-    trainer.persist("test_models", project_name="test_model_spacy_sklearn")
+    trainer.persist("test_models",
+                    project_name="test_model_pretrained_embeddings")
 
     model_dir_list = os.listdir(TEST_MODEL_PATH)
 

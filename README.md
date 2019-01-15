@@ -119,11 +119,16 @@ The intended audience is mainly __people developing bots__, starting from scratc
 * You don't have to make a `https` call to parse every message.
 * You can tune models to work well on your particular use case.
 
-These points are laid out in more detail in a [blog post](https://blog.rasa.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself/). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open-sourced. 
+These points are laid out in more detail in a 
+[blog post](https://blog.rasa.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself/). 
+Rasa is a set of tools for building more advanced bots, developed by 
+the company [Rasa](https://rasa.com). Rasa NLU is the natural language 
+understanding module, and the first component to be open-sourced. 
 
 ### What languages does it support?
-It depends. Some things, like intent classification with the `tensorflow_embedding` pipeline, work in any language. 
-Other features are more restricted. See details [here](https://nlu.rasa.com/languages.html)
+It depends. Some things, like intent classification with the 
+`supervised_embeddings` pipeline, work in any language. Other features are 
+more restricted. See details [here](https://nlu.rasa.com/languages.html)
 
 ### How to contribute
 We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://nlu.rasa.com/contribute.html).
