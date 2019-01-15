@@ -117,7 +117,7 @@ def test_random_seed(tmpdir, config_file):
         interpreter=RegexInterpreter(),
         policy_config= config_file,
         kwargs={})
-        
+
     processor_1 = agent_1.create_processor()
     processor_2 = agent_2.create_processor()
 
