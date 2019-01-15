@@ -956,7 +956,7 @@ class EmbeddingPolicy(Policy):
             # set random seed
             np.random.seed(self.random_seed)
             tf.set_random_seed(self.random_seed)
-            
+
             dialogue_len = None  # use dynamic time for rnn
             # create placeholders
             self.a_in = tf.placeholder(
