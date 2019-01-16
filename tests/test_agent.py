@@ -89,7 +89,7 @@ def test_wait_time_between_pulls_from_file(monkeypatch):
     monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: 1/0)    # raises an exception
+                        lambda *args: 1 / 0)  # raises an exception
 
     model_endpoint_config = utils. \
         read_endpoint_config("data/test_endpoints/model_endpoint.yml", "model")
@@ -102,7 +102,7 @@ def test_wait_time_between_pulls_str(monkeypatch):
     monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: 1/0)   # raises an exception
+                        lambda *args: 1 / 0)  # raises an exception
 
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": 'http://server.com/model/default_core@latest',
@@ -115,7 +115,7 @@ def test_wait_time_between_pulls_str(monkeypatch):
 
 def test_wait_time_between_pulls_with_not_number(monkeypatch):
     monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
-                        lambda *args: 1/0)     # raises an exception
+                        lambda *args: 1 / 0)  # raises an exception
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
                         lambda *args: True)
 
