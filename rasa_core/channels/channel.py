@@ -29,8 +29,10 @@ class UserMessage(object):
                  parse_data: Dict[Text, Any] = None,
                  input_channel: Text = None
                  ) -> None:
-
-        self.text = text.strip()
+        if text:
+            self.text = text.strip()
+        else:
+            self.text = text
 
         if output_channel is not None:
             self.output_channel = output_channel
