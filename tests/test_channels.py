@@ -731,3 +731,11 @@ def test_send_custom_messages_without_buttons():
     channel = OutputChannel()
     channel.send_text_message = test_message
     channel.send_custom_message("user", [{'title': 'a', 'subtitle': 'b'}])
+
+
+def test_newsline_strip():
+    from rasa_core.channels import UserMessage
+
+    message = UserMessage("\n/restart\n")
+
+    assert message.text == "/restart"

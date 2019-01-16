@@ -30,7 +30,7 @@ class UserMessage(object):
                  input_channel: Text = None
                  ) -> None:
 
-        self.text = text
+        self.text = text.strip()
 
         if output_channel is not None:
             self.output_channel = output_channel
