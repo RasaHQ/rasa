@@ -29,7 +29,7 @@ Added
   (as long as the event itself is enabled in the application hosting the bot)
 - Added sanitization mechanism for SlackInput that (in its current shape and form)
   strips bot's self mentions from messages posted using the said @mentions.
-  
+
 Removed
 -------
 - support for deprecated intents/entities format
@@ -48,6 +48,7 @@ Fixed
   dispatched messages using ``dispatcher.utter_custom_message``
 - re-added missing ``python-engineio`` dependency
 - fixed not working examples in ``examples/``
+- strip newlins from messages so you don't have something like "\n/restart\n"
 
 
 [0.12.3] - 2018-12-03
