@@ -38,8 +38,8 @@ if typing.TYPE_CHECKING:
     from rasa_core.tracker_store import TrackerStore
 
 
-def load_from_server(interpreter: NaturalLanguageInterpreter = None,
-                     generator: Union[EndpointConfig, 'NLG'] = None,
+def load_from_server(interpreter: Optional[NaturalLanguageInterpreter] = None,
+                     generator: Optional[Union[EndpointConfig, 'NLG']] = None,
                      tracker_store: Optional['TrackerStore'] = None,
                      action_endpoint: Optional[EndpointConfig] = None,
                      model_server: Optional[EndpointConfig] = None,
