@@ -24,7 +24,10 @@ Added
   classes' load function returns the correct type
 - Travis script now clones and tests the Rasa stack starter pack
 - Entries for tensorflow and sklearn versions to the policy metadata
-- Sanitization mechanism for SlackInput that (in its current shape and form)
+- SlackInput wont ignore `app_mention` event anymore.
+  Will handle messages containing @mentions to bots and will respond to these
+  (as long as the event itself is enabled in the application hosting the bot)
+- Added sanitization mechanism for SlackInput that (in its current shape and form)
   strips bot's self mentions from messages posted using the said @mentions.
   
 Removed
