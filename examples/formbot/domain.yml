@@ -8,6 +8,7 @@ intents:
   - deny
   - stop
   - thankyou
+  - greet
 
 entities:
   - cuisine
@@ -45,11 +46,11 @@ templates:
   utter_ask_preferences:
     - text: "please provide additional preferences"
   utter_ask_feedback:
-    - text: "please give your feedback"
+    - text: "please give your feedback on your experience so far"
   utter_submit:
-    - text: "done!"
+    - text: "All done!"
   utter_slots_values:
-    - text: "got slots:\n
+    - text: "I am going to run a restaurant search using the following parameters:\n
              - cuisine: {cuisine}\n
              - num_people: {num_people}\n
              - outdoor_seating: {outdoor_seating}\n
@@ -69,12 +70,15 @@ templates:
     - text: "could not convert input to boolean value, please try again"
   utter_default:
     - text: "sorry, I didn't understand you, please try input something else"
+  utter_greet:
+    - text: "Hello! I am restaurant search assistant! How can I help?"
 
 actions:
   - utter_slots_values
   - utter_noworries
   - utter_chitchat
   - utter_ask_continue
+  - utter_greet
 
 forms:
   - restaurant_form
