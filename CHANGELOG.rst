@@ -26,6 +26,8 @@ Added
 - Entries for tensorflow and sklearn versions to the policy metadata
 - random seed option for KerasPolicy and EmbeddingPolicy to allow for reproducible
   training results
+- Sanitization mechanism for SlackInput that (in its current shape and form)
+  strips bot's self mentions from messages posted using the said @mentions
   
 Removed
 -------
