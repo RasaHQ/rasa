@@ -27,6 +27,7 @@ def create_argument_parser():
 
     parser = argparse.ArgumentParser(
         description='starts the bot')
+
     parser.add_argument(
         '-d', '--core',
         required=True,
@@ -36,6 +37,13 @@ def create_argument_parser():
         '-u', '--nlu',
         type=str,
         help="nlu model to run")
+
+    utils.add_logging_option_arguments(parser)
+    add_run_options(parser)
+    return parser
+
+
+def add_run_options(parser):
     parser.add_argument(
         '-p', '--port',
         default=constants.DEFAULT_SERVER_PORT,
@@ -88,9 +96,6 @@ def create_argument_parser():
         default="HS256",
         help="Method used for the signature of the JWT authentication "
              "payload.")
-
-    utils.add_logging_option_arguments(parser)
-    return parser
 
 
 def create_http_input_channels(

@@ -9,7 +9,7 @@ import re
 import sys
 import tempfile
 import argparse
-from hashlib import sha1
+from hashlib import sha1, md5
 from random import Random
 from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
@@ -244,6 +244,18 @@ def wrap_with_color(text, color):
 
 def print_color(text, color):
     print(wrap_with_color(text, color))
+
+
+def print_warning(text):
+    print(wrap_with_color(text, bcolors.WARNING))
+
+
+def print_error(text):
+    print(wrap_with_color(text, bcolors.WARNING))
+
+
+def print_success(text):
+    print(wrap_with_color(text, bcolors.OKGREEN))
 
 
 class HashableNDArray(object):
@@ -542,6 +554,22 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
             if is_limit_reached(num_messages, max_line_limit):
                 break
+
+
+def file_as_bytes(path: str) -> bytes:
+    """Read in a file as a byte array."""
+    with io.open(path, 'rb') as f:
+        return f.read()
+
+
+def get_file_hash(path: str) -> str:
+    """Calculate the md5 hash of a file."""
+    return md5(file_as_bytes(path)).hexdigest()
+
+
+def get_text_hash(text: str, encoding: str = "utf-8") -> str:
+    """Calculate the md5 hash of a file."""
+    return md5(text.encode(encoding)).hexdigest()
 
 
 def download_file_from_url(url: Text) -> Text:
