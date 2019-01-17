@@ -47,7 +47,7 @@ model with the ``--core`` flag like so:
      --endpoints endpoints.yml
 
 In interactive mode, the bot will ask you to confirm every prediction
-made by NLU and Core before proceeding ()
+made by NLU and Core before proceeding.
 Here's an example:
 
 .. code-block:: text
