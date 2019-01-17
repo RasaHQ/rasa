@@ -83,8 +83,8 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         nlu_data = tracker.latest_message.parse_data
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
         last_intent_name = nlu_data['intent'].get('name', None)
-        should_fallback = self.should_fallback(nlu_confidence,
-                                               tracker.latest_action_name)
+        should_nlu_fallback = self.should_nlu_fallback(
+            nlu_confidence, tracker.latest_action_name)
         user_rephrased = has_user_rephrased(tracker)
 
         if self._is_user_input_expected(tracker):
@@ -94,7 +94,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             logger.debug("User '{}' denied suggested intents.".format(
                 tracker.sender_id))
             result = self._results_for_user_denied(tracker, domain)
-        elif user_rephrased and should_fallback:
+        elif user_rephrased and should_nlu_fallback:
             logger.debug("Ambiguous rephrasing of user '{}' "
                          "for intent '{}'".format(tracker.sender_id,
                                                   last_intent_name))
@@ -107,7 +107,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                                            FALLBACK_SCORE, domain)
         elif tracker.last_executed_action_has(
                 ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
-            if not should_fallback:
+            if not should_nlu_fallback:
                 logger.debug("User '{}' affirmed intent '{}'"
                              "".format(tracker.sender_id,
                                        last_intent_name))
@@ -117,7 +117,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             else:
                 result = confidence_scores_for(self.fallback_nlu_action_name,
                                                FALLBACK_SCORE, domain)
-        elif should_fallback:
+        elif should_nlu_fallback:
             logger.debug("User '{}' has to affirm intent '{}'.".format(
                 tracker.sender_id, last_intent_name))
             result = confidence_scores_for(ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
