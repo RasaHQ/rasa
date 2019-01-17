@@ -272,8 +272,19 @@ ask if they are looking for somewhere with outside seating.
 You can achieve this by writing some logic into the ``required_slots()`` method,
 for example:
 
-.. literalinclude:: ../examples/formbot/actions.py
-   :pyobject: RestaurantForm.required_slots
+.. code-block:: python
+
+    @staticmethod
+    def required_slots(tracker):
+       # type: () -> List[Text]
+       """A list of required slots that the form has to fill"""
+
+       if tracker.get_slot('cuisine') == 'greek':
+         return ["cuisine", "num_people", "outdoor_seating",
+                 "preferences", "feedback"]
+       else:
+         return ["cuisine", "num_people",
+                 "preferences", "feedback"]
 
 This mechanism is quite general and you can use it to build many different 
 kinds of logic into your forms.
