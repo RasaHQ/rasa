@@ -18,6 +18,10 @@ from rasa_core.trackers import DialogueStateTracker
 logger = logging.getLogger(__name__)
 
 
+def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
+    return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_REPHRASE_NAME)
+
+
 class TwoStageFallbackPolicy(FallbackPolicy):
     """ This policy handles low NLU confidence in multiple stages.
 
@@ -176,8 +180,3 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 meta = json.loads(utils.read_file(meta_path))
 
         return cls(**meta)
-
-
-def has_user_rephrased(tracker: DialogueStateTracker) -> bool:
-    return tracker.last_executed_action_has(
-        ACTION_DEFAULT_ASK_REPHRASE_NAME)
