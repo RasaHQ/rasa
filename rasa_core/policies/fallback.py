@@ -105,9 +105,7 @@ class FallbackPolicy(Policy):
                                       tracker.latest_action_name):
             logger.debug("NLU confidence {} is lower "
                          "than NLU threshold {}. "
-                         "Predicting fallback action: {}"
-                         "".format(nlu_confidence, self.nlu_threshold,
-                                   self.fallback_action_name))
+                         "".format(nlu_confidence, self.nlu_threshold))
             # we set this to 1.1 to make sure fallback overrides
             # the memoization policy
             result = self.fallback_scores(domain)
