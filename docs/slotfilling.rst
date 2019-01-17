@@ -42,7 +42,7 @@ story. By "happy path", we mean that whenever you ask a user for some informatio
 they respond with what you asked for.
 
 If we take the example of the restaurant bot, this single story describes all of the 
-happy paths. 
+happy paths.
 
 .. code-block:: story
 
@@ -126,30 +126,8 @@ The ``slot_mappings`` method defines how to extract slot values from user respon
 
 Here's an example for the restaurant bot:
 
-.. code-block:: python
-
-    def slot_mappings(self):
-        # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
-        """A dictionary to map required slots to
-            - an extracted entity
-            - intent: value pairs
-            - a whole message
-            or a list of them, where the first match will be picked"""
-
-        return {"cuisine": self.from_entity(entity="cuisine",
-                                            intent="inform"),
-                "num_people": self.from_entity(entity="number"),
-                "outdoor_seating": [self.from_entity(entity="seating"),
-                                    self.from_intent(intent='affirm',
-                                                     value=True),
-                                    self.from_intent(intent='deny',
-                                                     value=False)],
-                "preferences": [self.from_text(intent='inform'),
-                                self.from_intent(intent='deny',
-                                                 value="no additional "
-                                                       "preferences")],
-                "feedback": [self.from_entity(entity="feedback"),
-                             self.from_text()]}
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.slot_mappings
 
 The predefined functions work as follows:
 
@@ -178,56 +156,14 @@ you can do this by overwriting the ``validate()`` method.
 Here is an example which checks if the extracted cuisine slot belongs to a 
 list of supported cuisines.
 
-.. code-block:: python
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.cuisine_db
 
-    @staticmethod
-    def cuisine_db():
-        # type: () -> List[Text]
-        """Database of supported cuisines"""
-        return ["caribbean", "chinese", "french", "greek", "indian",
-                "italian", "mexican"]
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.is_int
 
-    def validate(self, dispatcher, tracker, domain):
-        # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-        """"Validate extracted requested slot else raise an error"""
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
-
-        # extract requested slot from a user input by using `slot_mappings`
-        events = self.extract(dispatcher, tracker, domain)
-        if events is None:
-            # raise an error if nothing was extracted
-            raise ActionExecutionRejection(self.name(),
-                                           "Failed to validate slot {0} "
-                                           "with action {1}"
-                                           "".format(slot_to_fill,
-                                                     self.name()))
-
-        extracted_slots = []
-        validated_events = []
-        for e in events:
-            if e['event'] == 'slot':
-                # get values of extracted slots to validate them later
-                extracted_slots.append(e['value'])
-            else:
-                # add other events without validating them
-                validated_events.append(e)
-
-        for slot in extracted_slots:
-            if slot_to_fill == 'cuisine':
-                if slot.lower() not in self.cuisine_db():
-                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                    # validation failed, set this slot to None, meaning the
-                    user will be asked for the slot again
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            else:
-                # no validation needed
-                validated_events.append(SlotSet(slot_to_fill, slot))
-
-        return validated_events
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.validate
 
 If nothing is extracted from the user's utterance for any of the required slots, an
 ``ActionExecutionRejection`` error will be raised, meaning the action execution
