@@ -561,7 +561,7 @@ ner_synonyms
     this component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entity
     extraction will return ``nyc`` even though the message contains ``NYC``. With fuzzy matching
     enabled values such as ``New York`` can also map to the synonym ``nyc``. You can enable fuzzy matching with the
-    option `fuzzy_matching: true` and modify the threshold with `fuzzy_threshold: 95`. When this component changes an
+    option ``fuzzy_matching: true`` and modify the threshold with ``fuzzy_threshold: 95``. When this component changes an
     existing entity, it appends itself to the processor list of this entity.
 
 ner_crf
