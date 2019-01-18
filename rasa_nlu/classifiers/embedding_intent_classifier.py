@@ -7,7 +7,6 @@ import io
 import copy
 import logging
 import os
-from tqdm import tqdm
 
 import typing
 from typing import List, Text, Any, Optional, Dict, Tuple
@@ -436,6 +435,14 @@ class EmbeddingIntentClassifier(Component):
                   ):
         # type: (...) -> None
         """Train tf graph"""
+        try:
+            from tqdm import tqdm
+            pbar = tqdm(range(self.epochs), desc="Epochs")
+        except ImportError:
+            logger.info("tqdm could not be imported. " 
+                        "This is likely due to missing multiprocessing "
+                        "capabilities of this system.")
+            pbar = range(self.epochs)
 
         self.session.run(tf.global_variables_initializer())
 
@@ -443,7 +450,6 @@ class EmbeddingIntentClassifier(Component):
             logger.info("Accuracy is updated every {} epochs"
                         "".format(self.evaluate_every_num_epochs))
 
-        pbar = tqdm(range(self.epochs), desc="Epochs")
         train_acc = 0
         last_loss = 0
         for ep in pbar:
