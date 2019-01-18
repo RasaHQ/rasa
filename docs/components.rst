@@ -533,8 +533,9 @@ ner_synonyms
 
 :Description:
     If the training data contains defined synonyms (by using the ``value`` attribute on the entity examples).
-    this component will make sure that detected entity values will be mapped to the same value. For example,
-    if your training data contains the following examples:
+    this component will make sure that detected entity values will be mapped to the same value. There is also
+    an option to fuzzy match the entity to a synonym. For example, if your training data contains the following
+    examples:
 
     .. code-block:: json
 
@@ -557,9 +558,11 @@ ner_synonyms
                        }]
         }]
 
-    this component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
-    extraction will return ``nyc`` even though the message contains ``NYC``. When this component changes an
-    exisiting entity, it appends itself to the processor list of this entity.
+    this component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entity
+    extraction will return ``nyc`` even though the message contains ``NYC``. With fuzzy matching
+    enabled values such as ``New York`` can also map to the synonym ``nyc``. You can enable fuzzy matching with the
+    option `fuzzy_matching: true` and modify the threshold with `fuzzy_threshold: 95`. When this component changes an
+    existing entity, it appends itself to the processor list of this entity.
 
 ner_crf
 ~~~~~~~
