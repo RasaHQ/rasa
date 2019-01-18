@@ -84,7 +84,7 @@ class PolicyTestCollection(object):
         probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain)
         assert len(probabilities) == default_domain.num_actions
-        assert max(probabilities) <= 1.0
+        assert max(probabilities) <= 1.1
         assert min(probabilities) >= 0.0
 
     def test_persist_and_load_empty_policy(self, tmpdir):

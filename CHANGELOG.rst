@@ -45,6 +45,7 @@ Changed
   only if previous action is ``action_listen``
 - updated docs for interactive learning to inform users of the
   ``--core`` flag
+- Change memoization policies confidence score to 1.1 to override ML policies
 
 Fixed
 -----

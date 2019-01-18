@@ -14,6 +14,7 @@ from rasa_core.featurizers import (
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.constants import MEMO_SCORE
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class MemoizationPolicy(Policy):
 
         This policy is not supposed to be the only policy in an ensemble,
         it is optimized for precision and not recall.
-        It should get a 100% precision because it emits probabilities of 1.0
+        It should get a 100% precision because it emits probabilities of 1.1
         along it's predictions, which makes every mistake fatal as
         no other policy can overrule it.
 
@@ -172,7 +173,7 @@ class MemoizationPolicy(Policy):
             after seeing the tracker.
 
             Returns the list of probabilities for the next actions.
-            If memorized action was found returns 1.0 for its index,
+            If memorized action was found returns 1.1 for its index,
             else returns 0.0 for all actions."""
         result = [0.0] * domain.num_actions
 
@@ -191,9 +192,10 @@ class MemoizationPolicy(Policy):
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
-                score = tracker.latest_message.intent.get("confidence", 1.0)
+                score = tracker.latest_message.intent.get("confidence",
+                                                          MEMO_SCORE)
             else:
-                score = 1.0
+                score = MEMO_SCORE
 
             result[recalled] = score
         else:
