@@ -5,6 +5,7 @@ from typing import List, Text, Optional, Dict, Any
 import requests
 import copy
 
+from rasa_core.version import __version__ as rasa_core_version
 from rasa_core import events
 from rasa_core.constants import (
     DOCS_BASE_URL,
@@ -230,7 +231,8 @@ class RemoteAction(Action):
             "next_action": self._name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
-            "domain": domain.as_dict()
+            "domain": domain.as_dict(),
+            "version": rasa_core_version
         }
 
     @staticmethod
