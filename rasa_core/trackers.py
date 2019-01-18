@@ -413,6 +413,55 @@ class DialogueStateTracker(object):
         with io.open(export_path, 'a', encoding="utf-8") as f:
             f.write(self.export_stories() + "\n")
 
+    def get_last_event_for(self,
+                           event_type: Type[Event],
+                           action_names_to_exclude: List[Text] = None,
+                           skip: int = 0) -> Optional[Any]:
+        """Gets the last event of a given type which was actually applied.
+
+        Args:
+            event_type: The type of event you want to find.
+            action_names_to_exclude: Events of type `ActionExecuted` which
+                should be excluded from the results. Can be used to skip
+                `action_listen` events.
+            skip: Skips n possible results before return an event.
+
+        Returns:
+            event which matched the query or `None` if no event matched.
+        """
+
+        to_exclude = action_names_to_exclude or []
+
+        def filter_function(e: Event):
+            has_instance = isinstance(e, event_type)
+            excluded = (isinstance(e, ActionExecuted) and
+                        e.action_name in to_exclude)
+
+            return has_instance and not excluded
+
+        filtered = filter(filter_function, reversed(self.applied_events()))
+        for i in range(skip):
+            next(filtered, None)
+
+        return next(filtered, None)
+
+    def last_executed_action_has(self, name: Text, skip=0) -> bool:
+        """Returns whether last `ActionExecuted` event had a specific name.
+
+        Args:
+            name: Name of the event which should be matched.
+            skip: Skips n possible results in between.
+
+        Returns:
+            `True` if last executed action had name `name`, otherwise `False`.
+        """
+
+        last = self.get_last_event_for(ActionExecuted,
+                                       action_names_to_exclude=[
+                                           ACTION_LISTEN_NAME],
+                                       skip=skip)
+        return last is not None and last.action_name == name
+
     ###
     # Internal methods for the modification of the trackers state. Should
     # only be called by events, not directly. Rather update the tracker
@@ -470,7 +519,7 @@ class DialogueStateTracker(object):
 
     def clear_followup_action(self):
         # type: () -> None
-        """Clears follow up action when it was executed"""
+        """Clears follow up action when it was executed."""
 
         self.followup_action = None
 
@@ -480,56 +529,10 @@ class DialogueStateTracker(object):
         """Take a list of entities and create tracker slot set events.
 
         If an entity type matches a slots name, the entities value is set
-        as the slots value by creating a ``SlotSet`` event."""
+        as the slots value by creating a ``SlotSet`` event.
+        """
 
         entities = entities if entities else self.latest_message.entities
         new_slots = [SlotSet(e["entity"], e["value"]) for e in entities if
                      e["entity"] in self.slots.keys()]
         return new_slots
-
-    def get_last_event_for(self,
-                           event_type: Type[Event],
-                           action_names_to_exclude: List[Text] = None,
-                           skip: int = 0) -> Optional[Any]:
-        """Gets the last event of a given type which was actually applied.
-
-        Args:
-            event_type: The type of event you want to find.
-            action_names_to_exclude: Events of type `ActionExecuted` which
-                should be excluded from the results. Can be used to skip
-                `action_listen` events.
-            skip: Skips n possible results before return an event.
-
-        Returns:
-            event which matched the query or `None` if no event matched.
-        """
-        to_exclude = action_names_to_exclude or []
-
-        def filter_function(e: Event):
-            has_instance = isinstance(e, event_type)
-            excluded = (isinstance(e, ActionExecuted) and
-                        e.action_name in to_exclude)
-
-            return has_instance and not excluded
-
-        filtered = filter(filter_function, reversed(self.applied_events()))
-        for i in range(skip):
-            next(filtered, None)
-
-        return next(filtered, None)
-
-    def last_executed_action_has(self, name: Text, skip=0) -> bool:
-        """Returns whether last `ActionExecuted` event had a specific name.
-
-        Args:
-            name: Name of the event which should be matched.
-            skip: Skips n possible results in between.
-
-        Returns:
-            `True` if last executed action had name `name`, otherwise `False`.
-        """
-        last = self.get_last_event_for(ActionExecuted,
-                                       action_names_to_exclude=[
-                                           ACTION_LISTEN_NAME],
-                                       skip=skip)
-        return last is not None and last.action_name == name

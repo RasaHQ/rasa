@@ -110,22 +110,21 @@ class TestFallbackPolicy(PolicyTestCollection):
         return p
 
     @pytest.mark.parametrize(
-        "nlu_confidence, prev_action_is_fallback, should_fallback",
+        "nlu_confidence, last_action_name, should_nlu_fallback",
         [
-            (0.1, True, False),
-            (0.1, False, True),
-            (0.9, True, False),
-            (0.9, False, False),
+            (0.1, 'some_action', False),
+            (0.1, 'action_listen', True),
+            (0.9, 'some_action', False),
+            (0.9, 'action_listen', False),
         ])
-    def test_something(self,
-                       trained_policy,
-                       nlu_confidence,
-                       prev_action_is_fallback,
-                       should_fallback):
-        last_action_name = trained_policy.fallback_action_name if \
-            prev_action_is_fallback else 'not_fallback'
-        assert trained_policy.should_fallback(
-            nlu_confidence, last_action_name) is should_fallback
+    def test_should_nlu_fallback(self,
+                                 trained_policy,
+                                 nlu_confidence,
+                                 last_action_name,
+                                 should_nlu_fallback):
+
+        assert trained_policy.should_nlu_fallback(
+            nlu_confidence, last_action_name) is should_nlu_fallback
 
 
 class TestMemoizationPolicy(PolicyTestCollection):

@@ -58,16 +58,19 @@ class FallbackPolicy(Policy):
 
         pass
 
-    def should_fallback(self,
-                        nlu_confidence: float,
-                        last_action_name: Text
-                        ) -> bool:
-        """It should predict fallback action only if
-        a. predicted NLU confidence is lower than ``nlu_threshold`` &&
-        b. last action is NOT fallback action
+    def should_nlu_fallback(self,
+                            nlu_confidence: float,
+                            last_action_name: Text
+                            ) -> bool:
+        """Checks if fallback action should be predicted.
+
+        Checks for:
+        - predicted NLU confidence is lower than ``nlu_threshold``
+        - last action is action listen
         """
+
         return (nlu_confidence < self.nlu_threshold and
-                last_action_name != self.fallback_action_name)
+                last_action_name == ACTION_LISTEN_NAME)
 
     def fallback_scores(self, domain, fallback_score=FALLBACK_SCORE):
         """Prediction scores used if a fallback is necessary."""
@@ -80,8 +83,11 @@ class FallbackPolicy(Policy):
     def predict_action_probabilities(self,
                                      tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
-        """Predicts a fallback action if NLU confidence is low
-            or no other policy has a high-confidence prediction"""
+        """Predicts a fallback action.
+
+        The fallback action is predicted if the NLU confidence is low
+        or no other policy has a high-confidence prediction.
+        """
 
         nlu_data = tracker.latest_message.parse_data
 
@@ -95,15 +101,15 @@ class FallbackPolicy(Policy):
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
             result[idx] = FALLBACK_SCORE
 
-        elif self.should_fallback(nlu_confidence, tracker.latest_action_name):
+        elif self.should_nlu_fallback(nlu_confidence,
+                                      tracker.latest_action_name):
             logger.debug("NLU confidence {} is lower "
                          "than NLU threshold {}. "
-                         "Predicting fallback action: {}"
-                         "".format(nlu_confidence, self.nlu_threshold,
-                                   self.fallback_action_name))
+                         "".format(nlu_confidence, self.nlu_threshold))
             # we set this to 1.2 to make sure fallback overrides
             # the memoization policy
             result = self.fallback_scores(domain)
+
         else:
             # NLU confidence threshold is met, so
             # predict fallback action with confidence `core_threshold`
@@ -115,6 +121,7 @@ class FallbackPolicy(Policy):
 
     def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
+
         config_file = os.path.join(path, 'fallback_policy.json')
         meta = {
             "nlu_threshold": self.nlu_threshold,
