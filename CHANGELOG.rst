@@ -43,6 +43,7 @@ Changed
   directly ask a user for a correct intent
 - Updated docs for interactive learning to inform users of the
   ``--core`` flag
+- Change memoization policies confidence score to 1.1 to override ML policies
 
 Fixed
 -----
