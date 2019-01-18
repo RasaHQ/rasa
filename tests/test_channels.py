@@ -460,6 +460,44 @@ def test_callback_calls_endpoint():
     assert text.parsed_body['text'] == "Hi there!"
 
 
+def test_slack_message_sanitization():
+    from rasa_core.channels.slack import SlackInput
+    test_uid = 17213535
+    target_message_1 = 'You can sit here if you want'
+    target_message_2 = 'Hey, you can sit here if you want !'
+    target_message_3 = 'Hey, you can sit here if you want!'
+
+    uid_token = '<@{}>'.format(test_uid)
+    raw_messages = [test.format(uid=uid_token) for test
+                    in ['You can sit here {uid} if you want{uid}',
+                        '{uid} You can sit here if you want{uid} ',
+                        '{uid}You can sit here if you want {uid}',
+                        # those last cases may be disputable
+                        # as we're virtually altering the entered text,
+                        # but this seem to be the correct course of action
+                        # (to be decided)
+                        'You can sit here{uid}if you want',
+                        'Hey {uid}, you can sit here if you want{uid}!',
+                        'Hey{uid} , you can sit here if you want {uid}!']]
+
+    target_messages = [target_message_1,
+                       target_message_1,
+                       target_message_1,
+                       target_message_1,
+                       target_message_2,
+                       target_message_3]
+
+    sanitized_messages = [SlackInput._sanitize_user_message(message,
+                                                            [test_uid])
+                          for message in raw_messages]
+
+    # no message that is wrongly sanitized please
+    assert len([sanitized
+                for sanitized, target
+                in zip(sanitized_messages, target_messages)
+                if sanitized != target]) == 0
+
+
 def test_slack_init_one_parameter():
     from rasa_core.channels.slack import SlackInput
 
@@ -693,3 +731,11 @@ def test_send_custom_messages_without_buttons():
     channel = OutputChannel()
     channel.send_text_message = test_message
     channel.send_custom_message("user", [{'title': 'a', 'subtitle': 'b'}])
+
+
+def test_newsline_strip():
+    from rasa_core.channels import UserMessage
+
+    message = UserMessage("\n/restart\n")
+
+    assert message.text == "/restart"

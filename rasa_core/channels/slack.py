@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 from typing import Text, Optional, List
@@ -121,7 +122,8 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_user_message(slack_event):
         return (slack_event.get('event') and
-                slack_event.get('event').get('type') == u'message' and
+                (slack_event.get('event').get('type') == u'message' or
+                 slack_event.get('event').get('type') == u'app_mention') and
                 slack_event.get('event').get('text') and not
                 slack_event.get('event').get('bot_id'))
 
@@ -134,6 +136,34 @@ class SlackInput(InputChannel):
     @staticmethod
     def _get_button_reply(slack_event):
         return json.loads(slack_event['payload'][0])['actions'][0]['name']
+
+    @staticmethod
+    def _sanitize_user_message(text, uids_to_remove):
+        """Remove superfluous/wrong/problematic tokens from a message.
+
+        Probably a good starting point for pre-formatting of user-provided text,
+        to make NLU's life easier in case they go funky to the power of extreme.
+
+        In the current state will just drop self-mentions of bot itself
+
+        Args:
+            text: raw message as sent from slack
+            uids_to_remove: a list of user ids to remove from the content
+
+        Returns:
+            str: parsed and cleaned version of the input text
+        """
+        for uid_to_remove in uids_to_remove:
+            # heuristic to format majority cases OK
+            # can be adjusted to taste later if needed,
+            # but is a good first approximation
+            for regex, replacement in [(r'<@{}>\s'.format(uid_to_remove), ''),
+                                       (r'\s<@{}>'.format(uid_to_remove), ''),
+                                       # a bit arbitrary but probably OK
+                                       (r'<@{}>'.format(uid_to_remove), ' ')]:
+                text = re.sub(regex, replacement, text)
+
+        return text.rstrip().lstrip()  # drop extra spaces at beginning and end
 
     def process_message(self, on_new_message, text, sender_id):
         """Slack retry to post messages up to 3 times based on
@@ -178,7 +208,9 @@ class SlackInput(InputChannel):
                 elif self._is_user_message(output):
                     return self.process_message(
                         on_new_message,
-                        text=output['event']['text'],
+                        text=self._sanitize_user_message(
+                            output['event']['text'],
+                            output['authed_users']),
                         sender_id=output.get('event').get('user'))
             elif request.form:
                 output = dict(request.form)
