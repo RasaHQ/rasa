@@ -40,6 +40,8 @@ install_requires = [
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
     "coloredlogs~=9.0",
+    "fuzzywuzzy==0.17.0",
+    "python-Levenshtein==0.12.0"
 ]
 
 extras_requires = {
