@@ -43,6 +43,8 @@ Changed
   directly ask a user for a correct intent
 - trigger ``fallback`` on low nlu confidence
   only if previous action is ``action_listen``
+- updated docs for interactive learning to inform users of the
+  ``--core`` flag
 
 Fixed
 -----
