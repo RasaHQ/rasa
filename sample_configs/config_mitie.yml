@@ -6,5 +6,7 @@ pipeline:
 - name: "tokenizer_mitie"
 - name: "ner_mitie"
 - name: "ner_synonyms"
+  fuzzy_matching: true
+  fuzzy_threshold: 90
 - name: "intent_entity_featurizer_regex"
 - name: "intent_classifier_mitie"

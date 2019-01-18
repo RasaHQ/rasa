@@ -7,6 +7,8 @@ pipeline:
 - name: "intent_featurizer_spacy"
 - name: "ner_crf"
 - name: "ner_synonyms"
+  fuzzy_matching: true
+  fuzzy_threshold: 90
 - name: "intent_classifier_sklearn"
 - name: "ner_duckling_http"
   url: "http://duckling:8000"
