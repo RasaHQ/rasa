@@ -85,7 +85,7 @@ class FallbackPolicy(Policy):
                                      domain: Domain) -> List[float]:
         """Predicts a fallback action.
 
-        Fallback predicted if NLU confidence is low
+        The fallback action is predicted if the NLU confidence is low
         or no other policy has a high-confidence prediction.
         """
 
