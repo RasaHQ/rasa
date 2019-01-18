@@ -41,6 +41,8 @@ Changed
   commandline interface (to avoid prompt toolkit 2 version issues)
 - if NLU classification returned ``None`` in interactive training,
   directly ask a user for a correct intent
+- Updated docs for interactive learning to inform users of the
+  ``--core`` flag
 
 Fixed
 -----
