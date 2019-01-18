@@ -12,6 +12,7 @@ from typing import Dict
 from typing import Optional
 from typing import Text
 
+from fuzzywuzzy import process
 from rasa_nlu import utils
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
@@ -26,6 +27,11 @@ class EntitySynonymMapper(EntityExtractor):
     name = "ner_synonyms"
 
     provides = ["entities"]
+
+    defaults = {
+        "fuzzy_matching": False,
+        "fuzzy_threshold": 90
+    }
 
     def __init__(self, component_config=None, synonyms=None):
         # type: (Optional[Dict[Text, Text]]) -> None
@@ -93,7 +99,13 @@ class EntitySynonymMapper(EntityExtractor):
         for entity in entities:
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
-            if entity_value.lower() in self.synonyms:
+            if self.component_config["fuzzy_matching"]:
+                threshold = self.component_config["fuzzy_threshold"]
+                fuzzy_matched_value = process.extractOne(entity_value, self.synonyms.keys(), score_cutoff=threshold)
+                if fuzzy_matched_value:
+                    entity["value"] = self.synonyms[fuzzy_matched_value[0]]
+                    self.add_processor_name(entity)
+            elif entity_value.lower() in self.synonyms:
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
 
