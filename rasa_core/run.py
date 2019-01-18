@@ -72,6 +72,14 @@ def _create_single_channel(channel, credentials):
                 "is a proper name of a class in a module.".format(channel))
 
 
+def create_event_broker(event_broker, event_broker_config):
+    if event_broker in BUILTIN_EVENT_BROKERS:
+        return BUILTIN_EVENT_BROKERS[event_broker].from_endpoint_config(event_broker_config)
+    else:
+        raise Exception(
+            "Failed to create event broker producer for '{}'.".format(event_broker))
+
+
 def start_cmdline_io(server_url, on_finish, **kwargs):
     from rasa_core.channels import console
 
@@ -183,7 +191,6 @@ if __name__ == '__main__':
     logging.getLogger('engineio').setLevel(logging.WARN)
     logging.getLogger('matplotlib').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
-    logging.getLogger('pika').setLevel(logging.ERROR)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,

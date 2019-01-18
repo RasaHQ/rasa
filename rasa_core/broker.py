@@ -5,6 +5,7 @@ from typing import Any, Dict, Text, Optional
 import pika
 from rasa_core.utils import class_from_module_path, EndpointConfig
 
+
 logger = logging.getLogger(__name__)
 
 
