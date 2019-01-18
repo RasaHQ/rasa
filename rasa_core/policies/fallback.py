@@ -101,7 +101,7 @@ class FallbackPolicy(Policy):
                          "Predicting fallback action: {}"
                          "".format(nlu_confidence, self.nlu_threshold,
                                    self.fallback_action_name))
-            # we set this to 1.1 to make sure fallback overrides
+            # we set this to 1.2 to make sure fallback overrides
             # the memoization policy
             result = self.fallback_scores(domain)
         else:
