@@ -117,7 +117,6 @@ class EntitySynonymMapper(EntityExtractor):
             entity["value"] = self.synonyms[fuzzy_matched_value[0]]
             self.add_processor_name(entity)
 
-
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
             original = utils.as_text_type(entity_a)
