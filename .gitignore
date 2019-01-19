@@ -34,6 +34,7 @@ models/
 projects/
 test_models/model_*
 test_projects/test_project_*
+venv/
 
 rasa_nlu/tmbo_test.py
 .mypy_cache/

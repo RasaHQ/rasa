@@ -100,14 +100,23 @@ class EntitySynonymMapper(EntityExtractor):
             # need to wrap in `str` to handle e.g. entity values of type int
             entity_value = str(entity["value"])
             if self.component_config["fuzzy_matching"]:
-                threshold = self.component_config["fuzzy_threshold"]
-                fuzzy_matched_value = process.extractOne(entity_value, self.synonyms.keys(), score_cutoff=threshold)
-                if fuzzy_matched_value:
-                    entity["value"] = self.synonyms[fuzzy_matched_value[0]]
-                    self.add_processor_name(entity)
+                self.fuzzy_match_entity(entity)
             elif entity_value.lower() in self.synonyms:
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
+
+    def fuzzy_match_entity(self, entity):
+        entity_value = str(entity["value"])
+        threshold = self.component_config["fuzzy_threshold"]
+        fuzzy_matched_value = process.extractOne(
+            entity_value,
+            self.synonyms.keys(),
+            score_cutoff=threshold
+        )
+        if fuzzy_matched_value:
+            entity["value"] = self.synonyms[fuzzy_matched_value[0]]
+            self.add_processor_name(entity)
+
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
