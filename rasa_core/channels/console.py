@@ -1,13 +1,15 @@
 # this builtin is needed so we can overwrite in test
-from builtins import input
+import questionary
 
 import json
 import requests
+from prompt_toolkit.styles import Style
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string, element_to_string,\
-    RestInput
+from rasa_core.channels.channel import (
+    button_to_string, element_to_string,
+    RestInput)
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
@@ -34,7 +36,10 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
 
 
 def get_cmd_input():
-    return input().strip()
+    return questionary.text("",
+                            qmark="Your input ->",
+                            style=Style([('qmark', '#b373d6'),
+                                         ('', '#b373d6')])).ask().strip()
 
 
 def send_message_receive_block(server_url, auth_token, sender_id, message):
