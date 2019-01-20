@@ -54,7 +54,8 @@ def create_argument_parser():
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-                        help="model configuration file (crossvalidation or testtrain only)")
+                        help="model configuration file (crossvalidation or "
+                             "testtrain only)")
 
     parser.add_argument('-m', '--model', required=False,
                         help="path to model (evaluation only)")
@@ -63,7 +64,8 @@ def create_argument_parser():
                         help="number of CV folds (crossvalidation only)")
 
     parser.add_argument('--cutoff', required=False, default=5,
-                        help="cutoff for minimum intent examples (testtrain only)")
+                        help="cutoff for minimum intent examples "
+                             "(testtrain only)")
 
     parser.add_argument('-p', '--pct', required=False, default=80,
                         help="training percent (testtrain only)")
@@ -667,7 +669,11 @@ def remove_duckling_entities(entity_predictions):
 
     return patched_entity_predictions
 
-def run_tt_evaluation(data, nlu_config, train_pct, cutoff, errors_filename='errors.json', confmat_filename=None, intent_hist_filename=None):
+
+def run_tt_evaluation(data, nlu_config, train_pct, cutoff,
+                      errors_filename='errors.json',
+                      confmat_filename=None,
+                      intent_hist_filename=None):
 
     train_pct = float(train_pct) / 100
     # load the training data
@@ -703,6 +709,7 @@ def run_tt_evaluation(data, nlu_config, train_pct, cutoff, errors_filename='erro
         logger.info("Entity evaluation results:")
         evaluate_entities(entity_targets, entity_predictions, tokens,
                           extractors)
+
 
 def run_evaluation(data_path, model,
                    errors_filename='errors.json',
