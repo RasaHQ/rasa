@@ -22,7 +22,14 @@ Added
   the intent right
 - Additional checks in PolicyEnsemble to ensure that custom Policy
   classes' load function returns the correct type
-  
+- Travis script now clones and tests the Rasa stack starter pack
+- Entries for tensorflow and sklearn versions to the policy metadata
+- SlackInput wont ignore `app_mention` event anymore.
+  Will handle messages containing @mentions to bots and will respond to these
+  (as long as the event itself is enabled in the application hosting the bot)
+- Added sanitization mechanism for SlackInput that (in its current shape and form)
+  strips bot's self mentions from messages posted using the said @mentions.
+
 Removed
 -------
 - support for deprecated intents/entities format
@@ -34,6 +41,11 @@ Changed
   commandline interface (to avoid prompt toolkit 2 version issues)
 - if NLU classification returned ``None`` in interactive training,
   directly ask a user for a correct intent
+- trigger ``fallback`` on low nlu confidence
+  only if previous action is ``action_listen``
+- updated docs for interactive learning to inform users of the
+  ``--core`` flag
+- Change memoization policies confidence score to 1.1 to override ML policies
 - replaced flask server with async sanic
 
 Fixed
@@ -41,6 +53,8 @@ Fixed
 - fix error during interactive learning which was caused by actions which
   dispatched messages using ``dispatcher.utter_custom_message``
 - re-added missing ``python-engineio`` dependency
+- fixed not working examples in ``examples/``
+- strip newlins from messages so you don't have something like "\n/restart\n"
 
 
 [0.12.3] - 2018-12-03

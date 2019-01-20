@@ -52,12 +52,24 @@ You can take a look at the source of the action below:
 
 .. autoclass:: rasa_core.actions.action.ActionDefaultFallback
 
-.. note::
 
-  You can also create your own custom action to use as a fallback. Be aware
-  that if this action does not return a ``UserUtteranceReverted`` event, the
-  next predictions of your bot may become inaccurate, as it very likely that the
-  fallback action is not present in your stories
+You can also create your own custom action to use as a fallback. If you do, then
+make sure to pass the custom fallback action to ``FallbackPolicy`` inside your
+policy configuration file. For example:
+
+.. code-block:: yaml
+
+  policies:
+    - name: "FallbackPolicy"
+      nlu_threshold: 0.4
+      core_threshold: 0.3
+      fallback_action_name: "my_fallback_action"
+
+  
+.. note::
+  If your custom fallback action does not return a ``UserUtteranceReverted`` event,
+  the next predictions of your bot may become inaccurate, as it is very likely that
+  the fallback action is not present in your stories.
 
 If you have a specific intent that will trigger this, let's say it's
 called ``out_of_scope``, then you should add this as a story:

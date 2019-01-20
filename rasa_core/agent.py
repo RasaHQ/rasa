@@ -42,12 +42,13 @@ if typing.TYPE_CHECKING:
     from rasa_core.tracker_store import TrackerStore
 
 
-async def load_from_server(interpreter: NaturalLanguageInterpreter = None,
-                           generator: Union[EndpointConfig, 'NLG'] = None,
-                           tracker_store: Optional['TrackerStore'] = None,
-                           action_endpoint: Optional[EndpointConfig] = None,
-                           model_server: Optional[EndpointConfig] = None,
-                           ) -> 'Agent':
+async def load_from_server(
+    interpreter: Optional[NaturalLanguageInterpreter] = None,
+    generator: Optional[Union[EndpointConfig, 'NLG']] = None,
+    tracker_store: Optional['TrackerStore'] = None,
+    action_endpoint: Optional[EndpointConfig] = None,
+    model_server: Optional[EndpointConfig] = None,
+) -> 'Agent':
     """Load a persisted model from a server."""
 
     agent = Agent(interpreter=interpreter,

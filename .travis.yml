@@ -22,7 +22,8 @@ after_success:
 - coveralls
 jobs:
   include:
-  - stage: Test API specification
+  - stage: integration
+    name: "Test API specification"
     language: python
     install:
     - npm install -g swagger-cli
@@ -30,7 +31,14 @@ jobs:
     - swagger-cli validate docs/_static/spec/server.yml
     after_success:
     - coveralls
-  - stage: Test Docs
+  - stage: integration
+    name: "Test stack starter pack"
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - python -m pytest tests/test_core.py
+  - stage: integration
+    name: "Test Docs"
     install:
     - pip install -r docs-requirements.txt
     - pip install -e .
