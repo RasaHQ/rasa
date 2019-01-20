@@ -25,9 +25,9 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
         utils.print_color("Attachment: " + message.get("attachment"), color)
 
     if "buttons" in message:
+        utils.print_color("Buttons:", color)
         for idx, button in enumerate(message.get("buttons")):
-            button_str = "Buttons:\n" + button_to_string(button, idx)
-            utils.print_color(button_str, color)
+            utils.print_color(button_to_string(button, idx), color)
 
     if "elements" in message:
         for idx, element in enumerate(message.get("elements")):
