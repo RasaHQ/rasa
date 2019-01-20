@@ -48,19 +48,25 @@ def create_argument_parser():
                         help="file containing training/evaluation data")
 
     parser.add_argument('--mode', default="evaluation",
-                        help="evaluation|crossvalidation (evaluate "
-                             "pretrained model or train model "
-                             "by crossvalidation)")
+                        help="evaluation|crossvalidation|testtrain (evaluate "
+                             "pretrained model, train model "
+                             "by crossvalidation or test train split)")
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-                        help="model configuration file (crossvalidation only)")
+                        help="model configuration file (crossvalidation or testtrain only)")
 
     parser.add_argument('-m', '--model', required=False,
                         help="path to model (evaluation only)")
 
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
+
+    parser.add_argument('--cutoff', required=False, default=5,
+                        help="cutoff for minimum intent examples (testtrain only)")
+
+    parser.add_argument('-p', '--pct', required=False, default=80,
+                        help="training percent (testtrain only)")
 
     parser.add_argument('--errors', required=False, default="errors.json",
                         help="output path for the json with wrong predictions")
@@ -661,6 +667,42 @@ def remove_duckling_entities(entity_predictions):
 
     return patched_entity_predictions
 
+def run_tt_evaluation(data, nlu_config, train_pct, cutoff, errors_filename='errors.json', confmat_filename=None, intent_hist_filename=None):
+
+    train_pct = float(train_pct) / 100
+    # load the training data
+    data = training_data.load_data(data)
+    # split into test & train
+    data_train, data_test = data.train_test_split(train_pct)
+    data_train = drop_intents_below_freq(data_train, cutoff)
+
+    # setup for training
+    nlu_config = config.load(nlu_config)
+    trainer = Trainer(nlu_config)
+    interpreter = trainer.train(data_train)
+    # run evaluation
+    extractors = get_entity_extractors(interpreter)
+    entity_predictions, tokens = get_entity_predictions(interpreter, data_test)
+
+    if duckling_extractors.intersection(extractors):
+        entity_predictions = remove_duckling_entities(entity_predictions)
+        extractors = remove_duckling_extractors(extractors)
+
+    if is_intent_classifier_present(interpreter):
+        intent_targets = get_intent_targets(data_test)
+        intent_results = get_intent_predictions(
+                intent_targets, interpreter, data_test)
+        logger.info("Intent evaluation results:")
+
+        evaluate_intents(intent_results, errors_filename, confmat_filename,
+                         intent_hist_filename)
+
+    if extractors:
+        entity_targets = get_entity_targets(data_test)
+
+        logger.info("Entity evaluation results:")
+        evaluate_entities(entity_targets, entity_predictions, tokens,
+                          extractors)
 
 def run_evaluation(data_path, model,
                    errors_filename='errors.json',
@@ -912,6 +954,23 @@ def main():
                        cmdline_args.errors,
                        cmdline_args.confmat,
                        cmdline_args.histogram)
+
+    elif cmdline_args.mode == "testtrain":
+        if cmdline_args.model is not None:
+            parser.error("Testtrain will train a new model "
+                         "- do not specify external model.")
+
+        if cmdline_args.config is None:
+            parser.error("Testtrain will train a new model "
+                         "you need to specify a model configuration.")
+
+        run_tt_evaluation(cmdline_args.data,
+                          cmdline_args.config,
+                          cmdline_args.pct,
+                          int(cmdline_args.cutoff),
+                          cmdline_args.errors,
+                          cmdline_args.confmat,
+                          cmdline_args.histogram)
 
     logger.info("Finished evaluation")
 
