@@ -35,6 +35,7 @@ Fixed
 - NLU Server can now handle training data mit emojis in it
 - If the ``token_name`` is not given in the endpoint configuration, the default
   value is ``token`` instead of ``None`
+- Throws error only if ``ner_crf`` picks up overlapping entities. If the entity extractor supports overlapping entitis no error is thrown.
 
 [0.13.8] - 2018-11-21
 ^^^^^^^^^^^^^^^^^^^^^
