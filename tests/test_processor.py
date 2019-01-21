@@ -24,7 +24,9 @@ def test_message_id_logging(default_processor):
     tracker = DialogueStateTracker('1', [])
     default_processor._handle_message_with_tracker(message, tracker)
     logged_event = tracker.events[-1]
+
     assert logged_event.message_id == message.message_id
+    assert logged_event.message_id is not None
 
 
 def test_parsing(default_processor):
