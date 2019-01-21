@@ -1,10 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from builtins import str
-
 import argparse
 import logging
 import os
@@ -29,32 +22,32 @@ def create_argument_parser():
     """Parse all the command line arguments for the training script."""
 
     parser = argparse.ArgumentParser(
-            description='Train a dialogue model for Rasa Core. '
-                        'The training will use your conversations '
-                        'in the story training data format and '
-                        'your domain definition to train a dialogue '
-                        'model to predict a bots actions.')
+        description='Train a dialogue model for Rasa Core. '
+                    'The training will use your conversations '
+                    'in the story training data format and '
+                    'your domain definition to train a dialogue '
+                    'model to predict a bots actions.')
     parent_parser = argparse.ArgumentParser(add_help=False)
     add_general_args(parent_parser)
 
     subparsers = parser.add_subparsers(
-            help='Training mode of core.',
-            dest='mode')
+        help='Training mode of core.',
+        dest='mode')
     subparsers.required = True
 
     train_parser = subparsers.add_parser(
-            'default',
-            help='train a dialogue model',
-            parents=[parent_parser])
+        'default',
+        help='train a dialogue model',
+        parents=[parent_parser])
     compare_parser = subparsers.add_parser(
-            'compare',
-            help='train multiple dialogue models to compare '
-                 'policies',
-            parents=[parent_parser])
+        'compare',
+        help='train multiple dialogue models to compare '
+             'policies',
+        parents=[parent_parser])
     interactive_parser = subparsers.add_parser(
-            'interactive',
-            help='teach the bot with interactive learning',
-            parents=[parent_parser])
+        'interactive',
+        help='teach the bot with interactive learning',
+        parents=[parent_parser])
 
     add_compare_args(compare_parser)
     add_interactive_args(interactive_parser)
@@ -65,103 +58,103 @@ def create_argument_parser():
 
 def add_compare_args(parser):
     parser.add_argument(
-            '--percentages',
-            nargs="*",
-            type=int,
-            default=[0, 5, 25, 50, 70, 90, 95],
-            help="Range of exclusion percentages")
+        '--percentages',
+        nargs="*",
+        type=int,
+        default=[0, 5, 25, 50, 70, 90, 95],
+        help="Range of exclusion percentages")
     parser.add_argument(
-            '--runs',
-            type=int,
-            default=3,
-            help="Number of runs for experiments")
+        '--runs',
+        type=int,
+        default=3,
+        help="Number of runs for experiments")
 
     cli.arguments.add_output_arg(
-            parser,
-            help_text="directory to persist the trained model in",
-            required=True)
+        parser,
+        help_text="directory to persist the trained model in",
+        required=True)
     cli.arguments.add_config_arg(
-            parser,
-            nargs="*")
+        parser,
+        nargs="*")
     cli.arguments.add_model_and_story_group(
-            parser,
-            allow_pretrained_model=False)
+        parser,
+        allow_pretrained_model=False)
     cli.arguments.add_domain_arg(
-            parser,
-            required=True)
+        parser,
+        required=True)
 
 
 def add_interactive_args(parser):
     parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            default=None,
-            help="trained nlu model")
+        '-u', '--nlu',
+        type=str,
+        default=None,
+        help="trained nlu model")
     parser.add_argument(
-            '--endpoints',
-            default=None,
-            help="Configuration file for the connectors as a yml file")
+        '--endpoints',
+        default=None,
+        help="Configuration file for the connectors as a yml file")
     parser.add_argument(
-            '--skip_visualization',
-            default=False,
-            action='store_true',
-            help="disables plotting the visualization during "
-                 "interactive learning")
+        '--skip_visualization',
+        default=False,
+        action='store_true',
+        help="disables plotting the visualization during "
+             "interactive learning")
     parser.add_argument(
-            '--finetune',
-            default=False,
-            action='store_true',
-            help="retrain the model immediately based on feedback.")
+        '--finetune',
+        default=False,
+        action='store_true',
+        help="retrain the model immediately based on feedback.")
 
     cli.arguments.add_output_arg(
-            parser,
-            help_text="directory to persist the trained model in",
-            required=False)
+        parser,
+        help_text="directory to persist the trained model in",
+        required=False)
     cli.arguments.add_config_arg(
-            parser,
-            nargs=1)
+        parser,
+        nargs=1)
     cli.arguments.add_model_and_story_group(
-            parser,
-            allow_pretrained_model=True)
+        parser,
+        allow_pretrained_model=True)
     cli.arguments.add_domain_arg(
-            parser,
-            required=False)
+        parser,
+        required=False)
 
 
 def add_train_args(parser):
     cli.arguments.add_config_arg(
-            parser,
-            nargs=1)
+        parser,
+        nargs=1)
     cli.arguments.add_output_arg(
-            parser,
-            help_text="directory to persist the trained model in",
-            required=True)
+        parser,
+        help_text="directory to persist the trained model in",
+        required=True)
     cli.arguments.add_model_and_story_group(
-            parser,
-            allow_pretrained_model=False)
+        parser,
+        allow_pretrained_model=False)
     cli.arguments.add_domain_arg(
-            parser,
-            required=True)
+        parser,
+        required=True)
 
 
 def add_general_args(parser):
     parser.add_argument(
-            '--augmentation',
-            type=int,
-            default=50,
-            help="how much data augmentation to use during training")
+        '--augmentation',
+        type=int,
+        default=50,
+        help="how much data augmentation to use during training")
     parser.add_argument(
-            '--dump_stories',
-            default=False,
-            action='store_true',
-            help="If enabled, save flattened stories to a file")
+        '--dump_stories',
+        default=False,
+        action='store_true',
+        help="If enabled, save flattened stories to a file")
     parser.add_argument(
-            '--debug_plots',
-            default=False,
-            action='store_true',
-            help="If enabled, will create plots showing checkpoints "
-                 "and their connections between story blocks in a  "
-                 "file called `story_blocks_connections.pdf`.")
+        '--debug_plots',
+        default=False,
+        action='store_true',
+        help="If enabled, will create plots showing checkpoints "
+             "and their connections between story blocks in a  "
+             "file called `story_blocks_connections.html`.")
 
     utils.add_logging_option_arguments(parser)
 
@@ -247,11 +240,11 @@ def train_comparison_models(stories,
                                        len(exclusion_percentages), i))
 
                 train_dialogue_model(
-                        domain, stories, output,
-                        policy_config=policy_config,
-                        exclusion_percentage=i,
-                        kwargs=kwargs,
-                        dump_stories=dump_stories)
+                    domain, stories, output,
+                    policy_config=policy_config,
+                    exclusion_percentage=i,
+                    kwargs=kwargs,
+                    dump_stories=dump_stories)
 
 
 def get_no_of_stories(story_file, domain):
@@ -309,9 +302,9 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
 
         _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
         _tracker_store = TrackerStore.find_tracker_store(
-                None,
-                _endpoints.tracker_store,
-                _broker)
+            None,
+            _endpoints.tracker_store,
+            _broker)
 
         _agent = Agent.load(cmdline_args.core,
                             interpreter=_interpreter,
@@ -335,9 +328,9 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
                                       additional_arguments)
 
     interactive.run_interactive_learning(
-            _agent, stories,
-            finetune=cmdline_args.finetune,
-            skip_visualization=cmdline_args.skip_visualization)
+        _agent, stories,
+        finetune=cmdline_args.finetune,
+        skip_visualization=cmdline_args.skip_visualization)
 
 
 if __name__ == '__main__':

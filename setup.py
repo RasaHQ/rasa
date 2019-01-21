@@ -14,7 +14,7 @@ with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 
 tests_requires = [
     "pytest~=3.0",
-    "pytest-pep8~=1.0",
+    "pytest-pycodestyle~=1.3",
     "pytest-cov~=2.0",
     "pytest_localserver~=0.4.0",
     "treq~=17.0",
@@ -27,7 +27,6 @@ tests_requires = [
 
 install_requires = [
     "jsonpickle~=0.9.0",
-    "six~=1.0",
     "redis~=2.0",
     "fakeredis~=0.10.0",
     "pymongo~=3.5",
@@ -60,17 +59,16 @@ install_requires = [
     "jsonschema~=2.6",
     "packaging~=17.0",
     "gevent~=1.2",
-    "pyyaml~=3.12",
     "pytz~=2018.4",
     "python-dateutil~=2.7",
     "rasa_nlu~=0.13.0",
     "rasa_core_sdk~=0.12.1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
-    "PyInquirer~=1.0",
-    "prompt_toolkit==1.0.14",
+    "questionary>=1.0.1",
     "flask-jwt-simple~=0.0.3",
-    "python-socketio~=2.0",
+    "python-socketio>=2.1.1,<3",
+    "python-engineio~=3.0",
     "pydot~=1.2",
 ]
 
@@ -86,7 +84,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",

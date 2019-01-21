@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import pytz
 from datetime import datetime
 import copy
@@ -164,14 +159,14 @@ def test_json_parse_user():
         }
     # DOCS END
     assert Event.from_parameters(evt) == UserUttered(
-            "Hey",
-            intent={"name": "greet",
-                    "confidence": 0.9},
-            entities=[],
-            parse_data={
-                "intent": {"name": "greet", "confidence": 0.9},
-                "entities": []
-            })
+        "Hey",
+        intent={"name": "greet",
+                "confidence": 0.9},
+        entities=[],
+        parse_data={
+            "intent": {"name": "greet", "confidence": 0.9},
+            "entities": []
+        })
 
 
 def test_json_parse_bot():
@@ -208,10 +203,10 @@ def test_json_parse_reminder():
         }
     # DOCS END
     assert Event.from_parameters(evt) == ReminderScheduled(
-            "my_action",
-            parser.parse('2018-09-03T11:41:10.128172'),
-            name='my_reminder',
-            kill_on_user_message=True)
+        "my_action",
+        parser.parse('2018-09-03T11:41:10.128172'),
+        name='my_reminder',
+        kill_on_user_message=True)
 
 
 def test_json_parse_undo():

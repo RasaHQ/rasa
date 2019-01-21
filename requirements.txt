@@ -1,6 +1,5 @@
 ## Setup py requirements
 jsonpickle==0.9.6
-six==1.11.0
 redis==2.10.6
 fakeredis==0.10.3
 future==0.16.0
@@ -32,7 +31,6 @@ pika==0.11.2
 jsonschema==2.6.0
 packaging==17.1
 gevent==1.2.2
-pyyaml==3.12
 pytz==2018.4
 rasa_core_sdk~=0.12.1
 pymongo==3.5.1
@@ -40,8 +38,8 @@ python-dateutil==2.7.3
 rocketchat_API==0.6.22
 colorclass==2.2.0
 terminaltables==3.1.0
-PyInquirer==1.0.3
+questionary==1.0.1
 flask-jwt-simple==0.0.3
-python-socketio==2.0.0
-prompt_toolkit==1.0.14
+python-socketio==2.1.1
+python-engineio==3.0.0
 pydot==1.2.4

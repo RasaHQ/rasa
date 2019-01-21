@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 
 from flask import Blueprint, request, jsonify, make_response
@@ -54,8 +49,7 @@ class MattermostInput(InputChannel):
                    credentials.get("user"),
                    credentials.get("pw"))
 
-    def __init__(self, url, team, user, pw):
-        # type: (Text, Text, Text, Text) -> None
+    def __init__(self, url: Text, team: Text, user: Text, pw: Text) -> None:
         """Create a Mattermost input channel.
         Needs a couple of settings to properly authenticate and validate
         messages.

@@ -14,8 +14,8 @@ your bot doesn't know how to do something yet, you can just teach it!
 Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
 
 
-Load up an existing bot
-^^^^^^^^^^^^^^^^^^^^^^^
+Running Interactive Learning
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We have created some initial stories, and now want to improve our bot
 by providing feedback on mistakes it makes.
@@ -28,17 +28,27 @@ Run the following command to start interactive learning:
 
    python -m rasa_core.train \
      interactive -o models/dialogue \
-     -d domain.yml -s stories.md \
+     -d domain.yml -c policy_config.yml \
+     -s data/stories.md \
      --nlu models/current/nlu \
      --endpoints endpoints.yml
 
 The first command starts the action server (see :ref:`customactions`).
 
-The second command starts the bot in interactive mode.
+The second command trains the bot from your stories and then starts it
+in interactive mode.  Alternatively, you can load an existing core
+model with the ``--core`` flag like so:
+
+.. code-block:: bash
+
+   python -m rasa_core.train \
+     interactive --core models/dialogue \
+     --nlu models/current/nlu \
+     --endpoints endpoints.yml
+
 In interactive mode, the bot will ask you to confirm every prediction
 made by NLU and Core before proceeding.
 Here's an example:
-
 
 .. code-block:: text
 
@@ -175,7 +185,7 @@ The form logic is described by your ``FormAction`` class, and not by the stories
 The machine learning policies should not have to learn this behavior, and should
 not get confused if you later change your form action, for example by adding or
 removing a required slot.
-When you user interactive learning to generate stories containing a form,
+When you use interactive learning to generate stories containing a form,
 the conversation steps handled by the form
 get a :code:`form:` prefix. This tells Rasa Core to ignore these steps when training
 your other policies. There is nothing special you have to do here, all of the form's

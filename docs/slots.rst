@@ -20,8 +20,8 @@ them for it. A ``text`` slot only tells Rasa Core whether the slot
 has a value. The specific value of a ``text`` slot (e.g. Bangalore
 or New York or Hong Kong) doesn't make any difference.
 
-If the value itself is important, use a ``categorical`` slot. There are
-also ``boolean``, ``float``, and ``list`` slots.
+If the value itself is important, use a ``categorical`` or a ``bool`` slot.
+There are also ``float``, and ``list`` slots.
 If you just want to store some data, but don't want it to affect the flow
 of the conversation, use an ``unfeaturized`` slot.
 

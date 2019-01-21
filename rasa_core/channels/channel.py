@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import inspect
 import json
 from multiprocessing import Queue
@@ -28,15 +23,16 @@ class UserMessage(object):
     DEFAULT_SENDER_ID = "default"
 
     def __init__(self,
-                 text,  # type: Optional[Text]
-                 output_channel=None,  # type: Optional[OutputChannel]
-                 sender_id=None,  # type: Text
-                 parse_data=None,  # type: Dict[Text, Any]
-                 input_channel=None  # type: Text
-                 ):
-        # type: (...) -> None
-
-        self.text = text
+                 text: Optional[Text],
+                 output_channel: Optional['OutputChannel'] = None,
+                 sender_id: Text = None,
+                 parse_data: Dict[Text, Any] = None,
+                 input_channel: Text = None
+                 ) -> None:
+        if text:
+            self.text = text.strip()
+        else:
+            self.text = text
 
         if output_channel is not None:
             self.output_channel = output_channel
@@ -53,13 +49,11 @@ class UserMessage(object):
         self.parse_data = parse_data
 
 
-def register(input_channels,  # type: List[InputChannel]
-             app,  # type: Flask
-             on_new_message,  # type: Callable[[UserMessage], None]
-             route  # type: Text
-             ):
-    # type: (...) -> None
-
+def register(input_channels: List['InputChannel'],
+             app: Flask,
+             on_new_message: Callable[[UserMessage], None],
+             route: Text
+             ) -> None:
     for channel in input_channels:
         p = urljoin(route, channel.url_prefix())
         app.register_blueprint(channel.blueprint(on_new_message), url_prefix=p)
@@ -117,14 +111,13 @@ class InputChannel(object):
     def url_prefix(self):
         return self.name()
 
-    def blueprint(self, on_new_message):
-        # type: (Callable[[UserMessage], None])-> None
+    def blueprint(self, on_new_message: Callable[[UserMessage], None]) -> None:
         """Defines a Flask blueprint.
 
         The blueprint will be attached to a running flask server and handel
         incoming routes it registered for."""
         raise NotImplementedError(
-                "Component listener needs to provide blueprint.")
+            "Component listener needs to provide blueprint.")
 
     @classmethod
     def raise_missing_credentials_exception(cls):
@@ -149,8 +142,8 @@ class OutputChannel(object):
         """Every output channel needs a name to identify it."""
         return cls.__name__
 
-    def send_response(self, recipient_id, message):
-        # type: (Text, Dict[Text, Any]) -> None
+    def send_response(self, recipient_id: Text,
+                      message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
         if message.get("elements"):
@@ -176,28 +169,28 @@ class OutputChannel(object):
         if message.get("attachment"):
             self.send_attachment(recipient_id, message.get("attachment"))
 
-    def send_text_message(self, recipient_id, message):
-        # type: (Text, Text) -> None
+    def send_text_message(self, recipient_id: Text, message: Text) -> None:
         """Send a message through this channel."""
 
         raise NotImplementedError("Output channel needs to implement a send "
                                   "message for simple texts.")
 
-    def send_image_url(self, recipient_id, image_url):
-        # type: (Text, Text) -> None
+    def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
         """Sends an image. Default will just post the url as a string."""
 
         self.send_text_message(recipient_id, "Image: {}".format(image_url))
 
-    def send_attachment(self, recipient_id, attachment):
-        # type: (Text, Text) -> None
+    def send_attachment(self, recipient_id: Text, attachment: Text) -> None:
         """Sends an attachment. Default will just post as a string."""
 
         self.send_text_message(recipient_id,
                                "Attachment: {}".format(attachment))
 
-    def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], Any) -> None
+    def send_text_with_buttons(self,
+                               recipient_id: Text,
+                               message: Text,
+                               buttons: List[Dict[Text, Any]],
+                               **kwargs: Any) -> None:
         """Sends buttons to the output.
 
         Default implementation will just post the buttons as a string."""
@@ -218,18 +211,19 @@ class OutputChannel(object):
             button_msg = button_to_string(button, idx)
             self.send_text_message(recipient_id, button_msg)
 
-    def send_custom_message(self, recipient_id, elements):
-        # type: (Text, Iterable[Dict[Text, Any]]) -> None
+    def send_custom_message(self,
+                            recipient_id: Text,
+                            elements: Iterable[Dict[Text, Any]]) -> None:
         """Sends elements to the output.
 
         Default implementation will just post the elements as a string."""
 
         for element in elements:
             element_msg = "{title} : {subtitle}".format(
-                    title=element.get('title', ''),
-                    subtitle=element.get('subtitle', ''))
+                title=element.get('title', ''),
+                subtitle=element.get('subtitle', ''))
             self.send_text_with_buttons(
-                    recipient_id, element_msg, element['buttons'])
+                recipient_id, element_msg, element.get('buttons', []))
 
 
 class CollectingOutputChannel(OutputChannel):
@@ -282,15 +276,13 @@ class CollectingOutputChannel(OutputChannel):
                                             text=message,
                                             buttons=buttons))
 
-    def send_image_url(self, recipient_id, image_url):
-        # type: (Text, Text) -> None
+    def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
         """Sends an image. Default will just post the url as a string."""
 
         self._persist_message(self._message(recipient_id,
                                             image=image_url))
 
-    def send_attachment(self, recipient_id, attachment):
-        # type: (Text, Text) -> None
+    def send_attachment(self, recipient_id: Text, attachment: Text) -> None:
         """Sends an attachment. Default will just post as a string."""
 
         self._persist_message(self._message(recipient_id,
@@ -306,8 +298,7 @@ class QueueOutputChannel(CollectingOutputChannel):
     def name(cls):
         return "queue"
 
-    def __init__(self, message_queue=None):
-        # type: (Queue) -> None
+    def __init__(self, message_queue: Queue = None) -> None:
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self):
@@ -362,8 +353,8 @@ class RestInput(InputChannel):
 
     def blueprint(self, on_new_message):
         custom_webhook = Blueprint(
-                'custom_webhook_{}'.format(type(self).__name__),
-                inspect.getmodule(self).__name__)
+            'custom_webhook_{}'.format(type(self).__name__),
+            inspect.getmodule(self).__name__)
 
         @custom_webhook.route("/", methods=['GET'])
         def health():
@@ -377,8 +368,8 @@ class RestInput(InputChannel):
 
             if should_use_stream:
                 return Response(
-                        self.stream_response(on_new_message, text, sender_id),
-                        content_type='text/event-stream')
+                    self.stream_response(on_new_message, text, sender_id),
+                    content_type='text/event-stream')
             else:
                 collector = CollectingOutputChannel()
                 on_new_message(UserMessage(text, collector, sender_id,

@@ -1,8 +1,4 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
+import re
 import json
 import logging
 from typing import Text, Optional, List
@@ -23,8 +19,9 @@ class SlackBot(SlackClient, OutputChannel):
     def name(cls):
         return "slack"
 
-    def __init__(self, token, slack_channel=None):
-        # type: (Text, Optional[Text]) -> None
+    def __init__(self,
+                 token: Text,
+                 slack_channel: Optional[Text] = None) -> None:
 
         self.slack_channel = slack_channel
         super(SlackBot, self).__init__(token)
@@ -70,7 +67,7 @@ class SlackBot(SlackClient, OutputChannel):
         button_attachment = [{"fallback": message,
                               "callback_id": message.replace(' ', '_')[:20],
                               "actions": self._convert_to_slack_buttons(
-                                      buttons)}]
+                                  buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
@@ -94,9 +91,10 @@ class SlackInput(InputChannel):
         return cls(credentials.get("slack_token"),
                    credentials.get("slack_channel"))
 
-    def __init__(self, slack_token, slack_channel=None,
-                 errors_ignore_retry=None):
-        # type: (Text, Optional[Text], Optional[List[Text]]) -> None
+    def __init__(self,
+                 slack_token: Text,
+                 slack_channel: Optional[Text] = None,
+                 errors_ignore_retry: Optional[List[Text]] = None) -> None:
         """Create a Slack input channel.
 
         Needs a couple of settings to properly authenticate and validate
@@ -124,7 +122,8 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_user_message(slack_event):
         return (slack_event.get('event') and
-                slack_event.get('event').get('type') == u'message' and
+                (slack_event.get('event').get('type') == u'message' or
+                 slack_event.get('event').get('type') == u'app_mention') and
                 slack_event.get('event').get('text') and not
                 slack_event.get('event').get('bot_id'))
 
@@ -137,6 +136,34 @@ class SlackInput(InputChannel):
     @staticmethod
     def _get_button_reply(slack_event):
         return json.loads(slack_event['payload'][0])['actions'][0]['name']
+
+    @staticmethod
+    def _sanitize_user_message(text, uids_to_remove):
+        """Remove superfluous/wrong/problematic tokens from a message.
+
+        Probably a good starting point for pre-formatting of user-provided text,
+        to make NLU's life easier in case they go funky to the power of extreme.
+
+        In the current state will just drop self-mentions of bot itself
+
+        Args:
+            text: raw message as sent from slack
+            uids_to_remove: a list of user ids to remove from the content
+
+        Returns:
+            str: parsed and cleaned version of the input text
+        """
+        for uid_to_remove in uids_to_remove:
+            # heuristic to format majority cases OK
+            # can be adjusted to taste later if needed,
+            # but is a good first approximation
+            for regex, replacement in [(r'<@{}>\s'.format(uid_to_remove), ''),
+                                       (r'\s<@{}>'.format(uid_to_remove), ''),
+                                       # a bit arbitrary but probably OK
+                                       (r'<@{}>'.format(uid_to_remove), ' ')]:
+                text = re.sub(regex, replacement, text)
+
+        return text.rstrip().lstrip()  # drop extra spaces at beginning and end
 
     def process_message(self, on_new_message, text, sender_id):
         """Slack retry to post messages up to 3 times based on
@@ -180,18 +207,19 @@ class SlackInput(InputChannel):
                                          {"content_type": "application/json"})
                 elif self._is_user_message(output):
                     return self.process_message(
-                            on_new_message,
-                            text=output['event']['text'],
-                            sender_id=output.get('event').get('user'))
+                        on_new_message,
+                        text=self._sanitize_user_message(
+                            output['event']['text'],
+                            output['authed_users']),
+                        sender_id=output.get('event').get('user'))
             elif request.form:
                 output = dict(request.form)
                 if self._is_button_reply(output):
+                    sender_id = json.loads(output['payload'][0])['user']['id']
                     return self.process_message(
-                            on_new_message,
-                            text=self._get_button_reply(output),
-                            sender_id=json.loads(
-                                    output['payload'][0]).get('user').get(
-                                'id'))
+                        on_new_message,
+                        text=self._get_button_reply(output),
+                        sender_id=sender_id)
 
             return make_response()
 

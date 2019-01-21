@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import datetime
 import uuid
 
@@ -12,6 +7,7 @@ from rasa_core.dispatcher import Button, Dispatcher
 from rasa_core.events import (
     ReminderScheduled, UserUttered, ActionExecuted,
     BotUttered, Restarted)
+from rasa_nlu.training_data import Message
 
 
 def test_message_processor(default_processor):
@@ -19,6 +15,13 @@ def test_message_processor(default_processor):
     default_processor.handle_message(UserMessage('/greet{"name":"Core"}', out))
     assert {'recipient_id': 'default',
             'text': 'hey there Core!'} == out.latest_output()
+
+
+def test_parsing(default_processor):
+    message = Message('/greet{"name": "boy"}')
+    parsed = default_processor._parse_message(message)
+    assert parsed["intent"]["name"] == 'greet'
+    assert parsed["entities"][0]["entity"] == 'name'
 
 
 def test_reminder_scheduled(default_processor):
@@ -105,5 +108,5 @@ def test_logging_of_bot_utterances_on_tracker(default_processor,
     assert len(default_dispatcher_collecting.latest_bot_messages) == 4
 
     default_processor.log_bot_utterances_on_tracker(
-            tracker, default_dispatcher_collecting)
+        tracker, default_dispatcher_collecting)
     assert not default_dispatcher_collecting.latest_bot_messages

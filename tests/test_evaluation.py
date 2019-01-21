@@ -1,15 +1,14 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 
 from rasa_core import evaluate
 from rasa_core.evaluate import (
     run_story_evaluation,
     collect_story_predictions)
-from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
+from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE, \
+    E2E_STORY_FILE_UNKNOWN_ENTITY
+
+
+# from tests.conftest import E2E_STORY_FILE_UNKNOWN_ENTITY
 
 
 def test_evaluation_image_creation(tmpdir, default_agent):
@@ -17,11 +16,11 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     img_path = os.path.join(tmpdir.strpath, "story_confmat.pdf")
 
     run_story_evaluation(
-            resource_name=DEFAULT_STORIES_FILE,
-            agent=default_agent,
-            out_directory=tmpdir.strpath,
-            max_stories=None,
-            use_e2e=False
+        resource_name=DEFAULT_STORIES_FILE,
+        agent=default_agent,
+        out_directory=tmpdir.strpath,
+        max_stories=None,
+        use_e2e=False
     )
 
     assert os.path.isfile(img_path)
@@ -30,11 +29,11 @@ def test_evaluation_image_creation(tmpdir, default_agent):
 
 def test_action_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-            DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
+        DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
     story_evaluation, num_stories = collect_story_predictions(
-                                            completed_trackers,
-                                            default_agent,
-                                            use_e2e=False)
+        completed_trackers,
+        default_agent,
+        use_e2e=False)
 
     assert not story_evaluation.evaluation_store. \
         has_prediction_target_mismatch()
@@ -44,14 +43,29 @@ def test_action_evaluation_script(tmpdir, default_agent):
 
 def test_end_to_end_evaluation_script(tmpdir, default_agent):
     completed_trackers = evaluate._generate_trackers(
-            END_TO_END_STORY_FILE, default_agent, use_e2e=True)
+        END_TO_END_STORY_FILE, default_agent, use_e2e=True)
 
     story_evaluation, num_stories = collect_story_predictions(
-                                            completed_trackers,
-                                            default_agent,
-                                            use_e2e=True)
+        completed_trackers,
+        default_agent,
+        use_e2e=True)
 
     assert not story_evaluation.evaluation_store. \
         has_prediction_target_mismatch()
     assert len(story_evaluation.failed_stories) == 0
     assert num_stories == 2
+
+
+def test_end_to_end_evaluation_script_unknown_entity(tmpdir, default_agent):
+    completed_trackers = evaluate._generate_trackers(
+        E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True)
+
+    story_evaluation, num_stories = collect_story_predictions(
+        completed_trackers,
+        default_agent,
+        use_e2e=True)
+
+    assert story_evaluation.evaluation_store. \
+        has_prediction_target_mismatch()
+    assert len(story_evaluation.failed_stories) == 1
+    assert num_stories == 1

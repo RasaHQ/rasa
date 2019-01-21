@@ -1,15 +1,11 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import typing
+from collections import deque
 
 import copy
 import io
 import logging
-import typing
-from collections import deque
 from enum import Enum
-from typing import Generator, Dict, Text, Any, Optional, Iterator
+from typing import Generator, Dict, Text, Any, Optional, Iterator, Type
 from typing import List
 
 from rasa_core import events
@@ -51,12 +47,11 @@ class DialogueStateTracker(object):
 
     @classmethod
     def from_dict(cls,
-                  sender_id,  # type: Text
-                  events_as_dict,  # type: List[Dict[Text, Any]]
-                  slots,  # type: List[Slot]
-                  max_event_history=None  # type: Optional[int]
-                  ):
-        # type: (...) -> DialogueStateTracker
+                  sender_id: Text,
+                  events_as_dict: List[Dict[Text, Any]],
+                  slots: List[Slot],
+                  max_event_history: Optional[int] = None
+                  ) -> 'DialogueStateTracker':
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring
@@ -67,10 +62,10 @@ class DialogueStateTracker(object):
 
     @classmethod
     def from_events(cls,
-                    sender_id,  # type: Text
-                    evts,  # type: List[Event]
-                    slots,  # type: List[Slot]
-                    max_event_history=None  # type: Optional[int]
+                    sender_id: Text,
+                    evts: List[Event],
+                    slots: List[Slot],
+                    max_event_history: Optional[int] = None
                     ):
         tracker = cls(sender_id, slots, max_event_history)
         for e in evts:
@@ -100,9 +95,9 @@ class DialogueStateTracker(object):
         # `reset()`
         ###
         # if tracker is paused, no actions should be taken
-        self._paused = None
+        self._paused = False
         # A deterministically scheduled action to be executed next
-        self.followup_action = ACTION_LISTEN_NAME  # type: Optional[Text]
+        self.followup_action = ACTION_LISTEN_NAME
         self.latest_action_name = None
         # Stores the most recent message sent by the user
         self.latest_message = None
@@ -113,8 +108,9 @@ class DialogueStateTracker(object):
     ###
     # Public tracker interface
     ###
-    def current_state(self, event_verbosity=EventVerbosity.NONE):
-        # type: (EventVerbosity) -> Dict[Text, Any]
+    def current_state(self,
+                      event_verbosity: EventVerbosity = EventVerbosity.NONE
+                      ) -> Dict[Text, Any]:
         """Return the current tracker state as an object."""
 
         if event_verbosity == EventVerbosity.ALL:
@@ -143,15 +139,13 @@ class DialogueStateTracker(object):
             "latest_action_name": self.latest_action_name
         }
 
-    def past_states(self, domain):
-        # type: (Domain) -> deque
+    def past_states(self, domain: 'Domain') -> deque:
         """Generate the past states of this tracker based on the history."""
 
         generated_states = domain.states_for_tracker_history(self)
         return deque((frozenset(s.items()) for s in generated_states))
 
-    def change_form_to(self, form_name):
-        # type: (Text) -> None
+    def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
         if form_name is not None:
             self.active_form = {'name': form_name,
@@ -160,19 +154,16 @@ class DialogueStateTracker(object):
         else:
             self.active_form = {}
 
-    def set_form_validation(self, validate):
-        # type: (bool) -> None
+    def set_form_validation(self, validate: bool) -> None:
         """Toggle form validation"""
         self.active_form['validate'] = validate
 
-    def reject_action(self, action_name):
-        # type: (Text) -> None
+    def reject_action(self, action_name: Text) -> None:
         """Notify active form that it was rejected"""
         if action_name == self.active_form.get('name'):
             self.active_form['rejected'] = True
 
-    def set_latest_action_name(self, action_name):
-        # type: (Text) -> None
+    def set_latest_action_name(self, action_name: Text) -> None:
         """Set latest action name
             and reset form validation and rejection parameters
         """
@@ -189,8 +180,7 @@ class DialogueStateTracker(object):
         """Return the currently set values of the slots"""
         return {key: slot.value for key, slot in self.slots.items()}
 
-    def get_slot(self, key):
-        # type: (Text) -> Optional[Any]
+    def get_slot(self, key: Text) -> Optional[Any]:
         """Retrieves the value of a slot."""
 
         if key in self.slots:
@@ -199,8 +189,7 @@ class DialogueStateTracker(object):
             logger.info("Tried to access non existent slot '{}'".format(key))
             return None
 
-    def get_latest_entity_values(self, entity_type):
-        # type: (Text) -> Iterator[Text]
+    def get_latest_entity_values(self, entity_type: Text) -> Iterator[Text]:
         """Get entity values found for the passed entity name in latest msg.
 
         If you are only interested in the first entity of a given type use
@@ -211,16 +200,14 @@ class DialogueStateTracker(object):
                 for x in self.latest_message.entities
                 if x.get("entity") == entity_type)
 
-    def get_latest_input_channel(self):
-        # type: () -> Optional[Text]
+    def get_latest_input_channel(self) -> Optional[Text]:
         """Get the name of the input_channel of the latest UserUttered event"""
 
         for e in reversed(self.events):
             if isinstance(e, UserUttered):
                 return e.input_channel
 
-    def is_paused(self):
-        # type: () -> bool
+    def is_paused(self) -> bool:
         """State whether the tracker is currently paused."""
         return self._paused
 
@@ -320,8 +307,7 @@ class DialogueStateTracker(object):
                 yield tr
             yield tracker
 
-    def applied_events(self):
-        # type: () -> List[Event]
+    def applied_events(self) -> List[Event]:
         """Returns all actions that should be applied - w/o reverted events."""
 
         def undo_till_previous(event_type, done_events):
@@ -357,8 +343,7 @@ class DialogueStateTracker(object):
         for event in applied_events:
             event.apply_to(self)
 
-    def recreate_from_dialogue(self, dialogue):
-        # type: (Dialogue) -> None
+    def recreate_from_dialogue(self, dialogue: Dialogue) -> None:
         """Use a serialised `Dialogue` to update the trackers state.
 
         This uses the state as is persisted in a ``TrackerStore``. If the
@@ -377,8 +362,8 @@ class DialogueStateTracker(object):
         """Creates a duplicate of this tracker"""
         return self.travel_back_in_time(float("inf"))
 
-    def travel_back_in_time(self, target_time):
-        # type: (float) -> DialogueStateTracker
+    def travel_back_in_time(self,
+                            target_time: float) -> 'DialogueStateTracker':
         """Creates a new tracker with a state at a specific timestamp.
 
         A new tracker will be created and all events previous to the
@@ -404,10 +389,8 @@ class DialogueStateTracker(object):
 
         return Dialogue(self.sender_id, list(self.events))
 
-    def update(self, event):
-        # type: (Event) -> None
+    def update(self, event: Event) -> None:
         """Modify the state of the tracker according to an ``Event``. """
-
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError("event to log must be an instance "
                              "of a subclass of Event.")
@@ -415,8 +398,7 @@ class DialogueStateTracker(object):
         self.events.append(event)
         event.apply_to(self)
 
-    def export_stories(self, e2e=False):
-        # type: () -> Text
+    def export_stories(self, e2e=False) -> Text:
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
@@ -425,12 +407,60 @@ class DialogueStateTracker(object):
         story = Story.from_events(self.applied_events(), self.sender_id)
         return story.as_story_string(flat=True, e2e=e2e)
 
-    def export_stories_to_file(self, export_path="debug.md"):
-        # type: (Text) -> None
+    def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""
 
         with io.open(export_path, 'a', encoding="utf-8") as f:
             f.write(self.export_stories() + "\n")
+
+    def get_last_event_for(self,
+                           event_type: Type[Event],
+                           action_names_to_exclude: List[Text] = None,
+                           skip: int = 0) -> Optional[Any]:
+        """Gets the last event of a given type which was actually applied.
+
+        Args:
+            event_type: The type of event you want to find.
+            action_names_to_exclude: Events of type `ActionExecuted` which
+                should be excluded from the results. Can be used to skip
+                `action_listen` events.
+            skip: Skips n possible results before return an event.
+
+        Returns:
+            event which matched the query or `None` if no event matched.
+        """
+
+        to_exclude = action_names_to_exclude or []
+
+        def filter_function(e: Event):
+            has_instance = isinstance(e, event_type)
+            excluded = (isinstance(e, ActionExecuted) and
+                        e.action_name in to_exclude)
+
+            return has_instance and not excluded
+
+        filtered = filter(filter_function, reversed(self.applied_events()))
+        for i in range(skip):
+            next(filtered, None)
+
+        return next(filtered, None)
+
+    def last_executed_action_has(self, name: Text, skip=0) -> bool:
+        """Returns whether last `ActionExecuted` event had a specific name.
+
+        Args:
+            name: Name of the event which should be matched.
+            skip: Skips n possible results in between.
+
+        Returns:
+            `True` if last executed action had name `name`, otherwise `False`.
+        """
+
+        last = self.get_last_event_for(ActionExecuted,
+                                       action_names_to_exclude=[
+                                           ACTION_LISTEN_NAME],
+                                       skip=skip)
+        return last is not None and last.action_name == name
 
     ###
     # Internal methods for the modification of the trackers state. Should
@@ -456,8 +486,7 @@ class DialogueStateTracker(object):
         for slot in self.slots.values():
             slot.reset()
 
-    def _set_slot(self, key, value):
-        # type: (Text, Any) -> None
+    def _set_slot(self, key: Text, value: Any) -> None:
         """Set the value of a slot if that slot exists."""
 
         if key in self.slots:
@@ -467,8 +496,7 @@ class DialogueStateTracker(object):
                          "added all your slots to your domain file."
                          "".format(key))
 
-    def _create_events(self, evts):
-        # type: (List[Event]) -> deque
+    def _create_events(self, evts: List[Event]) -> deque:
 
         if evts and not isinstance(evts[0], Event):  # pragma: no cover
             raise ValueError("events, if given, must be a list of events")
@@ -484,24 +512,25 @@ class DialogueStateTracker(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def trigger_followup_action(self, action):
-        # type: (Text) -> None
+    def trigger_followup_action(self, action: Text) -> None:
         """Triggers another action following the execution of the current."""
 
         self.followup_action = action
 
     def clear_followup_action(self):
         # type: () -> None
-        """Clears follow up action when it was executed"""
+        """Clears follow up action when it was executed."""
 
         self.followup_action = None
 
-    def _merge_slots(self, entities=None):
-        # type: (Optional[List[Dict[Text, Any]]]) -> List[SlotSet]
+    def _merge_slots(self,
+                     entities: Optional[List[Dict[Text, Any]]] = None
+                     ) -> List[SlotSet]:
         """Take a list of entities and create tracker slot set events.
 
         If an entity type matches a slots name, the entities value is set
-        as the slots value by creating a ``SlotSet`` event."""
+        as the slots value by creating a ``SlotSet`` event.
+        """
 
         entities = entities if entities else self.latest_message.entities
         new_slots = [SlotSet(e["entity"], e["value"]) for e in entities if

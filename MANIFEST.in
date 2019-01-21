@@ -1,1 +1,1 @@
-include LICENSE README.md requirements.txt dev-requirements.txt rasa_core/schemas/* rasa_core/training/visualization.html rasa_core/default_config.yml
+include LICENSE.txt README.md requirements.txt dev-requirements.txt rasa_core/schemas/* rasa_core/training/visualization.html rasa_core/default_config.yml

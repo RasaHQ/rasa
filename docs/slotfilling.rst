@@ -42,7 +42,7 @@ story. By "happy path", we mean that whenever you ask a user for some informatio
 they respond with what you asked for.
 
 If we take the example of the restaurant bot, this single story describes all of the 
-happy paths. 
+happy paths.
 
 .. code-block:: story
 
@@ -122,34 +122,12 @@ Custom slot mappings
 
 Some slots (like ``cuisine``) can be picked up using a single entity, but a 
 ``FormAction`` can also support yes/no questions and free-text input.
-The ``slot_mapping`` method defines how to extract slot values from user responses.
+The ``slot_mappings`` method defines how to extract slot values from user responses.
 
 Here's an example for the restaurant bot:
 
-.. code-block:: python
-
-    def slot_mapping(self):
-        # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
-        """A dictionary to map required slots to
-            - an extracted entity
-            - intent: value pairs
-            - a whole message
-            or a list of them, where the first match will be picked"""
-
-        return {"cuisine": self.from_entity(entity="cuisine",
-                                            intent="inform"),
-                "num_people": self.from_entity(entity="number"),
-                "outdoor_seating": [self.from_entity(entity="seating"),
-                                    self.from_intent(intent='affirm',
-                                                     value=True),
-                                    self.from_intent(intent='deny',
-                                                     value=False)],
-                "preferences": [self.from_text(intent='inform'),
-                                self.from_intent(intent='deny',
-                                                 value="no additional "
-                                                       "preferences")],
-                "feedback": [self.from_entity(entity="feedback"),
-                             self.from_text()]}
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.slot_mappings
 
 The predefined functions work as follows:
 
@@ -178,56 +156,14 @@ you can do this by overwriting the ``validate()`` method.
 Here is an example which checks if the extracted cuisine slot belongs to a 
 list of supported cuisines.
 
-.. code-block:: python
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.cuisine_db
 
-    @staticmethod
-    def cuisine_db():
-        # type: () -> List[Text]
-        """Database of supported cuisines"""
-        return ["caribbean", "chinese", "french", "greek", "indian",
-                "italian", "mexican"]
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.is_int
 
-    def validate(self, dispatcher, tracker, domain):
-        # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-        """"Validate extracted requested slot else raise an error"""
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
-
-        # extract requested slot from a user input by using `slot_mapping`
-        events = self.extract(dispatcher, tracker, domain)
-        if events is None:
-            # raise an error if nothing was extracted
-            raise ActionExecutionRejection(self.name(),
-                                           "Failed to validate slot {0} "
-                                           "with action {1}"
-                                           "".format(slot_to_fill,
-                                                     self.name()))
-
-        extracted_slots = []
-        validated_events = []
-        for e in events:
-            if e['event'] == 'slot':
-                # get values of extracted slots to validate them later
-                extracted_slots.append(e['value'])
-            else:
-                # add other events without validating them
-                validated_events.append(e)
-
-        for slot in extracted_slots:
-            if slot_to_fill == 'cuisine':
-                if slot.lower() not in self.cuisine_db():
-                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                    # validation failed, set this slot to None, meaning the
-                    user will be asked for the slot again
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            else:
-                # no validation needed
-                validated_events.append(SlotSet(slot_to_fill, slot))
-
-        return validated_events
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.validate
 
 If nothing is extracted from the user's utterance for any of the required slots, an
 ``ActionExecutionRejection`` error will be raised, meaning the action execution
@@ -257,6 +193,26 @@ you could add a story like this:
         - utter_chitchat
         - restaurant_form
         - form{"name": null}
+		
+In some situations, users may change their mind in the middle of form action
+and decide not to go forward with their initial request. In cases like this, the
+assistant should stop asking for the requested slots. You can handle such situations
+gracefully using a default action ``action_deactivate_form`` which will deactivate
+the form and reset the requested slot. An example story of such conversation could
+look as follows:
+
+.. code-block:: story
+
+    ## chitchat
+    * request_restaurant
+        - restaurant_form
+        - form{"name": "restaurant_form"}
+    * stop
+        - utter_ask_continue
+    * deny
+        - action_deactivate_form
+        - form{"name": null}
+
 
 It is **strongly** recommended that you build these stories using interactive learning.
 If you write these stories by hand you will likely miss important things.
@@ -332,6 +288,17 @@ for example:
 
 This mechanism is quite general and you can use it to build many different 
 kinds of logic into your forms.
+
+Configuration
+-------------
+To use forms, make sure to include the ``FormPolicy`` in your policy
+configuration file. For exmple:
+
+.. code-block:: yaml
+
+  policies:
+    - name: "FormPolicy"
+
 
 Debugging
 ---------

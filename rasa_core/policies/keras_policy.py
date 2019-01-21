@@ -1,28 +1,18 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import io
+import copy
 import json
 import logging
 import os
-import warnings
 import tensorflow as tf
-import copy
-
-import typing
+import warnings
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
-from rasa_core.policies.policy import Policy
-from rasa_core.featurizers import TrackerFeaturizer
+from rasa_core.domain import Domain
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
-
-if typing.TYPE_CHECKING:
-    from rasa_core.domain import Domain
-    from rasa_core.trackers import DialogueStateTracker
+from rasa_core.featurizers import TrackerFeaturizer
+from rasa_core.policies.policy import Policy
+from rasa_core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +34,14 @@ class KerasPolicy(Policy):
                                            max_history=max_history)
 
     def __init__(self,
-                 featurizer=None,  # type: Optional[TrackerFeaturizer]
-                 model=None,  # type: Optional[tf.keras.models.Sequential]
-                 graph=None,  # type: Optional[tf.Graph]
-                 session=None,  # type: Optional[tf.Session]
-                 current_epoch=0,  # type: int
-                 max_history=None,  # type: Optional[int]
-                 **kwargs  # type: Any
-                 ):
-        # type: (...) -> None
+                 featurizer: Optional[TrackerFeaturizer] = None,
+                 model: Optional[tf.keras.models.Sequential] = None,
+                 graph: Optional[tf.Graph] = None,
+                 session: Optional[tf.Session] = None,
+                 current_epoch: int = 0,
+                 max_history: Optional[int] = None,
+                 **kwargs: Any
+                 ) -> None:
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
         super(KerasPolicy, self).__init__(featurizer)
@@ -66,8 +55,7 @@ class KerasPolicy(Policy):
 
         self.current_epoch = current_epoch
 
-    def _load_params(self, **kwargs):
-        # type: (Dict[Text, Any]) -> None
+    def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
@@ -89,16 +77,15 @@ class KerasPolicy(Policy):
         return
 
     def model_architecture(
-            self,
-            input_shape,  # type: Tuple[int, int]
-            output_shape  # type: Tuple[int, Optional[int]]
-    ):
-        # type: (...) -> tf.keras.models.Sequential
+        self,
+        input_shape: Tuple[int, int],
+        output_shape: Tuple[int, Optional[int]]
+    ) -> tf.keras.models.Sequential:
         """Build a keras model and return a compiled model."""
 
         from tensorflow.keras.models import Sequential
-        from tensorflow.keras.layers import \
-            Masking, LSTM, Dense, TimeDistributed, Activation
+        from tensorflow.keras.layers import (
+            Masking, LSTM, Dense, TimeDistributed, Activation)
 
         # Build Model
         model = Sequential()
@@ -143,11 +130,10 @@ class KerasPolicy(Policy):
         return model
 
     def train(self,
-              training_trackers,  # type: List[DialogueStateTracker]
-              domain,  # type: Domain
-              **kwargs  # type: Any
-              ):
-        # type: (...) -> Dict[Text: Any]
+              training_trackers: List[DialogueStateTracker],
+              domain: Domain,
+              **kwargs: Any
+              ) -> None:
 
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
@@ -165,9 +151,9 @@ class KerasPolicy(Policy):
                                                          shuffled_y.shape[1:])
 
                 logger.info("Fitting model with {} total samples and a "
-                            "validation split of {}".format(
-                                training_data.num_examples(),
-                                self.validation_split))
+                            "validation split of {}"
+                            "".format(training_data.num_examples(),
+                                      self.validation_split))
                 # filter out kwargs that cannot be passed to fit
                 params = self._get_valid_params(self.model.fit, **kwargs)
 
@@ -179,8 +165,10 @@ class KerasPolicy(Policy):
                 self.current_epoch = self.defaults.get("epochs", 1)
                 logger.info("Done fitting keras policy model")
 
-    def continue_training(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, Any) -> None
+    def continue_training(self,
+                          training_trackers: List[DialogueStateTracker],
+                          domain: Domain,
+                          **kwargs: Any) -> None:
         """Continues training an already trained policy."""
 
         # takes the new example labelled and learns it
@@ -195,7 +183,7 @@ class KerasPolicy(Policy):
         with self.graph.as_default(), self.session.as_default():
             for _ in range(epochs):
                 training_data = self._training_data_for_continue_training(
-                        batch_size, training_trackers, domain)
+                    batch_size, training_trackers, domain)
 
                 # fit to one extra example using updated trackers
                 self.model.fit(training_data.X, training_data.y,
@@ -206,8 +194,9 @@ class KerasPolicy(Policy):
 
                 self.current_epoch += 1
 
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
+    def predict_action_probabilities(self,
+                                     tracker: DialogueStateTracker,
+                                     domain: Domain) -> List[float]:
 
         # noinspection PyPep8Naming
         X = self.featurizer.create_X([tracker], domain)
@@ -220,8 +209,7 @@ class KerasPolicy(Policy):
         elif len(y_pred.shape) == 3:
             return y_pred[0, -1].tolist()
 
-    def persist(self, path):
-        # type: (Text) -> None
+    def persist(self, path: Text) -> None:
 
         if self.model:
             self.featurizer.persist(path)
@@ -242,8 +230,7 @@ class KerasPolicy(Policy):
                           "Nothing to persist then!")
 
     @classmethod
-    def load(cls, path):
-        # type: (Text) -> KerasPolicy
+    def load(cls, path: Text) -> 'KerasPolicy':
         from tensorflow.keras.models import load_model
 
         if os.path.exists(path):

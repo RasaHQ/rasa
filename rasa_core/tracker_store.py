@@ -1,34 +1,26 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import itertools
-import typing
 
 import json
 import logging
-
+import pickle
 # noinspection PyPep8Naming
-import six.moves.cPickle as pickler
-from typing import Text, Optional, List
+from typing import Text, Optional, List, KeysView
 
-from rasa_core.utils import class_from_module_path
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
+from rasa_core.domain import Domain
 from rasa_core.trackers import (
     DialogueStateTracker, ActionExecuted,
     EventVerbosity)
+from rasa_core.utils import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
-if typing.TYPE_CHECKING:
-    from rasa_core.domain import Domain
-
 
 class TrackerStore(object):
-    def __init__(self, domain, event_broker=None):
-        # type: (Optional[Domain], Optional[EventChannel]) -> None
+    def __init__(self,
+                 domain: Optional[Domain],
+                 event_broker: Optional[EventChannel] = None) -> None:
         self.domain = domain
         self.event_broker = event_broker
 
@@ -93,12 +85,10 @@ class TrackerStore(object):
     def save(self, tracker):
         raise NotImplementedError()
 
-    def retrieve(self, sender_id):
-        # type: (Text) -> Optional[DialogueStateTracker]
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         raise NotImplementedError()
 
-    def stream_events(self, tracker):
-        # type: (DialogueStateTracker) -> None
+    def stream_events(self, tracker: DialogueStateTracker) -> None:
         old_tracker = self.retrieve(tracker.sender_id)
         offset = len(old_tracker.events) if old_tracker else 0
         evts = tracker.events
@@ -116,27 +106,30 @@ class TrackerStore(object):
     @staticmethod
     def serialise_tracker(tracker):
         dialogue = tracker.as_dialogue()
-        return pickler.dumps(dialogue)
+        return pickle.dumps(dialogue)
 
     def deserialise_tracker(self, sender_id, _json):
-        dialogue = pickler.loads(_json)
+        dialogue = pickle.loads(_json)
         tracker = self.init_tracker(sender_id)
         tracker.recreate_from_dialogue(dialogue)
         return tracker
 
 
 class InMemoryTrackerStore(TrackerStore):
-    def __init__(self, domain, event_broker=None):
+    def __init__(self,
+                 domain: Domain,
+                 event_broker: Optional[EventChannel] = None
+                 ) -> None:
         self.store = {}
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         if self.event_broker:
             self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
-    def retrieve(self, sender_id):
+    def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         if sender_id in self.store:
             logger.debug('Recreating tracker for '
                          'id \'{}\''.format(sender_id))
@@ -146,7 +139,7 @@ class InMemoryTrackerStore(TrackerStore):
                          'id \'{}\'.'.format(sender_id))
             return None
 
-    def keys(self):
+    def keys(self) -> KeysView[Text]:
         return self.store.keys()
 
 
@@ -222,9 +215,9 @@ class MongoTrackerStore(TrackerStore):
         state = tracker.current_state(EventVerbosity.ALL)
 
         self.conversations.update_one(
-                {"sender_id": tracker.sender_id},
-                {"$set": state},
-                upsert=True)
+            {"sender_id": tracker.sender_id},
+            {"$set": state},
+            upsert=True)
 
     def retrieve(self, sender_id):
         stored = self.conversations.find_one({"sender_id": sender_id})

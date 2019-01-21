@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import json
 
 from httpretty import httpretty
@@ -29,8 +24,8 @@ def test_console_input():
 
         httpretty.enable()
         console.record_messages(
-                server_url="https://abc.defg",
-                max_message_limit=3)
+            server_url="https://abc.defg",
+            max_message_limit=3)
         httpretty.disable()
 
         assert (httpretty.latest_requests[-1].path ==
@@ -51,11 +46,11 @@ def test_facebook_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = FacebookInput(
-            fb_verify="YOUR_FB_VERIFY",
-            # you need tell facebook this token, to confirm your URL
-            fb_secret="YOUR_FB_SECRET",  # your app secret
-            fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
-            # token for the page you subscribed to
+        fb_verify="YOUR_FB_VERIFY",
+        # you need tell facebook this token, to confirm your URL
+        fb_secret="YOUR_FB_SECRET",  # your app secret
+        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
+        # token for the page you subscribed to
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -67,9 +62,9 @@ def test_facebook_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/facebook/").startswith(
-                'fb_webhook.health')
+            'fb_webhook.health')
         assert routes_list.get("/webhooks/facebook/webhook").startswith(
-                'fb_webhook.webhook')
+            'fb_webhook.webhook')
     finally:
         s.stop()
 
@@ -84,10 +79,10 @@ def test_webexteams_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = WebexTeamsInput(
-            access_token="YOUR_ACCESS_TOKEN",
-            # this is the `bot access token`
-            room="YOUR_WEBEX_ROOM"
-            # the name of your channel to which the bot posts (optional)
+        access_token="YOUR_ACCESS_TOKEN",
+        # this is the `bot access token`
+        room="YOUR_WEBEX_ROOM"
+        # the name of your channel to which the bot posts (optional)
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -99,9 +94,9 @@ def test_webexteams_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/webexteams/").startswith(
-                'webexteams_webhook.health')
+            'webexteams_webhook.health')
         assert routes_list.get("/webhooks/webexteams/webhook").startswith(
-                'webexteams_webhook.webhook')
+            'webexteams_webhook.webhook')
     finally:
         s.stop()
 
@@ -116,10 +111,10 @@ def test_slack_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = SlackInput(
-            slack_token="YOUR_SLACK_TOKEN",
-            # this is the `bot_user_o_auth_access_token`
-            slack_channel="YOUR_SLACK_CHANNEL"
-            # the name of your channel to which the bot posts (optional)
+        slack_token="YOUR_SLACK_TOKEN",
+        # this is the `bot_user_o_auth_access_token`
+        slack_channel="YOUR_SLACK_CHANNEL"
+        # the name of your channel to which the bot posts (optional)
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -131,9 +126,9 @@ def test_slack_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/slack/").startswith(
-                'slack_webhook.health')
+            'slack_webhook.health')
         assert routes_list.get("/webhooks/slack/webhook").startswith(
-                'slack_webhook.webhook')
+            'slack_webhook.webhook')
     finally:
         s.stop()
 
@@ -148,15 +143,15 @@ def test_mattermost_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = MattermostInput(
-            # this is the url of the api for your mattermost instance
-            url="http://chat.example.com/api/v4",
-            # the name of your team for mattermost
-            team="community",
-            # the username of your bot user that will post
-            user="user@email.com",
-            # messages
-            pw="password"
-            # the password of your bot user that will post messages
+        # this is the url of the api for your mattermost instance
+        url="http://chat.example.com/api/v4",
+        # the name of your team for mattermost
+        team="community",
+        # the username of your bot user that will post
+        user="user@email.com",
+        # messages
+        pw="password"
+        # the password of your bot user that will post messages
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -168,9 +163,9 @@ def test_mattermost_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/mattermost/").startswith(
-                'mattermost_webhook.health')
+            'mattermost_webhook.health')
         assert routes_list.get("/webhooks/mattermost/webhook").startswith(
-                'mattermost_webhook.webhook')
+            'mattermost_webhook.webhook')
     finally:
         s.stop()
 
@@ -185,10 +180,10 @@ def test_botframework_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = BotFrameworkInput(
-            # you get this from your Bot Framework account
-            app_id="MICROSOFT_APP_ID",
-            # also from your Bot Framework account
-            app_password="MICROSOFT_APP_PASSWORD"
+        # you get this from your Bot Framework account
+        app_id="MICROSOFT_APP_ID",
+        # also from your Bot Framework account
+        app_password="MICROSOFT_APP_PASSWORD"
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -200,9 +195,9 @@ def test_botframework_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/botframework/").startswith(
-                'botframework_webhook.health')
+            'botframework_webhook.health')
         assert routes_list.get("/webhooks/botframework/webhook").startswith(
-                'botframework_webhook.webhook')
+            'botframework_webhook.webhook')
     finally:
         s.stop()
 
@@ -217,12 +212,12 @@ def test_rocketchat_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = RocketChatInput(
-            # your bots rocket chat user name
-            user="yourbotname",
-            # the password for your rocket chat bots account
-            password="YOUR_PASSWORD",
-            # url where your rocket chat instance is running
-            server_url="https://demo.rocket.chat"
+        # your bots rocket chat user name
+        user="yourbotname",
+        # the password for your rocket chat bots account
+        password="YOUR_PASSWORD",
+        # url where your rocket chat instance is running
+        server_url="https://demo.rocket.chat"
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -234,9 +229,9 @@ def test_rocketchat_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/rocketchat/").startswith(
-                'rocketchat_webhook.health')
+            'rocketchat_webhook.health')
         assert routes_list.get("/webhooks/rocketchat/webhook").startswith(
-                'rocketchat_webhook.webhook')
+            'rocketchat_webhook.webhook')
     finally:
         s.stop()
 
@@ -246,9 +241,9 @@ def test_telegram_channel():
     # telegram channel will try to set a webhook, so we need to mock the api
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
-            body='{"ok": true, "result": {}}')
+        httpretty.POST,
+        'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
+        body='{"ok": true, "result": {}}')
 
     httpretty.enable()
 
@@ -260,12 +255,12 @@ def test_telegram_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = TelegramInput(
-            # you get this when setting up a bot
-            access_token="123:YOUR_ACCESS_TOKEN",
-            # this is your bots username
-            verify="YOUR_TELEGRAM_BOT",
-            # the url your bot should listen for messages
-            webhook_url="YOUR_WEBHOOK_URL"
+        # you get this when setting up a bot
+        access_token="123:YOUR_ACCESS_TOKEN",
+        # this is your bots username
+        verify="YOUR_TELEGRAM_BOT",
+        # the url your bot should listen for messages
+        webhook_url="YOUR_WEBHOOK_URL"
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -277,9 +272,9 @@ def test_telegram_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/telegram/").startswith(
-                'telegram_webhook.health')
+            'telegram_webhook.health')
         assert routes_list.get("/webhooks/telegram/webhook").startswith(
-                'telegram_webhook.message')
+            'telegram_webhook.message')
     finally:
         s.stop()
         httpretty.disable()
@@ -354,12 +349,12 @@ def test_twilio_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = TwilioInput(
-            # you get this from your twilio account
-            account_sid="YOUR_ACCOUNT_SID",
-            # also from your twilio account
-            auth_token="YOUR_AUTH_TOKEN",
-            # a number associated with your twilio account
-            twilio_number="YOUR_TWILIO_NUMBER"
+        # you get this from your twilio account
+        account_sid="YOUR_ACCOUNT_SID",
+        # also from your twilio account
+        auth_token="YOUR_AUTH_TOKEN",
+        # a number associated with your twilio account
+        twilio_number="YOUR_TWILIO_NUMBER"
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -371,9 +366,9 @@ def test_twilio_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/twilio/").startswith(
-                'twilio_webhook.health')
+            'twilio_webhook.health')
         assert routes_list.get("/webhooks/twilio/webhook").startswith(
-                'twilio_webhook.message')
+            'twilio_webhook.message')
     finally:
         s.stop()
 
@@ -388,8 +383,8 @@ def test_callback_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = CallbackInput(
-            # URL Core will call to send the bot responses
-            endpoint=EndpointConfig("http://localhost:5004")
+        # URL Core will call to send the bot responses
+        endpoint=EndpointConfig("http://localhost:5004")
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -401,9 +396,9 @@ def test_callback_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/callback/").startswith(
-                'callback_webhook.health')
+            'callback_webhook.health')
         assert routes_list.get("/webhooks/callback/webhook").startswith(
-                'callback_webhook.webhook')
+            'callback_webhook.webhook')
     finally:
         s.stop()
 
@@ -418,12 +413,12 @@ def test_socketio_channel():
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
     input_channel = SocketIOInput(
-            # event name for messages sent from the user
-            user_message_evt="user_uttered",
-            # event name for messages sent from the bot
-            bot_message_evt="bot_uttered",
-            # socket.io namespace to use for the messages
-            namespace=None
+        # event name for messages sent from the user
+        user_message_evt="user_uttered",
+        # event name for messages sent from the bot
+        bot_message_evt="bot_uttered",
+        # socket.io namespace to use for the messages
+        namespace=None
     )
 
     # set serve_forever=True if you want to keep the server running
@@ -435,7 +430,7 @@ def test_socketio_channel():
         assert s.started
         routes_list = utils.list_routes(s.application)
         assert routes_list.get("/webhooks/socketio/").startswith(
-                'socketio_webhook.health')
+            'socketio_webhook.health')
     finally:
         s.stop()
 
@@ -463,6 +458,44 @@ def test_callback_calls_endpoint():
 
     assert text.parsed_body['recipient_id'] == "test-id"
     assert text.parsed_body['text'] == "Hi there!"
+
+
+def test_slack_message_sanitization():
+    from rasa_core.channels.slack import SlackInput
+    test_uid = 17213535
+    target_message_1 = 'You can sit here if you want'
+    target_message_2 = 'Hey, you can sit here if you want !'
+    target_message_3 = 'Hey, you can sit here if you want!'
+
+    uid_token = '<@{}>'.format(test_uid)
+    raw_messages = [test.format(uid=uid_token) for test
+                    in ['You can sit here {uid} if you want{uid}',
+                        '{uid} You can sit here if you want{uid} ',
+                        '{uid}You can sit here if you want {uid}',
+                        # those last cases may be disputable
+                        # as we're virtually altering the entered text,
+                        # but this seem to be the correct course of action
+                        # (to be decided)
+                        'You can sit here{uid}if you want',
+                        'Hey {uid}, you can sit here if you want{uid}!',
+                        'Hey{uid} , you can sit here if you want {uid}!']]
+
+    target_messages = [target_message_1,
+                       target_message_1,
+                       target_message_1,
+                       target_message_1,
+                       target_message_2,
+                       target_message_3]
+
+    sanitized_messages = [SlackInput._sanitize_user_message(message,
+                                                            [test_uid])
+                          for message in raw_messages]
+
+    # no message that is wrongly sanitized please
+    assert len([sanitized
+                for sanitized, target
+                in zip(sanitized_messages, target_messages)
+                if sanitized != target]) == 0
 
 
 def test_slack_init_one_parameter():
@@ -686,3 +719,23 @@ def test_int_sender_id_in_user_message():
     message = UserMessage("A text", sender_id=1234567890)
 
     assert message.sender_id == "1234567890"
+
+
+def test_send_custom_messages_without_buttons():
+    from rasa_core.channels.channel import OutputChannel
+
+    def test_message(sender, message):
+        assert sender == 'user'
+        assert message == 'a : b'
+
+    channel = OutputChannel()
+    channel.send_text_message = test_message
+    channel.send_custom_message("user", [{'title': 'a', 'subtitle': 'b'}])
+
+
+def test_newsline_strip():
+    from rasa_core.channels import UserMessage
+
+    message = UserMessage("\n/restart\n")
+
+    assert message.text == "/restart"
