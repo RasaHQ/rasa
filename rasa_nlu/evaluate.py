@@ -265,12 +265,10 @@ def save_json(data, filename):
                         json.dumps(data, indent=4, ensure_ascii=False))
 
 
-def collect_nlu_successes(intent_results, successes_filename):  # pragma: no cover
+def collect_nlu_successes(intent_results, successes_filename):
     """Log messages which result in successful predictions
     and save them to file"""
 
-    # it could be interesting to include entity-successes later
-    # therefore we start with an "intent_successes" key
     successes = [{"text": r.message,
                   "intent": r.target,
                   "intent_prediction": {"name": r.prediction,
@@ -287,11 +285,9 @@ def collect_nlu_successes(intent_results, successes_filename):  # pragma: no cov
         logger.info("Your model made no successful predictions")
 
 
-def collect_nlu_errors(intent_results, errors_filename):  # pragma: no cover
+def collect_nlu_errors(intent_results, errors_filename):
     """Log messages which result in wrong predictions and save them to file"""
 
-    # it could be interesting to include entity-errors later
-    # therefore we start with a "intent_errors" key
     errors = [{"text": r.message,
                "intent": r.target,
                "intent_prediction": {"name": r.prediction,
