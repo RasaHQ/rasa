@@ -22,6 +22,12 @@ from tests.utilities import (
 domain = Domain.load("data/test_domains/default.yml")
 
 
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
+
+
 class MockRedisTrackerStore(RedisTrackerStore):
     def __init__(self, domain):
         self.red = fakeredis.FakeStrictRedis()

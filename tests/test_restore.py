@@ -4,6 +4,12 @@ from rasa_core import restore
 from rasa_core.agent import Agent
 
 
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
+
+
 def test_restoring_tracker(loop, trained_moodbot_path, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 

@@ -7,6 +7,12 @@ from rasa_core.utils import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
 
 
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
+
+
 def test_is_int():
     assert utils.is_int(1)
     assert utils.is_int(1.0)

@@ -11,6 +11,12 @@ from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.utils import EndpointConfig
 
 
+@pytest.fixture(scope="session")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
+
+
 def test_agent_train(loop, tmpdir, default_domain):
     training_data_file = 'examples/moodbot/data/stories.md'
     agent = Agent("examples/moodbot/domain.yml",

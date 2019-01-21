@@ -37,6 +37,12 @@ async def train_trackers(domain):
     )
 
 
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
+
+
 # We are going to use class style testing here since unfortunately pytest
 # doesn't support using fixtures as arguments to its own parameterize yet
 # (hence, we can't train a policy, declare it as a fixture and use the different

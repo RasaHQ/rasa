@@ -3,6 +3,7 @@ import sys
 
 import json
 import os
+import pytest
 from aioresponses import aioresponses
 
 from rasa_core.agent import Agent
@@ -10,6 +11,12 @@ from rasa_core.train import train_dialogue_model
 from rasa_core.utils import (
     EndpointConfig, AvailableEndpoints,
     ClientResponseError)
+
+
+@pytest.fixture(scope="session")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
 
 
 def test_moodbot_example(loop, trained_moodbot_path):

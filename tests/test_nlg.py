@@ -14,6 +14,12 @@ from rasa_core.agent import Agent
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
 
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
+
+
 def nlg_app(base_url="/"):
     app = Flask(__name__)
 

@@ -1,9 +1,7 @@
 import logging
-import os
-
 import matplotlib
+import os
 import pytest
-from pytest_localserver.http import WSGIServer
 
 from rasa_core import train, server
 from rasa_core.agent import Agent

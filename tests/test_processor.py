@@ -1,4 +1,5 @@
 import datetime
+import pytest
 import uuid
 
 from rasa_core.channels import CollectingOutputChannel
@@ -8,6 +9,12 @@ from rasa_core.events import (
     ReminderScheduled, UserUttered, ActionExecuted,
     BotUttered, Restarted)
 from rasa_nlu.training_data import Message
+
+
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return next(sanic_loop())
 
 
 def test_message_processor(loop, default_processor):

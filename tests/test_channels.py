@@ -305,7 +305,7 @@ def test_handling_of_telegram_user_id():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_twilio_channel():
+def test_twilio_channel(loop):
     from rasa_core.channels.twilio import TwilioInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
@@ -323,7 +323,7 @@ def test_twilio_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False, loop=loop)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -334,7 +334,7 @@ def test_twilio_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_callback_channel():
+def test_callback_channel(loop):
     from rasa_core.channels.callback import CallbackInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
@@ -348,7 +348,7 @@ def test_callback_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False, loop=loop)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -360,7 +360,7 @@ def test_callback_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_socketio_channel():
+def test_socketio_channel(loop):
     from rasa_core.channels.socketio import SocketIOInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
@@ -378,7 +378,7 @@ def test_socketio_channel():
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False, loop=loop)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -653,7 +653,7 @@ def test_slackbot_send_text(loop):
                              'text': ['my message']}
 
 
-def test_channel_inheritance():
+def test_channel_inheritance(loop):
     from rasa_core.channels import RestInput
     from rasa_core.channels import RasaChatInput
     from rasa_core.agent import Agent

@@ -536,7 +536,7 @@ class Agent(object):
     def handle_channels(self, channels: List[InputChannel],
                         http_port: int = constants.DEFAULT_SERVER_PORT,
                         serve_forever: bool = True,
-                        route: Text = "/webhooks/") -> Future:
+                        route: Text = "/webhooks/", loop=None) -> Future:
         """Start a webserver attaching the input channels and handling msgs.
 
         If ``serve_forever`` is set to ``True``, this call will be blocking.
@@ -551,7 +551,7 @@ class Agent(object):
                                             route=route)
 
         http_server = app.create_server(host='0.0.0.0', port=http_port)
-        loop = asyncio.get_event_loop()
+        loop = loop or asyncio.get_event_loop()
         task = asyncio.ensure_future(http_server)
         signal(SIGINT, lambda s, f: loop.stop())
 
