@@ -11,7 +11,11 @@ python:
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
-  global: BOTO_CONFIG=/dev/null
+  global:
+  - BOTO_CONFIG=/dev/null
+  # secret for FOSSA
+  - secure: "g0c6z+CKVPiuGE3G3OGjzcKZJsdsA/j+zsTQ/xr1ie9gKNpKRA0KQAvsU/mow4NeMmt5YKnwKxFqWy0b3Oufm5WLTAWIVepT5FHA7YMVCMcpPIMsbtqe64FqJxhgL+sBJZku5i94PzCruXwbjk3Q5Uad95ZsIJLQLEkzIla6Fdcu5hdkfYVIGRGe0W2YxNVx+3fZimnOOvJmXD/nnZEBesq5fR09uA4v2PsBGuHOTkwuG60rU5bBPZ2PNiEZXt552kJ5yfdSszNd6uzgQNp10L0qXzt1fXeyf9uGAleDS1HrbcVcdWX0jwCwZF/FD40wUcyKGqOWWDs81mehsjhXymKBhy62QinCSFBmcJb/uRJpMWvvzOLaH94TgxFJCxogNKdqNN/jU3V8CuJ2ELp+RCiniO1u9Dd134j6dYWSWYO+R4WXYoIQYVlGZZqIZz+5b5eKsY+r6I1zPBfD+MowJx2HiLpSdgXh3tlhblOZwPKIuUQ++MeBY4JttJA4Sx5K+YIUzDvcx+7jyuYIjrV4D23n6i4dZZHpAqqtlf1iSbnEzO/rnAxZxy1UuEVmXNJSDOoKEzA7Mdd/Nh+M8wcJAb/KDS/TEvT27+TLRlrgOjgjU2q+4yXNomivi3rZJ1+EFUTgs7lgOGCM/LBpJgnyyiSYZoep0YDZHtA3DCnHKQI="
+
 install: 
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r alt_requirements/requirements_dev.txt
