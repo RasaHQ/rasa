@@ -24,6 +24,7 @@ tests_requires = [
     "matplotlib~=2.0",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
+    "aioresponses~=0.5.2"
 ]
 
 install_requires = [
@@ -72,6 +73,7 @@ install_requires = [
     "python-socketio>=2.1.1,<3",
     "python-engineio~=3.0",
     "pydot~=1.2",
+    "async_generator~=1.10"
 ]
 
 extras_requires = {

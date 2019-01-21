@@ -44,3 +44,4 @@ questionary==1.0.1
 python-socketio==2.1.1
 python-engineio==3.0.0
 pydot==1.2.4
+async_generator==1.10

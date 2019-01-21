@@ -32,7 +32,6 @@ Added
 
 Removed
 -------
-- removed support for python 3.5
 - removed support for deprecated intents/entities format
 
 Changed

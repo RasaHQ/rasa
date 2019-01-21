@@ -13,6 +13,7 @@ from rasa_core.channels.channel import (
     RestInput)
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
+from async_generator import async_generator, yield_
 
 
 def print_bot_output(message, color=utils.bcolors.OKBLUE):
@@ -60,6 +61,7 @@ async def send_message_receive_block(server_url,
             return await resp.json()
 
 
+@async_generator    # needed for python 3.5 compatibility
 async def send_message_receive_stream(server_url,
                                       auth_token,
                                       sender_id,
@@ -80,7 +82,7 @@ async def send_message_receive_stream(server_url,
 
             async for line in resp.content:
                 if line:
-                    yield json.loads(line)
+                    await yield_(json.loads(line))
 
 
 async def record_messages(server_url=DEFAULT_SERVER_URL,
