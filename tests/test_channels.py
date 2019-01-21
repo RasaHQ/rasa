@@ -323,7 +323,7 @@ def test_twilio_channel(loop):
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False, loop=loop)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -348,7 +348,7 @@ def test_callback_channel(loop):
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False, loop=loop)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
@@ -378,7 +378,7 @@ def test_socketio_channel(loop):
     )
 
     # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False, loop=loop)
+    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
     # END DOC INCLUDE
     # the above marker marks the end of the code snipped included
     # in the docs
