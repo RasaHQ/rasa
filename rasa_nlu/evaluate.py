@@ -64,23 +64,19 @@ def create_argument_parser():
 
     parser.add_argument('--report', required=False, nargs='?',
                         const="report.json", default=False,
-                        help="output path for the json with metrics report")
+                        help="output path to save the metrics report")
 
     parser.add_argument('--successes', required=False, nargs='?',
                         const="successes.json", default=False,
-                        help="output path for the json with successful \
-                        predictions")
+                        help="output path to save successful predictions")
 
-    parser.add_argument('--errors', required=False, nargs='?',
-                        const="errors.json", default=False,
-                        help="output path for the json with wrong predictions")
+    parser.add_argument('--errors', required=False, default="errors.json",
+                        help="output path to save model errors")
 
-    parser.add_argument('--histogram', required=False, nargs='?',
-                        const="hist.png", default=False,
+    parser.add_argument('--histogram', required=False, default="hist.png",
                         help="output path for the confidence histogram")
 
-    parser.add_argument('--confmat', required=False, nargs='?',
-                        const="confmat.png", default=False,
+    parser.add_argument('--confmat', required=False, default="confmat.png",
                         help="output path for the confusion matrix plot")
 
     utils.add_logging_option_arguments(parser, default=logging.INFO)
@@ -364,26 +360,24 @@ def evaluate_intents(intent_results,
         # save classified samples to file for debugging
         collect_nlu_successes(intent_results, successes_filename)
 
-    if errors_filename:
-        # log and save misclassified samples to file for debugging
-        collect_nlu_errors(intent_results, errors_filename)
+    # log and save misclassified samples to file for debugging
+    collect_nlu_errors(intent_results, errors_filename)
 
-    if confmat_filename:
-        from sklearn.metrics import confusion_matrix
-        from sklearn.utils.multiclass import unique_labels
-        import matplotlib.pyplot as plt
+    from sklearn.metrics import confusion_matrix
+    from sklearn.utils.multiclass import unique_labels
+    import matplotlib.pyplot as plt
 
-        cnf_matrix = confusion_matrix(targets, predictions)
-        labels = unique_labels(targets, predictions)
-        plot_confusion_matrix(cnf_matrix, classes=labels,
-                              title='Intent Confusion matrix',
-                              out=confmat_filename)
-        plt.show()
+    cnf_matrix = confusion_matrix(targets, predictions)
+    labels = unique_labels(targets, predictions)
+    plot_confusion_matrix(cnf_matrix, classes=labels,
+                          title='Intent Confusion matrix',
+                          out=confmat_filename)
+    plt.show()
 
-        plot_intent_confidences(intent_results,
-                                intent_hist_filename)
+    plot_intent_confidences(intent_results,
+                            intent_hist_filename)
 
-        plt.show()
+    plt.show()
 
     predictions = [
         {
