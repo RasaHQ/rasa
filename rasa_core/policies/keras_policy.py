@@ -139,9 +139,8 @@ class KerasPolicy(Policy):
               **kwargs: Any
               ) -> None:
 
-        # set random seed
+        # set numpy random seed
         np.random.seed(self.random_seed)
-        tf.set_random_seed(self.random_seed)
 
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
@@ -151,6 +150,8 @@ class KerasPolicy(Policy):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
+            # set random seed in tf
+            tf.set_random_seed(self.random_seed)
             self.session = tf.Session()
             with self.session.as_default():
                 if self.model is None:

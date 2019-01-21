@@ -923,9 +923,8 @@ class EmbeddingPolicy(Policy):
 
         logger.debug('Started training embedding policy.')
 
-        # set random seed
+        # set numpy random seed
         np.random.seed(self.random_seed)
-        tf.set_random_seed(self.random_seed)
 
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers,
@@ -956,6 +955,9 @@ class EmbeddingPolicy(Policy):
         self.graph = tf.Graph()
 
         with self.graph.as_default():
+            # set random seed in tf
+            tf.set_random_seed(self.random_seed)
+
             dialogue_len = None  # use dynamic time for rnn
             # create placeholders
             self.a_in = tf.placeholder(
