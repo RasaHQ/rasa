@@ -197,15 +197,13 @@ def report_to_dict(report, f1, precision, accuracy):
         'f1': f1,
         'precision': precision,
         'accuracy': accuracy,
-        'intents': [],
-        'results': []
+        'intents': []
     }
 
     lines = list(filter(None, report.split('\n')))
     labels = lines[0].split()
 
-    report_dict['intents'] = report_row_to_dict(labels, lines[2:-5])
-    report_dict['results'] = report_row_to_dict(labels, lines[-3:])
+    report_dict['intents'] = report_row_to_dict(labels, lines[1:-1])
 
     return report_dict
 
@@ -269,49 +267,47 @@ def save_json(data, filename):
                         json.dumps(data, indent=4, ensure_ascii=False))
 
 
-def collect_nlu_successes(intent_results):  # pragma: no cover
+def collect_nlu_successes(intent_results, successes_filename):  # pragma: no cover
     """Log messages which result in successful predictions
     and save them to file"""
 
     # it could be interesting to include entity-successes later
     # therefore we start with an "intent_successes" key
-    intent_successes = [{"text": r.message,
-                         "intent": r.target,
-                         "intent_prediction": {
-                            "name": r.prediction,
-                            "confidence": r.confidence
-                         }}
-                        for r in intent_results if r.target == r.prediction]
+    successes = [{"text": r.message,
+                  "intent": r.target,
+                  "intent_prediction": {"name": r.prediction,
+                                        "confidence": r.confidence}}
+                 for r in intent_results if r.target == r.prediction]
 
-    if intent_successes:
-        return {'intent_successes': intent_successes}
+    if successes:
+        save_json(successes, successes_filename)
+        logger.info("Model prediction successes saved to {}."
+                    .format(successes_filename))
+        logger.debug("\n\nSuccessfully predicted the following"
+                     "intents: \n{}".format(successes))
     else:
-        return None
+        logger.info("Your model made no successful predictions")
 
 
-def collect_nlu_errors(intent_results):  # pragma: no cover
+def collect_nlu_errors(intent_results, errors_filename):  # pragma: no cover
     """Log messages which result in wrong predictions and save them to file"""
 
     # it could be interesting to include entity-errors later
     # therefore we start with a "intent_errors" key
-    intent_errors = [{"text": r.message,
-                      "intent": r.target,
-                      "intent_prediction": {
-                          "name": r.prediction,
-                          "confidence": r.confidence
-                      }}
-                     for r in intent_results if r.target != r.prediction]
+    errors = [{"text": r.message,
+               "intent": r.target,
+               "intent_prediction": {"name": r.prediction,
+                                     "confidence": r.confidence}}
+              for r in intent_results if r.target != r.prediction]
 
-    if intent_errors:
-        logger.info("There were some nlu intent classification errors. "
-                    "Use `--verbose` to show them in the log.")
+    if errors:
+        save_json(errors, errors_filename)
+        logger.info("Model prediction errors saved to {}."
+                    .format(errors_filename))
         logger.debug("\n\nThese intent examples could not be classified "
-                     "correctly \n{}".format(intent_errors))
-
-        return {'intent_errors': intent_errors}
+                     "correctly: \n{}".format(errors))
     else:
-        logger.info("No prediction errors were found. You are AWESOME!")
-        return None
+        logger.info("Your model made no errors")
 
 
 def plot_intent_confidences(intent_results, intent_hist_filename):
@@ -359,33 +355,17 @@ def evaluate_intents(intent_results,
     log_evaluation_table(report, precision, f1, accuracy)
 
     if report_filename:
-        report, precision, f1, accuracy = get_evaluation_metrics(targets,
-                                                                 predictions)
         save_json(report_to_dict(report, f1, precision, accuracy), report_filename)
         logger.info("Classification report saved to {}."
                     .format(report_filename))
 
     if successes_filename:
         # save classified samples to file for debugging
-        successes = collect_nlu_successes(intent_results)
-
-        if successes:
-            save_json(successes, successes_filename)
-            logger.info("Model prediction successes saved to {}."
-                        .format(successes_filename))
-        else:
-            logger.info("Your model made no successful predictions")
+        collect_nlu_successes(intent_results, successes_filename)
 
     if errors_filename:
         # log and save misclassified samples to file for debugging
-        errors = collect_nlu_errors(intent_results)
-
-        if errors:
-            save_json(errors, errors_filename)
-            logger.info("Model prediction errors saved to {}."
-                        .format(errors_filename))
-        else:
-            logger.info("Your model made no errors")
+        collect_nlu_errors(intent_results, errors_filename)
 
     if confmat_filename:
         from sklearn.metrics import confusion_matrix
