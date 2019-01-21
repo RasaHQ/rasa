@@ -41,6 +41,11 @@ Changed
   commandline interface (to avoid prompt toolkit 2 version issues)
 - if NLU classification returned ``None`` in interactive training,
   directly ask a user for a correct intent
+- trigger ``fallback`` on low nlu confidence
+  only if previous action is ``action_listen``
+- updated docs for interactive learning to inform users of the
+  ``--core`` flag
+- Change memoization policies confidence score to 1.1 to override ML policies
 
 Fixed
 -----

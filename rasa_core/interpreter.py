@@ -23,34 +23,29 @@ class NaturalLanguageInterpreter(object):
     def create(obj, endpoint=None):
         if isinstance(obj, NaturalLanguageInterpreter):
             return obj
-        if isinstance(obj, str):
-            name_parts = os.path.split(obj)
 
-            if len(name_parts) == 1:
-                if endpoint:
-                    # using the default project name
-                    return RasaNLUHttpInterpreter(name_parts[0],
-                                                  endpoint)
-                else:
-                    return RasaNLUInterpreter(model_directory=obj)
-            elif len(name_parts) == 2:
-                if endpoint:
-                    return RasaNLUHttpInterpreter(name_parts[1],
-                                                  endpoint,
-                                                  name_parts[0])
-                else:
-                    return RasaNLUInterpreter(model_directory=obj)
-            else:
-                if endpoint:
-                    raise Exception(
-                        "You have configured an endpoint to use for "
-                        "the NLU model. To use it, you need to "
-                        "specify the model to use with "
-                        "`--nlu project/model`.")
-                else:
-                    return RasaNLUInterpreter(model_directory=obj)
-        else:
+        if not isinstance(obj, str):
             return RegexInterpreter()  # default interpreter
+
+        if not endpoint:
+            return RasaNLUInterpreter(model_directory=obj)
+
+        name_parts = os.path.split(obj)
+
+        if len(name_parts) == 1:
+            # using the default project name
+            return RasaNLUHttpInterpreter(name_parts[0],
+                                          endpoint)
+        elif len(name_parts) == 2:
+            return RasaNLUHttpInterpreter(name_parts[1],
+                                          endpoint,
+                                          name_parts[0])
+        else:
+            raise Exception(
+                "You have configured an endpoint to use for "
+                "the NLU model. To use it, you need to "
+                "specify the model to use with "
+                "`--nlu project/model`.")
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):

@@ -3,6 +3,7 @@ import json
 import pytest
 from httpretty import httpretty
 
+import rasa_core
 from rasa_core.actions import action
 from rasa_core.actions.action import (
     ActionRestart, UtterAction,
@@ -106,6 +107,7 @@ def test_remote_action_runs(default_dispatcher_collecting, default_domain):
         'domain': default_domain.as_dict(),
         'next_action': 'my_action',
         'sender_id': 'default',
+        'version': rasa_core.__version__,
         'tracker': {
             'latest_message': {
                 'entities': [],
@@ -161,6 +163,7 @@ def test_remote_action_logs_events(default_dispatcher_collecting,
         'domain': default_domain.as_dict(),
         'next_action': 'my_action',
         'sender_id': 'default',
+        'version': rasa_core.__version__,
         'tracker': {
             'latest_message': {
                 'entities': [],
