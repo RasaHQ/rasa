@@ -54,7 +54,7 @@ def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def default_agent(default_domain):
     agent = Agent(default_domain,
                   policies=[MemoizationPolicy()],
@@ -65,7 +65,7 @@ async def default_agent(default_domain):
     return agent
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def default_agent_path(default_agent, tmpdir_factory):
     path = tmpdir_factory.mktemp("agent").strpath
     default_agent.persist(path)
@@ -132,17 +132,8 @@ def moodbot_metadata():
     return PolicyEnsemble.load_metadata(MOODBOT_MODEL_PATH)
 
 
-@pytest.fixture(scope="module")
-def http_app(request, core_server):
-    http_server = WSGIServer(application=core_server)
-    http_server.start()
-
-    request.addfinalizer(http_server.stop)
-    return http_server.url
-
-
 @pytest.fixture
-async def core_server(tmpdir_factory):
+async def prepared_agent(tmpdir_factory):
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent("data/test_domains/default.yml",
@@ -151,26 +142,27 @@ async def core_server(tmpdir_factory):
     training_data = await agent.load_data(DEFAULT_STORIES_FILE)
     agent.train(training_data)
     agent.persist(model_path)
+    return agent
 
-    loaded_agent = Agent.load(model_path,
-                              interpreter=RegexInterpreter())
 
-    app = server.create_app(loaded_agent)
+@pytest.fixture
+async def core_server(prepared_agent):
+    app = server.create_app(prepared_agent)
     channel.register([RestInput()],
                      app,
-                     agent.handle_message,
+                     prepared_agent.handle_message,
                      "/webhooks/")
     return app
 
 
 @pytest.fixture
-def core_server_secured(default_agent):
-    app = server.create_app(default_agent,
+async def core_server_secured(prepared_agent):
+    app = server.create_app(prepared_agent,
                             auth_token="rasa",
                             jwt_secret="core")
     channel.register([RestInput()],
                      app,
-                     default_agent.handle_message,
+                     prepared_agent.handle_message,
                      "/webhooks/")
     return app
 
