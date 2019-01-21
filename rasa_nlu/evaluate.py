@@ -15,6 +15,7 @@ import numpy as np
 
 from rasa_nlu import training_data, utils, config
 from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer, TrainingData
 
@@ -41,8 +42,8 @@ IntentEvaluationResult = namedtuple('IntentEvaluationResult',
 def create_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
-            description='evaluate a Rasa NLU pipeline with cross '
-                        'validation or on external data')
+        description='evaluate a Rasa NLU pipeline with cross '
+                    'validation or on external data')
 
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
@@ -204,7 +205,7 @@ def drop_intents_below_freq(td, cutoff=5):
     """Remove intent groups with less than cutoff instances."""
 
     logger.debug(
-            "Raw data intent examples: {}".format(len(td.intent_examples)))
+        "Raw data intent examples: {}".format(len(td.intent_examples)))
     keep_examples = [ex
                      for ex in td.intent_examples
                      if td.examples_per_intent[ex.get("intent")] >= cutoff]
@@ -369,10 +370,10 @@ def evaluate_entities(targets,
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(
-                merged_predictions, "O", "no_entity")
+            merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions)
+            merged_targets, merged_predictions)
         log_evaluation_table(report, precision, f1, accuracy)
         result[extractor] = {
             "report": report,
@@ -462,22 +463,30 @@ def pick_best_entity_fit(token, candidates):
         return candidates[best_fit]["entity"]
 
 
-def determine_token_labels(token, entities):
+def determine_token_labels(token, entities, extractors):
     """Determines the token label given entities that do not overlap.
-
-    :param token: a single token
-    :param entities: entities found by a single extractor
-    :return: entity type
+    Args:
+        token: a single token
+        entities: entities found by a single extractor
+        extractors: list of extractors
+    Returns:
+        entity type
     """
 
     if len(entities) == 0:
         return "O"
-
-    if do_entities_overlap(entities):
+    if not do_extractors_support_overlap(extractors) and \
+            do_entities_overlap(entities):
         raise ValueError("The possible entities should not overlap")
 
     candidates = find_intersecting_entites(token, entities)
     return pick_best_entity_fit(token, candidates)
+
+
+def do_extractors_support_overlap(extractors):
+    """Checks if extractors support overlapping entities
+    """
+    return extractors is None or CRFEntityExtractor.name not in extractors
 
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
@@ -501,9 +510,10 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
         entities_by_extractors[p["extractor"]].append(p)
     extractor_labels = defaultdict(list)
     for t in tokens:
-        true_token_labels.append(determine_token_labels(t, targets))
+        true_token_labels.append(
+                determine_token_labels(t, targets, None))
         for extractor, entities in entities_by_extractors.items():
-            extracted = determine_token_labels(t, entities)
+            extracted = determine_token_labels(t, entities, extractor)
             extractor_labels[extractor].append(extracted)
 
     return {"target_labels": true_token_labels,
@@ -569,10 +579,10 @@ def get_intent_predictions(targets, interpreter,
     for e, target in zip(test_data.training_examples, targets):
         res = interpreter.parse(e.text, only_output_properties=False)
         intent_results.append(IntentEvaluationResult(
-                target,
-                extract_intent(res),
-                extract_message(res),
-                extract_confidence(res)))
+            target,
+            extract_intent(res),
+            extract_message(res),
+            extract_confidence(res)))
 
     return intent_results
 
@@ -692,7 +702,7 @@ def run_evaluation(data_path, model,
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
         intent_results = get_intent_predictions(
-                intent_targets, interpreter, test_data)
+            intent_targets, interpreter, test_data)
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
@@ -894,7 +904,7 @@ def main():
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
         results, entity_results = run_cv_evaluation(
-                data, int(cmdline_args.folds), nlu_config)
+            data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
         if any(results):

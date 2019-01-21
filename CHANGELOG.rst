@@ -40,6 +40,7 @@ Fixed
 - NLU Server can now handle training data mit emojis in it
 - If the ``token_name`` is not given in the endpoint configuration, the default
   value is ``token`` instead of ``None`
+- Throws error only if ``ner_crf`` picks up overlapping entities. If the entity extractor supports overlapping entitis no error is thrown.
 - Updated CORS support for the server.
   Added the ``Access-Control-Allow-Headers`` and ``Content-Type`` headers for nlu server
 - parsing of emojis which are sent within jsons
