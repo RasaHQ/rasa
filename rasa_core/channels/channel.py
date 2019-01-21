@@ -37,7 +37,7 @@ class UserMessage(object):
             self.text = text
 
         if message_id is not None:
-            self.message_id = message_id
+            self.message_id = str(message_id)
         else:
             self.message_id = uuid.uuid4().hex
 
