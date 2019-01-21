@@ -50,8 +50,8 @@ class Policy(object):
         return {
             "tf_config": {
                 "device_count": {"CPU": cpu_count()},
-                # tell tf.Session to use CPU limit
-                # if you have more CPU, you can increase this value appropriately
+                # tell tf.Session to use CPU limit, if you have
+                # more CPU, you can increase this value appropriately
                 "inter_op_parallelism_threads": 0,
                 # the number of threads in the thread pool available
                 # for each process for blocking operation nodes set to 0
