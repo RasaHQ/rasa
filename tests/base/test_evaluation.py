@@ -14,12 +14,15 @@ from rasa_nlu.evaluate import (
     remove_empty_intent_examples, get_entity_extractors,
     get_duckling_dimensions, known_duckling_dimensions,
     find_component, remove_duckling_extractors, drop_intents_below_freq,
-    run_cv_evaluation, substitute_labels, IntentEvaluationResult)
+    run_cv_evaluation, substitute_labels, IntentEvaluationResult,
+    evaluate_intents)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
+from rasa_nlu import utils
+import json
 from rasa_nlu import training_data, config
 from tests import utilities
 
@@ -238,6 +241,34 @@ def test_run_cv_evaluation():
     assert len(entity_results.test['ner_crf']["Accuracy"]) == n_folds
     assert len(entity_results.test['ner_crf']["Precision"]) == n_folds
     assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
+
+
+def test_report_output(tmpdir):
+
+    path = tmpdir.strpath
+    report_filename = path + "report.json"
+    successes_filename = None
+    errors_filename = path + "errors.json"
+    confmat_filename = path + "conf.png"
+    intent_hist_filename = path + "hist.png"
+
+    intent_results = [
+        IntentEvaluationResult("", "restaurant_search",
+                               "I am hungry", 0.12345),
+        IntentEvaluationResult("greet", "greet",
+                               "hello", 0.98765)]
+
+    evaluate_intents(intent_results,
+                     report_filename,
+                     successes_filename,
+                     errors_filename,
+                     confmat_filename,
+                     intent_hist_filename)
+
+    report = json.loads(utils.read_file(report_filename))
+
+    assert len(report.keys()) == 4
+    assert report["intents"][0]["name"] == "greet"
 
 
 def test_empty_intent_removal():
