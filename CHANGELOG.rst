@@ -11,6 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Ability to save successful predictions and classification results to a JSON
+  file from ``rasa_nlu.evaluate``
 
 Changed
 -------
