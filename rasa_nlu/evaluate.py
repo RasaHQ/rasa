@@ -226,6 +226,7 @@ def report_row_to_dict(labels, lines):
 
     return array
 
+
 def remove_empty_intent_examples(intent_results):
     """Remove those examples without an intent."""
 
