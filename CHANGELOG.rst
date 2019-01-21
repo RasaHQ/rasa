@@ -31,6 +31,7 @@ Removed
 -------
 - ``/config`` endpoint
 - removed pinning of ``msgpack`` and unused package ``python-msgpack``
+- removed support for ``ner_duckling``. Now supports only ``ner_duckling_http``
 
 Fixed
 -----
