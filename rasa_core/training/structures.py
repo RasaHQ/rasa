@@ -102,7 +102,7 @@ class StoryStep(object):
         self.block_name = block_name
         # put a counter prefix to uuid to get reproducible sorting results
         global STEP_COUNT
-        self.id = str(STEP_COUNT) + "_" + uuid.uuid4().hex
+        self.id = "{}_{}".format(STEP_COUNT, uuid.uuid4().hex)
         STEP_COUNT += 1
 
         self.story_string_helper = StoryStringHelper()
