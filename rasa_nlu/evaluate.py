@@ -20,7 +20,7 @@ from rasa_nlu.model import Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
-duckling_extractors = {"ner_duckling", "ner_duckling_http"}
+duckling_extractors = {"ner_duckling_http"}
 
 known_duckling_dimensions = {"amount-of-money", "distance", "duration",
                              "email", "number",
