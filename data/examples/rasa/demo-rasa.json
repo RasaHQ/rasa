@@ -22,12 +22,12 @@
     ],
     "common_examples": [
       {
-        "text": "hey", 
+        "text": "hey",
         "intent": "greet", 
         "entities": []
       }, 
       {
-        "text": "howdy", 
+        "text": "howdy",
         "intent": "greet", 
         "entities": []
       }, 

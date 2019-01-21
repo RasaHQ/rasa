@@ -16,12 +16,49 @@ from typing import Text
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.extractors.duckling_extractor import (
-    filter_irrelevant_matches, convert_duckling_format_to_rasa)
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
+
+
+def extract_value(match):
+    if match["value"].get("type") == "interval":
+        value = {"to": match["value"].get("to", {}).get("value"),
+                 "from": match["value"].get("from", {}).get("value")}
+    else:
+        value = match["value"].get("value")
+
+    return value
+
+
+def filter_irrelevant_matches(matches, requested_dimensions):
+    """Only return dimensions the user configured"""
+
+    if requested_dimensions:
+        return [match
+                for match in matches
+                if match["dim"] in requested_dimensions]
+    else:
+        return matches
+
+
+def convert_duckling_format_to_rasa(matches):
+    extracted = []
+
+    for match in matches:
+        value = extract_value(match)
+        entity = {"start": match["start"],
+                  "end": match["end"],
+                  "text": match.get("body", match.get("text", None)),
+                  "value": value,
+                  "confidence": 1.0,
+                  "additional_info": match["value"],
+                  "entity": match["dim"]}
+
+        extracted.append(entity)
+
+    return extracted
 
 
 class DucklingHTTPExtractor(EntityExtractor):

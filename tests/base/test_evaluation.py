@@ -19,6 +19,7 @@ from rasa_nlu.evaluate import (
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
+from rasa_nlu.evaluate import determine_token_labels
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu import utils
@@ -31,12 +32,12 @@ logging.basicConfig(level="DEBUG")
 
 @pytest.fixture(scope="session")
 def duckling_interpreter(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
+    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
     return utilities.interpreter_for(
-            component_builder,
-            data="./data/examples/rasa/demo-rasa.json",
-            path=tmpdir_factory.mktemp("projects").strpath,
-            config=conf)
+        component_builder,
+        data="./data/examples/rasa/demo-rasa.json",
+        path=tmpdir_factory.mktemp("projects").strpath,
+        config=conf)
 
 
 # Chinese Example
@@ -168,6 +169,23 @@ def test_entity_overlap():
     assert not do_entities_overlap(EN_targets)
 
 
+def test_determine_token_labels_throws_error():
+    with pytest.raises(ValueError):
+        determine_token_labels(CH_correct_segmentation,
+                               [CH_correct_entity,
+                                CH_wrong_entity], ["ner_crf"])
+
+
+def test_determine_token_labels_no_extractors():
+    determine_token_labels(CH_correct_segmentation[0],
+                           [CH_correct_entity, CH_wrong_entity], None)
+
+
+def test_determine_token_labels_with_extractors():
+    determine_token_labels(CH_correct_segmentation[0],
+                           [CH_correct_entity, CH_wrong_entity], ["A", "B"])
+
+
 def test_label_merging():
     aligned_predictions = [
         {"target_labels": ["O", "O"], "extractor_labels":
@@ -196,7 +214,7 @@ def test_duckling_patching():
             "end": 64,
             "value": "tonight",
             "entity": "Time",
-            "extractor": "ner_duckling"
+            "extractor": "ner_duckling_http"
 
         }
     ]]
@@ -291,6 +309,7 @@ def test_evaluate_entities():
     mock_extractors = ["A", "B"]
     result = align_entity_predictions(EN_targets, EN_predicted,
                                       EN_tokens, mock_extractors)
+
     assert result == {
         "target_labels": ["O", "O", "O", "O", "O", "O", "O", "O", "food",
                           "location", "location", "datetime"],
@@ -304,23 +323,23 @@ def test_evaluate_entities():
 
 
 def test_get_entity_extractors(duckling_interpreter):
-    assert get_entity_extractors(duckling_interpreter) == {"ner_duckling"}
+    assert get_entity_extractors(duckling_interpreter) == {"ner_duckling_http"}
 
 
 def test_get_duckling_dimensions(duckling_interpreter):
-    dims = get_duckling_dimensions(duckling_interpreter, "ner_duckling")
+    dims = get_duckling_dimensions(duckling_interpreter, "ner_duckling_http")
     assert set(dims) == known_duckling_dimensions
 
 
 def test_find_component(duckling_interpreter):
-    name = find_component(duckling_interpreter, "ner_duckling").name
-    assert name == "ner_duckling"
+    name = find_component(duckling_interpreter, "ner_duckling_http").name
+    assert name == "ner_duckling_http"
 
 
 def test_remove_duckling_extractors(duckling_interpreter):
     target = set([])
 
-    patched = remove_duckling_extractors({"ner_duckling"})
+    patched = remove_duckling_extractors({"ner_duckling_http"})
     assert patched == target
 
 

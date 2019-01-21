@@ -17,12 +17,17 @@ Download the installer and select VC++ Build tools in the list.
 
 Setting up Rasa NLU
 ~~~~~~~~~~~~~~~~~~~
-The recommended way to install Rasa NLU is using pip:
+
+Stable (Recommended)
+--------------------
+The recommended way to install Rasa NLU is using pip which will install the latest stable version of Rasa NLU:
 
 .. copyable::
 
     pip install rasa_nlu
 
+Latest (Most recent github)
+---------------------------	
 If you want to use the bleeding edge version you can get it from github:
 
 .. code-block:: bash

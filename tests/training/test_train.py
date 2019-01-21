@@ -41,7 +41,6 @@ def pipelines_for_tests():
                                "ner_mitie",
                                "ner_crf",
                                "ner_spacy",
-                               "ner_duckling",
                                "ner_duckling_http",
                                "ner_synonyms",
                                "intent_classifier_keyword",
@@ -84,6 +83,32 @@ def test_train_model(pipeline_template, component_builder, tmpdir):
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
+
+
+@utilities.slowtest
+def test_random_seed(component_builder, tmpdir):
+    '''test if train result is the same for two runs of tf embedding'''
+
+    _config = utilities.base_test_conf("tensorflow_embedding")
+    # set fixed random seed to 1
+    _config.set_component_attr("intent_classifier_tensorflow_embedding", random_seed=1)
+    # first run
+    (trained_a, _, persisted_path_a) = train.do_train(
+            _config,
+            path=tmpdir.strpath + "_a",
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder)
+    # second run
+    (trained_b, _, persisted_path_b) = train.do_train(
+            _config,
+            path=tmpdir.strpath + "_b",
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder)
+    loaded_a = Interpreter.load(persisted_path_a, component_builder)
+    loaded_b = Interpreter.load(persisted_path_b, component_builder)
+    result_a = loaded_a.parse("hello")["intent"]["confidence"]
+    result_b = loaded_b.parse("hello")["intent"]["confidence"]
+    assert result_a == result_b
 
 
 @utilities.slowtest

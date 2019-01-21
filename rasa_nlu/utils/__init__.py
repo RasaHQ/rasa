@@ -19,7 +19,7 @@ from typing import Text
 import requests
 import simplejson
 import six
-import yaml
+import ruamel.yaml as yaml
 from builtins import str
 from future.utils import PY3
 from requests.auth import HTTPBasicAuth
@@ -218,25 +218,68 @@ def read_json_file(filename):
 
 def fix_yaml_loader():
     """Ensure that any string read by yaml is represented as unicode."""
-    from yaml import Loader, SafeLoader
 
     def construct_yaml_str(self, node):
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
 
-    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
+                                    construct_yaml_str)
+
+
+def replace_environment_variables():
+    """Enable yaml loader to process the environment variables in the yaml."""
+    import re
+    import os
+
+    env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
+    yaml.add_implicit_resolver('!env_var', env_var_pattern)
+
+    def env_var_constructor(loader, node):
+        """Process environment variables found in the YAML."""
+        value = loader.construct_scalar(node)
+        prefix, env_var, postfix = env_var_pattern.match(value).groups()
+        return prefix + os.environ[env_var] + postfix
+
+    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
 def read_yaml(content):
+    """Parses yaml from a text.
+
+     Args:
+        content: A text containing yaml content.
+    """
     fix_yaml_loader()
-    return yaml.load(content)
+    replace_environment_variables()
+
+    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser.version = "1.2"
+    yaml_parser.unicode_supplementary = True
+
+    try:
+        return yaml_parser.load(content)
+    except yaml.scanner.ScannerError as _:
+        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
+        # unicode sequences that form surrogate pairs. Try converting the input
+        # to a parsable format based on
+        # https://stackoverflow.com/a/52187065/3429596.
+        content = (content.encode('utf-8')
+                   .decode('raw_unicode_escape')
+                   .encode("utf-16", 'surrogatepass')
+                   .decode('utf-16'))
+        return yaml_parser.load(content)
 
 
 def read_yaml_file(filename):
-    fix_yaml_loader()
-    return yaml.load(read_file(filename, "utf-8"))
+    """Parses a yaml file.
+
+     Args:
+        filename: The path to the file which should be read.
+    """
+    return read_yaml(read_file(filename, "utf-8"))
 
 
 def build_entity(start, end, value, entity_type, **kwargs):
@@ -340,8 +383,9 @@ def create_temporary_file(data, suffix="", mode="w+"):
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
     if PY3:
+        encoding = None if 'b' in mode else 'utf-8'
         f = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
-                                        delete=False)
+                                        delete=False, encoding=encoding)
         f.write(data)
     else:
         f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
@@ -474,12 +518,8 @@ class EndpointConfig(object):
     @classmethod
     def from_dict(cls, data):
         return EndpointConfig(
-                data.get("url"),
-                data.get("params"),
-                data.get("headers"),
-                data.get("basic_auth"),
-                data.get("token"),
-                data.get("token_name"))
+                data.pop("url"),
+                **data)
 
     def __eq__(self, other):
         if isinstance(self, type(other)):
