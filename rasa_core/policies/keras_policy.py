@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import tensorflow as tf
+import numpy as np
 import warnings
 from typing import Any, List, Dict, Text, Optional, Tuple
 
@@ -27,7 +28,6 @@ class KerasPolicy(Policy):
         "batch_size": 32,
         "validation_split": 0.1,
         # set random seed to any int to get reproducible results
-        # try to change to another int if you are not getting good results
         "random_seed": None
     }
 
@@ -139,19 +139,18 @@ class KerasPolicy(Policy):
               **kwargs: Any
               ) -> None:
 
+        # set random seed
+        np.random.seed(self.random_seed)
+        tf.set_random_seed(self.random_seed)
+
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
                                                     **kwargs)
-        # set random seed for shuffle
-        import numpy as np
-        np.random.seed(self.random_seed)
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            # set random seed in tf
-            tf.set_random_seed(self.random_seed)
             self.session = tf.Session()
             with self.session.as_default():
                 if self.model is None:
