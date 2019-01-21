@@ -90,10 +90,12 @@ def test_training_script_with_max_history_set(loop, tmpdir):
 
 
 def test_training_script_with_restart_stories(loop, tmpdir):
-    loop.run_until_complete(train_dialogue_model(DEFAULT_DOMAIN_PATH,
-                                                 "data/test_stories/stories_restart.md",
-                                                 tmpdir.strpath,
-                                                 interpreter=RegexInterpreter(),
-                                                 policy_config='data/test_config/max_hist_config.yml',
-                                                 kwargs={}))
+    loop.run_until_complete(
+        train_dialogue_model(DEFAULT_DOMAIN_PATH,
+                             "data/test_stories/stories_restart.md",
+                             tmpdir.strpath,
+                             interpreter=RegexInterpreter(),
+                             policy_config='data/test_config/max_hist_config'
+                                           '.yml',
+                             kwargs={}))
     assert True

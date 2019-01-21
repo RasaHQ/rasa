@@ -185,9 +185,10 @@ async def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "remove_duplicates",
                                                  "debug_plots"})
 
-    training_data = await agent.load_data(stories_file,
-                                          exclusion_percentage=exclusion_percentage,
-                                          **data_load_args)
+    training_data = await agent.load_data(
+        stories_file,
+        exclusion_percentage=exclusion_percentage,
+        **data_load_args)
     agent.train(training_data, **kwargs)
     agent.persist(output_path, dump_stories)
 

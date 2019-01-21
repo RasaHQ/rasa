@@ -4,7 +4,6 @@ import json
 import logging
 import numpy as np
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import UnknownTimeZoneError
 from types import LambdaType
 from typing import Optional, List, Dict, Any, Tuple
@@ -210,8 +209,8 @@ class MessageProcessor(object):
             return None
 
         if (reminder_event.kill_on_user_message and
-            self._has_message_after_reminder(tracker, reminder_event) or
-            not self._is_reminder_still_valid(tracker, reminder_event)):
+                self._has_message_after_reminder(tracker, reminder_event) or
+                not self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
