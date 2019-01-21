@@ -29,7 +29,7 @@ logging.basicConfig(level="DEBUG")
 
 @pytest.fixture(scope="session")
 def duckling_interpreter(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
+    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
     return utilities.interpreter_for(
         component_builder,
         data="./data/examples/rasa/demo-rasa.json",
@@ -211,7 +211,7 @@ def test_duckling_patching():
             "end": 64,
             "value": "tonight",
             "entity": "Time",
-            "extractor": "ner_duckling"
+            "extractor": "ner_duckling_http"
 
         }
     ]]
@@ -292,23 +292,23 @@ def test_evaluate_entities():
 
 
 def test_get_entity_extractors(duckling_interpreter):
-    assert get_entity_extractors(duckling_interpreter) == {"ner_duckling"}
+    assert get_entity_extractors(duckling_interpreter) == {"ner_duckling_http"}
 
 
 def test_get_duckling_dimensions(duckling_interpreter):
-    dims = get_duckling_dimensions(duckling_interpreter, "ner_duckling")
+    dims = get_duckling_dimensions(duckling_interpreter, "ner_duckling_http")
     assert set(dims) == known_duckling_dimensions
 
 
 def test_find_component(duckling_interpreter):
-    name = find_component(duckling_interpreter, "ner_duckling").name
-    assert name == "ner_duckling"
+    name = find_component(duckling_interpreter, "ner_duckling_http").name
+    assert name == "ner_duckling_http"
 
 
 def test_remove_duckling_extractors(duckling_interpreter):
     target = set([])
 
-    patched = remove_duckling_extractors({"ner_duckling"})
+    patched = remove_duckling_extractors({"ner_duckling_http"})
     assert patched == target
 
 

@@ -22,7 +22,6 @@ from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
 from rasa_nlu.classifiers.embedding_intent_classifier import \
     EmbeddingIntentClassifier
-from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -50,7 +49,7 @@ if typing.TYPE_CHECKING:
 # its class name should be listed here.
 component_classes = [
     SpacyNLP, MitieNLP,
-    SpacyEntityExtractor, MitieEntityExtractor, DucklingExtractor,
+    SpacyEntityExtractor, MitieEntityExtractor,
     CRFEntityExtractor, DucklingHTTPExtractor,
     EntitySynonymMapper,
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
