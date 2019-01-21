@@ -33,12 +33,10 @@ class Policy(object):
     @staticmethod
     def _load_tf_config(config: Dict[Text, Any]) -> None:
         """Prepare tf.ConfigProto for training"""
-        return tf.ConfigProto(
-            device_count={'CPU': config['device_count']},
-            inter_op_parallelism_threads=config['inter_op_threads'],
-            intra_op_parallelism_threads=config['intra_op_threads'],
-            gpu_options={'allow_growth': config['allow_growth']}
-        )
+        if config.get("tf_config") is not None:
+            return tf.ConfigProto(**config["tf_config"])
+        else:
+            return None
 
     def __init__(self, featurizer: Optional[TrackerFeaturizer] = None) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
@@ -50,19 +48,24 @@ class Policy(object):
     @property
     def tf_defaults(self):
         return {
-            "device_count": cpu_count(),  # tell tf.Session to use CPU limit
-            # if you have more CPU, you can increase this value appropriately
-            "inter_op_threads": 0,  # the number of threads in the thread pool
-            # available for each process for blocking operation nodes
-            # set to 0 to allow the system to select the appropriate value.
-            "intra_op_threads": 0,  # tells the degree of thread
-            # parallelism of the tf.Session operation.
-            # the smaller the value, the less reuse the thread will have
-            # and the more likely it will use more CPU cores.
-            # if the value is 0,
-            # tensorflow will automatically select an appropriate value.
-            "allow_growth": True  # if set True, will try to allocate
-            # as much GPU memory as possible to support running
+            "tf_config": {
+                "device_count": {"CPU": cpu_count()},
+                # tell tf.Session to use CPU limit
+                # if you have more CPU, you can increase this value appropriately
+                "inter_op_parallelism_threads": 0,
+                # the number of threads in the thread pool available
+                # for each process for blocking operation nodes set to 0
+                # to allow the system to select the appropriate value.
+                "intra_op_parallelism_threads": 0,  # tells the degree of thread
+                # parallelism of the tf.Session operation.
+                # the smaller the value, the less reuse the thread will have
+                # and the more likely it will use more CPU cores.
+                # if the value is 0,
+                # tensorflow will automatically select an appropriate value.
+                "gpu_options": {"allow_growth": True}
+                # if set True, will try to allocate
+                # as much GPU memory as possible to support running
+            }
         }
 
     @staticmethod
