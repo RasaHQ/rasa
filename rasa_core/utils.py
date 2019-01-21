@@ -1,29 +1,27 @@
 # -*- coding: utf-8 -*-
-import aiohttp
 import errno
+import sys
+
+import aiohttp
+import argparse
+import asyncio
 import inspect
 import io
 import json
 import logging
 import os
 import re
-import sys
 import tempfile
-import argparse
+from aiohttp import InvalidURL
 from hashlib import sha1
+from io import StringIO
+from numpy import all, array
 from random import Random
 from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
-
-import requests
-from numpy import all, array
-from requests.auth import HTTPBasicAuth
-from requests.exceptions import InvalidURL, HTTPError
-from io import StringIO
-from urllib.parse import unquote
 
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_nlu import utils as nlu_utils
@@ -573,7 +571,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
                 break
 
 
-def download_file_from_url(url: Text) -> Text:
+async def download_file_from_url(url: Text) -> Text:
     """Download a story file from a url and persists it into a temp file.
 
     Returns the file path of the temp file that contains the
@@ -582,10 +580,10 @@ def download_file_from_url(url: Text) -> Text:
     if not nlu_utils.is_url(url):
         raise InvalidURL(url)
 
-    response = requests.get(url)
-    response.raise_for_status()
-    filename = nlu_utils.create_temporary_file(response.content,
-                                               mode="w+b")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, raise_for_status=True) as resp:
+            filename = nlu_utils.create_temporary_file(await resp.read(),
+                                                       mode="w+b")
 
     return filename
 
@@ -635,7 +633,7 @@ class AvailableEndpoints(object):
         self.event_broker = event_broker
 
 
-class ClientResponseError(aiohttp.client_exceptions.ClientResponseError):
+class ClientResponseError(aiohttp.ClientResponseError):
     def __init__(self, error, text):
         super(ClientResponseError, self).__init__(
             error.request_info, error.history,
@@ -656,9 +654,14 @@ class EndpointConfig(object):
         self.token_name = token_name
         self.store_type = kwargs.pop('store_type', None)
         self.kwargs = kwargs
-        self.session = self._create_session()
+        self._session = None
 
-    def _create_session(self):
+    async def session(self):
+        if not self._session:
+            self._session = await self._create_session()
+        return self._session
+
+    async def _create_session(self):
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(self.basic_auth["username"],
@@ -673,8 +676,8 @@ class EndpointConfig(object):
         )
 
     def __del__(self):
-        if self.session and not self.session.closed:
-            self.session.close()
+        if self._session and not self._session.closed:
+            self._session.close()
 
     def combine_parameters(self, kwargs=None):
         # construct GET parameters
@@ -710,8 +713,8 @@ class EndpointConfig(object):
             del kwargs["headers"]
 
         url = concat_url(self.url, subpath)
-
-        async with self.session.request(
+        session = await self.session()
+        async with session.request(
                 method,
                 url,
                 headers=headers,
@@ -720,7 +723,7 @@ class EndpointConfig(object):
             try:
                 resp.raise_for_status()
                 return await resp.json()
-            except aiohttp.client_exceptions.ClientResponseError as e:
+            except aiohttp.ClientResponseError as e:
                 raise ClientResponseError(e, await resp.text())
 
     @classmethod
@@ -740,6 +743,19 @@ class EndpointConfig(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+def run_in_asyncio_thread(f, **kwargs):
+    def start_loop(loop):
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
+    new_loop = asyncio.new_event_loop()
+    t = Thread(target=start_loop, args=(new_loop,))
+    t.start()
+    asyncio.run_coroutine_threadsafe(
+        f(**kwargs),
+        new_loop)
 
 
 # noinspection PyProtectedMember

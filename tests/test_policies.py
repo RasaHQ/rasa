@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import patch
 
 import numpy as np
@@ -29,12 +30,11 @@ from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from tests.utilities import read_dialogue_file, user_uttered, get_tracker
 
 
-def train_trackers(domain):
-    trackers = training.load_data(
+async def train_trackers(domain):
+    return await training.load_data(
         DEFAULT_STORIES_FILE,
         domain
     )
-    return trackers
 
 
 # We are going to use class style testing here since unfortunately pytest
@@ -61,17 +61,18 @@ class PolicyTestCollection(object):
         return featurizer
 
     @pytest.fixture(scope="module")
-    def trained_policy(self, featurizer):
+    async def trained_policy(self, featurizer):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
-        training_trackers = train_trackers(default_domain)
+        training_trackers = await train_trackers(default_domain)
         policy.train(training_trackers, default_domain)
         return policy
 
-    def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
+    def test_persist_and_load(self, loop, trained_policy, default_domain,
+                              tmpdir):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        trackers = train_trackers(default_domain)
+        trackers = loop.run_until_complete(train_trackers(default_domain))
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
@@ -124,7 +125,6 @@ class TestFallbackPolicy(PolicyTestCollection):
                                  nlu_confidence,
                                  last_action_name,
                                  should_nlu_fallback):
-
         assert trained_policy.should_nlu_fallback(
             nlu_confidence, last_action_name) is should_nlu_fallback
 
@@ -139,8 +139,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
         p = MemoizationPolicy(max_history=max_history)
         return p
 
-    def test_memorise(self, trained_policy, default_domain):
-        trackers = train_trackers(default_domain)
+    def test_memorise(self, loop, trained_policy, default_domain):
+        trackers = loop.run_until_complete(train_trackers(default_domain))
         trained_policy.train(trackers, default_domain)
 
         (all_states, all_actions) = \
@@ -204,9 +204,9 @@ class TestSklearnPolicy(PolicyTestCollection):
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                     default_domain.slots)
 
-    @pytest.fixture(scope='module')
-    def trackers(self, default_domain):
-        return train_trackers(default_domain)
+    @pytest.fixture
+    async def trackers(self, default_domain):
+        return await train_trackers(default_domain)
 
     def test_cv_none_does_not_trigger_search(self,
                                              mock_search,
@@ -310,10 +310,10 @@ class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
         return p
 
     @pytest.fixture(scope="module")
-    def trained_policy(self, featurizer):
+    async def trained_policy(self, featurizer):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
-        training_trackers = train_trackers(default_domain)
+        training_trackers = await train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
                      attn_before_rnn=False,
                      attn_after_rnn=False)
@@ -330,10 +330,10 @@ class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
         return p
 
     @pytest.fixture(scope="module")
-    def trained_policy(self, featurizer):
+    async def trained_policy(self, featurizer):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
-        training_trackers = train_trackers(default_domain)
+        training_trackers = await train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
                      attn_before_rnn=True,
                      attn_after_rnn=False)
@@ -350,10 +350,10 @@ class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
         return p
 
     @pytest.fixture(scope="module")
-    def trained_policy(self, featurizer):
+    async def trained_policy(self, featurizer):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
-        training_trackers = train_trackers(default_domain)
+        training_trackers = await train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
                      attn_before_rnn=False,
                      attn_after_rnn=True)
@@ -370,10 +370,10 @@ class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
         return p
 
     @pytest.fixture(scope="module")
-    def trained_policy(self, featurizer):
+    async def trained_policy(self, featurizer):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer)
-        training_trackers = train_trackers(default_domain)
+        training_trackers = await train_trackers(default_domain)
         policy.train(training_trackers, default_domain,
                      attn_before_rnn=True,
                      attn_after_rnn=True)
@@ -387,10 +387,11 @@ class TestFormPolicy(PolicyTestCollection):
         p = FormPolicy()
         return p
 
-    def test_memorise(self, trained_policy, default_domain):
+    def test_memorise(self, loop, trained_policy, default_domain):
         domain = Domain.load('data/test_domains/form.yml')
-        trackers = training.load_data('data/test_stories/stories_form.md',
-                                      domain)
+        trackers = loop.run_until_complete(
+            training.load_data('data/test_stories/stories_form.md',
+                               domain))
         trained_policy.train(trackers, domain)
 
         (all_states, all_actions) = \

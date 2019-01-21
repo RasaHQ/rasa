@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 
 from policy import RestaurantPolicy
@@ -14,15 +15,15 @@ class RestaurantAPI(object):
         return "papi's pizza place"
 
 
-def train_dialogue(domain_file="restaurant_domain.yml",
-                   model_path="models/dialogue",
-                   training_data_file="data/babi_stories.md"):
+async def train_dialogue(domain_file="restaurant_domain.yml",
+                         model_path="models/dialogue",
+                         training_data_file="data/babi_stories.md"):
     agent = Agent(domain_file,
                   policies=[MemoizationPolicy(max_history=3),
                             RestaurantPolicy(batch_size=100, epochs=400,
                                              validation_split=0.2)])
 
-    training_data = agent.load_data(training_data_file)
+    training_data = await agent.load_data(training_data_file)
     agent.train(
         training_data
     )
@@ -57,8 +58,10 @@ if __name__ == '__main__':
         help="what the bot should do - e.g. run or train?")
     task = parser.parse_args().task
 
+    loop = asyncio.get_event_loop()
+
     # decide what to do based on first parameter of the script
     if task == "train-nlu":
         train_nlu()
     elif task == "train-dialogue":
-        train_dialogue()
+        loop.run_until_complete(train_dialogue())

@@ -1,5 +1,4 @@
 import datetime
-import pytest
 import uuid
 
 from rasa_core.channels import CollectingOutputChannel
@@ -19,9 +18,9 @@ def test_message_processor(loop, default_processor):
             'text': 'hey there Core!'} == out.latest_output()
 
 
-def test_parsing(default_processor):
+def test_parsing(loop, default_processor):
     message = Message('/greet{"name": "boy"}')
-    parsed = default_processor._parse_message(message)
+    parsed = loop.run_until_complete(default_processor._parse_message(message))
     assert parsed["intent"]["name"] == 'greet'
     assert parsed["entities"][0]["entity"] == 'name'
 

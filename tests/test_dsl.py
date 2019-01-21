@@ -14,14 +14,15 @@ from rasa_core.featurizers import (
     BinarySingleStateFeaturizer)
 
 
-def test_can_read_test_story(default_domain):
-    trackers = training.load_data(
-        "data/test_stories/stories.md",
-        default_domain,
-        use_story_concatenation=False,
-        tracker_limit=1000,
-        remove_duplicates=False
-    )
+def test_can_read_test_story(loop, default_domain):
+    trackers = loop.run_until_complete(
+        training.load_data(
+            "data/test_stories/stories.md",
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+        ))
     assert len(trackers) == 7
     # this should be the story simple_story_with_only_end -> show_it_all
     # the generated stories are in a non stable order - therefore we need to
@@ -41,39 +42,43 @@ def test_can_read_test_story(default_domain):
     assert tracker.events[4] == ActionExecuted("action_listen")
 
 
-def test_can_read_test_story_with_checkpoint_after_or(default_domain):
-    trackers = training.load_data(
-        "data/test_stories/stories_checkpoint_after_or.md",
-        default_domain,
-        use_story_concatenation=False,
-        tracker_limit=1000,
-        remove_duplicates=False
-    )
+def test_can_read_test_story_with_checkpoint_after_or(loop, default_domain):
+    trackers = loop.run_until_complete(
+        training.load_data(
+            "data/test_stories/stories_checkpoint_after_or.md",
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+        ))
     # there should be only 2 trackers
     assert len(trackers) == 2
 
 
-def test_persist_and_read_test_story_graph(tmpdir, default_domain):
-    graph = training.extract_story_graph("data/test_stories/stories.md",
-                                         default_domain)
+def test_persist_and_read_test_story_graph(loop, tmpdir, default_domain):
+    graph = loop.run_until_complete(
+        training.extract_story_graph("data/test_stories/stories.md",
+                                     default_domain))
     out_path = tmpdir.join("persisted_story.md")
     with io.open(out_path.strpath, "w", encoding="utf-8") as f:
         f.write(graph.as_story_string())
 
-    recovered_trackers = training.load_data(
-        out_path.strpath,
-        default_domain,
-        use_story_concatenation=False,
-        tracker_limit=1000,
-        remove_duplicates=False
-    )
-    existing_trackers = training.load_data(
-        "data/test_stories/stories.md",
-        default_domain,
-        use_story_concatenation=False,
-        tracker_limit=1000,
-        remove_duplicates=False
-    )
+    recovered_trackers = loop.run_until_complete(
+        training.load_data(
+            out_path.strpath,
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+        ))
+    existing_trackers = loop.run_until_complete(
+        training.load_data(
+            "data/test_stories/stories.md",
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+        ))
 
     existing_stories = {t.export_stories() for t in existing_trackers}
     for t in recovered_trackers:
@@ -82,26 +87,29 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
         existing_stories.discard(story_str)
 
 
-def test_persist_and_read_test_story(tmpdir, default_domain):
-    graph = training.extract_story_graph("data/test_stories/stories.md",
-                                         default_domain)
+def test_persist_and_read_test_story(loop, tmpdir, default_domain):
+    graph = loop.run_until_complete(
+        training.extract_story_graph("data/test_stories/stories.md",
+                                     default_domain))
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)
 
-    recovered_trackers = training.load_data(
-        out_path.strpath,
-        default_domain,
-        use_story_concatenation=False,
-        tracker_limit=1000,
-        remove_duplicates=False
-    )
-    existing_trackers = training.load_data(
-        "data/test_stories/stories.md",
-        default_domain,
-        use_story_concatenation=False,
-        tracker_limit=1000,
-        remove_duplicates=False
-    )
+    recovered_trackers = loop.run_until_complete(
+        training.load_data(
+            out_path.strpath,
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+        ))
+    existing_trackers = loop.run_until_complete(
+        training.load_data(
+            "data/test_stories/stories.md",
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+        ))
     existing_stories = {t.export_stories() for t in existing_trackers}
     for t in recovered_trackers:
         story_str = t.export_stories()
@@ -109,9 +117,9 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
         existing_stories.discard(story_str)
 
 
-def test_read_story_file_with_cycles(tmpdir, default_domain):
-    graph = training.extract_story_graph(
-        "data/test_stories/stories_with_cycle.md", default_domain)
+def test_read_story_file_with_cycles(loop, tmpdir, default_domain):
+    graph = loop.run_until_complete(training.extract_story_graph(
+        "data/test_stories/stories_with_cycle.md", default_domain))
 
     assert len(graph.story_steps) == 5
 
@@ -125,14 +133,14 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
-def test_generate_training_data_with_cycles(tmpdir, default_domain):
+def test_generate_training_data_with_cycles(loop, tmpdir, default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                              max_history=4)
-    training_trackers = training.load_data(
+    training_trackers = loop.run_until_complete(training.load_data(
         "data/test_stories/stories_with_cycle.md",
         default_domain,
         augmentation_factor=0
-    )
+    ))
 
     training_data = featurizer.featurize_trackers(training_trackers,
                                                   default_domain)
@@ -147,21 +155,22 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     assert Counter(y) == {0: 6, 1: 2, 7: num_threes, 8: 1, 9: 3}
 
 
-def test_generate_training_data_with_unused_checkpoints(tmpdir,
+def test_generate_training_data_with_unused_checkpoints(loop,
+                                                        tmpdir,
                                                         default_domain):
-    training_trackers = training.load_data(
+    training_trackers = loop.run_until_complete(training.load_data(
         "data/test_stories/stories_unused_checkpoints.md",
         default_domain,
-    )
+    ))
     # there are 3 training stories:
     #   2 with unused end checkpoints -> training_trackers
     #   1 with unused start checkpoints -> ignored
     assert len(training_trackers) == 2
 
 
-def test_visualize_training_data_graph(tmpdir, default_domain):
-    graph = training.extract_story_graph(
-        "data/test_stories/stories_with_cycle.md", default_domain)
+def test_visualize_training_data_graph(loop, tmpdir, default_domain):
+    graph = loop.run_until_complete(training.extract_story_graph(
+        "data/test_stories/stories_with_cycle.md", default_domain))
 
     graph = graph.with_cycles_removed()
 
@@ -182,16 +191,16 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
         assert len(G.edges()) == 16
 
 
-def test_load_multi_file_training_data(default_domain):
+def test_load_multi_file_training_data(loop, default_domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=2)
-    trackers = training.load_data(
+    trackers = loop.run_until_complete(training.load_data(
         "data/test_stories/stories.md",
         default_domain,
         augmentation_factor=0
-    )
+    ))
     (tr_as_sts, tr_as_acts) = featurizer.training_states_and_actions(
         trackers, default_domain)
     hashed = []
@@ -204,11 +213,11 @@ def test_load_multi_file_training_data(default_domain):
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=2)
-    trackers_mul = training.load_data(
+    trackers_mul = loop.run_until_complete(training.load_data(
         "data/test_multifile_stories",
         default_domain,
         augmentation_factor=0
-    )
+    ))
     (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_actions(
         trackers_mul, default_domain)
     hashed_mul = []
@@ -225,7 +234,7 @@ def test_load_multi_file_training_data(default_domain):
     assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
 
 
-def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
+def test_load_training_data_handles_hidden_files(loop, tmpdir, default_domain):
     # create a hidden file
 
     open(os.path.join(tmpdir.strpath, ".hidden"), 'a').close()
@@ -235,10 +244,10 @@ def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
 
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                              max_history=2)
-    trackers = training.load_data(
+    trackers = loop.run_until_complete(training.load_data(
         tmpdir.strpath,
         default_domain
-    )
+    ))
     data = featurizer.featurize_trackers(trackers,
                                          default_domain)
 

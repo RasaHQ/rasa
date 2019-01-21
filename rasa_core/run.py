@@ -136,10 +136,16 @@ def start_cmdline_io(server_url, on_finish, **kwargs):
     kwargs["server_url"] = server_url
     kwargs["on_finish"] = on_finish
 
-    p = Thread(target=console.record_messages,
-               kwargs=kwargs)
-    p.setDaemon(True)
-    p.start()
+    def start_loop(loop):
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
+    new_loop = asyncio.new_event_loop()
+    t = Thread(target=start_loop, args=(new_loop,))
+    t.start()
+    asyncio.run_coroutine_threadsafe(
+        console.record_messages(**kwargs),
+        new_loop)
 
 
 def start_server(input_channels,

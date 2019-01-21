@@ -28,12 +28,12 @@ test_events = [
 ]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def app(core_server):
     return core_server.test_client
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def secured_app(core_server_secured):
     return core_server_secured.test_client
 

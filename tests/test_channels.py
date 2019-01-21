@@ -1,41 +1,43 @@
 import json
-import pytest
-
+import re
+from aioresponses import aioresponses
 from httpretty import httpretty
 from sanic import Sanic
 
-from rasa_core import utils
 from rasa_core.utils import EndpointConfig
 from tests import utilities
 from tests.conftest import MOODBOT_MODEL_PATH
-
 # this is needed so that the tests included as code examples look better
+from tests.utilities import latest_request, json_of_latest_request
+
 MODEL_PATH = MOODBOT_MODEL_PATH
 
 
-def test_console_input():
+def test_console_input(loop):
     from rasa_core.channels import console
 
     # Overwrites the input() function and when someone else tries to read
     # something from the command line this function gets called.
     with utilities.mocked_cmd_input(console,
                                     text="Test Input"):
-        httpretty.register_uri(httpretty.POST,
-                               'https://abc.defg/webhooks/rest/webhook',
-                               body='')
+        with aioresponses() as mocked:
+            mocked.post('https://example.com/webhooks/rest/webhook?stream=true',
+                        repeat=True,
+                        payload={})
 
-        httpretty.enable()
-        console.record_messages(
-            server_url="https://abc.defg",
-            max_message_limit=3)
-        httpretty.disable()
+            loop.run_until_complete(console.record_messages(
+                server_url="https://example.com",
+                max_message_limit=3))
 
-        assert (httpretty.latest_requests[-1].path ==
-                "/webhooks/rest/webhook?stream=true&token=")
+            r = latest_request(
+                mocked, 'POST',
+                "https://example.com/webhooks/rest/webhook?stream=true")
 
-        b = httpretty.latest_requests[-1].body.decode("utf-8")
+            assert r
 
-        assert json.loads(b) == {"message": "Test Input", "sender": "default"}
+            b = json_of_latest_request(r)
+
+            assert b == {"message": "Test Input", "sender": "default"}
 
 
 # USED FOR DOCS - don't rename without changing in the docs
@@ -212,39 +214,36 @@ def test_rocketchat_channel():
 def test_telegram_channel():
     # telegram channel will try to set a webhook, so we need to mock the api
 
-    httpretty.register_uri(
-        httpretty.POST,
-        'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
-        body='{"ok": true, "result": {}}')
+    with aioresponses() as mocked:
+        mocked.post(
+            'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
+            payload={"ok": True, "result": {}})
 
-    httpretty.enable()
+        from rasa_core.channels.telegram import TelegramInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
 
-    from rasa_core.channels.telegram import TelegramInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+        input_channel = TelegramInput(
+            # you get this when setting up a bot
+            access_token="123:YOUR_ACCESS_TOKEN",
+            # this is your bots username
+            verify="YOUR_TELEGRAM_BOT",
+            # the url your bot should listen for messages
+            webhook_url="YOUR_WEBHOOK_URL"
+        )
 
-    input_channel = TelegramInput(
-        # you get this when setting up a bot
-        access_token="123:YOUR_ACCESS_TOKEN",
-        # this is your bots username
-        verify="YOUR_TELEGRAM_BOT",
-        # the url your bot should listen for messages
-        webhook_url="YOUR_WEBHOOK_URL"
-    )
-
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
-        httpretty.disable()
+        # set serve_forever=True if you want to keep the server running
+        s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        try:
+            assert s is not None
+        finally:
+            s.cancel()
 
 
 def test_handling_of_telegram_user_id():
@@ -391,29 +390,31 @@ def test_socketio_channel():
 
 def test_callback_calls_endpoint(loop):
     from rasa_core.channels.callback import CallbackOutput
+    with aioresponses() as mocked:
+        mocked.post('https://example.com/callback',
+                    repeat=True,
+                    headers={'Content-Type': 'application/json'})
 
-    httpretty.register_uri(httpretty.POST,
-                           'https://mycallback.com/callback')
+        output = CallbackOutput(EndpointConfig('https://example.com/callback'))
 
-    httpretty.enable()
+        loop.run_until_complete(
+            output.send_response("test-id", {
+                "text": "Hi there!",
+                "image": "https://example.com/image.jpg"}))
 
-    output = CallbackOutput(EndpointConfig('https://mycallback.com/callback'))
+        r = latest_request(
+            mocked, 'post', "https://example.com/callback")
 
-    loop.run_until_complete(
-        output.send_response("test-id", {
-            "text": "Hi there!",
-            "image": "https://myimage.com/image.jpg"}))
+        assert r
 
-    httpretty.disable()
+        image = r[-1].kwargs["json"]
+        text = r[-2].kwargs["json"]
 
-    image = httpretty.latest_requests[-1]
-    text = httpretty.latest_requests[-2]
+        assert image['recipient_id'] == "test-id"
+        assert image['image'] == "https://example.com/image.jpg"
 
-    assert image.parsed_body['recipient_id'] == "test-id"
-    assert image.parsed_body['image'] == "https://myimage.com/image.jpg"
-
-    assert text.parsed_body['recipient_id'] == "test-id"
-    assert text.parsed_body['text'] == "Hi there!"
+        assert text['recipient_id'] == "test-id"
+        assert text['text'] == "Hi there!"
 
 
 def test_slack_message_sanitization():
@@ -671,6 +672,7 @@ def test_channel_inheritance():
 def test_int_sender_id_in_user_message():
     from rasa_core.channels import UserMessage
 
+    # noinspection PyTypeChecker
     message = UserMessage("A text", sender_id=1234567890)
 
     assert message.sender_id == "1234567890"

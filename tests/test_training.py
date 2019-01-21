@@ -13,10 +13,11 @@ def test_story_visualization_script():
     assert create_argument_parser() is not None
 
 
-def test_story_visualization(default_domain, tmpdir):
-    story_steps = StoryFileReader.read_from_file(
-        "data/test_stories/stories.md", default_domain,
-        interpreter=RegexInterpreter())
+def test_story_visualization(loop, default_domain, tmpdir):
+    story_steps = loop.run_until_complete(
+        StoryFileReader.read_from_file(
+            "data/test_stories/stories.md", default_domain,
+            interpreter=RegexInterpreter()))
     out_file = tmpdir.join("graph.html").strpath
     generated_graph = visualize_stories(story_steps, default_domain,
                                         output_file=out_file,
@@ -28,10 +29,11 @@ def test_story_visualization(default_domain, tmpdir):
     assert len(generated_graph.edges()) == 56
 
 
-def test_story_visualization_with_merging(default_domain):
-    story_steps = StoryFileReader.read_from_file(
-        "data/test_stories/stories.md", default_domain,
-        interpreter=RegexInterpreter())
+def test_story_visualization_with_merging(loop, default_domain):
+    story_steps = loop.run_until_complete(
+        StoryFileReader.read_from_file(
+            "data/test_stories/stories.md", default_domain,
+            interpreter=RegexInterpreter()))
     generated_graph = visualize_stories(story_steps, default_domain,
                                         output_file=None,
                                         max_history=3,
@@ -41,22 +43,25 @@ def test_story_visualization_with_merging(default_domain):
     assert 20 < len(generated_graph.edges()) < 33
 
 
-def test_training_script(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                         tmpdir.strpath,
-                         policy_config='data/test_config/max_hist_config.yml',
-                         interpreter=RegexInterpreter(),
-                         kwargs={})
+def test_training_script(loop, tmpdir):
+    loop.run_until_complete(
+        train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+                             tmpdir.strpath,
+                             policy_config='data/test_config/max_hist_config'
+                                           '.yml',
+                             interpreter=RegexInterpreter(),
+                             kwargs={}))
     assert True
 
 
-def test_training_script_without_max_history_set(tmpdir):
-    train_dialogue_model(
-        DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-        tmpdir.strpath,
-        interpreter=RegexInterpreter(),
-        policy_config='data/test_config/no_max_hist_config.yml',
-        kwargs={})
+def test_training_script_without_max_history_set(loop, tmpdir):
+    loop.run_until_complete(
+        train_dialogue_model(
+            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+            tmpdir.strpath,
+            interpreter=RegexInterpreter(),
+            policy_config='data/test_config/no_max_hist_config.yml',
+            kwargs={}))
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
@@ -67,12 +72,14 @@ def test_training_script_without_max_history_set(tmpdir):
                         policy.featurizer.MAX_HISTORY_DEFAULT)
 
 
-def test_training_script_with_max_history_set(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                         tmpdir.strpath,
-                         interpreter=RegexInterpreter(),
-                         policy_config='data/test_config/max_hist_config.yml',
-                         kwargs={})
+def test_training_script_with_max_history_set(loop, tmpdir):
+    loop.run_until_complete(
+        train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+                             tmpdir.strpath,
+                             interpreter=RegexInterpreter(),
+                             policy_config='data/test_config/max_hist_config'
+                                           '.yml',
+                             kwargs={}))
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
@@ -82,11 +89,11 @@ def test_training_script_with_max_history_set(tmpdir):
                 assert policy.featurizer.max_history == 5
 
 
-def test_training_script_with_restart_stories(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH,
-                         "data/test_stories/stories_restart.md",
-                         tmpdir.strpath,
-                         interpreter=RegexInterpreter(),
-                         policy_config='data/test_config/max_hist_config.yml',
-                         kwargs={})
+def test_training_script_with_restart_stories(loop, tmpdir):
+    loop.run_until_complete(train_dialogue_model(DEFAULT_DOMAIN_PATH,
+                                                 "data/test_stories/stories_restart.md",
+                                                 tmpdir.strpath,
+                                                 interpreter=RegexInterpreter(),
+                                                 policy_config='data/test_config/max_hist_config.yml',
+                                                 kwargs={}))
     assert True

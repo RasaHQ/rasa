@@ -10,14 +10,12 @@ import typing
 import uuid
 import zipfile
 from io import BytesIO as IOReader
-from requests.exceptions import InvalidURL
 from signal import SIGINT
 from signal import signal
-from threading import Thread
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 import rasa_core
-from rasa_core import training, constants
+from rasa_core import training, constants, utils
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
@@ -77,7 +75,7 @@ async def _init_model_from_server(model_server: EndpointConfig
     """Initialise a Rasa Core model from a URL."""
 
     if not is_url(model_server.url):
-        raise InvalidURL(model_server.url)
+        raise aiohttp.InvalidURL(model_server.url)
 
     model_directory = tempfile.mkdtemp()
 
@@ -94,7 +92,7 @@ async def _update_model_from_server(model_server: EndpointConfig,
     """Load a zipped Rasa Core model from a URL and update the passed agent."""
 
     if not is_url(model_server.url):
-        raise InvalidURL(model_server.url)
+        raise aiohttp.InvalidURL(model_server.url)
 
     model_directory = tempfile.mkdtemp()
 
@@ -124,12 +122,13 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
                  "".format(model_server.url))
 
     try:
-        async with model_server.session.request(
-                "GET",
-                model_server.url,
-                timeout=DEFAULT_REQUEST_TIMEOUT,
-                headers=headers,
-                params=model_server.combine_parameters()) as resp:
+        session = await model_server.session()
+        params = model_server.combine_parameters()
+        async with session.request("GET",
+                                   model_server.url,
+                                   timeout=DEFAULT_REQUEST_TIMEOUT,
+                                   headers=headers,
+                                   params=params) as resp:
 
             resp.raise_for_status()
 
@@ -152,7 +151,7 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
                     "".format(resp.status))
                 return None
 
-            zip_ref = zipfile.ZipFile(IOReader(resp.read()))
+            zip_ref = zipfile.ZipFile(IOReader(await resp.read()))
             zip_ref.extractall(model_directory)
             logger.debug("Unzipped model to {}"
                          "".format(os.path.abspath(model_directory)))
@@ -160,7 +159,7 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
             # get the new fingerprint
             return resp.headers.get("ETag")
 
-    except aiohttp.client_exceptions.ClientResponseError as e:
+    except aiohttp.ClientResponseError as e:
         logger.warning("Tried to fetch model from server, but "
                        "couldn't reach server. We'll retry later... "
                        "Error: {}.".format(e))
@@ -178,11 +177,11 @@ async def _run_model_pulling_worker(model_server: EndpointConfig,
 def start_model_pulling_in_worker(model_server: EndpointConfig,
                                   wait_time_between_pulls: int,
                                   agent: 'Agent') -> None:
-    # TODO AS adapt to use asyncio loop
-    worker = Thread(target=_run_model_pulling_worker,
-                    args=(model_server, wait_time_between_pulls, agent))
-    worker.setDaemon(True)
-    worker.start()
+    utils.run_in_asyncio_thread(
+        _run_model_pulling_worker,
+        model_server=model_server,
+        wait_time_between_pulls=wait_time_between_pulls,
+        agent=agent)
 
 
 class Agent(object):
@@ -290,7 +289,6 @@ class Agent(object):
                 self.tracker_store is not None and
                 self.policy_ensemble is not None)
 
-    # todo follow
     async def handle_message(
         self,
         message: UserMessage,
@@ -330,7 +328,7 @@ class Agent(object):
         return processor.predict_next(sender_id)
 
     # noinspection PyUnusedLocal
-    def log_message(
+    async def log_message(
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
@@ -339,7 +337,7 @@ class Agent(object):
         """Append a message to a dialogue - does not predict actions."""
 
         processor = self.create_processor(message_preprocessor)
-        return processor.log_message(message)
+        return await processor.log_message(message)
 
     async def execute_action(
         self,
@@ -457,16 +455,16 @@ class Agent(object):
                 return False
         return True
 
-    def load_data(self,
-                  resource_name: Text,
-                  remove_duplicates: bool = True,
-                  unique_last_num_states: Optional[int] = None,
-                  augmentation_factor: int = 20,
-                  tracker_limit: Optional[int] = None,
-                  use_story_concatenation: bool = True,
-                  debug_plots: bool = False,
-                  exclusion_percentage: int = None
-                  ) -> List[DialogueStateTracker]:
+    async def load_data(self,
+                        resource_name: Text,
+                        remove_duplicates: bool = True,
+                        unique_last_num_states: Optional[int] = None,
+                        augmentation_factor: int = 20,
+                        tracker_limit: Optional[int] = None,
+                        use_story_concatenation: bool = True,
+                        debug_plots: bool = False,
+                        exclusion_percentage: int = None
+                        ) -> List[DialogueStateTracker]:
         """Load training data from a resource."""
 
         max_history = self._max_history()
@@ -488,12 +486,13 @@ class Agent(object):
                            "at least maximum max_history."
                            "".format(unique_last_num_states, max_history))
 
-        return training.load_data(resource_name, self.domain,
-                                  remove_duplicates, unique_last_num_states,
-                                  augmentation_factor,
-                                  tracker_limit, use_story_concatenation,
-                                  debug_plots,
-                                  exclusion_percentage=exclusion_percentage)
+        return await training.load_data(
+            resource_name, self.domain,
+            remove_duplicates, unique_last_num_states,
+            augmentation_factor,
+            tracker_limit, use_story_concatenation,
+            debug_plots,
+            exclusion_percentage=exclusion_percentage)
 
     def train(self,
               training_trackers: List[DialogueStateTracker],
@@ -611,14 +610,14 @@ class Agent(object):
         logger.info("Persisted model to '{}'"
                     "".format(os.path.abspath(model_path)))
 
-    def visualize(self,
-                  resource_name: Text,
-                  output_file: Text,
-                  max_history: Optional[int] = None,
-                  nlu_training_data: Optional[Text] = None,
-                  should_merge_nodes: bool = True,
-                  fontsize: int = 12
-                  ) -> None:
+    async def visualize(self,
+                        resource_name: Text,
+                        output_file: Text,
+                        max_history: Optional[int] = None,
+                        nlu_training_data: Optional[Text] = None,
+                        should_merge_nodes: bool = True,
+                        fontsize: int = 12
+                        ) -> None:
         from rasa_core.training.visualization import visualize_stories
         from rasa_core.training.dsl import StoryFileReader
         """Visualize the loaded training data from the resource."""
@@ -627,8 +626,8 @@ class Agent(object):
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = StoryFileReader.read_from_folder(resource_name,
-                                                       self.domain)
+        story_steps = await StoryFileReader.read_from_folder(resource_name,
+                                                             self.domain)
         visualize_stories(story_steps, self.domain, output_file,
                           max_history, self.interpreter,
                           nlu_training_data, should_merge_nodes, fontsize)

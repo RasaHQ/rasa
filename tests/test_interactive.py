@@ -1,17 +1,18 @@
 import json
 import pytest
 import uuid
-from httpretty import httpretty
+from aioresponses import aioresponses
 
 from rasa_core import utils
 from rasa_core.training import interactive
 from rasa_core.utils import EndpointConfig
 from rasa_core.actions.action import default_actions
+from tests.utilities import latest_request, json_of_latest_request
 
 
 @pytest.fixture
 def mock_endpoint():
-    return EndpointConfig("https://abc.defg")
+    return EndpointConfig("https://example.com")
 
 
 def test_send_message(loop, mock_endpoint):
@@ -19,19 +20,21 @@ def test_send_message(loop, mock_endpoint):
 
     url = '{}/conversations/{}/messages'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.POST, url, body='{}')
+    with aioresponses() as mocked:
+        mocked.post(url, payload={})
 
-    httpretty.enable()
-    loop.run_until_complete(
-        interactive.send_message(mock_endpoint, sender_id, "Hello"))
-    httpretty.disable()
+        loop.run_until_complete(
+            interactive.send_message(mock_endpoint, sender_id, "Hello"))
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
-    assert json.loads(b) == {
-        "sender": "user",
-        "message": "Hello",
-        "parse_data": None
-    }
+        r = latest_request(mocked, 'post', url)
+
+        assert r
+
+        assert json_of_latest_request(r) == {
+            "sender": "user",
+            "message": "Hello",
+            "parse_data": None
+        }
 
 
 def test_request_prediction(loop, mock_endpoint):
@@ -39,15 +42,14 @@ def test_request_prediction(loop, mock_endpoint):
 
     url = '{}/conversations/{}/predict'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.POST, url, body='{}')
 
-    httpretty.enable()
-    loop.run_until_complete(
-        interactive.request_prediction(mock_endpoint, sender_id))
-    httpretty.disable()
+    with aioresponses() as mocked:
+        mocked.post(url, payload={})
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
-    assert b == ""
+        loop.run_until_complete(
+            interactive.request_prediction(mock_endpoint, sender_id))
+
+        assert latest_request(mocked, 'post', url) is not None
 
 
 def test_bot_output_format():
@@ -120,20 +122,17 @@ def test_print_history(loop, mock_endpoint):
 
     sender_id = uuid.uuid4().hex
 
-    url = '{}/conversations/{}/tracker'.format(
+    url = '{}/conversations/{}/tracker?include_events=AFTER_RESTART'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
+    with aioresponses() as mocked:
+        mocked.get(url,
+                   body=tracker_dump,
+                   headers={"Accept": "application/json"})
 
-    httpretty.enable()
-    loop.run_until_complete(
-        interactive._print_history(sender_id, mock_endpoint))
-    httpretty.disable()
+        loop.run_until_complete(
+            interactive._print_history(sender_id, mock_endpoint))
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
-    assert b == ""
-    assert (httpretty.latest_requests[-1].path ==
-            "/conversations/{}/tracker?include_events=AFTER_RESTART"
-            "".format(sender_id))
+        assert latest_request(mocked, 'get', url) is not None
 
 
 def test_is_listening_for_messages(loop, mock_endpoint):
@@ -142,17 +141,17 @@ def test_is_listening_for_messages(loop, mock_endpoint):
 
     sender_id = uuid.uuid4().hex
 
-    url = '{}/conversations/{}/tracker'.format(
+    url = '{}/conversations/{}/tracker?include_events=APPLIED'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
+    with aioresponses() as mocked:
+        mocked.get(url, body=tracker_dump,
+                   headers={"Content-Type": "application/json"})
 
-    httpretty.enable()
-    is_listening = loop.run_until_complete(
-        interactive.is_listening_for_message(sender_id,
-                                             mock_endpoint))
-    httpretty.disable()
+        is_listening = loop.run_until_complete(
+            interactive.is_listening_for_message(sender_id,
+                                                 mock_endpoint))
 
-    assert is_listening
+        assert is_listening
 
 
 def test_splitting_conversation_at_restarts():
@@ -205,24 +204,26 @@ def test_undo_latest_msg(loop, mock_endpoint):
 
     sender_id = uuid.uuid4().hex
 
-    url = '{}/conversations/{}/tracker'.format(
+    url = '{}/conversations/{}/tracker?include_events=ALL'.format(
         mock_endpoint.url, sender_id)
     replace_url = '{}/conversations/{}/tracker/events'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
-    httpretty.register_uri(httpretty.PUT, replace_url)
+    with aioresponses() as mocked:
+        mocked.get(url, body=tracker_dump)
+        mocked.put(replace_url)
 
-    httpretty.enable()
-    loop.run_until_complete(interactive._undo_latest(sender_id, mock_endpoint))
-    httpretty.disable()
+        loop.run_until_complete(
+            interactive._undo_latest(sender_id, mock_endpoint))
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
+        r = latest_request(mocked, 'put', replace_url)
 
-    # this should be the events the interactive call send to the endpoint
-    # these events should have the last utterance omitted
-    replaced_evts = json.loads(b)
-    assert len(replaced_evts) == 6
-    assert replaced_evts == evts[:6]
+        assert r
+
+        # this should be the events the interactive call send to the endpoint
+        # these events should have the last utterance omitted
+        replaced_evts = json_of_latest_request(r)
+        assert len(replaced_evts) == 6
+        assert replaced_evts == evts[:6]
 
 
 def test_utter_custom_message():
@@ -258,12 +259,12 @@ def test_interactive_domain_persistence(loop, mock_endpoint, tmpdir):
     domain_path = tmpdir.join("interactive_domain_save.yml").strpath
 
     url = '{}/domain'.format(mock_endpoint.url)
-    httpretty.register_uri(httpretty.GET, url, body='{}')
+    with aioresponses() as mocked:
+        mocked.get(url, payload={})
 
-    httpretty.enable()
-    loop.run_until_complete(
-        interactive._write_domain_to_file(domain_path, events, mock_endpoint))
-    httpretty.disable()
+        loop.run_until_complete(
+            interactive._write_domain_to_file(domain_path, events,
+                                              mock_endpoint))
 
     saved_domain = utils.read_yaml_file(domain_path)
 

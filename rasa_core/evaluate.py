@@ -2,6 +2,7 @@ from collections import defaultdict
 from collections import namedtuple
 
 import argparse
+import asyncio
 import io
 import json
 import logging
@@ -252,9 +253,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
                            predicted_message)
 
 
-def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
-    story_graph = training.extract_story_graph(resource_name, agent.domain,
-                                               agent.interpreter, use_e2e)
+async def _generate_trackers(resource_name, agent,
+                             max_stories=None,
+                             use_e2e=False):
+    story_graph = await training.extract_story_graph(
+        resource_name, agent.domain, agent.interpreter, use_e2e)
     g = TrainingDataGenerator(story_graph, agent.domain,
                               use_story_concatenation=False,
                               augmentation_factor=0,
@@ -465,15 +468,15 @@ def log_failed_stories(failed, out_directory):
                 f.write("\n\n")
 
 
-def run_story_evaluation(resource_name, agent,
-                         max_stories=None,
-                         out_directory=None,
-                         fail_on_prediction_errors=False,
-                         use_e2e=False):
+async def run_story_evaluation(resource_name, agent,
+                               max_stories=None,
+                               out_directory=None,
+                               fail_on_prediction_errors=False,
+                               use_e2e=False):
     """Run the evaluation of the stories, optionally plots the results."""
 
-    completed_trackers = _generate_trackers(resource_name, agent,
-                                            max_stories, use_e2e)
+    completed_trackers = await _generate_trackers(resource_name, agent,
+                                                  max_stories, use_e2e)
 
     story_evaluation, _ = collect_story_predictions(completed_trackers, agent,
                                                     fail_on_prediction_errors,
@@ -553,9 +556,9 @@ def plot_story_evaluation(test_y, predictions,
                 bbox_inches='tight')
 
 
-def run_comparison_evaluation(models: Text,
-                              stories_file: Text,
-                              output: Text) -> None:
+async def run_comparison_evaluation(models: Text,
+                                    stories_file: Text,
+                                    output: Text) -> None:
     """Evaluates multiple trained models on a test set"""
 
     num_correct = defaultdict(list)
@@ -568,7 +571,7 @@ def run_comparison_evaluation(models: Text,
 
             agent = Agent.load(model)
 
-            completed_trackers = _generate_trackers(stories_file, agent)
+            completed_trackers = await _generate_trackers(stories_file, agent)
 
             story_eval_store, no_of_stories = \
                 collect_story_predictions(completed_trackers,
@@ -631,6 +634,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=cmdline_arguments.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_arguments.endpoints)
 
+    loop = asyncio.get_event_loop()
+
     if cmdline_arguments.output:
         nlu_utils.create_dir(cmdline_arguments.output)
 
@@ -647,21 +652,23 @@ if __name__ == '__main__':
 
         stories = cli.stories_from_cli_args(cmdline_arguments)
 
-        run_story_evaluation(stories,
-                             _agent,
-                             cmdline_arguments.max_stories,
-                             cmdline_arguments.output,
-                             cmdline_arguments.fail_on_prediction_errors,
-                             cmdline_arguments.e2e)
+        loop.run_until_complete(
+            run_story_evaluation(stories,
+                                 _agent,
+                                 cmdline_arguments.max_stories,
+                                 cmdline_arguments.output,
+                                 cmdline_arguments.fail_on_prediction_errors,
+                                 cmdline_arguments.e2e))
 
     elif cmdline_arguments.mode == 'compare':
-        run_comparison_evaluation(cmdline_arguments.core,
-                                  cmdline_arguments.stories,
-                                  cmdline_arguments.output)
+        loop.run_until_complete(
+            run_comparison_evaluation(cmdline_arguments.core,
+                                      cmdline_arguments.stories,
+                                      cmdline_arguments.output))
 
         story_n_path = os.path.join(cmdline_arguments.core, 'num_stories.json')
 
         number_of_stories = utils.read_json_file(story_n_path)
         plot_curve(cmdline_arguments.output, number_of_stories)
 
-    logger.info("Finished evaluation")
+        logger.info("Finished evaluation")

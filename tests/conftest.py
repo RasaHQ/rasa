@@ -54,18 +54,18 @@ def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH)
 
 
-@pytest.fixture(scope="session")
-def default_agent(default_domain):
+@pytest.fixture
+async def default_agent(default_domain):
     agent = Agent(default_domain,
                   policies=[MemoizationPolicy()],
                   interpreter=RegexInterpreter(),
                   tracker_store=InMemoryTrackerStore(default_domain))
-    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
     agent.train(training_data)
     return agent
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def default_agent_path(default_agent, tmpdir_factory):
     path = tmpdir_factory.mktemp("agent").strpath
     default_agent.persist(path)
@@ -79,12 +79,13 @@ def default_dispatcher_collecting(default_nlg):
 
 
 @pytest.fixture
-def default_processor(default_domain, default_nlg):
+def default_processor(loop, default_domain, default_nlg):
     agent = Agent(default_domain,
                   SimplePolicyEnsemble([AugmentedMemoizationPolicy()]),
                   interpreter=RegexInterpreter())
 
-    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    training_data = loop.run_until_complete(
+        agent.load_data(DEFAULT_STORIES_FILE))
     agent.train(training_data)
     tracker_store = InMemoryTrackerStore(default_domain)
     return MessageProcessor(agent.interpreter,
@@ -95,8 +96,8 @@ def default_processor(default_domain, default_nlg):
 
 
 @pytest.fixture(scope="session")
-def trained_moodbot_path():
-    train.train_dialogue_model(
+async def trained_moodbot_path():
+    await train.train_dialogue_model(
         domain_file="examples/moodbot/domain.yml",
         stories_file="examples/moodbot/data/stories.md",
         output_path=MOODBOT_MODEL_PATH,
@@ -140,14 +141,14 @@ def http_app(request, core_server):
     return http_server.url
 
 
-@pytest.fixture(scope="module")
-def core_server(tmpdir_factory):
+@pytest.fixture
+async def core_server(tmpdir_factory):
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent("data/test_domains/default.yml",
                   policies=[AugmentedMemoizationPolicy(max_history=3)])
 
-    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
     agent.train(training_data)
     agent.persist(model_path)
 
@@ -162,7 +163,7 @@ def core_server(tmpdir_factory):
     return app
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def core_server_secured(default_agent):
     app = server.create_app(default_agent,
                             auth_token="rasa",

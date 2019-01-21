@@ -1,8 +1,9 @@
 # this builtin is needed so we can overwrite in test
+import aiohttp
+
 import questionary
 
 import json
-import requests
 from prompt_toolkit.styles import Style
 
 from rasa_core import utils
@@ -42,20 +43,27 @@ def get_cmd_input():
                                          ('', '#b373d6')])).ask().strip()
 
 
-def send_message_receive_block(server_url, auth_token, sender_id, message):
+async def send_message_receive_block(server_url,
+                                     auth_token,
+                                     sender_id,
+                                     message):
     payload = {
         "sender": sender_id,
         "message": message
     }
 
-    response = requests.post("{}/webhooks/rest/webhook?token={}".format(
-        server_url, auth_token),
-        json=payload)
-    response.raise_for_status()
-    return response.json()
+    url = "{}/webhooks/rest/webhook?token={}".format(server_url, auth_token)
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url,
+                                json=payload,
+                                raise_for_status=True) as resp:
+            return await resp.json()
 
 
-def send_message_receive_stream(server_url, auth_token, sender_id, message):
+async def send_message_receive_stream(server_url,
+                                      auth_token,
+                                      sender_id,
+                                      message):
     payload = {
         "sender": sender_id,
         "message": message
@@ -64,24 +72,23 @@ def send_message_receive_stream(server_url, auth_token, sender_id, message):
     url = "{}/webhooks/rest/webhook?stream=true&token={}".format(
         server_url, auth_token)
 
-    with requests.post(url, json=payload, stream=True) as r:
+    # TODO: check if this properly receives UTF-8 data
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url,
+                                json=payload,
+                                raise_for_status=True) as resp:
 
-        r.raise_for_status()
-
-        if r.encoding is None:
-            r.encoding = 'utf-8'
-
-        for line in r.iter_lines(decode_unicode=True):
-            if line:
-                yield json.loads(line)
+            async for line in resp.content:
+                if line:
+                    yield json.loads(line)
 
 
-def record_messages(server_url=DEFAULT_SERVER_URL,
-                    auth_token=None,
-                    sender_id=UserMessage.DEFAULT_SENDER_ID,
-                    max_message_limit=None,
-                    use_response_stream=True,
-                    on_finish=None):
+async def record_messages(server_url=DEFAULT_SERVER_URL,
+                          auth_token=None,
+                          sender_id=UserMessage.DEFAULT_SENDER_ID,
+                          max_message_limit=None,
+                          use_response_stream=True,
+                          on_finish=None):
     """Read messages from the command line and print bot responses."""
 
     auth_token = auth_token if auth_token else ""
@@ -102,13 +109,14 @@ def record_messages(server_url=DEFAULT_SERVER_URL,
             bot_responses = send_message_receive_stream(server_url,
                                                         auth_token,
                                                         sender_id, text)
+            async for response in bot_responses:
+                print_bot_output(response)
         else:
-            bot_responses = send_message_receive_block(server_url,
-                                                       auth_token,
-                                                       sender_id, text)
-
-        for response in bot_responses:
-            print_bot_output(response)
+            bot_responses = await send_message_receive_block(server_url,
+                                                             auth_token,
+                                                             sender_id, text)
+            for response in bot_responses:
+                print_bot_output(response)
 
         num_messages += 1
 

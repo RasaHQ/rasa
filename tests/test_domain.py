@@ -10,10 +10,11 @@ from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
-def test_create_train_data_no_history(default_domain):
+def test_create_train_data_no_history(loop, default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0)
+    training_trackers = loop.run_until_complete(
+        training.load_data(
+            DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0))
 
     assert len(training_trackers) == 3
     (decoded, _) = featurizer.training_states_and_actions(
@@ -44,13 +45,14 @@ def test_create_train_data_no_history(default_domain):
     ]
 
 
-def test_create_train_data_with_history(default_domain):
+def test_create_train_data_with_history(loop, default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = training.load_data(
-        DEFAULT_STORIES_FILE,
-        default_domain,
-        augmentation_factor=0
-    )
+    training_trackers = loop.run_until_complete(
+        training.load_data(
+            DEFAULT_STORIES_FILE,
+            default_domain,
+            augmentation_factor=0
+        ))
     assert len(training_trackers) == 3
     (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain)
@@ -180,7 +182,7 @@ templates:
     # python 3 and 2 are different here, python 3 will have a leading set
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
-    domain = Domain.from_yaml(domain.as_yaml())
+    assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
 def test_merge_yaml_domains():

@@ -93,18 +93,18 @@ def test_tracker_store(filename, store):
     assert restored == tracker
 
 
-def test_tracker_write_to_story(tmpdir, default_domain):
+def test_tracker_write_to_story(loop, tmpdir, default_domain):
     tracker = tracker_from_dialogue_file(
         "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers = training.load_data(
+    trackers = loop.run_until_complete( training.load_data(
         p.strpath,
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False
-    )
+    ))
     assert len(trackers) == 1
     recovered = trackers[0]
     assert len(recovered.events) == 7
@@ -321,8 +321,8 @@ def test_traveling_back_in_time(default_domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
-def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
-    trackers = default_agent.load_data(DEFAULT_STORIES_FILE)
+def test_dump_and_restore_as_json(loop, default_agent, tmpdir_factory):
+    trackers = loop.run_until_complete( default_agent.load_data(DEFAULT_STORIES_FILE))
 
     for tracker in trackers:
         out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")

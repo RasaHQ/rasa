@@ -74,16 +74,17 @@ def test_common_action_prefix_unequal():
     assert num_common == 0
 
 
-def test_graph_persistence(default_domain, tmpdir):
+def test_graph_persistence(loop, default_domain, tmpdir):
     from os.path import isfile
     from networkx.drawing import nx_pydot
     import io
 
     from rasa_core.training.dsl import StoryFileReader
     from rasa_core.interpreter import RegexInterpreter
-    story_steps = StoryFileReader.read_from_file(
-        "data/test_stories/stories.md", default_domain,
-        interpreter=RegexInterpreter())
+    story_steps = loop.run_until_complete(
+        StoryFileReader.read_from_file(
+            "data/test_stories/stories.md", default_domain,
+            interpreter=RegexInterpreter()))
     out_file = tmpdir.join("graph.html").strpath
     generated_graph = visualization.visualize_stories(story_steps,
                                                       default_domain,

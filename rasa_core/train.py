@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 import os
 import tempfile
@@ -159,13 +160,13 @@ def add_general_args(parser):
     utils.add_logging_option_arguments(parser)
 
 
-def train_dialogue_model(domain_file, stories_file, output_path,
-                         interpreter=None,
-                         endpoints=AvailableEndpoints(),
-                         dump_stories=False,
-                         policy_config=None,
-                         exclusion_percentage=None,
-                         kwargs=None):
+async def train_dialogue_model(domain_file, stories_file, output_path,
+                               interpreter=None,
+                               endpoints=AvailableEndpoints(),
+                               dump_stories=False,
+                               policy_config=None,
+                               exclusion_percentage=None,
+                               kwargs=None):
     if not kwargs:
         kwargs = {}
 
@@ -184,9 +185,9 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "remove_duplicates",
                                                  "debug_plots"})
 
-    training_data = agent.load_data(stories_file,
-                                    exclusion_percentage=exclusion_percentage,
-                                    **data_load_args)
+    training_data = await agent.load_data(stories_file,
+                                          exclusion_percentage=exclusion_percentage,
+                                          **data_load_args)
     agent.train(training_data, **kwargs)
     agent.persist(output_path, dump_stories)
 
@@ -203,14 +204,14 @@ def _additional_arguments(args):
     return {k: v for k, v in additional.items() if v is not None}
 
 
-def train_comparison_models(stories,
-                            domain,
-                            output_path="",
-                            exclusion_percentages=None,
-                            policy_configs=None,
-                            runs=1,
-                            dump_stories=False,
-                            kwargs=None):
+async def train_comparison_models(stories,
+                                  domain,
+                                  output_path="",
+                                  exclusion_percentages=None,
+                                  policy_configs=None,
+                                  runs=1,
+                                  dump_stories=False,
+                                  kwargs=None):
     """Train multiple models for comparison of policies"""
 
     exclusion_percentages = exclusion_percentages or []
@@ -239,7 +240,7 @@ def train_comparison_models(stories,
                              "".format(policy_name, current_round,
                                        len(exclusion_percentages), i))
 
-                train_dialogue_model(
+                await train_dialogue_model(
                     domain, stories, output,
                     policy_config=policy_config,
                     exclusion_percentage=i,
@@ -247,37 +248,37 @@ def train_comparison_models(stories,
                     dump_stories=dump_stories)
 
 
-def get_no_of_stories(story_file, domain):
+async def get_no_of_stories(story_file, domain):
     """Get number of stories in a file."""
 
-    stories = StoryFileReader.read_from_folder(story_file,
-                                               TemplateDomain.load(domain))
+    stories = await StoryFileReader.read_from_folder(
+        story_file, TemplateDomain.load(domain))
     return len(stories)
 
 
-def do_default_training(cmdline_args, stories, additional_arguments):
+async def do_default_training(cmdline_args, stories, additional_arguments):
     """Train a model."""
 
-    train_dialogue_model(domain_file=cmdline_args.domain,
-                         stories_file=stories,
-                         output_path=cmdline_args.out,
-                         dump_stories=cmdline_args.dump_stories,
-                         policy_config=cmdline_args.config[0],
-                         kwargs=additional_arguments)
+    await train_dialogue_model(domain_file=cmdline_args.domain,
+                               stories_file=stories,
+                               output_path=cmdline_args.out,
+                               dump_stories=cmdline_args.dump_stories,
+                               policy_config=cmdline_args.config[0],
+                               kwargs=additional_arguments)
 
 
-def do_compare_training(cmdline_args, stories, additional_arguments):
-    train_comparison_models(stories,
-                            cmdline_args.domain,
-                            cmdline_args.out,
-                            cmdline_args.percentages,
-                            cmdline_args.config,
-                            cmdline_args.runs,
-                            cmdline_args.dump_stories,
-                            additional_arguments)
+async def do_compare_training(cmdline_args, stories, additional_arguments):
+    await train_comparison_models(stories,
+                                  cmdline_args.domain,
+                                  cmdline_args.out,
+                                  cmdline_args.percentages,
+                                  cmdline_args.config,
+                                  cmdline_args.runs,
+                                  cmdline_args.dump_stories,
+                                  additional_arguments)
 
-    no_stories = get_no_of_stories(cmdline_args.stories,
-                                   cmdline_args.domain)
+    no_stories = await get_no_of_stories(cmdline_args.stories,
+                                         cmdline_args.domain)
 
     # store the list of the number of stories present at each exclusion
     # percentage
@@ -288,7 +289,7 @@ def do_compare_training(cmdline_args, stories, additional_arguments):
     utils.dump_obj_as_json_to_file(story_n_path, story_range)
 
 
-def do_interactive_learning(cmdline_args, stories, additional_arguments):
+async def do_interactive_learning(cmdline_args, stories, additional_arguments):
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
@@ -317,17 +318,17 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
         else:
             model_directory = tempfile.mkdtemp(suffix="_core_model")
 
-        _agent = train_dialogue_model(cmdline_args.domain,
-                                      stories,
-                                      model_directory,
-                                      _interpreter,
-                                      _endpoints,
-                                      cmdline_args.dump_stories,
-                                      cmdline_args.config[0],
-                                      None,
-                                      additional_arguments)
+        _agent = await train_dialogue_model(cmdline_args.domain,
+                                            stories,
+                                            model_directory,
+                                            _interpreter,
+                                            _endpoints,
+                                            cmdline_args.dump_stories,
+                                            cmdline_args.config[0],
+                                            None,
+                                            additional_arguments)
 
-    interactive.run_interactive_learning(
+    await interactive.run_interactive_learning(
         _agent, stories,
         finetune=cmdline_args.finetune,
         skip_visualization=cmdline_args.skip_visualization)
@@ -345,17 +346,19 @@ if __name__ == '__main__':
 
     training_stories = cli.stories_from_cli_args(cmdline_arguments)
 
+    loop = asyncio.get_event_loop()
+
     if cmdline_arguments.mode == 'default':
-        do_default_training(cmdline_arguments,
-                            training_stories,
-                            additional_args)
+        loop.run_until_complete(do_default_training(cmdline_arguments,
+                                                    training_stories,
+                                                    additional_args))
 
     elif cmdline_arguments.mode == 'interactive':
-        do_interactive_learning(cmdline_arguments,
-                                training_stories,
-                                additional_args)
+        loop.run_until_complete(do_interactive_learning(cmdline_arguments,
+                                                        training_stories,
+                                                        additional_args))
 
     elif cmdline_arguments.mode == 'compare':
-        do_compare_training(cmdline_arguments,
-                            training_stories,
-                            additional_args)
+        loop.run_until_complete(do_compare_training(cmdline_arguments,
+                                                    training_stories,
+                                                    additional_args))

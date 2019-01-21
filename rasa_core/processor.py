@@ -3,6 +3,7 @@ import time
 import json
 import logging
 import numpy as np
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import UnknownTimeZoneError
 from types import LambdaType
@@ -38,7 +39,7 @@ from rasa_core.utils import EndpointConfig
 logger = logging.getLogger(__name__)
 
 try:
-    scheduler = BackgroundScheduler()
+    scheduler = AsyncIOScheduler()
     scheduler.start()
 except UnknownTimeZoneError:
     logger.warning("apscheduler failed to start. "
@@ -68,13 +69,12 @@ class MessageProcessor(object):
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
 
-    # todo: follow
     async def handle_message(self,
                              message: UserMessage) -> Optional[List[Text]]:
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
-        tracker = self.log_message(message)
+        tracker = await self.log_message(message)
         if not tracker:
             return None
 
@@ -110,8 +110,9 @@ class MessageProcessor(object):
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART)
         }
 
-    def log_message(self,
-                    message: UserMessage) -> Optional[DialogueStateTracker]:
+    async def log_message(self,
+                          message: UserMessage
+                          ) -> Optional[DialogueStateTracker]:
 
         # preprocess message if necessary
         if self.message_preprocessor is not None:
@@ -120,7 +121,7 @@ class MessageProcessor(object):
         # which maintains conversation state
         tracker = self._get_tracker(message.sender_id)
         if tracker:
-            self._handle_message_with_tracker(message, tracker)
+            await self._handle_message_with_tracker(message, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
         else:
@@ -128,7 +129,6 @@ class MessageProcessor(object):
                            "'{}'.".format(message.sender_id))
         return tracker
 
-    # TODO: follow
     async def execute_action(self,
                              sender_id: Text,
                              action_name: Text,
@@ -210,8 +210,8 @@ class MessageProcessor(object):
             return None
 
         if (reminder_event.kill_on_user_message and
-                self._has_message_after_reminder(tracker, reminder_event) or
-                not self._is_reminder_still_valid(tracker, reminder_event)):
+            self._has_message_after_reminder(tracker, reminder_event) or
+            not self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -240,14 +240,14 @@ class MessageProcessor(object):
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
-    def _parse_message(self, message):
+    async def _parse_message(self, message):
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
-            parse_data = RegexInterpreter().parse(message.text)
+            parse_data = await RegexInterpreter().parse(message.text)
         else:
-            parse_data = self.interpreter.parse(message.text)
+            parse_data = await self.interpreter.parse(message.text)
 
         logger.debug("Received user message '{}' with intent '{}' "
                      "and entities '{}'".format(message.text,
@@ -255,14 +255,15 @@ class MessageProcessor(object):
                                                 parse_data["entities"]))
         return parse_data
 
-    def _handle_message_with_tracker(self,
-                                     message: UserMessage,
-                                     tracker: DialogueStateTracker) -> None:
+    async def _handle_message_with_tracker(self,
+                                           message: UserMessage,
+                                           tracker: DialogueStateTracker
+                                           ) -> None:
 
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = self._parse_message(message)
+            parse_data = await self._parse_message(message)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
@@ -336,7 +337,6 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderScheduled):
-                    # todo: AS handle reminder is async
                     scheduler.add_job(self.handle_reminder, "date",
                                       run_date=e.trigger_date_time,
                                       args=[e, dispatcher],

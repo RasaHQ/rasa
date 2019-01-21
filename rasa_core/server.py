@@ -458,7 +458,7 @@ def create_app(agent,
 
         try:
             usermsg = UserMessage(message, None, sender_id, parse_data)
-            tracker = agent.log_message(usermsg)
+            tracker = await agent.log_message(usermsg)
             return response.json(tracker.current_state(verbosity))
 
         except Exception as e:
@@ -508,7 +508,8 @@ def create_app(agent,
                                                         mode='w+b')
         use_e2e = utils.bool_arg(request, 'e2e', default=False)
         try:
-            evaluation = run_story_evaluation(tmp_file, agent, use_e2e=use_e2e)
+            evaluation = await run_story_evaluation(tmp_file, agent,
+                                                    use_e2e=use_e2e)
             return response.json(evaluation)
         except ValueError as e:
             raise ErrorResponse(400, "FailedEvaluation",

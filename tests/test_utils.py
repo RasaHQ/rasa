@@ -1,11 +1,10 @@
-import json
 import os
-
 import pytest
-from httpretty import httpretty
+from aioresponses import aioresponses
 
 from rasa_core import utils
 from rasa_core.utils import EndpointConfig
+from tests.utilities import latest_request, json_of_latest_request
 
 
 def test_is_int():
@@ -82,42 +81,49 @@ def test_read_lines():
 
 
 def test_endpoint_config(loop):
-    endpoint = EndpointConfig(
-        "https://abc.defg/",
-        params={"A": "B"},
-        headers={"X-Powered-By": "Rasa"},
-        basic_auth={"username": "user",
-                    "password": "pass"},
-        token="mytoken",
-        token_name="letoken",
-        store_type="redis",
-        port=6379,
-        db=0,
-        password="password",
-        timeout=30000
-    )
+    with aioresponses() as mocked:
+        endpoint = EndpointConfig(
+            "https://example.com/",
+            params={"A": "B"},
+            headers={"X-Powered-By": "Rasa"},
+            basic_auth={"username": "user",
+                        "password": "pass"},
+            token="mytoken",
+            token_name="letoken",
+            store_type="redis",
+            port=6379,
+            db=0,
+            password="password",
+            timeout=30000
+        )
 
-    httpretty.register_uri(
-        httpretty.POST,
-        'https://abc.defg/test',
-        status=500,
-        body='')
+        mocked.post('https://example.com/test?A=B&P=1&letoken=mytoken',
+                    payload={"ok": True},
+                    repeat=True,
+                    status=200)
 
-    httpretty.enable()
-    loop.run_until_complete(endpoint.request("post", subpath="test",
-                                             content_type="application/text",
-                                             json={"c": "d"},
-                                             params={"P": "1"}))
-    httpretty.disable()
+        loop.run_until_complete(
+            endpoint.request("post", subpath="test",
+                             content_type="application/text",
+                             json={"c": "d"},
+                             params={"P": "1"}))
 
-    r = httpretty.latest_requests[-1]
+        r = latest_request(mocked, 'post',
+                           "https://example.com/test?A=B&P=1&letoken=mytoken")
 
-    assert json.loads(str(r.body.decode("utf-8"))) == {"c": "d"}
-    assert r.headers.get("X-Powered-By") == "Rasa"
-    assert r.headers.get("Authorization") == "Basic dXNlcjpwYXNz"
-    assert r.querystring.get("A") == ["B"]
-    assert r.querystring.get("P") == ["1"]
-    assert r.querystring.get("letoken") == ["mytoken"]
+        assert r
+
+        assert json_of_latest_request(r) == {"c": "d"}
+        assert r[-1].kwargs.get("params", {}).get("A") == "B"
+        assert r[-1].kwargs.get("params", {}).get("P") == "1"
+        assert r[-1].kwargs.get("params", {}).get("letoken") == "mytoken"
+
+        # unfortunately, the mock library won't report any headers stored on
+        # the session object, so we need to verify them separately
+        s = loop.run_until_complete(endpoint.session())
+        assert s._default_headers.get("X-Powered-By") == "Rasa"
+        assert s._default_auth.login == "user"
+        assert s._default_auth.password == "pass"
 
 
 os.environ['USER_NAME'] = 'user'

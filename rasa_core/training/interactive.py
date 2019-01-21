@@ -16,7 +16,9 @@ from gevent.pywsgi import WSGIServer
 from signal import signal
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
+from typing import (
+    Any, Text, Dict, List, Optional, Callable, Union, Tuple,
+    Awaitable)
 
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
@@ -1170,10 +1172,10 @@ async def record_messages(endpoint: EndpointConfig,
                              "Is the server running?".format(endpoint.url))
             return
 
-        trackers = training.load_data(stories, Domain.from_dict(domain),
-                                      augmentation_factor=0,
-                                      use_story_concatenation=False,
-                                      )
+        trackers = await training.load_data(stories, Domain.from_dict(domain),
+                                            augmentation_factor=0,
+                                            use_story_concatenation=False,
+                                            )
 
         intents = [next(iter(i)) for i in (domain.get("intents") or [])]
 
@@ -1233,23 +1235,30 @@ def _start_interactive_learning_io(endpoint: EndpointConfig,
                                    skip_visualization: bool = False) -> None:
     """Start the interactive learning message recording in a separate thread.
     """
-    # TODO AS adapt to asyncio loop
-    p = Thread(target=record_messages,
-               kwargs={
-                   "endpoint": endpoint,
-                   "on_finish": on_finish,
-                   "stories": stories,
-                   "finetune": finetune,
-                   "skip_visualization": skip_visualization,
-                   "sender_id": uuid.uuid4().hex})
-    p.setDaemon(True)
-    p.start()
+
+    def start_loop(loop):
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
+    new_loop = asyncio.new_event_loop()
+    t = Thread(target=start_loop, args=(new_loop,))
+    t.start()
+    asyncio.run_coroutine_threadsafe(
+        record_messages(
+            endpoint=endpoint,
+            on_finish=on_finish,
+            stories=stories,
+            finetune=finetune,
+            skip_visualization=skip_visualization,
+            sender_id=uuid.uuid4().hex),
+        new_loop)
 
 
 def _serve_application(app: Sanic, stories: Text,
                        finetune: bool = False,
                        serve_forever: bool = True,
-                       skip_visualization: bool = False) -> WSGIServer:
+                       skip_visualization: bool = False
+                       ) -> Awaitable[WSGIServer]:
     """Start a core server and attach the interactive learning IO."""
 
     if not skip_visualization:
@@ -1299,7 +1308,8 @@ def run_interactive_learning(agent: Agent,
                              stories: Text = None,
                              finetune: bool = False,
                              serve_forever: bool = True,
-                             skip_visualization: bool = False) -> WSGIServer:
+                             skip_visualization: bool = False
+                             ) -> Awaitable[WSGIServer]:
     """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)

@@ -1,12 +1,15 @@
-import os
+import aiohttp
 import sys
-import json
-import pytest
-from httpretty import httpretty
 
-from rasa_core.train import train_dialogue_model
+import json
+import os
+from aioresponses import aioresponses
+
 from rasa_core.agent import Agent
-from rasa_core.utils import EndpointConfig, AvailableEndpoints
+from rasa_core.train import train_dialogue_model
+from rasa_core.utils import (
+    EndpointConfig, AvailableEndpoints,
+    ClientResponseError)
 
 
 def test_moodbot_example(loop, trained_moodbot_path):
@@ -29,9 +32,10 @@ def test_restaurantbot_example(loop):
 
     p = "examples/restaurantbot/"
     stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    agent = train_dialogue(os.path.join(p, "restaurant_domain.yml"),
-                           os.path.join(p, "models", "dialogue"),
-                           stories)
+    agent = loop.run_until_complete(
+        train_dialogue(os.path.join(p, "restaurant_domain.yml"),
+                       os.path.join(p, "models", "dialogue"),
+                       stories))
 
     responses = loop.run_until_complete(agent.handle_text("/greet"))
     assert responses[0]['text'] == 'how can I help you?'
@@ -42,13 +46,14 @@ def test_formbot_example(loop):
 
     p = "examples/formbot/"
     stories = os.path.join(p, "data", "stories.md")
-    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
     endpoints = AvailableEndpoints(action=endpoint)
-    agent = train_dialogue_model(os.path.join(p, "domain.yml"),
-                                 stories,
-                                 os.path.join(p, "models", "dialogue"),
-                                 endpoints=endpoints,
-                                 policy_config="rasa_core/default_config.yml")
+    agent = loop.run_until_complete(
+        train_dialogue_model(os.path.join(p, "domain.yml"),
+                             stories,
+                             os.path.join(p, "models", "dialogue"),
+                             endpoints=endpoints,
+                             policy_config="rasa_core/default_config.yml"))
     response = {
         'events': [
             {'event': 'form', 'name': 'restaurant_form', 'timestamp': None},
@@ -60,38 +65,30 @@ def test_formbot_example(loop):
         ]
     }
 
-    httpretty.register_uri(
-        httpretty.POST,
-        'https://abc.defg/webhooks/actions',
-        body=json.dumps(response))
+    with aioresponses() as mocked:
+        mocked.post('https://example.com/webhooks/actions', payload=response)
 
-    httpretty.enable()
+        responses = loop.run_until_complete(
+            agent.handle_text("/request_restaurant"))
 
-    responses = loop.run_until_complete(
-        agent.handle_text("/request_restaurant"))
-
-    httpretty.disable()
-
-    assert responses[0]['text'] == 'what cuisine?'
+        assert responses[0]['text'] == 'what cuisine?'
 
     response = {
-        "error": "Failed to validate slot cuisine with action restaurant_form",
+        "error": "Failed to validate slot cuisine with action "
+                 "restaurant_form",
         "action_name": "restaurant_form"
     }
 
-    httpretty.register_uri(
-        httpretty.POST,
-        'https://abc.defg/webhooks/actions',
-        status=400,
-        body=json.dumps(response))
+    with aioresponses() as mocked:
+        # noinspection PyTypeChecker
+        mocked.post('https://example.com/webhooks/actions',
+                    exception=ClientResponseError(
+                        aiohttp.ClientResponseError(None, None, code=400),
+                        json.dumps(response)))
 
-    httpretty.enable()
+        responses = loop.run_until_complete(agent.handle_text("/chitchat"))
 
-    responses = loop.run_until_complete(agent.handle_text("/chitchat"))
-
-    httpretty.disable()
-
-    assert responses[0]['text'] == 'chitchat'
+        assert responses[0]['text'] == 'chitchat'
 
 
 def test_concertbot_training():

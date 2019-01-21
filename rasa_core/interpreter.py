@@ -1,9 +1,10 @@
+import aiohttp
+
 import json
 import logging
 import re
 
 import os
-import requests
 from typing import Text, List, Dict, Any
 
 from rasa_core import constants
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class NaturalLanguageInterpreter(object):
-    def parse(self, text):
+    async def parse(self, text):
         raise NotImplementedError(
             "Interpreter needs to be able to parse "
             "messages into structured output.")
@@ -136,7 +137,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                            "'{}'. ".format(user_input))
             return None, 0.0, []
 
-    def parse(self, text):
+    async def parse(self, text):
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)
@@ -174,18 +175,18 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    def parse(self, text):
+    async def parse(self, text):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         default_return = {"intent": {"name": "", "confidence": 0.0},
                           "entities": [], "text": ""}
-        result = self._rasa_http_parse(text)
+        result = await self._rasa_http_parse(text)
 
         return result if result is not None else default_return
 
-    def _rasa_http_parse(self, text):
+    async def _rasa_http_parse(self, text):
         """Send a text message to a running rasa NLU http server.
 
         Return `None` on failure."""
@@ -204,14 +205,15 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         }
         url = "{}/parse".format(self.endpoint.url)
         try:
-            result = requests.get(url, params=params)
-            if result.status_code == 200:
-                return result.json()
-            else:
-                logger.error(
-                    "Failed to parse text '{}' using rasa NLU over http. "
-                    "Error: {}".format(text, result.text))
-                return None
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    else:
+                        logger.error(
+                            "Failed to parse text '{}' using rasa NLU over "
+                            "http. Error: {}".format(text, await resp.text()))
+                        return None
         except Exception as e:
             logger.error(
                 "Failed to parse text '{}' using rasa NLU over http. "
@@ -230,7 +232,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         else:
             self.interpreter = None
 
-    def parse(self, text):
+    async def parse(self, text):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""

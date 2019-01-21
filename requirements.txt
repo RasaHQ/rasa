@@ -8,7 +8,6 @@ numpy==1.14.5
 scipy==1.1.0
 typing==3.6.4
 ruamel.yaml==0.15.66
-requests==2.20.0
 tensorflow==1.10.0
 h5py==2.8.0
 apscheduler==3.5.1
@@ -21,7 +20,7 @@ coloredlogs==10.0
 sanic==0.8.3
 sanic-cors==0.9.6
 sanic-jwt==1.2.1
-aiohttp==3.4.4
+aiohttp==3.5.4
 scikit-learn==0.19.2
 rasa_nlu~=0.13.0
 slackclient==1.2.1

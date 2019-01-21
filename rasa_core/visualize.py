@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 import os
 
@@ -64,9 +65,11 @@ if __name__ == '__main__':
     stories = cli.stories_from_cli_args(cmdline_arguments)
 
     logger.info("Starting to visualize stories...")
-    agent.visualize(stories, cmdline_arguments.output,
-                    cmdline_arguments.max_history,
-                    nlu_training_data=nlu_data)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(
+        agent.visualize(stories, cmdline_arguments.output,
+                        cmdline_arguments.max_history,
+                        nlu_training_data=nlu_data))
 
     logger.info("Finished graph creation. Saved into file://{}".format(
         os.path.abspath(cmdline_arguments.output)))

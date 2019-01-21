@@ -295,6 +295,7 @@ class QueueOutputChannel(CollectingOutputChannel):
     def name(cls):
         return "queue"
 
+    # noinspection PyMissingConstructor
     def __init__(self, message_queue: Queue = None) -> None:
         self.messages = Queue() if not message_queue else message_queue
 
@@ -326,7 +327,7 @@ class RestInput(InputChannel):
 
         queue.put("DONE")
 
-    def _extract_sender(self, req):
+    async def _extract_sender(self, req):
         return req.json.get("sender", None)
 
     # noinspection PyMethodMayBeStatic
@@ -338,7 +339,7 @@ class RestInput(InputChannel):
             asyncio.set_event_loop(loop)
             loop.run_forever()
 
-        async def stream(response):
+        async def stream(resp):
             from multiprocessing import Queue
 
             q = Queue()
@@ -354,7 +355,7 @@ class RestInput(InputChannel):
                 if result == "DONE":
                     break
                 else:
-                    await response.write(json.dumps(result) + "\n")
+                    await resp.write(json.dumps(result) + "\n")
 
         return stream
 
@@ -363,13 +364,14 @@ class RestInput(InputChannel):
             'custom_webhook_{}'.format(type(self).__name__),
             inspect.getmodule(self).__name__)
 
+        # noinspection PyUnusedLocal
         @custom_webhook.route("/", methods=['GET'])
         async def health(request):
             return response.json({"status": "ok"})
 
         @custom_webhook.route("/webhook", methods=['POST'])
         async def receive(request):
-            sender_id = self._extract_sender(request)
+            sender_id = await self._extract_sender(request)
             text = self._extract_message(request)
             should_use_stream = utils.bool_arg(request, "stream",
                                                default=False)

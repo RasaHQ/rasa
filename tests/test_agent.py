@@ -1,7 +1,7 @@
 import io
 
 import pytest
-import responses
+from aioresponses import aioresponses
 
 import rasa_core
 from rasa_core import utils
@@ -11,12 +11,13 @@ from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.utils import EndpointConfig
 
 
-def test_agent_train(tmpdir, default_domain):
+def test_agent_train(loop, tmpdir, default_domain):
     training_data_file = 'examples/moodbot/data/stories.md'
     agent = Agent("examples/moodbot/domain.yml",
                   policies=[AugmentedMemoizationPolicy()])
 
-    training_data = agent.load_data(training_data_file)
+    training_data = loop.run_until_complete(
+        agent.load_data(training_data_file))
     agent.train(training_data)
     agent.persist(tmpdir.strpath)
 
@@ -57,7 +58,6 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
         agent.load(training_data_file)
 
 
-@responses.activate
 def test_agent_with_model_server(loop,
                                  tmpdir, zipped_moodbot_model,
                                  moodbot_domain, moodbot_metadata):
@@ -69,14 +69,15 @@ def test_agent_with_model_server(loop,
 
     # mock a response that returns a zipped model
     with io.open(zipped_moodbot_model, 'rb') as f:
-        responses.add(responses.GET,
-                      model_endpoint_config.url,
-                      headers={"ETag": fingerprint},
-                      body=f.read(),
-                      content_type='application/zip',
-                      stream=True)
-    agent = loop.run_until_complete(rasa_core.agent.load_from_server(
-        model_server=model_endpoint_config))
+        body = f.read()
+    with aioresponses() as mocked:
+        mocked.get(model_endpoint_config.url,
+                   headers={"ETag": fingerprint,
+                            "Content-Type": 'application/zip'},
+                   body=body)
+        agent = loop.run_until_complete(rasa_core.agent.load_from_server(
+            model_server=model_endpoint_config))
+
     assert agent.fingerprint == fingerprint
 
     assert agent.domain.as_dict() == moodbot_domain.as_dict()
