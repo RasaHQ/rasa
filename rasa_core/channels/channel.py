@@ -1,10 +1,9 @@
 import asyncio
+from asyncio import Queue
+
 import inspect
 import json
-from multiprocessing import Queue
-
 from sanic import Sanic, Blueprint, response
-from threading import Thread
 from typing import (
     Text, List, Dict, Any, Optional, Callable, Iterable,
     Awaitable)
@@ -303,7 +302,7 @@ class QueueOutputChannel(CollectingOutputChannel):
         raise NotImplemented("A queue doesn't allow to peek at messages.")
 
     async def _persist_message(self, message):
-        self.messages.put(message)
+        await self.messages.put(message)
 
 
 class RestInput(InputChannel):
@@ -325,7 +324,7 @@ class RestInput(InputChannel):
                               input_channel=RestInput.name())
         await on_new_message(message)
 
-        queue.put("DONE")
+        await queue.put("DONE")
 
     async def _extract_sender(self, req):
         return req.json.get("sender", None)
@@ -335,27 +334,17 @@ class RestInput(InputChannel):
         return req.json.get("message", None)
 
     def stream_response(self, on_new_message, text, sender_id):
-        def start_loop(loop):
-            asyncio.set_event_loop(loop)
-            loop.run_forever()
-
         async def stream(resp):
-            from multiprocessing import Queue
-
             q = Queue()
-
-            new_loop = asyncio.new_event_loop()
-            t = Thread(target=start_loop, args=(new_loop,))
-            t.start()
-            asyncio.run_coroutine_threadsafe(
-                self.on_message_wrapper(on_new_message, text, q, sender_id),
-                new_loop)
+            task = asyncio.ensure_future(
+                self.on_message_wrapper(on_new_message, text, q, sender_id))
             while True:
-                result = q.get()
+                result = await q.get()
                 if result == "DONE":
                     break
                 else:
                     await resp.write(json.dumps(result) + "\n")
+            await task
 
         return stream
 

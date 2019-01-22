@@ -336,6 +336,8 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderScheduled):
+                    # TODO async we need to fix this, most likely this is using
+                    # the wrong scheduler
                     scheduler.add_job(self.handle_reminder, "date",
                                       run_date=e.trigger_date_time,
                                       args=[e, dispatcher],

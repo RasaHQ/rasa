@@ -1,7 +1,8 @@
 import asyncio
-from asyncio import Future
+from asyncio import Future, Task
 
 import aiohttp
+import datetime
 import logging
 import os
 import shutil
@@ -60,9 +61,11 @@ async def load_from_server(
         isinstance(wait_time_between_pulls,
                    int) or wait_time_between_pulls.isdigit()):
         # continuously pull the model every `wait_time_between_pulls` seconds
-        start_model_pulling_in_worker(model_server,
-                                      int(wait_time_between_pulls),
-                                      agent)
+        # TODO async check if it is really a good idea to not await this task
+        # noinspection PyAsyncCall
+        schedule_model_pulling(model_server,
+                               int(wait_time_between_pulls),
+                               agent)
     else:
         # just pull the model once
         await _update_model_from_server(model_server, agent)
@@ -99,11 +102,14 @@ async def _update_model_from_server(model_server: EndpointConfig,
     new_model_fingerprint = await _pull_model_and_fingerprint(
         model_server, model_directory, agent.fingerprint)
     if new_model_fingerprint:
+        logger.debug("Found new model with fingerprint {}. Loading..."
+                     "".format(new_model_fingerprint))
         domain_path = os.path.join(os.path.abspath(model_directory),
                                    "domain.yml")
         domain = Domain.load(domain_path)
         policy_ensemble = PolicyEnsemble.load(model_directory)
         agent.update_model(domain, policy_ensemble, new_model_fingerprint)
+        logger.debug("Finished updating agent to new model.")
     else:
         logger.debug("No new model found at "
                      "URL {}".format(model_server.url))
@@ -129,8 +135,6 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
                                    timeout=DEFAULT_REQUEST_TIMEOUT,
                                    headers=headers,
                                    params=params) as resp:
-
-            resp.raise_for_status()
 
             if resp.status in [204, 304]:
                 logger.debug("Model server returned {} status code, indicating "
@@ -174,14 +178,11 @@ async def _run_model_pulling_worker(model_server: EndpointConfig,
         await asyncio.sleep(wait_time_between_pulls)
 
 
-def start_model_pulling_in_worker(model_server: EndpointConfig,
-                                  wait_time_between_pulls: int,
-                                  agent: 'Agent') -> None:
-    utils.run_in_asyncio_thread(
-        _run_model_pulling_worker,
-        model_server=model_server,
-        wait_time_between_pulls=wait_time_between_pulls,
-        agent=agent)
+def schedule_model_pulling(model_server: EndpointConfig,
+                           wait_time_between_pulls: int,
+                           agent: 'Agent') -> Future:
+    return asyncio.ensure_future(_run_model_pulling_worker(
+        model_server, wait_time_between_pulls, agent))
 
 
 class Agent(object):

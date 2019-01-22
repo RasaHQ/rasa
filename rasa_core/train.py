@@ -290,7 +290,7 @@ async def do_compare_training(cmdline_args, stories, additional_arguments):
     utils.dump_obj_as_json_to_file(story_n_path, story_range)
 
 
-async def do_interactive_learning(cmdline_args, stories, additional_arguments):
+def do_interactive_learning(cmdline_args, stories, additional_arguments, loop):
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
@@ -319,17 +319,18 @@ async def do_interactive_learning(cmdline_args, stories, additional_arguments):
         else:
             model_directory = tempfile.mkdtemp(suffix="_core_model")
 
-        _agent = await train_dialogue_model(cmdline_args.domain,
-                                            stories,
-                                            model_directory,
-                                            _interpreter,
-                                            _endpoints,
-                                            cmdline_args.dump_stories,
-                                            cmdline_args.config[0],
-                                            None,
-                                            additional_arguments)
+        _agent = loop.run_until_complete(
+            train_dialogue_model(cmdline_args.domain,
+                                 stories,
+                                 model_directory,
+                                 _interpreter,
+                                 _endpoints,
+                                 cmdline_args.dump_stories,
+                                 cmdline_args.config[0],
+                                 None,
+                                 additional_arguments))
 
-    await interactive.run_interactive_learning(
+    interactive.run_interactive_learning(
         _agent, stories,
         finetune=cmdline_args.finetune,
         skip_visualization=cmdline_args.skip_visualization)
@@ -355,9 +356,10 @@ if __name__ == '__main__':
                                                     additional_args))
 
     elif cmdline_arguments.mode == 'interactive':
-        loop.run_until_complete(do_interactive_learning(cmdline_arguments,
-                                                        training_stories,
-                                                        additional_args))
+        do_interactive_learning(cmdline_arguments,
+                                training_stories,
+                                additional_args,
+                                loop)
 
     elif cmdline_arguments.mode == 'compare':
         loop.run_until_complete(do_compare_training(cmdline_arguments,

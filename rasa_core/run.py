@@ -1,13 +1,9 @@
-from _signal import SIGINT
+import asyncio
 
 import argparse
-import asyncio
 import logging
-from gevent.pywsgi import WSGIServer
 from sanic import Sanic
 from sanic_cors import CORS
-from signal import signal
-from threading import Thread
 from typing import Text, Optional, List
 
 import rasa_core
@@ -132,30 +128,13 @@ def _create_single_channel(channel, credentials):
                 "is a proper name of a class in a module.".format(channel))
 
 
-def start_cmdline_io(server_url, on_finish, **kwargs):
-    kwargs["server_url"] = server_url
-    kwargs["on_finish"] = on_finish
-
-    def start_loop(loop):
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-
-    new_loop = asyncio.new_event_loop()
-    t = Thread(target=start_loop, args=(new_loop,))
-    t.start()
-    asyncio.run_coroutine_threadsafe(
-        console.record_messages(**kwargs),
-        new_loop)
-
-
-def start_server(input_channels,
-                 cors,
-                 auth_token,
-                 port,
-                 initial_agent,
-                 enable_api=True,
-                 jwt_secret=None,
-                 jwt_method=None):
+def _configure_app(input_channels,
+                   cors,
+                   auth_token,
+                   initial_agent,
+                   enable_api=True,
+                   jwt_secret=None,
+                   jwt_method=None):
     """Run the agent."""
 
     if enable_api:
@@ -179,10 +158,7 @@ def start_server(input_channels,
     if logger.isEnabledFor(logging.DEBUG):
         utils.list_routes(app)
 
-    http_server = app.create_server(host='0.0.0.0', port=port)
-    logger.info("Rasa Core server is up and running on "
-                "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
-    return http_server
+    return app
 
 
 def serve_application(initial_agent,
@@ -200,23 +176,24 @@ def serve_application(initial_agent,
 
     input_channels = create_http_input_channels(channel, credentials_file)
 
-    http_server = start_server(input_channels, cors, auth_token,
-                               port, initial_agent, enable_api,
-                               jwt_secret, jwt_method)
-
-    loop = asyncio.get_event_loop()
-    task = asyncio.ensure_future(http_server)
-    signal(SIGINT, lambda s, f: loop.stop())
+    app = _configure_app(input_channels, cors, auth_token,
+                         initial_agent, enable_api,
+                         jwt_secret, jwt_method)
 
     if channel == "cmdline":
-        start_cmdline_io(constants.DEFAULT_SERVER_FORMAT.format(port),
-                         loop.stop)
+        async def run_cmdline_io(running_app: Sanic):
+            """Small wrapper to shutdown the server once cmd io is done."""
 
-    try:
-        loop.run_forever()
-    except Exception as exc:
-        logger.exception(exc)
-        loop.stop()
+            await console.record_messages(
+                server_url=constants.DEFAULT_SERVER_FORMAT.format(port))
+            running_app.stop()      # kill the sanic server
+
+        app.add_task(run_cmdline_io)
+
+    logger.info("Rasa Core server is up and running on "
+                "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
+    app.run(host='0.0.0.0', port=port,
+            debug=logger.isEnabledFor(logging.DEBUG))
 
 
 async def load_agent(core_model, interpreter, endpoints,

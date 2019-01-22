@@ -1,11 +1,11 @@
 # this builtin is needed so we can overwrite in test
 import aiohttp
-
-import questionary
-
 import json
+import logging
+from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
+import questionary
 from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import (
@@ -13,7 +13,8 @@ from rasa_core.channels.channel import (
     RestInput)
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
-from async_generator import async_generator, yield_
+
+logger = logging.getLogger(__name__)
 
 
 def print_bot_output(message, color=utils.bcolors.OKBLUE):
@@ -37,11 +38,15 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
             utils.print_color(element_str, color)
 
 
-def get_cmd_input():
-    return questionary.text("",
-                            qmark="Your input ->",
-                            style=Style([('qmark', '#b373d6'),
-                                         ('', '#b373d6')])).ask().strip()
+async def get_cmd_input():
+    response = questionary.text("",
+                                qmark="Your input ->",
+                                style=Style([('qmark', '#b373d6'),
+                                             ('', '#b373d6')])).ask()
+    if response is not None:
+        return response.strip()
+    else:
+        return None
 
 
 async def send_message_receive_block(server_url,
@@ -61,7 +66,7 @@ async def send_message_receive_block(server_url,
             return await resp.json()
 
 
-@async_generator    # needed for python 3.5 compatibility
+@async_generator  # needed for python 3.5 compatibility
 async def send_message_receive_stream(server_url,
                                       auth_token,
                                       sender_id,
@@ -89,8 +94,7 @@ async def record_messages(server_url=DEFAULT_SERVER_URL,
                           auth_token=None,
                           sender_id=UserMessage.DEFAULT_SENDER_ID,
                           max_message_limit=None,
-                          use_response_stream=True,
-                          on_finish=None):
+                          use_response_stream=True):
     """Read messages from the command line and print bot responses."""
 
     auth_token = auth_token if auth_token else ""
@@ -103,11 +107,12 @@ async def record_messages(server_url=DEFAULT_SERVER_URL,
 
     num_messages = 0
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = get_cmd_input()
-        if text == exit_text:
+        text = await get_cmd_input()
+        if text == exit_text or text is None:
             break
 
         if use_response_stream:
+            logger.info("using strea")
             bot_responses = send_message_receive_stream(server_url,
                                                         auth_token,
                                                         sender_id, text)
@@ -121,9 +126,7 @@ async def record_messages(server_url=DEFAULT_SERVER_URL,
                 print_bot_output(response)
 
         num_messages += 1
-
-    if on_finish:
-        on_finish()
+    return num_messages
 
 
 class CmdlineInput(RestInput):

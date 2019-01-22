@@ -1,25 +1,20 @@
 import sys
 
-import asyncio
-from signal import SIGINT
-
 import io
 import logging
 import numpy as np
 import os
-import requests
 import textwrap
 import uuid
+from aiohttp import ClientError
 from colorclass import Color
 from sanic import Sanic, response
-from gevent.pywsgi import WSGIServer
-from signal import signal
 from terminaltables import SingleTable, AsciiTable
-from threading import Thread
 from typing import (
-    Any, Text, Dict, List, Optional, Callable, Union, Tuple,
-    Awaitable)
+    Any, Text, Dict, List, Optional, Callable, Union, Tuple)
 
+import questionary
+from questionary import Choice, Form, Question
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
@@ -38,9 +33,6 @@ from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
     visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
 from rasa_core.utils import EndpointConfig
-
-import questionary
-from questionary import Choice, Form, Question
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
@@ -159,7 +151,7 @@ async def send_action(
         return await endpoint.request(json=payload,
                                       method="post",
                                       subpath=subpath)
-    except requests.exceptions.HTTPError:
+    except ClientError:
         if is_new_action:
             warning_questions = questionary.confirm(
                 "WARNING: You have created a new action: '{}', "
@@ -1153,7 +1145,6 @@ def _print_help(skip_visualization: bool) -> None:
 async def record_messages(endpoint: EndpointConfig,
                           sender_id: Text = UserMessage.DEFAULT_SENDER_ID,
                           max_message_limit: Optional[int] = None,
-                          on_finish: Optional[Callable[[], None]] = None,
                           finetune: bool = False,
                           stories: Optional[Text] = None,
                           skip_visualization: bool = False
@@ -1167,7 +1158,7 @@ async def record_messages(endpoint: EndpointConfig,
 
         try:
             domain = await retrieve_domain(endpoint)
-        except requests.exceptions.ConnectionError:
+        except ClientError:
             logger.exception("Failed to connect to rasa core server at '{}'. "
                              "Is the server running?".format(endpoint.url))
             return
@@ -1223,80 +1214,57 @@ async def record_messages(endpoint: EndpointConfig,
     except Exception:
         logger.exception("An exception occurred while recording messages.")
         raise
-    finally:
-        if on_finish:
-            on_finish()
-
-
-def _start_interactive_learning_io(endpoint: EndpointConfig,
-                                   stories: Text,
-                                   on_finish: Callable[[], None],
-                                   finetune: bool = False,
-                                   skip_visualization: bool = False) -> None:
-    """Start the interactive learning message recording in a separate thread.
-    """
-
-    def start_loop(loop):
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-
-    new_loop = asyncio.new_event_loop()
-    t = Thread(target=start_loop, args=(new_loop,))
-    t.start()
-    asyncio.run_coroutine_threadsafe(
-        record_messages(
-            endpoint=endpoint,
-            on_finish=on_finish,
-            stories=stories,
-            finetune=finetune,
-            skip_visualization=skip_visualization,
-            sender_id=uuid.uuid4().hex),
-        new_loop)
 
 
 def _serve_application(app: Sanic, stories: Text,
                        finetune: bool = False,
                        serve_forever: bool = True,
                        skip_visualization: bool = False
-                       ) -> Awaitable[WSGIServer]:
+                       ):
     """Start a core server and attach the interactive learning IO."""
 
     if not skip_visualization:
         _add_visualization_routes(app, "story_graph.dot")
 
-    http_server = app.create_server(host='0.0.0.0', port=DEFAULT_SERVER_PORT)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
 
-    loop = asyncio.get_event_loop()
-    task = asyncio.ensure_future(http_server)
-    signal(SIGINT, lambda s, f: loop.stop())
-
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
-    _start_interactive_learning_io(endpoint, stories,
-                                   loop.stop,
-                                   finetune=finetune,
-                                   skip_visualization=skip_visualization)
+
+    async def run_interactive_io(running_app: Sanic):
+        """Small wrapper to shutdown the server once cmd io is done."""
+
+        await record_messages(
+            endpoint=endpoint,
+            stories=stories,
+            finetune=finetune,
+            skip_visualization=skip_visualization,
+            sender_id=uuid.uuid4().hex)
+
+        logger.info("Killing Sanic server now.")
+
+        running_app.stop()      # kill the sanic server
+
+    app.add_task(run_interactive_io)
 
     if serve_forever:
-        try:
-            loop.run_forever()
-        except Exception as exc:
-            logger.exception(exc)
-            loop.stop()
+        logger.info("Rasa Core server is up and running on "
+                    "{}".format(DEFAULT_SERVER_URL))
+        app.run(host='0.0.0.0', port=DEFAULT_SERVER_PORT,
+                debug=logger.isEnabledFor(logging.DEBUG))
 
-    return task
+    return app
 
 
 def _add_visualization_routes(app: Sanic, image_path: Text = None) -> None:
     """Add routes to serve the conversation visualization files."""
 
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
-    def visualisation_html():
+    def visualisation_html(request):
         return response.file(visualization.visualization_html_path())
 
     @app.route("/visualization.dot", methods=["GET"])
-    def visualisation_png():
+    def visualisation_png(request):
         try:
             headers = {'Cache-Control': "no-cache"}
             return response.file(os.path.abspath(image_path), headers=headers)
@@ -1309,7 +1277,7 @@ def run_interactive_learning(agent: Agent,
                              finetune: bool = False,
                              serve_forever: bool = True,
                              skip_visualization: bool = False
-                             ) -> Awaitable[WSGIServer]:
+                             ):
     """Start the interactive learning with the model of the agent."""
 
     app = server.create_app(agent)

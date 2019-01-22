@@ -20,7 +20,6 @@ from random import Random
 from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
-from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -421,28 +420,6 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
         return s
 
 
-def wait_for_threads(threads: List[Thread]) -> None:
-    """Block until all child threads have been terminated."""
-
-    while len(threads) > 0:
-        try:
-            # Join all threads using a timeout so it doesn't block
-            # Filter out threads which have been joined or are None
-            [t.join(1000) for t in threads]
-            threads = [t for t in threads if t.isAlive()]
-        except KeyboardInterrupt:
-            logger.info("Ctrl-c received! Sending kill to threads...")
-            # It would be better at this point to properly shutdown every
-            # thread (e.g. by setting a flag on it) Unfortunately, there
-            # are IO operations that are blocking without a timeout
-            # (e.g. sys.read) so threads that are waiting for one of
-            # these calls can't check the set flag. Hence, we go the easy
-            # route for now
-            sys.exit(0)
-    logger.info("Finished waiting for input threads to terminate. "
-                "Stopping to serve forever.")
-
-
 def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     """Return a passed boolean argument of the request or a default.
 
@@ -743,19 +720,6 @@ class EndpointConfig(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-
-def run_in_asyncio_thread(f, **kwargs):
-    def start_loop(loop):
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-
-    new_loop = asyncio.new_event_loop()
-    t = Thread(target=start_loop, args=(new_loop,))
-    t.start()
-    asyncio.run_coroutine_threadsafe(
-        f(**kwargs),
-        new_loop)
 
 
 # noinspection PyProtectedMember

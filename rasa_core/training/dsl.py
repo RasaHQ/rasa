@@ -347,6 +347,7 @@ class StoryFileReader(object):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
+        # TODO async make sure this is tested
         parsed_messages = await asyncio.gather(
             *[self._parse_message(m, line_num) for m in messages])
         self.current_step_builder.add_user_messages(parsed_messages)

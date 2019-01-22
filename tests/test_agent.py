@@ -1,7 +1,10 @@
+import asyncio
 import io
 
 import pytest
 from aioresponses import aioresponses
+from sanic import Sanic, response
+from typing import Text
 
 import rasa_core
 from rasa_core import utils
@@ -94,10 +97,60 @@ def test_agent_with_model_server(loop,
     assert agent_policies == moodbot_policies
 
 
+def model_server_app(model_path: Text, model_hash: Text = "somehash"):
+    app = Sanic(__name__)
+
+    @app.route("/model", methods=['GET'])
+    async def model(request):
+        """Simple HTTP NLG generator, checks that the incoming request
+        is format according to the spec."""
+
+        if model_hash == request.headers.get("If-None-Match"):
+            return response.text("", 204)
+
+        return await response.file_stream(
+            location=model_path,
+            headers={'ETag': model_hash,
+                     'filename': model_path},
+            mime_type='application/zip')
+
+    return app
+
+
+async def test_agent_with_model_server_in_thread(test_server, tmpdir,
+                                                 zipped_moodbot_model,
+                                                 moodbot_domain,
+                                                 moodbot_metadata):
+
+    fingerprint = 'somehash'
+    server = await test_server(model_server_app(zipped_moodbot_model,
+                                                model_hash=fingerprint))
+
+    model_endpoint_config = EndpointConfig.from_dict({
+        "url": server.make_url('/model'),
+        "wait_time_between_pulls": 1
+    })
+
+    agent = await rasa_core.agent.load_from_server(
+        model_server=model_endpoint_config)
+
+    await asyncio.sleep(10)
+
+    assert agent.fingerprint == fingerprint
+
+    assert agent.domain.as_dict() == moodbot_domain.as_dict()
+
+    agent_policies = {utils.module_path_from_instance(p)
+                      for p in agent.policy_ensemble.policies}
+    moodbot_policies = set(moodbot_metadata["policy_names"])
+    assert agent_policies == moodbot_policies
+    await server.close()
+
+
 def test_wait_time_between_pulls_from_file(monkeypatch):
     from future.utils import raise_
 
-    monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
+    monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
                         lambda *args: raise_(Exception()))
@@ -112,7 +165,7 @@ def test_wait_time_between_pulls_from_file(monkeypatch):
 def test_wait_time_between_pulls_str(monkeypatch):
     from future.utils import raise_
 
-    monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
+    monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
                         lambda *args: raise_(Exception()))
@@ -129,7 +182,7 @@ def test_wait_time_between_pulls_str(monkeypatch):
 def test_wait_time_between_pulls_with_not_number(monkeypatch):
     from future.utils import raise_
 
-    monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
+    monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: raise_(Exception()))
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
                         lambda *args: True)
