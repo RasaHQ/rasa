@@ -242,9 +242,14 @@ class PolicyEnsemble(object):
                 policy['featurizer'] = featurizer_func(**featurizer_config)
 
             constr_func = utils.class_from_module_path(policy_name)
-            policy_object = constr_func(**policy)
 
-            policies.append(policy_object)
+            if constr_func:
+                policy_object = constr_func(**policy)
+                policies.append(policy_object)
+            else:
+                raise InvalidPolicyConfig("Module for policy '{}' could not be "
+                                          "loaded. Please make sure the name "
+                                          "is valid.".format(policy_name))
 
         return policies
 
