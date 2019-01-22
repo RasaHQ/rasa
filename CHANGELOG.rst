@@ -30,7 +30,7 @@ Added
 - Added sanitization mechanism for SlackInput that (in its current shape and form)
   strips bot's self mentions from messages posted using the said @mentions.
 - ``InvalidPolicyConfig`` error if policy in policy configuration could not be
-  loaded
+  loaded, or if ``policies`` key is empty or not provided
 
 Removed
 -------
