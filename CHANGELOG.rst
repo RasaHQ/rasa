@@ -46,6 +46,7 @@ Changed
 - updated docs for interactive learning to inform users of the
   ``--core`` flag
 - Change memoization policies confidence score to 1.1 to override ML policies
+- reload domain when using `/model` endpoint to upload new model
 
 Fixed
 -----
