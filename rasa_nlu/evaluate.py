@@ -738,8 +738,8 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model,
-                   report_filename='report.json',
-                   successes_filename='successes.json',
+                   report_filename=None,
+                   successes_filename=None,
                    errors_filename='errors.json',
                    confmat_filename=None,
                    intent_hist_filename=None,
