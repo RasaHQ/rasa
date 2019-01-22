@@ -85,8 +85,10 @@ def test_policy_from_dict_with_valid_module():
     assert PolicyEnsemble.from_dict(test_dict)
 
 
-def test_policy_from_dict_with_invalid_module():
-    test_dict = {"policies": [{"name": "ykaüoppodas"}]}
-
+@pytest.mark.parametrize("invalid_config", [
+    {"policy": [{"name": "MemoizationPolicy"}]},
+    {"policies": []},
+    {"policies": [{"name": "ykaüoppodas"}]}])
+def test_invalid_policy_configurations(invalid_config):
     with pytest.raises(InvalidPolicyConfig):
-        assert PolicyEnsemble.from_dict(test_dict)
+        PolicyEnsemble.from_dict(invalid_config)
