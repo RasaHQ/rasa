@@ -261,9 +261,9 @@ def test_run_cv_evaluation():
     assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
 
 
-def test_report_output(tmpdir):
+def test_report_output(tmpdir_factory):
 
-    path = tmpdir.strpath
+    path = tmpdir_factory.mktemp("evaluation").strpath
     report_filename = path + "report.json"
     successes_filename = None
     errors_filename = path + "errors.json"
