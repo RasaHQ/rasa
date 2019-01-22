@@ -357,8 +357,9 @@ def evaluate_intents(intent_results,
         # save classified samples to file for debugging
         collect_nlu_successes(intent_results, successes_filename)
 
-    # log and save misclassified samples to file for debugging
-    collect_nlu_errors(intent_results, errors_filename)
+    if errors_filename:
+        # log and save misclassified samples to file for debugging
+        collect_nlu_errors(intent_results, errors_filename)
 
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels

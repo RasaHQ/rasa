@@ -15,7 +15,7 @@ from rasa_nlu.evaluate import (
     get_duckling_dimensions, known_duckling_dimensions,
     find_component, remove_duckling_extractors, drop_intents_below_freq,
     run_cv_evaluation, substitute_labels, IntentEvaluationResult,
-    evaluate_intents)
+    get_evaluation_metrics, save_json, report_to_dict)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
@@ -265,10 +265,6 @@ def test_report_output(tmpdir_factory):
 
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_filename = path + "report.json"
-    successes_filename = None
-    errors_filename = path + "errors.json"
-    confmat_filename = path + "conf.png"
-    intent_hist_filename = path + "hist.png"
 
     intent_results = [
         IntentEvaluationResult("", "restaurant_search",
@@ -276,12 +272,14 @@ def test_report_output(tmpdir_factory):
         IntentEvaluationResult("greet", "greet",
                                "hello", 0.98765)]
 
-    evaluate_intents(intent_results,
-                     report_filename,
-                     successes_filename,
-                     errors_filename,
-                     confmat_filename,
-                     intent_hist_filename)
+    intent_results = remove_empty_intent_examples(intent_results)
+
+    targets, predictions = zip(*[(r.target, r.prediction)
+                                 for r in intent_results])
+    report, precision, f1, accuracy = get_evaluation_metrics(targets,
+                                                             predictions)
+
+    save_json(report_to_dict(report, f1, precision, accuracy), report_filename)
 
     report = json.loads(utils.read_file(report_filename))
 
