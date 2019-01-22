@@ -26,6 +26,7 @@ Changed
 - replaced ``yaml`` with ``ruamel.yaml``
 - updated spacy version to 2.0.18
 - updated TensorFlow version to 1.12.0
+- updated scikit-learn version to 0.20.2
 
 Removed
 -------
@@ -44,6 +45,7 @@ Fixed
 - Updated CORS support for the server.
   Added the ``Access-Control-Allow-Headers`` and ``Content-Type`` headers for nlu server
 - parsing of emojis which are sent within jsons
+- Bad input shape error from ``sklearn_intent_classifier`` when using ``scikit-learn==0.20.2``
 
 [0.13.8] - 2018-11-21
 ^^^^^^^^^^^^^^^^^^^^^
