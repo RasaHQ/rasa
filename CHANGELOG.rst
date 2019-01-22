@@ -29,6 +29,7 @@ Added
   (as long as the event itself is enabled in the application hosting the bot)
 - Added sanitization mechanism for SlackInput that (in its current shape and form)
   strips bot's self mentions from messages posted using the said @mentions.
+- Added a unique identifier to ``UserMessage`` and the ``UserUttered`` event.
 
 Removed
 -------
