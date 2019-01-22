@@ -361,21 +361,22 @@ def evaluate_intents(intent_results,
         # log and save misclassified samples to file for debugging
         collect_nlu_errors(intent_results, errors_filename)
 
-    from sklearn.metrics import confusion_matrix
-    from sklearn.utils.multiclass import unique_labels
-    import matplotlib.pyplot as plt
+    if confmat_filename:
+        from sklearn.metrics import confusion_matrix
+        from sklearn.utils.multiclass import unique_labels
+        import matplotlib.pyplot as plt
 
-    cnf_matrix = confusion_matrix(targets, predictions)
-    labels = unique_labels(targets, predictions)
-    plot_confusion_matrix(cnf_matrix, classes=labels,
-                          title='Intent Confusion matrix',
-                          out=confmat_filename)
-    plt.show()
+        cnf_matrix = confusion_matrix(targets, predictions)
+        labels = unique_labels(targets, predictions)
+        plot_confusion_matrix(cnf_matrix, classes=labels,
+                              title='Intent Confusion matrix',
+                              out=confmat_filename)
+        plt.show()
 
-    plot_intent_confidences(intent_results,
-                            intent_hist_filename)
+        plot_intent_confidences(intent_results,
+                                intent_hist_filename)
 
-    plt.show()
+        plt.show()
 
     predictions = [
         {
