@@ -43,9 +43,17 @@ class DialogflowReader(TrainingDataReader):
         elif fformat == DIALOGFLOW_ENTITIES:
             return self._read_entities(examples_js)
 
+    def _get_intent_name(self, intent_js):
+        intent_name = None
+        if(intent_js.get("responses") and intent_js.get("responses")[0]):
+            intent_name = intent_js.get("responses")[0].get('action')
+        if(intent_name is None):
+            intent_name = intent_js.get("name")
+        return intent_name
+
     def _read_intent(self, intent_js, examples_js):
         """Reads the intent and examples from respective jsons."""
-        intent = intent_js.get("name")
+        intent = self._get_intent_name(intent_js)
 
         training_examples = []
         for ex in examples_js:
