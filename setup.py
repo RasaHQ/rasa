@@ -44,12 +44,12 @@ install_requires = [
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["scikit-learn<0.20",
+    'spacy': ["scikit-learn~=0.20.2",
               "sklearn-crfsuite~=0.3.6",
               "scipy~=1.1",
               "spacy<=2.0.18,>2.0",
               ],
-    'tensorflow': ["scikit-learn<0.20",
+    'tensorflow': ["scikit-learn~=0.20.2",
                    "sklearn-crfsuite~=0.3.6",
                    "scipy~=1.1",
                    "tensorflow~=1.12"
