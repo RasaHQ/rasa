@@ -272,7 +272,7 @@ class EmbeddingPolicy(Policy):
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
-        config = copy.deepcopy(dict(self.defaults, **self.tf_defaults))
+        config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
         self._tf_config = self._load_tf_config(config)
