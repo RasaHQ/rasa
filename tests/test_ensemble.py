@@ -1,7 +1,7 @@
 import pytest
 
 from rasa_core.policies import Policy
-from rasa_core.policies.ensemble import PolicyEnsemble
+from rasa_core.policies.ensemble import PolicyEnsemble, InvalidPolicyConfig
 
 
 class WorkingPolicy(Policy):
@@ -77,3 +77,11 @@ def test_policy_loading_load_returns_wrong_type(tmpdir):
 
     with pytest.raises(Exception):
         PolicyEnsemble.load(str(tmpdir))
+
+
+@pytest.mark.parametrize("invalid_config", [
+    {"policy": [{"name": "MemoizationPolicy"}]},
+    {"policies": []}])
+def test_invalid_policy_configurations(invalid_config):
+    with pytest.raises(InvalidPolicyConfig):
+        PolicyEnsemble.from_dict(invalid_config)
