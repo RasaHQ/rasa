@@ -261,7 +261,7 @@ def test_run_cv_evaluation():
     assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
 
 
-def test_report_output(tmpdir_factory):
+def test_evaluation_report(tmpdir_factory):
 
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_filename = path + "report.json"
@@ -281,9 +281,19 @@ def test_report_output(tmpdir_factory):
 
     report = json.loads(utils.read_file(report_filename))
 
+    greet_results = {"precision": 1.0,
+                     "recall": 1.0,
+                     "f1-score": 1.0,
+                     "support": 1}
+
+    prediction = {'text': 'hello',
+                  'intent': 'greet',
+                  'predicted': 'greet',
+                  'confidence': 0.98765}
+
     assert len(report.keys()) == 4
-    assert report["greet"]
-    assert result
+    assert report["greet"] == greet_results
+    assert result["predictions"][0] == prediction
 
 
 def test_empty_intent_removal():
