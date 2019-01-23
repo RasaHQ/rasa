@@ -29,6 +29,8 @@ Added
   (as long as the event itself is enabled in the application hosting the bot)
 - Added sanitization mechanism for SlackInput that (in its current shape and form)
   strips bot's self mentions from messages posted using the said @mentions.
+- Added random seed option for KerasPolicy and EmbeddingPolicy
+  to allow for reproducible training results
 - ``InvalidPolicyConfig`` error if policy in policy configuration could not be
   loaded, or if ``policies`` key is empty or not provided
 - Added a unique identifier to ``UserMessage`` and the ``UserUttered`` event.
