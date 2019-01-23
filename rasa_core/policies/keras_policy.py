@@ -251,11 +251,12 @@ class KerasPolicy(Policy):
             if os.path.isfile(meta_file):
                 meta = json.loads(utils.read_file(meta_file))
 
-                model_file = os.path.join(path, meta["model"])
-                tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
-
+                tf_config_file = os.path.join(
+                    path, "keras_policy.tf_config.pkl")
                 with io.open(tf_config_file, 'rb') as f:
                     _tf_config = pickle.load(f)
+
+                model_file = os.path.join(path, meta["model"])
 
                 graph = tf.Graph()
                 with graph.as_default():
