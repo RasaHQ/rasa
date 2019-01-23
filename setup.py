@@ -40,17 +40,16 @@ install_requires = [
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
     "coloredlogs~=9.0",
+    "scikit-learn~=0.20.2"
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["scikit-learn~=0.20.2",
-              "sklearn-crfsuite~=0.3.6",
+    'spacy': ["sklearn-crfsuite~=0.3.6",
               "scipy~=1.1",
               "spacy<=2.0.18,>2.0",
               ],
-    'tensorflow': ["scikit-learn~=0.20.2",
-                   "sklearn-crfsuite~=0.3.6",
+    'tensorflow': ["sklearn-crfsuite~=0.3.6",
                    "scipy~=1.1",
                    "tensorflow~=1.12"
                    ],
