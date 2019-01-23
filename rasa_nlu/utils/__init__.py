@@ -1,9 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import errno
+
 import glob
 import io
 import json
@@ -18,7 +15,6 @@ from typing import Text
 
 import requests
 import simplejson
-import six
 import ruamel.yaml as yaml
 from builtins import str
 from future.utils import PY3
@@ -90,7 +86,7 @@ def list_directory(path):
     If the path points to a file, returns the file. This is a recursive
     implementation returning files in any depth of the path."""
 
-    if not isinstance(path, six.string_types):
+    if not isinstance(path, str):
         raise ValueError("Resourcename must be a string type")
 
     if os.path.isfile(path):
@@ -332,13 +328,6 @@ def remove_model(model_dir):
     else:
         raise ValueError("Cannot remove {}, it seems it is not a model "
                          "directory".format(model_dir))
-
-
-def as_text_type(t):
-    if isinstance(t, six.text_type):
-        return t
-    else:
-        return six.text_type(t)
 
 
 def configure_colored_logging(loglevel):

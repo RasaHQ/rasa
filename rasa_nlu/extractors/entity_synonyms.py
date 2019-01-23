@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import os
 import warnings
@@ -70,7 +66,7 @@ class EntitySynonymMapper(EntityExtractor):
              model_dir=None,  # type: Optional[Text]
              model_metadata=None,  # type: Optional[Metadata]
              cached_component=None,  # type: Optional[EntitySynonymMapper]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> EntitySynonymMapper
 
@@ -99,8 +95,8 @@ class EntitySynonymMapper(EntityExtractor):
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
-            original = utils.as_text_type(entity_a)
-            replacement = utils.as_text_type(entity_b)
+            original = str(entity_a)
+            replacement = str(entity_b)
 
             if original != replacement:
                 original = original.lower()

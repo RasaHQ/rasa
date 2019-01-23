@@ -1,14 +1,9 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import argparse
 import logging
 from functools import wraps
 
 import simplejson
-import six
 from builtins import str
 from klein import Klein
 from twisted.internet import reactor, threads
@@ -146,10 +141,7 @@ def requires_auth(f):
     def decorated(*args, **kwargs):
         self = args[0]
         request = args[1]
-        if six.PY3:
-            token = request.args.get(b'token', [b''])[0].decode("utf8")
-        else:
-            token = str(request.args.get('token', [''])[0])
+        token = request.args.get(b'token', [b''])[0].decode("utf8")
         if self.access_token is None or token == self.access_token:
             return f(*args, **kwargs)
         request.setResponseCode(401)
@@ -175,7 +167,7 @@ def parameter_or_default(request, name, default=None):
 
 
 def dump_to_data_file(data):
-    if isinstance(data, six.string_types):
+    if isinstance(data, str):
         data_string = data
     else:
         data_string = utils.json_to_string(data)

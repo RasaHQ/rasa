@@ -1,7 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import io
 import logging
@@ -155,8 +151,8 @@ class AWSPersistor(Persistor):
             return [self._project_and_model_from_filename(obj.key)[1]
                     for obj in self.bucket.objects.filter(Prefix=prefix)]
         except Exception as e:
-            logger.warn("Failed to list models for project {} in "
-                        "AWS. {}".format(project, e))
+            logger.warning("Failed to list models for project {} in "
+                           "AWS. {}".format(project, e))
             return []
 
     def list_projects(self):
@@ -222,8 +218,8 @@ class GCSPersistor(Persistor):
             return [self._project_and_model_from_filename(b.name)[1]
                     for b in blob_iterator]
         except Exception as e:
-            logger.warn("Failed to list models for project {} in "
-                        "google cloud storage. {}".format(project, e))
+            logger.warning("Failed to list models for project {} in "
+                           "google cloud storage. {}".format(project, e))
             return []
 
     def list_projects(self):

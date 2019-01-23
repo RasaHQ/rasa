@@ -1,7 +1,3 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
 
 import logging
 import typing
@@ -124,9 +120,9 @@ class SklearnIntentClassifier(Component):
                   for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            logger.warn("Can not train an intent classifier. "
-                        "Need at least 2 different classes. "
-                        "Skipping training of intent classifier.")
+            logger.warning("Can not train an intent classifier. "
+                           "Need at least 2 different classes. "
+                           "Skipping training of intent classifier.")
         else:
             y = self.transform_labels_str2num(labels)
             X = np.stack([example.get("text_features")
