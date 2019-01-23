@@ -31,6 +31,7 @@ Added
   strips bot's self mentions from messages posted using the said @mentions.
 - ``InvalidPolicyConfig`` error if policy in policy configuration could not be
   loaded, or if ``policies`` key is empty or not provided
+- Added a unique identifier to ``UserMessage`` and the ``UserUttered`` event.
 
 Removed
 -------

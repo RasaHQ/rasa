@@ -182,11 +182,13 @@ class UserUttered(Event):
                  entities=None,
                  parse_data=None,
                  timestamp=None,
-                 input_channel=None):
+                 input_channel=None,
+                 message_id=None):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
         self.input_channel = input_channel
+        self.message_id = message_id
 
         if parse_data:
             self.parse_data = parse_data
