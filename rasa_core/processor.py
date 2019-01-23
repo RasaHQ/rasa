@@ -262,7 +262,8 @@ class MessageProcessor(object):
         # - instead pass its events to log
         tracker.update(UserUttered(message.text, parse_data["intent"],
                                    parse_data["entities"], parse_data,
-                                   input_channel=message.input_channel))
+                                   input_channel=message.input_channel,
+                                   message_id=message.message_id))
         # store all entities as slots
         for e in self.domain.slots_for_entities(parse_data["entities"]):
             tracker.update(e)
