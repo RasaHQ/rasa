@@ -1,4 +1,5 @@
 import copy
+import io
 import json
 import logging
 import os
@@ -13,6 +14,11 @@ from rasa_core.featurizers import (
 from rasa_core.featurizers import TrackerFeaturizer
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +65,7 @@ class KerasPolicy(Policy):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
+        self._tf_config = self._load_tf_config(config)
         self.rnn_size = config['rnn_size']
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
@@ -144,7 +151,7 @@ class KerasPolicy(Policy):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            self.session = tf.Session()
+            self.session = tf.Session(config=self._tf_config)
             with self.session.as_default():
                 if self.model is None:
                     self.model = self.model_architecture(shuffled_X.shape[1:],
@@ -225,6 +232,11 @@ class KerasPolicy(Policy):
             utils.create_dir_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
+
+            dump_tf_config_path = os.path.join(
+                path, "keras_policy.tf_config.pkl")
+            with io.open(dump_tf_config_path, 'wb') as f:
+                pickle.dump(self._tf_config, f)
         else:
             warnings.warn("Persist called without a trained model present. "
                           "Nothing to persist then!")
@@ -240,10 +252,14 @@ class KerasPolicy(Policy):
                 meta = json.loads(utils.read_file(meta_path))
 
                 model_file = os.path.join(path, meta["model"])
+                config_file = os.path.join(path, "keras_policy.tf_config.pkl")
+
+                with io.open(config_file, 'rb') as f:
+                    _tf_config = pickle.load(f)
 
                 graph = tf.Graph()
                 with graph.as_default():
-                    session = tf.Session()
+                    session = tf.Session(config=_tf_config)
                     with session.as_default():
                         model = load_model(model_file)
 
