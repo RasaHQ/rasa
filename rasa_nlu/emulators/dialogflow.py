@@ -1,11 +1,8 @@
-from builtins import str
 import uuid
 from datetime import datetime
-
 from typing import Any
 from typing import Dict
 from typing import Text
-from typing import List
 
 from rasa_nlu.emulators import NoEmulator
 
@@ -24,7 +21,7 @@ class DialogflowEmulator(NoEmulator):
         # populate entities dict
         entities = {
             entity_type: []
-            for entity_type in set([x["entity"] for x in data["entities"]])}  # type: Dict[Text, List[Text]]
+            for entity_type in set([x["entity"] for x in data["entities"]])}
 
         for entity in data["entities"]:
             entities[entity["entity"]].append(entity["value"])

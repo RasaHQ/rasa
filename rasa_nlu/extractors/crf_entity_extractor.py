@@ -3,7 +3,6 @@ import logging
 import os
 
 import typing
-from builtins import str
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa_nlu.config import RasaNLUModelConfig, InvalidConfigError
@@ -115,7 +114,7 @@ class CRFEntityExtractor(EntityExtractor):
         return ["sklearn_crfsuite", "sklearn"]
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         self.component_config = config.for_component(self.name, self.defaults)
 
@@ -416,7 +415,9 @@ class CRFEntityExtractor(EntityExtractor):
                             # add all regexes as a feature
                             regex_patterns = self.function_dict[feature](word)
                             for p_name, matched in regex_patterns.items():
-                                feature_name = prefix + ":" + feature + ":" + p_name
+                                feature_name = (prefix + ":"
+                                                + feature
+                                                + ":" + p_name)
                                 word_features[feature_name] = matched
                         else:
                             # append each feature to a feature vector

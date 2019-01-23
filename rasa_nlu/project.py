@@ -1,5 +1,4 @@
 import time
-from builtins import object
 
 import datetime
 import logging
@@ -14,6 +13,7 @@ from typing import Text, List, Optional
 from rasa_nlu import utils
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
+from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.model import Metadata, Interpreter
 from rasa_nlu.utils import is_url, EndpointConfig
 
@@ -30,7 +30,7 @@ STATUS_TRAINING = 1
 STATUS_FAILED = -1
 
 
-def load_from_server(component_builder=None,  # type: Optional[Text]
+def load_from_server(component_builder=None,  # type: Optional[ComponentBuilder]
                      project=None,  # type: Optional[Text]
                      project_dir=None,  # type: Optional[Text]
                      remote_storage=None,  # type: Optional[Text]
@@ -120,8 +120,8 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
         return None, None
     elif response.status_code != 200:
         logger.warning("Tried to fetch model from server, but server response "
-                    "status code is {}. We'll retry later..."
-                    "".format(response.status_code))
+                       "status code is {}. We'll retry later..."
+                       "".format(response.status_code))
         return None, None
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
@@ -134,7 +134,7 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
 
 
 def _run_model_pulling_worker(model_server, wait_time_between_pulls, project):
-    # type: (Text, int, Project) -> None
+    # type: (EndpointConfig, int, Project) -> None
     while True:
         _update_model_from_server(model_server, project)
         time.sleep(wait_time_between_pulls)
@@ -142,7 +142,7 @@ def _run_model_pulling_worker(model_server, wait_time_between_pulls, project):
 
 def start_model_pulling_in_worker(model_server, wait_time_between_pulls,
                                   project):
-    # type: (Text, int, Project) -> None
+    # type: (Optional[EndpointConfig], int, Project) -> None
 
     worker = Thread(target=_run_model_pulling_worker,
                     args=(model_server, wait_time_between_pulls, project))

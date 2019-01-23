@@ -13,7 +13,6 @@ from rasa_nlu.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     import mitie
-    from builtins import str
 
 
 class MitieFeaturizer(Featurizer):

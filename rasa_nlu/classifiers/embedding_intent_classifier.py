@@ -1,21 +1,14 @@
-
 import io
-import copy
 import logging
+import numpy as np
 import os
-from tqdm import tqdm
-
+import pickle
 import typing
+from tqdm import tqdm
 from typing import List, Text, Any, Optional, Dict, Tuple
 
 from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa_nlu.components import Component
-import numpy as np
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 
 logger = logging.getLogger(__name__)
 

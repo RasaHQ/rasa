@@ -6,7 +6,6 @@ import os
 import warnings
 
 from copy import deepcopy
-from builtins import object, str
 from rasa_nlu.training_data import Message
 
 from typing import Any
@@ -37,7 +36,7 @@ class TrainingData(object):
                  entity_synonyms=None,
                  regex_features=None,
                  lookup_tables=None):
-        # type: (Optional[List[Message]], Optional[Dict[Text, Text]]) -> None
+        # type: (Optional[List[Message]], Optional[Dict[Text, Text]], Optional[Dict[Text, Text]], Optional[Dict[Text, Text]]) -> None
 
         if training_examples:
             self.training_examples = self.sanitize_examples(training_examples)
@@ -195,7 +194,9 @@ class TrainingData(object):
                                         self.MIN_EXAMPLES_PER_ENTITY))
 
     def train_test_split(self, train_frac=0.8):
-        """Split into a training and test dataset, preserving the fraction of examples per intent."""
+        """Split into a training and test dataset,
+        preserving the fraction of examples per intent."""
+
         train, test = [], []
         for intent, count in self.examples_per_intent.items():
             ex = [e for e in self.intent_examples if e.data["intent"] == intent]

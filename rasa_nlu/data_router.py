@@ -7,7 +7,6 @@ import os
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from typing import Text, Dict, Any, Optional
 
-from builtins import object
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger

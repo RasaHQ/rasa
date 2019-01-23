@@ -1,7 +1,6 @@
 import logging
 
 import typing
-from builtins import object
 from typing import Any
 from typing import Dict
 from typing import List

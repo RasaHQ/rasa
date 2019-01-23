@@ -1,4 +1,3 @@
-
 import itertools
 import json
 import logging
@@ -167,7 +166,7 @@ def log_evaluation_table(report,  # type: Text
     logger.info("Classification report: \n{}".format(report))
 
 
-def get_evaluation_metrics(targets, predictions, output_dict=False):  # pragma: no cover
+def get_evaluation_metrics(targets, predictions, output_dict=False):
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
@@ -305,9 +304,8 @@ def evaluate_intents(intent_results,
     targets, predictions = _targets_predictions_from(intent_results)
 
     if report_filename:
-        report, precision, f1, accuracy = get_evaluation_metrics(targets,
-                                                                 predictions,
-                                                                 output_dict=True)
+        report, precision, f1, accuracy = get_evaluation_metrics(
+            targets, predictions, output_dict=True)
 
         save_json(report, report_filename)
         logger.info("Classification report saved to {}."
@@ -449,8 +447,8 @@ def do_entities_overlap(entities):
     for i in range(len(sorted_entities) - 1):
         curr_ent = sorted_entities[i]
         next_ent = sorted_entities[i + 1]
-        if (next_ent["start"] < curr_ent["end"]
-                and next_ent["entity"] != curr_ent["entity"]):
+        if (next_ent["start"] < curr_ent["end"] and
+                next_ent["entity"] != curr_ent["entity"]):
             return True
 
     return False
@@ -506,8 +504,8 @@ def determine_token_labels(token, entities, extractors):
 
     if len(entities) == 0:
         return "O"
-    if not do_extractors_support_overlap(extractors) and \
-            do_entities_overlap(entities):
+    if (not do_extractors_support_overlap(extractors) and
+            do_entities_overlap(entities)):
         raise ValueError("The possible entities should not overlap")
 
     candidates = find_intersecting_entites(token, entities)
@@ -542,7 +540,7 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
     extractor_labels = defaultdict(list)
     for t in tokens:
         true_token_labels.append(
-                determine_token_labels(t, targets, None))
+            determine_token_labels(t, targets, None))
         for extractor, entities in entities_by_extractors.items():
             extracted = determine_token_labels(t, entities, extractor)
             extractor_labels[extractor].append(extracted)

@@ -1,6 +1,7 @@
 
 import numpy as np
 import typing
+from rasa_nlu.config import RasaNLUModelConfig
 from typing import Any
 
 from rasa_nlu.featurizers import Featurizer
@@ -13,14 +14,14 @@ if typing.TYPE_CHECKING:
 
 
 def ndim(spacy_nlp):
+    # type: (Language) -> int
     """Number of features used to represent a document / sentence."""
-    # type: Language -> int
     return spacy_nlp.vocab.vectors_length
 
 
 def features_for_doc(doc):
+    # type: (Doc) -> np.ndarray
     """Feature vector for a single document / sentence."""
-    # type: Doc -> np.ndarray
     return doc.vector
 
 
@@ -32,7 +33,7 @@ class SpacyFeaturizer(Featurizer):
     requires = ["spacy_doc"]
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         for example in training_data.intent_examples:
             self._set_spacy_features(example)

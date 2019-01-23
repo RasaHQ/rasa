@@ -5,7 +5,6 @@ import os
 import shutil
 import tarfile
 
-from builtins import object
 from typing import Optional, Tuple, List, Text
 
 from rasa_nlu.config import RasaNLUModelConfig
@@ -37,7 +36,7 @@ class Persistor(object):
     """Store models in cloud and fetch them when needed"""
 
     def persist(self, model_directory, model_name, project):
-        # type: (Text) -> None
+        # type: (Text, Text, Text) -> None
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
         if not os.path.isdir(model_directory):
@@ -49,7 +48,7 @@ class Persistor(object):
         self._persist_tar(file_key, tar_path)
 
     def retrieve(self, model_name, project, target_path):
-        # type: (Text) -> None
+        # type: (Text, Text, Text) -> None
         """Downloads a model that has been persisted to cloud storage."""
 
         tar_name = self._tar_name(model_name, project)
@@ -82,7 +81,7 @@ class Persistor(object):
         raise NotImplementedError("")
 
     def _compress(self, model_directory, model_name, project):
-        # type: (Text) -> Tuple[Text, Text]
+        # type: (Text, Text, Text) -> Tuple[Text, Text]
         """Creates a compressed archive and returns key and tar."""
         import tempfile
 
@@ -267,7 +266,6 @@ class AzurePersistor(Persistor):
                  azure_account_name,
                  azure_account_key):
         from azure.storage import blob as azureblob
-        from azure.storage.common import models as storageModel
 
         super(AzurePersistor, self).__init__()
 

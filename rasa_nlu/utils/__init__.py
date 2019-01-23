@@ -16,8 +16,6 @@ from typing import Text
 import requests
 import simplejson
 import ruamel.yaml as yaml
-from builtins import str
-from future.utils import PY3
 from requests.auth import HTTPBasicAuth
 
 
@@ -182,7 +180,7 @@ def json_to_string(obj, **kwargs):
 
 
 def write_json_to_file(filename, obj, **kwargs):
-    # type: (Text, Any) -> None
+    # type: (Text, Any, Any) -> None
     """Write an object as a json string to a file."""
 
     write_to_file(filename, json_to_string(obj, **kwargs))
@@ -367,15 +365,10 @@ def create_temporary_file(data, suffix="", mode="w+"):
 
     mode defines NamedTemporaryFile's  mode parameter in py3."""
 
-    if PY3:
-        encoding = None if 'b' in mode else 'utf-8'
-        f = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
-                                        delete=False, encoding=encoding)
-        f.write(data)
-    else:
-        f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
-                                        delete=False)
-        f.write(data.encode("utf-8"))
+    encoding = None if 'b' in mode else 'utf-8'
+    f = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
+                                    delete=False, encoding=encoding)
+    f.write(data)
 
     f.close()
     return f.name

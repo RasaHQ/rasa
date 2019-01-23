@@ -85,8 +85,10 @@ class DialogflowReader(TrainingDataReader):
         """Infer and load the example file based on the root
         filename and root format."""
 
-        if fformat == DIALOGFLOW_INTENT_
-        examples_type = "usersays"  else "entries"
+        if fformat == DIALOGFLOW_INTENT:
+            examples_type = "usersays"
+        else:
+            examples_type = "entries"
         examples_fn_ending = "_{}_{}.json".format(examples_type, language)
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):

@@ -1,21 +1,17 @@
 
+import io
 import logging
+import numpy as np
 import os
 import re
-import warnings
-import io
-import sys
-
 import typing
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

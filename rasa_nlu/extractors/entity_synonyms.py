@@ -2,7 +2,7 @@
 import os
 import warnings
 
-from builtins import str
+from rasa_nlu.config import RasaNLUModelConfig
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -24,14 +24,14 @@ class EntitySynonymMapper(EntityExtractor):
     provides = ["entities"]
 
     def __init__(self, component_config=None, synonyms=None):
-        # type: (Optional[Dict[Text, Text]]) -> None
+        # type: (Optional[Dict[Text, Text]], Optional[Dict[Text, Any]]) -> None
 
         super(EntitySynonymMapper, self).__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         for key, value in list(training_data.entity_synonyms.items()):
             self.add_entities_if_synonyms(key, value)

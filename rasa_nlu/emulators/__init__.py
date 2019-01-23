@@ -1,4 +1,3 @@
-from builtins import object
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -25,7 +24,10 @@ class NoEmulator(object):
             _data["project"] = data["project"]
 
         if data.get("model"):
-            _data["model"] = data["model"][0] if type(data["model"]) == list else data["model"]
+            if type(data["model"]) == list:
+                _data["model"] = data["model"][0]
+            else:
+                _data["model"] = data["model"]
 
         _data['time'] = data["time"] if "time" in data else None
         return _data

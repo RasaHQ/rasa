@@ -1,16 +1,11 @@
-from builtins import str
-import re
-
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Text
-from typing import Tuple
 
+from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu.tokenizers import Tokenizer
-from rasa_nlu.components import Component
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 

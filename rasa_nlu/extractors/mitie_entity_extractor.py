@@ -1,5 +1,3 @@
-
-from builtins import range, str
 import logging
 import os
 
@@ -68,7 +66,7 @@ class MitieEntityExtractor(EntityExtractor):
         return ents
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
         import mitie
 
         model_file = kwargs.get("mitie_file")

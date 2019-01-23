@@ -1,6 +1,7 @@
-
 import logging
 from collections import defaultdict
+
+from typing import Dict, Text, Any
 
 from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import (
@@ -83,7 +84,7 @@ def validate_rasa_nlu_data(data):
     except ValidationError as e:
         e.message += (". Failed to validate training data, make sure your data "
                       "is valid. For more information about the format visit "
-                      "https://github.com/RasaHQ/rasa_nlu/blob/master/docs/dataformat.rst")
+                      "https://rasa.com/docs/nlu/dataformat/")
         raise e
 
 

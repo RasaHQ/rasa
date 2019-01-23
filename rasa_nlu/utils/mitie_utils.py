@@ -2,7 +2,6 @@
 import os
 
 import typing
-from builtins import str
 from typing import Any
 from typing import Dict
 from typing import List

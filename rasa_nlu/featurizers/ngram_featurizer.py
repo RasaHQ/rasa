@@ -8,8 +8,6 @@ from string import punctuation
 
 import numpy as np
 import typing
-from builtins import map
-from builtins import range
 from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils

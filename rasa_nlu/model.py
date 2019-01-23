@@ -3,8 +3,6 @@ import copy
 import datetime
 import logging
 import os
-
-from builtins import object
 from typing import Any
 from typing import Dict
 from typing import List
@@ -14,7 +12,7 @@ from typing import Text
 import rasa_nlu
 from rasa_nlu import components, utils, config
 from rasa_nlu.components import Component, ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig, override_defaults
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir, write_json_to_file
@@ -165,7 +163,7 @@ class Trainer(object):
         return pipeline
 
     def train(self, data, **kwargs):
-        # type: (TrainingData) -> Interpreter
+        # type: (TrainingData, Any) -> Interpreter
         """Trains the underlying pipeline using the provided training data."""
 
         self.training_data = data
@@ -198,7 +196,7 @@ class Trainer(object):
 
     def persist(self, path, persistor=None, project_name=None,
                 fixed_model_name=None):
-        # type: (Text, Optional[Persistor], Text) -> Text
+        # type: (Text, Optional[Persistor], Text, Text) -> Text
         """Persist all components of the pipeline to the passed path.
 
         Returns the directory of the persisted model."""
@@ -333,7 +331,7 @@ class Interpreter(object):
         self.model_metadata = model_metadata
 
     def parse(self, text, time=None, only_output_properties=True):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text, Optional[datetime], bool) -> Dict[Text, Any]
         """Parse the input text, classify it and return pipeline result.
 
         The pipeline result usually contains intent and entities."""

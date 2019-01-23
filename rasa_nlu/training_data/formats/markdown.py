@@ -1,25 +1,27 @@
-
-import re
 import logging
+import re
 
 from rasa_nlu.training_data import Message, TrainingData
+from rasa_nlu.training_data.formats.readerwriter import (
+    TrainingDataReader,
+    TrainingDataWriter)
 from rasa_nlu.training_data.util import check_duplicate_synonym
 from rasa_nlu.utils import build_entity
-
-from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader, TrainingDataWriter
 
 INTENT = "intent"
 SYNONYM = "synonym"
 REGEX = "regex"
 LOOKUP = "lookup"
 available_sections = [INTENT, SYNONYM, REGEX, LOOKUP]
+
+# regex for: `[entity_text](entity_type(:entity_synonym)?)`
 ent_regex = re.compile(r'\[(?P<entity_text>[^\]]+)'
                        r'\]\((?P<entity>[^:)]*?)'
-                       r'(?:\:(?P<value>[^)]+))?\)')  # [entity_text](entity_type(:entity_synonym)?)
+                       r'(?:\:(?P<value>[^)]+))?\)')
 
-item_regex = re.compile(r'\s*[-\*+]\s*(.+)')
+item_regex = re.compile(r'\s*[-*+]\s*(.+)')
 comment_regex = re.compile(r'<!--[\s\S]*?--!*>', re.MULTILINE)
-fname_regex = re.compile(r'\s*([^-\*+]+)')
+fname_regex = re.compile(r'\s*([^-*+]+)')
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,8 @@ class MarkdownReader(TrainingDataReader):
         return {sn: make_regex(sn) for sn in section_names}
 
     def _find_section_header(self, line):
-        """Checks if the current line contains a section header and returns the section and the title."""
+        """Checks if the current line contains a section header
+        and returns the section and the title."""
         for name, regex in self.section_regexes.items():
             match = re.search(regex, line)
             if match is not None:
@@ -104,7 +107,8 @@ class MarkdownReader(TrainingDataReader):
         matches = [l for l in self.lookup_tables
                    if l["name"] == self.current_title]
         if not matches:
-            self.lookup_tables.append({"name": self.current_title, "elements": [item]})
+            self.lookup_tables.append({"name": self.current_title,
+                                       "elements": [item]})
         else:
             elements = matches[0]['elements']
             elements.append(item)
@@ -116,19 +120,24 @@ class MarkdownReader(TrainingDataReader):
         for match in re.finditer(ent_regex, example):
             entity_text = match.groupdict()['entity_text']
             entity_type = match.groupdict()['entity']
-            entity_value = match.groupdict()['value'] if match.groupdict()['value'] else entity_text
+            if match.groupdict()['value']:
+                entity_value = match.groupdict()['value']
+            else:
+                entity_value = entity_text
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_text)
             offset += len(match.group(0)) - len(entity_text)
 
-            entity = build_entity(start_index, end_index, entity_value, entity_type)
+            entity = build_entity(start_index, end_index, entity_value,
+                                  entity_type)
             entities.append(entity)
 
         return entities
 
     def _add_synonym(self, text, value):
-        check_duplicate_synonym(self.entity_synonyms, text, value, "reading markdown")
+        check_duplicate_synonym(self.entity_synonyms, text, value,
+                                "reading markdown")
         self.entity_synonyms[text] = value
 
     def _add_synonyms(self, plain_text, entities):
@@ -141,7 +150,9 @@ class MarkdownReader(TrainingDataReader):
     def _parse_training_example(self, example):
         """Extract entities and synonyms, and convert to plain text."""
         entities = self._find_entities_in_training_example(example)
-        plain_text = re.sub(ent_regex, lambda m: m.groupdict()['entity_text'], example)
+        plain_text = re.sub(ent_regex,
+                            lambda m: m.groupdict()['entity_text'],
+                            example)
         self._add_synonyms(plain_text, entities)
         message = Message(plain_text, {'intent': self.current_title})
         if len(entities) > 0:
@@ -152,7 +163,8 @@ class MarkdownReader(TrainingDataReader):
         """Update parsing mode."""
         if section not in available_sections:
             raise ValueError("Found markdown section {} which is not "
-                             "in the allowed sections {},".format(section, ",".join(available_sections)))
+                             "in the allowed sections {},"
+                             "".format(section, ",".join(available_sections)))
 
         self.current_section = section
         self.current_title = title
@@ -172,12 +184,16 @@ class MarkdownWriter(TrainingDataWriter):
 
     def _generate_training_examples_md(self, training_data):
         """generates markdown training examples."""
-        training_examples = sorted([e.as_dict() for e in training_data.training_examples],
+        training_examples = sorted([e.as_dict()
+                                    for e in training_data.training_examples],
                                    key=lambda k: k['intent'])
         md = u''
         for i, example in enumerate(training_examples):
-            if i == 0 or training_examples[i - 1]['intent'] != example['intent']:
-                md += self._generate_section_header_md(INTENT, example['intent'], i != 0)
+            intent = training_examples[i - 1]['intent']
+            if i == 0 or intent != example['intent']:
+                md += self._generate_section_header_md(INTENT,
+                                                       example['intent'],
+                                                       i != 0)
 
             md += self._generate_item_md(self._generate_message_md(example))
 
@@ -203,7 +219,8 @@ class MarkdownWriter(TrainingDataWriter):
         regex_features = training_data.regex_features
         for i, regex_feature in enumerate(regex_features):
             if i == 0 or regex_features[i - 1]["name"] != regex_feature["name"]:
-                md += self._generate_section_header_md(REGEX, regex_feature["name"])
+                md += self._generate_section_header_md(REGEX,
+                                                       regex_feature["name"])
 
             md += self._generate_item_md(regex_feature["pattern"])
 
@@ -224,7 +241,8 @@ class MarkdownWriter(TrainingDataWriter):
                 md += self._generate_fname_md(elements)
         return md
 
-    def _generate_section_header_md(self, section_type, title, prepend_newline=True):
+    def _generate_section_header_md(self, section_type, title,
+                                    prepend_newline=True):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
         return prefix + "## {}:{}\n".format(section_type, title)

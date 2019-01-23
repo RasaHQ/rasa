@@ -1,6 +1,4 @@
-from builtins import map
 from typing import Any
-from typing import Dict
 from typing import Text
 
 from rasa_nlu.components import Component
