@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 import os
 import pytest
 from rasa_nlu.config import RasaNLUModelConfig
