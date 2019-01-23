@@ -15,7 +15,7 @@ from rasa_nlu.evaluate import (
     get_duckling_dimensions, known_duckling_dimensions,
     find_component, remove_duckling_extractors, drop_intents_below_freq,
     run_cv_evaluation, substitute_labels, IntentEvaluationResult,
-    get_evaluation_metrics, save_json, report_to_dict)
+    evaluate_intents)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
@@ -272,19 +272,18 @@ def test_report_output(tmpdir_factory):
         IntentEvaluationResult("greet", "greet",
                                "hello", 0.98765)]
 
-    intent_results = remove_empty_intent_examples(intent_results)
-
-    targets, predictions = zip(*[(r.target, r.prediction)
-                                 for r in intent_results])
-    report, precision, f1, accuracy = get_evaluation_metrics(targets,
-                                                             predictions)
-
-    save_json(report_to_dict(report, f1, precision, accuracy), report_filename)
+    result = evaluate_intents(intent_results,
+                              report_filename,
+                              successes_filename=None,
+                              errors_filename=None,
+                              confmat_filename=None,
+                              intent_hist_filename=None)
 
     report = json.loads(utils.read_file(report_filename))
 
     assert len(report.keys()) == 4
     assert report["intents"][0]["name"] == "greet"
+    assert result
 
 
 def test_empty_intent_removal():
