@@ -171,57 +171,21 @@ def log_evaluation_table(report,  # type: Text
     logger.info("Classification report: \n{}".format(report))
 
 
-def get_evaluation_metrics(targets, predictions):  # pragma: no cover
+def get_evaluation_metrics(targets, predictions, output_dict=False):  # pragma: no cover
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
     targets = clean_intent_labels(targets)
     predictions = clean_intent_labels(predictions)
 
-    report = metrics.classification_report(targets, predictions)
+    report = metrics.classification_report(targets, predictions,
+                                           output_dict=output_dict)
     precision = metrics.precision_score(targets, predictions,
                                         average='weighted')
     f1 = metrics.f1_score(targets, predictions, average='weighted')
     accuracy = metrics.accuracy_score(targets, predictions)
 
     return report, precision, f1, accuracy
-
-
-def report_to_dict(report, f1, precision, accuracy):
-    """Convert sklearn metrics report into dict"""
-
-    report_dict = {
-        'f1': f1,
-        'precision': precision,
-        'accuracy': accuracy,
-        'intents': []
-    }
-
-    lines = list(filter(None, report.split('\n')))
-    labels = lines[0].split()
-
-    report_dict['intents'] = report_row_to_dict(labels, lines[1:-1])
-
-    return report_dict
-
-
-def report_row_to_dict(labels, lines):
-    """Convert sklearn metrics report row to dict"""
-    import re
-
-    array = []
-    for line in lines:
-        row_data = re.split('\s{2,}', line.strip())
-        name = row_data[0]
-        values = row_data[1:]
-        r = {
-            'name': name
-        }
-        for i in range(len(values)):
-            r[labels[i]] = values[i]
-        array.append(r)
-
-    return array
 
 
 def remove_empty_intent_examples(intent_results):
@@ -343,15 +307,20 @@ def evaluate_intents(intent_results,
                 "of {} examples".format(len(intent_results), num_examples))
 
     targets, predictions = _targets_predictions_from(intent_results)
-    report, precision, f1, accuracy = get_evaluation_metrics(targets,
-                                                             predictions)
-
-    log_evaluation_table(report, precision, f1, accuracy)
 
     if report_filename:
-        save_json(report_to_dict(report, f1, precision, accuracy), report_filename)
+        report, precision, f1, accuracy = get_evaluation_metrics(targets,
+                                                                 predictions,
+                                                                 output_dict=True)
+
+        save_json(report, report_filename)
         logger.info("Classification report saved to {}."
                     .format(report_filename))
+
+    else:
+        report, precision, f1, accuracy = get_evaluation_metrics(targets,
+                                                                 predictions)
+        log_evaluation_table(report, precision, f1, accuracy)
 
     if successes_filename:
         # save classified samples to file for debugging
