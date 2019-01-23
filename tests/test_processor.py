@@ -17,6 +17,18 @@ def test_message_processor(default_processor):
             'text': 'hey there Core!'} == out.latest_output()
 
 
+def test_message_id_logging(default_processor):
+    from rasa_core.trackers import DialogueStateTracker
+
+    message = UserMessage("If Meg was an egg would she still have a leg?")
+    tracker = DialogueStateTracker('1', [])
+    default_processor._handle_message_with_tracker(message, tracker)
+    logged_event = tracker.events[-1]
+
+    assert logged_event.message_id == message.message_id
+    assert logged_event.message_id is not None
+
+
 def test_parsing(default_processor):
     message = Message('/greet{"name": "boy"}')
     parsed = default_processor._parse_message(message)
