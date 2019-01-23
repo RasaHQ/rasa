@@ -63,8 +63,16 @@ def create_argument_parser():
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
 
+    parser.add_argument('--report', required=False, nargs='?',
+                        const="report.json", default=False,
+                        help="output path to save the metrics report")
+
+    parser.add_argument('--successes', required=False, nargs='?',
+                        const="successes.json", default=False,
+                        help="output path to save successful predictions")
+
     parser.add_argument('--errors', required=False, default="errors.json",
-                        help="output path for the json with wrong predictions")
+                        help="output path to save model errors")
 
     parser.add_argument('--histogram', required=False, default="hist.png",
                         help="output path for the confidence histogram")
@@ -163,14 +171,15 @@ def log_evaluation_table(report,  # type: Text
     logger.info("Classification report: \n{}".format(report))
 
 
-def get_evaluation_metrics(targets, predictions):  # pragma: no cover
+def get_evaluation_metrics(targets, predictions, output_dict=False):  # pragma: no cover
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
     targets = clean_intent_labels(targets)
     predictions = clean_intent_labels(predictions)
 
-    report = metrics.classification_report(targets, predictions)
+    report = metrics.classification_report(targets, predictions,
+                                           output_dict=output_dict)
     precision = metrics.precision_score(targets, predictions,
                                         average='weighted')
     f1 = metrics.f1_score(targets, predictions, average='weighted')
@@ -213,37 +222,50 @@ def drop_intents_below_freq(td, cutoff=5):
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def save_nlu_errors(errors, filename):
-    """Write out nlu classification errors to a file."""
+def save_json(data, filename):
+    """Write out nlu classification to a file."""
 
     utils.write_to_file(filename,
-                        json.dumps(errors, indent=4, ensure_ascii=False))
-    logger.info("Model prediction errors saved to {}.".format(filename))
+                        json.dumps(data, indent=4, ensure_ascii=False))
 
 
-def collect_nlu_errors(intent_results):  # pragma: no cover
+def collect_nlu_successes(intent_results, successes_filename):
+    """Log messages which result in successful predictions
+    and save them to file"""
+
+    successes = [{"text": r.message,
+                  "intent": r.target,
+                  "intent_prediction": {"name": r.prediction,
+                                        "confidence": r.confidence}}
+                 for r in intent_results if r.target == r.prediction]
+
+    if successes:
+        save_json(successes, successes_filename)
+        logger.info("Model prediction successes saved to {}."
+                    .format(successes_filename))
+        logger.debug("\n\nSuccessfully predicted the following"
+                     "intents: \n{}".format(successes))
+    else:
+        logger.info("Your model made no successful predictions")
+
+
+def collect_nlu_errors(intent_results, errors_filename):
     """Log messages which result in wrong predictions and save them to file"""
 
-    # it could be interesting to include entity-errors later
-    # therefore we start with a "intent_errors" key
-    intent_errors = [{"text": r.message,
-                      "intent": r.target,
-                      "intent_prediction": {
-                          "name": r.prediction,
-                          "confidence": r.confidence
-                      }}
-                     for r in intent_results if r.target != r.prediction]
+    errors = [{"text": r.message,
+               "intent": r.target,
+               "intent_prediction": {"name": r.prediction,
+                                     "confidence": r.confidence}}
+              for r in intent_results if r.target != r.prediction]
 
-    if intent_errors:
-        logger.info("There were some nlu intent classification errors. "
-                    "Use `--verbose` to show them in the log.")
+    if errors:
+        save_json(errors, errors_filename)
+        logger.info("Model prediction errors saved to {}."
+                    .format(errors_filename))
         logger.debug("\n\nThese intent examples could not be classified "
-                     "correctly \n{}".format(intent_errors))
-
-        return {'intent_errors': intent_errors}
+                     "correctly: \n{}".format(errors))
     else:
-        logger.info("No prediction errors were found. You are AWESOME!")
-        return None
+        logger.info("Your model made no errors")
 
 
 def plot_intent_confidences(intent_results, intent_hist_filename):
@@ -262,6 +284,8 @@ def plot_intent_confidences(intent_results, intent_hist_filename):
 
 
 def evaluate_intents(intent_results,
+                     report_filename,
+                     successes_filename,
                      errors_filename,
                      confmat_filename,
                      intent_hist_filename):  # pragma: no cover
@@ -284,16 +308,27 @@ def evaluate_intents(intent_results,
 
     targets, predictions = _targets_predictions_from(intent_results)
 
-    report, precision, f1, accuracy = get_evaluation_metrics(targets,
-                                                             predictions)
+    if report_filename:
+        report, precision, f1, accuracy = get_evaluation_metrics(targets,
+                                                                 predictions,
+                                                                 output_dict=True)
 
-    log_evaluation_table(report, precision, f1, accuracy)
+        save_json(report, report_filename)
+        logger.info("Classification report saved to {}."
+                    .format(report_filename))
 
-    # log and save misclassified samples to file for debugging
-    errors = collect_nlu_errors(intent_results)
+    else:
+        report, precision, f1, accuracy = get_evaluation_metrics(targets,
+                                                                 predictions)
+        log_evaluation_table(report, precision, f1, accuracy)
 
-    if errors and errors_filename:
-        save_nlu_errors(errors, errors_filename)
+    if successes_filename:
+        # save classified samples to file for debugging
+        collect_nlu_successes(intent_results, successes_filename)
+
+    if errors_filename:
+        # log and save misclassified samples to file for debugging
+        collect_nlu_errors(intent_results, errors_filename)
 
     if confmat_filename:
         from sklearn.metrics import confusion_matrix
@@ -673,6 +708,8 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model,
+                   report_filename=None,
+                   successes_filename=None,
                    errors_filename='errors.json',
                    confmat_filename=None,
                    intent_hist_filename=None,
@@ -706,6 +743,8 @@ def run_evaluation(data_path, model,
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
+                                                       report_filename,
+                                                       successes_filename,
                                                        errors_filename,
                                                        confmat_filename,
                                                        intent_hist_filename)
@@ -919,6 +958,8 @@ def main():
     elif cmdline_args.mode == "evaluation":
         run_evaluation(cmdline_args.data,
                        cmdline_args.model,
+                       cmdline_args.report,
+                       cmdline_args.successes,
                        cmdline_args.errors,
                        cmdline_args.confmat,
                        cmdline_args.histogram)
