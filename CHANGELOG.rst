@@ -6,6 +6,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. _v0-14-0:
 
+[0.14.1] - 2018-01-23
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- scikit-learn is a global requirement
+
 [0.14.0] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
 
