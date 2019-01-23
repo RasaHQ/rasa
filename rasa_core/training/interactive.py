@@ -1259,10 +1259,12 @@ def _serve_application(app: Sanic, stories: Text,
 def _add_visualization_routes(app: Sanic, image_path: Text = None) -> None:
     """Add routes to serve the conversation visualization files."""
 
+    # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
     def visualisation_html(request):
         return response.file(visualization.visualization_html_path())
 
+    # noinspection PyUnusedLocal
     @app.route("/visualization.dot", methods=["GET"])
     def visualisation_png(request):
         try:
