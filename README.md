@@ -39,6 +39,13 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 
 - **I would like to contribute 🤗** [How to contribute](#how-to-contribute)
 
+### Important Note
+
+Current github master version does NOT support python 2.7 anymore (neither
+will the next major release). If you want to use Rasa NLU with python 
+2.7, please install the most recent version from pypi (0.14).
+
+
 # Quick Install
 
 For the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.com/installation.html)
