@@ -32,11 +32,12 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_ENTITY = 2
 
     def __init__(self,
-                 training_examples=None,
-                 entity_synonyms=None,
-                 regex_features=None,
-                 lookup_tables=None):
-        # type: (Optional[List[Message]], Optional[Dict[Text, Text]], Optional[Dict[Text, Text]], Optional[Dict[Text, Text]]) -> None
+                 training_examples=None, # type: Optional[List[Message]]
+                 entity_synonyms=None,  # type:  Optional[Dict[Text, Text]]
+                 regex_features=None,  # type: Optional[Dict[Text, Text]]
+                 lookup_tables=None  # type: Optional[Dict[Text, Text]]
+                 ):
+        # type: (...) -> None
 
         if training_examples:
             self.training_examples = self.sanitize_examples(training_examples)

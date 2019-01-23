@@ -28,8 +28,7 @@ def _sklearn_numpy_warning_fix():
     """Fixes unecessary warnings emitted by sklearns use of numpy.
 
     Sklearn will fix the warnings in their next release in ~ August 2018.
-    based on
-    https://stackoverflow.com/questions/49545947/sklearn-deprecationwarning-truth-value-of-an-array"""
+    based on https://stackoverflow.com/a/49668081"""
     import warnings
 
     warnings.filterwarnings(module='sklearn*', action='ignore',

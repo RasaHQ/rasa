@@ -12,7 +12,8 @@ def test_luis_response():
     em = LUISEmulator()
     data = {
         "text": "I want italian food",
-        "intent": {"name": "restaurant_search", "confidence": 0.737014589341683},
+        "intent": {"name": "restaurant_search",
+                   "confidence": 0.737014589341683},
         "intent_ranking": [
             {
                 "confidence": 0.737014589341683,
@@ -83,7 +84,8 @@ def test_wit_response():
     data = {
         "text": "I want italian food",
         "intent": {"name": "inform", "confidence": 0.4794813722432127},
-        "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}]}
+        "entities": [{"entity": "cuisine", "value": "italian",
+                      "start": 7, "end": 14}]}
     norm = em.normalise_response_json(data)
     assert norm == [{
         'entities': {
@@ -114,7 +116,8 @@ def test_dialogflow_response():
     data = {
         "text": "I want italian food",
         "intent": {"name": "inform", "confidence": 0.4794813722432127},
-        "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}]
+        "entities": [{"entity": "cuisine", "value": "italian",
+                      "start": 7, "end": 14}]
     }
     norm = em.normalise_response_json(data)
 
@@ -154,8 +157,13 @@ def test_dummy_request():
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "project": "default", "time": None}
 
-    norm = em.normalise_request_json({"q": ["arb text"], "project": "specific", "time": "1499279161658"})
-    assert norm == {"text": "arb text", "project": "specific", "time": "1499279161658"}
+    norm = em.normalise_request_json({
+        "q": ["arb text"],
+        "project": "specific",
+        "time": "1499279161658"})
+    assert norm == {"text": "arb text",
+                    "project": "specific",
+                    "time": "1499279161658"}
 
 
 def test_dummy_response():
@@ -168,6 +176,7 @@ def test_dummy_response():
 def test_emulators_can_handle_missing_data():
     from rasa_nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
-    norm = em.normalise_response_json({"text": "this data doesn't contain an intent result"})
+    norm = em.normalise_response_json({
+        "text": "this data doesn't contain an intent result"})
     assert norm["topScoringIntent"] is None
     assert norm["intents"] == []

@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -
-
-
-import os
-
 import numpy as np
 import pytest
 
 from rasa_nlu import training_data, config
+from rasa_nlu.tokenizers import Token
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
-from rasa_nlu.tokenizers import Token
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -109,7 +105,9 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 
     lookups = [
-        {"name": 'drinks', "elements": ["mojito", "lemonade", "sweet berry wine", "tea", "club?mate"]},
+        {"name": 'drinks', "elements": ["mojito", "lemonade",
+                                        "sweet berry wine",
+                                        "tea", "club?mate"]},
         {"name": 'plates', "elements": "data/test/lookup_tables/plates.txt"}
     ]
     ftr = RegexFeaturizer(lookup_tables=lookups)

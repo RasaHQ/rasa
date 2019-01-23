@@ -67,7 +67,7 @@ def _update_model_from_server(model_server, project):
     model_directory = tempfile.mkdtemp()
 
     new_model_fingerprint, filename = _pull_model_and_fingerprint(
-            model_server, model_directory, project.fingerprint)
+        model_server, model_directory, project.fingerprint)
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
         project.fingerprint = new_model_fingerprint
@@ -89,8 +89,11 @@ def _get_remote_model_name(filename):
         return MODEL_NAME_PREFIX + timestamp
 
 
-def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
-    # type: (EndpointConfig, Text, Optional[Text]) -> (Optional[Text], Optional[Text])
+def _pull_model_and_fingerprint(model_server,  # type: EndpointConfig
+                                model_directory,  # type: Text
+                                fingerprint  # type: Optional[Text]
+                                ):
+    # type: (...) -> (Optional[Text], Optional[Text])
     """Queries the model server and returns a tuple of containing the
 
     response's <ETag> header which contains the model hash, and the
@@ -171,6 +174,7 @@ class Project(object):
         self.remote_storage = remote_storage
         self.fingerprint = fingerprint
         self.pull_models = pull_models
+        self.error_message = None
 
         if project and project_dir:
             self._path = os.path.join(project_dir, project)
@@ -244,7 +248,7 @@ class Project(object):
         logger.warning("Invalid model requested. Using default")
         return self._latest_project_model()
 
-    def parse(self, text, time=None, requested_model_name=None):
+    def parse(self, text, parsing_time=None, requested_model_name=None):
         self._begin_read()
 
         model_name = self._dynamic_load_model(requested_model_name)
@@ -257,7 +261,7 @@ class Project(object):
         finally:
             self._loader_lock.release()
 
-        response = self._models[model_name].parse(text, time)
+        response = self._models[model_name].parse(text, parsing_time)
         response['project'] = self._project
         response['model'] = model_name
 
@@ -293,15 +297,16 @@ class Project(object):
             self.unload(model)
 
         self._begin_read()
+        # noinspection PyUnusedLocal
         status = False
 
         logger.debug('Loading model {} from directory {}'.format(
-                model_name, model_dir))
+            model_name, model_dir))
 
         self._loader_lock.acquire()
         try:
             interpreter = self._interpreter_for_model(
-                    model_name, model_dir)
+                model_name, model_dir)
             self._models[model_name] = interpreter
             status = True
         finally:
@@ -332,8 +337,8 @@ class Project(object):
                   for model in self._models.keys()
                   if model.startswith(MODEL_NAME_PREFIX)}
         if models:
-            time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S')
-                         for time, model in models.items()]
+            time_list = [datetime.datetime.strptime(parse_time, '%Y%m%d-%H%M%S')
+                         for parse_time, model in models.items()]
             return models[max(time_list).strftime('%Y%m%d-%H%M%S')]
         else:
             return FALLBACK_MODEL_NAME
@@ -379,17 +384,21 @@ class Project(object):
             return Metadata.load(path)
 
     def as_dict(self):
-        result = {}
-        result["status"] = 'ready'
+        status = "ready"
+        error_message = None
         if self.status == STATUS_TRAINING:
-            result["status"] = 'training'
+            status = 'training'
         elif self.status == STATUS_FAILED:
-            result["status"] = 'failed'
-            result["error_message"] = self.error_message
-        result["current_training_processes"] = self.current_training_processes
-        result["available_models"] = list(self._models.keys())
-        result["loaded_models"] = self._list_loaded_models()
-        return result
+            status = 'failed'
+            error_message = self.error_message
+
+        return {
+            "status": status,
+            "error_message": error_message,
+            "current_training_processes": self.current_training_processes,
+            "available_models": list(self._models.keys()),
+            "loaded_models": self._list_loaded_models()
+        }
 
     def _list_loaded_models(self):
         models = []

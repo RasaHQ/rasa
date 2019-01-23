@@ -9,7 +9,7 @@ from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Tokenizer, Token
 from rasa_nlu.training_data import Message, TrainingData
-from typing import Any, List, Text, Optional
+from typing import Any, List, Text, Optional, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ JIEBA_CUSTOM_DICTIONARY_PATH = "tokenizer_jieba"
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
+
 
 class JiebaTokenizer(Tokenizer, Component):
     name = "tokenizer_jieba"
@@ -73,7 +74,8 @@ class JiebaTokenizer(Tokenizer, Component):
         # type: (Message, Any) -> None
         message.set("tokens", self.tokenize(message.text))
 
-    def tokenize(self, text):
+    @staticmethod
+    def tokenize(text):
         # type: (Text) -> List[Token]
         import jieba
 
