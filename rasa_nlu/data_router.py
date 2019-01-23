@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import datetime
 import io
 import logging
@@ -11,7 +6,6 @@ import os
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from typing import Text, Dict, Any, Optional
 
-import six
 from builtins import object
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -109,11 +103,10 @@ class DataRouter(object):
 
         self.project_store = self._create_project_store(project_dir)
 
-        if six.PY3:
-            # tensorflow sessions are not fork-safe,
-            # and training processes have to be spawned instead of forked.
-            # See https://github.com/tensorflow/tensorflow/issues/5448#issuecomment-258934405
-            multiprocessing.set_start_method('spawn', force=True)
+        # tensorflow sessions are not fork-safe,
+        # and training processes have to be spawned instead of forked. See
+        # https://github.com/tensorflow/tensorflow/issues/5448#issuecomment-258934405
+        multiprocessing.set_start_method('spawn', force=True)
 
         self.pool = ProcessPool(self._training_processes)
 
@@ -349,43 +342,18 @@ class DataRouter(object):
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
 
-        # tensorflow training is not executed in a separate thread on python 2,
-        # as this may cause training to freeze
-        if six.PY2 and self._tf_in_pipeline(train_config):
-            try:
-                logger.warning("Training a pipeline with a tensorflow "
-                               "component. This blocks the server during "
-                               "training.")
-                model_path = do_train_in_worker(
-                        train_config,
-                        data_file,
-                        path=self.project_dir,
-                        project=project,
-                        fixed_model_name=model_name,
-                        storage=self.remote_storage)
-                model_dir = os.path.basename(os.path.normpath(model_path))
-                training_callback(model_dir)
-                return model_dir
-            except TrainingException as e:
-                logger.warning(e)
-                target_project = self.project_store.get(
-                        e.failed_target_project)
-                if target_project:
-                    target_project.status = STATUS_READY
-                raise e
-        else:
-            result = self.pool.submit(do_train_in_worker,
-                                      train_config,
-                                      data_file,
-                                      path=self.project_dir,
-                                      project=project,
-                                      fixed_model_name=model_name,
-                                      storage=self.remote_storage)
-            result = deferred_from_future(result)
-            result.addCallback(training_callback)
-            result.addErrback(training_errback)
+        result = self.pool.submit(do_train_in_worker,
+                                  train_config,
+                                  data_file,
+                                  path=self.project_dir,
+                                  project=project,
+                                  fixed_model_name=model_name,
+                                  storage=self.remote_storage)
+        result = deferred_from_future(result)
+        result.addCallback(training_callback)
+        result.addErrback(training_errback)
 
-            return result
+        return result
 
     def evaluate(self, data, project=None, model=None):
         # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]

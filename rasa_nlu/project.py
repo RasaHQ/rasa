@@ -1,31 +1,21 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import time
+from builtins import object
 
 import datetime
 import logging
 import os
 import tempfile
 import zipfile
-from threading import Lock, Thread
-from typing import Text, List
-
-import six
-import time
-from builtins import object
+from io import BytesIO as IOReader
 from requests.exceptions import InvalidURL, RequestException
+from threading import Lock, Thread
+from typing import Text, List, Optional
 
 from rasa_nlu import utils
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.model import Metadata, Interpreter
 from rasa_nlu.utils import is_url, EndpointConfig
-
-if six.PY2:
-    from StringIO import StringIO as IOReader
-else:
-    from io import BytesIO as IOReader
 
 logger = logging.getLogger(__name__)
 
@@ -129,9 +119,9 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
                      "and tag combination yet.")
         return None, None
     elif response.status_code != 200:
-        logger.warn("Tried to fetch model from server, but server response "
-                    "status code is {}. We'll retry later..."
-                    "".format(response.status_code))
+        logger.warning("Tried to fetch model from server, but server response "
+                       "status code is {}. We'll retry later..."
+                       "".format(response.status_code))
         return None, None
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
@@ -251,7 +241,7 @@ class Project(object):
             return local_model
 
         # still not found user specified model
-        logger.warn("Invalid model requested. Using default")
+        logger.warning("Invalid model requested. Using default")
         return self._latest_project_model()
 
     def parse(self, text, time=None, requested_model_name=None):
@@ -419,8 +409,8 @@ class Project(object):
             else:
                 return []
         except Exception as e:
-            logger.warn("Failed to list models of project {}. "
-                        "{}".format(self._project, e))
+            logger.warning("Failed to list models of project {}. "
+                           "{}".format(self._project, e))
             return []
 
     def _load_model_from_cloud(self, model_name, target_path):
@@ -432,8 +422,8 @@ class Project(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logger.warn("Using default interpreter, couldn't fetch "
-                        "model: {}".format(e))
+            logger.warning("Using default interpreter, couldn't fetch "
+                           "model: {}".format(e))
             raise  # re-raise this exception because nothing we can do now
 
     @staticmethod

@@ -1,13 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import copy
 import logging
 import os
 
-import six
 import ruamel.yaml as yaml
 from builtins import object
 # Describes where to search for the config file if no location is specified
@@ -118,7 +112,7 @@ class RasaNLUModelConfig(object):
         self.override(DEFAULT_CONFIG)
         self.override(configuration_values)
 
-        if isinstance(self.__dict__['pipeline'], six.string_types):
+        if isinstance(self.__dict__['pipeline'], str):
             from rasa_nlu import registry
 
             template_name = self.__dict__['pipeline']
@@ -188,8 +182,9 @@ class RasaNLUModelConfig(object):
             if c.get("name") == name:
                 c.update(kwargs)
         else:
-            logger.warn("Tried to set configuration value for component '{}' "
-                        "which is not part of the pipeline.".format(name))
+            logger.warning("Tried to set configuration value for component "
+                           "'{}' which is not part of the pipeline."
+                           "".format(name))
 
     def override(self, config):
         if config:

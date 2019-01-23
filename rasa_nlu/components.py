@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 
 import typing
@@ -43,7 +38,7 @@ def find_unavailable_packages(package_names):
 
 
 def validate_requirements(component_names):
-    # type: (List[Text], Text) -> None
+    # type: (List[Text]) -> None
     """Ensures that all required python packages are installed to
     instantiate and used the passed components."""
     from rasa_nlu import registry
@@ -206,7 +201,7 @@ class Component(object):
              model_dir=None,   # type: Optional[Text]
              model_metadata=None,   # type: Optional[Metadata]
              cached_component=None,   # type: Optional[Component]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> Component
         """Load this component from file.
@@ -370,7 +365,6 @@ class ComponentBuilder(object):
 
         Returns the component, if found, and the cache key."""
         from rasa_nlu import registry
-        from rasa_nlu.model import Metadata
 
         component_class = registry.get_component_class(component_name)
         cache_key = component_class.cache_key(model_metadata)
@@ -409,7 +403,6 @@ class ComponentBuilder(object):
             Component: the loaded component.
         """
         from rasa_nlu import registry
-        from rasa_nlu.model import Metadata
 
         try:
             cached_component, cache_key = self.__get_cached_component(

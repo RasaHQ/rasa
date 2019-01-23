@@ -3,10 +3,6 @@ and preconfigured templates.
 
 Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
 
 import typing
 from rasa_nlu import utils

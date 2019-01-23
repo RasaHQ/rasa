@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 from collections import defaultdict
 
@@ -32,12 +27,12 @@ class RasaReader(JsonTrainingDataReader):
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
         if intent_examples or entity_examples:
-            logger.warn("DEPRECATION warning: your rasa data "
-                        "contains 'intent_examples' "
-                        "or 'entity_examples' which will be "
-                        "removed in the future. Consider "
-                        "putting all your examples "
-                        "into the 'common_examples' section.")
+            logger.warning("DEPRECATION warning: your rasa data "
+                           "contains 'intent_examples' "
+                           "or 'entity_examples' which will be "
+                           "removed in the future. Consider "
+                           "putting all your examples "
+                           "into the 'common_examples' section.")
 
         all_examples = common_examples + intent_examples + entity_examples
         training_examples = []

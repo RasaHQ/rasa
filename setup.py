@@ -31,7 +31,6 @@ install_requires = [
     "packaging~=17.1",
     "typing~=3.6",
     "future~=0.16.0",
-    "six~=1.11",
     "tqdm~=4.19",
     "requests~=2.20",
     "jsonschema~=2.6",
@@ -65,7 +64,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",
