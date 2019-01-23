@@ -282,7 +282,7 @@ def test_report_output(tmpdir_factory):
     report = json.loads(utils.read_file(report_filename))
 
     assert len(report.keys()) == 4
-    assert report["intents"][0]["name"] == "greet"
+    assert report["greet"]
     assert result
 
 
