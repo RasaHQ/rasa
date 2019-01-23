@@ -4,6 +4,22 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
+[Unreleased 0.15.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+- **removed python 2.7 support**
+
+Fixed
+-----
+
 .. _v0-14-0:
 
 [0.14.0] - 2018-01-23
