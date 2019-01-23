@@ -13,3 +13,4 @@ cloudpickle==0.6.1
 packaging==17.1
 ruamel.yaml==0.15.78
 coloredlogs==9.0
+scikit-learn==0.20.2
