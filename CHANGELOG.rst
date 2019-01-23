@@ -4,13 +4,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased 0.14.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.14.0] - 2018-01-23
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
 - environment variables specified with ``${env_variable}`` in a yaml
-  configuration file are now replaced with the value of the environment variable
+  configuration file are now replaced with the value of the environment
+  variable
 - more documentation on how to run NLU with Docker
 - ``analyzer`` parameter to ``intent_featurizer_count_vectors`` featurizer to
   configure whether to use word or character n-grams
@@ -22,11 +23,11 @@ Changed
   config parameters as well as comments and types for all class functions.
 - the http server's ``POST /evaluate`` endpoint returns evaluation results
   for both entities and intents
-- use cloudpickle version 0.6.1
 - replaced ``yaml`` with ``ruamel.yaml``
 - updated spacy version to 2.0.18
 - updated TensorFlow version to 1.12.0
 - updated scikit-learn version to 0.20.2
+- updated cloudpickle version to 0.6.1
 
 Removed
 -------
@@ -41,11 +42,14 @@ Fixed
 - NLU Server can now handle training data mit emojis in it
 - If the ``token_name`` is not given in the endpoint configuration, the default
   value is ``token`` instead of ``None`
-- Throws error only if ``ner_crf`` picks up overlapping entities. If the entity extractor supports overlapping entitis no error is thrown.
+- Throws error only if ``ner_crf`` picks up overlapping entities. If the
+  entity extractor supports overlapping entitis no error is thrown.
 - Updated CORS support for the server.
-  Added the ``Access-Control-Allow-Headers`` and ``Content-Type`` headers for nlu server
+  Added the ``Access-Control-Allow-Headers`` and ``Content-Type`` headers
+  for nlu server
 - parsing of emojis which are sent within jsons
-- Bad input shape error from ``sklearn_intent_classifier`` when using ``scikit-learn==0.20.2``
+- Bad input shape error from ``sklearn_intent_classifier`` when using
+  ``scikit-learn==0.20.2``
 
 [0.13.8] - 2018-11-21
 ^^^^^^^^^^^^^^^^^^^^^
@@ -88,8 +92,8 @@ Fixed
 
 Changed
 -------
-- Training data is now validated after loading from files in ``loading.py`` instead of on initialisation of
-  ``TrainingData`` object
+- Training data is now validated after loading from files in ``loading.py``
+  instead of on initialisation of ``TrainingData`` object
 
 Fixed
 -----
@@ -109,9 +113,12 @@ Fixed
 
 Added
 -----
-- ``EndpointConfig`` class that handles authenticated requests (ported from Rasa Core)
-- ``DataRouter()`` class supports a ``model_server`` ``EndpointConfig``, which it regularly queries to fetch NLU models
-- this can be used with ``rasa_nlu.server`` with the ``--endpoint`` option (the key for this the model server config is ``model``)
+- ``EndpointConfig`` class that handles authenticated requests
+  (ported from Rasa Core)
+- ``DataRouter()`` class supports a ``model_server`` ``EndpointConfig``,
+  which it regularly queries to fetch NLU models
+- this can be used with ``rasa_nlu.server`` with the ``--endpoint`` option
+  (the key for this the model server config is ``model``)
 - docs on model fetching from a URL
 - ability to specify lookup tables in training data
 
