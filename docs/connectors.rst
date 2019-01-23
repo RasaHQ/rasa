@@ -767,7 +767,7 @@ use the ``rasa_core.channels.channel.RestInput`` class as a template.
 The methods you need to implement are ``blueprint`` and ``name``. The method
 needs to create a Flask blueprint that can be attached to a flask server.
 
-This allows you to add `REST` endpoints to the server, the external
+This allows you to add `REST` endpoints to the server, which the external
 messaging service can call to deliver messages.
 
 Your blueprint should have at least the two routes ``health`` on ``/``
@@ -797,14 +797,20 @@ are methods to send text and images) or you can use the
 ``CollectingOutputChannel`` to collect the bot responses Core
 creates while the bot is processing your messages and return
 them as part of your endpoint response. This is the way the ``RestInput``
-is implemented. For examples on how to create and use your own output
+channel is implemented. For examples on how to create and use your own output
 channel, please take a look at the implementations of the other
 output channels, e.g. the ``SlackBot`` in ``rasa_core.channels.slack``.
 
-To use a custom channel, you can use the ``rasa_core.run`` script,
-passing in the classpath of your custom channel using
-``--channel mypackage.MyIO`` or you can write your own code
-hooking up the agent with the channel.
+To use a custom channel, you need to supply a credentials configuration file
+``credentials.yml`` with the command line argument ``--credentials``.
+This credentials file has to contain the module path of your custom channel and
+any required configuration parameters. This could e.g. look like:
+
+.. code-block:: yaml
+
+    mypackage.MyIO:
+      username: "user_name"
+      another_parameter: "some value"
 
 Example implementation for an input channel that receives the messages,
 hands them over to Rasa Core, collects the bot utterances and returns
