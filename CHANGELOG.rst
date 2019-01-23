@@ -9,6 +9,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Ability to save successful predictions and classification results to a JSON
+  file from ``rasa_nlu.evaluate``
 - environment variables specified with ``${env_variable}`` in a yaml
   configuration file are now replaced with the value of the environment variable
 - more documentation on how to run NLU with Docker
