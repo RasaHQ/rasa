@@ -1,6 +1,7 @@
 from collections import deque, defaultdict
 
 import io
+import sys
 import json
 import logging
 import uuid
@@ -31,6 +32,9 @@ CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 GENERATED_HASH_LENGTH = 5
 
 FORM_PREFIX = "form: "
+# prefix for storystep ID to get reproducible sorting results
+# will get increased with each new instance
+STEP_COUNT = 1
 
 
 class StoryStringHelper(object):
@@ -96,7 +100,10 @@ class StoryStep(object):
         self.start_checkpoints = start_checkpoints if start_checkpoints else []
         self.events = events if events else []
         self.block_name = block_name
-        self.id = uuid.uuid4().hex
+        # put a counter prefix to uuid to get reproducible sorting results
+        global STEP_COUNT
+        self.id = "{}_{}".format(STEP_COUNT, uuid.uuid4().hex)
+        STEP_COUNT += 1
 
         self.story_string_helper = StoryStringHelper()
 
@@ -418,7 +425,15 @@ class StoryGraph(object):
         cyclic_edge_ids = self.cyclic_edge_ids
         # we need to remove the start steps and replace them with steps ending
         # in a special end checkpoint
-        story_steps = {s.id: s for s in self.story_steps}
+
+        # as in python 3.5, dict is not ordered, in order to generate
+        # reproducible result with random seed in python 3.5, we have
+        # to use OrderedDict
+        if sys.version_info >= (3, 6):
+            story_steps = {s.id: s for s in self.story_steps}
+        else:
+            from collections import OrderedDict
+            story_steps = OrderedDict([(s.id, s) for s in self.story_steps])
 
         # collect all overlapping checkpoints
         # we will remove unused start ones
@@ -643,7 +658,7 @@ class StoryGraph(object):
         GRAY, BLACK = 0, 1
 
         ordered = deque()
-        unprocessed = set(graph)
+        unprocessed = sorted(set(graph))
         visited_nodes = {}
 
         removed_edges = set()
@@ -657,7 +672,7 @@ class StoryGraph(object):
                     continue
                 if sk == BLACK:
                     continue
-                unprocessed.discard(k)
+                unprocessed.remove(k)
                 dfs(k)
             ordered.appendleft(node)
             visited_nodes[node] = BLACK

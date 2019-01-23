@@ -1,5 +1,6 @@
 import inspect
 import json
+import uuid
 from multiprocessing import Queue
 from threading import Thread
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable
@@ -27,10 +28,18 @@ class UserMessage(object):
                  output_channel: Optional['OutputChannel'] = None,
                  sender_id: Text = None,
                  parse_data: Dict[Text, Any] = None,
-                 input_channel: Text = None
+                 input_channel: Text = None,
+                 message_id: Text = None
                  ) -> None:
+        if text:
+            self.text = text.strip()
+        else:
+            self.text = text
 
-        self.text = text
+        if message_id is not None:
+            self.message_id = str(message_id)
+        else:
+            self.message_id = uuid.uuid4().hex
 
         if output_channel is not None:
             self.output_channel = output_channel

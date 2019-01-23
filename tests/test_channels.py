@@ -721,6 +721,14 @@ def test_int_sender_id_in_user_message():
     assert message.sender_id == "1234567890"
 
 
+def test_int_message_id_in_user_message():
+    from rasa_core.channels import UserMessage
+
+    message = UserMessage("B text", message_id=987654321)
+
+    assert message.message_id == "987654321"
+
+
 def test_send_custom_messages_without_buttons():
     from rasa_core.channels.channel import OutputChannel
 
@@ -731,3 +739,11 @@ def test_send_custom_messages_without_buttons():
     channel = OutputChannel()
     channel.send_text_message = test_message
     channel.send_custom_message("user", [{'title': 'a', 'subtitle': 'b'}])
+
+
+def test_newsline_strip():
+    from rasa_core.channels import UserMessage
+
+    message = UserMessage("\n/restart\n")
+
+    assert message.text == "/restart"

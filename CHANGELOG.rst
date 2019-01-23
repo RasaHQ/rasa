@@ -24,9 +24,17 @@ Added
   classes' load function returns the correct type
 - Travis script now clones and tests the Rasa stack starter pack
 - Entries for tensorflow and sklearn versions to the policy metadata
-- Sanitization mechanism for SlackInput that (in its current shape and form)
+- SlackInput wont ignore `app_mention` event anymore.
+  Will handle messages containing @mentions to bots and will respond to these
+  (as long as the event itself is enabled in the application hosting the bot)
+- Added sanitization mechanism for SlackInput that (in its current shape and form)
   strips bot's self mentions from messages posted using the said @mentions.
-  
+- Added random seed option for KerasPolicy and EmbeddingPolicy
+  to allow for reproducible training results
+- ``InvalidPolicyConfig`` error if policy in policy configuration could not be
+  loaded, or if ``policies`` key is empty or not provided
+- Added a unique identifier to ``UserMessage`` and the ``UserUttered`` event.
+
 Removed
 -------
 - support for deprecated intents/entities format
@@ -38,6 +46,11 @@ Changed
   commandline interface (to avoid prompt toolkit 2 version issues)
 - if NLU classification returned ``None`` in interactive training,
   directly ask a user for a correct intent
+- trigger ``fallback`` on low nlu confidence
+  only if previous action is ``action_listen``
+- updated docs for interactive learning to inform users of the
+  ``--core`` flag
+- Change memoization policies confidence score to 1.1 to override ML policies
 
 Fixed
 -----
@@ -45,7 +58,9 @@ Fixed
   dispatched messages using ``dispatcher.utter_custom_message``
 - re-added missing ``python-engineio`` dependency
 - fixed not working examples in ``examples/``
-
+- strip newlins from messages so you don't have something like "\n/restart\n"
+- properly reload domain when using `/model` endpoint to upload new model
+- updated documentation for custom channels to use the ``credentials.yml``
 
 [0.12.3] - 2018-12-03
 ^^^^^^^^^^^^^^^^^^^^^
