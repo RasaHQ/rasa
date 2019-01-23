@@ -756,14 +756,12 @@ def test_newsline_strip():
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
     from rasa_core.channels import RestInput
+    from flask import Flask
+    import rasa_core
 
     # load your trained agent
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
     input_channel = RestInput()
-
-    from flask import Flask
-    import rasa_core
 
     app = Flask(__name__)
     rasa_core.channels.channel.register([input_channel],
