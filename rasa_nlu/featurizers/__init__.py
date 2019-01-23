@@ -1,4 +1,3 @@
-
 import numpy as np
 
 from rasa_nlu.components import Component
