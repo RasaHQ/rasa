@@ -120,8 +120,8 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
         return None, None
     elif response.status_code != 200:
         logger.warning("Tried to fetch model from server, but server response "
-                    "status code is {}. We'll retry later..."
-                    "".format(response.status_code))
+                       "status code is {}. We'll retry later..."
+                       "".format(response.status_code))
         return None, None
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
