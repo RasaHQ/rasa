@@ -40,7 +40,7 @@ after_success:
 jobs:
   include:
   - stage: test
-    name: Check Depency Licenses
+    name: Check Dependency Licenses
     before_script:
     - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
     script:
