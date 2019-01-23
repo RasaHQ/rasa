@@ -34,7 +34,7 @@ class MitieFeaturizer(Featurizer):
         return feature_extractor.num_dimensions
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
@@ -45,7 +45,7 @@ class MitieFeaturizer(Featurizer):
                                 example, features))
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(message.get("tokens"),

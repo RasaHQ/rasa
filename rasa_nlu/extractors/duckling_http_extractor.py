@@ -159,7 +159,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         return int(time.time()) * 1000
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         if self._url() is not None:
             reference_time = self._reference_time_from_message(message)
@@ -184,7 +184,7 @@ class DucklingHTTPExtractor(EntityExtractor):
              model_dir=None,  # type: Text
              model_metadata=None,  # type: Metadata
              cached_component=None,  # type: Optional[DucklingHTTPExtractor]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> DucklingHTTPExtractor
 

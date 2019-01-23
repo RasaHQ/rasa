@@ -119,7 +119,7 @@ def load_component_by_name(component_name,  # type: Text
                            model_dir,  # type: Text
                            metadata,  # type: Metadata
                            cached_component,  # type: Optional[Component]
-                           **kwargs  # type: **Any
+                           **kwargs  # type: Any
                            ):
     # type: (...) -> Optional[Component]
     """Resolves a component and calls its load method to init it based on a

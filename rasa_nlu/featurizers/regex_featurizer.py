@@ -43,7 +43,7 @@ class RegexFeaturizer(Featurizer):
         self._add_lookup_table_regexes(lookup_tables)
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         self.known_patterns = training_data.regex_features
         self._add_lookup_table_regexes(training_data.lookup_tables)
@@ -53,7 +53,7 @@ class RegexFeaturizer(Featurizer):
             example.set("text_features", updated)
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         updated = self._text_features_with_regex(message)
         message.set("text_features", updated)
@@ -136,7 +136,7 @@ class RegexFeaturizer(Featurizer):
              model_dir=None,   # type: Optional[Text]
              model_metadata=None,   # type: Optional[Metadata]
              cached_component=None,   # type: Optional[RegexFeaturizer]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> RegexFeaturizer
 

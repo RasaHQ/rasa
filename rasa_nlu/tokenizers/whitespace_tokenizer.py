@@ -15,13 +15,13 @@ class WhitespaceTokenizer(Tokenizer, Component):
     provides = ["tokens"]
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         message.set("tokens", self.tokenize(message.text))
 

@@ -20,7 +20,7 @@ class SpacyEntityExtractor(EntityExtractor):
     requires = ["spacy_nlp"]
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         # can't use the existing doc here (spacy_doc on the message)
         # because tokens are lower cased which is bad for NER

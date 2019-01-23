@@ -44,7 +44,7 @@ class MitieIntentClassifier(Component):
         return ["mitie"]
 
     def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
         import mitie
 
         model_file = kwargs.get("mitie_file")
@@ -65,7 +65,7 @@ class MitieIntentClassifier(Component):
             self.clf = trainer.train()
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
@@ -93,7 +93,7 @@ class MitieIntentClassifier(Component):
              model_dir=None,  # type: Optional[Text]
              model_metadata=None,  # type: Optional[Metadata]
              cached_component=None,  # type: Optional[MitieIntentClassifier]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> MitieIntentClassifier
         import mitie

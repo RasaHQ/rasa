@@ -1,3 +1,4 @@
+import typing
 
 import glob
 import logging
@@ -8,12 +9,14 @@ from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Tokenizer, Token
 from rasa_nlu.training_data import Message, TrainingData
-from typing import Any, List, Text
+from typing import Any, List, Text, Optional
 
 logger = logging.getLogger(__name__)
 
 JIEBA_CUSTOM_DICTIONARY_PATH = "tokenizer_jieba"
 
+if typing.TYPE_CHECKING:
+    from rasa_nlu.model import Metadata
 
 class JiebaTokenizer(Tokenizer, Component):
     name = "tokenizer_jieba"
@@ -62,12 +65,12 @@ class JiebaTokenizer(Tokenizer, Component):
             jieba.load_userdict(jieba_userdict)
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
         message.set("tokens", self.tokenize(message.text))
 
     def tokenize(self, text):
@@ -83,7 +86,7 @@ class JiebaTokenizer(Tokenizer, Component):
              model_dir=None,  # type: Optional[Text]
              model_metadata=None,  # type: Optional[Metadata]
              cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> JiebaTokenizer
 

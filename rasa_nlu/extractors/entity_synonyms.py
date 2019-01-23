@@ -43,7 +43,7 @@ class EntitySynonymMapper(EntityExtractor):
                                               str(entity.get("value")))
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         updated_entities = message.get("entities", [])[:]
         self.replace_synonyms(updated_entities)

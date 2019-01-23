@@ -16,7 +16,6 @@ from rasa_nlu.training_data.loading import load_data_from_endpoint
 from rasa_nlu.utils import read_endpoints, EndpointConfig
 
 logger = logging.getLogger(__name__)
-
 if typing.TYPE_CHECKING:
     from rasa_nlu.persistor import Persistor
 

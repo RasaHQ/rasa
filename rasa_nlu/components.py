@@ -250,7 +250,7 @@ class Component(object):
         pass
 
     def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
         """Train this component.
 
         This is the components chance to train itself provided
@@ -264,7 +264,7 @@ class Component(object):
         pass
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
         """Process an incoming message.
 
         This is the components chance to process an incoming
@@ -389,7 +389,7 @@ class ComponentBuilder(object):
                        model_dir,
                        model_metadata,
                        **context):
-        # type: (Text, Text, Metadata, **Any) -> Component
+        # type: (Text, Text, Metadata, Any) -> Component
         """Tries to retrieve a component from the cache, else calls
         ``load`` to create a new component.
 

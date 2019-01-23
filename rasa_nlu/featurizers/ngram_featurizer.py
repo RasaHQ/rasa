@@ -66,7 +66,7 @@ class NGramFeaturizer(Featurizer):
         return ["spacy", "sklearn", "cloudpickle"]
 
     def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         start = time.time()
         self.train_on_sentences(training_data.intent_examples)
@@ -79,7 +79,7 @@ class NGramFeaturizer(Featurizer):
             example.set("text_features", updated)
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         updated = self._text_features_with_ngrams(message, self.best_num_ngrams)
         message.set("text_features", updated)
@@ -99,7 +99,7 @@ class NGramFeaturizer(Featurizer):
              model_dir=None,  # type: Optional[Text]
              model_metadata=None,  # type: Optional[Metadata]
              cached_component=None,  # type: Optional[NGramFeaturizer]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> NGramFeaturizer
 

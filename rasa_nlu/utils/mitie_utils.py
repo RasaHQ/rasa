@@ -94,7 +94,7 @@ class MitieNLP(Component):
              model_dir=None,  # type: Optional[Text]
              model_metadata=None,  # type: Optional[Metadata]
              cached_component=None,  # type: Optional[MitieNLP]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> MitieNLP
         import mitie

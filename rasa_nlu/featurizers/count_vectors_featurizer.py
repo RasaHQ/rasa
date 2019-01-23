@@ -256,7 +256,7 @@ class CountVectorsFeaturizer(Featurizer):
                                                                   X[i]))
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
         if self.vect is None:
             logger.error("There is no trained CountVectorizer: "
                          "component is either not trained or "

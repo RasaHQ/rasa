@@ -111,7 +111,7 @@ class SklearnIntentClassifier(Component):
         return self.le.inverse_transform(y)
 
     def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
         """Train the intent classifier on a data set."""
 
         num_threads = kwargs.get("num_threads", 1)
@@ -163,7 +163,7 @@ class SklearnIntentClassifier(Component):
                             verbose=1)
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
         """Return the most likely intent and its probability for a message."""
 
         if not self.clf:
@@ -226,7 +226,7 @@ class SklearnIntentClassifier(Component):
              model_dir=None,  # type: Optional[Text]
              model_metadata=None,  # type: Optional[Metadata]
              cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> SklearnIntentClassifier
 

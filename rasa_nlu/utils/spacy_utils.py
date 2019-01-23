@@ -94,13 +94,13 @@ class SpacyNLP(Component):
             return self.nlp(text.lower())
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
 
         for example in training_data.training_examples:
             example.set("spacy_doc", self.doc_for_text(example.text))
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         message.set("spacy_doc", self.doc_for_text(message.text))
 
@@ -110,7 +110,7 @@ class SpacyNLP(Component):
              model_metadata=None,
              cached_component=None,
              **kwargs):
-        # type: (Text, Metadata, Optional[SpacyNLP], **Any) -> SpacyNLP
+        # type: (Text, Metadata, Optional[SpacyNLP], Any) -> SpacyNLP
         import spacy
 
         if cached_component:

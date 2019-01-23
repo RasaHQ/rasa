@@ -156,7 +156,7 @@ class CRFEntityExtractor(EntityExtractor):
                 'for details'.format(message.text))
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         self._check_spacy_doc(message)
 
@@ -354,7 +354,7 @@ class CRFEntityExtractor(EntityExtractor):
              model_dir=None,  # type: Text
              model_metadata=None,  # type: Metadata
              cached_component=None,  # type: Optional[CRFEntityExtractor]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> CRFEntityExtractor
         from sklearn.externals import joblib

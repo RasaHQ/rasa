@@ -38,7 +38,7 @@ class SpacyFeaturizer(Featurizer):
             self._set_spacy_features(example)
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         self._set_spacy_features(message)
 

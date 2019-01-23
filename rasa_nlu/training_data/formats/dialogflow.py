@@ -1,6 +1,7 @@
 
 import logging
 import os
+from typing import Text, Any
 
 from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
@@ -19,7 +20,7 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 class DialogflowReader(TrainingDataReader):
     def read(self, fn, **kwargs):
-        # type: ([Text]) -> TrainingData
+        # type: (Text, Any) -> TrainingData
         """Loads training data stored in the Dialogflow data format."""
 
         language = kwargs["language"]
@@ -64,6 +65,7 @@ class DialogflowReader(TrainingDataReader):
 
     def _extract_entity(self, chunk, current_offset):
         """Extract an entity from a chunk if present."""
+
         entity = None
         if "meta" in chunk or "alias" in chunk:
             start = current_offset
@@ -80,8 +82,11 @@ class DialogflowReader(TrainingDataReader):
         return TrainingData([], entity_synonyms)
 
     def _read_examples_js(self, fn, language, fformat):
-        """Infer and load the example file based on the root filename and root format."""
-        examples_type = "usersays" if fformat == DIALOGFLOW_INTENT else "entries"
+        """Infer and load the example file based on the root
+        filename and root format."""
+
+        if fformat == DIALOGFLOW_INTENT_
+        examples_type = "usersays"  else "entries"
         examples_fn_ending = "_{}_{}.json".format(examples_type, language)
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):

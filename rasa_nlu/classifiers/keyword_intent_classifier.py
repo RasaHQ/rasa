@@ -18,7 +18,7 @@ class KeywordIntentClassifier(Component):
     byes = ["bye", "goodbye"]
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         intent = {"name": self.parse(message.text), "confidence": 1.0}
         message.set("intent", intent,

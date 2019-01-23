@@ -121,7 +121,7 @@ class MitieEntityExtractor(EntityExtractor):
         return sample
 
     def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+        # type: (Message, Any) -> None
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
@@ -139,7 +139,7 @@ class MitieEntityExtractor(EntityExtractor):
              model_dir=None,  # type: Text
              model_metadata=None,  # type: Metadata
              cached_component=None,  # type: Optional[MitieEntityExtractor]
-             **kwargs  # type: **Any
+             **kwargs  # type: Any
              ):
         # type: (...) -> MitieEntityExtractor
         import mitie

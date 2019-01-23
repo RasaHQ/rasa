@@ -128,7 +128,7 @@ class TrainingData(object):
                                                                   e['pattern']))
 
     def as_json(self, **kwargs):
-        # type: (**Any) -> str
+        # type: (Any) -> str
         """Represent this set of training examples as json."""
         from rasa_nlu.training_data.formats import RasaWriter
         return RasaWriter().dumps(self)
