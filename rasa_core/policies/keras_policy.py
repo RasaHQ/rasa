@@ -224,8 +224,8 @@ class KerasPolicy(Policy):
             meta = {"model": "keras_model.h5",
                     "epochs": self.current_epoch}
 
-            config_file = os.path.join(path, 'keras_policy.json')
-            utils.dump_obj_as_json_to_file(config_file, meta)
+            meta_file = os.path.join(path, 'keras_policy.json')
+            utils.dump_obj_as_json_to_file(meta_file, meta)
 
             model_file = os.path.join(path, meta['model'])
             # makes sure the model directory exists
@@ -233,9 +233,9 @@ class KerasPolicy(Policy):
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
 
-            dump_tf_config_path = os.path.join(
+            tf_config_file = os.path.join(
                 path, "keras_policy.tf_config.pkl")
-            with io.open(dump_tf_config_path, 'wb') as f:
+            with io.open(tf_config_file, 'wb') as f:
                 pickle.dump(self._tf_config, f)
         else:
             warnings.warn("Persist called without a trained model present. "
@@ -252,9 +252,9 @@ class KerasPolicy(Policy):
                 meta = json.loads(utils.read_file(meta_path))
 
                 model_file = os.path.join(path, meta["model"])
-                config_file = os.path.join(path, "keras_policy.tf_config.pkl")
+                tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
 
-                with io.open(config_file, 'rb') as f:
+                with io.open(tf_config_file, 'rb') as f:
                     _tf_config = pickle.load(f)
 
                 graph = tf.Graph()

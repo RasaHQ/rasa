@@ -1400,12 +1400,12 @@ class EmbeddingPolicy(Policy):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        dump_path = os.path.join(path, file_name + ".encoded_all_actions.pkl")
-        with io.open(dump_path, 'wb') as f:
+        encoded_actions_file = os.path.join(path, file_name + ".encoded_all_actions.pkl")
+        with io.open(encoded_actions_file, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
 
-        dump_tf_config_path = os.path.join(path, file_name + ".tf_config.pkl")
-        with io.open(dump_tf_config_path, 'wb') as f:
+        tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
+        with io.open(tf_config_file, 'wb') as f:
             pickle.dump(self._tf_config, f)
 
     @staticmethod
