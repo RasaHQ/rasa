@@ -73,6 +73,20 @@ jobs:
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
+  - stage: Test starter packs
+    name: "NLU starter pack"
+    python: 3.6
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
+    - cd starter-pack-rasa-nlu
+    - python -m pytest tests/test_nlu.py
+  - stage: Test starter packs
+    name: "Stack starter pack (NLU only)"
+    python: 3.6
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - python -m pytest tests/test_nlu.py
   - stage: trigger website rebuild
     if: fork = false AND branch = "master" AND type != "pull_request"
     script:
@@ -93,20 +107,6 @@ jobs:
     - cd rasa-website
     - git commit --allow-empty -m "trigger nlu docs update"
     - git push origin master
-  - stage: Test starter packs
-    name: "NLU starter pack"
-    python: 3.6
-    script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
-    - cd starter-pack-rasa-nlu
-    - python -m pytest tests/test_nlu.py
-  - stage: Test starter packs
-    name: "Stack starter pack (NLU only)"
-    python: 3.6
-    script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
-    - cd starter-pack-rasa-stack
-    - python -m pytest tests/test_nlu.py
   - stage: deploy
     python: 3.6
     install: skip
