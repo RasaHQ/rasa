@@ -1,4 +1,3 @@
-
 import logging
 
 from rasa_nlu.training_data import Message, TrainingData

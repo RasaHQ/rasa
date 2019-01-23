@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 from rasa_nlu.utils import ordered
 
 
