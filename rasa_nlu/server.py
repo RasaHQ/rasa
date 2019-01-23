@@ -151,9 +151,8 @@ def requires_auth(f):
 
 
 def decode_parameters(request):
-    """Make sure all the parameters have the same encoding.
+    """Make sure all the parameters have the same encoding."""
 
-    Ensures  py2 / py3 compatibility."""
     return {
         key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
         for key, value in request.args.items()}

@@ -347,14 +347,10 @@ def configure_colored_logging(loglevel):
 def pycloud_unpickle(file_name):
     # type: (Text) -> Any
     """Unpickle an object from file using cloudpickle."""
-    from future.utils import PY2
     import cloudpickle
 
     with io.open(file_name, 'rb') as f:  # pragma: no test
-        if PY2:
-            return cloudpickle.load(f)
-        else:
-            return cloudpickle.load(f, encoding="latin-1")
+        return cloudpickle.load(f, encoding="latin-1")
 
 
 def pycloud_pickle(file_name, obj):
