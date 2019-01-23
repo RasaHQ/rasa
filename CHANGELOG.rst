@@ -56,6 +56,7 @@ Fixed
 - fixed not working examples in ``examples/``
 - strip newlins from messages so you don't have something like "\n/restart\n"
 - properly reload domain when using `/model` endpoint to upload new model
+- updated documentation for custom channels to use the ``credentials.yml``
 
 [0.12.3] - 2018-12-03
 ^^^^^^^^^^^^^^^^^^^^^
