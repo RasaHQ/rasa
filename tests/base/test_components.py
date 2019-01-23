@@ -1,4 +1,3 @@
-
 import pytest
 
 from rasa_nlu import registry

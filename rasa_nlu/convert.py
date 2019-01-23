@@ -1,4 +1,3 @@
-
 import argparse
 
 from rasa_nlu import training_data

@@ -1,4 +1,3 @@
-
 from rasa_nlu.components import Component
 
 

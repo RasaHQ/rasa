@@ -1,4 +1,3 @@
-
 import mock
 
 from rasa_nlu import data_router

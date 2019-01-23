@@ -1,4 +1,3 @@
-
 import rasa_nlu
 
 import pytest
