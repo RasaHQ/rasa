@@ -1,12 +1,16 @@
+import typing
+
 import logging
 import re
 
-from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter)
 from rasa_nlu.training_data.util import check_duplicate_synonym
 from rasa_nlu.utils import build_entity
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import Message, TrainingData
 
 INTENT = "intent"
 SYNONYM = "synonym"
@@ -40,6 +44,8 @@ class MarkdownReader(TrainingDataReader):
 
     def reads(self, s, **kwargs):
         """Read markdown string and create TrainingData object"""
+        from rasa_nlu.training_data import TrainingData
+
         self.__init__()
         s = self._strip_comments(s)
         for line in s.splitlines():
@@ -149,6 +155,8 @@ class MarkdownReader(TrainingDataReader):
 
     def _parse_training_example(self, example):
         """Extract entities and synonyms, and convert to plain text."""
+        from rasa_nlu.training_data import Message
+
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(ent_regex,
                             lambda m: m.groupdict()['entity_text'],

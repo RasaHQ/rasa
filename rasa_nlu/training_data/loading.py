@@ -1,3 +1,4 @@
+import typing
 
 import json
 import logging
@@ -6,15 +7,15 @@ import requests
 from typing import Text, Optional
 
 from rasa_nlu import utils
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.formats import (
-    MarkdownReader, WitReader, LuisReader,
-    RasaReader, DialogflowReader)
+
 from rasa_nlu.training_data.formats import markdown
 from rasa_nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT,
     DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES)
 from rasa_nlu.utils import EndpointConfig
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ def load_data(resource_name, language='en'):
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
+    from rasa_nlu.training_data import TrainingData
 
     files = utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
@@ -83,6 +85,10 @@ def load_data_from_endpoint(data_endpoint, language='en'):
 
 def _reader_factory(fformat):
     """Generates the appropriate reader class based on the file format."""
+    from rasa_nlu.training_data.formats import (
+        MarkdownReader, WitReader, LuisReader,
+        RasaReader, DialogflowReader)
+
     reader = None
     if fformat == LUIS:
         reader = LuisReader()

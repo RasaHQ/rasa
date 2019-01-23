@@ -1,9 +1,12 @@
+import typing
 
 import logging
 from typing import Text, Any, Dict
 
-from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import JsonTrainingDataReader
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +16,7 @@ class LuisReader(JsonTrainingDataReader):
     def read_from_json(self, js, **kwargs):
         # type: (Dict[Text, Any], Any) -> TrainingData
         """Loads training data stored in the LUIS.ai data format."""
+        from rasa_nlu.training_data import Message, TrainingData
 
         training_examples = []
         regex_features = []

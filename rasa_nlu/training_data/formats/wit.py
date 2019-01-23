@@ -1,9 +1,12 @@
+import typing
 
 import logging
 from typing import Any, Text, Dict
 
-from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import JsonTrainingDataReader
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 

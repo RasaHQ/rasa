@@ -12,11 +12,11 @@ from typing import Hashable
 
 from rasa_nlu import config
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.training_data import TrainingData
     from rasa_nlu.model import Metadata
+    from rasa_nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 

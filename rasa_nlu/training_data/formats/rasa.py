@@ -1,14 +1,18 @@
+import typing
+
 import logging
 from collections import defaultdict
 
 from typing import Dict, Text, Any
 
-from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
     TrainingDataWriter)
 from rasa_nlu.training_data.util import transform_entity_synonyms
 from rasa_nlu.utils import json_to_string
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +20,8 @@ logger = logging.getLogger(__name__)
 class RasaReader(JsonTrainingDataReader):
     def read_from_json(self, js, **kwargs):
         """Loads training data stored in the rasa NLU data format."""
+        from rasa_nlu.training_data import Message, TrainingData
+
         validate_rasa_nlu_data(js)
 
         data = js['rasa_nlu_data']
