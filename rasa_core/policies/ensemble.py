@@ -217,10 +217,11 @@ class PolicyEnsemble(object):
 
     @classmethod
     def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
-        policies = dictionary.get('policies')
+        policies = dictionary.get('policies') or dictionary.get('policy')
         if policies is None:
-            raise InvalidPolicyConfig("The policy configuration file has to "
-                                      "include a key 'policies'.")
+            raise InvalidPolicyConfig("You didn't define any policies. "
+                                      "Please define them under 'policies:' in "
+                                      "your policy configuration file.")
         if len(policies) == 0:
             raise InvalidPolicyConfig("The policy configuration file has to "
                                       "include at least one policy.")

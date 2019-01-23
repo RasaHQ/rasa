@@ -79,16 +79,18 @@ def test_policy_loading_load_returns_wrong_type(tmpdir):
         PolicyEnsemble.load(str(tmpdir))
 
 
-def test_policy_from_dict_with_valid_module():
-    test_dict = {"policies": [{"name": "MemoizationPolicy"}]}
-
-    assert PolicyEnsemble.from_dict(test_dict)
+@pytest.mark.parametrize("valid_config", [
+    {"policy": [{"name": "MemoizationPolicy"}]},
+    {"policies": [{"name": "MemoizationPolicy"}]}])
+def test_valid_policy_configurations(valid_config):
+    assert PolicyEnsemble.from_dict(valid_config)
 
 
 @pytest.mark.parametrize("invalid_config", [
-    {"policy": [{"name": "MemoizationPolicy"}]},
+    {"police": [{"name": "MemoizationPolicy"}]},
     {"policies": []},
-    {"policies": [{"name": "ykaüoppodas"}]}])
+    {"policies": [{"name": "ykaüoppodas"}]},
+    {"policy": [{"name": "ykaüoppodas"}]}])
 def test_invalid_policy_configurations(invalid_config):
     with pytest.raises(InvalidPolicyConfig):
         PolicyEnsemble.from_dict(invalid_config)
