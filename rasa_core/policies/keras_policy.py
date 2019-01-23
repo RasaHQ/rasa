@@ -247,9 +247,9 @@ class KerasPolicy(Policy):
 
         if os.path.exists(path):
             featurizer = TrackerFeaturizer.load(path)
-            meta_path = os.path.join(path, "keras_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(utils.read_file(meta_path))
+            meta_file = os.path.join(path, "keras_policy.json")
+            if os.path.isfile(meta_file):
+                meta = json.loads(utils.read_file(meta_file))
 
                 model_file = os.path.join(path, meta["model"])
                 tf_config_file = os.path.join(path, "keras_policy.tf_config.pkl")
