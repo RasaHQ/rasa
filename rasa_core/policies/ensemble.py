@@ -257,7 +257,8 @@ class PolicyEnsemble(object):
             else:
                 raise InvalidPolicyConfig("Module for policy '{}' could not be "
                                           "loaded. Please make sure the name "
-                                          "is a valid policy.".format(policy_name))
+                                          "is a valid policy."
+                                          "".format(policy_name))
 
         return parsed_policies
 
