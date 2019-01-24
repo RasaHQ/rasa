@@ -1,7 +1,9 @@
 import pytest
 
 import rasa_core
-from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX, RasaNLUHttpInterpreter
+from rasa_core.interpreter import (RegexInterpreter,
+                                   INTENT_MESSAGE_PREFIX,
+                                   RasaNLUHttpInterpreter)
 from rasa_core.utils import EndpointConfig
 from httpretty import httpretty
 
