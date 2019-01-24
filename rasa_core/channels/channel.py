@@ -7,7 +7,7 @@ from sanic import Sanic, Blueprint, response
 from typing import (
     Text, List, Dict, Any, Optional, Callable, Iterable,
     Awaitable)
-
+import uuid
 from rasa_core import utils
 from rasa_core.constants import DOCS_BASE_URL
 
@@ -29,12 +29,18 @@ class UserMessage(object):
                  output_channel: Optional['OutputChannel'] = None,
                  sender_id: Text = None,
                  parse_data: Dict[Text, Any] = None,
-                 input_channel: Text = None
+                 input_channel: Text = None,
+                 message_id: Text = None
                  ) -> None:
         if text:
             self.text = text.strip()
         else:
             self.text = text
+
+        if message_id is not None:
+            self.message_id = str(message_id)
+        else:
+            self.message_id = uuid.uuid4().hex
 
         if output_channel is not None:
             self.output_channel = output_channel
@@ -54,10 +60,13 @@ class UserMessage(object):
 def register(input_channels: List['InputChannel'],
              app: Sanic,
              on_new_message: Callable[[UserMessage], Awaitable[None]],
-             route: Text
+             route: Optional[Text]
              ) -> None:
     for channel in input_channels:
-        p = urljoin(route, channel.url_prefix())
+        if route:
+            p = urljoin(route, channel.url_prefix())
+        else:
+            p = None
         app.blueprint(channel.blueprint(on_new_message), url_prefix=p)
 
 
@@ -296,6 +305,7 @@ class QueueOutputChannel(CollectingOutputChannel):
 
     # noinspection PyMissingConstructor
     def __init__(self, message_queue: Queue = None) -> None:
+        super(QueueOutputChannel).__init__()
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self):

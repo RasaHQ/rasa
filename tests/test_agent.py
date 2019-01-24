@@ -148,12 +148,10 @@ async def test_agent_with_model_server_in_thread(test_server, tmpdir,
 
 
 def test_wait_time_between_pulls_from_file(monkeypatch):
-    from future.utils import raise_
-
     monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: raise_(Exception()))
+                        lambda *args: 1 / 0)  # raises an exception
 
     model_endpoint_config = utils. \
         read_endpoint_config("data/test_endpoints/model_endpoint.yml", "model")
@@ -163,12 +161,10 @@ def test_wait_time_between_pulls_from_file(monkeypatch):
 
 
 def test_wait_time_between_pulls_str(monkeypatch):
-    from future.utils import raise_
-
     monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: raise_(Exception()))
+                        lambda *args: 1 / 0)  # raises an exception
 
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": 'http://server.com/model/default_core@latest',
@@ -180,10 +176,8 @@ def test_wait_time_between_pulls_str(monkeypatch):
 
 
 def test_wait_time_between_pulls_with_not_number(monkeypatch):
-    from future.utils import raise_
-
     monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
-                        lambda *args: raise_(Exception()))
+                        lambda *args: 1 / 0)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
                         lambda *args: True)
 

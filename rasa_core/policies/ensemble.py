@@ -217,10 +217,18 @@ class PolicyEnsemble(object):
 
     @classmethod
     def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
+        policies = dictionary.get('policies') or dictionary.get('policy')
+        if policies is None:
+            raise InvalidPolicyConfig("You didn't define any policies. "
+                                      "Please define them under 'policies:' in "
+                                      "your policy configuration file.")
+        if len(policies) == 0:
+            raise InvalidPolicyConfig("The policy configuration file has to "
+                                      "include at least one policy.")
 
-        policies = []
+        parsed_policies = []
 
-        for policy in dictionary.get('policies', []):
+        for policy in policies:
 
             policy_name = policy.pop('name')
             if policy.get('featurizer'):
@@ -242,11 +250,17 @@ class PolicyEnsemble(object):
                 policy['featurizer'] = featurizer_func(**featurizer_config)
 
             constr_func = utils.class_from_module_path(policy_name)
-            policy_object = constr_func(**policy)
 
-            policies.append(policy_object)
+            if constr_func:
+                policy_object = constr_func(**policy)
+                parsed_policies.append(policy_object)
+            else:
+                raise InvalidPolicyConfig("Module for policy '{}' could not be "
+                                          "loaded. Please make sure the name "
+                                          "is a valid policy."
+                                          "".format(policy_name))
 
-        return policies
+        return parsed_policies
 
     @classmethod
     def get_featurizer_from_dict(cls, policy):

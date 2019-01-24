@@ -74,6 +74,8 @@ class EmbeddingPolicy(Policy):
         "batch_size": [8, 32],
         # number of epochs
         "epochs": 1,
+        # set random seed to any int to get reproducible results
+        "random_seed": None,
 
         # embedding parameters
         # dimension size of embedding vectors
@@ -238,6 +240,8 @@ class EmbeddingPolicy(Policy):
         self.batch_size = config['batch_size']
 
         self.epochs = config['epochs']
+
+        self.random_seed = config['random_seed']
 
     def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
         self.embed_dim = config['embed_dim']
@@ -919,6 +923,9 @@ class EmbeddingPolicy(Policy):
 
         logger.debug('Started training embedding policy.')
 
+        # set numpy random seed
+        np.random.seed(self.random_seed)
+
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
@@ -948,6 +955,9 @@ class EmbeddingPolicy(Policy):
         self.graph = tf.Graph()
 
         with self.graph.as_default():
+            # set random seed in tf
+            tf.set_random_seed(self.random_seed)
+
             dialogue_len = None  # use dynamic time for rnn
             # create placeholders
             self.a_in = tf.placeholder(
