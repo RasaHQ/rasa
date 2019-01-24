@@ -388,7 +388,9 @@ class DataRouter(object):
                 errors_filename=None
         )
 
-    def unload_model(self, project: Optional[Text], model: Text) -> Dict[Text, Any]:
+    def unload_model(self,
+                     project: Optional[Text],
+                     model: Text) -> Dict[Text, Any]:
         """Unload a model from server memory."""
 
         if project is None:
