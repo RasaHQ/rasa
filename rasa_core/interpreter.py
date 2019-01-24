@@ -174,18 +174,18 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    def parse(self, text):
+    def parse(self, text, message_id=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         default_return = {"intent": {"name": "", "confidence": 0.0},
                           "entities": [], "text": ""}
-        result = self._rasa_http_parse(text)
+        result = self._rasa_http_parse(text, message_id)
 
         return result if result is not None else default_return
 
-    def _rasa_http_parse(self, text):
+    def _rasa_http_parse(self, text, message_id=None):
         """Send a text message to a running rasa NLU http server.
 
         Return `None` on failure."""
@@ -202,6 +202,10 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "project": self.project_name,
             "q": text
         }
+
+        if message_id:
+            params.update({"message_id": message_id})
+
         url = "{}/parse".format(self.endpoint.url)
         try:
             result = requests.get(url, params=params)
