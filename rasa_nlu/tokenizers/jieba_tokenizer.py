@@ -1,22 +1,21 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import glob
 import logging
 import os
 import shutil
+import typing
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.tokenizers import Tokenizer, Token
+from rasa_nlu.tokenizers import Token, Tokenizer
 from rasa_nlu.training_data import Message, TrainingData
-from typing import Any, List, Text
 
 logger = logging.getLogger(__name__)
 
 JIEBA_CUSTOM_DICTIONARY_PATH = "tokenizer_jieba"
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.model import Metadata
 
 
 class JiebaTokenizer(Tokenizer, Component):
@@ -30,8 +29,7 @@ class JiebaTokenizer(Tokenizer, Component):
         "dictionary_path": None  # default don't load custom dictionary
     }
 
-    def __init__(self, component_config=None):
-        # type: (Dict[Text, Any]) -> None
+    def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
         super(JiebaTokenizer, self).__init__(component_config)
@@ -44,13 +42,11 @@ class JiebaTokenizer(Tokenizer, Component):
             self.load_custom_dictionary(self.dictionary_path)
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["jieba"]
 
     @staticmethod
-    def load_custom_dictionary(path):
-        # type: (Text) -> None
+    def load_custom_dictionary(path: Text) -> None:
         """Load all the custom dictionaries stored in the path.
 
         More information about the dictionaries file format can
@@ -65,17 +61,18 @@ class JiebaTokenizer(Tokenizer, Component):
                         "{}".format(jieba_userdict))
             jieba.load_userdict(jieba_userdict)
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
         message.set("tokens", self.tokenize(message.text))
 
-    def tokenize(self, text):
-        # type: (Text) -> List[Token]
+    @staticmethod
+    def tokenize(text: Text) -> List[Token]:
         import jieba
 
         tokenized = jieba.tokenize(text)
@@ -84,12 +81,11 @@ class JiebaTokenizer(Tokenizer, Component):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Optional[Text]
-             model_metadata=None,  # type: Optional[Metadata]
-             cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> JiebaTokenizer
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional[Component] = None,
+             **kwargs: Any
+             ) -> 'JiebaTokenizer':
 
         meta = model_metadata.for_component(cls.name)
         relative_dictionary_path = meta.get("dictionary_path")
@@ -112,8 +108,7 @@ class JiebaTokenizer(Tokenizer, Component):
         for target_file in target_file_list:
             shutil.copy2(target_file, output_dir)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Optional[Dict[Text, Any]]
+    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
         model_dictionary_path = None

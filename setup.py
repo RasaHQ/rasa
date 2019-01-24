@@ -31,7 +31,6 @@ install_requires = [
     "packaging~=17.1",
     "typing~=3.6",
     "future~=0.16.0",
-    "six~=1.11",
     "tqdm~=4.19",
     "requests~=2.20",
     "jsonschema~=2.6",
@@ -41,18 +40,17 @@ install_requires = [
     "ruamel.yaml~=0.15.7",
     "coloredlogs~=9.0",
     "fuzzywuzzy==0.17.0",
-    "python-Levenshtein==0.12.0"
+    "python-Levenshtein==0.12.0",
+    "scikit-learn~=0.20.2"
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["scikit-learn<0.20",
-              "sklearn-crfsuite~=0.3.6",
+    'spacy': ["sklearn-crfsuite~=0.3.6",
               "scipy~=1.1",
               "spacy<=2.0.18,>2.0",
               ],
-    'tensorflow': ["scikit-learn<0.20",
-                   "sklearn-crfsuite~=0.3.6",
+    'tensorflow': ["sklearn-crfsuite~=0.3.6",
                    "scipy~=1.1",
                    "tensorflow~=1.12"
                    ],
@@ -68,7 +66,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",
