@@ -2,14 +2,14 @@
 
 import os
 import pytest
-from rasa_nlu.config import RasaNLUModelConfig
 
-from tests.conftest import DEFAULT_DATA_PATH
 from rasa_nlu import registry, train
-from rasa_nlu.model import Trainer, Interpreter
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.model import Interpreter, Trainer
 from rasa_nlu.train import create_persistor
 from rasa_nlu.training_data import TrainingData
 from tests import utilities
+from tests.conftest import DEFAULT_DATA_PATH
 
 
 def as_pipeline(*components):
@@ -82,11 +82,12 @@ def test_train_model(pipeline_template, component_builder, tmpdir):
 
 @utilities.slowtest
 def test_random_seed(component_builder, tmpdir):
-    '''test if train result is the same for two runs of tf embedding'''
+    """test if train result is the same for two runs of tf embedding"""
 
     _config = utilities.base_test_conf("tensorflow_embedding")
     # set fixed random seed to 1
-    _config.set_component_attr("intent_classifier_tensorflow_embedding", random_seed=1)
+    _config.set_component_attr("intent_classifier_tensorflow_embedding",
+                               random_seed=1)
     # first run
     (trained_a, _, persisted_path_a) = train.do_train(
             _config,

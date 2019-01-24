@@ -14,6 +14,7 @@ class WitReader(JsonTrainingDataReader):
 
     def read_from_json(self, js: Dict[Text, Any], **kwargs: Any):
         """Loads training data stored in the WIT.ai data format."""
+        from rasa_nlu.training_data import Message, TrainingData
 
         training_examples = []
 

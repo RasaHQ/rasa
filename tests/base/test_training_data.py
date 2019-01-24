@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import tempfile
-
 import pytest
+import tempfile
 from jsonschema import ValidationError
 
-from rasa_nlu import training_data
-from rasa_nlu import utils
+from rasa_nlu import training_data, utils
 from rasa_nlu.convert import convert_training_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -65,7 +63,8 @@ def test_dialogflow_data():
     assert len(td.training_examples) == 24
     assert td.intents == {"affirm", "goodbye", "hi", "inform"}
     assert td.entities == {"cuisine", "location"}
-    non_trivial_synonyms = {k: v for k, v in td.entity_synonyms.items() if k != v}
+    non_trivial_synonyms = {k: v
+                            for k, v in td.entity_synonyms.items() if k != v}
     assert non_trivial_synonyms == {"mexico": "mexican",
                                     "china": "chinese",
                                     "india": "indian"}
@@ -74,7 +73,7 @@ def test_dialogflow_data():
 def test_lookup_table_json():
     lookup_fname = 'data/test/lookup_tables/plates.txt'
     td_lookup = training_data.load_data(
-        'data/test/lookup_tables/lookup_table.json')
+            'data/test/lookup_tables/lookup_table.json')
     assert td_lookup.lookup_tables[0]['name'] == 'plates'
     assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
     assert td_lookup.lookup_tables[1]['name'] == 'drinks'
@@ -85,7 +84,7 @@ def test_lookup_table_json():
 def test_lookup_table_md():
     lookup_fname = 'data/test/lookup_tables/plates.txt'
     td_lookup = training_data.load_data(
-        'data/test/lookup_tables/lookup_table.md')
+            'data/test/lookup_tables/lookup_table.md')
     assert td_lookup.lookup_tables[0]['name'] == 'plates'
     assert td_lookup.lookup_tables[0]['elements'] == lookup_fname
     assert td_lookup.lookup_tables[1]['name'] == 'drinks'
@@ -93,7 +92,8 @@ def test_lookup_table_md():
         'mojito', 'lemonade', 'sweet berry wine', 'tea', 'club mate']
 
 
-@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json", 'data/examples/rasa/demo-rasa.md'])
+@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json",
+                                      'data/examples/rasa/demo-rasa.md'])
 def test_demo_data(filename):
     td = training_data.load_data(filename)
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
@@ -126,8 +126,10 @@ def test_train_test_split(filename):
     assert len(td_test.training_examples) == 10
 
 
-@pytest.mark.parametrize("files", [('data/examples/rasa/demo-rasa.json', 'data/test/multiple_files_json'),
-                                   ('data/examples/rasa/demo-rasa.md', 'data/test/multiple_files_markdown')])
+@pytest.mark.parametrize("files", [('data/examples/rasa/demo-rasa.json',
+                                    'data/test/multiple_files_json'),
+                                   ('data/examples/rasa/demo-rasa.md',
+                                    'data/test/multiple_files_markdown')])
 def test_data_merging(files):
     td_reference = training_data.load_data(files[0])
     td = training_data.load_data(files[1])
@@ -141,10 +143,13 @@ def test_data_merging(files):
 
 
 def test_markdown_single_sections():
-    td_regex_only = training_data.load_data('data/test/markdown_single_sections/regex_only.md')
-    assert td_regex_only.regex_features == [{"name": "greet", "pattern": "hey[^\s]*"}]
+    td_regex_only = training_data.load_data(
+            'data/test/markdown_single_sections/regex_only.md')
+    assert td_regex_only.regex_features == \
+           [{"name": "greet", "pattern": "hey[^\s]*"}]
 
-    td_syn_only = training_data.load_data('data/test/markdown_single_sections/synonyms_only.md')
+    td_syn_only = training_data.load_data(
+            'data/test/markdown_single_sections/synonyms_only.md')
     assert td_syn_only.entity_synonyms == {'Chines': 'chinese',
                                            'Chinese': 'chinese'}
 

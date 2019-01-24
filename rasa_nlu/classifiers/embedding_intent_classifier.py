@@ -312,8 +312,9 @@ class EmbeddingIntentClassifier(Component):
                                          name='b')
         return emb_a, emb_b
 
-    def _tf_sim(self, a: tf.Tensor, b: tf.Tensor) -> Tuple[
-        tf.Tensor, tf.Tensor]:
+    def _tf_sim(self,
+                a: tf.Tensor,
+                b: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
         """Define similarity
 
         in two cases:

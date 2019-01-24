@@ -15,7 +15,7 @@ def test_dynamic_load_model_with_exists_model():
     with mock.patch.object(Project, "__init__", mocked_init):
         project = Project()
 
-        project._models = (MODEL_NAME, )
+        project._models = (MODEL_NAME,)
 
         project.pull_models = None
 
@@ -31,10 +31,11 @@ def test_dynamic_load_model_with_refresh_exists_model():
         return None
 
     def mocked_search_for_models(self):
-        self._models = (MODEL_NAME, )
+        self._models = (MODEL_NAME,)
 
     with mock.patch.object(Project, "__init__", mocked_init):
-        with mock.patch.object(Project, '_search_for_models', mocked_search_for_models):
+        with mock.patch.object(Project, '_search_for_models',
+                               mocked_search_for_models):
             project = Project()
 
             project._models = ()
@@ -59,8 +60,10 @@ def test_dynamic_load_model_with_refresh_not_exists_model():
         return LATEST_MODEL_NAME
 
     with mock.patch.object(Project, "__init__", mocked_init):
-        with mock.patch.object(Project, "_search_for_models", mocked_search_for_models):
-            with mock.patch.object(Project, "_latest_project_model", mocked_latest_project_model):
+        with mock.patch.object(Project, "_search_for_models",
+                               mocked_search_for_models):
+            with mock.patch.object(Project, "_latest_project_model",
+                                   mocked_latest_project_model):
                 project = Project()
 
                 project._models = ()
@@ -85,8 +88,10 @@ def test_dynamic_load_model_with_model_is_none():
         return LATEST_MODEL_NAME
 
     with mock.patch.object(Project, "__init__", mocked_init):
-        with mock.patch.object(Project, "_search_for_models", mocked_search_for_models):
-            with mock.patch.object(Project, "_latest_project_model", mocked_latest_project_model):
+        with mock.patch.object(Project, "_search_for_models",
+                               mocked_search_for_models):
+            with mock.patch.object(Project, "_latest_project_model",
+                                   mocked_latest_project_model):
                 project = Project()
 
                 project._models = ()
