@@ -244,7 +244,7 @@ def test_unload_model_error(app):
     rjs = yield response.json()
     assert response.code == 500, "Model not found"
     assert rjs['error'] == ("Failed to unload model my_model for project "
-                           "default.")
+                            "default.")
 
 
 @pytest.inlineCallbacks

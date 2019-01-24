@@ -145,8 +145,8 @@ def test_data_merging(files):
 def test_markdown_single_sections():
     td_regex_only = training_data.load_data(
             'data/test/markdown_single_sections/regex_only.md')
-    assert td_regex_only.regex_features == \
-           [{"name": "greet", "pattern": "hey[^\s]*"}]
+    assert (td_regex_only.regex_features ==
+            [{"name": "greet", "pattern": "hey[^\s]*"}])
 
     td_syn_only = training_data.load_data(
             'data/test/markdown_single_sections/synonyms_only.md')
