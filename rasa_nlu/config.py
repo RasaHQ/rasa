@@ -26,7 +26,7 @@ class InvalidConfigError(ValueError):
         super(InvalidConfigError, self).__init__(message)
 
 
-def load(filename: Text = None, **kwargs: Any) -> 'RasaNLUModelConfig':
+def load(filename: Optional[Text] = None, **kwargs: Any) -> 'RasaNLUModelConfig':
     if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
         filename = DEFAULT_CONFIG_LOCATION
 
