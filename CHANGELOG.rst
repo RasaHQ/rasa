@@ -4,6 +4,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+[Unreleased 0.13.1.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fix form validation question error in interactive learninig
+
+
 .. _v0-13-0:
 
 [0.13.0] - 2019-01-23
