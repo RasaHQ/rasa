@@ -8,14 +8,14 @@ import zipfile
 from io import BytesIO as IOReader
 from requests.exceptions import InvalidURL, RequestException
 from threading import Lock, Thread
-from typing import Text, List, Optional
+from typing import List, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.model import Metadata, Interpreter
-from rasa_nlu.utils import is_url, EndpointConfig
+from rasa_nlu.model import Interpreter, Metadata
+from rasa_nlu.utils import EndpointConfig, is_url
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +30,13 @@ STATUS_TRAINING = 1
 STATUS_FAILED = -1
 
 
-def load_from_server(component_builder=None,  # type: Optional[ComponentBuilder]
-                     project=None,  # type: Optional[Text]
-                     project_dir=None,  # type: Optional[Text]
-                     remote_storage=None,  # type: Optional[Text]
-                     model_server=None,  # type: Optional[EndpointConfig]
-                     wait_time_between_pulls=None,  # type: Optional[int]
-                     ):
-    # type: (...) -> Project
+def load_from_server(component_builder: Optional[ComponentBuilder] = None,
+                     project: Optional[Text] = None,
+                     project_dir: Optional[Text] = None,
+                     remote_storage: Optional[Text] = None,
+                     model_server: Optional[EndpointConfig] = None,
+                     wait_time_between_pulls: Optional[int] = None,
+                     ) -> 'Project':
     """Load a persisted model from a server."""
 
     project = Project(component_builder=component_builder,
@@ -56,8 +55,8 @@ def load_from_server(component_builder=None,  # type: Optional[ComponentBuilder]
     return project
 
 
-def _update_model_from_server(model_server, project):
-    # type: (EndpointConfig, Project) -> None
+def _update_model_from_server(model_server: EndpointConfig,
+                              project: 'Project') -> None:
     """Load a zipped Rasa NLU model from a URL and update the passed
 
     project."""
@@ -67,7 +66,7 @@ def _update_model_from_server(model_server, project):
     model_directory = tempfile.mkdtemp()
 
     new_model_fingerprint, filename = _pull_model_and_fingerprint(
-        model_server, model_directory, project.fingerprint)
+            model_server, model_directory, project.fingerprint)
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
         project.fingerprint = new_model_fingerprint
@@ -77,8 +76,7 @@ def _update_model_from_server(model_server, project):
         logger.debug("No new model found at URL {}".format(model_server.url))
 
 
-def _get_remote_model_name(filename):
-    # type: (Optional[Text]) -> Text
+def _get_remote_model_name(filename: Optional[Text]) -> Text:
     """Get the name to save a model under that was fetched from a
 
     remote server."""
@@ -89,11 +87,10 @@ def _get_remote_model_name(filename):
         return MODEL_NAME_PREFIX + timestamp
 
 
-def _pull_model_and_fingerprint(model_server,  # type: EndpointConfig
-                                model_directory,  # type: Text
-                                fingerprint  # type: Optional[Text]
-                                ):
-    # type: (...) -> (Optional[Text], Optional[Text])
+def _pull_model_and_fingerprint(model_server: EndpointConfig,
+                                model_directory: Text,
+                                fingerprint: Optional[Text]
+                                ) -> (Optional[Text], Optional[Text]):
     """Queries the model server and returns a tuple of containing the
 
     response's <ETag> header which contains the model hash, and the
@@ -136,17 +133,17 @@ def _pull_model_and_fingerprint(model_server,  # type: EndpointConfig
     return response.headers.get("ETag"), response.headers.get("filename")
 
 
-def _run_model_pulling_worker(model_server, wait_time_between_pulls, project):
-    # type: (EndpointConfig, int, Project) -> None
+def _run_model_pulling_worker(model_server: EndpointConfig,
+                              wait_time_between_pulls: int,
+                              project: 'Project') -> None:
     while True:
         _update_model_from_server(model_server, project)
         time.sleep(wait_time_between_pulls)
 
 
-def start_model_pulling_in_worker(model_server, wait_time_between_pulls,
-                                  project):
-    # type: (Optional[EndpointConfig], int, Project) -> None
-
+def start_model_pulling_in_worker(model_server: Optional[EndpointConfig],
+                                  wait_time_between_pulls: int,
+                                  project: 'Project') -> None:
     worker = Thread(target=_run_model_pulling_worker,
                     args=(model_server, wait_time_between_pulls, project))
     worker.setDaemon(True)
@@ -215,8 +212,7 @@ class Project(object):
 
         return None  # local model loading failed!
 
-    def _dynamic_load_model(self, requested_model_name=None):
-        # type: (Text) -> Text
+    def _dynamic_load_model(self, requested_model_name: Text = None):
 
         # If the Project was configured to pull models from a
         # server, only one model is in memory at a time.
@@ -289,9 +285,9 @@ class Project(object):
         return status
 
     def update_model_from_dir_and_unload_others(self,
-                                                model_dir,  # type: Text
-                                                model_name  # type: Text
-                                                ):
+                                                model_dir: Text,
+                                                model_name: Text
+                                                ) -> bool:
         # unload all loaded models
         for model in self._list_loaded_models():
             self.unload(model)
@@ -301,12 +297,12 @@ class Project(object):
         status = False
 
         logger.debug('Loading model {} from directory {}'.format(
-            model_name, model_dir))
+                model_name, model_dir))
 
         self._loader_lock.acquire()
         try:
             interpreter = self._interpreter_for_model(
-                model_name, model_dir)
+                    model_name, model_dir)
             self._models[model_name] = interpreter
             status = True
         finally:
@@ -407,8 +403,7 @@ class Project(object):
                 models.append(model)
         return models
 
-    def _list_models_in_cloud(self):
-        # type: () -> List[Text]
+    def _list_models_in_cloud(self) -> List[Text]:
 
         try:
             from rasa_nlu.persistor import get_persistor

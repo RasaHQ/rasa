@@ -1,7 +1,6 @@
-import typing
-
 import logging
-from typing import Any, Text, Dict
+import typing
+from typing import Any, Dict, Text
 
 from rasa_nlu.training_data.formats.readerwriter import JsonTrainingDataReader
 
@@ -13,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 class WitReader(JsonTrainingDataReader):
 
-    def read_from_json(self, js, **kwargs):
-        # type: (Dict[Text, Any], Any) -> TrainingData
+    def read_from_json(self, js: Dict[Text, Any], **kwargs: Any):
         """Loads training data stored in the WIT.ai data format."""
 
         training_examples = []

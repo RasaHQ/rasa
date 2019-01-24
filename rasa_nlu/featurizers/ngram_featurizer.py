@@ -1,19 +1,18 @@
-import logging
-import os
 import time
-import warnings
 from collections import Counter
-from string import punctuation
 
+import logging
 import numpy as np
+import os
 import typing
+import warnings
+from string import punctuation
 from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +57,11 @@ class NGramFeaturizer(Featurizer):
         self.all_ngrams = None
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["spacy", "sklearn", "cloudpickle"]
 
-    def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
+    def train(self, training_data: TrainingData, cfg: RasaNLUModelConfig,
+              **kwargs: Any):
 
         start = time.time()
         self.train_on_sentences(training_data.intent_examples)
@@ -75,8 +73,7 @@ class NGramFeaturizer(Featurizer):
                                                       self.best_num_ngrams)
             example.set("text_features", updated)
 
-    def process(self, message, **kwargs):
-        # type: (Message, Any) -> None
+    def process(self, message: Message, **kwargs: Any):
 
         updated = self._text_features_with_ngrams(message, self.best_num_ngrams)
         message.set("text_features", updated)
@@ -93,12 +90,11 @@ class NGramFeaturizer(Featurizer):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Optional[Text]
-             model_metadata=None,  # type: Optional[Metadata]
-             cached_component=None,  # type: Optional[NGramFeaturizer]
-             **kwargs  # type: Any
-             ):
-        # type: (...) -> NGramFeaturizer
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional['NGramFeaturizer'] = None,
+             **kwargs: Any
+             ) -> 'NGramFeaturizer':
 
         meta = model_metadata.for_component(cls.name)
         file_name = meta.get("featurizer_file", NGRAM_MODEL_FILE_NAME)
@@ -109,8 +105,7 @@ class NGramFeaturizer(Featurizer):
         else:
             return NGramFeaturizer(meta)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Optional[Dict[Text, Any]]
+    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
         featurizer_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)

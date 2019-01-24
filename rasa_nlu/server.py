@@ -1,13 +1,12 @@
 import argparse
 import logging
-from functools import wraps
-
 import simplejson
+from functools import wraps
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from rasa_nlu import utils, config
+from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
@@ -109,19 +108,19 @@ def check_cors(f):
             if '*' in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', '*')
                 request.setHeader(
-                    'Access-Control-Allow-Headers',
-                    'Content-Type')
+                        'Access-Control-Allow-Headers',
+                        'Content-Type')
                 request.setHeader(
-                    'Access-Control-Allow-Methods',
-                    'POST, GET, OPTIONS, PUT, DELETE')
+                        'Access-Control-Allow-Methods',
+                        'POST, GET, OPTIONS, PUT, DELETE')
             elif origin in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', origin)
                 request.setHeader(
-                    'Access-Control-Allow-Headers',
-                    'Content-Type')
+                        'Access-Control-Allow-Headers',
+                        'Content-Type')
                 request.setHeader(
-                    'Access-Control-Allow-Methods',
-                    'POST, GET, OPTIONS, PUT, DELETE')
+                        'Access-Control-Allow-Methods',
+                        'POST, GET, OPTIONS, PUT, DELETE')
             else:
                 request.setResponseCode(403)
                 return 'forbidden'

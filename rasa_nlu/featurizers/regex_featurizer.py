@@ -9,14 +9,12 @@ from typing import Any, Dict, Optional, Text
 from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
-
 
 REGEX_FEATURIZER_FILE_NAME = "regex_featurizer.json"
 
@@ -37,8 +35,8 @@ class RegexFeaturizer(Featurizer):
         lookup_tables = lookup_tables or []
         self._add_lookup_table_regexes(lookup_tables)
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
+    def train(self, training_data: TrainingData, config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         self.known_patterns = training_data.regex_features
         self._add_lookup_table_regexes(training_data.lookup_tables)
@@ -47,8 +45,7 @@ class RegexFeaturizer(Featurizer):
             updated = self._text_features_with_regex(example)
             example.set("text_features", updated)
 
-    def process(self, message, **kwargs):
-        # type: (Message, Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         updated = self._text_features_with_regex(message)
         message.set("text_features", updated)
@@ -128,12 +125,11 @@ class RegexFeaturizer(Featurizer):
 
     @classmethod
     def load(cls,
-             model_dir=None,   # type: Optional[Text]
-             model_metadata=None,   # type: Optional[Metadata]
-             cached_component=None,   # type: Optional[RegexFeaturizer]
-             **kwargs  # type: Any
-             ):
-        # type: (...) -> RegexFeaturizer
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional['RegexFeaturizer'] = None,
+             **kwargs: Any
+             ) -> 'RegexFeaturizer':
 
         meta = model_metadata.for_component(cls.name)
         file_name = meta.get("regex_file", REGEX_FEATURIZER_FILE_NAME)
@@ -145,8 +141,7 @@ class RegexFeaturizer(Featurizer):
         else:
             return RegexFeaturizer(meta)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Optional[Dict[Text, Any]]
+    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again."""

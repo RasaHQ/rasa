@@ -1,13 +1,10 @@
-from typing import Any
-from typing import Dict
-from typing import Text
+from typing import Any, Dict, Text
 
 from rasa_nlu.emulators import NoEmulator
 
 
 class LUISEmulator(NoEmulator):
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
 
         super(LUISEmulator, self).__init__()
         self.name = 'luis'
@@ -29,8 +26,7 @@ class LUISEmulator(NoEmulator):
             top = self._top_intent(data)
             return [top] if top else []
 
-    def normalise_response_json(self, data):
-        # type: (Dict[Text, Any]) -> Dict[Text, Any]
+    def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         """Transform data to luis.ai format."""
 
         top_intent = self._top_intent(data)

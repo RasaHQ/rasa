@@ -1,17 +1,14 @@
-import typing
-
 import json
 import logging
-
 import requests
-from typing import Text, Optional
+import typing
+from typing import Optional, Text
 
 from rasa_nlu import utils
-
 from rasa_nlu.training_data.formats import markdown
 from rasa_nlu.training_data.formats.dialogflow import (
-    DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT,
-    DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES)
+    DIALOGFLOW_AGENT, DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES,
+    DIALOGFLOW_INTENT, DIALOGFLOW_INTENT_EXAMPLES, DIALOGFLOW_PACKAGE)
 from rasa_nlu.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
@@ -42,8 +39,8 @@ _json_format_heuristics = {
 }
 
 
-def load_data(resource_name, language='en'):
-    # type: (Text, Optional[Text]) -> TrainingData
+def load_data(resource_name: Text,
+              language: Optional[Text] = 'en') -> 'TrainingData':
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
@@ -63,8 +60,8 @@ def load_data(resource_name, language='en'):
     return training_data
 
 
-def load_data_from_endpoint(data_endpoint, language='en'):
-    # type: (EndpointConfig, Optional[Text]) -> TrainingData
+def load_data_from_endpoint(data_endpoint: EndpointConfig,
+                            language: Optional[Text] = 'en') -> 'TrainingData':
     """Load training data from a URL."""
 
     if not utils.is_url(data_endpoint.url):
@@ -119,8 +116,7 @@ def _load(filename, language='en'):
         return None
 
 
-def _guess_format(filename):
-    # type: (Text) -> Text
+def _guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file."""
     guess = UNK
     content = utils.read_file(filename)

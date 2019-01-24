@@ -1,11 +1,6 @@
 import os
-
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
@@ -27,10 +22,9 @@ class MitieNLP(Component):
     }
 
     def __init__(self,
-                 component_config=None,  # type: Dict[Text, Any]
+                 component_config: Dict[Text, Any] = None,
                  extractor=None
-                 ):
-        # type: (...) -> None
+                 ) -> None:
         """Construct a new language model from the MITIE framework."""
 
         super(MitieNLP, self).__init__(component_config)
@@ -38,13 +32,11 @@ class MitieNLP(Component):
         self.extractor = extractor
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
     @classmethod
-    def create(cls, cfg):
-        # type: (RasaNLUModelConfig) -> MitieNLP
+    def create(cls, cfg: RasaNLUModelConfig) -> 'MitieNLP':
         import mitie
 
         component_conf = cfg.for_component(cls.name, cls.defaults)
@@ -62,8 +54,7 @@ class MitieNLP(Component):
         return MitieNLP(component_conf, extractor)
 
     @classmethod
-    def cache_key(cls, model_metadata):
-        # type: (Metadata) -> Optional[Text]
+    def cache_key(cls, model_metadata: Metadata) -> Optional[Text]:
 
         component_meta = model_metadata.for_component(cls.name)
 
@@ -73,15 +64,14 @@ class MitieNLP(Component):
         else:
             return None
 
-    def provide_context(self):
-        # type: () -> Dict[Text, Any]
+    def provide_context(self) -> Dict[Text, Any]:
 
         return {"mitie_feature_extractor": self.extractor,
                 "mitie_file": self.component_config.get("model")}
 
     @staticmethod
-    def ensure_proper_language_model(extractor):
-        # type: (Optional[mitie.total_word_feature_extractor]) -> None
+    def ensure_proper_language_model(
+            extractor: Optional['mitie.total_word_feature_extractor']) -> None:
 
         if extractor is None:
             raise Exception("Failed to load MITIE feature extractor. "
@@ -89,12 +79,11 @@ class MitieNLP(Component):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Optional[Text]
-             model_metadata=None,  # type: Optional[Metadata]
-             cached_component=None,  # type: Optional[MitieNLP]
-             **kwargs  # type: Any
-             ):
-        # type: (...) -> MitieNLP
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional[Metadata] = None,
+             cached_component: Optional['MitieNLP'] = None,
+             **kwargs: Any
+             ) -> 'MitieNLP':
         import mitie
 
         if cached_component:
@@ -105,8 +94,7 @@ class MitieNLP(Component):
         return cls(component_meta,
                    mitie.total_word_feature_extractor(mitie_file))
 
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+    def persist(self, model_dir: Text) -> Dict[Text, Any]:
 
         return {
             "mitie_feature_extractor_fingerprint": self.extractor.fingerprint,

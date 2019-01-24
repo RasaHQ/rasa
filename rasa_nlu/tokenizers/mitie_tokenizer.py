@@ -1,13 +1,9 @@
-from typing import Any
-from typing import List
-from typing import Text
+from typing import Any, List, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.tokenizers import Token
-from rasa_nlu.tokenizers import Tokenizer
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.tokenizers import Token, Tokenizer
+from rasa_nlu.training_data import Message, TrainingData
 
 
 class MitieTokenizer(Tokenizer, Component):
@@ -16,18 +12,18 @@ class MitieTokenizer(Tokenizer, Component):
     provides = ["tokens"]
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 
-    def process(self, message, **kwargs):
-        # type: (Message, Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set("tokens", self.tokenize(message.text))
 
@@ -35,8 +31,7 @@ class MitieTokenizer(Tokenizer, Component):
         return Token(text.decode('utf-8'),
                      self._byte_to_char_offset(encoded_sentence, offset))
 
-    def tokenize(self, text):
-        # type: (Text) -> List[Token]
+    def tokenize(self, text: Text) -> List[Token]:
         import mitie
 
         encoded_sentence = text.encode('utf-8')
@@ -46,5 +41,5 @@ class MitieTokenizer(Tokenizer, Component):
         return tokens
 
     @staticmethod
-    def _byte_to_char_offset(text, byte_offset):
+    def _byte_to_char_offset(text: bytes, byte_offset: int) -> int:
         return len(text[:byte_offset].decode('utf-8'))

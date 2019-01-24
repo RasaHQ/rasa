@@ -1,11 +1,10 @@
-import typing
-
 import logging
 import os
-from typing import Text, Any
+import typing
+from typing import Any, Text
 
-from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa_nlu import utils
+from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa_nlu.training_data.util import transform_entity_synonyms
 
 if typing.TYPE_CHECKING:
@@ -22,8 +21,7 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
-    def read(self, fn, **kwargs):
-        # type: (Text, Any) -> TrainingData
+    def read(self, fn: Text, **kwargs: Any) -> 'TrainingData':
         """Loads training data stored in the Dialogflow data format."""
         from rasa_nlu.training_data import TrainingData
 

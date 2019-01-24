@@ -1,7 +1,7 @@
-import typing
-
 import logging
 import re
+import typing
+from typing import Any, Text
 
 from rasa_nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class MarkdownReader(TrainingDataReader):
     """Reads markdown training data and creates a TrainingData object."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.current_title = None
         self.current_section = None
         self.training_examples = []
@@ -42,7 +42,7 @@ class MarkdownReader(TrainingDataReader):
         self.section_regexes = self._create_section_regexes(available_sections)
         self.lookup_tables = []
 
-    def reads(self, s, **kwargs):
+    def reads(self, s: Text, **kwargs: Any) -> 'TrainingData':
         """Read markdown string and create TrainingData object"""
         from rasa_nlu.training_data import TrainingData
 
@@ -60,7 +60,7 @@ class MarkdownReader(TrainingDataReader):
                             self.regex_features, self.lookup_tables)
 
     @staticmethod
-    def _strip_comments(text):
+    def _strip_comments(text: Text) -> Text:
         """ Removes comments defined by `comment_regex` from `text`. """
         return re.sub(comment_regex, '', text)
 
@@ -89,7 +89,7 @@ class MarkdownReader(TrainingDataReader):
             if match:
                 fname = match.group(1)
                 self.lookup_tables.append(
-                    {"name": self.current_title, "elements": str(fname)})
+                        {"name": self.current_title, "elements": str(fname)})
 
     def _parse_item(self, line):
         """Parses an md list item line based on the current section type."""
@@ -103,7 +103,7 @@ class MarkdownReader(TrainingDataReader):
                 self._add_synonym(item, self.current_title)
             elif self.current_section == REGEX:
                 self.regex_features.append(
-                    {"name": self.current_title, "pattern": item})
+                        {"name": self.current_title, "pattern": item})
             elif self.current_section == LOOKUP:
                 self._add_item_to_lookup(item)
 
@@ -119,7 +119,8 @@ class MarkdownReader(TrainingDataReader):
             elements = matches[0]['elements']
             elements.append(item)
 
-    def _find_entities_in_training_example(self, example):
+    @staticmethod
+    def _find_entities_in_training_example(example):
         """Extracts entities from a markdown intent example."""
         entities = []
         offset = 0
@@ -249,17 +250,20 @@ class MarkdownWriter(TrainingDataWriter):
                 md += self._generate_fname_md(elements)
         return md
 
-    def _generate_section_header_md(self, section_type, title,
+    @staticmethod
+    def _generate_section_header_md(section_type, title,
                                     prepend_newline=True):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
         return prefix + "## {}:{}\n".format(section_type, title)
 
-    def _generate_item_md(self, text):
+    @staticmethod
+    def _generate_item_md(text):
         """generates markdown for a list item."""
         return "- {}\n".format(text)
 
-    def _generate_fname_md(self, text):
+    @staticmethod
+    def _generate_fname_md(text):
         """generates markdown for a lookup table file path."""
         return "  {}\n".format(text)
 
@@ -280,7 +284,8 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_entity_md(self, text, entity):
+    @staticmethod
+    def _generate_entity_md(text, entity):
         """generates markdown for an entity object."""
         entity_text = text[entity['start']:entity['end']]
         entity_type = entity['entity']

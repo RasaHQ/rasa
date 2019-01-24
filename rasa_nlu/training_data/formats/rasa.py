@@ -1,9 +1,8 @@
-import typing
-
-import logging
 from collections import defaultdict
 
-from typing import Dict, Text, Any
+import logging
+import typing
+from typing import Any, Dict, Text
 
 from rasa_nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
@@ -77,8 +76,7 @@ class RasaWriter(TrainingDataWriter):
         }, **kwargs)
 
 
-def validate_rasa_nlu_data(data):
-    # type: (Dict[Text, Any]) -> None
+def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
     """Validate rasa training data format to ensure proper training.
 
     Raises exception on failure."""

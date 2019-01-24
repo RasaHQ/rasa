@@ -1,20 +1,17 @@
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Text
+from typing import Any, Dict, List, Text
 
 from rasa_nlu.emulators import NoEmulator
 
 
 class WitEmulator(NoEmulator):
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
 
         super(WitEmulator, self).__init__()
         self.name = "wit"
 
-    def normalise_response_json(self, data):
-        # type: (Dict[Text, Any]) -> List[Dict[Text, Any]]
+    def normalise_response_json(self,
+                                data: Dict[Text, Any]
+                                ) -> List[Dict[Text, Any]]:
         """Transform data to wit.ai format."""
 
         entities = {}

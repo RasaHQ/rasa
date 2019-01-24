@@ -1,17 +1,11 @@
-from typing import Any
-from typing import Dict
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, Text
 
 
 class NoEmulator(object):
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
+        self.name = None
 
-        self.name = None  # type: Optional[Text]
-
-    def normalise_request_json(self, data):
-        # type: (Dict[Text, Any]) -> Dict[Text, Any]
+    def normalise_request_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
 
         _data = {}
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
@@ -32,8 +26,7 @@ class NoEmulator(object):
         _data['time'] = data["time"] if "time" in data else None
         return _data
 
-    def normalise_response_json(self, data):
-        # type: (Dict[Text, Any]) -> Any
+    def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         """Transform data to target format."""
 
         return data

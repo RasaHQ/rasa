@@ -1,21 +1,17 @@
 import uuid
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import Text
+from typing import Any, Dict, Text
 
 from rasa_nlu.emulators import NoEmulator
 
 
 class DialogflowEmulator(NoEmulator):
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
 
         super(DialogflowEmulator, self).__init__()
         self.name = 'api'
 
-    def normalise_response_json(self, data):
-        # type: (Dict[Text, Any]) -> Dict[Text, Any]
+    def normalise_response_json(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         """Transform data to Dialogflow format."""
 
         # populate entities dict
