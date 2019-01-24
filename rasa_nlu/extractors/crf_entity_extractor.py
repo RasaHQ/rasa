@@ -75,7 +75,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def __init__(self,
                  component_config: 'sklearn_crfsuite.CRF' = None,
-                 ent_tagger: Dict[Text, Any] = None) -> None:
+                 ent_tagger: Optional[Dict[Text, Any]] = None) -> None:
 
         super(CRFEntityExtractor, self).__init__(component_config)
 

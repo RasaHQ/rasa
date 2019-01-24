@@ -62,7 +62,7 @@ class SklearnIntentClassifier(Component):
     def __init__(self,
                  component_config: Dict[Text, Any] = None,
                  clf: 'sklearn.model_selection.GridSearchCV' = None,
-                 le: 'sklearn.preprocessing.LabelEncoder' = None
+                 le: Optional['sklearn.preprocessing.LabelEncoder'] = None
                  ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder

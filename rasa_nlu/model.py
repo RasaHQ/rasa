@@ -327,7 +327,7 @@ class Interpreter(object):
 
     def __init__(self,
                  pipeline: List[Component],
-                 context: Dict[Text, Any],
+                 context: Optional[Dict[Text, Any]],
                  model_metadata: Optional[Metadata] = None) -> None:
 
         self.pipeline = pipeline
