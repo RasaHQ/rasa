@@ -200,11 +200,9 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "token": self.endpoint.token,
             "model": self.model_name,
             "project": self.project_name,
-            "q": text
+            "q": text,
+            "message_id": message_id
         }
-
-        if message_id:
-            params.update({"message_id": message_id})
 
         url = "{}/parse".format(self.endpoint.url)
         try:
