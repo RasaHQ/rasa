@@ -1,8 +1,5 @@
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Text
+from typing import Any, Dict, List, Text
 
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import Message
@@ -18,9 +15,7 @@ class SpacyEntityExtractor(EntityExtractor):
 
     requires = ["spacy_nlp"]
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
-
+    def process(self, message: Message, **kwargs: Any) -> None:
         # can't use the existing doc here (spacy_doc on the message)
         # because tokens are lower cased which is bad for NER
         spacy_nlp = kwargs.get("spacy_nlp", None)
@@ -31,9 +26,7 @@ class SpacyEntityExtractor(EntityExtractor):
                     add_to_output=True)
 
     @staticmethod
-    def extract_entities(doc):
-        # type: (Doc) -> List[Dict[Text, Any]]
-
+    def extract_entities(doc: 'Doc') -> List[Dict[Text, Any]]:
         entities = [
             {
                 "entity": ent.label_,

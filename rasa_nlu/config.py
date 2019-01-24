@@ -1,15 +1,13 @@
 import copy
 import logging
 import os
-
 import ruamel.yaml as yaml
-from builtins import object
-# Describes where to search for the config file if no location is specified
-from typing import Text, Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.utils import json_to_string
 
+# Describes where to search for the config file if no location is specified
 DEFAULT_CONFIG_LOCATION = "config.yml"
 
 DEFAULT_CONFIG = {
@@ -24,12 +22,12 @@ logger = logging.getLogger(__name__)
 class InvalidConfigError(ValueError):
     """Raised if an invalid configuration is encountered."""
 
-    def __init__(self, message):
-        # type: (Text) -> None
+    def __init__(self, message: Text) -> None:
         super(InvalidConfigError, self).__init__(message)
 
 
-def load(filename=None, **kwargs):
+def load(filename: Optional[Text] = None,
+         **kwargs: Any) -> 'RasaNLUModelConfig':
     if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
         filename = DEFAULT_CONFIG_LOCATION
 
@@ -47,11 +45,9 @@ def load(filename=None, **kwargs):
         return RasaNLUModelConfig(kwargs)
 
 
-def override_defaults(
-        defaults,  # type: Optional[Dict[Text, Any]]
-        custom  # type: Optional[Dict[Text, Any]]
-):
-    # type: (...) -> Dict[Text, Any]
+def override_defaults(defaults: Optional[Dict[Text, Any]],
+                      custom: Optional[Dict[Text, Any]]
+                      ) -> Dict[Text, Any]:
     if defaults:
         cfg = copy.deepcopy(defaults)
     else:
@@ -62,8 +58,7 @@ def override_defaults(
     return cfg
 
 
-def make_path_absolute(path):
-    # type: (Text) -> Text
+def make_path_absolute(path: Text) -> Text:
     if path and not os.path.isabs(path):
         return os.path.join(os.getcwd(), path)
     else:
@@ -71,11 +66,10 @@ def make_path_absolute(path):
 
 
 def component_config_from_pipeline(
-        name,  # type: Text
-        pipeline,  # type: List[Dict[Text, Any]]
-        defaults=None  # type: Optional[Dict[Text, Any]]
-):
-    # type: (...) -> Dict[Text, Any]
+        name: Text,
+        pipeline: List[Dict[Text, Any]],
+        defaults: Optional[Dict[Text, Any]] = None
+) -> Dict[Text, Any]:
     from rasa_nlu.registry import registered_components
     for c in pipeline:
         c_name = c.get("name")
@@ -88,9 +82,7 @@ def component_config_from_pipeline(
     return override_defaults(defaults, {})
 
 
-def get_custom_name(
-    component,  # type: Dict[Text, Any]
-):
+def get_custom_name(component: Dict[Text, Any]) -> Optional[Text]:
     """Checks whether there is a separate "class" attribute or just a name
     and returns the name in either case"""
     if "class" in component:

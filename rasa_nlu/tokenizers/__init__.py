@@ -1,6 +1,3 @@
-from builtins import object
-
-
 class Tokenizer(object):
     pass
 

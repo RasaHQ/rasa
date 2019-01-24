@@ -40,8 +40,8 @@ def convert_training_data(data_file, out_file, output_format, language):
 
 
 if __name__ == "__main__":
-    parser = create_argument_parser()
-    args = parser.parse_args()
+    arg_parser = create_argument_parser()
+    args = arg_parser.parse_args()
 
     convert_training_data(args.data_file,
                           args.out_file,

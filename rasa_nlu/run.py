@@ -1,8 +1,6 @@
 import json
 import logging
 
-from builtins import input
-
 from rasa_nlu import utils
 from rasa_nlu.model import Interpreter
 

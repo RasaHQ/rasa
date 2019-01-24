@@ -1,14 +1,12 @@
 import argparse
 import logging
-from functools import wraps
-
 import simplejson
-from builtins import str
+from functools import wraps
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from rasa_nlu import utils, config
+from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
@@ -39,7 +37,8 @@ def create_argument_parser():
                              'server. \nIf given `all` as input all the models '
                              'will be loaded.\nElse you can specify a list of '
                              'specific project names.\nEg: python -m '
-                             'rasa_nlu.server --pre_load project1 --path projects '
+                             'rasa_nlu.server --pre_load project1 '
+                             '--path projects '
                              '-c config.yaml')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
@@ -71,7 +70,8 @@ def create_argument_parser():
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
     parser.add_argument('--endpoints',
-                        help='Configuration file for the model server as a yaml file')
+                        help='Configuration file for the model server '
+                             'as a yaml file')
     parser.add_argument('--wait_time_between_pulls',
                         type=int,
                         default=10,
@@ -108,19 +108,19 @@ def check_cors(f):
             if '*' in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', '*')
                 request.setHeader(
-                    'Access-Control-Allow-Headers',
-                    'Content-Type')
+                        'Access-Control-Allow-Headers',
+                        'Content-Type')
                 request.setHeader(
-                    'Access-Control-Allow-Methods',
-                    'POST, GET, OPTIONS, PUT, DELETE')
+                        'Access-Control-Allow-Methods',
+                        'POST, GET, OPTIONS, PUT, DELETE')
             elif origin in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', origin)
                 request.setHeader(
-                    'Access-Control-Allow-Headers',
-                    'Content-Type')
+                        'Access-Control-Allow-Headers',
+                        'Content-Type')
                 request.setHeader(
-                    'Access-Control-Allow-Methods',
-                    'POST, GET, OPTIONS, PUT, DELETE')
+                        'Access-Control-Allow-Methods',
+                        'POST, GET, OPTIONS, PUT, DELETE')
             else:
                 request.setResponseCode(403)
                 return 'forbidden'
@@ -335,6 +335,7 @@ class RasaNLU(object):
 
         try:
             model_config, data = self.extract_data_and_config(request)
+
         except Exception as e:
             request.setResponseCode(400)
             returnValue(json_to_string({"error": "{}".format(e)}))

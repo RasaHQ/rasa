@@ -1,18 +1,16 @@
 import itertools
+from collections import defaultdict, namedtuple
+
 import json
 import logging
+import numpy as np
 import shutil
-from collections import defaultdict
-from collections import namedtuple
 from typing import List, Optional, Text
 
-import numpy as np
-
-from rasa_nlu import training_data, utils, config
+from rasa_nlu import config, training_data, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa_nlu.model import Interpreter
-from rasa_nlu.model import Trainer, TrainingData
+from rasa_nlu.model import Interpreter, Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +35,8 @@ IntentEvaluationResult = namedtuple('IntentEvaluationResult',
 def create_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
-        description='evaluate a Rasa NLU pipeline with cross '
-                    'validation or on external data')
+            description='evaluate a Rasa NLU pipeline with cross '
+                        'validation or on external data')
 
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
@@ -80,12 +78,13 @@ def create_argument_parser():
     return parser
 
 
-def plot_confusion_matrix(cm, classes,
+def plot_confusion_matrix(cm,
+                          classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=None,
                           zmin=1,
-                          out=None):  # pragma: no cover
+                          out=None) -> None:  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
 
     Normalization can be applied by setting `normalize=True`."""
@@ -126,9 +125,9 @@ def plot_confusion_matrix(cm, classes,
         fig.savefig(out, bbox_inches='tight')
 
 
-def plot_histogram(hist_data,  # type: List[List[float]]
-                   out=None  # type: Optional[Text]
-                   ):  # pragma: no cover
+def plot_histogram(hist_data: List[List[float]],
+                   out: Optional[Text] = None
+                   ) -> None:  # pragma: no cover
     """Plot a histogram of the confidence distribution of the predictions in
     two columns.
     Wine-ish colour for the confidences of hits.
@@ -153,11 +152,11 @@ def plot_histogram(hist_data,  # type: List[List[float]]
         fig.savefig(out, bbox_inches='tight')
 
 
-def log_evaluation_table(report,  # type: Text
-                         precision,  # type: float
-                         f1,  # type: float
-                         accuracy  # type: float
-                         ):  # pragma: no cover
+def log_evaluation_table(report: Text,
+                         precision: float,
+                         f1: float,
+                         accuracy: float
+                         ) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
 
     logger.info("F1-Score:  {}".format(f1))
@@ -166,7 +165,7 @@ def log_evaluation_table(report,  # type: Text
     logger.info("Classification report: \n{}".format(report))
 
 
-def get_evaluation_metrics(targets, predictions, output_dict=False):  # pragma: no cover
+def get_evaluation_metrics(targets, predictions, output_dict=False):
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
@@ -204,12 +203,11 @@ def clean_intent_labels(labels):
     return [l if l is not None else "" for l in labels]
 
 
-def drop_intents_below_freq(td, cutoff=5):
-    # type: (TrainingData, int) -> TrainingData
+def drop_intents_below_freq(td: TrainingData, cutoff: int = 5):
     """Remove intent groups with less than cutoff instances."""
 
     logger.debug(
-        "Raw data intent examples: {}".format(len(td.intent_examples)))
+            "Raw data intent examples: {}".format(len(td.intent_examples)))
     keep_examples = [ex
                      for ex in td.intent_examples
                      if td.examples_per_intent[ex.get("intent")] >= cutoff]
@@ -304,9 +302,8 @@ def evaluate_intents(intent_results,
     targets, predictions = _targets_predictions_from(intent_results)
 
     if report_filename:
-        report, precision, f1, accuracy = get_evaluation_metrics(targets,
-                                                                 predictions,
-                                                                 output_dict=True)
+        report, precision, f1, accuracy = get_evaluation_metrics(
+                targets, predictions, output_dict=True)
 
         save_json(report, report_filename)
         logger.info("Classification report saved to {}."
@@ -400,10 +397,10 @@ def evaluate_entities(targets,
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(
-            merged_predictions, "O", "no_entity")
+                merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         report, precision, f1, accuracy = get_evaluation_metrics(
-            merged_targets, merged_predictions)
+                merged_targets, merged_predictions)
         log_evaluation_table(report, precision, f1, accuracy)
         result[extractor] = {
             "report": report,
@@ -448,8 +445,8 @@ def do_entities_overlap(entities):
     for i in range(len(sorted_entities) - 1):
         curr_ent = sorted_entities[i]
         next_ent = sorted_entities[i + 1]
-        if (next_ent["start"] < curr_ent["end"]
-                and next_ent["entity"] != curr_ent["entity"]):
+        if (next_ent["start"] < curr_ent["end"] and
+                next_ent["entity"] != curr_ent["entity"]):
             return True
 
     return False
@@ -505,8 +502,8 @@ def determine_token_labels(token, entities, extractors):
 
     if len(entities) == 0:
         return "O"
-    if not do_extractors_support_overlap(extractors) and \
-            do_entities_overlap(entities):
+    if (not do_extractors_support_overlap(extractors) and
+            do_entities_overlap(entities)):
         raise ValueError("The possible entities should not overlap")
 
     candidates = find_intersecting_entites(token, entities)
@@ -609,10 +606,10 @@ def get_intent_predictions(targets, interpreter,
     for e, target in zip(test_data.training_examples, targets):
         res = interpreter.parse(e.text, only_output_properties=False)
         intent_results.append(IntentEvaluationResult(
-            target,
-            extract_intent(res),
-            extract_message(res),
-            extract_confidence(res)))
+                target,
+                extract_intent(res),
+                extract_message(res),
+                extract_confidence(res)))
 
     return intent_results
 
@@ -734,7 +731,7 @@ def run_evaluation(data_path, model,
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
         intent_results = get_intent_predictions(
-            intent_targets, interpreter, test_data)
+                intent_targets, interpreter, test_data)
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
@@ -794,8 +791,9 @@ def combine_entity_result(results, interpreter, data):
     return results
 
 
-def run_cv_evaluation(data, n_folds, nlu_config):
-    # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
+def run_cv_evaluation(data: TrainingData,
+                      n_folds: int,
+                      nlu_config: RasaNLUModelConfig) -> CVEvaluationResult:
     """Stratified cross validation on data
 
     :param data: Training Data
@@ -938,7 +936,7 @@ def main():
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
         results, entity_results = run_cv_evaluation(
-            data, int(cmdline_args.folds), nlu_config)
+                data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
         if any(results):

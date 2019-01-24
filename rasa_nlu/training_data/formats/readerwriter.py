@@ -1,4 +1,5 @@
 import json
+
 from rasa_nlu import utils
 
 

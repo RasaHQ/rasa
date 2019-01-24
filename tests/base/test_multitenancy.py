@@ -6,7 +6,6 @@ import pytest
 from treq.testing import StubTreq
 
 from rasa_nlu import config
-from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.model import Trainer
 from rasa_nlu.server import RasaNLU
@@ -97,7 +96,8 @@ def test_get_parse_invalid_model(app, response_test):
 ])
 @pytest.inlineCallbacks
 def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint, json=response_test.payload)
+    response = yield app.post(response_test.endpoint,
+                              json=response_test.payload)
     rjs = yield response.json()
     assert response.code == 200
     assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
@@ -140,7 +140,8 @@ def test_post_parse_specific_model(app):
 ])
 @pytest.inlineCallbacks
 def test_post_parse_invalid_model(app, response_test):
-    response = yield app.post(response_test.endpoint, json=response_test.payload)
+    response = yield app.post(response_test.endpoint,
+                              json=response_test.payload)
     rjs = yield response.json()
     assert response.code == 404
     assert rjs.get("error").startswith(response_test.expected_response["error"])
@@ -149,7 +150,6 @@ def test_post_parse_invalid_model(app, response_test):
 def train_models(component_builder, data):
     # Retrain different multitenancy models
     def train(cfg_name, project_name):
-        from rasa_nlu.train import create_persistor
         from rasa_nlu import training_data
 
         cfg = config.load(cfg_name)
@@ -159,6 +159,9 @@ def train_models(component_builder, data):
         trainer.train(training_data)
         trainer.persist("test_projects", project_name=project_name)
 
-    train("sample_configs/config_spacy.yml", "test_project_spacy_sklearn")
-    train("sample_configs/config_mitie.yml", "test_project_mitie")
-    train("sample_configs/config_mitie_sklearn.yml", "test_project_mitie_sklearn")
+    train("sample_configs/config_spacy.yml",
+          "test_project_spacy_sklearn")
+    train("sample_configs/config_mitie.yml",
+          "test_project_mitie")
+    train("sample_configs/config_mitie_sklearn.yml",
+          "test_project_mitie_sklearn")

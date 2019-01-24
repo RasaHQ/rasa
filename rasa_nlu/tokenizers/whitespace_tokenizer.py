@@ -3,9 +3,8 @@ from typing import Any, List, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.tokenizers import Tokenizer, Token
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.tokenizers import Token, Tokenizer
+from rasa_nlu.training_data import Message, TrainingData
 
 
 class WhitespaceTokenizer(Tokenizer, Component):
@@ -13,19 +12,17 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     provides = ["tokens"]
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+    def train(self, training_data: TrainingData, config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set("tokens", self.tokenize(message.text))
 
-    def tokenize(self, text):
-        # type: (Text) -> List[Token]
+    def tokenize(self, text: Text) -> List[Token]:
 
         # there is space or end of string after punctuation
         # because we do not want to replace 10.000 with 10 000

@@ -1,21 +1,16 @@
 import logging
-
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
+    from spacy.tokens.doc import Doc
     from rasa_nlu.model import Metadata
 
 
@@ -38,20 +33,19 @@ class SpacyNLP(Component):
         "case_sensitive": False,
     }
 
-    def __init__(self, component_config=None, nlp=None):
-        # type: (Dict[Text, Any], Language) -> None
+    def __init__(self,
+                 component_config: Dict[Text, Any] = None,
+                 nlp: 'Language' = None) -> None:
 
         self.nlp = nlp
         super(SpacyNLP, self).__init__(component_config)
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["spacy"]
 
     @classmethod
-    def create(cls, cfg):
-        # type: (RasaNLUModelConfig) -> SpacyNLP
+    def create(cls, cfg: RasaNLUModelConfig) -> 'SpacyNLP':
         import spacy
 
         component_conf = cfg.for_component(cls.name, cls.defaults)
@@ -70,8 +64,7 @@ class SpacyNLP(Component):
         return SpacyNLP(component_conf, nlp)
 
     @classmethod
-    def cache_key(cls, model_metadata):
-        # type: (Metadata) -> Text
+    def cache_key(cls, model_metadata: 'Metadata') -> Text:
 
         component_meta = model_metadata.for_component(cls.name)
 
@@ -81,35 +74,33 @@ class SpacyNLP(Component):
 
         return cls.name + "-" + spacy_model_name
 
-    def provide_context(self):
-        # type: () -> Dict[Text, Any]
-
+    def provide_context(self) -> Dict[Text, Any]:
         return {"spacy_nlp": self.nlp}
 
-    def doc_for_text(self, text):
+    def doc_for_text(self, text: Text) -> 'Doc':
         if self.component_config.get("case_sensitive"):
             return self.nlp(text)
         else:
             return self.nlp(text.lower())
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         for example in training_data.training_examples:
             example.set("spacy_doc", self.doc_for_text(example.text))
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set("spacy_doc", self.doc_for_text(message.text))
 
     @classmethod
     def load(cls,
-             model_dir=None,
-             model_metadata=None,
-             cached_component=None,
-             **kwargs):
-        # type: (Text, Metadata, Optional[SpacyNLP], **Any) -> SpacyNLP
+             model_dir: Text = None,
+             model_metadata: 'Metadata' = None,
+             cached_component: Optional['SpacyNLP'] = None,
+             **kwargs: Any) -> 'SpacyNLP':
         import spacy
 
         if cached_component:
@@ -123,8 +114,7 @@ class SpacyNLP(Component):
         return cls(component_meta, nlp)
 
     @staticmethod
-    def ensure_proper_language_model(nlp):
-        # type: (Optional[Language]) -> None
+    def ensure_proper_language_model(nlp: Optional['Language']) -> None:
         """Checks if the spacy language model is properly loaded.
 
         Raises an exception if the model is invalid."""

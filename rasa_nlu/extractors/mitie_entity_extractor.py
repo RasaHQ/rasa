@@ -1,19 +1,12 @@
-from builtins import range, str
 import logging
 import os
-
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +24,16 @@ class MitieEntityExtractor(EntityExtractor):
     requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self,
-                 component_config=None,  # type: Dict[Text, Any]
+                 component_config: Dict[Text, Any] = None,
                  ner=None
                  ):
-        # type: (...) -> None
         """Construct a new intent classifier using the sklearn framework."""
 
         super(MitieEntityExtractor, self).__init__(component_config)
         self.ner = ner
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
     def extract_entities(self, text, tokens, feature_extractor):
@@ -66,8 +57,10 @@ class MitieEntityExtractor(EntityExtractor):
 
         return ents
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
         import mitie
 
         model_file = kwargs.get("mitie_file")
@@ -119,8 +112,7 @@ class MitieEntityExtractor(EntityExtractor):
                 continue
         return sample
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
@@ -135,12 +127,11 @@ class MitieEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Text
-             model_metadata=None,  # type: Metadata
-             cached_component=None,  # type: Optional[MitieEntityExtractor]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> MitieEntityExtractor
+             model_dir: Text = None,
+             model_metadata: Metadata = None,
+             cached_component: Optional['MitieEntityExtractor'] = None,
+             **kwargs: Any
+             ) -> 'MitieEntityExtractor':
         import mitie
 
         meta = model_metadata.for_component(cls.name)
@@ -157,8 +148,7 @@ class MitieEntityExtractor(EntityExtractor):
         else:
             return cls(meta)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+    def persist(self, model_dir: Text) -> Dict[Text, Any]:
 
         if self.ner:
             entity_extractor_file = os.path.join(model_dir,

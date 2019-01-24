@@ -1,17 +1,12 @@
 import os
 import warnings
-
-from builtins import str
-from typing import Any
-from typing import Dict
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, Optional, Text
 
 from rasa_nlu import utils
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.utils import write_json_to_file
 
 ENTITY_SYNONYMS_FILE_NAME = "entity_synonyms.json"
@@ -22,15 +17,18 @@ class EntitySynonymMapper(EntityExtractor):
 
     provides = ["entities"]
 
-    def __init__(self, component_config=None, synonyms=None):
-        # type: (Optional[Dict[Text, Text]]) -> None
+    def __init__(self,
+                 component_config: Optional[Dict[Text, Text]] = None,
+                 synonyms: Optional[Dict[Text, Any]] = None) -> None:
 
         super(EntitySynonymMapper, self).__init__(component_config)
 
         self.synonyms = synonyms if synonyms else {}
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         for key, value in list(training_data.entity_synonyms.items()):
             self.add_entities_if_synonyms(key, value)
@@ -41,15 +39,13 @@ class EntitySynonymMapper(EntityExtractor):
                 self.add_entities_if_synonyms(entity_val,
                                               str(entity.get("value")))
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         updated_entities = message.get("entities", [])[:]
         self.replace_synonyms(updated_entities)
         message.set("entities", updated_entities, add_to_output=True)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Optional[Dict[Text, Any]]
+    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir,
@@ -62,12 +58,11 @@ class EntitySynonymMapper(EntityExtractor):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Optional[Text]
-             model_metadata=None,  # type: Optional[Metadata]
-             cached_component=None,  # type: Optional[EntitySynonymMapper]
-             **kwargs  # type: Any
-             ):
-        # type: (...) -> EntitySynonymMapper
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional[Metadata] = None,
+             cached_component: Optional['EntitySynonymMapper'] = None,
+             **kwargs: Any
+             ) -> 'EntitySynonymMapper':
 
         meta = model_metadata.for_component(cls.name)
         file_name = meta.get("synonyms_file")
