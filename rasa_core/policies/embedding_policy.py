@@ -898,7 +898,7 @@ class EmbeddingPolicy(Policy):
 
         # maximize similarity returned by time attention wrapper
         for sim_to_add in sims_rnn_to_max:
-            loss += tf.maximum(0., - sim_to_add + 1.)
+            loss += tf.maximum(0., 1. - sim_to_add)
 
         # mask loss for different length sequences
         loss *= mask
