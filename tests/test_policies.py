@@ -53,7 +53,7 @@ def tf_defaults():
 
 def session_config():
     import tensorflow as tf
-    return tf.ConfigProto(**tf_defaults())
+    return tf.ConfigProto(**tf_defaults()["tf_config"])
 
 
 def train_trackers(domain):
