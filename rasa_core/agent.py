@@ -51,8 +51,11 @@ def load_from_server(interpreter: Optional[NaturalLanguageInterpreter] = None,
                   tracker_store=tracker_store,
                   action_endpoint=action_endpoint)
 
-    wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
-                                                      100)
+    wait_time_between_pulls = model_server.kwargs.get(
+        'wait_time_between_pulls',
+        100
+    )
+
     if wait_time_between_pulls is not None and (
             isinstance(wait_time_between_pulls,
                        int) or wait_time_between_pulls.isdigit()):
@@ -509,7 +512,13 @@ class Agent(object):
                             "`data = agent.load_data(file_name)` and pass it "
                             "to `agent.train(data)`.")
 
-        logger.debug("Agent trainer got kwargs: {}".format(kwargs))
+        if not(kwargs == {}):
+            logger.debug("Agent trainer got kwargs: {}. These args will be "
+                         "ignored. Passing policy configuration parameters "
+                         "to `agent.train(...)` is not supported anymore. "
+                         "Specify parameters directly in the policy "
+                         "configuration instead.".format(kwargs))
+
         check_domain_sanity(self.domain)
 
         self.policy_ensemble.train(training_trackers, self.domain,
