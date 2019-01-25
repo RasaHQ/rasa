@@ -59,10 +59,14 @@ class UserMessage(object):
 def register(input_channels: List['InputChannel'],
              app: Flask,
              on_new_message: Callable[[UserMessage], None],
-             route: Text
+             route: Optional[Text]
              ) -> None:
     for channel in input_channels:
-        p = urljoin(route, channel.url_prefix())
+        if route:
+            p = urljoin(route, channel.url_prefix())
+        else:
+            p = None
+
         app.register_blueprint(channel.blueprint(on_new_message), url_prefix=p)
 
 
@@ -290,6 +294,7 @@ class QueueOutputChannel(CollectingOutputChannel):
         return "queue"
 
     def __init__(self, message_queue: Queue = None) -> None:
+        super(QueueOutputChannel).__init__()
         self.messages = Queue() if not message_queue else message_queue
 
     def latest_output(self):

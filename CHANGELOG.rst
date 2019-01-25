@@ -4,31 +4,32 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-.. _master-release:
+.. _v0-13-0:
 
-[Unreleased 0.13.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. note:: This version is not yet released and is under active development.
+[0.13.0] - 2019-01-23
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
 - A support for session persistence mechanism in the ``SocketIOInput``
   compatible with the example SocketIO WebChat + short explanation on
   how session persistence should be implemented in a frontend
-- ``TwoStageFallbackPolicy`` which asks the user for their affirmation if the NLU
-  confidence is low for an intent, for rephrasing the intent if they deny the
-  suggested intent, and does finally an ultimate fallback if it does not get
-  the intent right
+- ``TwoStageFallbackPolicy`` which asks the user for their affirmation
+  if the NLU confidence is low for an intent, for rephrasing the intent
+  if they deny the suggested intent, and does finally an ultimate fallback
+  if it does not get the intent right
 - Additional checks in PolicyEnsemble to ensure that custom Policy
-  classes' load function returns the correct type
+  classes' ``load`` function returns the correct type
 - Travis script now clones and tests the Rasa stack starter pack
 - Entries for tensorflow and sklearn versions to the policy metadata
-- SlackInput wont ignore `app_mention` event anymore.
+- SlackInput wont ignore ``app_mention`` event anymore.
   Will handle messages containing @mentions to bots and will respond to these
   (as long as the event itself is enabled in the application hosting the bot)
-- Added sanitization mechanism for SlackInput that (in its current shape and form)
-  strips bot's self mentions from messages posted using the said @mentions.
+- Added sanitization mechanism for SlackInput that (in its current
+  shape and form) strips bot's self mentions from messages posted using
+  the said @mentions.
+- Added random seed option for KerasPolicy and EmbeddingPolicy
+  to allow for reproducible training results
 - ``InvalidPolicyConfig`` error if policy in policy configuration could not be
   loaded, or if ``policies`` key is empty or not provided
 - Added a unique identifier to ``UserMessage`` and the ``UserUttered`` event.
@@ -57,7 +58,7 @@ Fixed
 - re-added missing ``python-engineio`` dependency
 - fixed not working examples in ``examples/``
 - strip newlins from messages so you don't have something like "\n/restart\n"
-- properly reload domain when using `/model` endpoint to upload new model
+- properly reload domain when using ``/model`` endpoint to upload new model
 - updated documentation for custom channels to use the ``credentials.yml``
 
 [0.12.3] - 2018-12-03

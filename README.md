@@ -24,12 +24,6 @@
 - **I would like to contribute 🤗**
   [How to contribute](#how-to-contribute)
 
-### Important Note
-
-Current github master version does NOT support python 2.7 anymore (neither
-will the next major release). If you want to use Rasa Core with python 
-2.7, please install the most recent version from pypi.
-
 ## Introduction
 
 Rasa Core is a framework for building conversational software, which includes
