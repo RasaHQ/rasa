@@ -81,11 +81,10 @@ def test_http_interpreter():
     interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
     interpreter.parse(text='message_text', message_id='1134')
 
-    b = httpretty.last_request.querystring
+    query = httpretty.last_request.querystring
     httpretty.disable()
     response = {'project': ['default'],
                 'q': ['message_text'],
                 'message_id': ['1134']}
 
-    assert b == response
-    
+    assert query == response
