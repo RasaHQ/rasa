@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import mock
 
@@ -11,24 +7,26 @@ def test_whitespace():
     from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     tk = WhitespaceTokenizer()
 
-    assert [t.text for t in tk.tokenize("Forecast for lunch")] == \
-           ['Forecast', 'for', 'lunch']
+    assert ([t.text for t in tk.tokenize("Forecast for lunch")] ==
+            ['Forecast', 'for', 'lunch'])
 
-    assert [t.offset for t in tk.tokenize("Forecast for lunch")] == \
-           [0, 9, 13]
+    assert ([t.offset for t in tk.tokenize("Forecast for lunch")] ==
+            [0, 9, 13])
 
     # we ignore .,!?
-    assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == \
-           ['hey', 'ńöñàśçií', 'how\'re', 'you']
+    assert ([t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] ==
+            ['hey', 'ńöñàśçií', 'how\'re', 'you'])
 
-    assert [t.offset for t in tk.tokenize("hey ńöñàśçií how're you?")] == \
-           [0, 4, 13, 20]
+    assert ([t.offset for t in tk.tokenize("hey ńöñàśçií how're you?")] ==
+            [0, 4, 13, 20])
 
-    assert [t.text for t in tk.tokenize("привет! 10.000, ńöñàśçií. how're you?")] == \
-           ['привет', '10.000', 'ńöñàśçií', 'how\'re', 'you']
+    assert ([t.text
+             for t in tk.tokenize("привет! 10.000, ńöñàśçií. how're you?")] ==
+            ['привет', '10.000', 'ńöñàśçií', 'how\'re', 'you'])
 
-    assert [t.offset for t in tk.tokenize("привет! 10.000, ńöñàśçií. how're you?")] == \
-           [0, 8, 16, 26, 33]
+    assert ([t.offset
+             for t in tk.tokenize("привет! 10.000, ńöñàśçií. how're you?")] ==
+            [0, 8, 16, 26, 33])
 
 
 def test_spacy(spacy_nlp):

@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import time
 
 import io
 import json
-import tempfile
-
 import pytest
-import time
 import ruamel.yaml as yaml
+import tempfile
 from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter
@@ -70,25 +65,25 @@ def test_version(app):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://dummy-uri/parse?q=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
+            "http://dummy-uri/parse?q=hello",
+            {'project': 'default', 'entities': [], 'model': 'fallback',
+             'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?query=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
+            "http://dummy-uri/parse?query=hello",
+            {'project': 'default', 'entities': [], 'model': 'fallback',
+             'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?q=hello ńöñàśçií",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello ńöñàśçií'}
+            "http://dummy-uri/parse?q=hello ńöñàśçií",
+            {'project': 'default', 'entities': [], 'model': 'fallback',
+             'intent': {'confidence': 1.0, 'name': 'greet'},
+             'text': 'hello ńöñàśçií'}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?q=",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
+            "http://dummy-uri/parse?q=",
+            {'project': 'default', 'entities': [], 'model': 'fallback',
+             'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
     ),
 ])
 @pytest.inlineCallbacks
@@ -104,25 +99,25 @@ def test_get_parse(app, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://dummy-uri/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello'},
-        payload={"q": "hello"}
+            "http://dummy-uri/parse",
+            {'project': 'default', 'entities': [], 'model': 'fallback',
+             'intent': {'confidence': 1.0, 'name': 'greet'},
+             'text': 'hello'},
+            payload={"q": "hello"}
     ),
     ResponseTest(
-        "http://dummy-uri/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello'},
-        payload={"query": "hello"}
+            "http://dummy-uri/parse",
+            {'project': 'default', 'entities': [], 'model': 'fallback',
+             'intent': {'confidence': 1.0, 'name': 'greet'},
+             'text': 'hello'},
+            payload={"query": "hello"}
     ),
     ResponseTest(
-        "http://dummy-uri/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello ńöñàśçií'},
-        payload={"q": "hello ńöñàśçií"}
+            "http://dummy-uri/parse",
+            {'project': 'default', 'entities': [], 'model': 'fallback',
+             'intent': {'confidence': 1.0, 'name': 'greet'},
+             'text': 'hello ńöñàśçií'},
+            payload={"q": "hello ńöñàśçií"}
     ),
 ])
 @pytest.inlineCallbacks
@@ -248,7 +243,8 @@ def test_unload_model_error(app):
     response = yield app.delete(model_err)
     rjs = yield response.json()
     assert response.code == 500, "Model not found"
-    assert rjs['error'] == "Failed to unload model my_model for project default."
+    assert rjs['error'] == ("Failed to unload model my_model for project "
+                            "default.")
 
 
 @pytest.inlineCallbacks

@@ -5,13 +5,14 @@ cache:
   - $HOME/.cache/pip
   - /tmp/cached/
 python:
-  - '2.7'
   - '3.5'
   - '3.6'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
-  global: BOTO_CONFIG=/dev/null
+  global:
+  - BOTO_CONFIG=/dev/null
+
 install: 
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r alt_requirements/requirements_dev.txt
@@ -35,6 +36,15 @@ after_success:
   - coveralls
 jobs:
   include:
+  - stage: test
+    name: Check Dependency Licenses
+    before_script:
+    - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
+    script:
+    - pip freeze > requirements.txt
+    - fossa init
+    - fossa analyze
+    - fossa test
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
@@ -60,6 +70,20 @@ jobs:
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
+  - stage: Test starter packs
+    name: "NLU starter pack"
+    python: 3.6
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
+    - cd starter-pack-rasa-nlu
+    - python -m pytest tests/test_nlu.py
+  - stage: Test starter packs
+    name: "Stack starter pack (NLU only)"
+    python: 3.6
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - python -m pytest tests/test_nlu.py
   - stage: trigger website rebuild
     if: fork = false AND branch = "master" AND type != "pull_request"
     script:
@@ -80,20 +104,6 @@ jobs:
     - cd rasa-website
     - git commit --allow-empty -m "trigger nlu docs update"
     - git push origin master
-  - stage: Test starter packs
-    name: "NLU starter pack"
-    python: 3.6
-    script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
-    - cd starter-pack-rasa-nlu
-    - python -m pytest tests/test_nlu.py
-  - stage: Test starter packs
-    name: "Stack starter pack (NLU only)"
-    python: 3.6
-    script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
-    - cd starter-pack-rasa-stack
-    - python -m pytest tests/test_nlu.py
   - stage: deploy
     python: 3.6
     install: skip
