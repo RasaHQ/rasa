@@ -14,6 +14,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 Added
 -----
 - ``message_id`` can now be passed in the payload to the ``NLUHttpInterpreter``
+- ``tf.ConfigProto`` configuration can now be specified
+  for tensorflow based pipelines
 
 Removed
 -------
