@@ -220,8 +220,8 @@ class PolicyEnsemble(object):
         policies = dictionary.get('policies') or dictionary.get('policy')
         if policies is None:
             raise InvalidPolicyConfig("You didn't define any policies. "
-                                      "Please define them under 'policies:' in "
-                                      "your policy configuration file.")
+                                      "Please define them under 'policies:' in"
+                                      " your policy configuration file.")
         if len(policies) == 0:
             raise InvalidPolicyConfig("The policy configuration file has to "
                                       "include at least one policy.")
@@ -255,8 +255,8 @@ class PolicyEnsemble(object):
                 policy_object = constr_func(**policy)
                 parsed_policies.append(policy_object)
             else:
-                raise InvalidPolicyConfig("Module for policy '{}' could not be "
-                                          "loaded. Please make sure the name "
+                raise InvalidPolicyConfig("Module for policy '{}' could not be"
+                                          " loaded. Please make sure the name "
                                           "is a valid policy."
                                           "".format(policy_name))
 
