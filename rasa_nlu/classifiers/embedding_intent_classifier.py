@@ -4,7 +4,6 @@ import numpy as np
 import os
 import pickle
 import typing
-from tqdm import tqdm
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
@@ -415,6 +414,14 @@ class EmbeddingIntentClassifier(Component):
                   train_op: tf.Tensor
                   ) -> None:
         """Train tf graph"""
+        try:
+            from tqdm import tqdm
+            pbar = tqdm(range(self.epochs), desc="Epochs")
+        except ImportError:
+            logger.info("tqdm could not be imported. " 
+                        "This is likely due to missing multiprocessing "
+                        "capabilities of this system.")
+            pbar = range(self.epochs)
 
         self.session.run(tf.global_variables_initializer())
 
@@ -422,7 +429,6 @@ class EmbeddingIntentClassifier(Component):
             logger.info("Accuracy is updated every {} epochs"
                         "".format(self.evaluate_every_num_epochs))
 
-        pbar = tqdm(range(self.epochs), desc="Epochs")
         train_acc = 0
         last_loss = 0
         for ep in pbar:

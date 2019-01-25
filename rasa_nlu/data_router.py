@@ -87,7 +87,8 @@ class DataRouter(object):
                  remote_storage=None,
                  component_builder=None,
                  model_server=None,
-                 wait_time_between_pulls=None):
+                 wait_time_between_pulls=None,
+                 single_process=None):
         self._training_processes = max(max_training_processes, 1)
         self._current_training_processes = 0
         self.responses = self._create_query_logger(response_log)
@@ -96,6 +97,7 @@ class DataRouter(object):
         self.remote_storage = remote_storage
         self.model_server = model_server
         self.wait_time_between_pulls = wait_time_between_pulls
+        self.single_process = single_process
 
         if component_builder:
             self.component_builder = component_builder
@@ -110,11 +112,13 @@ class DataRouter(object):
         # -258934405
         multiprocessing.set_start_method('spawn', force=True)
 
-        self.pool = ProcessPool(self._training_processes)
+        if not self.single_process:
+            self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
-        self.pool.shutdown()
+        if not self.single_process:
+            self.pool.shutdown()
 
     @staticmethod
     def _create_query_logger(response_log):
@@ -208,7 +212,7 @@ class DataRouter(object):
             logger.exception("Failed to list projects. Make sure you have "
                              "correctly configured your cloud storage "
                              "settings.")
-            return []
+            retuUpdate Formrn []
 
     @staticmethod
     def _create_emulator(mode: Optional[Text]) -> NoEmulator:
@@ -343,24 +347,49 @@ class DataRouter(object):
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
 
-        result = self.pool.submit(do_train_in_worker,
-                                  train_config,
-                                  data_file,
-                                  path=self.project_dir,
-                                  project=project,
-                                  fixed_model_name=model_name,
-                                  storage=self.remote_storage)
-        result = deferred_from_future(result)
-        result.addCallback(training_callback)
-        result.addErrback(training_errback)
+        # tensorflow training is not executed in a separate thread on python 2,
+        # as this may cause training to freeze
+        if self.single_process or (six.PY2 and self._tf_in_pipeline(train_config)):
+            try:
+                if self.single_process:
+                    logger.warning("Training using a single process")
+                if six.PY2 and self._tf_in_pipeline(train_config):
+                    logger.warning("Training a pipeline with a tensorflow "
+                                   "component")
+                logger.warning("This blocks the server during training.")
+                model_path = do_train_in_worker(
+                        train_config,
+                        data_file,
+                        path=self.project_dir,
+                        project=project,
+                        fixed_model_name=model_name,
+                        storage=self.remote_storage)
+                model_dir = os.path.basename(os.path.normpath(model_path))
+                training_callback(model_dir)
+                return model_dir
+            except TrainingException as e:
+                logger.warning(e)
+                target_project = self.project_store.get(
+                        e.failed_target_project)
+                if target_project:
+                    target_project.status = STATUS_READY
+                raise e
+        else:
+            result = self.pool.submit(do_train_in_worker,
+                                      train_config,
+                                      data_file,
+                                      path=self.project_dir,
+                                      project=project,
+                                      fixed_model_name=model_name,
+                                      storage=self.remote_storage)
+            result = deferred_from_future(result)
+            result.addCallback(training_callback)
+            result.addErrback(training_errback)
 
-        return result
+            return result
 
-    # noinspection PyProtectedMember
-    def evaluate(self,
-                 data: Text,
-                 project: Optional[Text] = None,
-                 model: Optional[Text] = None) -> Dict[Text, Any]:
+    def evaluate(self, data, project=None, model=None):
+        # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]
         """Perform a model evaluation."""
 
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
