@@ -77,17 +77,25 @@ for every cross-validation fold.
 
 Intent Classification
 ---------------------
-The evaluation script will log precision, recall, and f1 measure for
-each intent and once summarized for all.
-Furthermore, it creates a confusion matrix for you to see which
-intents are mistaken for which others.
-Samples which have not been predicted correctly are logged and saved to a file 
-called ``errors.json`` for easier debugging. 
-Finally, the evaluation script creates a histogram of the confidence distribution for all predictions,
-separating the confidence of wrong and correct predictions in different bars of the histogram.
-Improving the quality of your training data will move the blue-ish histogram bars
-(confidence of the correct predictions) to the right and the wine-ish histogram bars
-(confidence of wrong predictions) to the left.
+The evaluation script will produce a report, confusion matrix
+and confidence histogram for your model.
+
+The report logs precision, recall, and f1 measure for
+each intent, as well as provide an overall average.  You can save this
+report as a JSON file using the `--report` flag.
+
+The confusion matrix shows you which
+intents are mistaken for others; any samples which have been
+incorrectly predicted are logged and saved to a file
+called ``errors.json`` for easier debugging.
+
+The histogram that the script produces allows you to visualise the
+confidence distribution for all predictions,
+with the volume of correct and incorrect predictions being displayed by
+blue and red bars respectively.
+Improving the quality of your training data will move the blue
+histogram bars to the right and the red histogram bars
+to the left of the plot.
 
 
 .. note::

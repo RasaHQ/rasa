@@ -1,15 +1,14 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 import os
+import typing
+from typing import Any, Text
 
-from rasa_nlu.training_data import Message, TrainingData
-from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa_nlu import utils
+from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
 from rasa_nlu.training_data.util import transform_entity_synonyms
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -22,21 +21,23 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
-    def read(self, fn, **kwargs):
-        # type: ([Text]) -> TrainingData
+    def read(self, fn: Text, **kwargs: Any) -> 'TrainingData':
         """Loads training data stored in the Dialogflow data format."""
+        from rasa_nlu.training_data import TrainingData
 
         language = kwargs["language"]
         fformat = kwargs["fformat"]
 
         if fformat not in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
-            raise ValueError("fformat must be either {}, or {}".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES))
+            raise ValueError("fformat must be either {}, or {}"
+                             "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES))
 
         root_js = utils.read_json_file(fn)
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
-            logger.warning("No training examples found for dialogflow file {}!".format(fn))
+            logger.warning("No training examples found for dialogflow file {}!"
+                           "".format(fn))
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
@@ -45,6 +46,8 @@ class DialogflowReader(TrainingDataReader):
 
     def _read_intent(self, intent_js, examples_js):
         """Reads the intent and examples from respective jsons."""
+        from rasa_nlu.training_data import Message, TrainingData
+
         intent = intent_js.get("name")
 
         training_examples = []
@@ -56,6 +59,7 @@ class DialogflowReader(TrainingDataReader):
 
     def _join_text_chunks(self, chunks):
         """Combines text chunks and extracts entities."""
+
         utterance = ""
         entities = []
         for chunk in chunks:
@@ -66,8 +70,10 @@ class DialogflowReader(TrainingDataReader):
 
         return utterance, entities
 
-    def _extract_entity(self, chunk, current_offset):
+    @staticmethod
+    def _extract_entity(chunk, current_offset):
         """Extract an entity from a chunk if present."""
+
         entity = None
         if "meta" in chunk or "alias" in chunk:
             start = current_offset
@@ -79,13 +85,22 @@ class DialogflowReader(TrainingDataReader):
 
         return entity
 
-    def _read_entities(self, examples_js):
+    @staticmethod
+    def _read_entities(examples_js):
+        from rasa_nlu.training_data import TrainingData
+
         entity_synonyms = transform_entity_synonyms(examples_js)
         return TrainingData([], entity_synonyms)
 
-    def _read_examples_js(self, fn, language, fformat):
-        """Infer and load the example file based on the root filename and root format."""
-        examples_type = "usersays" if fformat == DIALOGFLOW_INTENT else "entries"
+    @staticmethod
+    def _read_examples_js(fn, language, fformat):
+        """Infer and load the example file based on the root
+        filename and root format."""
+
+        if fformat == DIALOGFLOW_INTENT:
+            examples_type = "usersays"
+        else:
+            examples_type = "entries"
         examples_fn_ending = "_{}_{}.json".format(examples_type, language)
         examples_fn = fn.replace(".json", examples_fn_ending)
         if os.path.isfile(examples_fn):

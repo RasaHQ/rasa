@@ -1,9 +1,11 @@
 # Rasa NLU
 [![Join the forum at https://forum.rasa.com](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![PyPI version](https://badge.fury.io/py/rasa-nlu.svg)](https://badge.fury.io/py/rasa-nlu)
+[![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa_nlu.svg)](https://pypi.python.org/pypi/rasa_nlu)
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
-[![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://nlu.rasa.com/)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu?ref=badge_shield)
 
 Rasa NLU (Natural Language Understanding) is a tool for understanding what is being said in short pieces of text.
 For example, taking a short message like:
@@ -37,6 +39,13 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 - **I have a question ❓** [Rasa Community Forum](https://forum.rasa.com)
 
 - **I would like to contribute 🤗** [How to contribute](#how-to-contribute)
+
+### Important Note
+
+Current github master version does NOT support python 2.7 anymore (neither
+will the next major release). If you want to use Rasa NLU with python 
+2.7, please install the most recent version from pypi (0.14).
+
 
 # Quick Install
 

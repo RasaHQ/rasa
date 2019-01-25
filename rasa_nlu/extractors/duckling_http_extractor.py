@@ -1,27 +1,56 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import time
 
 import logging
 import os
-import time
-
 import requests
 import simplejson
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, List, Optional, Text
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.extractors.duckling_extractor import (
-    filter_irrelevant_matches, convert_duckling_format_to_rasa)
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
+
+
+def extract_value(match):
+    if match["value"].get("type") == "interval":
+        value = {"to": match["value"].get("to", {}).get("value"),
+                 "from": match["value"].get("from", {}).get("value")}
+    else:
+        value = match["value"].get("value")
+
+    return value
+
+
+def filter_irrelevant_matches(matches, requested_dimensions):
+    """Only return dimensions the user configured"""
+
+    if requested_dimensions:
+        return [match
+                for match in matches
+                if match["dim"] in requested_dimensions]
+    else:
+        return matches
+
+
+def convert_duckling_format_to_rasa(matches):
+    extracted = []
+
+    for match in matches:
+        value = extract_value(match)
+        entity = {"start": match["start"],
+                  "end": match["end"],
+                  "text": match.get("body", match.get("text", None)),
+                  "value": value,
+                  "confidence": 1.0,
+                  "additional_info": match["value"],
+                  "entity": match["dim"]}
+
+        extracted.append(entity)
+
+    return extracted
 
 
 class DucklingHTTPExtractor(EntityExtractor):
@@ -48,15 +77,15 @@ class DucklingHTTPExtractor(EntityExtractor):
         "timezone": None
     }
 
-    def __init__(self, component_config=None, language=None):
-        # type: (Text, Optional[List[Text]]) -> None
+    def __init__(self,
+                 component_config: Text = None,
+                 language: Optional[List[Text]] = None) -> None:
 
         super(DucklingHTTPExtractor, self).__init__(component_config)
         self.language = language
 
     @classmethod
-    def create(cls, config):
-        # type: (RasaNLUModelConfig) -> DucklingHTTPExtractor
+    def create(cls, config: RasaNLUModelConfig) -> 'DucklingHTTPExtractor':
 
         return cls(config.for_component(cls.name,
                                         cls.defaults),
@@ -125,8 +154,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         # requires the reftime in miliseconds
         return int(time.time()) * 1000
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         if self._url() is not None:
             reference_time = self._reference_time_from_message(message)
@@ -148,12 +176,11 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Text
-             model_metadata=None,  # type: Metadata
-             cached_component=None,  # type: Optional[DucklingHTTPExtractor]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> DucklingHTTPExtractor
+             model_dir: Text = None,
+             model_metadata: Metadata = None,
+             cached_component: Optional['DucklingHTTPExtractor'] = None,
+             **kwargs: Any
+             ) -> 'DucklingHTTPExtractor':
 
         component_config = model_metadata.for_component(cls.name)
         return cls(component_config, model_metadata.get("language"))

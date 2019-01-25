@@ -1,13 +1,10 @@
 # coding=utf-8
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.training_data import TrainingData, Message
 from tests import utilities
+from httpretty import httpretty
 
 
 def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
@@ -121,18 +118,66 @@ def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
 
 
 def test_duckling_entity_extractor(component_builder):
-    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
-    _config.set_component_attr("ner_duckling", dimensions=["time"])
-    duckling = component_builder.create_component("ner_duckling", _config)
+    httpretty.register_uri(
+        httpretty.POST,
+        "http://localhost:8000/parse",
+        body="""[{"body":"Today","start":0,"value":{"values":[{
+             "value":"2018-11-13T00:00:00.000-08:00","grain":"day",
+             "type":"value"}],"value":"2018-11-13T00:00:00.000-08:00",
+             "grain":"day","type":"value"},"end":5,
+             "dim":"time","latent":false},{"body":"the 5th","start":9,
+             "value":{"values":[{
+             "value":"2018-12-05T00:00:00.000-08:00","grain":"day",
+             "type":"value"},
+             {"value":"2019-01-05T00:00:00.000-08:00","grain":"day",
+             "type":"value"},
+             {"value":"2019-02-05T00:00:00.000-08:00","grain":"day",
+             "type":"value"}],
+             "value":"2018-12-05T00:00:00.000-08:00","grain":"day",
+             "type":"value"},"end":16,"dim":"time",
+             "latent":false},{"body":"5th of May","start":13,"value":{
+             "values":[{
+             "value":"2019-05-05T00:00:00.000-07:00","grain":"day",
+             "type":"value"},
+             {"value":"2020-05-05T00:00:00.000-07:00","grain":"day",
+             "type":"value"},
+             {"value":"2021-05-05T00:00:00.000-07:00","grain":"day",
+             "type":"value"}],
+             "value":"2019-05-05T00:00:00.000-07:00","grain":"day",
+             "type":"value"},"end":23,"dim":"time",
+             "latent":false},{"body":"tomorrow","start":37,"value":{
+             "values":[{
+             "value":"2018-11-14T00:00:00.000-08:00","grain":"day",
+             "type":"value"}],
+             "value":"2018-11-14T00:00:00.000-08:00","grain":"day",
+             "type":"value"},"end":45,"dim":"time",
+             "latent":false}]"""
+    )
+    httpretty.enable()
+
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
+    _config.set_component_attr("ner_duckling_http", dimensions=["time"],
+                               timezone="UTC", url="http://localhost:8000")
+    duckling = component_builder.create_component("ner_duckling_http", _config)
     message = Message("Today is the 5th of May. Let us meet tomorrow.")
     duckling.process(message)
     entities = message.get("entities")
-    assert len(entities) == 3
+    assert len(entities) == 4
 
     # Test duckling with a defined date
 
-    # 1381536182000 == 2013/10/12 02:03:02
-    message = Message("Let us meet tomorrow.", time="1381536182000")
+    httpretty.register_uri(
+        httpretty.POST,
+        "http://localhost:8000/parse",
+        body="""[{"body":"tomorrow","start":12,"value":{"values":[{
+             "value":"2013-10-13T00:00:00.000Z","grain":"day",
+             "type":"value"}],"value":"2013-10-13T00:00:00.000Z",
+             "grain":"day","type":"value"},"end":20,
+             "dim":"time","latent":false}]"""
+    )
+
+    # 1381536182 == 2013/10/12 02:03:02
+    message = Message("Let us meet tomorrow.", time="1381536182")
     duckling.process(message)
     entities = message.get("entities")
     assert len(entities) == 1
@@ -141,9 +186,9 @@ def test_duckling_entity_extractor(component_builder):
 
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
-    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
-    _config.set_component_attr("ner_duckling", dimensions=["number"])
-    duckling = component_builder.create_component("ner_duckling", _config)
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
+    _config.set_component_attr("ner_duckling_http", dimensions=["number"])
+    duckling = component_builder.create_component("ner_duckling_http", _config)
     synonyms = component_builder.create_component("ner_synonyms", _config)
     message = Message("He was 6 feet away")
     duckling.process(message)

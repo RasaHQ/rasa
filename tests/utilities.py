@@ -1,13 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import tempfile
 
 import pytest
 import ruamel.yaml as yaml
-from builtins import object
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
