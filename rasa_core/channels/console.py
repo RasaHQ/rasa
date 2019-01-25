@@ -36,10 +36,14 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
 
 
 def get_cmd_input():
-    return questionary.text("",
-                            qmark="Your input ->",
-                            style=Style([('qmark', '#b373d6'),
-                                         ('', '#b373d6')])).ask().strip()
+    response = questionary.text("",
+                                qmark="Your input ->",
+                                style=Style([('qmark', '#b373d6'),
+                                             ('', '#b373d6')])).ask()
+    if response is not None:
+        return response.strip()
+    else:
+        return None
 
 
 def send_message_receive_block(server_url, auth_token, sender_id, message):
@@ -95,7 +99,7 @@ def record_messages(server_url=DEFAULT_SERVER_URL,
     num_messages = 0
     while not utils.is_limit_reached(num_messages, max_message_limit):
         text = get_cmd_input()
-        if text == exit_text:
+        if text == exit_text or text is None:
             break
 
         if use_response_stream:
