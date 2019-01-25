@@ -1,7 +1,11 @@
 import pytest
 
 import rasa_core
-from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
+from rasa_core.interpreter import (RegexInterpreter,
+                                   INTENT_MESSAGE_PREFIX,
+                                   RasaNLUHttpInterpreter)
+from rasa_core.utils import EndpointConfig
+from httpretty import httpretty
 
 
 def test_regex_interpreter():
@@ -65,3 +69,22 @@ def test_regex_interpreter_adds_intent_prefix():
     r = interpreter.parse('mood_greet{"name": "rasa"}')
 
     assert r.get("text") == '/mood_greet{"name": "rasa"}'
+
+
+def test_http_interpreter():
+
+    httpretty.register_uri(httpretty.GET,
+                           'https://interpreter.com/parse')
+
+    endpoint = EndpointConfig('https://interpreter.com')
+    httpretty.enable()
+    interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
+    interpreter.parse(text='message_text', message_id='1134')
+
+    query = httpretty.last_request.querystring
+    httpretty.disable()
+    response = {'project': ['default'],
+                'q': ['message_text'],
+                'message_id': ['1134']}
+
+    assert query == response
