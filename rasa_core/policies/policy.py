@@ -37,7 +37,9 @@ class Policy(object):
         else:
             return None
 
-    def __init__(self, featurizer: Optional[TrackerFeaturizer] = None) -> None:
+    def __init__(self,
+                 featurizer: Optional[TrackerFeaturizer] = None
+                 ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
 
     @property

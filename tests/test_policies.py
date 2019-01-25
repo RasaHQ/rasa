@@ -55,6 +55,7 @@ def session_config():
     import tensorflow as tf
     return tf.ConfigProto(**tf_defaults())
 
+
 def train_trackers(domain):
     trackers = training.load_data(
         DEFAULT_STORIES_FILE,
