@@ -23,6 +23,7 @@ Changed
 
 Fixed
 -----
+- fix form validation question error in interactive learninig
 
 .. _v0-13-0:
 

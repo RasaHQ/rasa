@@ -884,9 +884,9 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
     validation_questions = questionary.confirm(
         "Should '{}' validate user input to fill "
         "the slot '{}'?".format(action_name, requested_slot))
-    form_answers = _ask_or_abort(validation_questions, sender_id, endpoint)
+    validate_input = _ask_or_abort(validation_questions, sender_id, endpoint)
 
-    if not form_answers["validation"]:
+    if not validate_input:
         # notify form action to skip validation
         send_event(endpoint, sender_id,
                    {"event": "form_validation", "validate": False})
