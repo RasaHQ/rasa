@@ -87,8 +87,12 @@ def create_argument_parser():
                              'server will only serve the models that are '
                              'on disk in the configured `path`.')
     parser.add_argument('-c', '--config',
-                        help="Default model configuration file used for "
-                             "training.")
+                        help='Default model configuration file used for '
+                             'training.')
+    parser.add_argument('--single_process',
+                        action='store_true',
+                        help='Whether to use a single process while running '
+                             'the server')
 
     utils.add_logging_option_arguments(parser)
 
@@ -244,7 +248,7 @@ class RasaNLU(object):
                 request.setResponseCode(200)
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(
-                        self.data_router.parse, data))
+                    self.data_router.parse, data))
                 returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)
@@ -425,7 +429,8 @@ if __name__ == '__main__':
             cmdline_args.emulate,
             cmdline_args.storage,
             model_server=_endpoints.model,
-            wait_time_between_pulls=cmdline_args.wait_time_between_pulls
+            wait_time_between_pulls=cmdline_args.wait_time_between_pulls,
+            single_process=cmdline_args.single_process
     )
     if pre_load:
         logger.debug('Preloading....')
