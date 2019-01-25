@@ -121,6 +121,15 @@ class PolicyTestCollection(object):
         loaded = empty_policy.__class__.load(tmpdir.strpath)
         assert loaded is not None
 
+    def test_tf_config(self, trained_policy, tmpdir):
+        if hasattr(trained_policy, 'session'):
+            # noinspection PyProtectedMember
+            assert trained_policy.session._config is None
+            trained_policy.persist(tmpdir.strpath)
+            loaded = trained_policy.__class__.load(tmpdir.strpath)
+            # noinspection PyProtectedMember
+            assert loaded.session._config is None
+
 
 class TestKerasPolicy(PolicyTestCollection):
 
