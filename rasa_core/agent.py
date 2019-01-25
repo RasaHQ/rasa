@@ -494,10 +494,10 @@ class Agent(object):
                             " to the policy configuration instead. More info "
                             "https://rasa.com/docs/core/migrations.html")
         if kwargs.get('epochs') or kwargs.get('max_history') or kwargs.get(
-            'batch_size'):
-                raise Exception("Passing policy configuration parameters "
-                                "to `agent.train(...)` is not supported anymore. "
-                                "Specify parameters directly in the"
+                'batch_size'):
+            raise Exception("Passing policy configuration parameters "
+                                "to `agent.train(...)` is not supported "
+                                "anymore. Specify parameters directly in the"
                                 " policy configuration instead. More info "
                                 "https://rasa.com/docs/core/migrations.html")
 
