@@ -493,7 +493,7 @@ class Agent(object):
                             "Pass appropriate featurizer directly"
                             " to the policy configuration instead. More info "
                             "https://rasa.com/docs/core/migrations.html")
-        if kwargs.get('epochs') or kwargs.get('max_history') or kwargs.get(\
+        if kwargs.get('epochs') or kwargs.get('max_history') or kwargs.get(
                 'batch_size'):
             raise Exception("Passing policy configuration parameters "
                             "to `agent.train(...)` is not supported "
