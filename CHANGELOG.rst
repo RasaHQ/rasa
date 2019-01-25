@@ -4,13 +4,26 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+.. _master-release:
+
 [Unreleased 0.13.1.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note:: This version is not yet released and is under active development.
+
+Added
+-----
+- ``message_id`` can now be passed in the payload to the ``NLUHttpInterpreter``
+
+Removed
+-------
+
+Changed
+-------
 
 Fixed
 -----
 - fix form validation question error in interactive learninig
-
 
 .. _v0-13-0:
 
