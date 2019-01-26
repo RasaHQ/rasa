@@ -12,6 +12,7 @@ import logging
 import os
 import re
 import tempfile
+import warnings
 from aiohttp import InvalidURL
 from hashlib import sha1
 from io import StringIO
@@ -743,3 +744,18 @@ def set_default_subparser(parser,
         if not subparser_found:
             # insert default in first position before all other arguments
             sys.argv.insert(1, default_subparser)
+
+
+def enable_async_loop_debugging(event_loop):
+    logging.info("Enabling coroutine debugging. "
+                 "Loop id {}".format(id(asyncio.get_event_loop())))
+
+    # Enable debugging
+    event_loop.set_debug(True)
+
+    # Make the threshold for "slow" tasks very very small for
+    # illustration. The default is 0.1, or 100 milliseconds.
+    event_loop.slow_callback_duration = 0.001
+
+    # Report all mistakes managing asynchronous resources.
+    warnings.simplefilter('always', ResourceWarning)

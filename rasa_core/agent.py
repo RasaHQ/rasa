@@ -1,8 +1,7 @@
 import asyncio
-from asyncio import Future, Task
+from asyncio import Future
 
 import aiohttp
-import datetime
 import logging
 import os
 import shutil
@@ -11,21 +10,20 @@ import typing
 import uuid
 import zipfile
 from io import BytesIO as IOReader
-from signal import SIGINT
-from signal import signal
-from typing import Text, List, Optional, Callable, Any, Dict, Union
+from signal import SIGINT, signal
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import rasa_core
-from rasa_core import training, constants, utils
-from rasa_core.channels import UserMessage, OutputChannel, InputChannel
+from rasa_core import constants, training
+from rasa_core.channels import InputChannel, OutputChannel, UserMessage
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
-from rasa_core.domain import Domain, check_domain_sanity, InvalidDomain
+from rasa_core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa_core.exceptions import AgentNotReady
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
-from rasa_core.policies import Policy, FormPolicy
-from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
+from rasa_core.policies import FormPolicy, Policy
+from rasa_core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore
@@ -42,18 +40,10 @@ if typing.TYPE_CHECKING:
 
 
 async def load_from_server(
-    interpreter: Optional[NaturalLanguageInterpreter] = None,
-    generator: Optional[Union[EndpointConfig, 'NLG']] = None,
-    tracker_store: Optional['TrackerStore'] = None,
-    action_endpoint: Optional[EndpointConfig] = None,
+    agent,
     model_server: Optional[EndpointConfig] = None,
 ) -> 'Agent':
     """Load a persisted model from a server."""
-
-    agent = Agent(interpreter=interpreter,
-                  generator=generator,
-                  tracker_store=tracker_store,
-                  action_endpoint=action_endpoint)
 
     wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
                                                       100)
@@ -61,8 +51,6 @@ async def load_from_server(
         isinstance(wait_time_between_pulls,
                    int) or wait_time_between_pulls.isdigit()):
         # continuously pull the model every `wait_time_between_pulls` seconds
-        # TODO async check if it is really a good idea to not await this task
-        # noinspection PyAsyncCall
         schedule_model_pulling(model_server,
                                int(wait_time_between_pulls),
                                agent)
@@ -174,15 +162,31 @@ async def _run_model_pulling_worker(model_server: EndpointConfig,
                                     wait_time_between_pulls: int,
                                     agent: 'Agent') -> None:
     while True:
-        await _update_model_from_server(model_server, agent)
-        await asyncio.sleep(wait_time_between_pulls)
+        # noinspection PyBroadException
+        try:
+            await _update_model_from_server(model_server, agent)
+        except Exception:
+            logger.exception("An exception was raised, while fetching "
+                             "a model. Continuing anyways...")
+        finally:
+            await asyncio.sleep(wait_time_between_pulls)
 
 
 def schedule_model_pulling(model_server: EndpointConfig,
                            wait_time_between_pulls: int,
-                           agent: 'Agent') -> Future:
-    return asyncio.ensure_future(_run_model_pulling_worker(
+                           agent: 'Agent'):
+    f = asyncio.ensure_future(_run_model_pulling_worker(
         model_server, wait_time_between_pulls, agent))
+
+    def error_handler(fut):
+        # noinspection PyBroadException
+        try:
+            fut.result()
+        except Exception:
+            logger.exception("An exception was raised, while fetching "
+                             "a model. Model pulling is stopped!")
+
+    f.add_done_callback(error_handler)
 
 
 class Agent(object):

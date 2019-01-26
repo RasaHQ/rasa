@@ -2,6 +2,7 @@ import asyncio
 
 import argparse
 import logging
+import warnings
 from sanic import Sanic
 from sanic_cors import CORS
 from typing import Text, Optional, List
@@ -170,6 +171,7 @@ def serve_application(initial_agent,
                       enable_api=True,
                       jwt_secret=None,
                       jwt_method=None,
+                      endpoints=None
                       ):
     if not channel and not credentials_file:
         channel = "cmdline"
@@ -180,9 +182,23 @@ def serve_application(initial_agent,
                          initial_agent, enable_api,
                          jwt_secret, jwt_method)
 
+    # configure async loop logging
+    async def configure_logging():
+        if logger.isEnabledFor(logging.DEBUG):
+            utils.enable_async_loop_debugging(asyncio.get_event_loop())
+
+    app.add_task(configure_logging)
+
+    if endpoints and endpoints.model:
+        app.add_task(agent.load_from_server(agent,
+                                            model_server=endpoints.model))
+
     if channel == "cmdline":
         async def run_cmdline_io(running_app: Sanic):
             """Small wrapper to shutdown the server once cmd io is done."""
+
+            if logger.isEnabledFor(logging.DEBUG):
+                utils.enable_async_loop_debugging(asyncio.get_event_loop())
 
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format(port))
@@ -192,20 +208,18 @@ def serve_application(initial_agent,
 
     logger.info("Rasa Core server is up and running on "
                 "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
+
     app.run(host='0.0.0.0', port=port,
-            debug=logger.isEnabledFor(logging.DEBUG))
+            debug=logger.isEnabledFor(logging.DEBUG),
+            access_log=logger.isEnabledFor(logging.DEBUG))
 
 
-async def load_agent(core_model, interpreter, endpoints,
-                     tracker_store=None):
+def load_agent(core_model, interpreter, endpoints, tracker_store=None):
     if endpoints.model:
-        return await agent.load_from_server(
-            interpreter=interpreter,
-            generator=endpoints.nlg,
-            action_endpoint=endpoints.action,
-            model_server=endpoints.model,
-            tracker_store=tracker_store
-        )
+        return Agent(interpreter=interpreter,
+                     generator=endpoints.nlg,
+                     tracker_store=tracker_store,
+                     action_endpoint=endpoints.action)
     else:
         return Agent.load(core_model,
                           interpreter=interpreter,
@@ -240,10 +254,11 @@ if __name__ == '__main__':
         None, _endpoints.tracker_store, _broker)
 
     loop = asyncio.get_event_loop()
-    _agent = loop.run_until_complete(load_agent(cmdline_args.core,
-                                                interpreter=_interpreter,
-                                                tracker_store=_tracker_store,
-                                                endpoints=_endpoints))
+    _agent = load_agent(cmdline_args.core,
+                        interpreter=_interpreter,
+                        tracker_store=_tracker_store,
+                        endpoints=_endpoints)
+
     serve_application(_agent,
                       cmdline_args.connector,
                       cmdline_args.port,
@@ -252,4 +267,5 @@ if __name__ == '__main__':
                       cmdline_args.auth_token,
                       cmdline_args.enable_api,
                       cmdline_args.jwt_secret,
-                      cmdline_args.jwt_method)
+                      cmdline_args.jwt_method,
+                      _endpoints)

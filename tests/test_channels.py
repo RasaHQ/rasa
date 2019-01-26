@@ -712,19 +712,18 @@ def test_newsline_strip():
 def test_register_channel_without_route():
     """Check we properly connect the input channel blueprint if route is None"""
     from rasa_core.channels import RestInput
-    from flask import Flask
     import rasa_core
 
     # load your trained agent
     agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
     input_channel = RestInput()
 
-    app = Flask(__name__)
+    app = Sanic(__name__)
     rasa_core.channels.channel.register([input_channel],
                                         app,
                                         agent.handle_message,
                                         route=None)
 
     routes_list = utils.list_routes(app)
-    assert routes_list.get("/webhook").startswith(
-        "custom_webhook_RestInput.receive")
+    assert routes_list.get("custom_webhook_RestInput.receive").startswith(
+        "/webhook")

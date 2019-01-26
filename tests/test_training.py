@@ -110,17 +110,17 @@ def configs_for_random_seed_test():
 
 
 @pytest.mark.parametrize("config_file", configs_for_random_seed_test())
-def test_random_seed(tmpdir, config_file):
+async def test_random_seed(tmpdir, config_file):
     # set random seed in config file to
     # generate a reproducible training result
-    agent_1 = train_dialogue_model(
+    agent_1 = await train_dialogue_model(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "1",
         interpreter=RegexInterpreter(),
         policy_config= config_file,
         kwargs={})
 
-    agent_2 = train_dialogue_model(
+    agent_2 = await train_dialogue_model(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "2",
         interpreter=RegexInterpreter(),

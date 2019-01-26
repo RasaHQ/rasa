@@ -38,7 +38,7 @@ def print_bot_output(message, color=utils.bcolors.OKBLUE):
             utils.print_color(element_str, color)
 
 
-async def get_cmd_input():
+def get_cmd_input():
     response = questionary.text("",
                                 qmark="Your input ->",
                                 style=Style([('qmark', '#b373d6'),
@@ -107,12 +107,11 @@ async def record_messages(server_url=DEFAULT_SERVER_URL,
 
     num_messages = 0
     while not utils.is_limit_reached(num_messages, max_message_limit):
-        text = await get_cmd_input()
+        text = get_cmd_input()
         if text == exit_text or text is None:
             break
 
         if use_response_stream:
-            logger.info("using strea")
             bot_responses = send_message_receive_stream(server_url,
                                                         auth_token,
                                                         sender_id, text)

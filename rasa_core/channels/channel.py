@@ -3,6 +3,7 @@ from asyncio import Queue
 
 import inspect
 import json
+import logging
 from sanic import Sanic, Blueprint, response
 from typing import (
     Text, List, Dict, Any, Optional, Callable, Iterable,
@@ -15,6 +16,8 @@ try:
     from urlparse import urljoin
 except ImportError:
     from urllib.parse import urljoin
+
+logger = logging.getLogger(__name__)
 
 
 class UserMessage(object):
