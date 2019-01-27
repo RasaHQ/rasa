@@ -35,7 +35,7 @@ def test_text_format():
 
 def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
-            ["random_name", "utter_test"], None, ["random_name", "utter_test"])
+        ["random_name", "utter_test"], None, ["random_name", "utter_test"])
     assert len(instantiated_actions) == 2
     assert isinstance(instantiated_actions[0], RemoteAction)
     assert instantiated_actions[0].name() == "random_name"
@@ -46,12 +46,12 @@ def test_action_instantiation_from_names():
 
 def test_domain_action_instantiation():
     domain = Domain(
-            intent_properties={},
-            entities=[],
-            slots=[],
-            templates={},
-            action_names=["my_module.ActionTest", "utter_test"],
-            form_names=[])
+        intent_properties={},
+        entities=[],
+        slots=[],
+        templates={},
+        action_names=["my_module.ActionTest", "utter_test"],
+        form_names=[])
 
     instantiated_actions = domain.actions(None)
 
@@ -90,8 +90,8 @@ async def test_remote_action_runs(default_dispatcher_collecting,
 
     with aioresponses() as mocked:
         mocked.post(
-                'https://example.com/webhooks/actions',
-                payload={"events": [], "responses": []})
+            'https://example.com/webhooks/actions',
+            payload={"events": [], "responses": []})
 
         await remote_action.run(default_dispatcher_collecting,
                                 tracker,
@@ -246,10 +246,10 @@ async def test_remote_action_endpoint_responds_400(
     with aioresponses() as mocked:
         # noinspection PyTypeChecker
         mocked.post(
-                'https://example.com/webhooks/actions',
-                exception=ClientResponseError(
-                        aiohttp.ClientResponseError(None, None, code=400),
-                        '{"action_name": "my_action"}'))
+            'https://example.com/webhooks/actions',
+            exception=ClientResponseError(
+                aiohttp.ClientResponseError(None, None, code=400),
+                '{"action_name": "my_action"}'))
 
         with pytest.raises(Exception) as execinfo:
             await remote_action.run(default_dispatcher_collecting,

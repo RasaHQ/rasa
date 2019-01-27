@@ -20,7 +20,7 @@ def loop():
 async def test_message_processor(default_processor):
     out = CollectingOutputChannel()
     await default_processor.handle_message(
-            UserMessage('/greet{"name":"Core"}', out))
+        UserMessage('/greet{"name":"Core"}', out))
     assert {'recipient_id': 'default',
             'text': 'hey there Core!'} == out.latest_output()
 
@@ -130,5 +130,5 @@ async def test_logging_of_bot_utterances_on_tracker(
     assert len(default_dispatcher_collecting.latest_bot_messages) == 4
 
     default_processor.log_bot_utterances_on_tracker(
-            tracker, default_dispatcher_collecting)
+        tracker, default_dispatcher_collecting)
     assert not default_dispatcher_collecting.latest_bot_messages

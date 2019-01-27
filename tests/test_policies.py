@@ -32,8 +32,8 @@ from tests.utilities import read_dialogue_file, user_uttered, get_tracker
 
 async def train_trackers(domain):
     return await training.load_data(
-            DEFAULT_STORIES_FILE,
-            domain
+        DEFAULT_STORIES_FILE,
+        domain
     )
 
 
@@ -82,16 +82,16 @@ class PolicyTestCollection(object):
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
-                    tracker, default_domain)
+                tracker, default_domain)
             actual_probabilities = trained_policy.predict_action_probabilities(
-                    tracker, default_domain)
+                tracker, default_domain)
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
         tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        default_domain.slots)
         probabilities = trained_policy.predict_action_probabilities(
-                tracker, default_domain)
+            tracker, default_domain)
         assert len(probabilities) == default_domain.num_actions
         assert max(probabilities) <= 1.1
         assert min(probabilities) >= 0.0
@@ -119,20 +119,20 @@ class TestFallbackPolicy(PolicyTestCollection):
         return p
 
     @pytest.mark.parametrize(
-            "nlu_confidence, last_action_name, should_nlu_fallback",
-            [
-                (0.1, 'some_action', False),
-                (0.1, 'action_listen', True),
-                (0.9, 'some_action', False),
-                (0.9, 'action_listen', False),
-            ])
+        "nlu_confidence, last_action_name, should_nlu_fallback",
+        [
+            (0.1, 'some_action', False),
+            (0.1, 'action_listen', True),
+            (0.9, 'some_action', False),
+            (0.9, 'action_listen', False),
+        ])
     def test_should_nlu_fallback(self,
                                  trained_policy,
                                  nlu_confidence,
                                  last_action_name,
                                  should_nlu_fallback):
         assert trained_policy.should_nlu_fallback(
-                nlu_confidence, last_action_name) is should_nlu_fallback
+            nlu_confidence, last_action_name) is should_nlu_fallback
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
@@ -151,7 +151,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
-                    trackers, default_domain)
+                trackers, default_domain)
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
@@ -246,9 +246,9 @@ class TestSklearnPolicy(PolicyTestCollection):
                                                        featurizer):
         param_grid = {'n_estimators': 50}
         policy = self.create_policy(
-                featurizer=featurizer,
-                cv=3,
-                param_grid=param_grid,
+            featurizer=featurizer,
+            cv=3,
+            param_grid=param_grid,
         )
         policy.train(trackers, domain=default_domain)
 
@@ -272,8 +272,8 @@ class TestSklearnPolicy(PolicyTestCollection):
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
-                            np.random.choice(classes),
-                            action_endpoint=None).name()
+                        np.random.choice(classes),
+                        action_endpoint=None).name()
                     new_tracker.update(ActionExecuted(new_action))
                 else:
                     new_tracker.update(e)
@@ -282,7 +282,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
         policy.train(new_trackers, domain=default_domain)
         predicted_probabilities = policy.predict_action_probabilities(
-                tracker, default_domain)
+            tracker, default_domain)
 
         assert len(predicted_probabilities) == default_domain.num_actions
         assert np.allclose(sum(predicted_probabilities), 1.0)
@@ -401,7 +401,7 @@ class TestFormPolicy(PolicyTestCollection):
 
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
-                    trackers, domain)
+                trackers, domain)
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             for state in states:
@@ -415,16 +415,18 @@ class TestFormPolicy(PolicyTestCollection):
                 # explicitly set intents and actions before listen after
                 # which FormPolicy should not predict a form action and
                 # should add FormValidation(False) event
+                # @formatter:off
                 is_no_validation = (
-                        ('prev_some_form' in states[0].keys() and
-                         'intent_default' in states[-1].keys()) or
-                        ('prev_some_form' in states[0].keys() and
-                         'intent_stop' in states[-1].keys()) or
-                        ('prev_utter_ask_continue' in states[0].keys() and
-                         'intent_affirm' in states[-1].keys()) or
-                        ('prev_utter_ask_continue' in states[0].keys() and
-                         'intent_deny' in states[-1].keys())
+                    ('prev_some_form' in states[0].keys() and
+                     'intent_default' in states[-1].keys()) or
+                    ('prev_some_form' in states[0].keys() and
+                     'intent_stop' in states[-1].keys()) or
+                    ('prev_utter_ask_continue' in states[0].keys() and
+                     'intent_affirm' in states[-1].keys()) or
+                    ('prev_utter_ask_continue' in states[0].keys() and
+                     'intent_deny' in states[-1].keys())
                 )
+                # @formatter:on
             else:
                 is_no_validation = False
 
@@ -502,9 +504,9 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered('greet', 1)]
 
         tracker = await self._get_tracker_after_reverts(
-                events,
-                default_dispatcher_collecting,
-                default_domain)
+            events,
+            default_dispatcher_collecting,
+            default_domain)
 
         assert 'greet' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == ("## sender\n"
@@ -539,9 +541,9 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ]
 
         tracker = await self._get_tracker_after_reverts(
-                events,
-                default_dispatcher_collecting,
-                default_domain)
+            events,
+            default_dispatcher_collecting,
+            default_domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
@@ -580,9 +582,9 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ]
 
         tracker = await self._get_tracker_after_reverts(
-                events,
-                default_dispatcher_collecting,
-                default_domain)
+            events,
+            default_dispatcher_collecting,
+            default_domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
@@ -621,9 +623,9 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ]
 
         tracker = await self._get_tracker_after_reverts(
-                events,
-                default_dispatcher_collecting,
-                default_domain)
+            events,
+            default_dispatcher_collecting,
+            default_domain)
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == ("## sender\n"

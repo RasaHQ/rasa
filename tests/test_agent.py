@@ -41,7 +41,7 @@ async def test_agent_train(tmpdir, default_domain):
 
     # test policies
     assert type(loaded.policy_ensemble) is type(
-            agent.policy_ensemble)  # nopep8
+        agent.policy_ensemble)  # nopep8
     assert [type(p) for p in loaded.policy_ensemble.policies] == \
            [type(p) for p in agent.policy_ensemble.policies]
 
@@ -49,8 +49,8 @@ async def test_agent_train(tmpdir, default_domain):
 async def test_agent_handle_message(default_agent):
     message = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = await default_agent.handle_message(
-            message,
-            sender_id="test_agent_handle_message")
+        message,
+        sender_id="test_agent_handle_message")
     assert result == [{'recipient_id': 'test_agent_handle_message',
                        'text': 'hey there Rasa!'}]
 
@@ -70,8 +70,8 @@ async def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
                                        moodbot_domain, moodbot_metadata):
     fingerprint = 'somehash'
     model_endpoint_config = EndpointConfig.from_dict(
-            {"url": 'http://server.com/model/default_core@latest',
-             "wait_time_between_pulls": None}
+        {"url": 'http://server.com/model/default_core@latest',
+         "wait_time_between_pulls": None}
     )
 
     # mock a response that returns a zipped model
@@ -84,7 +84,7 @@ async def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
                    body=body)
         agent = Agent()
         agent = await rasa_core.agent.load_from_server(
-                agent, model_server=model_endpoint_config)
+            agent, model_server=model_endpoint_config)
 
     assert agent.fingerprint == fingerprint
 
@@ -108,10 +108,10 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
             return response.text("", 204)
 
         return await response.file_stream(
-                location=model_path,
-                headers={'ETag': model_hash,
-                         'filename': model_path},
-                mime_type='application/zip')
+            location=model_path,
+            headers={'ETag': model_hash,
+                     'filename': model_path},
+            mime_type='application/zip')
 
     return app
 
@@ -131,7 +131,7 @@ async def test_agent_with_model_server_in_thread(test_server, tmpdir,
 
     agent = Agent()
     agent = await rasa_core.agent.load_from_server(
-            agent, model_server=model_endpoint_config)
+        agent, model_server=model_endpoint_config)
 
     await asyncio.sleep(10)
 
@@ -166,8 +166,8 @@ def test_wait_time_between_pulls_str(monkeypatch):
                         lambda *args: 1 / 0)  # raises an exception
 
     model_endpoint_config = EndpointConfig.from_dict(
-            {"url": 'http://server.com/model/default_core@latest',
-             "wait_time_between_pulls": "10"}
+        {"url": 'http://server.com/model/default_core@latest',
+         "wait_time_between_pulls": "10"}
     )
 
     agent = Agent()
@@ -181,8 +181,8 @@ def test_wait_time_between_pulls_with_not_number(monkeypatch):
                         lambda *args: True)
 
     model_endpoint_config = EndpointConfig.from_dict(
-            {"url": 'http://server.com/model/default_core@latest',
-             "wait_time_between_pulls": "None"}
+        {"url": 'http://server.com/model/default_core@latest',
+         "wait_time_between_pulls": "None"}
     )
 
     agent = Agent()

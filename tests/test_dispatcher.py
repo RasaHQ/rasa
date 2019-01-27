@@ -18,15 +18,15 @@ async def test_dispatcher_utter_attachment(default_dispatcher_collecting):
 async def test_dispatcher_utter_template(default_dispatcher_collecting,
                                          default_tracker):
     await default_dispatcher_collecting.utter_template("utter_goodbye",
-                                                     default_tracker)
+                                                       default_tracker)
     collected = default_dispatcher_collecting.output_channel.latest_output()
     assert collected['text'] in {"goodbye 😢", "bye bye 😢"}
 
 
 async def test_dispatcher_handle_unknown_template(default_dispatcher_collecting,
-                                            default_tracker):
+                                                  default_tracker):
     await default_dispatcher_collecting.utter_template("my_made_up_template",
-                                                     default_tracker)
+                                                       default_tracker)
 
     collected = default_dispatcher_collecting.output_channel.latest_output()
     assert collected is None

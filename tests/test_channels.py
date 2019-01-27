@@ -400,8 +400,8 @@ async def test_callback_calls_endpoint():
         output = CallbackOutput(EndpointConfig("https://example.com/callback"))
 
         await output.send_response("test-id", {
-                "text": "Hi there!",
-                "image": "https://example.com/image.jpg"})
+            "text": "Hi there!",
+            "image": "https://example.com/image.jpg"})
 
         r = latest_request(
             mocked, "post", "https://example.com/callback")

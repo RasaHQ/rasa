@@ -26,7 +26,7 @@ async def test_moodbot_example(trained_moodbot_path):
     assert responses[0]['text'] == 'Hey! How are you?'
 
     responses.extend(
-            await agent.handle_text("/mood_unhappy"))
+        await agent.handle_text("/mood_unhappy"))
     assert responses[-1]['text'] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
@@ -54,11 +54,11 @@ async def test_formbot_example():
     stories = os.path.join(p, "data", "stories.md")
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     endpoints = AvailableEndpoints(action=endpoint)
-    agent = await train_dialogue_model(os.path.join(p, "domain.yml"),
-                                       stories,
-                                       os.path.join(p, "models", "dialogue"),
-                                       endpoints=endpoints,
-                                       policy_config="rasa_core/default_config.yml")
+    agent = await train_dialogue_model(
+        os.path.join(p, "domain.yml"), stories,
+        os.path.join(p, "models", "dialogue"),
+        endpoints=endpoints,
+        policy_config="rasa_core/default_config.yml")
     response = {
         'events': [
             {'event': 'form', 'name': 'restaurant_form', 'timestamp': None},
@@ -87,8 +87,8 @@ async def test_formbot_example():
         # noinspection PyTypeChecker
         mocked.post('https://example.com/webhooks/actions',
                     exception=ClientResponseError(
-                            aiohttp.ClientResponseError(None, None, code=400),
-                            json.dumps(response)))
+                        aiohttp.ClientResponseError(None, None, code=400),
+                        json.dumps(response)))
 
         responses = await agent.handle_text("/chitchat")
 

@@ -79,7 +79,6 @@ async def test_regex_interpreter_adds_intent_prefix(regex_interpreter):
 
 
 async def test_http_interpreter():
-
     with aioresponses() as mocked:
         mocked.get("https://example.com/parse"
                    "?message_id=1134"
@@ -91,10 +90,10 @@ async def test_http_interpreter():
         await interpreter.parse(text='message_text', message_id='1134')
 
         r = latest_request(
-                mocked, "GET", "https://example.com/parse"
-                               "?message_id=1134"
-                               "&project=default"
-                               "&q=message_text")
+            mocked, "GET", "https://example.com/parse"
+                           "?message_id=1134"
+                           "&project=default"
+                           "&q=message_text")
 
         query = r[-1].kwargs["params"]
         response = {'project': 'default',

@@ -19,7 +19,7 @@ async def test_send_message(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/messages'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.post(url, payload={})
 
@@ -40,7 +40,7 @@ async def test_request_prediction(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/predict'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
 
     with aioresponses() as mocked:
         mocked.post(url, payload={})
@@ -116,12 +116,12 @@ def test_all_events_before_user_msg_on_no_events():
 
 async def test_print_history(mock_endpoint):
     tracker_dump = utils.read_file(
-            "data/test_trackers/tracker_moodbot.json")
+        "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker?include_events=AFTER_RESTART'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.get(url,
                    body=tracker_dump,
@@ -134,18 +134,18 @@ async def test_print_history(mock_endpoint):
 
 async def test_is_listening_for_messages(mock_endpoint):
     tracker_dump = utils.read_file(
-            "data/test_trackers/tracker_moodbot.json")
+        "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker?include_events=APPLIED'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.get(url, body=tracker_dump,
                    headers={"Content-Type": "application/json"})
 
         is_listening = await interactive.is_listening_for_message(
-                sender_id, mock_endpoint)
+            sender_id, mock_endpoint)
 
         assert is_listening
 
@@ -194,16 +194,16 @@ def test_validate_user_message():
 
 async def test_undo_latest_msg(mock_endpoint):
     tracker_dump = utils.read_file(
-            "data/test_trackers/tracker_moodbot.json")
+        "data/test_trackers/tracker_moodbot.json")
     tracker_json = json.loads(tracker_dump)
     evts = tracker_json.get("events")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker?include_events=ALL'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     replace_url = '{}/conversations/{}/tracker/events'.format(
-            mock_endpoint.url, sender_id)
+        mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.get(url, body=tracker_dump)
         mocked.put(replace_url)

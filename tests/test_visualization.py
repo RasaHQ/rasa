@@ -82,8 +82,8 @@ async def test_graph_persistence(default_domain, tmpdir):
     from rasa_core.training.dsl import StoryFileReader
     from rasa_core.interpreter import RegexInterpreter
     story_steps = await StoryFileReader.read_from_file(
-            "data/test_stories/stories.md", default_domain,
-            interpreter=RegexInterpreter())
+        "data/test_stories/stories.md", default_domain,
+        interpreter=RegexInterpreter())
     out_file = tmpdir.join("graph.html").strpath
     generated_graph = visualization.visualize_stories(story_steps,
                                                       default_domain,

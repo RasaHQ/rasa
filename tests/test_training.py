@@ -17,8 +17,8 @@ def test_story_visualization_script():
 
 async def test_story_visualization(default_domain, tmpdir):
     story_steps = await StoryFileReader.read_from_file(
-            "data/test_stories/stories.md", default_domain,
-            interpreter=RegexInterpreter())
+        "data/test_stories/stories.md", default_domain,
+        interpreter=RegexInterpreter())
     out_file = tmpdir.join("graph.html").strpath
     generated_graph = visualize_stories(story_steps, default_domain,
                                         output_file=out_file,
@@ -32,8 +32,8 @@ async def test_story_visualization(default_domain, tmpdir):
 
 async def test_story_visualization_with_merging(default_domain):
     story_steps = await StoryFileReader.read_from_file(
-            "data/test_stories/stories.md", default_domain,
-            interpreter=RegexInterpreter())
+        "data/test_stories/stories.md", default_domain,
+        interpreter=RegexInterpreter())
     generated_graph = visualize_stories(story_steps, default_domain,
                                         output_file=None,
                                         max_history=3,
@@ -55,11 +55,11 @@ async def test_training_script(tmpdir):
 
 async def test_training_script_without_max_history_set(tmpdir):
     await train_dialogue_model(
-            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-            tmpdir.strpath,
-            interpreter=RegexInterpreter(),
-            policy_config='data/test_config/no_max_hist_config.yml',
-            kwargs={})
+        DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+        tmpdir.strpath,
+        interpreter=RegexInterpreter(),
+        policy_config='data/test_config/no_max_hist_config.yml',
+        kwargs={})
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
@@ -108,18 +108,18 @@ async def test_random_seed(tmpdir, config_file):
     # set random seed in config file to
     # generate a reproducible training result
     agent_1 = await train_dialogue_model(
-            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-            tmpdir.strpath + "1",
-            interpreter=RegexInterpreter(),
-            policy_config=config_file,
-            kwargs={})
+        DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+        tmpdir.strpath + "1",
+        interpreter=RegexInterpreter(),
+        policy_config=config_file,
+        kwargs={})
 
     agent_2 = await train_dialogue_model(
-            DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-            tmpdir.strpath + "2",
-            interpreter=RegexInterpreter(),
-            policy_config=config_file,
-            kwargs={})
+        DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+        tmpdir.strpath + "2",
+        interpreter=RegexInterpreter(),
+        policy_config=config_file,
+        kwargs={})
 
     processor_1 = agent_1.create_processor()
     processor_2 = agent_2.create_processor()
