@@ -146,7 +146,7 @@ async def test_agent_with_model_server_in_thread(test_server, tmpdir,
     await server.close()
 
 
-def test_wait_time_between_pulls_from_file(monkeypatch):
+async def test_wait_time_between_pulls_from_file(monkeypatch):
     monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
@@ -156,10 +156,11 @@ def test_wait_time_between_pulls_from_file(monkeypatch):
         read_endpoint_config("data/test_endpoints/model_endpoint.yml", "model")
 
     agent = Agent()
-    rasa_core.agent.load_from_server(agent, model_server=model_endpoint_config)
+    await rasa_core.agent.load_from_server(agent,
+                                           model_server=model_endpoint_config)
 
 
-def test_wait_time_between_pulls_str(monkeypatch):
+async def test_wait_time_between_pulls_str(monkeypatch):
     monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: True)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
@@ -171,10 +172,11 @@ def test_wait_time_between_pulls_str(monkeypatch):
     )
 
     agent = Agent()
-    rasa_core.agent.load_from_server(agent, model_server=model_endpoint_config)
+    await rasa_core.agent.load_from_server(agent,
+                                           model_server=model_endpoint_config)
 
 
-def test_wait_time_between_pulls_with_not_number(monkeypatch):
+async def test_wait_time_between_pulls_with_not_number(monkeypatch):
     monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: 1 / 0)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
@@ -186,4 +188,5 @@ def test_wait_time_between_pulls_with_not_number(monkeypatch):
     )
 
     agent = Agent()
-    rasa_core.agent.load_from_server(agent, model_server=model_endpoint_config)
+    await rasa_core.agent.load_from_server(agent,
+                                           model_server=model_endpoint_config)

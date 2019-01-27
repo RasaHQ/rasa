@@ -98,7 +98,7 @@ def test_webexteams_channel():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_slack_channel():
+async def test_slack_channel():
     from rasa_core.channels.slack import SlackInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
@@ -122,6 +122,7 @@ def test_slack_channel():
         assert s is not None
     finally:
         s.cancel()
+        await s
 
 
 # USED FOR DOCS - don't rename without changing in the docs
@@ -688,16 +689,17 @@ def test_int_message_id_in_user_message():
     assert message.message_id == "987654321"
 
 
-def test_send_custom_messages_without_buttons():
+async def test_send_custom_messages_without_buttons():
     from rasa_core.channels.channel import OutputChannel
 
-    def test_message(sender, message):
+    async def test_message(sender, message):
         assert sender == 'user'
         assert message == 'a : b'
 
     channel = OutputChannel()
     channel.send_text_message = test_message
-    channel.send_custom_message("user", [{'title': 'a', 'subtitle': 'b'}])
+    await channel.send_custom_message("user",
+                                      [{'title': 'a', 'subtitle': 'b'}])
 
 
 def test_newsline_strip():
