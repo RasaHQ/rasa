@@ -129,13 +129,14 @@ def _create_single_channel(channel, credentials):
                 "is a proper name of a class in a module.".format(channel))
 
 
-def _configure_app(input_channels,
-                   cors,
-                   auth_token,
-                   initial_agent,
-                   enable_api=True,
-                   jwt_secret=None,
-                   jwt_method=None):
+def configure_app(input_channels,
+                  cors,
+                  auth_token,
+                  initial_agent,
+                  enable_api=True,
+                  jwt_secret=None,
+                  jwt_method=None,
+                  route="/webhooks/"):
     """Run the agent."""
 
     if enable_api:
@@ -154,10 +155,17 @@ def _configure_app(input_channels,
         rasa_core.channels.channel.register(input_channels,
                                             app,
                                             initial_agent.handle_message,
-                                            route="/webhooks/")
+                                            route=route)
 
     if logger.isEnabledFor(logging.DEBUG):
         utils.list_routes(app)
+
+    # configure async loop logging
+    async def configure_logging():
+        if logger.isEnabledFor(logging.DEBUG):
+            utils.enable_async_loop_debugging(asyncio.get_event_loop())
+
+    app.add_task(configure_logging)
 
     return app
 
@@ -178,16 +186,9 @@ def serve_application(initial_agent,
 
     input_channels = create_http_input_channels(channel, credentials_file)
 
-    app = _configure_app(input_channels, cors, auth_token,
-                         initial_agent, enable_api,
-                         jwt_secret, jwt_method)
-
-    # configure async loop logging
-    async def configure_logging():
-        if logger.isEnabledFor(logging.DEBUG):
-            utils.enable_async_loop_debugging(asyncio.get_event_loop())
-
-    app.add_task(configure_logging)
+    app = configure_app(input_channels, cors, auth_token,
+                        initial_agent, enable_api,
+                        jwt_secret, jwt_method)
 
     if endpoints and endpoints.model:
         app.add_task(agent.load_from_server(agent,

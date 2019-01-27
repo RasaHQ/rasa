@@ -177,10 +177,13 @@ async def test_wait_time_between_pulls_str(monkeypatch):
 
 
 async def test_wait_time_between_pulls_with_not_number(monkeypatch):
+    async def patched_updated(*args):
+        return True
+
     monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
                         lambda *args: 1 / 0)
     monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: True)
+                        patched_updated)
 
     model_endpoint_config = EndpointConfig.from_dict(
         {"url": 'http://server.com/model/default_core@latest',

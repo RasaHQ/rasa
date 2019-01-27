@@ -1,4 +1,7 @@
 import json
+import logging
+import mock
+import sanic
 from aioresponses import aioresponses
 from httpretty import httpretty
 from sanic import Sanic
@@ -10,9 +13,17 @@ from rasa_core.utils import EndpointConfig
 from tests import utilities
 from tests.conftest import MOODBOT_MODEL_PATH
 # this is needed so that the tests included as code examples look better
-from tests.utilities import latest_request, json_of_latest_request
+from tests.utilities import json_of_latest_request, latest_request
 
 MODEL_PATH = MOODBOT_MODEL_PATH
+
+logger = logging.getLogger(__name__)
+
+
+def fake_sanic_run(*args, **kwargs):
+    """Used to replace `run` method of a Sanic server to avoid hanging."""
+    logger.info("Rabatnic: Take this and find Sanic! "
+                "I want him here by supper time.")
 
 
 async def test_console_input():
@@ -44,209 +55,222 @@ async def test_console_input():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_facebook_channel():
-    from rasa_core.channels.facebook import FacebookInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
-    input_channel = FacebookInput(
-        fb_verify="YOUR_FB_VERIFY",
-        # you need tell facebook this token, to confirm your URL
-        fb_secret="YOUR_FB_SECRET",  # your app secret
-        fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
-        # token for the page you subscribed to
-    )
-
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
-
-
-# USED FOR DOCS - don't rename without changing in the docs
-def test_webexteams_channel():
-    from rasa_core.channels.webexteams import WebexTeamsInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
-    input_channel = WebexTeamsInput(
-        access_token="YOUR_ACCESS_TOKEN",
-        # this is the `bot access token`
-        room="YOUR_WEBEX_ROOM"
-        # the name of your channel to which the bot posts (optional)
-    )
-
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
-
-
-# USED FOR DOCS - don't rename without changing in the docs
-async def test_slack_channel():
-    from rasa_core.channels.slack import SlackInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
-    input_channel = SlackInput(
-        slack_token="YOUR_SLACK_TOKEN",
-        # this is the `bot_user_o_auth_access_token`
-        slack_channel="YOUR_SLACK_CHANNEL"
-        # the name of your channel to which the bot posts (optional)
-    )
-
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
-        await s
-
-
-# USED FOR DOCS - don't rename without changing in the docs
-def test_mattermost_channel():
-    from rasa_core.channels.mattermost import MattermostInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
-    input_channel = MattermostInput(
-        # this is the url of the api for your mattermost instance
-        url="http://chat.example.com/api/v4",
-        # the name of your team for mattermost
-        team="community",
-        # the username of your bot user that will post
-        user="user@email.com",
-        # messages
-        pw="password"
-        # the password of your bot user that will post messages
-    )
-
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
-
-
-# USED FOR DOCS - don't rename without changing in the docs
-def test_botframework_channel():
-    from rasa_core.channels.botframework import BotFrameworkInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
-    input_channel = BotFrameworkInput(
-        # you get this from your Bot Framework account
-        app_id="MICROSOFT_APP_ID",
-        # also from your Bot Framework account
-        app_password="MICROSOFT_APP_PASSWORD"
-    )
-
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
-
-
-# USED FOR DOCS - don't rename without changing in the docs
-def test_rocketchat_channel():
-    from rasa_core.channels.rocketchat import RocketChatInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
-
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
-
-    input_channel = RocketChatInput(
-        # your bots rocket chat user name
-        user="yourbotname",
-        # the password for your rocket chat bots account
-        password="YOUR_PASSWORD",
-        # url where your rocket chat instance is running
-        server_url="https://demo.rocket.chat"
-    )
-
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
-
-
-# USED FOR DOCS - don't rename without changing in the docs
-def test_telegram_channel():
-    # telegram channel will try to set a webhook, so we need to mock the api
-
-    with aioresponses() as mocked:
-        mocked.post(
-            'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
-            payload={"ok": True, "result": {}})
-
-        from rasa_core.channels.telegram import TelegramInput
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.facebook import FacebookInput
         from rasa_core.agent import Agent
         from rasa_core.interpreter import RegexInterpreter
 
         # load your trained agent
         agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-        input_channel = TelegramInput(
-            # you get this when setting up a bot
-            access_token="123:YOUR_ACCESS_TOKEN",
-            # this is your bots username
-            verify="YOUR_TELEGRAM_BOT",
-            # the url your bot should listen for messages
-            webhook_url="YOUR_WEBHOOK_URL"
+        input_channel = FacebookInput(
+            fb_verify="YOUR_FB_VERIFY",
+            # you need tell facebook this token, to confirm your URL
+            fb_secret="YOUR_FB_SECRET",  # your app secret
+            fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"
+            # token for the page you subscribed to
         )
 
-        # set serve_forever=True if you want to keep the server running
-        s = agent.handle_channels([input_channel], 5004, serve_forever=False)
+        s = agent.handle_channels([input_channel], 5004)
         # END DOC INCLUDE
         # the above marker marks the end of the code snipped included
         # in the docs
-        try:
-            assert s is not None
-        finally:
-            s.cancel()
+        routes_list = utils.list_routes(s)
+        print(routes_list)
+        assert routes_list.get("fb_webhook.health").startswith(
+            "/webhooks/facebook")
+        assert routes_list.get("fb_webhook.webhook").startswith(
+            "/webhooks/facebook/webhook")
+
+
+# USED FOR DOCS - don't rename without changing in the docs
+def test_webexteams_channel():
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.webexteams import WebexTeamsInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
+
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+        input_channel = WebexTeamsInput(
+            access_token="YOUR_ACCESS_TOKEN",
+            # this is the `bot access token`
+            room="YOUR_WEBEX_ROOM"
+            # the name of your channel to which the bot posts (optional)
+        )
+
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("webexteams_webhook.health").startswith(
+            "/webhooks/webexteams")
+        assert routes_list.get("webexteams_webhook.webhook").startswith(
+            "/webhooks/webexteams/webhook")
+
+
+# USED FOR DOCS - don't rename without changing in the docs
+def test_slack_channel():
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.slack import SlackInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
+
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+        input_channel = SlackInput(
+            slack_token="YOUR_SLACK_TOKEN",
+            # this is the `bot_user_o_auth_access_token`
+            slack_channel="YOUR_SLACK_CHANNEL"
+            # the name of your channel to which the bot posts (optional)
+        )
+
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("slack_webhook.health").startswith(
+            "/webhooks/slack")
+        assert routes_list.get("slack_webhook.webhook").startswith(
+            "/webhooks/slack/webhook")
+
+
+# USED FOR DOCS - don't rename without changing in the docs
+def test_mattermost_channel():
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.mattermost import MattermostInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
+
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+        input_channel = MattermostInput(
+            # this is the url of the api for your mattermost instance
+            url="http://chat.example.com/api/v4",
+            # the name of your team for mattermost
+            team="community",
+            # the username of your bot user that will post
+            user="user@email.com",
+            # messages
+            pw="password"
+            # the password of your bot user that will post messages
+        )
+
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("mattermost_webhook.health").startswith(
+            "/webhooks/mattermost")
+        assert routes_list.get("mattermost_webhook.webhook").startswith(
+            "/webhooks/mattermost/webhook")
+
+
+# USED FOR DOCS - don't rename without changing in the docs
+def test_botframework_channel():
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.botframework import BotFrameworkInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
+
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+        input_channel = BotFrameworkInput(
+            # you get this from your Bot Framework account
+            app_id="MICROSOFT_APP_ID",
+            # also from your Bot Framework account
+            app_password="MICROSOFT_APP_PASSWORD"
+        )
+
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("botframework_webhook.health").startswith(
+            "/webhooks/botframework")
+        assert routes_list.get("botframework_webhook.webhook").startswith(
+            "/webhooks/botframework/webhook")
+
+
+# USED FOR DOCS - don't rename without changing in the docs
+def test_rocketchat_channel():
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.rocketchat import RocketChatInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
+
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+        input_channel = RocketChatInput(
+            # your bots rocket chat user name
+            user="yourbotname",
+            # the password for your rocket chat bots account
+            password="YOUR_PASSWORD",
+            # url where your rocket chat instance is running
+            server_url="https://demo.rocket.chat"
+        )
+
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("rocketchat_webhook.health").startswith(
+            "/webhooks/rocketchat")
+        assert routes_list.get("rocketchat_webhook.webhook").startswith(
+            "/webhooks/rocketchat/webhook")
+
+
+# USED FOR DOCS - don't rename without changing in the docs
+def test_telegram_channel():
+    # telegram channel will try to set a webhook, so we need to mock the api
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        with aioresponses() as mocked:
+            mocked.post(
+                'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
+                payload={"ok": True, "result": {}})
+
+            from rasa_core.channels.telegram import TelegramInput
+            from rasa_core.agent import Agent
+            from rasa_core.interpreter import RegexInterpreter
+
+            # load your trained agent
+            agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+
+            input_channel = TelegramInput(
+                # you get this when setting up a bot
+                access_token="123:YOUR_ACCESS_TOKEN",
+                # this is your bots username
+                verify="YOUR_TELEGRAM_BOT",
+                # the url your bot should listen for messages
+                webhook_url="YOUR_WEBHOOK_URL"
+            )
+
+            s = agent.handle_channels([input_channel], 5004)
+            # END DOC INCLUDE
+            # the above marker marks the end of the code snipped included
+            # in the docs
+            routes_list = utils.list_routes(s)
+            assert routes_list.get("telegram_webhook.health").startswith(
+                "/webhooks/telegram")
+            assert routes_list.get("telegram_webhook.message").startswith(
+                "/webhooks/telegram/webhook")
 
 
 def test_handling_of_telegram_user_id():
@@ -309,86 +333,91 @@ def test_handling_of_telegram_user_id():
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_twilio_channel():
-    from rasa_core.channels.twilio import TwilioInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.twilio import TwilioInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
 
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-    input_channel = TwilioInput(
-        # you get this from your twilio account
-        account_sid="YOUR_ACCOUNT_SID",
-        # also from your twilio account
-        auth_token="YOUR_AUTH_TOKEN",
-        # a number associated with your twilio account
-        twilio_number="YOUR_TWILIO_NUMBER"
-    )
+        input_channel = TwilioInput(
+            # you get this from your twilio account
+            account_sid="YOUR_ACCOUNT_SID",
+            # also from your twilio account
+            auth_token="YOUR_AUTH_TOKEN",
+            # a number associated with your twilio account
+            twilio_number="YOUR_TWILIO_NUMBER"
+        )
 
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("twilio_webhook.health").startswith(
+            "/webhooks/twilio")
+        assert routes_list.get("twilio_webhook.message").startswith(
+            "/webhooks/twilio/webhook")
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-async def test_callback_channel():
-    from rasa_core.channels.callback import CallbackInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
+def test_callback_channel():
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.callback import CallbackInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
 
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-    input_channel = CallbackInput(
-        # URL Core will call to send the bot responses
-        endpoint=EndpointConfig("http://localhost:5004")
-    )
+        input_channel = CallbackInput(
+            # URL Core will call to send the bot responses
+            endpoint=EndpointConfig("http://localhost:5004")
+        )
 
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-        # TODO check by sending a request
-    finally:
-        s.cancel()
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("callback_webhook.health").startswith(
+            "/webhooks/callback")
+        assert routes_list.get("callback_webhook.webhook").startswith(
+            "/webhooks/callback/webhook")
 
 
 # USED FOR DOCS - don't rename without changing in the docs
 def test_socketio_channel():
-    from rasa_core.channels.socketio import SocketIOInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        # START DOC INCLUDE
+        from rasa_core.channels.socketio import SocketIOInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
 
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-    input_channel = SocketIOInput(
-        # event name for messages sent from the user
-        user_message_evt="user_uttered",
-        # event name for messages sent from the bot
-        bot_message_evt="bot_uttered",
-        # socket.io namespace to use for the messages
-        namespace=None
-    )
+        input_channel = SocketIOInput(
+            # event name for messages sent from the user
+            user_message_evt="user_uttered",
+            # event name for messages sent from the bot
+            bot_message_evt="bot_uttered",
+            # socket.io namespace to use for the messages
+            namespace=None
+        )
 
-    # set serve_forever=True if you want to keep the server running
-    s = agent.handle_channels([input_channel], 5004, serve_forever=False)
-    # END DOC INCLUDE
-    # the above marker marks the end of the code snipped included
-    # in the docs
-    try:
-        assert s is not None
-    finally:
-        s.cancel()
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("socketio_webhook.health").startswith(
+            "/webhooks/socketio")
+        assert routes_list.get("handle_request").startswith(
+            "/socket.io")
 
 
 async def test_callback_calls_endpoint():
@@ -656,19 +685,26 @@ async def test_slackbot_send_text():
 
 
 def test_channel_inheritance():
-    from rasa_core.channels import RestInput
-    from rasa_core.channels import RasaChatInput
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import RegexInterpreter
+    with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        from rasa_core.channels import RestInput
+        from rasa_core.channels import RasaChatInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
 
-    # load your trained agent
-    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-    rasa_input = RasaChatInput("https://example.com")
+        rasa_input = RasaChatInput("https://example.com")
 
-    s = agent.handle_channels([RestInput(), rasa_input], 5004,
-                              serve_forever=False)
-    assert s is not None
+        s = agent.handle_channels([RestInput(), rasa_input], 5004)
+
+        routes_list = utils.list_routes(s)
+        assert routes_list.get(
+            "custom_webhook_RasaChatInput.health").startswith(
+            "/webhooks/rasa")
+        assert routes_list.get(
+            "custom_webhook_RasaChatInput.receive").startswith(
+            "/webhooks/rasa/webhook")
 
 
 def test_int_sender_id_in_user_message():

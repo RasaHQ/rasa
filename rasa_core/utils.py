@@ -373,6 +373,13 @@ def list_routes(app: Sanic):
     Mainly used for debugging."""
     from urllib.parse import unquote
     output = {}
+
+    def find_route(suffix, path):
+        for name, (uri, _) in app.router.routes_names.items():
+            if name.endswith(suffix) and uri == path:
+                return name
+        return None
+
     for endpoint, route in app.router.routes_all.items():
         if endpoint[:-1] in app.router.routes_all and endpoint[-1] == "/":
             continue
@@ -381,15 +388,16 @@ def list_routes(app: Sanic):
         for arg in route.parameters:
             options[arg] = "[{0}]".format(arg)
 
-        methods = ','.join(route.methods)
         if not isinstance(route.handler, CompositionView):
-            handlers = [route.name]
+            handlers = [(list(route.methods)[0], route.name)]
         else:
-            handlers = {v.__name__ for v in route.handler.handlers.values()}
-        name = ", ".join(handlers)
-        line = unquote(
-            "{:50s} {:30s} {}".format(endpoint, methods, name))
-        output[name] = line
+            handlers = [(method, find_route(v.__name__, endpoint) or v.__name__)
+                        for method, v in route.handler.handlers.items()]
+
+        for method, name in handlers:
+            line = unquote(
+                "{:50s} {:30s} {}".format(endpoint, method, name))
+            output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))
     logger.debug("Available web server routes: \n{}".format(url_table))
@@ -770,4 +778,5 @@ def create_task_error_logger(error_message=""):
         except Exception:
             logger.exception("An exception was raised, while running task. "
                              "{}".format(error_message))
+
     return handler

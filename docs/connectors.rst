@@ -113,7 +113,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_facebook_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 
@@ -186,7 +187,8 @@ Code to create a WebexTeams-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_webexteams_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 .. _slack_connector:
@@ -260,7 +262,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_slack_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 .. _mattermost_connector:
@@ -326,7 +329,8 @@ Code to create a Mattermost-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_mattermost_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -391,7 +395,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_telegram_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -459,7 +464,8 @@ Code to create a Twilio-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_twilio_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -528,7 +534,8 @@ Code to create a RocketChat-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_rocketchat_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -570,7 +577,8 @@ Code to create a Microsoft Bot Framework-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_botframework_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -627,7 +635,8 @@ Code to create a Socket.IO-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_socketio_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and

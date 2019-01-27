@@ -2,12 +2,14 @@ import os
 import pytest
 from aioresponses import aioresponses
 
-from rasa_core import utils
+import rasa_core
+from rasa_core import utils, channels
+from rasa_core.channels import FacebookInput
 from rasa_core.utils import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
     return next(sanic_loop())
@@ -55,7 +57,23 @@ def test_list_routes(default_agent):
     app = server.create_app(default_agent, auth_token=None)
 
     routes = utils.list_routes(app)
-    assert len(routes) > 0
+    assert set(routes.keys()) == {'hello',
+                                  'version',
+                                  'execute_action',
+                                  'append_event',
+                                  'replace_events',
+                                  'list_trackers',
+                                  'retrieve_tracker',
+                                  'retrieve_story',
+                                  'respond',
+                                  'predict',
+                                  'log_message',
+                                  'load_model',
+                                  'evaluate_stories',
+                                  'get_domain',
+                                  'continue_training',
+                                  'status',
+                                  'tracker_predict'}
 
 
 def test_cap_length():

@@ -37,6 +37,7 @@ if typing.TYPE_CHECKING:
     # noinspection PyPep8Naming
     from rasa_core.nlg import NaturalLanguageGenerator as NLG
     from rasa_core.tracker_store import TrackerStore
+    from sanic import Sanic
 
 
 async def load_from_server(
@@ -534,33 +535,28 @@ class Agent(object):
 
     def handle_channels(self, channels: List[InputChannel],
                         http_port: int = constants.DEFAULT_SERVER_PORT,
-                        serve_forever: bool = True,
-                        route: Text = "/webhooks/") -> Future:
+                        route: Text = "/webhooks/",
+                        cors=None) -> 'Sanic':
         """Start a webserver attaching the input channels and handling msgs.
 
         If ``serve_forever`` is set to ``True``, this call will be blocking.
         Otherwise the webserver will be started, and the method will
         return afterwards."""
-        from sanic import Sanic
+        from rasa_core import run
 
-        app = Sanic(__name__)
-        rasa_core.channels.channel.register(channels,
-                                            app,
-                                            self.handle_message,
-                                            route=route)
+        app = run.configure_app(channels, cors, None,
+                                self, enable_api=False,
+                                route=route)
 
-        http_server = app.create_server(host='0.0.0.0', port=http_port)
-        loop = asyncio.get_event_loop()
-        task = asyncio.ensure_future(http_server)
-        signal(SIGINT, lambda s, f: task.cancel())
+        app.run(host='0.0.0.0', port=http_port,
+                debug=logger.isEnabledFor(logging.DEBUG),
+                access_log=logger.isEnabledFor(logging.DEBUG))
 
-        if serve_forever:
-            try:
-                loop.run_forever()
-            except Exception as exc:
-                logger.exception(exc)
-                loop.stop()
-        return task
+        # this might seem unecassary (as run does not return until the server
+        # is killed) - but we use it for tests where we mock `.run` to directly
+        # return and need the app to inspect if we created a properly
+        # configured server
+        return app
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
 
