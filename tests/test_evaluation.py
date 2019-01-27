@@ -1,6 +1,7 @@
 import os
 
 from rasa_core import evaluate
+from rasa_core.agent import Agent
 from rasa_core.evaluate import (
     run_story_evaluation,
     collect_story_predictions)
@@ -61,7 +62,6 @@ async def test_end_to_end_evaluation_script_unknown_entity(tmpdir,
                                                            default_agent):
     completed_trackers = await evaluate._generate_trackers(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True)
-    t
 
     story_evaluation, num_stories = collect_story_predictions(
         completed_trackers,
