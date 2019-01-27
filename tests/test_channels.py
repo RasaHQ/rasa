@@ -15,7 +15,7 @@ from tests.utilities import latest_request, json_of_latest_request
 MODEL_PATH = MOODBOT_MODEL_PATH
 
 
-def test_console_input(loop):
+async def test_console_input():
     from rasa_core.channels import console
 
     # Overwrites the input() function and when someone else tries to read
@@ -27,9 +27,9 @@ def test_console_input(loop):
                         repeat=True,
                         payload={})
 
-            loop.run_until_complete(console.record_messages(
+            await console.record_messages(
                 server_url="https://example.com",
-                max_message_limit=3))
+                max_message_limit=3)
 
             r = latest_request(
                 mocked, 'POST',
@@ -307,7 +307,7 @@ def test_handling_of_telegram_user_id():
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_twilio_channel(loop):
+def test_twilio_channel():
     from rasa_core.channels.twilio import TwilioInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
@@ -336,7 +336,7 @@ def test_twilio_channel(loop):
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_callback_channel(loop):
+async def test_callback_channel():
     from rasa_core.channels.callback import CallbackInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
@@ -362,7 +362,7 @@ def test_callback_channel(loop):
 
 
 # USED FOR DOCS - don't rename without changing in the docs
-def test_socketio_channel(loop):
+def test_socketio_channel():
     from rasa_core.channels.socketio import SocketIOInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
@@ -390,22 +390,21 @@ def test_socketio_channel(loop):
         s.cancel()
 
 
-def test_callback_calls_endpoint(loop):
+async def test_callback_calls_endpoint():
     from rasa_core.channels.callback import CallbackOutput
     with aioresponses() as mocked:
-        mocked.post('https://example.com/callback',
+        mocked.post("https://example.com/callback",
                     repeat=True,
-                    headers={'Content-Type': 'application/json'})
+                    headers={"Content-Type": "application/json"})
 
-        output = CallbackOutput(EndpointConfig('https://example.com/callback'))
+        output = CallbackOutput(EndpointConfig("https://example.com/callback"))
 
-        loop.run_until_complete(
-            output.send_response("test-id", {
+        await output.send_response("test-id", {
                 "text": "Hi there!",
-                "image": "https://example.com/image.jpg"}))
+                "image": "https://example.com/image.jpg"})
 
         r = latest_request(
-            mocked, 'post', "https://example.com/callback")
+            mocked, "post", "https://example.com/callback")
 
         assert r
 
@@ -525,7 +524,7 @@ def test_slackbot_init_two_parameter():
 
 
 # Use monkeypatch for sending attachments, images and plain text.
-def test_slackbot_send_attachment_only(loop):
+async def test_slackbot_send_attachment_only():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
@@ -555,7 +554,7 @@ def test_slackbot_send_attachment_only(loop):
                                            "style": "danger"}],
                               "footer": "Powered by 1010rocks",
                               "ts": 1531889719}])
-    loop.run_until_complete(bot.send_attachment("ID", attachment))
+    await bot.send_attachment("ID", attachment)
 
     httpretty.disable()
 
@@ -566,7 +565,7 @@ def test_slackbot_send_attachment_only(loop):
                              'attachments': [attachment]}
 
 
-def test_slackbot_send_attachment_withtext(loop):
+async def test_slackbot_send_attachment_withtext():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
@@ -598,7 +597,7 @@ def test_slackbot_send_attachment_withtext(loop):
                               "footer": "Powered by 1010rocks",
                               "ts": 1531889719}])
 
-    loop.run_until_complete(bot.send_attachment("ID", attachment, text))
+    await bot.send_attachment("ID", attachment, text)
 
     httpretty.disable()
 
@@ -610,7 +609,7 @@ def test_slackbot_send_attachment_withtext(loop):
                              'attachments': [attachment]}
 
 
-def test_slackbot_send_image_url(loop):
+async def test_slackbot_send_image_url():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
@@ -621,7 +620,7 @@ def test_slackbot_send_image_url(loop):
 
     bot = SlackBot("DummyToken", "General")
     url = json.dumps([{"URL": "http://www.rasa.net"}])
-    loop.run_until_complete(bot.send_image_url("ID", url))
+    await bot.send_image_url("ID", url)
 
     httpretty.disable()
 
@@ -635,7 +634,7 @@ def test_slackbot_send_image_url(loop):
            in r.parsed_body['attachments'][0]
 
 
-def test_slackbot_send_text(loop):
+async def test_slackbot_send_text():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
@@ -645,7 +644,7 @@ def test_slackbot_send_text(loop):
     httpretty.enable()
 
     bot = SlackBot("DummyToken", "General")
-    loop.run_until_complete(bot.send_text_message("ID", "my message"))
+    await bot.send_text_message("ID", "my message")
     httpretty.disable()
 
     r = httpretty.latest_requests[-1]
@@ -655,7 +654,7 @@ def test_slackbot_send_text(loop):
                              'text': ['my message']}
 
 
-def test_channel_inheritance(loop):
+def test_channel_inheritance():
     from rasa_core.channels import RestInput
     from rasa_core.channels import RasaChatInput
     from rasa_core.agent import Agent

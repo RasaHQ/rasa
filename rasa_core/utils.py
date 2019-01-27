@@ -14,6 +14,7 @@ import re
 import tempfile
 import warnings
 from aiohttp import InvalidURL
+from asyncio import AbstractEventLoop
 from hashlib import sha1
 from io import StringIO
 from numpy import all, array
@@ -566,7 +567,7 @@ async def download_file_from_url(url: Text) -> Text:
     return filename
 
 
-def remove_none_values(obj):
+def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
     """Remove all keys that store a `None` value."""
     return {k: v for k, v in obj.items() if v is not None}
 
@@ -655,7 +656,7 @@ class EndpointConfig(object):
 
     def __del__(self):
         if self._session and not self._session.closed:
-            self._session.close()
+            asyncio.ensure_future(self._session.close())
 
     def combine_parameters(self, kwargs=None):
         # construct GET parameters
@@ -746,7 +747,7 @@ def set_default_subparser(parser,
             sys.argv.insert(1, default_subparser)
 
 
-def enable_async_loop_debugging(event_loop):
+def enable_async_loop_debugging(event_loop: AbstractEventLoop):
     logging.info("Enabling coroutine debugging. "
                  "Loop id {}".format(id(asyncio.get_event_loop())))
 

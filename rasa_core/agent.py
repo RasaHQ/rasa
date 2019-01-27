@@ -558,7 +558,7 @@ class Agent(object):
         http_server = app.create_server(host='0.0.0.0', port=http_port)
         loop = asyncio.get_event_loop()
         task = asyncio.ensure_future(http_server)
-        signal(SIGINT, lambda s, f: loop.stop())
+        signal(SIGINT, lambda s, f: task.cancel())
 
         if serve_forever:
             try:

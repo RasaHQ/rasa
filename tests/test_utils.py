@@ -86,7 +86,7 @@ def test_read_lines():
     assert len(lines) == 2
 
 
-def test_endpoint_config(loop):
+async def test_endpoint_config():
     with aioresponses() as mocked:
         endpoint = EndpointConfig(
             "https://example.com/",
@@ -108,11 +108,10 @@ def test_endpoint_config(loop):
                     repeat=True,
                     status=200)
 
-        loop.run_until_complete(
-            endpoint.request("post", subpath="test",
-                             content_type="application/text",
-                             json={"c": "d"},
-                             params={"P": "1"}))
+        await endpoint.request("post", subpath="test",
+                               content_type="application/text",
+                               json={"c": "d"},
+                               params={"P": "1"})
 
         r = latest_request(mocked, 'post',
                            "https://example.com/test?A=B&P=1&letoken=mytoken")
@@ -126,7 +125,7 @@ def test_endpoint_config(loop):
 
         # unfortunately, the mock library won't report any headers stored on
         # the session object, so we need to verify them separately
-        s = loop.run_until_complete(endpoint.session())
+        s = await endpoint.session()
         assert s._default_headers.get("X-Powered-By") == "Rasa"
         assert s._default_auth.login == "user"
         assert s._default_auth.password == "pass"

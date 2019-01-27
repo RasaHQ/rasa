@@ -10,15 +10,14 @@ from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
-def test_create_train_data_no_history(loop, default_domain):
+async def test_create_train_data_no_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = loop.run_until_complete(
-        training.load_data(
-            DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0))
+    training_trackers = await training.load_data(
+            DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0)
 
     assert len(training_trackers) == 3
     (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain)
+            training_trackers, default_domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -45,17 +44,16 @@ def test_create_train_data_no_history(loop, default_domain):
     ]
 
 
-def test_create_train_data_with_history(loop, default_domain):
+async def test_create_train_data_with_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = loop.run_until_complete(
-        training.load_data(
+    training_trackers = await training.load_data(
             DEFAULT_STORIES_FILE,
             default_domain,
             augmentation_factor=0
-        ))
+    )
     assert len(training_trackers) == 3
     (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain)
+            training_trackers, default_domain)
 
     # decoded needs to be sorted
     hashed = []
@@ -131,7 +129,7 @@ def test_utter_templates():
 def test_restaurant_domain_is_valid():
     # should raise no exception
     Domain.validate_domain_yaml(
-        read_file('examples/restaurantbot/restaurant_domain.yml'))
+            read_file('examples/restaurantbot/restaurant_domain.yml'))
 
 
 def test_custom_slot_type(tmpdir):

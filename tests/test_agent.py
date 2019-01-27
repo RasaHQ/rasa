@@ -20,13 +20,12 @@ def loop():
     return next(sanic_loop())
 
 
-def test_agent_train(loop, tmpdir, default_domain):
+async def test_agent_train(tmpdir, default_domain):
     training_data_file = 'examples/moodbot/data/stories.md'
     agent = Agent("examples/moodbot/domain.yml",
                   policies=[AugmentedMemoizationPolicy()])
 
-    training_data = loop.run_until_complete(
-        agent.load_data(training_data_file))
+    training_data = await agent.load_data(training_data_file)
     agent.train(training_data)
     agent.persist(tmpdir.strpath)
 
@@ -42,16 +41,16 @@ def test_agent_train(loop, tmpdir, default_domain):
 
     # test policies
     assert type(loaded.policy_ensemble) is type(
-        agent.policy_ensemble)  # nopep8
+            agent.policy_ensemble)  # nopep8
     assert [type(p) for p in loaded.policy_ensemble.policies] == \
            [type(p) for p in agent.policy_ensemble.policies]
 
 
-def test_agent_handle_message(loop, default_agent):
+async def test_agent_handle_message(default_agent):
     message = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
-    result = loop.run_until_complete(default_agent.handle_message(
-        message,
-        sender_id="test_agent_handle_message"))
+    result = await default_agent.handle_message(
+            message,
+            sender_id="test_agent_handle_message")
     assert result == [{'recipient_id': 'test_agent_handle_message',
                        'text': 'hey there Rasa!'}]
 
@@ -67,13 +66,12 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
         agent.load(training_data_file)
 
 
-def test_agent_with_model_server(loop,
-                                 tmpdir, zipped_moodbot_model,
-                                 moodbot_domain, moodbot_metadata):
+async def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
+                                       moodbot_domain, moodbot_metadata):
     fingerprint = 'somehash'
     model_endpoint_config = EndpointConfig.from_dict(
-        {"url": 'http://server.com/model/default_core@latest',
-         "wait_time_between_pulls": None}
+            {"url": 'http://server.com/model/default_core@latest',
+             "wait_time_between_pulls": None}
     )
 
     # mock a response that returns a zipped model
@@ -84,8 +82,9 @@ def test_agent_with_model_server(loop,
                    headers={"ETag": fingerprint,
                             "Content-Type": 'application/zip'},
                    body=body)
-        agent = loop.run_until_complete(rasa_core.agent.load_from_server(
-            model_server=model_endpoint_config))
+        agent = Agent()
+        agent = await rasa_core.agent.load_from_server(
+                agent, model_server=model_endpoint_config)
 
     assert agent.fingerprint == fingerprint
 
@@ -109,10 +108,10 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
             return response.text("", 204)
 
         return await response.file_stream(
-            location=model_path,
-            headers={'ETag': model_hash,
-                     'filename': model_path},
-            mime_type='application/zip')
+                location=model_path,
+                headers={'ETag': model_hash,
+                         'filename': model_path},
+                mime_type='application/zip')
 
     return app
 
@@ -121,7 +120,6 @@ async def test_agent_with_model_server_in_thread(test_server, tmpdir,
                                                  zipped_moodbot_model,
                                                  moodbot_domain,
                                                  moodbot_metadata):
-
     fingerprint = 'somehash'
     server = await test_server(model_server_app(zipped_moodbot_model,
                                                 model_hash=fingerprint))
@@ -131,8 +129,9 @@ async def test_agent_with_model_server_in_thread(test_server, tmpdir,
         "wait_time_between_pulls": 1
     })
 
+    agent = Agent()
     agent = await rasa_core.agent.load_from_server(
-        model_server=model_endpoint_config)
+            agent, model_server=model_endpoint_config)
 
     await asyncio.sleep(10)
 
@@ -156,8 +155,8 @@ def test_wait_time_between_pulls_from_file(monkeypatch):
     model_endpoint_config = utils. \
         read_endpoint_config("data/test_endpoints/model_endpoint.yml", "model")
 
-    rasa_core.agent. \
-        load_from_server(model_server=model_endpoint_config)
+    agent = Agent()
+    rasa_core.agent.load_from_server(agent, model_server=model_endpoint_config)
 
 
 def test_wait_time_between_pulls_str(monkeypatch):
@@ -167,12 +166,12 @@ def test_wait_time_between_pulls_str(monkeypatch):
                         lambda *args: 1 / 0)  # raises an exception
 
     model_endpoint_config = EndpointConfig.from_dict(
-        {"url": 'http://server.com/model/default_core@latest',
-         "wait_time_between_pulls": "10"}
+            {"url": 'http://server.com/model/default_core@latest',
+             "wait_time_between_pulls": "10"}
     )
 
-    rasa_core.agent. \
-        load_from_server(model_server=model_endpoint_config)
+    agent = Agent()
+    rasa_core.agent.load_from_server(agent, model_server=model_endpoint_config)
 
 
 def test_wait_time_between_pulls_with_not_number(monkeypatch):
@@ -182,9 +181,9 @@ def test_wait_time_between_pulls_with_not_number(monkeypatch):
                         lambda *args: True)
 
     model_endpoint_config = EndpointConfig.from_dict(
-        {"url": 'http://server.com/model/default_core@latest',
-         "wait_time_between_pulls": "None"}
+            {"url": 'http://server.com/model/default_core@latest',
+             "wait_time_between_pulls": "None"}
     )
 
-    rasa_core.agent. \
-        load_from_server(model_server=model_endpoint_config)
+    agent = Agent()
+    rasa_core.agent.load_from_server(agent, model_server=model_endpoint_config)

@@ -3,7 +3,7 @@ import matplotlib
 import os
 import pytest
 
-from rasa_core import train, server
+from rasa_core import train, server, utils
 from rasa_core.agent import Agent
 from rasa_core.channels import CollectingOutputChannel, RestInput, channel
 from rasa_core.dispatcher import Dispatcher
@@ -47,6 +47,14 @@ class ExamplePolicy(Policy):
         pass
 
 
+@pytest.fixture
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    l = next(sanic_loop())
+    utils.enable_async_loop_debugging(l)
+    return l
+
+
 @pytest.fixture(scope="session")
 def default_domain():
     return Domain.load(DEFAULT_DOMAIN_PATH)
@@ -77,13 +85,12 @@ def default_dispatcher_collecting(default_nlg):
 
 
 @pytest.fixture
-def default_processor(loop, default_domain, default_nlg):
+async def default_processor(default_domain, default_nlg):
     agent = Agent(default_domain,
                   SimplePolicyEnsemble([AugmentedMemoizationPolicy()]),
                   interpreter=RegexInterpreter())
 
-    training_data = loop.run_until_complete(
-        agent.load_data(DEFAULT_STORIES_FILE))
+    training_data = await agent.load_data(DEFAULT_STORIES_FILE)
     agent.train(training_data)
     tracker_store = InMemoryTrackerStore(default_domain)
     return MessageProcessor(agent.interpreter,

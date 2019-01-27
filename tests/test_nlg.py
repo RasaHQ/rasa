@@ -50,7 +50,7 @@ def http_nlg(request):
     return http_server.url
 
 
-def test_nlg(loop, http_nlg, default_agent_path):
+async def test_nlg(http_nlg, default_agent_path):
     sender = str(uuid.uuid1())
 
     nlg_endpoint = EndpointConfig.from_dict({
@@ -59,8 +59,7 @@ def test_nlg(loop, http_nlg, default_agent_path):
     agent = Agent.load(default_agent_path, None,
                        generator=nlg_endpoint)
 
-    response = loop.run_until_complete(
-        agent.handle_text("/greet", sender_id=sender))
+    response = await agent.handle_text("/greet", sender_id=sender)
     assert len(response) == 1
     assert response[0] == {"text": "Hey there!", "recipient_id": sender}
 

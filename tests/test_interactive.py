@@ -15,16 +15,15 @@ def mock_endpoint():
     return EndpointConfig("https://example.com")
 
 
-def test_send_message(loop, mock_endpoint):
+async def test_send_message(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/messages'.format(
-        mock_endpoint.url, sender_id)
+            mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.post(url, payload={})
 
-        loop.run_until_complete(
-            interactive.send_message(mock_endpoint, sender_id, "Hello"))
+        await interactive.send_message(mock_endpoint, sender_id, "Hello")
 
         r = latest_request(mocked, 'post', url)
 
@@ -37,17 +36,16 @@ def test_send_message(loop, mock_endpoint):
         }
 
 
-def test_request_prediction(loop, mock_endpoint):
+async def test_request_prediction(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/predict'.format(
-        mock_endpoint.url, sender_id)
+            mock_endpoint.url, sender_id)
 
     with aioresponses() as mocked:
         mocked.post(url, payload={})
 
-        loop.run_until_complete(
-            interactive.request_prediction(mock_endpoint, sender_id))
+        await interactive.request_prediction(mock_endpoint, sender_id)
 
         assert latest_request(mocked, 'post', url) is not None
 
@@ -116,40 +114,38 @@ def test_all_events_before_user_msg_on_no_events():
     assert interactive.all_events_before_latest_user_msg([]) == []
 
 
-def test_print_history(loop, mock_endpoint):
+async def test_print_history(mock_endpoint):
     tracker_dump = utils.read_file(
-        "data/test_trackers/tracker_moodbot.json")
+            "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker?include_events=AFTER_RESTART'.format(
-        mock_endpoint.url, sender_id)
+            mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.get(url,
                    body=tracker_dump,
                    headers={"Accept": "application/json"})
 
-        loop.run_until_complete(
-            interactive._print_history(sender_id, mock_endpoint))
+        await interactive._print_history(sender_id, mock_endpoint)
 
         assert latest_request(mocked, 'get', url) is not None
 
 
-def test_is_listening_for_messages(loop, mock_endpoint):
+async def test_is_listening_for_messages(mock_endpoint):
     tracker_dump = utils.read_file(
-        "data/test_trackers/tracker_moodbot.json")
+            "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker?include_events=APPLIED'.format(
-        mock_endpoint.url, sender_id)
+            mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.get(url, body=tracker_dump,
                    headers={"Content-Type": "application/json"})
 
-        is_listening = loop.run_until_complete(
-            interactive.is_listening_for_message(sender_id,
-                                                 mock_endpoint))
+        is_listening = await interactive.is_listening_for_message(
+                sender_id, mock_endpoint)
 
         assert is_listening
 
@@ -196,24 +192,23 @@ def test_validate_user_message():
     assert not interactive._validate_user_regex(parse_data, ["goodbye"])
 
 
-def test_undo_latest_msg(loop, mock_endpoint):
+async def test_undo_latest_msg(mock_endpoint):
     tracker_dump = utils.read_file(
-        "data/test_trackers/tracker_moodbot.json")
+            "data/test_trackers/tracker_moodbot.json")
     tracker_json = json.loads(tracker_dump)
     evts = tracker_json.get("events")
 
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/tracker?include_events=ALL'.format(
-        mock_endpoint.url, sender_id)
+            mock_endpoint.url, sender_id)
     replace_url = '{}/conversations/{}/tracker/events'.format(
-        mock_endpoint.url, sender_id)
+            mock_endpoint.url, sender_id)
     with aioresponses() as mocked:
         mocked.get(url, body=tracker_dump)
         mocked.put(replace_url)
 
-        loop.run_until_complete(
-            interactive._undo_latest(sender_id, mock_endpoint))
+        await interactive._undo_latest(sender_id, mock_endpoint)
 
         r = latest_request(mocked, 'put', replace_url)
 
@@ -248,7 +243,7 @@ def test_utter_custom_message():
     assert json.dumps({'a': 'b'}) in actual
 
 
-def test_interactive_domain_persistence(loop, mock_endpoint, tmpdir):
+async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
@@ -262,9 +257,8 @@ def test_interactive_domain_persistence(loop, mock_endpoint, tmpdir):
     with aioresponses() as mocked:
         mocked.get(url, payload={})
 
-        loop.run_until_complete(
-            interactive._write_domain_to_file(domain_path, events,
-                                              mock_endpoint))
+        await interactive._write_domain_to_file(domain_path, events,
+                                                mock_endpoint)
 
     saved_domain = utils.read_yaml_file(domain_path)
 

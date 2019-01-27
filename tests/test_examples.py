@@ -19,48 +19,46 @@ def loop():
     return next(sanic_loop())
 
 
-def test_moodbot_example(loop, trained_moodbot_path):
+async def test_moodbot_example(trained_moodbot_path):
     agent = Agent.load(trained_moodbot_path)
 
-    responses = loop.run_until_complete(agent.handle_text("/greet"))
+    responses = await agent.handle_text("/greet")
     assert responses[0]['text'] == 'Hey! How are you?'
 
     responses.extend(
-        loop.run_until_complete(agent.handle_text("/mood_unhappy")))
+            await agent.handle_text("/mood_unhappy"))
     assert responses[-1]['text'] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
     assert len(responses) == 4
 
 
-def test_restaurantbot_example(loop):
+async def test_restaurantbot_example():
     sys.path.append("examples/restaurantbot/")
     from bot import train_dialogue
 
     p = "examples/restaurantbot/"
     stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    agent = loop.run_until_complete(
-        train_dialogue(os.path.join(p, "restaurant_domain.yml"),
-                       os.path.join(p, "models", "dialogue"),
-                       stories))
+    agent = await train_dialogue(os.path.join(p, "restaurant_domain.yml"),
+                                 os.path.join(p, "models", "dialogue"),
+                                 stories)
 
-    responses = loop.run_until_complete(agent.handle_text("/greet"))
+    responses = await agent.handle_text("/greet")
     assert responses[0]['text'] == 'how can I help you?'
 
 
-def test_formbot_example(loop):
+async def test_formbot_example():
     sys.path.append("examples/formbot/")
 
     p = "examples/formbot/"
     stories = os.path.join(p, "data", "stories.md")
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     endpoints = AvailableEndpoints(action=endpoint)
-    agent = loop.run_until_complete(
-        train_dialogue_model(os.path.join(p, "domain.yml"),
-                             stories,
-                             os.path.join(p, "models", "dialogue"),
-                             endpoints=endpoints,
-                             policy_config="rasa_core/default_config.yml"))
+    agent = await train_dialogue_model(os.path.join(p, "domain.yml"),
+                                       stories,
+                                       os.path.join(p, "models", "dialogue"),
+                                       endpoints=endpoints,
+                                       policy_config="rasa_core/default_config.yml")
     response = {
         'events': [
             {'event': 'form', 'name': 'restaurant_form', 'timestamp': None},
@@ -75,8 +73,7 @@ def test_formbot_example(loop):
     with aioresponses() as mocked:
         mocked.post('https://example.com/webhooks/actions', payload=response)
 
-        responses = loop.run_until_complete(
-            agent.handle_text("/request_restaurant"))
+        responses = await agent.handle_text("/request_restaurant")
 
         assert responses[0]['text'] == 'what cuisine?'
 
@@ -90,10 +87,10 @@ def test_formbot_example(loop):
         # noinspection PyTypeChecker
         mocked.post('https://example.com/webhooks/actions',
                     exception=ClientResponseError(
-                        aiohttp.ClientResponseError(None, None, code=400),
-                        json.dumps(response)))
+                            aiohttp.ClientResponseError(None, None, code=400),
+                            json.dumps(response)))
 
-        responses = loop.run_until_complete(agent.handle_text("/chitchat"))
+        responses = await agent.handle_text("/chitchat")
 
         assert responses[0]['text'] == 'chitchat'
 

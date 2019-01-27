@@ -10,7 +10,7 @@ def loop():
     return next(sanic_loop())
 
 
-def test_restoring_tracker(loop, trained_moodbot_path, recwarn):
+async def test_restoring_tracker(trained_moodbot_path, recwarn):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
 
     agent = Agent.load(trained_moodbot_path)
@@ -18,7 +18,7 @@ def test_restoring_tracker(loop, trained_moodbot_path, recwarn):
     tracker = restore.load_tracker_from_json(tracker_dump,
                                              agent.domain)
 
-    loop.run_until_complete(restore.replay_events(tracker, agent))
+    await restore.replay_events(tracker, agent)
 
     # makes sure there are no warnings. warnings are raised, if the models
     # predictions differ from the tracker when the dumped tracker is replayed

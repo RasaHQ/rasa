@@ -7,7 +7,7 @@ import re
 import os
 from typing import Text, List, Dict, Any
 
-from rasa_core import constants
+from rasa_core import constants, utils
 from rasa_core.utils import EndpointConfig
 from rasa_core.constants import INTENT_MESSAGE_PREFIX
 
@@ -175,18 +175,18 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    async def parse(self, text):
+    async def parse(self, text, message_id=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         default_return = {"intent": {"name": "", "confidence": 0.0},
                           "entities": [], "text": ""}
-        result = await self._rasa_http_parse(text)
+        result = await self._rasa_http_parse(text, message_id)
 
         return result if result is not None else default_return
 
-    async def _rasa_http_parse(self, text):
+    async def _rasa_http_parse(self, text, message_id=None):
         """Send a text message to a running rasa NLU http server.
 
         Return `None` on failure."""
@@ -201,9 +201,15 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "token": self.endpoint.token,
             "model": self.model_name,
             "project": self.project_name,
-            "q": text
+            "q": text,
+            "message_id": message_id
         }
+
+        # aiohttp can't handle None param values -> we need to remove them
+        params = utils.remove_none_values(params)
+
         url = "{}/parse".format(self.endpoint.url)
+        # noinspection PyBroadException
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, params=params) as resp:
@@ -215,9 +221,9 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                             "http. Error: {}".format(text, await resp.text()))
                         return None
         except Exception as e:
-            logger.error(
+            logger.exception(
                 "Failed to parse text '{}' using rasa NLU over http. "
-                "Error: {}".format(text, e))
+                "".format(text))
             return None
 
 

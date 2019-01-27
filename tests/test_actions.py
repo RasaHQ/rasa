@@ -18,12 +18,11 @@ from rasa_core.utils import EndpointConfig, ClientResponseError
 from tests.utilities import latest_request, json_of_latest_request
 
 
-def test_restart(loop, default_dispatcher_collecting, default_domain):
+async def test_restart(default_dispatcher_collecting, default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
-    events = loop.run_until_complete(
-        ActionRestart().run(default_dispatcher_collecting, tracker,
-                            default_domain))
+    events = await ActionRestart().run(default_dispatcher_collecting, tracker,
+                                       default_domain)
     assert events == [Restarted()]
 
 
@@ -36,7 +35,7 @@ def test_text_format():
 
 def test_action_instantiation_from_names():
     instantiated_actions = action.actions_from_names(
-        ["random_name", "utter_test"], None, ["random_name", "utter_test"])
+            ["random_name", "utter_test"], None, ["random_name", "utter_test"])
     assert len(instantiated_actions) == 2
     assert isinstance(instantiated_actions[0], RemoteAction)
     assert instantiated_actions[0].name() == "random_name"
@@ -47,12 +46,12 @@ def test_action_instantiation_from_names():
 
 def test_domain_action_instantiation():
     domain = Domain(
-        intent_properties={},
-        entities=[],
-        slots=[],
-        templates={},
-        action_names=["my_module.ActionTest", "utter_test"],
-        form_names=[])
+            intent_properties={},
+            entities=[],
+            slots=[],
+            templates={},
+            action_names=["my_module.ActionTest", "utter_test"],
+            form_names=[])
 
     instantiated_actions = domain.actions(None)
 
@@ -80,10 +79,8 @@ def test_domain_fails_on_duplicated_actions():
                form_names=[])
 
 
-def test_remote_action_runs(loop,
-                            default_dispatcher_collecting,
-                            default_domain):
-    loop.set_debug(True)
+async def test_remote_action_runs(default_dispatcher_collecting,
+                                  default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
@@ -93,12 +90,12 @@ def test_remote_action_runs(loop,
 
     with aioresponses() as mocked:
         mocked.post(
-            'https://example.com/webhooks/actions',
-            payload={"events": [], "responses": []})
+                'https://example.com/webhooks/actions',
+                payload={"events": [], "responses": []})
 
-        loop.run_until_complete(remote_action.run(default_dispatcher_collecting,
-                                                  tracker,
-                                                  default_domain))
+        await remote_action.run(default_dispatcher_collecting,
+                                tracker,
+                                default_domain)
 
         r = latest_request(mocked, 'post',
                            "https://example.com/webhooks/actions")
@@ -129,9 +126,8 @@ def test_remote_action_runs(loop,
         }
 
 
-def test_remote_action_logs_events(loop,
-                                   default_dispatcher_collecting,
-                                   default_domain):
+async def test_remote_action_logs_events(default_dispatcher_collecting,
+                                         default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
@@ -149,10 +145,9 @@ def test_remote_action_logs_events(loop,
     with aioresponses() as mocked:
         mocked.post('https://example.com/webhooks/actions', payload=response)
 
-        events = loop.run_until_complete(
-            remote_action.run(default_dispatcher_collecting,
-                              tracker,
-                              default_domain))
+        events = await remote_action.run(default_dispatcher_collecting,
+                                         tracker,
+                                         default_domain)
 
         r = latest_request(mocked, 'post',
                            "https://example.com/webhooks/actions")
@@ -190,24 +185,23 @@ def test_remote_action_logs_events(loop,
         {"text": "hey there None!", "recipient_id": "my-sender"}]
 
 
-def test_remote_action_wo_endpoint(loop,
-                                   default_dispatcher_collecting,
-                                   default_domain):
+async def test_remote_action_wo_endpoint(default_dispatcher_collecting,
+                                         default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
     remote_action = action.RemoteAction("my_action", None)
 
     with pytest.raises(Exception) as execinfo:
-        loop.run_until_complete(remote_action.run(default_dispatcher_collecting,
-                                                  tracker,
-                                                  default_domain))
+        await remote_action.run(default_dispatcher_collecting,
+                                tracker,
+                                default_domain)
     assert "you didn't configure an endpoint" in str(execinfo.value)
 
 
-def test_remote_action_endpoint_not_running(loop,
-                                            default_dispatcher_collecting,
-                                            default_domain):
+async def test_remote_action_endpoint_not_running(
+        default_dispatcher_collecting,
+        default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
@@ -215,15 +209,15 @@ def test_remote_action_endpoint_not_running(loop,
     remote_action = action.RemoteAction("my_action", endpoint)
 
     with pytest.raises(Exception) as execinfo:
-        loop.run_until_complete(remote_action.run(default_dispatcher_collecting,
-                                                  tracker,
-                                                  default_domain))
+        await remote_action.run(default_dispatcher_collecting,
+                                tracker,
+                                default_domain)
     assert "Failed to execute custom action." in str(execinfo.value)
 
 
-def test_remote_action_endpoint_responds_500(loop,
-                                             default_dispatcher_collecting,
-                                             default_domain):
+async def test_remote_action_endpoint_responds_500(
+        default_dispatcher_collecting,
+        default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
@@ -234,16 +228,15 @@ def test_remote_action_endpoint_responds_500(loop,
         mocked.post('https://example.com/webhooks/actions', status=500)
 
         with pytest.raises(Exception) as execinfo:
-            loop.run_until_complete(
-                remote_action.run(default_dispatcher_collecting,
-                                  tracker,
-                                  default_domain))
+            await remote_action.run(default_dispatcher_collecting,
+                                    tracker,
+                                    default_domain)
         assert "Failed to execute custom action." in str(execinfo.value)
 
 
-def test_remote_action_endpoint_responds_400(loop,
-                                             default_dispatcher_collecting,
-                                             default_domain):
+async def test_remote_action_endpoint_responds_400(
+        default_dispatcher_collecting,
+        default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
@@ -253,33 +246,31 @@ def test_remote_action_endpoint_responds_400(loop,
     with aioresponses() as mocked:
         # noinspection PyTypeChecker
         mocked.post(
-            'https://example.com/webhooks/actions',
-            exception=ClientResponseError(
-                aiohttp.ClientResponseError(None, None, code=400),
-                '{"action_name": "my_action"}'))
+                'https://example.com/webhooks/actions',
+                exception=ClientResponseError(
+                        aiohttp.ClientResponseError(None, None, code=400),
+                        '{"action_name": "my_action"}'))
 
         with pytest.raises(Exception) as execinfo:
-            loop.run_until_complete(
-                remote_action.run(default_dispatcher_collecting,
-                                  tracker,
-                                  default_domain))
+            await remote_action.run(default_dispatcher_collecting,
+                                    tracker,
+                                    default_domain)
 
     assert execinfo.type == ActionExecutionRejection
     assert "Custom action 'my_action' rejected to run" in str(execinfo.value)
 
 
-def test_default_action(loop,
-                        default_dispatcher_collecting,
-                        default_domain):
+async def test_default_action(
+        default_dispatcher_collecting,
+        default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 
     fallback_action = action.ActionDefaultFallback()
 
-    events = loop.run_until_complete(
-        fallback_action.run(default_dispatcher_collecting,
-                            tracker,
-                            default_domain))
+    events = await fallback_action.run(default_dispatcher_collecting,
+                                       tracker,
+                                       default_domain)
 
     channel = default_dispatcher_collecting.output_channel
     assert channel.messages == [
