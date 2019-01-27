@@ -76,7 +76,8 @@ class SklearnPolicy(Policy):
 
     @staticmethod
     def _default_model():
-        return LogisticRegression(solver="liblinear")
+        return LogisticRegression(solver="liblinear",
+                                  multi_class="auto")
 
     @property
     def _state(self):
