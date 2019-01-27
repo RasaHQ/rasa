@@ -270,7 +270,7 @@ def persist_graph(graph, output_file):
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    with io.open(visualization_html_path(), 'r') as file:
+    with open(visualization_html_path(), 'r') as file:
         template = file.read()
 
     # customize content of template by replacing tags
@@ -278,7 +278,7 @@ def persist_graph(graph, output_file):
     template = template.replace('// { graph-content }', "graph = `{}`"
                                 .format(expg.to_string()), 1)
 
-    with io.open(output_file, 'w') as file:
+    with open(output_file, 'w') as file:
         file.write(template)
 
 

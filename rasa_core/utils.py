@@ -113,7 +113,7 @@ def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
 def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
     """Dump a text to a file."""
 
-    with io.open(filename, 'w', encoding="utf-8") as f:
+    with open(filename, 'w', encoding="utf-8") as f:
         # noinspection PyTypeChecker
         f.write(str(text))
 
@@ -344,7 +344,7 @@ def _dump_yaml(obj, output):
 
 def dump_obj_as_yaml_to_file(filename, obj):
     """Writes data (python dict) to the filename in yaml repr."""
-    with io.open(filename, 'w', encoding="utf-8") as output:
+    with open(filename, 'w', encoding="utf-8") as output:
         _dump_yaml(obj, output)
 
 
@@ -357,13 +357,13 @@ def dump_obj_as_yaml_to_string(obj):
 
 def read_file(filename, encoding="utf-8"):
     """Read text from a file."""
-    with io.open(filename, encoding=encoding) as f:
+    with open(filename, encoding=encoding) as f:
         return f.read()
 
 
 def read_json_file(filename):
     """Read json from a file"""
-    with io.open(filename) as f:
+    with open(filename) as f:
         return json.load(f)
 
 
@@ -546,7 +546,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
     line_filter = re.compile(line_pattern)
 
-    with io.open(filename, 'r', encoding="utf-8") as f:
+    with open(filename, 'r', encoding="utf-8") as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)

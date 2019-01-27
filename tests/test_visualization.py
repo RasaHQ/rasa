@@ -95,7 +95,7 @@ async def test_graph_persistence(default_domain, tmpdir):
 
     assert isfile(out_file)
 
-    with io.open(out_file, 'r') as graph_file:
+    with open(out_file, 'r') as graph_file:
         content = graph_file.read()
 
     assert 'isClient = true' in content

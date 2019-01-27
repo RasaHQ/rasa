@@ -159,7 +159,7 @@ def test_list_conversations(app):
 
 
 def test_evaluate(app):
-    with io.open(DEFAULT_STORIES_FILE, 'r') as f:
+    with open(DEFAULT_STORIES_FILE, 'r') as f:
         stories = f.read()
     _, response = app.post('/evaluate',
                            data=stories)
@@ -181,7 +181,7 @@ def test_evaluate(app):
 
 
 def test_end_to_end_evaluation(app):
-    with io.open(END_TO_END_STORY_FILE, 'r') as f:
+    with open(END_TO_END_STORY_FILE, 'r') as f:
         stories = f.read()
     _, response = app.post('/evaluate?e2e=true',
                            data=stories)

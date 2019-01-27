@@ -75,7 +75,7 @@ async def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
     )
 
     # mock a response that returns a zipped model
-    with io.open(zipped_moodbot_model, 'rb') as f:
+    with open(zipped_moodbot_model, 'rb') as f:
         body = f.read()
     with aioresponses() as mocked:
         mocked.get(model_endpoint_config.url,

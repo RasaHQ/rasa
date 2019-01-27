@@ -1411,7 +1411,7 @@ class EmbeddingPolicy(Policy):
             saver.save(self.session, checkpoint)
 
         dump_path = os.path.join(path, file_name + ".encoded_all_actions.pkl")
-        with io.open(dump_path, 'wb') as f:
+        with open(dump_path, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
 
     @staticmethod
@@ -1471,7 +1471,7 @@ class EmbeddingPolicy(Policy):
         encoded_actions_file = os.path.join(
             path, "{}.encoded_all_actions.pkl".format(file_name))
 
-        with io.open(encoded_actions_file, 'rb') as f:
+        with open(encoded_actions_file, 'rb') as f:
             encoded_all_actions = pickle.load(f)
 
         return cls(featurizer=featurizer,

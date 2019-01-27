@@ -57,7 +57,7 @@ async def test_persist_and_read_test_story_graph(tmpdir, default_domain):
     graph = await training.extract_story_graph("data/test_stories/stories.md",
                                                default_domain)
     out_path = tmpdir.join("persisted_story.md")
-    with io.open(out_path.strpath, "w", encoding="utf-8") as f:
+    with open(out_path.strpath, "w", encoding="utf-8") as f:
         f.write(graph.as_story_string())
 
     recovered_trackers = await training.load_data(
@@ -228,10 +228,12 @@ async def test_load_multi_file_training_data(default_domain):
 async def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
     # create a hidden file
 
-    open(os.path.join(tmpdir.strpath, ".hidden"), 'a').close()
+    with open(os.path.join(tmpdir.strpath, ".hidden"), 'a') as f:
+        f.close()
     # create a normal file
     normal_file = os.path.join(tmpdir.strpath, "normal_file")
-    open(normal_file, 'a').close()
+    with open(normal_file, 'a') as f:
+        f.close()
 
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                              max_history=2)

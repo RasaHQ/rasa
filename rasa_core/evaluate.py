@@ -458,7 +458,7 @@ def log_failed_stories(failed, out_directory):
     """Take stories as a list of dicts."""
     if not out_directory:
         return
-    with io.open(os.path.join(out_directory, 'failed_stories.md'), 'w',
+    with open(os.path.join(out_directory, 'failed_stories.md'), 'w',
                  encoding="utf-8") as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")

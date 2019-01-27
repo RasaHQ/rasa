@@ -190,7 +190,7 @@ class StoryFileReader(object):
         """Given a md file reads the contained stories."""
 
         try:
-            with io.open(filename, "r", encoding="utf-8") as f:
+            with open(filename, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter,
                                      template_variables, use_e2e)

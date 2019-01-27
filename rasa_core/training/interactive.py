@@ -673,7 +673,7 @@ async def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
-    with io.open(export_story_path, 'a', encoding="utf-8") as f:
+    with open(export_story_path, 'a', encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
@@ -709,7 +709,7 @@ async def _write_nlu_to_file(
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
-    with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
+    with open(export_nlu_path, 'w', encoding="utf-8") as f:
         if _guess_format(export_nlu_path) in {"md", "unk"}:
             f.write(nlu_data.as_markdown())
         else:

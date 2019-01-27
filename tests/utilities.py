@@ -41,7 +41,7 @@ def read_dialogue_file(filename: Text):
 
 def write_text_to_file(tmpdir: Text, filename: Text, text: Text):
     path = tmpdir.join(filename).strpath
-    with io.open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(text)
     return path
 
