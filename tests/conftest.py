@@ -115,11 +115,11 @@ async def trained_moodbot_path():
 
 
 @pytest.fixture(scope="session")
-def zipped_moodbot_model():
+async def zipped_moodbot_model():
     # train moodbot if necessary
     policy_file = os.path.join(MOODBOT_MODEL_PATH, 'policy_metadata.json')
     if not os.path.isfile(policy_file):
-        trained_moodbot_path()
+        await trained_moodbot_path()
 
     zip_path = zip_folder(MOODBOT_MODEL_PATH)
 
@@ -138,7 +138,7 @@ def moodbot_metadata():
 
 
 @pytest.fixture
-async def prepared_agent(tmpdir_factory):
+async def prepared_agent(tmpdir_factory) -> Agent:
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent("data/test_domains/default.yml",
