@@ -31,7 +31,7 @@ class SklearnPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
-        model: 'sklearn.base.BaseEstimator' = LogisticRegression(),
+        model: 'sklearn.base.BaseEstimator' = None,
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
         scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
@@ -63,7 +63,7 @@ class SklearnPolicy(Policy):
                                 "".format(type(featurizer).__name__))
         super(SklearnPolicy, self).__init__(featurizer)
 
-        self.model = model
+        self.model = model or self._default_model()
         self.cv = cv
         self.param_grid = param_grid
         self.scoring = scoring
@@ -73,6 +73,10 @@ class SklearnPolicy(Policy):
         # attributes that need to be restored after loading
         self._pickle_params = [
             'model', 'cv', 'param_grid', 'scoring', 'label_encoder']
+
+    @staticmethod
+    def _default_model():
+        return LogisticRegression(solver="liblinear")
 
     @property
     def _state(self):
