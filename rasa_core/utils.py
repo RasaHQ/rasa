@@ -14,7 +14,7 @@ import re
 import tempfile
 import warnings
 from aiohttp import InvalidURL
-from asyncio import AbstractEventLoop
+from asyncio import AbstractEventLoop, Future
 from hashlib import sha1
 from io import StringIO
 from numpy import all, array
@@ -760,3 +760,14 @@ def enable_async_loop_debugging(event_loop: AbstractEventLoop):
 
     # Report all mistakes managing asynchronous resources.
     warnings.simplefilter('always', ResourceWarning)
+
+
+def create_task_error_logger(error_message=""):
+    def handler(fut):
+        # noinspection PyBroadException
+        try:
+            fut.result()
+        except Exception:
+            logger.exception("An exception was raised, while running task. "
+                             "{}".format(error_message))
+    return handler

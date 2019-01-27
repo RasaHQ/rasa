@@ -1,10 +1,11 @@
+import asyncio
 import logging
 from sanic import Blueprint, response
 from telegram import (
     Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
     KeyboardButton, ReplyKeyboardMarkup)
 
-from rasa_core import constants
+from rasa_core import constants, utils
 from rasa_core.channels import InputChannel
 from rasa_core.channels.channel import UserMessage, OutputChannel
 
@@ -169,5 +170,7 @@ class TelegramInput(InputChannel):
 
                 return response.text("success")
 
-        set_webhook(None)
+        task = asyncio.ensure_future(set_webhook(None))
+        task.add_done_callback(utils.create_task_error_logger(
+            error_message="Error while trying to set telegram webhook."))
         return telegram_webhook

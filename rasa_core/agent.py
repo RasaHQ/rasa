@@ -14,7 +14,7 @@ from signal import SIGINT, signal
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import rasa_core
-from rasa_core import constants, training
+from rasa_core import constants, training, utils
 from rasa_core.channels import InputChannel, OutputChannel, UserMessage
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
@@ -178,15 +178,9 @@ def schedule_model_pulling(model_server: EndpointConfig,
     f = asyncio.ensure_future(_run_model_pulling_worker(
         model_server, wait_time_between_pulls, agent))
 
-    def error_handler(fut):
-        # noinspection PyBroadException
-        try:
-            fut.result()
-        except Exception:
-            logger.exception("An exception was raised, while fetching "
-                             "a model. Model pulling is stopped!")
-
-    f.add_done_callback(error_handler)
+    f.add_done_callback(utils.create_task_error_logger(
+        error_message="Error while fetching a model - "
+                      "Model pulling is stopped!"))
 
 
 class Agent(object):
