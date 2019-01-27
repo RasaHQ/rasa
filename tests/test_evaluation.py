@@ -1,4 +1,5 @@
 import os
+import pytest
 
 from rasa_core import evaluate
 from rasa_core.agent import Agent
@@ -58,6 +59,7 @@ async def test_end_to_end_evaluation_script(tmpdir, default_agent):
     assert num_stories == 2
 
 
+@pytest.mark.filterwarnings("ignore:Precision and F-score are ill-defined")
 async def test_end_to_end_evaluation_script_unknown_entity(tmpdir,
                                                            default_agent):
     completed_trackers = await evaluate._generate_trackers(

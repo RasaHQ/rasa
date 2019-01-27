@@ -97,10 +97,11 @@ class PolicyTestCollection(object):
         assert min(probabilities) >= 0.0
 
     def test_persist_and_load_empty_policy(self, tmpdir):
-        empty_policy = self.create_policy(None)
-        empty_policy.persist(tmpdir.strpath)
-        loaded = empty_policy.__class__.load(tmpdir.strpath)
-        assert loaded is not None
+        with pytest.warns(UserWarning):
+            empty_policy = self.create_policy(None)
+            empty_policy.persist(tmpdir.strpath)
+            loaded = empty_policy.__class__.load(tmpdir.strpath)
+            assert loaded is not None
 
 
 class TestKerasPolicy(PolicyTestCollection):
