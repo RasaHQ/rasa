@@ -493,15 +493,15 @@ class Agent(object):
         if kwargs.get('featurizer'):
             raise Exception("Passing `featurizer` "
                             "to `agent.train(...)` is not supported anymore. "
-                            "Pass appropriate featurizer directly"
-                            " to the policy configuration instead. More info "
+                            "Pass appropriate featurizer directly "
+                            "to the policy configuration instead. More info "
                             "https://rasa.com/docs/core/migrations.html")
         if kwargs.get('epochs') or kwargs.get('max_history') or kwargs.get(
                 'batch_size'):
             raise Exception("Passing policy configuration parameters "
                             "to `agent.train(...)` is not supported "
-                            "anymore. Specify parameters directly in the"
-                            " policy configuration instead. More info "
+                            "anymore. Specify parameters directly in the "
+                            "policy configuration instead. More info "
                             "https://rasa.com/docs/core/migrations.html")
 
         if isinstance(training_trackers, str):
