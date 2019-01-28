@@ -66,10 +66,9 @@ class Slot(object):
         for cls in utils.all_subclasses(Slot):
             if cls.type_name == type_name:
                 return cls
-        cls = utils.class_from_module_path(type_name)
-        if cls:
-            return cls
-        else:
+        try:
+            return utils.class_from_module_path(type_name)
+        except(ImportError):
             raise ValueError(
                 "Failed to find slot type, '{}' is neither a known type nor "
                 "user-defined. If you are creating your own slot type, make "
