@@ -9,6 +9,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Added a detailed warning showing which entities are overlapping
 
 Changed
 -------
@@ -765,7 +766,6 @@ Added
 - multithreading support of build in REST server (e.g. using gunicorn)
 - multitenancy implementation to allow loading multiple models which
   share the same backend
-
 Fixed
 -----
 - error propagation on failed vector model loading (spacy)
