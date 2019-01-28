@@ -12,6 +12,7 @@ Added
 
 Changed
 -------
+- applied spacy guidelines on how to disable pipeline components
 
 Removed
 -------
