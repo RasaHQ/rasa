@@ -1,3 +1,4 @@
 -r ../requirements.txt
 
 sklearn-crfsuite==0.3.6
+service_identity==18.1.0

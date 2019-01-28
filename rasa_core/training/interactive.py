@@ -779,18 +779,21 @@ def _write_domain_to_file(
     messages = _collect_messages(evts)
     actions = _collect_actions(evts)
 
-    domain_dict = dict.fromkeys(domain.keys(), [])
-
     # TODO for now there is no way to distinguish between action and form
-    domain_dict["forms"] = []
-    domain_dict["intents"] = _intents_from_messages(messages)
-    domain_dict["entities"] = _entities_from_messages(messages)
-    # do not automatically add default actions to the domain dict
-    domain_dict["actions"] = list({e["name"]
-                                   for e in actions
-                                   if e["name"] not in default_action_names()})
+    intent_properties = Domain.collect_intent_properties(
+        _intents_from_messages(messages))
 
-    new_domain = Domain.from_dict(domain_dict)
+    collected_actions = list({e["name"]
+                              for e in actions
+                              if e["name"] not in default_action_names()})
+
+    new_domain = Domain(
+        intent_properties=intent_properties,
+        entities=_entities_from_messages(messages),
+        slots=[],
+        templates={},
+        action_names=collected_actions,
+        form_names=[])
 
     old_domain.merge(new_domain).persist_clean(domain_path)
 
@@ -884,9 +887,9 @@ def _confirm_form_validation(action_name, tracker, endpoint, sender_id):
     validation_questions = questionary.confirm(
         "Should '{}' validate user input to fill "
         "the slot '{}'?".format(action_name, requested_slot))
-    form_answers = _ask_or_abort(validation_questions, sender_id, endpoint)
+    validate_input = _ask_or_abort(validation_questions, sender_id, endpoint)
 
-    if not form_answers["validation"]:
+    if not validate_input:
         # notify form action to skip validation
         send_event(endpoint, sender_id,
                    {"event": "form_validation", "validate": False})
