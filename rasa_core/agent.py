@@ -514,10 +514,10 @@ class Agent(object):
 
         if kwargs:
             logger.warning("Agent trainer got kwargs: {}. These args will be "
-                         "ignored. Passing policy configuration parameters "
-                         "to `agent.train(...)` is not supported anymore. "
-                         "Specify parameters directly in the policy "
-                         "configuration instead.".format(kwargs))
+                           "ignored. Passing policy configuration parameters "
+                           "to `agent.train(...)` is not supported anymore. "
+                           "Specify parameters directly in the policy "
+                           "configuration instead.".format(kwargs))
 
         check_domain_sanity(self.domain)
 
