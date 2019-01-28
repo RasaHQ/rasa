@@ -35,20 +35,6 @@ class Policy(object):
     def featurizer(self):
         return self.__featurizer
 
-    @staticmethod
-    def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
-        # filter out kwargs that cannot be passed to func
-        valid_keys = utils.arguments_of(func)
-
-        params = {key: kwargs.get(key)
-                  for key in valid_keys if kwargs.get(key)}
-        ignored_params = {key: kwargs.get(key)
-                          for key in kwargs.keys()
-                          if not params.get(key)}
-        logger.debug("Parameters ignored by `model.fit(...)`: {}"
-                     "".format(ignored_params))
-        return params
-
     def featurize_for_training(
         self,
         training_trackers: List[DialogueStateTracker],
