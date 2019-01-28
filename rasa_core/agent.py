@@ -513,7 +513,7 @@ class Agent(object):
                             "to `agent.train(data)`.")
 
         if not(kwargs == {}):
-            logger.debug("Agent trainer got kwargs: {}. These args will be "
+            logger.warning("Agent trainer got kwargs: {}. These args will be "
                          "ignored. Passing policy configuration parameters "
                          "to `agent.train(...)` is not supported anymore. "
                          "Specify parameters directly in the policy "
