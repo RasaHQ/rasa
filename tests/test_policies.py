@@ -280,8 +280,8 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     def test_train_kwargs_are_set_on_model(
             self, default_domain, trackers, featurizer):
-        policy = self.create_policy(featurizer=featurizer, cv=None, C=123)
-        policy.train(trackers, domain=default_domain)
+        policy = self.create_policy(featurizer=featurizer, cv=None)
+        policy.train(trackers, domain=default_domain, C=123)
         assert policy.model.C == 123
 
     def test_train_with_shuffle_false(
