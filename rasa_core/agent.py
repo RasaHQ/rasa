@@ -512,7 +512,7 @@ class Agent(object):
                             "`data = agent.load_data(file_name)` and pass it "
                             "to `agent.train(data)`.")
 
-        if not(kwargs == {}):
+        if kwargs:
             logger.warning("Agent trainer got kwargs: {}. These args will be "
                          "ignored. Passing policy configuration parameters "
                          "to `agent.train(...)` is not supported anymore. "
