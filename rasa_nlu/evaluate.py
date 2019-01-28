@@ -447,7 +447,8 @@ def do_entities_overlap(entities):
         next_ent = sorted_entities[i + 1]
         if (next_ent["start"] < curr_ent["end"] and
                 next_ent["entity"] != curr_ent["entity"]):
-            logger.warn("Overlapping entity found: {} with {}".format(next_ent, curr_ent))
+            logger.warn("Overlapping entity found: {} with "
+                        "{}".format(next_ent, curr_ent))
             return True
 
     return False
