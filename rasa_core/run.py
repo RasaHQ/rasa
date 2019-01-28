@@ -129,10 +129,10 @@ def _create_single_channel(channel, credentials):
                 "is a proper name of a class in a module.".format(channel))
 
 
-def configure_app(input_channels,
-                  cors,
-                  auth_token,
-                  initial_agent,
+def configure_app(input_channels=None,
+                  cors=None,
+                  auth_token=None,
+                  initial_agent=None,
                   enable_api=True,
                   jwt_secret=None,
                   jwt_method=None,
@@ -191,19 +191,18 @@ def serve_application(initial_agent,
                         jwt_secret, jwt_method)
 
     if endpoints and endpoints.model:
-        app.add_task(agent.load_from_server(agent,
+        app.add_task(agent.load_from_server(initial_agent,
                                             model_server=endpoints.model))
 
     if channel == "cmdline":
         async def run_cmdline_io(running_app: Sanic):
             """Small wrapper to shutdown the server once cmd io is done."""
-
-            if logger.isEnabledFor(logging.DEBUG):
-                utils.enable_async_loop_debugging(asyncio.get_event_loop())
-
+            await asyncio.sleep(1)  # allow server to start
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format(port))
-            running_app.stop()      # kill the sanic server
+
+            logger.info("Killing Sanic server now.")
+            running_app.stop()      # kill the sanic serverx
 
         app.add_task(run_cmdline_io)
 
@@ -211,7 +210,6 @@ def serve_application(initial_agent,
                 "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
 
     app.run(host='0.0.0.0', port=port,
-            debug=logger.isEnabledFor(logging.DEBUG),
             access_log=logger.isEnabledFor(logging.DEBUG))
 
 
@@ -243,8 +241,6 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
                                  cmdline_args.log_file)
-
-    logger.info("Rasa process starting")
 
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,

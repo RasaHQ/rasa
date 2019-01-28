@@ -549,7 +549,6 @@ class Agent(object):
                                 route=route)
 
         app.run(host='0.0.0.0', port=http_port,
-                debug=logger.isEnabledFor(logging.DEBUG),
                 access_log=logger.isEnabledFor(logging.DEBUG))
 
         # this might seem unecassary (as run does not return until the server

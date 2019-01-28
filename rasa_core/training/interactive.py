@@ -1,5 +1,6 @@
 import sys
 
+import asyncio
 import io
 import logging
 import numpy as np
@@ -15,7 +16,7 @@ from typing import (
 
 import questionary
 from questionary import Choice, Form, Question
-from rasa_core import utils, server, events, constants
+from rasa_core import utils, server, events, constants, run
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
@@ -77,6 +78,11 @@ class UndoLastStep(Exception):
 
     The last step is either the most recent user message or the most
     recent action run by the bot."""
+    pass
+
+
+class Abort(Exception):
+    """Exception used to abort the interactive learning and exit."""
     pass
 
 
@@ -611,7 +617,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
 
     answers = questions.ask()
     if not answers:
-        sys.exit()
+        raise Abort()
 
     return (answers["export_stories"],
             answers["export_nlu"],
@@ -1214,6 +1220,8 @@ async def record_messages(endpoint: EndpointConfig,
                     await _print_history(sender_id, endpoint)
                     await _plot_trackers(sender_ids, plot_file, endpoint)
 
+    except Abort:
+        return
     except Exception:
         logger.exception("An exception occurred while recording messages.")
         raise
@@ -1237,6 +1245,7 @@ def _serve_application(app: Sanic, stories: Text,
     async def run_interactive_io(running_app: Sanic):
         """Small wrapper to shutdown the server once cmd io is done."""
 
+        await asyncio.sleep(1)  # allow server to start
         await record_messages(
             endpoint=endpoint,
             stories=stories,
@@ -1253,8 +1262,7 @@ def _serve_application(app: Sanic, stories: Text,
     if serve_forever:
         logger.info("Rasa Core server is up and running on "
                     "{}".format(DEFAULT_SERVER_URL))
-        app.run(host='0.0.0.0', port=DEFAULT_SERVER_PORT,
-                debug=logger.isEnabledFor(logging.DEBUG))
+        app.run(host='0.0.0.0', port=DEFAULT_SERVER_PORT)
 
     return app
 
@@ -1285,7 +1293,7 @@ def run_interactive_learning(agent: Agent,
                              ):
     """Start the interactive learning with the model of the agent."""
 
-    app = server.create_app(agent)
+    app = run.configure_app(initial_agent=agent, enable_api=True)
 
     return _serve_application(app, stories, finetune,
                               serve_forever, skip_visualization)
