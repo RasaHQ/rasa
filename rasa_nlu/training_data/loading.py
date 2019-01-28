@@ -13,6 +13,7 @@ from rasa_nlu.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.training_data import TrainingData
+    from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,8 @@ _json_format_heuristics = {
 
 
 def load_data(resource_name: Text,
-              language: Optional[Text] = 'en') -> 'TrainingData':
+              language: Optional[Text] = 'en',
+              validate: bool = True) -> 'TrainingData':
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
@@ -56,7 +58,8 @@ def load_data(resource_name: Text,
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
 
-    training_data.validate()
+    if validate:
+        training_data.validate()
     return training_data
 
 
@@ -80,7 +83,7 @@ def load_data_from_endpoint(data_endpoint: EndpointConfig,
                        "from URL:\n{}".format(e))
 
 
-def _reader_factory(fformat):
+def _reader_factory(fformat: Text) -> Optional['TrainingDataReader']:
     """Generates the appropriate reader class based on the file format."""
     from rasa_nlu.training_data.formats import (
         MarkdownReader, WitReader, LuisReader,
@@ -100,7 +103,8 @@ def _reader_factory(fformat):
     return reader
 
 
-def _load(filename, language='en'):
+def _load(filename: Text, language: Optional[Text] = 'en'
+          ) -> Optional['TrainingData']:
     """Loads a single training data file from disk."""
 
     fformat = _guess_format(filename)

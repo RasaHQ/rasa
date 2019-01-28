@@ -714,7 +714,8 @@ def run_evaluation(data_path, model,
     else:
         interpreter = Interpreter.load(model, component_builder)
     test_data = training_data.load_data(data_path,
-                                        interpreter.model_metadata.language)
+                                        interpreter.model_metadata.language,
+                                        validate=False)
     extractors = get_entity_extractors(interpreter)
     entity_predictions, tokens = get_entity_predictions(interpreter,
                                                         test_data)
