@@ -12,6 +12,7 @@ Added
 
 Changed
 -------
+- skip training data validation for evaluation
 
 Removed
 -------
