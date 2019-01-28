@@ -159,7 +159,7 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
 
         actions:
             - utter_greet""")
-    with pytest.raises(ValueError):
+    with pytest.raises(AttributeError):
         Domain.load(domain_path)
 
 
