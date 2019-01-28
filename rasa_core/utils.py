@@ -96,7 +96,8 @@ def class_from_module_path(module_path: Text) -> Any:
         if module is not None:
             return module
         else:
-            raise ImportError(f"Cannot retrieve class from path {module_path}.")
+            raise ImportError("Cannot retrieve class from path {}."
+                              "".format(module_path))
 
 
 def module_path_from_instance(inst: Any) -> Text:
