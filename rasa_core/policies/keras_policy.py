@@ -166,6 +166,9 @@ class KerasPolicy(Policy):
                             "".format(training_data.num_examples(),
                                       self.validation_split))
 
+                self._train_params = self._get_valid_params(
+                    self.model.fit, **self._train_params)
+
                 self.model.fit(shuffled_X, shuffled_y,
                                epochs=self.epochs,
                                batch_size=self.batch_size,
