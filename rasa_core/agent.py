@@ -434,7 +434,7 @@ class Agent(object):
         for policy in self.policy_ensemble.policies:
             if (policy.featurizer and not
                     hasattr(policy.featurizer, 'max_history')):
-                        return False
+                    return False
         return True
 
     def load_data(self,
