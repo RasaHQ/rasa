@@ -198,7 +198,6 @@ def _additional_arguments(args):
         "augmentation_factor": args.augmentation,
         "debug_plots": args.debug_plots
     }
-
     # remove None values
     return {k: v for k, v in additional.items() if v is not None}
 
@@ -295,7 +294,8 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments):
 
     if cmdline_args.core:
         if cmdline_args.finetune:
-            raise ValueError("--core can only be used without --finetune flag.")
+            raise ValueError("--core can only be used without "
+                             "--finetune flag.")
 
         logger.info("Loading a pre-trained model. This means that "
                     "all training-related parameters will be ignored.")

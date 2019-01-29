@@ -62,11 +62,14 @@ class KerasPolicy(Policy):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
-        self.rnn_size = config['rnn_size']
-        self.epochs = config['epochs']
-        self.batch_size = config['batch_size']
-        self.validation_split = config['validation_split']
-        self.random_seed = config['random_seed']
+        # filter out kwargs that cannot be passed to fit
+        self.rnn_size = config.pop('rnn_size')
+        self.epochs = config.pop('epochs')
+        self.batch_size = config.pop('batch_size')
+        self.validation_split = config.pop('validation_split')
+        self.random_seed = config.pop('random_seed')
+
+        self._train_params = config
 
     @property
     def max_len(self):
@@ -162,14 +165,15 @@ class KerasPolicy(Policy):
                             "validation split of {}"
                             "".format(training_data.num_examples(),
                                       self.validation_split))
-                # filter out kwargs that cannot be passed to fit
-                params = self._get_valid_params(self.model.fit, **kwargs)
+
+                self._train_params = self._get_valid_params(
+                    self.model.fit, **self._train_params)
 
                 self.model.fit(shuffled_X, shuffled_y,
                                epochs=self.epochs,
                                batch_size=self.batch_size,
                                shuffle=False,
-                               **params)
+                               **self._train_params)
                 # the default parameter for epochs in keras fit is 1
                 self.current_epoch = self.defaults.get("epochs", 1)
                 logger.info("Done fitting keras policy model")

@@ -108,14 +108,14 @@ def test_random_seed(tmpdir, config_file):
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "1",
         interpreter=RegexInterpreter(),
-        policy_config= config_file,
+        policy_config=config_file,
         kwargs={})
 
     agent_2 = train_dialogue_model(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "2",
         interpreter=RegexInterpreter(),
-        policy_config= config_file,
+        policy_config=config_file,
         kwargs={})
 
     processor_1 = agent_1.create_processor()
