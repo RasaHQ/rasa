@@ -8,7 +8,6 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 [Unreleased 0.14.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. note:: This version is not yet released and is under active development.
 
 Added
@@ -16,6 +15,15 @@ Added
 
 Changed
 -------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.13.1] - 2019-01-29
+^^^^^^^^^^^^^^^^^^^^^
 
 Removed
 -------
