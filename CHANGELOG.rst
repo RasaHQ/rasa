@@ -13,6 +13,7 @@ Added
 Changed
 -------
 - skip test data validation for evaluation
+- applied spacy guidelines on how to disable pipeline components
 
 Removed
 -------
