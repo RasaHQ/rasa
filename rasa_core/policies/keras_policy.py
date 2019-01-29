@@ -62,7 +62,7 @@ class KerasPolicy(Policy):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
-        # filter out kwargs that cannot be passed to fit
+        # filter out kwargs that are used explicitly
         self.rnn_size = config.pop('rnn_size')
         self.epochs = config.pop('epochs')
         self.batch_size = config.pop('batch_size')
@@ -166,6 +166,7 @@ class KerasPolicy(Policy):
                             "".format(training_data.num_examples(),
                                       self.validation_split))
 
+                # filter out kwargs that cannot be passed to fit
                 self._train_params = self._get_valid_params(
                     self.model.fit, **self._train_params)
 
