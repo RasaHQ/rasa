@@ -59,7 +59,7 @@ class SpacyNLP(Component):
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
 
-        nlp = spacy.load(spacy_model_name, parser=False)
+        nlp = spacy.load(spacy_model_name, disable=['parser'])
         cls.ensure_proper_language_model(nlp)
         return SpacyNLP(component_conf, nlp)
 
@@ -109,7 +109,7 @@ class SpacyNLP(Component):
         component_meta = model_metadata.for_component(cls.name)
         model_name = component_meta.get("model")
 
-        nlp = spacy.load(model_name, parser=False)
+        nlp = spacy.load(model_name, disable=['parser'])
         cls.ensure_proper_language_model(nlp)
         return cls(component_meta, nlp)
 
