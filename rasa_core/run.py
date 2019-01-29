@@ -209,6 +209,10 @@ def serve_application(initial_agent,
     logger.info("Rasa Core server is up and running on "
                 "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
 
+    # make sure there are no leftover tasks before starting the sanic
+    # asyncio loop
+    pending = asyncio.Task.all_tasks()
+    loop.run_until_complete(asyncio.gather(*pending))
     app.run(host='0.0.0.0', port=port,
             access_log=logger.isEnabledFor(logging.DEBUG))
 
