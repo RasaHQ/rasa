@@ -12,7 +12,7 @@ Added
 
 Changed
 -------
-- skip training data validation for evaluation
+- skip test data validation for evaluation
 
 Removed
 -------
