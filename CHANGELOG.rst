@@ -32,7 +32,7 @@ Removed
 Fixed
 -----
 - fixed domain persistence after exiting interactive learning
-- fix form validation question error in interactive learninig
+- fix form validation question error in interactive learning
 
 .. _v0-13-0:
 
