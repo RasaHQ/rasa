@@ -13,6 +13,7 @@ Added
 Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
+- updated requirements for colorlogs, packaging, future to match Rasa Core and SDK
 
 Removed
 -------
