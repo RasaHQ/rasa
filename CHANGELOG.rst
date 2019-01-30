@@ -4,7 +4,18 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-.. _v0-14-0:
+[0.14.2]
+^^^^^^^^
+
+Added
+-----
+- ``rasa_nlu.evaluate`` now exports reports into a folder and also
+  includes the entity extractor reports
+  
+Changed
+-------
+- updated requirements to match Core and SDK
+- pinned keras dependecies
 
 [0.14.1] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
@@ -12,6 +23,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Fixed
 -----
 - scikit-learn is a global requirement
+
+.. _v0-14-0:
 
 [0.14.0] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
@@ -39,8 +52,6 @@ Changed
 - updated TensorFlow version to 1.12.0
 - updated scikit-learn version to 0.20.2
 - updated cloudpickle version to 0.6.1
-- updated requirements to match Core and SDK
-- pinned keras dependecies
 
 Removed
 -------

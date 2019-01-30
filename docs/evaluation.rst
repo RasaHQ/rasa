@@ -80,9 +80,9 @@ Intent Classification
 The evaluation script will produce a report, confusion matrix
 and confidence histogram for your model.
 
-The report logs precision, recall, and f1 measure for
-each intent, as well as provide an overall average.  You can save this
-report as a JSON file using the `--report` flag.
+The report logs precision, recall and f1 measure for
+each intent and entity, as well as provide an overall average.
+You can save these reports as JSON files using the `--report` flag.
 
 The confusion matrix shows you which
 intents are mistaken for others; any samples which have been
