@@ -13,6 +13,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- open api spec for the Rasa Core SDK action server
 
 Changed
 -------
