@@ -28,7 +28,7 @@ install_requires = [
     "gevent~=1.2",
     "klein~=17.10",
     "boto3~=1.5",
-    "packaging~=17.1",
+    "packaging~=18.0",
     "typing~=3.6",
     "future~=0.16.0",
     "tqdm~=4.19",
@@ -38,7 +38,7 @@ install_requires = [
     "numpy>=1.13",
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
-    "coloredlogs~=9.0",
+    "coloredlogs~=10.0",
     "scikit-learn~=0.20.2"
 ]
 
