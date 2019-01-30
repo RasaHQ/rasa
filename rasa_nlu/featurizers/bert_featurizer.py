@@ -55,7 +55,7 @@ class BertFeaturizer(Featurizer):
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
-        self.layer_indexes = [-1]
+        self.layer_indexes = [-2]
         bert_config = modeling.BertConfig.from_json_file("/Users/oakela/Documents/RASA/bert/uncased_L-24_H-1024_A-16/bert_config.json")
         self.tokenizer = tokenization.FullTokenizer(vocab_file="/Users/oakela/Documents/RASA/bert/uncased_L-24_H-1024_A-16/vocab.txt", do_lower_case=True)
         is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
@@ -66,7 +66,7 @@ class BertFeaturizer(Featurizer):
                 per_host_input_for_training=is_per_host))
         model_fn = model_fn_builder(
           bert_config=bert_config,
-          init_checkpoint="/Users/oakela/Documents/RASA/bert/uncased_L-24_H-1024_A-16/bert_model.ckpt.index",
+          init_checkpoint="/Users/oakela/Documents/RASA/bert/uncased_L-24_H-1024_A-16/bert_model.ckpt",
           layer_indexes=self.layer_indexes,
           use_tpu=False,
           use_one_hot_embeddings=False)
@@ -83,6 +83,7 @@ class BertFeaturizer(Featurizer):
         fs = create_features(messages, self.estimator, self.tokenizer, self.layer_indexes)
         features = []
         for x in fs:
+            # features.append(np.array(x['features'][0]['layers'][0]['values']))
             feats = [y['layers'][0]['values'] for y in x['features'][1:-1]]
             features.append(np.average(feats, axis=0))
         for i, message in enumerate(training_data.intent_examples):
@@ -100,4 +101,5 @@ class BertFeaturizer(Featurizer):
         fs = create_features([message.text], self.estimator, self.tokenizer, self.layer_indexes)
         feats = [x['layers'][0]['values'] for x in fs[0]['features'][1:-1]]
         features = np.average(feats, axis=0)
+        # features = np.array(fs[0]['features'][0]['layers'][0]['values'])
         message.set("text_features", features)
