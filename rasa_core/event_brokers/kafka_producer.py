@@ -32,13 +32,6 @@ class KafkaProducer(EventChannel):
 
         logging.getLogger('kafka').setLevel(loglevel)
 
-    @classmethod
-    def from_endpoint_config(cls, broker_config):
-        if broker_config is None:
-            return None
-
-        return cls(broker_config.url, **broker_config.kwargs)
-
     def publish(self, event):
         self._create_producer()
         self._publish(event)
