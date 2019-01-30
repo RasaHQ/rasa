@@ -37,7 +37,7 @@ class MitieFeaturizer(Featurizer):
                                                 mitie_feature_extractor)
             example.set("text_features",
                         self._combine_with_existing_text_features(
-                                example, features))
+                            example, features))
 
     def process(self, message: Message, **kwargs: Any) -> None:
 

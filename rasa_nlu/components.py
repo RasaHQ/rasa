@@ -37,7 +37,7 @@ def validate_requirements(component_names: List[Text]) -> None:
     for component_name in component_names:
         component_class = registry.get_component_class(component_name)
         failed_imports.update(find_unavailable_packages(
-                component_class.required_packages()))
+            component_class.required_packages()))
     if failed_imports:  # pragma: no cover
         # if available, use the development file to figure out the correct
         # version numbers for each requirement
@@ -170,7 +170,7 @@ class Component(object):
         component_config["name"] = self.name
 
         self.component_config = config.override_defaults(
-                self.defaults, component_config)
+            self.defaults, component_config)
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
@@ -355,9 +355,9 @@ class ComponentBuilder(object):
 
         component_class = registry.get_component_class(component_name)
         cache_key = component_class.cache_key(model_metadata)
-        if (cache_key is not None
-                and self.use_cache
-                and cache_key in self.component_cache):
+        if (cache_key is not None and
+                self.use_cache and
+                cache_key in self.component_cache):
             return self.component_cache[cache_key], cache_key
         else:
             return None, cache_key
@@ -393,10 +393,10 @@ class ComponentBuilder(object):
 
         try:
             cached_component, cache_key = self.__get_cached_component(
-                    component_name, model_metadata)
+                component_name, model_metadata)
             component = registry.load_component_by_name(
-                    component_name, model_dir, model_metadata,
-                    cached_component, **context)
+                component_name, model_dir, model_metadata,
+                cached_component, **context)
             if not cached_component:
                 # If the component wasn't in the cache,
                 # let us add it if possible
@@ -416,7 +416,7 @@ class ComponentBuilder(object):
 
         try:
             component, cache_key = self.__get_cached_component(
-                    component_name, Metadata(cfg.as_dict(), None))
+                component_name, Metadata(cfg.as_dict(), None))
             if component is None:
                 component = registry.create_component_by_name(component_name,
                                                               cfg)
