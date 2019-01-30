@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import itertools
-from collections import defaultdict, namedtuple
 
 import json
 import os
@@ -91,7 +90,7 @@ def plot_confusion_matrix(cm,
                           title='Confusion matrix',
                           cmap=None,
                           zmin=1,
-                          out=None) -> None:  # pragma: no cover
+                          out=None):  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
     Normalization can be applied by setting `normalize=True`."""
     import matplotlib.pyplot as plt
@@ -131,9 +130,9 @@ def plot_confusion_matrix(cm,
         fig.savefig(out, bbox_inches='tight')
 
 
-def plot_histogram(hist_data: List[List[float]],
-                   out: Optional[Text] = None
-                   ) -> None:  # pragma: no cover
+def plot_histogram(hist_data,  # type: List[List[float]]
+                   out=None  # type: Optional[Text]
+                   ):  # pragma: no cover
     """Plot a histogram of the confidence distribution of the predictions in
     two columns.
     Wine-ish colour for the confidences of hits.
@@ -158,11 +157,11 @@ def plot_histogram(hist_data: List[List[float]],
         fig.savefig(out, bbox_inches='tight')
 
 
-def log_evaluation_table(report: Text,
-                         precision: float,
-                         f1: float,
-                         accuracy: float
-                         ) -> None:  # pragma: no cover
+def log_evaluation_table(report,  # type: Text
+                         precision,  # type: float
+                         f1,  # type: float
+                         accuracy  # type: float
+                         ):  # pragma: no cover
     """Log the sklearn evaluation metrics."""
 
     logger.info("F1-Score:  {}".format(f1))
@@ -209,7 +208,8 @@ def clean_intent_labels(labels):
     return [l if l is not None else "" for l in labels]
 
 
-def drop_intents_below_freq(td: TrainingData, cutoff: int = 5):
+def drop_intents_below_freq(td, cutoff=5):
+    # type: (TrainingData, int) -> TrainingData
     """Remove intent groups with less than cutoff instances."""
 
     logger.debug(
@@ -806,9 +806,8 @@ def combine_entity_result(results, interpreter, data):
     return results
 
 
-def run_cv_evaluation(data: TrainingData,
-                      n_folds: int,
-                      nlu_config: RasaNLUModelConfig) -> CVEvaluationResult:
+def run_cv_evaluation(data, n_folds, nlu_config):
+    # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
     """Stratified cross validation on data
     :param data: Training Data
     :param n_folds: integer, number of cv folds
