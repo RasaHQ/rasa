@@ -51,7 +51,9 @@ extras_requires = {
               ],
     'tensorflow': ["sklearn-crfsuite~=0.3.6",
                    "scipy~=1.1",
-                   "tensorflow~=1.12"
+                   "tensorflow~=1.12",
+                   "keras-applications==1.0.6",
+                   "keras-preprocessing==1.0.5"
                    ],
     'mitie': ["mitie"],
 }
