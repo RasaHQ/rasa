@@ -1,22 +1,11 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
-
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -32,10 +21,9 @@ class MitieIntentClassifier(Component):
     requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self,
-                 component_config=None,  # type: Dict[Text, Any]
+                 component_config: Dict[Text, Any] = None,
                  clf=None
-                 ):
-        # type: (...) -> None
+                 ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
         super(MitieIntentClassifier, self).__init__(component_config)
@@ -43,12 +31,11 @@ class MitieIntentClassifier(Component):
         self.clf = clf
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+    def train(self, training_data: TrainingData, cfg: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
         import mitie
 
         model_file = kwargs.get("mitie_file")
@@ -68,8 +55,7 @@ class MitieIntentClassifier(Component):
             # we can not call train if there are no examples!
             self.clf = trainer.train()
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
@@ -94,12 +80,11 @@ class MitieIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Optional[Text]
-             model_metadata=None,  # type: Optional[Metadata]
-             cached_component=None,  # type: Optional[MitieIntentClassifier]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> MitieIntentClassifier
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional[Metadata] = None,
+             cached_component: Optional['MitieIntentClassifier'] = None,
+             **kwargs: Any
+             ) -> 'MitieIntentClassifier':
         import mitie
 
         meta = model_metadata.for_component(cls.name)
@@ -114,8 +99,7 @@ class MitieIntentClassifier(Component):
         else:
             return cls(meta)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+    def persist(self, model_dir: Text) -> Dict[Text, Any]:
         import os
 
         if self.clf:
