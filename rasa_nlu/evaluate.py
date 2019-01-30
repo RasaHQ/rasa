@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import itertools
+from collections import defaultdict, namedtuple
 
 import json
 import os
