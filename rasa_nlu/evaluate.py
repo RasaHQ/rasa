@@ -2,6 +2,7 @@ import itertools
 from collections import defaultdict, namedtuple
 
 import json
+import os
 import logging
 import numpy as np
 import shutil
@@ -57,8 +58,9 @@ def create_argument_parser():
                         help="number of CV folds (crossvalidation only)")
 
     parser.add_argument('--report', required=False, nargs='?',
-                        const="report.json", default=False,
-                        help="output path to save the metrics report")
+                        const="reports", default=False,
+                        help="output path to save the intent/entity"
+                             "metrics report")
 
     parser.add_argument('--successes', required=False, nargs='?',
                         const="successes.json", default=False,
@@ -277,7 +279,7 @@ def plot_intent_confidences(intent_results, intent_hist_filename):
 
 
 def evaluate_intents(intent_results,
-                     report_filename,
+                     report_folder,
                      successes_filename,
                      errors_filename,
                      confmat_filename,
@@ -301,9 +303,11 @@ def evaluate_intents(intent_results,
 
     targets, predictions = _targets_predictions_from(intent_results)
 
-    if report_filename:
+    if report_folder:
         report, precision, f1, accuracy = get_evaluation_metrics(
                 targets, predictions, output_dict=True)
+
+        report_filename = os.path.join(report_folder, 'intent_report.json')
 
         save_json(report, report_filename)
         logger.info("Classification report saved to {}."
@@ -382,7 +386,8 @@ def substitute_labels(labels, old, new):
 def evaluate_entities(targets,
                       predictions,
                       tokens,
-                      extractors):  # pragma: no cover
+                      extractors,
+                      report_folder):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
     Logs precision, recall, and F1 per entity type for each extractor."""
@@ -399,9 +404,22 @@ def evaluate_entities(targets,
         merged_predictions = substitute_labels(
                 merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
-        report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions)
-        log_evaluation_table(report, precision, f1, accuracy)
+        if report_folder:
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                    merged_targets, merged_predictions, output_dict=True)
+
+            report_filename = extractor + "_report.json"
+            extractor_report = os.path.join(report_folder, report_filename)
+
+            save_json(report, extractor_report)
+            logger.info("Classification report for {} saved to {}."
+                        .format(extractor, extractor_report))
+
+        else:
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                    merged_targets, merged_predictions)
+            log_evaluation_table(report, precision, f1, accuracy)
+
         result[extractor] = {
             "report": report,
             "precision": precision,
@@ -700,7 +718,7 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model,
-                   report_filename=None,
+                   report_folder=None,
                    successes_filename=None,
                    errors_filename='errors.json',
                    confmat_filename=None,
@@ -728,6 +746,9 @@ def run_evaluation(data_path, model,
         "entity_evaluation": None
     }
 
+    if report_folder:
+        utils.create_dir(report_folder)
+
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
         intent_results = get_intent_predictions(
@@ -735,7 +756,7 @@ def run_evaluation(data_path, model,
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
-                                                       report_filename,
+                                                       report_folder,
                                                        successes_filename,
                                                        errors_filename,
                                                        confmat_filename,
@@ -748,7 +769,8 @@ def run_evaluation(data_path, model,
         result['entity_evaluation'] = evaluate_entities(entity_targets,
                                                         entity_predictions,
                                                         tokens,
-                                                        extractors)
+                                                        extractors,
+                                                        report_folder)
 
     return result
 

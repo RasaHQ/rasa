@@ -13,6 +13,8 @@ Added
 Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
+- ``rasa_nlu.evaluate`` now exports reports into a folder and also
+  includes the entity extractor reports
 
 Removed
 -------
