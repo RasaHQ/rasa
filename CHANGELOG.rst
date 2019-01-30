@@ -24,6 +24,8 @@ Added
 - added ``priority`` property of policies to influence best policy in
   the case of equal confidence
 - **support for python 3.7**
+- ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
+  access to message triggering the form
 
 Changed
 -------
