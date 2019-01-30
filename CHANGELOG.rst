@@ -15,6 +15,8 @@ Added
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
+- ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
+  access to message triggering the form
 
 Changed
 -------

@@ -145,12 +145,13 @@ class DialogueStateTracker(object):
         generated_states = domain.states_for_tracker_history(self)
         return deque((frozenset(s.items()) for s in generated_states))
 
-    def change_form_to(self, form_name: Text) -> None:
+    def change_form_to(self, form_name: Text, trigger_message: Text) -> None:
         """Activate or deactivate a form"""
         if form_name is not None:
             self.active_form = {'name': form_name,
                                 'validate': True,
-                                'rejected': False}
+                                'rejected': False,
+                                'trigger_message': trigger_message}
         else:
             self.active_form = {}
 

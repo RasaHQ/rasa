@@ -138,7 +138,11 @@ The predefined functions work as follows:
 - ``self.from_intent(intent=intent_name, value=value)``
   will fill slot ``slot_name`` with ``value`` if user intent is ``intent_name``.
   To make a boolean slot, take a look at the definition of ``outdoor_seating``
-  above.
+  above. Note: Slot will not be filled with user intent of message triggering
+  the form action. Use ``self.from_trigger_intent`` below.
+- ``self.from_trigger_intent(intent=intent_name, value=value)``
+  will fill slot ``slot_name`` with ``value`` if form was triggered with user
+  intent ``intent_name``.
 - ``self.from_text(intent=intent_name)`` will use the next
   user utterance to fill the text slot ``slot_name`` regardless of user intent
   if ``intent_name`` is ``None`` else only if user intent is ``intent_name``.
