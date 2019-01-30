@@ -14,3 +14,5 @@ packaging==18.0
 ruamel.yaml==0.15.78
 coloredlogs==10.0
 scikit-learn==0.20.2
+keras-applications==1.0.6
+keras-preprocessing==1.0.5
