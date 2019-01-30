@@ -1,4 +1,5 @@
 import itertools
+from collections import defaultdict, namedtuple
 
 import json
 import os
