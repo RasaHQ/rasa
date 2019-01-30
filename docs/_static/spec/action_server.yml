@@ -9,11 +9,14 @@ servers:
   - url: "http://localhost:5055/webhook"
     description: "Local development action server"
 paths:
-  /webhook:
+  /:
     post:
-      summary: Call a custom action
+      summary: Core request to execute a custom action
       description: >-
-        Sends a request to the action server to execute a custom action.
+        Rasa Core sends a request to the action server to execute a
+        certain custom action. As a response to the action call from Core,
+        you can modify the tracker, e.g. by setting slots and send responses
+        back to the user.
       operationId: call_action
       requestBody:
         description: >- 
