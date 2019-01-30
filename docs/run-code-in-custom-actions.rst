@@ -157,11 +157,11 @@ to the list of actions in your domain:
 Rasa Core will then call your action endpoint and treat it as every other
 custom action.
 
-Execute Actions in other Code
+Execute Actions in Other Code
 -----------------------------
 
 Rasa Core will send an HTTP ``POST`` request to your server containing
-information on which action to run. Furthermore, this request contains all
+information on which action to run. Furthermore, this request will contain all
 information about the conversation.
 
 As a response to the action call from Core, you can modify the tracker,
