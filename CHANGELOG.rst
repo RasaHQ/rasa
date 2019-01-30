@@ -21,19 +21,15 @@ Removed
 Fixed
 -----
 
-.. _v0-14-0:
 
 [0.14.1] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
 
-Added
------
-- ``rasa_nlu.evaluate`` now exports reports into a folder and also
-  includes the entity extractor reports
-
 Fixed
 -----
 - scikit-learn is a global requirement
+
+.. _v0-14-0:
 
 [0.14.0] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
