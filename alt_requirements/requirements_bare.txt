@@ -2,7 +2,7 @@ gevent==1.2.2
 klein==17.10.0
 hyperlink==17.3.1
 typing==3.6.2
-future==0.16.0
+future==0.17.1
 jsonschema==2.6.0
 matplotlib==2.1.0
 requests==2.20.0
@@ -10,7 +10,7 @@ tqdm==4.19.5
 numpy==1.14.5
 simplejson==3.13.2
 cloudpickle==0.6.1
-packaging==17.1
+packaging==18.0
 ruamel.yaml==0.15.78
-coloredlogs==9.0
+coloredlogs==10.0
 scikit-learn==0.20.2
