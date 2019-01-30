@@ -71,6 +71,8 @@ Changed
 - updated TensorFlow version to 1.12.0
 - updated scikit-learn version to 0.20.2
 - updated cloudpickle version to 0.6.1
+- updated requirements to match Core and SDK
+- pinned keras dependecies
 
 Removed
 -------
