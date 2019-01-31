@@ -13,6 +13,8 @@ Added
 Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
+
+=======
 - replace pep8 with pycodestyle
 
 Removed
@@ -35,6 +37,8 @@ Changed
 -------
 - updated requirements to match Core and SDK
 - pinned keras dependecies
+- starter packs are now tested in parallel with the unittests,
+  and only on branches ending in ``.x`` (i.e. new version releases)
 
 
 [0.14.1] - 2018-01-23
