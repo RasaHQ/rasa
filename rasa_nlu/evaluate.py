@@ -4,20 +4,19 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import itertools
+from collections import defaultdict, namedtuple
+
 import json
+import os
 import logging
+import numpy as np
 import shutil
-from collections import defaultdict
-from collections import namedtuple
 from typing import List, Optional, Text
 
-import numpy as np
-
-from rasa_nlu import training_data, utils, config
+from rasa_nlu import config, training_data, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa_nlu.model import Interpreter
-from rasa_nlu.model import Trainer, TrainingData
+from rasa_nlu.model import Interpreter, Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +41,8 @@ IntentEvaluationResult = namedtuple('IntentEvaluationResult',
 def create_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
-        description='evaluate a Rasa NLU pipeline with cross '
-                    'validation or on external data')
+            description='evaluate a Rasa NLU pipeline with cross '
+                        'validation or on external data')
 
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
@@ -64,8 +63,9 @@ def create_argument_parser():
                         help="number of CV folds (crossvalidation only)")
 
     parser.add_argument('--report', required=False, nargs='?',
-                        const="report.json", default=False,
-                        help="output path to save the metrics report")
+                        const="reports", default=False,
+                        help="output path to save the intent/entity"
+                             "metrics report")
 
     parser.add_argument('--successes', required=False, nargs='?',
                         const="successes.json", default=False,
@@ -85,14 +85,14 @@ def create_argument_parser():
     return parser
 
 
-def plot_confusion_matrix(cm, classes,
+def plot_confusion_matrix(cm,
+                          classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=None,
                           zmin=1,
                           out=None):  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
-
     Normalization can be applied by setting `normalize=True`."""
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
@@ -171,7 +171,7 @@ def log_evaluation_table(report,  # type: Text
     logger.info("Classification report: \n{}".format(report))
 
 
-def get_evaluation_metrics(targets, predictions, output_dict=False):  # pragma: no cover
+def get_evaluation_metrics(targets, predictions, output_dict=False):
     """Compute the f1, precision, accuracy and summary report from sklearn."""
     from sklearn import metrics
 
@@ -214,7 +214,7 @@ def drop_intents_below_freq(td, cutoff=5):
     """Remove intent groups with less than cutoff instances."""
 
     logger.debug(
-        "Raw data intent examples: {}".format(len(td.intent_examples)))
+            "Raw data intent examples: {}".format(len(td.intent_examples)))
     keep_examples = [ex
                      for ex in td.intent_examples
                      if td.examples_per_intent[ex.get("intent")] >= cutoff]
@@ -284,7 +284,7 @@ def plot_intent_confidences(intent_results, intent_hist_filename):
 
 
 def evaluate_intents(intent_results,
-                     report_filename,
+                     report_folder,
                      successes_filename,
                      errors_filename,
                      confmat_filename,
@@ -308,10 +308,11 @@ def evaluate_intents(intent_results,
 
     targets, predictions = _targets_predictions_from(intent_results)
 
-    if report_filename:
-        report, precision, f1, accuracy = get_evaluation_metrics(targets,
-                                                                 predictions,
-                                                                 output_dict=True)
+    if report_folder:
+        report, precision, f1, accuracy = get_evaluation_metrics(
+                targets, predictions, output_dict=True)
+
+        report_filename = os.path.join(report_folder, 'intent_report.json')
 
         save_json(report, report_filename)
         logger.info("Classification report saved to {}."
@@ -367,7 +368,6 @@ def evaluate_intents(intent_results,
 
 def merge_labels(aligned_predictions, extractor=None):
     """Concatenates all labels of the aligned predictions.
-
     Takes the aligned prediction labels which are grouped for each message
     and concatenates them."""
 
@@ -390,9 +390,9 @@ def substitute_labels(labels, old, new):
 def evaluate_entities(targets,
                       predictions,
                       tokens,
-                      extractors):  # pragma: no cover
+                      extractors,
+                      report_folder):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
-
     Logs precision, recall, and F1 per entity type for each extractor."""
 
     aligned_predictions = align_all_entity_predictions(targets, predictions,
@@ -405,11 +405,24 @@ def evaluate_entities(targets,
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(
-            merged_predictions, "O", "no_entity")
+                merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
-        report, precision, f1, accuracy = get_evaluation_metrics(
-            merged_targets, merged_predictions)
-        log_evaluation_table(report, precision, f1, accuracy)
+        if report_folder:
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                    merged_targets, merged_predictions, output_dict=True)
+
+            report_filename = extractor + "_report.json"
+            extractor_report = os.path.join(report_folder, report_filename)
+
+            save_json(report, extractor_report)
+            logger.info("Classification report for {} saved to {}."
+                        .format(extractor, extractor_report))
+
+        else:
+            report, precision, f1, accuracy = get_evaluation_metrics(
+                    merged_targets, merged_predictions)
+            log_evaluation_table(report, precision, f1, accuracy)
+
         result[extractor] = {
             "report": report,
             "precision": precision,
@@ -442,9 +455,7 @@ def determine_intersection(token, entity):
 
 def do_entities_overlap(entities):
     """Checks if entities overlap.
-
     I.e. cross each others start and end boundaries.
-
     :param entities: list of entities
     :return: boolean
     """
@@ -453,8 +464,8 @@ def do_entities_overlap(entities):
     for i in range(len(sorted_entities) - 1):
         curr_ent = sorted_entities[i]
         next_ent = sorted_entities[i + 1]
-        if (next_ent["start"] < curr_ent["end"]
-                and next_ent["entity"] != curr_ent["entity"]):
+        if (next_ent["start"] < curr_ent["end"] and
+                next_ent["entity"] != curr_ent["entity"]):
             return True
 
     return False
@@ -462,7 +473,6 @@ def do_entities_overlap(entities):
 
 def find_intersecting_entites(token, entities):
     """Finds the entities that intersect with a token.
-
     :param token: a single token
     :param entities: entities found by a single extractor
     :return: list of entities
@@ -482,7 +492,6 @@ def find_intersecting_entites(token, entities):
 
 def pick_best_entity_fit(token, candidates):
     """Determines the token label given intersecting entities.
-
     :param token: a single token
     :param candidates: entities found by a single extractor
     :return: entity type
@@ -510,8 +519,8 @@ def determine_token_labels(token, entities, extractors):
 
     if len(entities) == 0:
         return "O"
-    if not do_extractors_support_overlap(extractors) and \
-            do_entities_overlap(entities):
+    if (not do_extractors_support_overlap(extractors) and
+            do_entities_overlap(entities)):
         raise ValueError("The possible entities should not overlap")
 
     candidates = find_intersecting_entites(token, entities)
@@ -526,11 +535,9 @@ def do_extractors_support_overlap(extractors):
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
     """Aligns entity predictions to the message tokens.
-
     Determines for every token the true label based on the
     prediction targets and the label assigned by each
     single extractor.
-
     :param targets: list of target entities
     :param predictions: list of predicted entities
     :param tokens: original message tokens
@@ -558,7 +565,6 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
 def align_all_entity_predictions(targets, predictions, tokens, extractors):
     """ Aligns entity predictions to the message tokens for the whole dataset
         using align_entity_predictions
-
     :param targets: list of lists of target entities
     :param predictions: list of lists of predicted entities
     :param tokens: list of original message tokens
@@ -614,10 +620,10 @@ def get_intent_predictions(targets, interpreter,
     for e, target in zip(test_data.training_examples, targets):
         res = interpreter.parse(e.text, only_output_properties=False)
         intent_results.append(IntentEvaluationResult(
-            target,
-            extract_intent(res),
-            extract_message(res),
-            extract_confidence(res)))
+                target,
+                extract_intent(res),
+                extract_message(res),
+                extract_confidence(res)))
 
     return intent_results
 
@@ -639,7 +645,6 @@ def get_entity_predictions(interpreter, test_data):  # pragma: no cover
 
 def get_entity_extractors(interpreter):
     """Finds the names of entity extractors used by the interpreter.
-
     Processors are removed since they do not
     detect the boundaries themselves."""
 
@@ -663,7 +668,6 @@ def combine_extractor_and_dimension_name(extractor, dim):
 
 def get_duckling_dimensions(interpreter, duckling_extractor_name):
     """Gets the activated dimensions of a duckling extractor.
-
     If there are no activated dimensions, it uses all known
     dimensions as a fallback."""
 
@@ -708,7 +712,7 @@ def remove_duckling_entities(entity_predictions):
 
 
 def run_evaluation(data_path, model,
-                   report_filename=None,
+                   report_folder=None,
                    successes_filename=None,
                    errors_filename='errors.json',
                    confmat_filename=None,
@@ -736,14 +740,17 @@ def run_evaluation(data_path, model,
         "entity_evaluation": None
     }
 
+    if report_folder:
+        utils.create_dir(report_folder)
+
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
         intent_results = get_intent_predictions(
-            intent_targets, interpreter, test_data)
+                intent_targets, interpreter, test_data)
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
-                                                       report_filename,
+                                                       report_folder,
                                                        successes_filename,
                                                        errors_filename,
                                                        confmat_filename,
@@ -756,7 +763,8 @@ def run_evaluation(data_path, model,
         result['entity_evaluation'] = evaluate_entities(entity_targets,
                                                         entity_predictions,
                                                         tokens,
-                                                        extractors)
+                                                        extractors,
+                                                        report_folder)
 
     return result
 
@@ -802,7 +810,6 @@ def combine_entity_result(results, interpreter, data):
 def run_cv_evaluation(data, n_folds, nlu_config):
     # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
     """Stratified cross validation on data
-
     :param data: Training Data
     :param n_folds: integer, number of cv folds
     :param nlu_config: nlu config file
@@ -943,7 +950,7 @@ def main():
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
         results, entity_results = run_cv_evaluation(
-            data, int(cmdline_args.folds), nlu_config)
+                data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
         if any(results):
