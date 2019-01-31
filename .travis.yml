@@ -5,7 +5,6 @@ cache:
   - $HOME/.cache/pip
   - /tmp/cached/
 python:
-  - '2.7'
   - '3.5'
   - '3.6'
 env:
@@ -13,10 +12,8 @@ env:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
-  # secret for FOSSA
-  - secure: "g0c6z+CKVPiuGE3G3OGjzcKZJsdsA/j+zsTQ/xr1ie9gKNpKRA0KQAvsU/mow4NeMmt5YKnwKxFqWy0b3Oufm5WLTAWIVepT5FHA7YMVCMcpPIMsbtqe64FqJxhgL+sBJZku5i94PzCruXwbjk3Q5Uad95ZsIJLQLEkzIla6Fdcu5hdkfYVIGRGe0W2YxNVx+3fZimnOOvJmXD/nnZEBesq5fR09uA4v2PsBGuHOTkwuG60rU5bBPZ2PNiEZXt552kJ5yfdSszNd6uzgQNp10L0qXzt1fXeyf9uGAleDS1HrbcVcdWX0jwCwZF/FD40wUcyKGqOWWDs81mehsjhXymKBhy62QinCSFBmcJb/uRJpMWvvzOLaH94TgxFJCxogNKdqNN/jU3V8CuJ2ELp+RCiniO1u9Dd134j6dYWSWYO+R4WXYoIQYVlGZZqIZz+5b5eKsY+r6I1zPBfD+MowJx2HiLpSdgXh3tlhblOZwPKIuUQ++MeBY4JttJA4Sx5K+YIUzDvcx+7jyuYIjrV4D23n6i4dZZHpAqqtlf1iSbnEzO/rnAxZxy1UuEVmXNJSDOoKEzA7Mdd/Nh+M8wcJAb/KDS/TEvT27+TLRlrgOjgjU2q+4yXNomivi3rZJ1+EFUTgs7lgOGCM/LBpJgnyyiSYZoep0YDZHtA3DCnHKQI="
 
-install: 
+install:
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r alt_requirements/requirements_dev.txt
   - pip install -e .
@@ -31,7 +28,7 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script: 
+script:
   - py.test --pep8 -m pep8
   - py.test tests/base --cov rasa_nlu -v --cov-append
   - py.test tests/training --cov rasa_nlu -v --cov-append
@@ -40,6 +37,7 @@ after_success:
 jobs:
   include:
   - stage: test
+    if: fork = false
     name: Check Dependency Licenses
     before_script:
     - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
@@ -73,14 +71,16 @@ jobs:
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
-  - stage: Test starter packs
+  - stage: test
+    if: branch = "*.x" # only new NLU version builds test the starter packs
     name: "NLU starter pack"
     python: 3.6
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
     - cd starter-pack-rasa-nlu
     - python -m pytest tests/test_nlu.py
-  - stage: Test starter packs
+  - stage: test
+    if: branch = "*.x" # only new NLU version builds test the starter packs
     name: "Stack starter pack (NLU only)"
     python: 3.6
     script:
@@ -108,6 +108,7 @@ jobs:
     - git commit --allow-empty -m "trigger nlu docs update"
     - git push origin master
   - stage: deploy
+    name: "PyPI test"
     python: 3.6
     install: skip
     script: skip
