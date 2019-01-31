@@ -12,7 +12,7 @@ Added
 
 Changed
 -------
-- skip test data validation for evaluation
+- validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 
 Removed
