@@ -91,6 +91,7 @@ jobs:
     - git commit --allow-empty -m "trigger core docs update"
     - git push origin master
   - stage: deploy
+    name: "PyPI test"
     python: 3.6
     install: skip
     script: skip
