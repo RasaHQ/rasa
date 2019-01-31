@@ -21,7 +21,7 @@ after_success:
 - coveralls
 jobs:
   include:
-  - stage: test
+  - stage: integration
     name: "Test API specification"
     language: python
     install:

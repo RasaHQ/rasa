@@ -17,7 +17,6 @@ Changed
 -------
 - starter packs are now tested in parallel with the unittests,
   and only on branches ending in ``.x`` (i.e. new version releases)
-- API specification is tested in parallel with unittests by Travis
 
 Removed
 -------
