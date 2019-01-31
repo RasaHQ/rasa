@@ -12,6 +12,7 @@ env:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
+  - TRAVIS_JOB_NAME="/tests/ and pep8 checks"
 
 install: 
   - pip install git+https://github.com/tmbo/MITIE.git
@@ -72,7 +73,7 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: test
-    if: branch = "*.x" # only tag builds test the starter packs
+    if: branch = "*.x" # only new NLU version builds test the starter packs
     name: "NLU starter pack"
     python: 3.6
     script:
@@ -80,7 +81,7 @@ jobs:
     - cd starter-pack-rasa-nlu
     - python -m pytest tests/test_nlu.py
   - stage: test
-    if: branch = "*.x" # only tag builds test the starter packs
+    if: branch = "*.x" # only new NLU version builds test the starter packs
     name: "Stack starter pack (NLU only)"
     python: 3.6
     script:
