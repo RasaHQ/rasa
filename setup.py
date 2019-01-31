@@ -38,7 +38,7 @@ install_requires = [
     "numpy>=1.13",
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
-    "coloredlogs~=9.0",
+    "coloredlogs~=10.0",
     "scikit-learn~=0.20.2"
 ]
 
