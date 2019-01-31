@@ -12,7 +12,6 @@ env:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
-  - TRAVIS_JOB_NAME="/tests/ and pep8 checks"
 
 install: 
   - pip install git+https://github.com/tmbo/MITIE.git
