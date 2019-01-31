@@ -62,9 +62,9 @@ class EntityExtractor(Component):
             data = message.data.copy()
             data['entities'] = entities
             filtered.append(
-                    Message(text=message.text,
-                            data=data,
-                            output_properties=message.output_properties,
-                            time=message.time))
+                Message(text=message.text,
+                        data=data,
+                        output_properties=message.output_properties,
+                        time=message.time))
 
         return filtered

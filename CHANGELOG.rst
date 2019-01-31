@@ -13,8 +13,9 @@ Added
 Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
-- starter packs are now tested in parallel with the unittests,
-  and only on branches ending in ``.x`` (i.e. new version releases)
+
+=======
+- replace pep8 with pycodestyle
 
 Removed
 -------
@@ -23,7 +24,22 @@ Removed
 Fixed
 -----
 
-.. _v0-14-0:
+[0.14.2] - 2018-01-29
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+- ``rasa_nlu.evaluate`` now exports reports into a folder and also
+  includes the entity extractor reports
+
+Changed
+-------
+- updated requirements to match Core and SDK
+- pinned keras dependecies
+- starter packs are now tested in parallel with the unittests,
+  and only on branches ending in ``.x`` (i.e. new version releases)
+
 
 [0.14.1] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
@@ -31,6 +47,8 @@ Fixed
 Fixed
 -----
 - scikit-learn is a global requirement
+
+.. _v0-14-0:
 
 [0.14.0] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^

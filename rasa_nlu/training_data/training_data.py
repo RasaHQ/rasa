@@ -191,24 +191,24 @@ class TrainingData(object):
             test.extend(ex[n_train:])
 
         data_train = TrainingData(
-                train,
-                entity_synonyms=self.entity_synonyms,
-                regex_features=self.regex_features,
-                lookup_tables=self.lookup_tables)
+            train,
+            entity_synonyms=self.entity_synonyms,
+            regex_features=self.regex_features,
+            lookup_tables=self.lookup_tables)
         data_test = TrainingData(
-                test,
-                entity_synonyms=self.entity_synonyms,
-                regex_features=self.regex_features,
-                lookup_tables=self.lookup_tables)
+            test,
+            entity_synonyms=self.entity_synonyms,
+            regex_features=self.regex_features,
+            lookup_tables=self.lookup_tables)
         return data_train, data_test
 
     def print_stats(self) -> None:
         logger.info("Training data stats: \n" +
                     "\t- intent examples: {} ({} distinct intents)\n".format(
-                            len(self.intent_examples), len(self.intents)) +
+                        len(self.intent_examples), len(self.intents)) +
                     "\t- Found intents: {}\n".format(
-                            list_to_str(self.intents)) +
+                        list_to_str(self.intents)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(
-                            len(self.entity_examples), len(self.entities)) +
+                        len(self.entity_examples), len(self.entities)) +
                     "\t- found entities: {}\n".format(
-                            list_to_str(self.entities)))
+                        list_to_str(self.entities)))

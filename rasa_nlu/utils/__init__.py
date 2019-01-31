@@ -21,20 +21,20 @@ def add_logging_option_arguments(parser, default=logging.WARNING):
 
     # arguments for logging configuration
     parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=default,
+        '--debug',
+        help="Print lots of debugging statements. "
+             "Sets logging level to DEBUG",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=default,
     )
     parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
+        '-v', '--verbose',
+        help="Be verbose. Sets logging level to INFO",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
     )
 
 
@@ -330,11 +330,11 @@ def configure_colored_logging(loglevel: Text) -> None:
     level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
     level_styles['debug'] = {}
     coloredlogs.install(
-            level=loglevel,
-            use_chroot=False,
-            fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
-            level_styles=level_styles,
-            field_styles=field_styles)
+        level=loglevel,
+        use_chroot=False,
+        fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
+        level_styles=level_styles,
+        field_styles=field_styles)
 
 
 def pycloud_unpickle(file_name: Text) -> Any:
@@ -494,9 +494,7 @@ class EndpointConfig(object):
 
     @classmethod
     def from_dict(cls, data):
-        return EndpointConfig(
-                data.pop("url"),
-                **data)
+        return EndpointConfig(data.pop("url"), **data)
 
     def __eq__(self, other):
         if isinstance(self, type(other)):

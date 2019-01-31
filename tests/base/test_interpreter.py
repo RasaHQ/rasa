@@ -25,8 +25,8 @@ def test_interpreter(pipeline_template, component_builder, tmpdir):
     for text in texts:
         result = interpreter.parse(text, time=None)
         assert result['text'] == text
-        assert (not result['intent']['name']
-                or result['intent']['name'] in td.intents)
+        assert (not result['intent']['name'] or
+                result['intent']['name'] in td.intents)
         assert result['intent']['confidence'] >= 0
         # Ensure the model doesn't detect entity types that are not present
         # Models on our test data set are not stable enough to
