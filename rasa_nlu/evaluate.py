@@ -801,8 +801,9 @@ def combine_entity_result(results, interpreter, data):
     return results
 
 
-def run_cv_evaluation(data, n_folds, nlu_config):
-    # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
+def run_cv_evaluation(data: TrainingData,
+                      n_folds: int,
+                      nlu_config: RasaNLUModelConfig) -> CVEvaluationResult:
     """Stratified cross validation on data
     :param data: Training Data
     :param n_folds: integer, number of cv folds
