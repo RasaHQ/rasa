@@ -8,7 +8,7 @@ python:
   - '3.5'
   - '3.6'
 name:
-  - /tests/ and pep8
+  - "/tests/ and pep8 checks"
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
@@ -110,6 +110,7 @@ jobs:
     - git commit --allow-empty -m "trigger nlu docs update"
     - git push origin master
   - stage: deploy
+    name: "PyPI test"
     python: 3.6
     install: skip
     script: skip
