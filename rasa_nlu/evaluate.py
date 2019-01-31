@@ -36,8 +36,8 @@ IntentEvaluationResult = namedtuple('IntentEvaluationResult',
 def create_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
-            description='evaluate a Rasa NLU pipeline with cross '
-                        'validation or on external data')
+        description='evaluate a Rasa NLU pipeline with cross '
+                    'validation or on external data')
 
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
@@ -208,7 +208,7 @@ def drop_intents_below_freq(td: TrainingData, cutoff: int = 5):
     """Remove intent groups with less than cutoff instances."""
 
     logger.debug(
-            "Raw data intent examples: {}".format(len(td.intent_examples)))
+        "Raw data intent examples: {}".format(len(td.intent_examples)))
     keep_examples = [ex
                      for ex in td.intent_examples
                      if td.examples_per_intent[ex.get("intent")] >= cutoff]
@@ -304,13 +304,13 @@ def evaluate_intents(intent_results,
 
     if report_folder:
         report, precision, f1, accuracy = get_evaluation_metrics(
-                targets, predictions, output_dict=True)
+            targets, predictions, output_dict=True)
 
         report_filename = os.path.join(report_folder, 'intent_report.json')
 
         save_json(report, report_filename)
         logger.info("Classification report saved to {}."
-                    .format(report_filename))
+                    "".format(report_filename))
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(targets,
@@ -399,22 +399,22 @@ def evaluate_entities(targets,
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(
-                merged_predictions, "O", "no_entity")
+            merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         if report_folder:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                    merged_targets, merged_predictions, output_dict=True)
+                merged_targets, merged_predictions, output_dict=True)
 
             report_filename = extractor + "_report.json"
             extractor_report = os.path.join(report_folder, report_filename)
 
             save_json(report, extractor_report)
-            logger.info("Classification report for {} saved to {}."
-                        .format(extractor, extractor_report))
+            logger.info("Classification report for '{}' saved to '{}'."
+                        "".format(extractor, extractor_report))
 
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                    merged_targets, merged_predictions)
+                merged_targets, merged_predictions)
             log_evaluation_table(report, precision, f1, accuracy)
 
         result[extractor] = {
@@ -547,7 +547,7 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
     extractor_labels = defaultdict(list)
     for t in tokens:
         true_token_labels.append(
-                determine_token_labels(t, targets, None))
+            determine_token_labels(t, targets, None))
         for extractor, entities in entities_by_extractors.items():
             extracted = determine_token_labels(t, entities, extractor)
             extractor_labels[extractor].append(extracted)
@@ -614,10 +614,10 @@ def get_intent_predictions(targets, interpreter,
     for e, target in zip(test_data.training_examples, targets):
         res = interpreter.parse(e.text, only_output_properties=False)
         intent_results.append(IntentEvaluationResult(
-                target,
-                extract_intent(res),
-                extract_message(res),
-                extract_confidence(res)))
+            target,
+            extract_intent(res),
+            extract_message(res),
+            extract_confidence(res)))
 
     return intent_results
 
@@ -740,7 +740,7 @@ def run_evaluation(data_path, model,
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
         intent_results = get_intent_predictions(
-                intent_targets, interpreter, test_data)
+            intent_targets, interpreter, test_data)
 
         logger.info("Intent evaluation results:")
         result['intent_evaluation'] = evaluate_intents(intent_results,
@@ -945,7 +945,7 @@ def main():
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
         results, entity_results = run_cv_evaluation(
-                data, int(cmdline_args.folds), nlu_config)
+            data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
         if any(results):
