@@ -31,7 +31,7 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script: 
+script:
   - py.test --pep8 -m pep8
   - py.test tests/base --cov rasa_nlu -v --cov-append
   - py.test tests/training --cov rasa_nlu -v --cov-append
@@ -40,7 +40,6 @@ after_success:
 jobs:
   include:
   - stage: test
-    if: fork = false
     name: Check Dependency Licenses
     before_script:
     - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
