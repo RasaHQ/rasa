@@ -9,6 +9,7 @@ python:
   - '3.6'
 name:
   - "/tests/ and pep8 checks"
+  - "/tests/ and pep8 checks"
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
