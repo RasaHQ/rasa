@@ -60,7 +60,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Reset the states."""
         self._states = None
 
-    def init_copy(self)-> 'TrackerWithCachedStates':
+    def init_copy(self) -> 'TrackerWithCachedStates':
         """Create a new state tracker with the same initial values."""
         return type(self)("",
                           self.slots.values(),
