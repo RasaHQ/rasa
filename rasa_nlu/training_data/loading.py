@@ -41,8 +41,7 @@ _json_format_heuristics = {
 
 
 def load_data(resource_name: Text,
-              language: Optional[Text] = 'en',
-              validate: bool = True) -> 'TrainingData':
+              language: Optional[Text] = 'en') -> 'TrainingData':
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
@@ -58,8 +57,6 @@ def load_data(resource_name: Text,
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
 
-    if validate:
-        training_data.validate()
     return training_data
 
 
@@ -75,7 +72,6 @@ def load_data_from_endpoint(data_endpoint: EndpointConfig,
         temp_data_file = utils.create_temporary_file(response.content,
                                                      mode="w+b")
         training_data = _load(temp_data_file, language)
-        training_data.validate()
 
         return training_data
     except Exception as e:
