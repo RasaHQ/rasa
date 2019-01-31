@@ -62,7 +62,7 @@ paths:
         400:
           description: >-
             Action execution was rejected. This is the same as returning
-            an `action_execution_rejected` event.
+            an `ActionExecutionRejected` event.
           content:
             application/json:
               schema:
