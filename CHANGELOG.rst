@@ -13,6 +13,8 @@ Added
 Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
+- starter packs are now tested in parallel with the unittests,
+  and only on branches ending in ``.x`` (i.e. new version releases)
 
 Removed
 -------
