@@ -11,11 +11,13 @@ Added
 -----
 - ``rasa_nlu.evaluate`` now exports reports into a folder and also
   includes the entity extractor reports
-  
+
 Changed
 -------
 - updated requirements to match Core and SDK
 - pinned keras dependecies
+- starter packs are now tested in parallel with the unittests,
+  and only on branches ending in ``.x`` (i.e. new version releases)
 
 [0.14.1] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
