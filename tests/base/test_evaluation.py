@@ -15,7 +15,7 @@ from rasa_nlu.evaluate import (
     get_duckling_dimensions, known_duckling_dimensions,
     find_component, remove_duckling_extractors, drop_intents_below_freq,
     run_cv_evaluation, substitute_labels, IntentEvaluationResult,
-    evaluate_intents)
+    evaluate_intents, evaluate_entities)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
@@ -24,6 +24,7 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu import utils
 import json
+import os
 from rasa_nlu import training_data, config
 from tests import utilities
 
@@ -261,10 +262,13 @@ def test_run_cv_evaluation():
     assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
 
 
-def test_evaluation_report(tmpdir_factory):
+def test_intent_evaluation_report(tmpdir_factory):
 
     path = tmpdir_factory.mktemp("evaluation").strpath
-    report_filename = path + "report.json"
+    report_folder = os.path.join(path, "reports")
+    report_filename = os.path.join(report_folder, "intent_report.json")
+
+    utils.create_dir(report_folder)
 
     intent_results = [
         IntentEvaluationResult("", "restaurant_search",
@@ -273,7 +277,7 @@ def test_evaluation_report(tmpdir_factory):
                                "hello", 0.98765)]
 
     result = evaluate_intents(intent_results,
-                              report_filename,
+                              report_folder,
                               successes_filename=None,
                               errors_filename=None,
                               confmat_filename=None,
@@ -296,6 +300,32 @@ def test_evaluation_report(tmpdir_factory):
     assert result["predictions"][0] == prediction
 
 
+def test_entity_evaluation_report(tmpdir_factory):
+
+    path = tmpdir_factory.mktemp("evaluation").strpath
+    report_folder = os.path.join(path, "reports")
+
+    mock_extractors = ["A", "B"]
+    report_filename_a = os.path.join(report_folder, "A_report.json")
+    report_filename_b = os.path.join(report_folder, "B_report.json")
+
+    utils.create_dir(report_folder)
+
+    result = evaluate_entities([EN_targets],
+                               [EN_predicted],
+                               [EN_tokens],
+                               mock_extractors,
+                               report_folder)
+
+    report_a = json.loads(utils.read_file(report_filename_a))
+    report_b = json.loads(utils.read_file(report_filename_b))
+
+    assert len(report_a) == 8
+    assert report_a["datetime"]["support"] == 1.0
+    assert report_b["macro avg"]["recall"] == 0.2
+    assert result["A"]["accuracy"] == 0.75
+
+
 def test_empty_intent_removal():
     intent_results = [
         IntentEvaluationResult("", "restaurant_search",
@@ -312,7 +342,7 @@ def test_empty_intent_removal():
     assert intent_results[0].message == "hello"
 
 
-def test_evaluate_entities():
+def test_evaluate_entities_cv():
     mock_extractors = ["A", "B"]
     result = align_entity_predictions(EN_targets, EN_predicted,
                                       EN_tokens, mock_extractors)
