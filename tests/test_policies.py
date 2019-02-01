@@ -45,10 +45,10 @@ def loop():
 
 # We are going to use class style testing here since unfortunately pytest
 # doesn't support using fixtures as arguments to its own parameterize yet
-# (hence, we can't train a policy, declare it as a fixture and use the different
-# fixtures of the different policies for the functional tests). Therefore, we
-# are going to reverse this and train the policy within a class and collect the
-# tests in a base class.
+# (hence, we can't train a policy, declare it as a fixture and use the
+# different fixtures of the different policies for the functional tests).
+# Therefore, we are going to reverse this and train the policy within a class
+# and collect the tests in a base class.
 # noinspection PyMethodMayBeStatic
 class PolicyTestCollection(object):
     """Tests every policy needs to fulfill.
@@ -295,11 +295,10 @@ class TestSklearnPolicy(PolicyTestCollection):
             else:
                 assert prob == 0.0
 
-    def test_train_kwargs_are_set_on_model(self,
-                                           default_domain, trackers,
-                                           featurizer):
-        policy = self.create_policy(featurizer=featurizer, cv=None)
-        policy.train(trackers, domain=default_domain, C=123)
+    def test_train_kwargs_are_set_on_model(
+            self, default_domain, trackers, featurizer):
+        policy = self.create_policy(featurizer=featurizer, cv=None, C=123)
+        policy.train(trackers, domain=default_domain)
         assert policy.model.C == 123
 
     def test_train_with_shuffle_false(self,
@@ -315,18 +314,8 @@ class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
     def create_policy(self, featurizer):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy()
+        p = EmbeddingPolicy(attn_before_rnn=False, attn_after_rnn=False)
         return p
-
-    @pytest.fixture(scope="module")
-    async def trained_policy(self, featurizer):
-        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy(featurizer)
-        training_trackers = await train_trackers(default_domain)
-        policy.train(training_trackers, default_domain,
-                     attn_before_rnn=False,
-                     attn_after_rnn=False)
-        return policy
 
 
 class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
@@ -335,18 +324,8 @@ class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
     def create_policy(self, featurizer):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy()
+        p = EmbeddingPolicy(attn_before_rnn=True, attn_after_rnn=False)
         return p
-
-    @pytest.fixture(scope="module")
-    async def trained_policy(self, featurizer):
-        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy(featurizer)
-        training_trackers = await train_trackers(default_domain)
-        policy.train(training_trackers, default_domain,
-                     attn_before_rnn=True,
-                     attn_after_rnn=False)
-        return policy
 
 
 class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
@@ -355,18 +334,8 @@ class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
     def create_policy(self, featurizer):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy()
+        p = EmbeddingPolicy(attn_before_rnn=False, attn_after_rnn=True)
         return p
-
-    @pytest.fixture(scope="module")
-    async def trained_policy(self, featurizer):
-        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy(featurizer)
-        training_trackers = await train_trackers(default_domain)
-        policy.train(training_trackers, default_domain,
-                     attn_before_rnn=False,
-                     attn_after_rnn=True)
-        return policy
 
 
 class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
@@ -375,18 +344,8 @@ class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
     def create_policy(self, featurizer):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy()
+        p = EmbeddingPolicy(attn_before_rnn=True, attn_after_rnn=True)
         return p
-
-    @pytest.fixture(scope="module")
-    async def trained_policy(self, featurizer):
-        default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy(featurizer)
-        training_trackers = await train_trackers(default_domain)
-        policy.train(training_trackers, default_domain,
-                     attn_before_rnn=True,
-                     attn_after_rnn=True)
-        return policy
 
 
 class TestFormPolicy(PolicyTestCollection):
@@ -509,7 +468,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
-            default_domain)
+            default_domain
+        )
 
         assert 'greet' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == ("## sender\n"
@@ -546,7 +506,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
-            default_domain)
+            default_domain
+        )
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
@@ -587,7 +548,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
-            default_domain)
+            default_domain
+        )
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == "## sender\n* bye\n"
@@ -628,7 +590,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
-            default_domain)
+            default_domain
+        )
 
         assert 'bye' == tracker.latest_message.parse_data['intent']['name']
         assert tracker.export_stories() == ("## sender\n"

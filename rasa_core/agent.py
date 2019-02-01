@@ -505,18 +505,23 @@ class Agent(object):
             **kwargs: additional arguments passed to the underlying ML
                            trainer (e.g. keras parameters)
         """
-
         if not self.is_ready():
             raise AgentNotReady("Can't train without a policy ensemble.")
 
         # deprecation tests
-        if kwargs.get('featurizer') or kwargs.get('max_history'):
-            raise Exception("Passing `featurizer` and `max_history` "
+        if kwargs.get('featurizer'):
+            raise Exception("Passing `featurizer` "
                             "to `agent.train(...)` is not supported anymore. "
-                            "Pass appropriate featurizer "
-                            "directly to the policy instead. More info "
-                            "https://rasa.com/docs/core/migrations.html#x-to"
-                            "-0-9-0")
+                            "Pass appropriate featurizer directly "
+                            "to the policy configuration instead. More info "
+                            "https://rasa.com/docs/core/migrations.html")
+        if kwargs.get('epochs') or kwargs.get('max_history') or kwargs.get(
+                'batch_size'):
+            raise Exception("Passing policy configuration parameters "
+                            "to `agent.train(...)` is not supported "
+                            "anymore. Specify parameters directly in the "
+                            "policy configuration instead. More info "
+                            "https://rasa.com/docs/core/migrations.html")
 
         if isinstance(training_trackers, str):
             # the user most likely passed in a file name to load training
@@ -527,6 +532,7 @@ class Agent(object):
                             "to `agent.train(data)`.")
 
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
+
         check_domain_sanity(self.domain)
 
         self.policy_ensemble.train(training_trackers, self.domain,
