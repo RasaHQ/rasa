@@ -39,9 +39,8 @@ install_requires = [
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
     "coloredlogs~=10.0",
-    "fuzzywuzzy==0.17.0",
-    "python-Levenshtein==0.12.0",
-    "scikit-learn~=0.20.2"
+    "scikit-learn~=0.20.2",
+    "editdistance~=0.5.2"
 ]
 
 extras_requires = {
