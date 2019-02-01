@@ -68,7 +68,7 @@ class Slot(object):
                 return cls
         try:
             return utils.class_from_module_path(type_name)
-        except(ImportError):
+        except(ImportError, AttributeError):
             raise ValueError(
                 "Failed to find slot type, '{}' is neither a known type nor "
                 "user-defined. If you are creating your own slot type, make "
