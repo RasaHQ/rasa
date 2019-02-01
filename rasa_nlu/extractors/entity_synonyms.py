@@ -96,28 +96,39 @@ class EntitySynonymMapper(EntityExtractor):
                 self.add_processor_name(entity)
 
     def fuzzy_match_entity(self, entity):
-        fuzzy_match = self.get_fuzzy_value(entity)
+        entity_value = str(entity["value"])
+
+        fuzzy_match = None
+        for w in self.synonyms.keys():
+            value = self.get_fuzzy_match_value(w, entity_value)
+            fuzzy_match = max(fuzzy_match, value) if value else fuzzy_match
 
         if fuzzy_match:
             entity["value"] = self.synonyms[fuzzy_match[1]]
             self.add_processor_name(entity)
 
-    def get_fuzzy_value(self, entity):
-        entity_value = str(entity["value"])
+    def get_fuzzy_match_value(self, word, value):
+        """
+        Returns a tuple of similarity and value between 2 strings
+        For example:
+        get_fuzzy_match_value("ab", "abc")
+        Returns: (80, "ab")
+
+
+        This converts the editdistance to a percentage
+        Based on the equation used here:
+        https://docs.python.org/3/library/difflib.html#difflib.SequenceMatcher.ratio
+        :param word:
+        :param value:
+        :return:
+        """
         threshold = self.component_config["fuzzy_threshold"]
-
-        fuzzy_match = None
-        for w in self.synonyms.keys():
-            distance = editdistance.eval(entity_value, w)
-            # Gives a similarity percentage between 2 strings.
-            # This converts the editdistance to a percentage
-            # Based on the equation used here:
-            # https://docs.python.org/3/library/difflib.html#difflib.SequenceMatcher.ratio
-            similarity = 2 * (max(len(w), len(entity_value)) - distance) / (len(w) + len(entity_value)) * 100
-            if similarity >= threshold:
-                fuzzy_match = max((similarity, w), fuzzy_match) if fuzzy_match else (similarity, w)
-
-        return fuzzy_match
+        distance = editdistance.eval(value, word)
+        matches = max(len(word), len(value)) - distance
+        similarity = 2 * matches / (len(word) + len(value)) * 100
+        if similarity >= threshold:
+            return similarity, word
+        return None
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
