@@ -1,14 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import copy
 import datetime
 import logging
 import os
-
-from builtins import object
 from typing import Any
 from typing import Dict
 from typing import List
@@ -18,7 +11,7 @@ from typing import Text
 import rasa_nlu
 from rasa_nlu import components, utils, config
 from rasa_nlu.components import Component, ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig, override_defaults
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir, write_json_to_file
@@ -60,8 +53,7 @@ class Metadata(object):
     """Captures all information about a model to load and prepare it."""
 
     @staticmethod
-    def load(model_dir):
-        # type: (Text) -> 'Metadata'
+    def load(model_dir: Text):
         """Loads the metadata from a models directory.
 
         Args:
@@ -78,8 +70,7 @@ class Metadata(object):
             raise InvalidProjectError("Failed to load model metadata "
                                       "from '{}'. {}".format(abspath, e))
 
-    def __init__(self, metadata, model_dir):
-        # type: (Dict[Text, Any], Optional[Text]) -> None
+    def __init__(self, metadata: Dict[Text, Any], model_dir: Optional[Text]):
 
         self.metadata = metadata
         self.model_dir = model_dir
@@ -100,14 +91,12 @@ class Metadata(object):
                                                      defaults)
 
     @property
-    def language(self):
-        # type: () -> Optional[Text]
+    def language(self) -> Optional[Text]:
         """Language of the underlying model"""
 
         return self.get('language')
 
-    def persist(self, model_dir):
-        # type: (Text) -> None
+    def persist(self, model_dir: Text):
         """Persists the metadata of a model to a given directory."""
 
         metadata = self.metadata.copy()
@@ -131,15 +120,15 @@ class Trainer(object):
     SUPPORTED_LANGUAGES = ["de", "en"]
 
     def __init__(self,
-                 cfg,  # type: RasaNLUModelConfig
-                 component_builder=None,  # type: Optional[ComponentBuilder]
-                 skip_validation=False  # type: bool
+                 cfg: RasaNLUModelConfig,
+                 component_builder: Optional[ComponentBuilder] = None,
+                 skip_validation: bool = False
                  ):
-        # type: (...) -> None
 
         self.config = cfg
         self.skip_validation = skip_validation
-        self.training_data = None  # type: Optional[TrainingData]
+        self.training_data = None
+        # type: Optional[TrainingData]
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in
@@ -155,26 +144,26 @@ class Trainer(object):
         self.pipeline = self._build_pipeline(cfg, component_builder)
 
     @staticmethod
-    def _build_pipeline(cfg, component_builder):
-        # type: (RasaNLUModelConfig, ComponentBuilder) -> List
+    def _build_pipeline(cfg: RasaNLUModelConfig,
+                        component_builder: ComponentBuilder
+                        ) -> List[Component]:
         """Transform the passed names of the pipeline components into classes"""
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
         for component_name in cfg.component_names:
             component = component_builder.create_component(
-                    component_name, cfg)
+                component_name, cfg)
             pipeline.append(component)
 
         return pipeline
 
-    def train(self, data, **kwargs):
-        # type: (TrainingData) -> Interpreter
+    def train(self, data: TrainingData, **kwargs: Any) -> 'Interpreter':
         """Trains the underlying pipeline using the provided training data."""
 
         self.training_data = data
 
-        context = kwargs  # type: Dict[Text, Any]
+        context = kwargs
 
         for component in self.pipeline:
             updates = component.provide_context()
@@ -200,9 +189,11 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context)
 
-    def persist(self, path, persistor=None, project_name=None,
-                fixed_model_name=None):
-        # type: (Text, Optional[Persistor], Text) -> Text
+    def persist(self,
+                path: Text,
+                persistor: Optional[Persistor] = None,
+                project_name: Text = None,
+                fixed_model_name: Text = None) -> Text:
         """Persist all components of the pipeline to the passed path.
 
         Returns the directory of the persisted model."""
@@ -252,11 +243,13 @@ class Interpreter(object):
     # Defines all attributes (& default values)
     # that will be returned by `parse`
     @staticmethod
-    def default_output_attributes():
+    def default_output_attributes() -> Dict[Text, Any]:
         return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
 
     @staticmethod
-    def ensure_model_compatibility(metadata, version_to_check=None):
+    def ensure_model_compatibility(metadata: Metadata,
+                                   version_to_check: Optional[Text] = None
+                                   ) -> None:
         from packaging import version
 
         if version_to_check is None:
@@ -273,16 +266,20 @@ class Interpreter(object):
                 "".format(model_version, rasa_nlu.__version__))
 
     @staticmethod
-    def load(model_dir, component_builder=None, skip_validation=False):
+    def load(model_dir: Text,
+             component_builder: Optional[ComponentBuilder] = None,
+             skip_validation: bool = False) -> 'Interpreter':
         """Create an interpreter based on a persisted model.
 
         Args:
-            model_dir (str): The path of the model to load
-            component_builder (ComponentBuilder): The
-                :class:`ComponentBuilder` to use.
+            skip_validation: If set to `True`, tries to check that all
+                required packages for the components are installed
+                before loading them.
+            model_dir: The path of the model to load
+            component_builder: The :class:`ComponentBuilder` to use.
 
         Returns:
-            Interpreter: An interpreter that uses the loaded model.
+            An interpreter that uses the loaded model.
         """
 
         model_metadata = Metadata.load(model_dir)
@@ -293,11 +290,10 @@ class Interpreter(object):
                                   skip_validation)
 
     @staticmethod
-    def create(model_metadata,  # type: Metadata
-               component_builder=None,  # type: Optional[ComponentBuilder]
-               skip_validation=False  # type: bool
-               ):
-        # type: (...) -> Interpreter
+    def create(model_metadata: Metadata,
+               component_builder: Optional[ComponentBuilder] = None,
+               skip_validation: bool = False
+               ) -> 'Interpreter':
         """Load stored model and components defined by the provided metadata."""
 
         context = {}
@@ -316,8 +312,8 @@ class Interpreter(object):
 
         for component_name in model_metadata.component_classes:
             component = component_builder.load_component(
-                    component_name, model_metadata.model_dir,
-                    model_metadata, **context)
+                component_name, model_metadata.model_dir,
+                model_metadata, **context)
             try:
                 updates = component.provide_context()
                 if updates:
@@ -329,15 +325,17 @@ class Interpreter(object):
 
         return Interpreter(pipeline, context, model_metadata)
 
-    def __init__(self, pipeline, context, model_metadata=None):
-        # type: (List[Component], Dict[Text, Any], Optional[Metadata]) -> None
+    def __init__(self,
+                 pipeline: List[Component],
+                 context: Optional[Dict[Text, Any]],
+                 model_metadata: Optional[Metadata] = None) -> None:
 
         self.pipeline = pipeline
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
 
-    def parse(self, text, time=None, only_output_properties=True):
-        # type: (Text) -> Dict[Text, Any]
+    def parse(self, text: Text, time: Optional[datetime.datetime] = None,
+              only_output_properties: bool = True) -> Dict[Text, Any]:
         """Parse the input text, classify it and return pipeline result.
 
         The pipeline result usually contains intent and entities."""
@@ -358,5 +356,5 @@ class Interpreter(object):
 
         output = self.default_output_attributes()
         output.update(message.as_dict(
-                only_output_properties=only_output_properties))
+            only_output_properties=only_output_properties))
         return output

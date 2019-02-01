@@ -1,21 +1,13 @@
 # -*- coding: utf-8 -
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import os
-
 import numpy as np
 import pytest
 
 from rasa_nlu import training_data, config
+from rasa_nlu.tokenizers import Token
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
-from rasa_nlu.tokenizers import Token
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -52,14 +44,14 @@ def test_ngram_featurizer(spacy_nlp):
     greet = {"intent": "greet", "text_features": [0.5]}
     goodbye = {"intent": "goodbye", "text_features": [0.5]}
     labeled_sentences = [
-                            Message("heyheyheyhey", greet),
-                            Message("howdyheyhowdy", greet),
-                            Message("heyhey howdyheyhowdy", greet),
-                            Message("howdyheyhowdy heyhey", greet),
-                            Message("astalavistasista", goodbye),
-                            Message("astalavistasista sistala", goodbye),
-                            Message("sistala astalavistasista", goodbye),
-                        ] * repetition_factor
+        Message("heyheyheyhey", greet),
+        Message("howdyheyhowdy", greet),
+        Message("heyhey howdyheyhowdy", greet),
+        Message("howdyheyhowdy heyhey", greet),
+        Message("astalavistasista", goodbye),
+        Message("astalavistasista sistala", goodbye),
+        Message("sistala astalavistasista", goodbye),
+    ] * repetition_factor
 
     for m in labeled_sentences:
         m.set("spacy_doc", spacy_nlp(m.text))
@@ -113,7 +105,9 @@ def test_lookup_tables(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 
     lookups = [
-        {"name": 'drinks', "elements": ["mojito", "lemonade", "sweet berry wine", "tea", "club?mate"]},
+        {"name": 'drinks', "elements": ["mojito", "lemonade",
+                                        "sweet berry wine",
+                                        "tea", "club?mate"]},
         {"name": 'plates', "elements": "data/test/lookup_tables/plates.txt"}
     ]
     ftr = RegexFeaturizer(lookup_tables=lookups)
@@ -154,7 +148,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
         assert np.allclose(vecs, vecs_capitalized, atol=1e-5), \
             "Vectors are unequal for texts '{}' and '{}'".format(
-                    e.text, e.text.capitalize())
+                e.text, e.text.capitalize())
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -268,9 +262,9 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
 
 @pytest.mark.parametrize("sentence, expected", [
-     ("ababab", [3, 3, 3, 2]),
-     ("ab ab ab", [2, 2, 3, 3, 3, 2]),
-     ("abc", [1, 1, 1, 1, 1])
+    ("ababab", [3, 3, 3, 2]),
+    ("ab ab ab", [2, 2, 3, 3, 3, 2]),
+    ("abc", [1, 1, 1, 1, 1])
 ])
 def test_count_vector_featurizer(sentence, expected):
     from rasa_nlu.featurizers.count_vectors_featurizer import \

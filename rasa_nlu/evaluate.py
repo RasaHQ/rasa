@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import itertools
 from collections import defaultdict, namedtuple
 
@@ -91,7 +86,7 @@ def plot_confusion_matrix(cm,
                           title='Confusion matrix',
                           cmap=None,
                           zmin=1,
-                          out=None):  # pragma: no cover
+                          out=None) -> None:  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
     Normalization can be applied by setting `normalize=True`."""
     import matplotlib.pyplot as plt
@@ -131,9 +126,9 @@ def plot_confusion_matrix(cm,
         fig.savefig(out, bbox_inches='tight')
 
 
-def plot_histogram(hist_data,  # type: List[List[float]]
-                   out=None  # type: Optional[Text]
-                   ):  # pragma: no cover
+def plot_histogram(hist_data: List[List[float]],
+                   out: Optional[Text] = None
+                   ) -> None:  # pragma: no cover
     """Plot a histogram of the confidence distribution of the predictions in
     two columns.
     Wine-ish colour for the confidences of hits.
@@ -158,11 +153,11 @@ def plot_histogram(hist_data,  # type: List[List[float]]
         fig.savefig(out, bbox_inches='tight')
 
 
-def log_evaluation_table(report,  # type: Text
-                         precision,  # type: float
-                         f1,  # type: float
-                         accuracy  # type: float
-                         ):  # pragma: no cover
+def log_evaluation_table(report: Text,
+                         precision: float,
+                         f1: float,
+                         accuracy: float
+                         ) -> None:  # pragma: no cover
     """Log the sklearn evaluation metrics."""
 
     logger.info("F1-Score:  {}".format(f1))
@@ -209,8 +204,7 @@ def clean_intent_labels(labels):
     return [l if l is not None else "" for l in labels]
 
 
-def drop_intents_below_freq(td, cutoff=5):
-    # type: (TrainingData, int) -> TrainingData
+def drop_intents_below_freq(td: TrainingData, cutoff: int = 5):
     """Remove intent groups with less than cutoff instances."""
 
     logger.debug(
@@ -310,13 +304,13 @@ def evaluate_intents(intent_results,
 
     if report_folder:
         report, precision, f1, accuracy = get_evaluation_metrics(
-                targets, predictions, output_dict=True)
+            targets, predictions, output_dict=True)
 
         report_filename = os.path.join(report_folder, 'intent_report.json')
 
         save_json(report, report_filename)
         logger.info("Classification report saved to {}."
-                    .format(report_filename))
+                    "".format(report_filename))
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(targets,
@@ -409,18 +403,18 @@ def evaluate_entities(targets,
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         if report_folder:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                    merged_targets, merged_predictions, output_dict=True)
+                merged_targets, merged_predictions, output_dict=True)
 
             report_filename = extractor + "_report.json"
             extractor_report = os.path.join(report_folder, report_filename)
 
             save_json(report, extractor_report)
-            logger.info("Classification report for {} saved to {}."
-                        .format(extractor, extractor_report))
+            logger.info("Classification report for '{}' saved to '{}'."
+                        "".format(extractor, extractor_report))
 
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                    merged_targets, merged_predictions)
+                merged_targets, merged_predictions)
             log_evaluation_table(report, precision, f1, accuracy)
 
         result[extractor] = {
@@ -553,7 +547,7 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
     extractor_labels = defaultdict(list)
     for t in tokens:
         true_token_labels.append(
-                determine_token_labels(t, targets, None))
+            determine_token_labels(t, targets, None))
         for extractor, entities in entities_by_extractors.items():
             extracted = determine_token_labels(t, entities, extractor)
             extractor_labels[extractor].append(extracted)
@@ -807,8 +801,9 @@ def combine_entity_result(results, interpreter, data):
     return results
 
 
-def run_cv_evaluation(data, n_folds, nlu_config):
-    # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
+def run_cv_evaluation(data: TrainingData,
+                      n_folds: int,
+                      nlu_config: RasaNLUModelConfig) -> CVEvaluationResult:
     """Stratified cross validation on data
     :param data: Training Data
     :param n_folds: integer, number of cv folds

@@ -4,6 +4,26 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
+[Unreleased 0.15.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+
+Changed
+-------
+- applied spacy guidelines on how to disable pipeline components
+
+=======
+- replace pep8 with pycodestyle
+
+Removed
+-------
+- **removed python 2.7 support**
+
+Fixed
+-----
+
 [0.14.3] - 2018-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -61,6 +81,8 @@ Changed
 - updated TensorFlow version to 1.12.0
 - updated scikit-learn version to 0.20.2
 - updated cloudpickle version to 0.6.1
+- updated requirements to match Core and SDK
+- pinned keras dependecies
 
 Removed
 -------

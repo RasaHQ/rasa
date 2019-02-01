@@ -15,7 +15,7 @@ with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 tests_requires = [
     "pytest~=3.3",
-    "pytest-pep8~=1.0",
+    "pytest-pycodestyle~=1.4",
     "pytest-cov~=2.5",
     "pytest-twisted<1.6",
     "treq~=17.8",
@@ -31,7 +31,6 @@ install_requires = [
     "packaging~=18.0",
     "typing~=3.6",
     "future~=0.17.1",
-    "six~=1.11",
     "tqdm~=4.19",
     "requests~=2.20",
     "jsonschema~=2.6",
@@ -67,7 +66,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",
