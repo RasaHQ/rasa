@@ -2,7 +2,7 @@ import os
 import warnings
 from typing import Any, Dict, Optional, Text
 
-from fuzzywuzzy import process
+import editdistance
 from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
@@ -98,13 +98,20 @@ class EntitySynonymMapper(EntityExtractor):
     def fuzzy_match_entity(self, entity):
         entity_value = str(entity["value"])
         threshold = self.component_config["fuzzy_threshold"]
-        fuzzy_matched_value = process.extractOne(
-            entity_value,
-            self.synonyms.keys(),
-            score_cutoff=threshold
-        )
-        if fuzzy_matched_value:
-            entity["value"] = self.synonyms[fuzzy_matched_value[0]]
+
+        fuzzy_match = None
+        for w in self.synonyms.keys():
+            distance = editdistance.eval(entity_value, w)
+            # Gives a similarity percentage between 2 strings.
+            # This converts the editdistance to a percentage
+            # Based on the equation used here:
+            # https://docs.python.org/3/library/difflib.html#difflib.SequenceMatcher.ratio
+            similarity = 2 * (max(len(w), len(entity_value)) - distance) / (len(w) + len(entity_value)) * 100
+            if similarity >= threshold:
+                fuzzy_match = max((similarity, w), fuzzy_match) if fuzzy_match else (similarity, w)
+
+        if fuzzy_match:
+            entity["value"] = self.synonyms[fuzzy_match[1]]
             self.add_processor_name(entity)
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
