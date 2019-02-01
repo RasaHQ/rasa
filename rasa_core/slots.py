@@ -72,7 +72,7 @@ class Slot(object):
             raise ValueError(
                 "Failed to find slot type, '{}' is neither a known type nor "
                 "user-defined. If you are creating your own slot type, make "
-                "sure its module path is correct:".format(type_name))
+                "sure its module path is correct.".format(type_name))
 
     def persistence_info(self):
         return {"type": utils.module_path_from_instance(self),
