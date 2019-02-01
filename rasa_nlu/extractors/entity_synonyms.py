@@ -96,6 +96,13 @@ class EntitySynonymMapper(EntityExtractor):
                 self.add_processor_name(entity)
 
     def fuzzy_match_entity(self, entity):
+        fuzzy_match = self.get_fuzzy_value(entity)
+
+        if fuzzy_match:
+            entity["value"] = self.synonyms[fuzzy_match[1]]
+            self.add_processor_name(entity)
+
+    def get_fuzzy_value(self, entity):
         entity_value = str(entity["value"])
         threshold = self.component_config["fuzzy_threshold"]
 
@@ -110,9 +117,7 @@ class EntitySynonymMapper(EntityExtractor):
             if similarity >= threshold:
                 fuzzy_match = max((similarity, w), fuzzy_match) if fuzzy_match else (similarity, w)
 
-        if fuzzy_match:
-            entity["value"] = self.synonyms[fuzzy_match[1]]
-            self.add_processor_name(entity)
+        return fuzzy_match
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
