@@ -15,7 +15,7 @@ with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 tests_requires = [
     "pytest~=3.3",
-    "pytest-pep8~=1.0",
+    "pytest-pycodestyle~=1.4",
     "pytest-cov~=2.5",
     "pytest-twisted<1.6",
     "treq~=17.8",
@@ -50,7 +50,9 @@ extras_requires = {
               ],
     'tensorflow': ["sklearn-crfsuite~=0.3.6",
                    "scipy~=1.1",
-                   "tensorflow~=1.12"
+                   "tensorflow~=1.12",
+                   "keras-applications==1.0.6",
+                   "keras-preprocessing==1.0.5"
                    ],
     'mitie': ["mitie"],
 }

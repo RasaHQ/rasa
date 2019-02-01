@@ -115,7 +115,7 @@ class RasaNLUModelConfig(object):
                 self.__dict__['pipeline'] = pipeline
             else:
                 known_templates = ", ".join(
-                        registry.registered_pipeline_templates.keys())
+                    registry.registered_pipeline_templates.keys())
 
                 raise InvalidConfigError("No pipeline specified and unknown "
                                          "pipeline template '{}' passed. Known "

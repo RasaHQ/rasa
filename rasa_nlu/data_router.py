@@ -135,8 +135,8 @@ class DataRouter(object):
             out_file = io.open(response_logfile, 'a', encoding='utf8')
             # noinspection PyTypeChecker
             query_logger = Logger(
-                    observer=jsonFileLogObserver(out_file, recordSeparator=''),
-                    namespace='query-logger')
+                observer=jsonFileLogObserver(out_file, recordSeparator=''),
+                namespace='query-logger')
             # Prevents queries getting logged with parent logger
             # --> might log them to stdout
             logger.info("Logging requests to '{}'.".format(response_logfile))
@@ -166,12 +166,12 @@ class DataRouter(object):
 
         if self.model_server is not None:
             project_store[default_project] = load_from_server(
-                    self.component_builder,
-                    default_project,
-                    self.project_dir,
-                    self.remote_storage,
-                    self.model_server,
-                    self.wait_time_between_pulls
+                self.component_builder,
+                default_project,
+                self.project_dir,
+                self.remote_storage,
+                self.model_server,
+                self.wait_time_between_pulls
             )
         else:
             for project in projects:
@@ -182,9 +182,9 @@ class DataRouter(object):
 
             if not project_store:
                 project_store[default_project] = Project(
-                        project=default_project,
-                        project_dir=self.project_dir,
-                        remote_storage=self.remote_storage
+                    project=default_project,
+                    project_dir=self.project_dir,
+                    remote_storage=self.remote_storage
                 )
 
         return project_store
@@ -251,16 +251,16 @@ class DataRouter(object):
 
             if project not in projects:
                 raise InvalidProjectError(
-                        "No project found with name '{}'.".format(project))
+                    "No project found with name '{}'.".format(project))
             else:
                 try:
                     self.project_store[project] = Project(
-                            self.component_builder, project,
-                            self.project_dir, self.remote_storage)
+                        self.component_builder, project,
+                        self.project_dir, self.remote_storage)
                 except Exception as e:
                     raise InvalidProjectError(
-                            "Unable to load project '{}'. "
-                            "Error: {}".format(project, e))
+                        "Unable to load project '{}'. "
+                        "Error: {}".format(project, e))
 
         time = data.get('time')
         response = self.project_store[project].parse(data['text'], time,
@@ -313,8 +313,8 @@ class DataRouter(object):
             self.project_store[project].status = STATUS_TRAINING
         elif project not in self.project_store:
             self.project_store[project] = Project(
-                    self.component_builder, project,
-                    self.project_dir, self.remote_storage)
+                self.component_builder, project,
+                self.project_dir, self.remote_storage)
             self.project_store[project].status = STATUS_TRAINING
 
         def training_callback(model_path):
@@ -383,9 +383,9 @@ class DataRouter(object):
             self.project_store[project]._loader_lock.release()
 
         return run_evaluation(
-                data_path=file_name,
-                model=self.project_store[project]._models[model_name],
-                errors_filename=None
+            data_path=file_name,
+            model=self.project_store[project]._models[model_name],
+            errors_filename=None
         )
 
     def unload_model(self,

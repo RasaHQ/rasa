@@ -44,14 +44,14 @@ def test_ngram_featurizer(spacy_nlp):
     greet = {"intent": "greet", "text_features": [0.5]}
     goodbye = {"intent": "goodbye", "text_features": [0.5]}
     labeled_sentences = [
-                            Message("heyheyheyhey", greet),
-                            Message("howdyheyhowdy", greet),
-                            Message("heyhey howdyheyhowdy", greet),
-                            Message("howdyheyhowdy heyhey", greet),
-                            Message("astalavistasista", goodbye),
-                            Message("astalavistasista sistala", goodbye),
-                            Message("sistala astalavistasista", goodbye),
-                        ] * repetition_factor
+        Message("heyheyheyhey", greet),
+        Message("howdyheyhowdy", greet),
+        Message("heyhey howdyheyhowdy", greet),
+        Message("howdyheyhowdy heyhey", greet),
+        Message("astalavistasista", goodbye),
+        Message("astalavistasista sistala", goodbye),
+        Message("sistala astalavistasista", goodbye),
+    ] * repetition_factor
 
     for m in labeled_sentences:
         m.set("spacy_doc", spacy_nlp(m.text))
@@ -148,7 +148,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
 
         assert np.allclose(vecs, vecs_capitalized, atol=1e-5), \
             "Vectors are unequal for texts '{}' and '{}'".format(
-                    e.text, e.text.capitalize())
+                e.text, e.text.capitalize())
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -262,9 +262,9 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
 
 @pytest.mark.parametrize("sentence, expected", [
-     ("ababab", [3, 3, 3, 2]),
-     ("ab ab ab", [2, 2, 3, 3, 3, 2]),
-     ("abc", [1, 1, 1, 1, 1])
+    ("ababab", [3, 3, 3, 2]),
+    ("ab ab ab", [2, 2, 3, 3, 3, 2]),
+    ("abc", [1, 1, 1, 1, 1])
 ])
 def test_count_vector_featurizer(sentence, expected):
     from rasa_nlu.featurizers.count_vectors_featurizer import \

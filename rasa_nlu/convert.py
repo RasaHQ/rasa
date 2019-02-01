@@ -6,7 +6,7 @@ from rasa_nlu.utils import write_to_file
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
-            description='Convert training data formats into one another')
+        description='Convert training data formats into one another')
 
     parser.add_argument('-d', '--data_file',
                         required=True,
