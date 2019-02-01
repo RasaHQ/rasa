@@ -130,7 +130,7 @@ class NGramFeaturizer(Featurizer):
 
         oov_strings = self._remove_in_vocab_words(examples)
         ngrams = self._generate_all_ngrams(
-                oov_strings, self.component_config["ngram_min_length"])
+            oov_strings, self.component_config["ngram_min_length"])
         return self._sort_applicable_ngrams(ngrams, examples, labels)
 
     def _remove_in_vocab_words(self, examples):
@@ -148,9 +148,9 @@ class NGramFeaturizer(Featurizer):
 
         Excludes every word with digits in them, hyperlinks or
         an assigned word vector."""
-        return (not token.has_vector and not token.like_url
-                and not token.like_num and not token.like_email
-                and not token.is_punct)
+        return (not token.has_vector and not token.like_url and not
+                token.like_num and not token.like_email and not
+                token.is_punct)
 
     def _remove_in_vocab_words_from_sentence(self, example):
         """Filter for words that do not have a word vector."""
@@ -221,7 +221,7 @@ class NGramFeaturizer(Featurizer):
                 labels = np.array(labels)[mask]
 
                 return self._rank_ngrams_using_cv(
-                        examples, labels, ngrams_list)
+                    examples, labels, ngrams_list)
             except ValueError as e:
                 if "needs samples of at least 2 classes" in str(e):
                     # we got unlucky during the random
@@ -294,11 +294,11 @@ class NGramFeaturizer(Featurizer):
                     begin = can[:-1]
                     end = can[1:]
                     if n >= ngram_min_length:
-                        if (counters[n - 1][begin] == counters[n][can]
-                                and begin in features[n - 1]):
+                        if (counters[n - 1][begin] == counters[n][can] and
+                                begin in features[n - 1]):
                             features[n - 1].remove(begin)
-                        if (counters[n - 1][end] == counters[n][can]
-                                and end in features[n - 1]):
+                        if (counters[n - 1][end] == counters[n][can] and
+                                end in features[n - 1]):
                             features[n - 1].remove(end)
 
         return [item for sublist in list(features.values()) for item in sublist]
@@ -349,7 +349,7 @@ class NGramFeaturizer(Featurizer):
         clf = LogisticRegression(class_weight='balanced')
 
         no_ngrams_X = self._append_ngram_features(
-                examples, existing_text_features, max_ngrams)
+            examples, existing_text_features, max_ngrams)
         return np.mean(cross_val_score(clf, no_ngrams_X, y, cv=cv_splits))
 
     @staticmethod

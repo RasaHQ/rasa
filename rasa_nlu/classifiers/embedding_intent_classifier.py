@@ -198,9 +198,9 @@ class EmbeddingIntentClassifier(Component):
     def _check_tensorflow():
         if tf is None:
             raise ImportError(
-                    'Failed to import `tensorflow`. '
-                    'Please install `tensorflow`. '
-                    'For example with `pip install tensorflow`.')
+                'Failed to import `tensorflow`. '
+                'Please install `tensorflow`. '
+                'For example with `pip install tensorflow`.')
 
     # training data helpers:
     @staticmethod
@@ -232,7 +232,7 @@ class EmbeddingIntentClassifier(Component):
 
         if self.intent_tokenization_flag:
             intent_token_dict = self._create_intent_token_dict(
-                    list(intent_dict.keys()), self.intent_split_symbol)
+                list(intent_dict.keys()), self.intent_split_symbol)
 
             encoded_all_intents = np.zeros((len(intent_dict),
                                             len(intent_token_dict)))
@@ -379,8 +379,8 @@ class EmbeddingIntentClassifier(Component):
         for b in range(batch_pos_b.shape[0]):
             # create negative indexes out of possible ones
             # except for correct index of b
-            negative_indexes = [i for i in range(
-                    self.encoded_all_intents.shape[0])
+            negative_indexes = [i for i in
+                                range(self.encoded_all_intents.shape[0])
                                 if i != intent_ids[b]]
             negs = np.random.choice(negative_indexes, size=self.num_neg)
 
@@ -443,10 +443,10 @@ class EmbeddingIntentClassifier(Component):
                 batch_b = self._create_batch_b(batch_pos_b, intents_for_b)
 
                 sess_out = self.session.run(
-                        {'loss': loss, 'train_op': train_op},
-                        feed_dict={self.a_in: batch_a,
-                                   self.b_in: batch_b,
-                                   is_training: True}
+                    {'loss': loss, 'train_op': train_op},
+                    feed_dict={self.a_in: batch_a,
+                               self.b_in: batch_b,
+                               is_training: True}
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
@@ -509,10 +509,10 @@ class EmbeddingIntentClassifier(Component):
 
         self.inv_intent_dict = {v: k for k, v in intent_dict.items()}
         self.encoded_all_intents = self._create_encoded_intents(
-                intent_dict)
+            intent_dict)
 
         X, Y, intents_for_X = self._prepare_data_for_training(
-                training_data, intent_dict)
+            training_data, intent_dict)
 
         # check if number of negatives is less than number of intents
         logger.debug("Check if num_neg {} is smaller than "
@@ -707,16 +707,16 @@ class EmbeddingIntentClassifier(Component):
                 encoded_all_intents = pickle.load(f)
 
             return cls(
-                    component_config=meta,
-                    inv_intent_dict=inv_intent_dict,
-                    encoded_all_intents=encoded_all_intents,
-                    session=sess,
-                    graph=graph,
-                    message_placeholder=a_in,
-                    intent_placeholder=b_in,
-                    similarity_op=sim_op,
-                    word_embed=word_embed,
-                    intent_embed=intent_embed
+                component_config=meta,
+                inv_intent_dict=inv_intent_dict,
+                encoded_all_intents=encoded_all_intents,
+                session=sess,
+                graph=graph,
+                message_placeholder=a_in,
+                intent_placeholder=b_in,
+                similarity_op=sim_op,
+                word_embed=word_embed,
+                intent_embed=intent_embed
             )
 
         else:

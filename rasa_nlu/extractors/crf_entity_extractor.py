@@ -97,10 +97,10 @@ class CRFEntityExtractor(EntityExtractor):
     def _check_spacy():
         if spacy is None:
             raise ImportError(
-                    'Failed to import `spaCy`. '
-                    '`spaCy` is required for POS features '
-                    'See https://spacy.io/usage/ for installation'
-                    'instructions.')
+                'Failed to import `spaCy`. '
+                '`spaCy` is required for POS features '
+                'See https://spacy.io/usage/ for installation'
+                'instructions.')
 
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -127,7 +127,7 @@ class CRFEntityExtractor(EntityExtractor):
 
             # filter out pre-trained entity examples
             filtered_entity_examples = self.filter_trainable_entities(
-                    training_data.training_examples)
+                training_data.training_examples)
 
             # convert the dataset into features
             # this will train on ALL examples, even the ones
@@ -148,12 +148,12 @@ class CRFEntityExtractor(EntityExtractor):
     def _check_spacy_doc(self, message):
         if self.pos_features and message.get("spacy_doc") is None:
             raise InvalidConfigError(
-                    'Could not find `spacy_doc` attribute for '
-                    'message {}\n'
-                    'POS features require a pipeline component '
-                    'that provides `spacy_doc` attributes, i.e. `nlp_spacy`. '
-                    'See https://nlu.rasa.com/pipeline.html#nlp-spacy '
-                    'for details'.format(message.text))
+                'Could not find `spacy_doc` attribute for '
+                'message {}\n'
+                'POS features require a pipeline component '
+                'that provides `spacy_doc` attributes, i.e. `nlp_spacy`. '
+                'See https://nlu.rasa.com/pipeline.html#nlp-spacy '
+                'for details'.format(message.text))
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
@@ -241,7 +241,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         while not finished:
             label, label_confidence = self.most_likely_entity(
-                    ent_word_idx, entities)
+                ent_word_idx, entities)
 
             confidence = min(confidence, label_confidence)
 
@@ -277,7 +277,7 @@ class CRFEntityExtractor(EntityExtractor):
         elif self._bilou_from_label(label) == "B":
             # start of multi word-entity need to represent whole extent
             ent_word_idx, confidence = self._find_bilou_end(
-                    word_idx, entities)
+                word_idx, entities)
             return ent_word_idx, confidence, entity_label
 
         else:
@@ -298,11 +298,11 @@ class CRFEntityExtractor(EntityExtractor):
 
         if self.component_config["BILOU_flag"]:
             return self._convert_bilou_tagging_to_entity_result(
-                    tokens, entities)
+                tokens, entities)
         else:
             # not using BILOU tagging scheme, multi-word entities are split.
             return self._convert_simple_tagging_to_entity_result(
-                    tokens, entities)
+                tokens, entities)
 
     def _convert_bilou_tagging_to_entity_result(self, tokens, entities):
         # using the BILOU tagging scheme
@@ -310,7 +310,7 @@ class CRFEntityExtractor(EntityExtractor):
         word_idx = 0
         while word_idx < len(tokens):
             end_idx, confidence, entity_label = self._handle_bilou_label(
-                    word_idx, entities)
+                word_idx, entities)
 
             if end_idx is not None:
                 ent = self._create_entity_dict(tokens,
@@ -329,7 +329,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         for word_idx in range(len(tokens)):
             entity_label, confidence = self.most_likely_entity(
-                    word_idx, entities)
+                word_idx, entities)
             word = tokens[word_idx]
             if entity_label != 'O':
                 if self.pos_features:
@@ -413,9 +413,9 @@ class CRFEntityExtractor(EntityExtractor):
                             # add all regexes as a feature
                             regex_patterns = self.function_dict[feature](word)
                             for p_name, matched in regex_patterns.items():
-                                feature_name = (prefix + ":"
-                                                + feature
-                                                + ":" + p_name)
+                                feature_name = (prefix + ":" +
+                                                feature +
+                                                ":" + p_name)
                                 word_features[feature_name] = matched
                         else:
                             # append each feature to a feature vector
@@ -535,14 +535,14 @@ class CRFEntityExtractor(EntityExtractor):
         X_train = [self._sentence_to_features(sent) for sent in df_train]
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
         self.ent_tagger = sklearn_crfsuite.CRF(
-                algorithm='lbfgs',
-                # coefficient for L1 penalty
-                c1=self.component_config["L1_c"],
-                # coefficient for L2 penalty
-                c2=self.component_config["L2_c"],
-                # stop earlier
-                max_iterations=self.component_config["max_iterations"],
-                # include transitions that are possible, but not observed
-                all_possible_transitions=True
+            algorithm='lbfgs',
+            # coefficient for L1 penalty
+            c1=self.component_config["L1_c"],
+            # coefficient for L2 penalty
+            c2=self.component_config["L2_c"],
+            # stop earlier
+            max_iterations=self.component_config["max_iterations"],
+            # include transitions that are possible, but not observed
+            all_possible_transitions=True
         )
         self.ent_tagger.fit(X_train, y_train)

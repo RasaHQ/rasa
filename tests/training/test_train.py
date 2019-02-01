@@ -69,10 +69,10 @@ def test_all_components_are_in_at_least_one_test_pipeline():
 def test_train_model(pipeline_template, component_builder, tmpdir):
     _config = utilities.base_test_conf(pipeline_template)
     (trained, _, persisted_path) = train.do_train(
-            _config,
-            path=tmpdir.strpath,
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder)
+        _config,
+        path=tmpdir.strpath,
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder)
     assert trained.pipeline
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
@@ -90,16 +90,16 @@ def test_random_seed(component_builder, tmpdir):
                                random_seed=1)
     # first run
     (trained_a, _, persisted_path_a) = train.do_train(
-            _config,
-            path=tmpdir.strpath + "_a",
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder)
+        _config,
+        path=tmpdir.strpath + "_a",
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder)
     # second run
     (trained_b, _, persisted_path_b) = train.do_train(
-            _config,
-            path=tmpdir.strpath + "_b",
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder)
+        _config,
+        path=tmpdir.strpath + "_b",
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder)
     loaded_a = Interpreter.load(persisted_path_a, component_builder)
     loaded_b = Interpreter.load(persisted_path_b, component_builder)
     result_a = loaded_a.parse("hello")["intent"]["confidence"]
@@ -113,10 +113,10 @@ def test_train_model_on_test_pipelines(language, pipeline,
                                        component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
     (trained, _, persisted_path) = train.do_train(
-            _config,
-            path=tmpdir.strpath,
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder)
+        _config,
+        path=tmpdir.strpath,
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder)
     assert trained.pipeline
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
@@ -129,10 +129,10 @@ def test_train_model_on_test_pipelines(language, pipeline,
 def test_train_model_noents(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
     (trained, _, persisted_path) = train.do_train(
-            _config,
-            path=tmpdir.strpath,
-            data="./data/test/demo-rasa-noents.json",
-            component_builder=component_builder)
+        _config,
+        path=tmpdir.strpath,
+        data="./data/test/demo-rasa-noents.json",
+        component_builder=component_builder)
     assert trained.pipeline
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
@@ -145,11 +145,11 @@ def test_train_model_noents(language, pipeline, component_builder, tmpdir):
 def test_train_model_multithread(language, pipeline, component_builder, tmpdir):
     _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
     (trained, _, persisted_path) = train.do_train(
-            _config,
-            path=tmpdir.strpath,
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder,
-            num_threads=2)
+        _config,
+        path=tmpdir.strpath,
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder,
+        num_threads=2)
     assert trained.pipeline
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
@@ -162,19 +162,19 @@ def test_train_model_empty_pipeline(component_builder):
     _config = utilities.base_test_conf(pipeline_template=None)
     with pytest.raises(ValueError):
         train.do_train(
-                _config,
-                data=DEFAULT_DATA_PATH,
-                component_builder=component_builder)
+            _config,
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder)
 
 
 def test_train_named_model(component_builder, tmpdir):
     _config = utilities.base_test_conf("keyword")
     (trained, _, persisted_path) = train.do_train(
-            _config,
-            path=tmpdir.strpath,
-            project="my_keyword_model",
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder)
+        _config,
+        path=tmpdir.strpath,
+        project="my_keyword_model",
+        data=DEFAULT_DATA_PATH,
+        component_builder=component_builder)
     assert trained.pipeline
     normalized_path = os.path.dirname(os.path.normpath(persisted_path))
     # should be saved in a dir named after a project
@@ -186,9 +186,9 @@ def test_handles_pipeline_with_non_existing_component(component_builder):
     _config.pipeline.append({"name": "my_made_up_component"})
     with pytest.raises(Exception) as execinfo:
         train.do_train(
-                _config,
-                data=DEFAULT_DATA_PATH,
-                component_builder=component_builder)
+            _config,
+            data=DEFAULT_DATA_PATH,
+            component_builder=component_builder)
     assert "Failed to find component" in str(execinfo.value)
 
 

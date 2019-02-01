@@ -89,7 +89,7 @@ class MarkdownReader(TrainingDataReader):
             if match:
                 fname = match.group(1)
                 self.lookup_tables.append(
-                        {"name": self.current_title, "elements": str(fname)})
+                    {"name": self.current_title, "elements": str(fname)})
 
     def _parse_item(self, line):
         """Parses an md list item line based on the current section type."""
@@ -103,7 +103,7 @@ class MarkdownReader(TrainingDataReader):
                 self._add_synonym(item, self.current_title)
             elif self.current_section == REGEX:
                 self.regex_features.append(
-                        {"name": self.current_title, "pattern": item})
+                    {"name": self.current_title, "pattern": item})
             elif self.current_section == LOOKUP:
                 self._add_item_to_lookup(item)
 

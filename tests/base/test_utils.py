@@ -60,12 +60,12 @@ def test_ordered():
 
 
 @pytest.mark.parametrize(
-        ("model_dir", "expected"),
-        [("test_models/test_model_mitie/model_20170628-002704", True),
-         ("test_models/test_model_mitie_sklearn/model_20170628-002712", True),
-         ("test_models/test_model_spacy_sklearn/model_20170628-002705", True),
-         ("test_models/", False),
-         ("test_models/nonexistent_for_sure_123", False)])
+    ("model_dir", "expected"),
+    [("test_models/test_model_mitie/model_20170628-002704", True),
+     ("test_models/test_model_mitie_sklearn/model_20170628-002712", True),
+     ("test_models/test_model_spacy_sklearn/model_20170628-002705", True),
+     ("test_models/", False),
+     ("test_models/nonexistent_for_sure_123", False)])
 def test_is_model_dir(model_dir, expected):
     assert is_model_dir(model_dir) == expected
 
@@ -111,20 +111,20 @@ def test_is_url():
 
 def test_endpoint_config():
     endpoint = EndpointConfig(
-            "https://abc.defg/",
-            params={"A": "B"},
-            headers={"X-Powered-By": "Rasa"},
-            basic_auth={"username": "user",
-                        "password": "pass"},
-            token="mytoken",
-            token_name="letoken"
+        "https://abc.defg/",
+        params={"A": "B"},
+        headers={"X-Powered-By": "Rasa"},
+        basic_auth={"username": "user",
+                    "password": "pass"},
+        token="mytoken",
+        token_name="letoken"
     )
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/test',
-            status=500,
-            body='')
+        httpretty.POST,
+        'https://abc.defg/test',
+        status=500,
+        body='')
 
     httpretty.enable()
     endpoint.request("post", subpath="test",

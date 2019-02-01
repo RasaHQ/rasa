@@ -38,16 +38,16 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy-uri/parse?q=food&project=test_project_mitie",
-            {"entities": [], "intent": "affirm", "text": "food"}
+        "http://dummy-uri/parse?q=food&project=test_project_mitie",
+        {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-            "http://dummy-uri/parse?q=food&project=test_project_mitie_sklearn",
-            {"entities": [], "intent": "restaurant_search", "text": "food"}
+        "http://dummy-uri/parse?q=food&project=test_project_mitie_sklearn",
+        {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-            "http://dummy-uri/parse?q=food&project=test_project_spacy_sklearn",
-            {"entities": [], "intent": "restaurant_search", "text": "food"}
+        "http://dummy-uri/parse?q=food&project=test_project_spacy_sklearn",
+        {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
 @pytest.inlineCallbacks
@@ -61,12 +61,12 @@ def test_get_parse(app, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy-uri/parse?q=food",
-            {"error": "No project found with name 'default'."}
+        "http://dummy-uri/parse?q=food",
+        {"error": "No project found with name 'default'."}
     ),
     ResponseTest(
-            "http://dummy-uri/parse?q=food&project=umpalumpa",
-            {"error": "No project found with name 'umpalumpa'."}
+        "http://dummy-uri/parse?q=food&project=umpalumpa",
+        {"error": "No project found with name 'umpalumpa'."}
     )
 ])
 @pytest.inlineCallbacks
@@ -79,19 +79,19 @@ def test_get_parse_invalid_model(app, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy-uri/parse",
-            {"entities": [], "intent": "affirm", "text": "food"},
-            payload={"q": "food", "project": "test_project_mitie"}
+        "http://dummy-uri/parse",
+        {"entities": [], "intent": "affirm", "text": "food"},
+        payload={"q": "food", "project": "test_project_mitie"}
     ),
     ResponseTest(
-            "http://dummy-uri/parse",
-            {"entities": [], "intent": "restaurant_search", "text": "food"},
-            payload={"q": "food", "project": "test_project_mitie_sklearn"}
+        "http://dummy-uri/parse",
+        {"entities": [], "intent": "restaurant_search", "text": "food"},
+        payload={"q": "food", "project": "test_project_mitie_sklearn"}
     ),
     ResponseTest(
-            "http://dummy-uri/parse",
-            {"entities": [], "intent": "restaurant_search", "text": "food"},
-            payload={"q": "food", "project": "test_project_spacy_sklearn"}
+        "http://dummy-uri/parse",
+        {"entities": [], "intent": "restaurant_search", "text": "food"},
+        payload={"q": "food", "project": "test_project_spacy_sklearn"}
     ),
 ])
 @pytest.inlineCallbacks
@@ -128,14 +128,14 @@ def test_post_parse_specific_model(app):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy-uri/parse",
-            {"error": "No project found with name 'default'."},
-            payload={"q": "food"}
+        "http://dummy-uri/parse",
+        {"error": "No project found with name 'default'."},
+        payload={"q": "food"}
     ),
     ResponseTest(
-            "http://dummy-uri/parse",
-            {"error": "No project found with name 'umpalumpa'."},
-            payload={"q": "food", "project": "umpalumpa"}
+        "http://dummy-uri/parse",
+        {"error": "No project found with name 'umpalumpa'."},
+        payload={"q": "food", "project": "umpalumpa"}
     ),
 ])
 @pytest.inlineCallbacks
