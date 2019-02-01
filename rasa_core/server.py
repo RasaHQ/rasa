@@ -14,6 +14,7 @@ from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.evaluate import run_story_evaluation
 from rasa_core.events import Event
+from rasa_core.domain import Domain
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.version import __version__
@@ -478,8 +479,11 @@ def create_app(agent,
         logger.debug("Unzipped model to {}".format(
             os.path.abspath(model_directory)))
 
+        domain_path = os.path.join(os.path.abspath(model_directory),
+                                   "domain.yml")
+        domain = Domain.load(domain_path)
         ensemble = PolicyEnsemble.load(model_directory)
-        agent.policy_ensemble = ensemble
+        agent.update_model(domain, ensemble, None)
         logger.debug("Finished loading new agent.")
         return '', 204
 
