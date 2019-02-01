@@ -238,23 +238,23 @@ class bcolors(object):
     UNDERLINE = '\033[4m'
 
 
-def wrap_with_color(text, color):
+def wrap_with_color(text: Text, color: Text):
     return color + text + bcolors.ENDC
 
 
-def print_color(text, color):
+def print_color(text: Text, color: Text):
     print(wrap_with_color(text, color))
 
 
-def print_warning(text):
+def print_warning(text: Text):
     print(wrap_with_color(text, bcolors.WARNING))
 
 
-def print_error(text):
+def print_error(text: Text):
     print(wrap_with_color(text, bcolors.WARNING))
 
 
-def print_success(text):
+def print_success(text: Text):
     print(wrap_with_color(text, bcolors.OKGREEN))
 
 
@@ -556,18 +556,18 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
                 break
 
 
-def file_as_bytes(path: str) -> bytes:
+def file_as_bytes(path: Text) -> bytes:
     """Read in a file as a byte array."""
     with io.open(path, 'rb') as f:
         return f.read()
 
 
-def get_file_hash(path: str) -> str:
+def get_file_hash(path: Text) -> Text:
     """Calculate the md5 hash of a file."""
     return md5(file_as_bytes(path)).hexdigest()
 
 
-def get_text_hash(text: str, encoding: str = "utf-8") -> str:
+def get_text_hash(text: Text, encoding: Text = "utf-8") -> Text:
     """Calculate the md5 hash of a file."""
     return md5(text.encode(encoding)).hexdigest()
 
