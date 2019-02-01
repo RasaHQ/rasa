@@ -4,6 +4,15 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
+[0.14.3] - 2018-02-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- starter packs are now tested in parallel with the unittests,
+  and only on branches ending in ``.x`` (i.e. new version releases)
+- pinned ``coloredlogs``, ``future`` and ``packaging``
+
 [0.14.2] - 2018-01-29
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -16,8 +25,6 @@ Changed
 -------
 - updated requirements to match Core and SDK
 - pinned keras dependecies
-- starter packs are now tested in parallel with the unittests,
-  and only on branches ending in ``.x`` (i.e. new version releases)
 
 [0.14.1] - 2018-01-23
 ^^^^^^^^^^^^^^^^^^^^^
