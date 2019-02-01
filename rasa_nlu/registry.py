@@ -101,13 +101,13 @@ def get_component_class(component_name: Text) -> Type['Component']:
             return utils.class_from_module_path(component_name)
         except Exception:
             raise Exception(
-                    "Failed to find component class for '{}'. Unknown "
-                    "component name. Check your configured pipeline and make "
-                    "sure the mentioned component is not misspelled. If you "
-                    "are creating your own component, make sure it is either "
-                    "listed as part of the `component_classes` in "
-                    "`rasa_nlu.registry.py` or is a proper name of a class "
-                    "in a module.".format(component_name))
+                "Failed to find component class for '{}'. Unknown "
+                "component name. Check your configured pipeline and make "
+                "sure the mentioned component is not misspelled. If you "
+                "are creating your own component, make sure it is either "
+                "listed as part of the `component_classes` in "
+                "`rasa_nlu.registry.py` or is a proper name of a class "
+                "in a module.".format(component_name))
     return registered_components[component_name]
 
 

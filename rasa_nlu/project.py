@@ -66,7 +66,7 @@ def _update_model_from_server(model_server: EndpointConfig,
     model_directory = tempfile.mkdtemp()
 
     new_model_fingerprint, filename = _pull_model_and_fingerprint(
-            model_server, model_directory, project.fingerprint)
+        model_server, model_directory, project.fingerprint)
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
         project.fingerprint = new_model_fingerprint
@@ -296,13 +296,13 @@ class Project(object):
         # noinspection PyUnusedLocal
         status = False
 
-        logger.debug('Loading model {} from directory {}'.format(
-                model_name, model_dir))
+        logger.debug("Loading model '{}' from directory '{}'.".format(
+            model_name, model_dir))
 
         self._loader_lock.acquire()
         try:
             interpreter = self._interpreter_for_model(
-                    model_name, model_dir)
+                model_name, model_dir)
             self._models[model_name] = interpreter
             status = True
         finally:

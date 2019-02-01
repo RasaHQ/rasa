@@ -158,7 +158,7 @@ class Trainer(object):
 
         return pipeline
 
-    def train(self, data: TrainingData, **kwargs: Any)-> 'Interpreter':
+    def train(self, data: TrainingData, **kwargs: Any) -> 'Interpreter':
         """Trains the underlying pipeline using the provided training data."""
 
         self.training_data = data
@@ -193,7 +193,7 @@ class Trainer(object):
                 path: Text,
                 persistor: Optional[Persistor] = None,
                 project_name: Text = None,
-                fixed_model_name: Text = None)-> Text:
+                fixed_model_name: Text = None) -> Text:
         """Persist all components of the pipeline to the passed path.
 
         Returns the directory of the persisted model."""
