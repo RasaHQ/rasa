@@ -149,28 +149,27 @@ def test_custom_slot_type(tmpdir):
 
 @pytest.mark.parametrize("domain_unkown_slot_type", [
     """
-            slots:
-                custom:
-                 type: tests.conftest.Unknown
+    slots:
+        custom:
+         type: tests.conftest.Unknown
 
-            templates:
-                utter_greet:
-                 - hey there!
+    templates:
+        utter_greet:
+         - hey there!
 
-            actions:
-                - utter_greet"""
-    ,
+    actions:
+        - utter_greet""",
     """
-            slots:
-                custom:
-                 type: blubblubblub
+    slots:
+        custom:
+         type: blubblubblub
 
-            templates:
-                utter_greet:
-                 - hey there!
+    templates:
+        utter_greet:
+         - hey there!
 
-            actions:
-                - utter_greet"""])
+    actions:
+        - utter_greet"""])
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir,
                                                   domain_unkown_slot_type):
     domain_path = utilities.write_text_to_file(tmpdir, "domain.yml",
