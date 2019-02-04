@@ -13,6 +13,7 @@ Added
 Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
+- starter packs now also tested when attempting to merge a branch to master
 
 =======
 - replace pep8 with pycodestyle
