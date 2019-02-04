@@ -1,7 +1,7 @@
 openapi: "3.0.1"
 info:
   title: "Rasa Core - Server Endpoints"
-  version: "0.12.0"
+  version: "0.0.0"
   description: >-
     The Rasa Core server provides endpoints to retrieve trackers of
     conversations as well as endpoints to modify them.
