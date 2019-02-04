@@ -64,7 +64,7 @@ The Rasa Core dialogue engine
 
    architecture
    connectors
-   customactions
+   run-code-in-custom-actions
    slots
    slotfilling
    responses
