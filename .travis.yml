@@ -13,7 +13,7 @@ env:
   global:
   - BOTO_CONFIG=/dev/null
 
-install: 
+install:
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r alt_requirements/requirements_dev.txt
   - pip install -e .
