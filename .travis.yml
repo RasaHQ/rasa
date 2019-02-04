@@ -108,7 +108,7 @@ jobs:
     - git commit --allow-empty -m "trigger nlu docs update"
     - git push origin master
   - stage: deploy
-    name: "PyPI test"
+    name: "Deploy to PyPI"
     python: 3.6
     install: skip
     script: skip
