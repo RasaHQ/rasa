@@ -337,6 +337,18 @@ def test_empty_intent_removal():
     assert intent_results[0].confidence == 0.98765
     assert intent_results[0].message == "hello"
 
+def test_evaluate_entities_cv_empty_tokens():
+    mock_extractors = ["A", "B"]
+    result = align_entity_predictions(EN_targets, EN_predicted,
+                                      [], mock_extractors)
+
+    assert result == {
+        "target_labels": [],
+        "extractor_labels": {
+            "A": [],
+            "B": []
+        }
+    }, "Wrong entity prediction alignment"
 
 def test_evaluate_entities_cv():
     mock_extractors = ["A", "B"]
