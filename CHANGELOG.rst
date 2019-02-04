@@ -16,7 +16,7 @@ Added
 Changed
 -------
 - starter packs are now tested in parallel with the unittests,
-  and only on branches ending in ``.x`` (i.e. new version releases)
+  and only on master and branches ending in ``.x`` (i.e. new version releases)
 
 Removed
 -------
