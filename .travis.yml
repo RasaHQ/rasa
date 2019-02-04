@@ -72,7 +72,7 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: test
-    if: branch = "*.x" # only new NLU version builds test the starter packs
+    if: branch =~ /(\d\.\d{1,2}\.x)/ or branch = "master" # only master and new Core builds test the starter packs
     name: "NLU starter pack"
     python: 3.6
     script:
@@ -80,7 +80,7 @@ jobs:
     - cd starter-pack-rasa-nlu
     - python -m pytest tests/test_nlu.py
   - stage: test
-    if: branch = "*.x" # only new NLU version builds test the starter packs
+    if: branch =~ /(\d\.\d{1,2}\.x)/ or branch = "master" # only master and new Core builds test the starter packs
     name: "Stack starter pack (NLU only)"
     python: 3.6
     script:
