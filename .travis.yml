@@ -31,7 +31,7 @@ jobs:
     after_success:
     - coveralls
   - stage: test
-    if: branch = "*.x" # only new Core version builds test the starter pack
+    if: branch =~ /(\d\.\d{1,2}\.x)/ or branch = "master" # only master and new Core builds test the starter pack
     name: "Test stack starter pack"
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
