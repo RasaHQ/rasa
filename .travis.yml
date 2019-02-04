@@ -28,6 +28,7 @@ jobs:
     - npm install -g swagger-cli
     script:
     - swagger-cli validate docs/_static/spec/server.yml
+    - swagger-cli validate docs/_static/spec/action_server.yml
     after_success:
     - coveralls
   - stage: integration
