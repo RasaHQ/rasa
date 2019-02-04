@@ -80,7 +80,7 @@ jobs:
     - cd starter-pack-rasa-nlu
     - python -m pytest tests/test_nlu.py
   - stage: test
-    if: branch =~ /(\d\.\d{1,2}\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
+    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "Stack starter pack (NLU only)"
     python: 3.6
     script:
