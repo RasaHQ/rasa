@@ -27,6 +27,7 @@ from rasa_core.events import (
     ActionExecutionRejected)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
+    RasaNLUHttpInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
@@ -240,6 +241,9 @@ class MessageProcessor(object):
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = RegexInterpreter().parse(message.text)
+        elif self.interpreter is type(RasaNLUHttpInterpreter):
+            parse_data = self.interpreter.parse(message.text,
+                                                message.message_id)
         else:
             parse_data = self.interpreter.parse(message.text)
 
