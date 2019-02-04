@@ -3,12 +3,11 @@ from rasa_core.event_brokers.pika_producer import PikaProducer
 from rasa_core.event_brokers.kafka_producer import KafkaProducer
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
-PIKA_EVENT_BROKER_ENDPOINT_FILE = 'data/test_endpoints/event_brokers/pika_event_broker_endpoint.yml'
-KAFKA_EVENT_BROKER_ENDPOINT_FILE = 'data/test_endpoints/event_brokers/kafka_event_broker_endpoint.yml'
-
 
 def test_pika_broker_from_config():
-    cfg = utils.read_endpoint_config(PIKA_EVENT_BROKER_ENDPOINT_FILE,
+    endpoints_path = 'data/test_endpoints/event_brokers/' \
+                     'pika_event_broker_endpoint.yml'
+    cfg = utils.read_endpoint_config(endpoints_path,
                                      "event_broker")
     actual = PikaProducer.from_endpoint_config(cfg)
 
@@ -28,13 +27,15 @@ def test_pika_broker_not_in_config():
 
 
 def test_kafka_broker_from_config():
-    cfg = utils.read_endpoint_config(KAFKA_EVENT_BROKER_ENDPOINT_FILE,
+    endpoints_path = 'data/test_endpoints/event_brokers/' \
+                     'kafka_event_broker_plaintext_endpoint.yml'
+    cfg = utils.read_endpoint_config(endpoints_path,
                                      "event_broker")
 
     actual = KafkaProducer.from_endpoint_config(cfg)
 
     expected = KafkaProducer("localhost", "username", "password",
-                              topic="topic", security_protocol="SASL_PLAINTEXT")
+                             topic="topic", security_protocol="SASL_PLAINTEXT")
 
     assert actual.host == expected.host
     assert actual.sasl_plain_username == expected.sasl_plain_username

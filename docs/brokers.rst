@@ -58,7 +58,7 @@ Here is how you add it using Python code:
 
 .. code-block:: python
 
-    from rasa_core.broker import PikaProducer
+    from rasa_core.event_brokers.pika_producer import PikaProducer
     from rasa_platform.core.tracker_store import InMemoryTrackerStore
 
     pika_broker = PikaProducer('localhost',
@@ -141,7 +141,7 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
 
 .. code-block:: python
 
-    from rasa_core.broker import KafkaProducer
+    from rasa_core.event_brokers.kafka_producer import KafkaProducer
     from rasa_platform.core.tracker_store import InMemoryTrackerStore
 
     kafka_broker = KafkaProducer(host='localhost:9092',
@@ -151,15 +151,19 @@ The code below shows an example on how to instantiate a Kafka producer in you sc
 
 
 The host variable can be either a list of brokers adresses or a single one.
-If only one broker address is available, the client will connect to it and request the cluster Metadata.
+If only one broker address is available, the client will connect to it and 
+request the cluster Metadata.
 Therefore, the remain brokers in the cluster can be discovered
 automatically through the data served by the first connected broker.
 
-To pass more than one broker address as argument, they must be passed in a list of strings. e.g.:
+To pass more than one broker address as argument, they must be passed in a
+list of strings. e.g.:
 
 .. code-block:: python
 
-    kafka_broker = KafkaProducer(host=['kafka_broker_1:9092','kafka_broker_2:2030','kafka_broker_3:9092'],
+    kafka_broker = KafkaProducer(host=['kafka_broker_1:9092',
+                                       'kafka_broker_2:2030',
+                                       'kafka_broker_3:9092'],
                                  topic='rasa_core_events')
 
 Authentication and authorization

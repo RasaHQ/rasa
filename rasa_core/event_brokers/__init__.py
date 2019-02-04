@@ -5,7 +5,6 @@ event_broker_classes = [
     PikaProducer, KafkaProducer
 ]  # type: List[InputChannel]
 
-# Mapping from a input channel name to its class to allow name based lookup.
 BUILTIN_EVENT_BROKERS = {
     c.name(): c
     for c in event_broker_classes}  # type: Dict[Text, InputChannel]

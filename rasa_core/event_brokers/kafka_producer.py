@@ -39,20 +39,22 @@ class KafkaProducer(EventChannel):
 
     def _create_producer(self):
         if self.security_protocol == 'SASL_PLAINTEXT':
-            self.producer = ProducerKafka(bootstrap_servers=[self.host],
-                                          value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                                          sasl_plain_username=self.sasl_plain_username,
-                                          sasl_plain_password=self.sasl_plain_password,
-                                          sasl_mechanism='PLAIN',
-                                          security_protocol=self.security_protocol)
+            self.producer = ProducerKafka(
+                bootstrap_servers=[self.host],
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                sasl_plain_username=self.sasl_plain_username,
+                sasl_plain_password=self.sasl_plain_password,
+                sasl_mechanism='PLAIN',
+                security_protocol=self.security_protocol)
         elif self.security_protocol == 'SSL':
-            self.producer = ProducerKafka(bootstrap_servers=[self.host],
-                                          value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                                          ssl_cafile=self.ssl_cafile,
-                                          ssl_certfile=self.ssl_certfile,
-                                          ssl_keyfile=self.ssl_keyfile,
-                                          ssl_check_hostname=False,
-                                          security_protocol=self.security_protocol)
+            self.producer = ProducerKafka(
+                bootstrap_servers=[self.host],
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                ssl_cafile=self.ssl_cafile,
+                ssl_certfile=self.ssl_certfile,
+                ssl_keyfile=self.ssl_keyfile,
+                ssl_check_hostname=False,
+                security_protocol=self.security_protocol)
 
     def _publish(self, event):
         self.producer.send(self.topic, event)

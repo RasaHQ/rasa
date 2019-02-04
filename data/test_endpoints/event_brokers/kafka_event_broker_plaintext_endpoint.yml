@@ -1,5 +1,5 @@
 event_broker:
-  bootstrap_servers: localhost
+  url: localhost
   sasl_plain_username: username
   sasl_plain_password: password
   topic: topic

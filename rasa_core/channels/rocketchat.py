@@ -1,6 +1,5 @@
 import logging
 from typing import Text
-from kafka import KafkaProducer as ProducerKafka
 
 from flask import Blueprint, request, jsonify, make_response
 

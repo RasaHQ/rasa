@@ -201,7 +201,8 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
         logger.info("Loading a pre-trained model. This means that "
                     "all training-related parameters will be ignored.")
 
-        _broker = create_event_broker(cmdline_args.event_broker,_endpoints.event_broker)
+        _broker = create_event_broker(cmdline_args.event_broker,
+                                      _endpoints.event_broker)
         _tracker_store = TrackerStore.find_tracker_store(
             None,
             _endpoints.tracker_store,

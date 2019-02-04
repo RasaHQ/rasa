@@ -1,5 +1,5 @@
 event_broker:
-  bootstrap_servers: localhost
+  url: localhost
   topic: topic
   security_protocol: SSL
   ssl_cafile: CARoot.pem

@@ -30,7 +30,7 @@ class KerasPolicy(Policy):
     defaults = {
         # Neural Net and training params
         "rnn_size": 32,
-        "epochs": 8,
+        "epochs": 100,
         "batch_size": 32,
         "validation_split": 0.1,
         # set random seed to any int to get reproducible results
@@ -201,7 +201,7 @@ class KerasPolicy(Policy):
         # its importance (and therefore throwing off the biases)
 
         batch_size = kwargs.get('batch_size', 5)
-        epochs = kwargs.get('epochs', 8)
+        epochs = kwargs.get('epochs', 50)
 
         with self.graph.as_default(), self.session.as_default():
             for _ in range(epochs):
