@@ -273,13 +273,13 @@ class EmbeddingPolicy(Policy):
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
         if self.evaluate_every_num_epochs < 1:
             self.evaluate_every_num_epochs = self.epochs
-
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
+        self._tf_config = self._load_tf_config(config)
         self._load_nn_architecture_params(config)
         self._load_embedding_params(config)
         self._load_regularization_params(config)
@@ -898,7 +898,7 @@ class EmbeddingPolicy(Policy):
 
         # maximize similarity returned by time attention wrapper
         for sim_to_add in sims_rnn_to_max:
-            loss += tf.maximum(0., - sim_to_add + 1.)
+            loss += tf.maximum(0., 1. - sim_to_add)
 
         # mask loss for different length sequences
         loss *= mask
@@ -1053,7 +1053,7 @@ class EmbeddingPolicy(Policy):
             self._train_op = tf.train.AdamOptimizer(
                 learning_rate=0.001, epsilon=1e-16).minimize(loss)
             # train tensorflow graph
-            self.session = tf.Session()
+            self.session = tf.Session(config=self._tf_config)
 
             self._train_tf(session_data, loss, mask)
 
@@ -1410,9 +1410,14 @@ class EmbeddingPolicy(Policy):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        dump_path = os.path.join(path, file_name + ".encoded_all_actions.pkl")
-        with io.open(dump_path, 'wb') as f:
+        encoded_actions_file = os.path.join(
+            path, file_name + ".encoded_all_actions.pkl")
+        with io.open(encoded_actions_file, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
+
+        tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
+        with io.open(tf_config_file, 'wb') as f:
+            pickle.dump(self._tf_config, f)
 
     @staticmethod
     def load_tensor(name: Text) -> Optional[tf.Tensor]:
@@ -1437,9 +1442,15 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(checkpoint + '.meta'):
             return cls(featurizer=featurizer)
 
+        tf_config_file = os.path.join(
+            path, "{}.tf_config.pkl".format(file_name))
+
+        with io.open(tf_config_file, 'rb') as f:
+            _tf_config = pickle.load(f)
+
         graph = tf.Graph()
         with graph.as_default():
-            sess = tf.Session()
+            sess = tf.Session(config=_tf_config)
             saver = tf.train.import_meta_graph(checkpoint + '.meta')
 
             saver.restore(sess, checkpoint)
