@@ -1,8 +1,7 @@
 import datetime
 import uuid
 
-from rasa_core.channels import CollectingOutputChannel
-from rasa_core.channels import UserMessage
+from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.dispatcher import Button, Dispatcher
 from rasa_core.events import (
     ReminderScheduled, UserUttered, ActionExecuted,
@@ -12,7 +11,6 @@ from rasa_core.processor import MessageProcessor
 from rasa_core.interpreter import RasaNLUHttpInterpreter
 from rasa_core.utils import EndpointConfig
 from httpretty import httpretty
-import logging
 
 
 def test_message_processor(default_processor):
