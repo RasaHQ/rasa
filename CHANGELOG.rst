@@ -13,6 +13,7 @@ Added
 Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
+- starter packs now also tested when attempting to merge a branch to master
 
 =======
 - replace pep8 with pycodestyle
@@ -24,7 +25,7 @@ Removed
 Fixed
 -----
 
-[0.14.3] - 2018-02-01
+[0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 
 Changed
@@ -33,7 +34,7 @@ Changed
   and only on branches ending in ``.x`` (i.e. new version releases)
 - pinned ``coloredlogs``, ``future`` and ``packaging``
 
-[0.14.2] - 2018-01-29
+[0.14.2] - 2019-01-29
 ^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -46,7 +47,7 @@ Changed
 - updated requirements to match Core and SDK
 - pinned keras dependecies
 
-[0.14.1] - 2018-01-23
+[0.14.1] - 2019-01-23
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
@@ -55,7 +56,7 @@ Fixed
 
 .. _v0-14-0:
 
-[0.14.0] - 2018-01-23
+[0.14.0] - 2019-01-23
 ^^^^^^^^^^^^^^^^^^^^^
 
 Added
