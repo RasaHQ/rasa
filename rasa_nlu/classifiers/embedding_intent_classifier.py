@@ -569,8 +569,6 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return intent_ids, message_sim.tolist()
 
-        # noinspection PyPep8Naming
-
     def process(self, message: 'Message', **kwargs: Any) -> None:
         """Return the most likely intent and its similarity to the input."""
 
