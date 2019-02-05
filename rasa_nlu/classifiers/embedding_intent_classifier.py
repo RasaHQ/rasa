@@ -141,8 +141,7 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
-        # init helpers
-
+    # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {'a': config['hidden_layers_sizes_a'],
                                    'b': config['hidden_layers_sizes_b']}
@@ -243,7 +242,6 @@ class EmbeddingIntentClassifier(Component):
             return np.eye(len(intent_dict))
 
     # noinspection PyPep8Naming
-
     def _create_all_Y(self, size: int) -> np.ndarray:
         """Stack encoded_all_intents on top of each other
 
@@ -253,8 +251,7 @@ class EmbeddingIntentClassifier(Component):
 
         return np.stack([self.encoded_all_intents] * size)
 
-        # noinspection PyPep8Naming
-
+    # noinspection PyPep8Naming
     def _prepare_data_for_training(
             self,
             training_data: 'TrainingData',
@@ -273,8 +270,7 @@ class EmbeddingIntentClassifier(Component):
 
         return X, Y, intents_for_X
 
-        # tf helpers:
-
+    # tf helpers:
     def _create_tf_embed_nn(self, x_in: 'tf.Tensor', is_training: 'tf.Tensor',
                             layer_sizes: List[int], name: Text) -> 'tf.Tensor':
         """Create nn with hidden layers and name"""
@@ -359,8 +355,7 @@ class EmbeddingIntentClassifier(Component):
         loss = (tf.reduce_mean(loss) + tf.losses.get_regularization_loss())
         return loss
 
-        # training helpers:
-
+    # training helpers:
     def _create_batch_b(self, batch_pos_b: np.ndarray,
                         intent_ids: np.ndarray) -> np.ndarray:
         """Create batch of intents.
@@ -403,7 +398,6 @@ class EmbeddingIntentClassifier(Component):
             return int(self.batch_size[0])
 
     # noinspection PyPep8Naming
-
     def _train_tf(self,
                   X: np.ndarray,
                   Y: np.ndarray,
@@ -471,7 +465,6 @@ class EmbeddingIntentClassifier(Component):
                         "".format(last_loss, train_acc))
 
     # noinspection PyPep8Naming
-
     def _output_training_stat(self,
                               X: np.ndarray,
                               intents_for_X: np.ndarray,
@@ -490,8 +483,6 @@ class EmbeddingIntentClassifier(Component):
         train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X[ids])
         return train_acc
 
-        # noinspection PyPep8Naming
-
     def train(self,
               training_data: 'TrainingData',
               cfg: Optional['RasaNLUModelConfig'] = None,
@@ -509,6 +500,7 @@ class EmbeddingIntentClassifier(Component):
         self.encoded_all_intents = self._create_encoded_intents(
             intent_dict)
 
+        # noinspection PyPep8Naming
         X, Y, intents_for_X = self._prepare_data_for_training(
             training_data, intent_dict)
 
@@ -592,10 +584,12 @@ class EmbeddingIntentClassifier(Component):
 
         else:
             # get features (bag of words) for a message
+            # noinspection PyPep8Naming
             X = message.get("text_features").reshape(1, -1)
 
             # stack encoded_all_intents on top of each other
             # to create candidates for test examples
+            # noinspection PyPep8Naming
             all_Y = self._create_all_Y(X.shape[0])
 
             # load tf graph and session
