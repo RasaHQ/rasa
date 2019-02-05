@@ -16,6 +16,8 @@ Added
 
 Changed
 -------
+- ``MessageProcessor`` now also passes ``message_id`` to the interpreter
+  when parsing with a ``RasaNLUHttpInterpreter``
 
 Removed
 -------
@@ -26,9 +28,9 @@ Fixed
 [0.13.1] - 2019-01-29
 ^^^^^^^^^^^^^^^^^^^^^
 
-Removed
--------
-- ``message_id`` can now be passed in the payload to the ``NLUHttpInterpreter``
+Added
+-----
+- ``message_id`` can now be passed in the payload to the ``RasaNLUHttpInterpreter``
 
 Fixed
 -----
