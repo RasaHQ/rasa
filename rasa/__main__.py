@@ -30,7 +30,7 @@ def create_argument_parser():
     return parser
 
 
-if __name__ == '__main__':
+def main():
     # Running as standalone python application
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
@@ -44,3 +44,7 @@ if __name__ == '__main__':
         logger.error("No command specified.")
         arg_parser.print_help()
         exit(1)
+
+
+if __name__ == '__main__':
+    main()

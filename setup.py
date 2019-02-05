@@ -8,6 +8,12 @@ exec(open('rasa/version.py').read())
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+tests_requires = [
+    "pytest~=3.0",
+    "pytest-pycodestyle~=1.3",
+    "pytest-cov~=2.0",
+]
+
 install_requires = [
   "rasa-core>=0.13.0a5",
   "rasa-nlu[tensorflow]",
@@ -16,9 +22,11 @@ install_requires = [
 
 setup(
     name="rasa",
-    scripts=['bin/rasa'],
+    entry_points={
+        'console_scripts': ['rasa=rasa.__main__:main'],
+    },
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Scd ..tatus :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
@@ -30,6 +38,7 @@ setup(
     ],
     version=__version__,
     install_requires=install_requires,
+    tests_require=tests_requires,
     description="Rasa Stack - A package which includes Rasa Core and Rasa NLU",
     long_description=long_description,
     long_description_content_type="text/markdown",
