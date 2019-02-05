@@ -8,25 +8,39 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 [Unreleased 0.14.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. note:: This version is not yet released and is under active development.
 
 Added
 -----
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
+- open api spec for the Rasa Core SDK action server
+
 
 Changed
 -------
-
+- ``MessageProcessor`` now also passes ``message_id`` to the interpreter
+  when parsing with a ``RasaNLUHttpInterpreter``
+- starter packs are now tested in parallel with the unittests,
+  and only on master and branches ending in ``.x`` (i.e. new version releases)
+  
 Removed
 -------
-- ``message_id`` can now be passed in the payload to the ``NLUHttpInterpreter``
+
+Fixed
+-----
+
+[0.13.1] - 2019-01-29
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``message_id`` can now be passed in the payload to the ``RasaNLUHttpInterpreter``
 
 Fixed
 -----
 - fixed domain persistence after exiting interactive learning
-- fix form validation question error in interactive learninig
+- fix form validation question error in interactive learning
 
 .. _v0-13-0:
 

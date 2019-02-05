@@ -33,7 +33,7 @@ class Policy(object):
     def _load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
         """Prepare tf.ConfigProto for training"""
         if config.get("tf_config") is not None:
-            return tf.ConfigProto(**config["tf_config"])
+            return tf.ConfigProto(**config.pop("tf_config"))
         else:
             return None
 
