@@ -5,7 +5,6 @@ from rasa_nlu.training_data import Message
 
 
 class KeywordIntentClassifier(Component):
-    name = "intent_classifier_keyword"
 
     provides = ["intent"]
 

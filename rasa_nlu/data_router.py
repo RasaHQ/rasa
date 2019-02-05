@@ -234,7 +234,8 @@ class DataRouter(object):
     def _tf_in_pipeline(model_config: RasaNLUModelConfig) -> bool:
         from rasa_nlu.classifiers.embedding_intent_classifier import \
             EmbeddingIntentClassifier
-        return EmbeddingIntentClassifier.name in model_config.component_names
+        return any(EmbeddingIntentClassifier.__name__ in c.values()
+                   for c in model_config.pipeline)
 
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)

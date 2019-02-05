@@ -12,14 +12,12 @@ from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
-JIEBA_CUSTOM_DICTIONARY_PATH = "tokenizer_jieba"
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
 
 
 class JiebaTokenizer(Tokenizer, Component):
-    name = "tokenizer_jieba"
 
     provides = ["tokens"]
 
@@ -81,13 +79,14 @@ class JiebaTokenizer(Tokenizer, Component):
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Optional[Text] = None,
              model_metadata: Optional['Metadata'] = None,
              cached_component: Optional[Component] = None,
              **kwargs: Any
              ) -> 'JiebaTokenizer':
 
-        meta = model_metadata.for_component(cls.name)
+        meta = model_metadata.for_component(index)
         relative_dictionary_path = meta.get("dictionary_path")
 
         # get real path of dictionary path, if any
@@ -108,19 +107,18 @@ class JiebaTokenizer(Tokenizer, Component):
         for target_file in target_file_list:
             shutil.copy2(target_file, output_dir)
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                index: int,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
-
-        model_dictionary_path = None
 
         # copy custom dictionaries to model dir, if any
         if self.dictionary_path is not None:
-            target_dictionary_path = os.path.join(model_dir,
-                                                  JIEBA_CUSTOM_DICTIONARY_PATH)
+            file_name = self._file_name(index)
+            target_dictionary_path = os.path.join(model_dir, file_name)
             self.copy_files_dir_to_dir(self.dictionary_path,
                                        target_dictionary_path)
 
-            # set dictionary_path of model metadata to relative path
-            model_dictionary_path = JIEBA_CUSTOM_DICTIONARY_PATH
-
-        return {"dictionary_path": model_dictionary_path}
+            return {"dictionary_path": file_name}
+        else:
+            return {"dictionary_path": None}

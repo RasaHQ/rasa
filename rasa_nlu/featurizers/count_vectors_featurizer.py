@@ -25,8 +25,6 @@ class CountVectorsFeaturizer(Featurizer):
     from https://arxiv.org/abs/1810.07150.
     """
 
-    name = "intent_featurizer_count_vectors"
-
     provides = ["text_features"]
 
     requires = []
@@ -266,28 +264,32 @@ class CountVectorsFeaturizer(Featurizer):
                         self._combine_with_existing_text_features(message,
                                                                   bag))
 
-    def persist(self, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self,
+                index: int,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again.
         """
 
-        featurizer_file = os.path.join(model_dir, self.name + ".pkl")
+        file_name = self._file_name(index) + ".pkl"
+        featurizer_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(featurizer_file, self)
-        return {"featurizer_file": self.name + ".pkl"}
+        return {"file": file_name}
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['CountVectorsFeaturizer'] = None,
              **kwargs: Any
              ) -> 'CountVectorsFeaturizer':
 
-        meta = model_metadata.for_component(cls.name)
+        meta = model_metadata.for_component(index)
 
-        if model_dir and meta.get("featurizer_file"):
-            file_name = meta.get("featurizer_file")
+        if model_dir and meta.get("file"):
+            file_name = meta.get("file")
             featurizer_file = os.path.join(model_dir, file_name)
             return utils.pycloud_unpickle(featurizer_file)
         else:

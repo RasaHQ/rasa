@@ -78,15 +78,19 @@ class Metadata(object):
     def get(self, property_name, default=None):
         return self.metadata.get(property_name, default)
 
-    @property
-    def component_classes(self):
-        if self.get('pipeline'):
-            return [c.get("class") for c in self.get('pipeline', [])]
-        else:
-            return []
+    def component_name(self, index):
+        return self.get('pipeline', [])[index]['name']
 
-    def for_component(self, name, defaults=None):
-        return config.component_config_from_pipeline(name,
+    @property
+    def component_names(self):
+        return [c.get("class") for c in self.get('pipeline', [])]
+
+    @property
+    def number_of_components(self):
+        return len(self.get('pipeline', []))
+
+    def for_component(self, index, defaults=None):
+        return config.component_config_from_pipeline(index,
                                                      self.get('pipeline', []),
                                                      defaults)
 
@@ -151,9 +155,8 @@ class Trainer(object):
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
-        for component_name in cfg.component_names:
-            component = component_builder.create_component(
-                component_name, cfg)
+        for i in range(len(cfg.pipeline)):
+            component = component_builder.create_component(i, cfg)
             pipeline.append(component)
 
         return pipeline
@@ -220,8 +223,8 @@ class Trainer(object):
         if self.training_data:
             metadata.update(self.training_data.persist(dir_name))
 
-        for component in self.pipeline:
-            update = component.persist(dir_name)
+        for i, component in enumerate(self.pipeline):
+            update = component.persist(i, dir_name)
             component_meta = component.component_config
             if update:
                 component_meta.update(update)
@@ -308,11 +311,11 @@ class Interpreter(object):
         # Before instantiating the component classes,
         # lets check if all required packages are available
         if not skip_validation:
-            components.validate_requirements(model_metadata.component_classes)
+            components.validate_requirements(model_metadata.component_names)
 
-        for component_name in model_metadata.component_classes:
+        for i in range(model_metadata.number_of_components):
             component = component_builder.load_component(
-                component_name, model_metadata.model_dir,
+                i, model_metadata.model_dir,
                 model_metadata, **context)
             try:
                 updates = component.provide_context()

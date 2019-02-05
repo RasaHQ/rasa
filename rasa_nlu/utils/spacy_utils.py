@@ -45,10 +45,10 @@ class SpacyNLP(Component):
         return ["spacy"]
 
     @classmethod
-    def create(cls, cfg: RasaNLUModelConfig) -> 'SpacyNLP':
+    def create(cls, index: int, cfg: RasaNLUModelConfig) -> 'SpacyNLP':
         import spacy
 
-        component_conf = cfg.for_component(cls.name, cls.defaults)
+        component_conf = cfg.for_component(index, cls.defaults)
         spacy_model_name = component_conf.get("model")
 
         # if no model is specified, we fall back to the language string
@@ -64,15 +64,17 @@ class SpacyNLP(Component):
         return SpacyNLP(component_conf, nlp)
 
     @classmethod
-    def cache_key(cls, model_metadata: 'Metadata') -> Text:
+    def cache_key(cls,
+                  index: int,
+                  model_metadata: 'Metadata') -> Optional[Text]:
 
-        component_meta = model_metadata.for_component(cls.name)
+        component_meta = model_metadata.for_component(index)
 
         # Fallback, use the language name, e.g. "en",
         # as the model name if no explicit name is defined
         spacy_model_name = component_meta.get("model", model_metadata.language)
 
-        return cls.name + "-" + spacy_model_name
+        return cls.__name__ + "-" + spacy_model_name
 
     def provide_context(self) -> Dict[Text, Any]:
         return {"spacy_nlp": self.nlp}
@@ -97,6 +99,7 @@ class SpacyNLP(Component):
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Text = None,
              model_metadata: 'Metadata' = None,
              cached_component: Optional['SpacyNLP'] = None,
@@ -106,7 +109,7 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.for_component(cls.name)
+        component_meta = model_metadata.for_component(index)
         model_name = component_meta.get("model")
 
         nlp = spacy.load(model_name, disable=['parser'])

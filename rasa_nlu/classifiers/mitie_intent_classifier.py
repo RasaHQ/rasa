@@ -10,11 +10,8 @@ from rasa_nlu.training_data import Message, TrainingData
 if typing.TYPE_CHECKING:
     import mitie
 
-MITIE_MODEL_FILE_NAME = "intent_classifier.dat"
-
 
 class MitieIntentClassifier(Component):
-    name = "intent_classifier_mitie"
 
     provides = ["intent"]
 
@@ -80,6 +77,7 @@ class MitieIntentClassifier(Component):
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['MitieIntentClassifier'] = None,
@@ -87,8 +85,8 @@ class MitieIntentClassifier(Component):
              ) -> 'MitieIntentClassifier':
         import mitie
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("classifier_file", MITIE_MODEL_FILE_NAME)
+        meta = model_metadata.for_component(index)
+        file_name = meta.get("file")
 
         if not file_name:
             return cls(meta)
@@ -99,12 +97,16 @@ class MitieIntentClassifier(Component):
         else:
             return cls(meta)
 
-    def persist(self, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self,
+                index: int,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         import os
 
         if self.clf:
-            classifier_file = os.path.join(model_dir, MITIE_MODEL_FILE_NAME)
+
+            classifier_file = os.path.join(model_dir,
+                                           self._file_name(index) + ".dat")
             self.clf.save_to_disk(classifier_file, pure_model=True)
-            return {"classifier_file": MITIE_MODEL_FILE_NAME}
+            return {"file": self._file_name(index) + ".dat"}
         else:
-            return {"classifier_file": None}
+            return {"file": None}

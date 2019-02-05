@@ -36,10 +36,10 @@ class MitieNLP(Component):
         return ["mitie"]
 
     @classmethod
-    def create(cls, cfg: RasaNLUModelConfig) -> 'MitieNLP':
+    def create(cls, index: int, cfg: RasaNLUModelConfig) -> 'MitieNLP':
         import mitie
 
-        component_conf = cfg.for_component(cls.name, cls.defaults)
+        component_conf = cfg.for_component(index, cls.defaults)
         model_file = component_conf.get("model")
         if not model_file:
             raise Exception("The MITIE component 'nlp_mitie' needs "
@@ -54,13 +54,15 @@ class MitieNLP(Component):
         return MitieNLP(component_conf, extractor)
 
     @classmethod
-    def cache_key(cls, model_metadata: Metadata) -> Optional[Text]:
+    def cache_key(cls,
+                  index: int,
+                  model_metadata: 'Metadata') -> Optional[Text]:
 
-        component_meta = model_metadata.for_component(cls.name)
+        component_meta = model_metadata.for_component(index)
 
         mitie_file = component_meta.get("model", None)
         if mitie_file is not None:
-            return cls.name + "-" + str(os.path.abspath(mitie_file))
+            return cls.__name__ + "-" + str(os.path.abspath(mitie_file))
         else:
             return None
 
@@ -79,6 +81,7 @@ class MitieNLP(Component):
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['MitieNLP'] = None,
@@ -89,12 +92,14 @@ class MitieNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.for_component(cls.name)
+        component_meta = model_metadata.for_component(index)
         mitie_file = component_meta.get("model")
         return cls(component_meta,
                    mitie.total_word_feature_extractor(mitie_file))
 
-    def persist(self, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self,
+                index: int,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         return {
             "mitie_feature_extractor_fingerprint": self.extractor.fingerprint,

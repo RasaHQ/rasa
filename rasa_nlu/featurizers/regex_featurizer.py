@@ -16,11 +16,8 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
 
-REGEX_FEATURIZER_FILE_NAME = "regex_featurizer.json"
-
 
 class RegexFeaturizer(Featurizer):
-    name = "intent_entity_featurizer_regex"
 
     provides = ["text_features"]
 
@@ -125,14 +122,15 @@ class RegexFeaturizer(Featurizer):
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Optional[Text] = None,
              model_metadata: Optional['Metadata'] = None,
              cached_component: Optional['RegexFeaturizer'] = None,
              **kwargs: Any
              ) -> 'RegexFeaturizer':
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("regex_file", REGEX_FEATURIZER_FILE_NAME)
+        meta = model_metadata.for_component(index)
+        file_name = meta.get("file")
         regex_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(regex_file):
@@ -141,12 +139,14 @@ class RegexFeaturizer(Featurizer):
         else:
             return RegexFeaturizer(meta)
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                index: int,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again."""
-
-        regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
+        file_name = self._file_name(index) + ".pkl"
+        regex_file = os.path.join(model_dir, file_name)
         utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
 
-        return {"regex_file": REGEX_FEATURIZER_FILE_NAME}
+        return {"file": file_name}

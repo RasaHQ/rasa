@@ -44,8 +44,6 @@ class EmbeddingIntentClassifier(Component):
     and additional hidden layers are added together with dropout.
     """
 
-    name = "intent_classifier_tensorflow_embedding"
-
     provides = ["intent", "intent_ranking"]
 
     requires = ["text_features"]
@@ -617,16 +615,19 @@ class EmbeddingIntentClassifier(Component):
         message.set("intent", intent, add_to_output=True)
         message.set("intent_ranking", intent_ranking, add_to_output=True)
 
-    def persist(self, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self,
+                index: int,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
         """
 
         if self.session is None:
-            return {"classifier_file": None}
+            return {"file": None}
 
-        checkpoint = os.path.join(model_dir, self.name + ".ckpt")
+        file_name = self._file_name(index)
+        checkpoint = os.path.join(model_dir, file_name + ".ckpt")
 
         try:
             os.makedirs(os.path.dirname(checkpoint))
@@ -660,28 +661,29 @@ class EmbeddingIntentClassifier(Component):
 
         with io.open(os.path.join(
                 model_dir,
-                self.name + "_inv_intent_dict.pkl"), 'wb') as f:
+                file_name + "_inv_intent_dict.pkl"), 'wb') as f:
             pickle.dump(self.inv_intent_dict, f)
         with io.open(os.path.join(
                 model_dir,
-                self.name + "_encoded_all_intents.pkl"), 'wb') as f:
+                file_name + "_encoded_all_intents.pkl"), 'wb') as f:
             pickle.dump(self.encoded_all_intents, f)
 
-        return {"classifier_file": self.name + ".ckpt"}
+        return {"file": file_name}
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Text = None,
              model_metadata: 'Metadata' = None,
              cached_component: Optional['EmbeddingIntentClassifier'] = None,
              **kwargs: Any
              ) -> 'EmbeddingIntentClassifier':
 
-        meta = model_metadata.for_component(cls.name)
+        meta = model_metadata.for_component(index)
 
-        if model_dir and meta.get("classifier_file"):
-            file_name = meta.get("classifier_file")
-            checkpoint = os.path.join(model_dir, file_name)
+        if model_dir and meta.get("file"):
+            file_name = meta.get("file")
+            checkpoint = os.path.join(model_dir, file_name + ".ckpt")
             graph = tf.Graph()
             with graph.as_default():
                 sess = tf.Session()
@@ -699,11 +701,11 @@ class EmbeddingIntentClassifier(Component):
 
             with io.open(os.path.join(
                     model_dir,
-                    cls.name + "_inv_intent_dict.pkl"), 'rb') as f:
+                    file_name + "_inv_intent_dict.pkl"), 'rb') as f:
                 inv_intent_dict = pickle.load(f)
             with io.open(os.path.join(
                     model_dir,
-                    cls.name + "_encoded_all_intents.pkl"), 'rb') as f:
+                    file_name + "_encoded_all_intents.pkl"), 'rb') as f:
                 encoded_all_intents = pickle.load(f)
 
             return cls(

@@ -11,7 +11,6 @@ if typing.TYPE_CHECKING:
 
 
 class SpacyTokenizer(Tokenizer, Component):
-    name = "tokenizer_spacy"
 
     provides = ["tokens"]
 

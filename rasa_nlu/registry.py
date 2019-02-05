@@ -53,7 +53,7 @@ component_classes = [
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
-registered_components = {c.name: c for c in component_classes}
+registered_components = {c.__name__: c for c in component_classes}
 
 # To simplify usage, there are a couple of model templates, that already add
 # necessary components in the right order. They also implement
@@ -111,24 +111,31 @@ def get_component_class(component_name: Text) -> Type['Component']:
     return registered_components[component_name]
 
 
-def load_component_by_name(component_name: Text,
-                           model_dir: Text,
-                           metadata: Metadata,
-                           cached_component: Optional['Component'],
-                           **kwargs: Any
-                           ) -> Optional['Component']:
-    """Resolves a component and calls its load method to init it based on a
-    previously persisted model."""
+def load_component_by_index(index: int,
+                            model_dir: Text,
+                            metadata: Metadata,
+                            cached_component: Optional['Component'],
+                            **kwargs: Any
+                            ) -> Optional['Component']:
+    """Resolves a component and calls its load method.
 
-    component_clz = get_component_class(component_name)
-    return component_clz.load(model_dir, metadata, cached_component, **kwargs)
+    Inits it based on a previously persisted model.
+    """
+
+    component_name = metadata.component_name(index)
+    component_class = get_component_class(component_name)
+    return component_class.load(index, model_dir, metadata,
+                                cached_component, **kwargs)
 
 
-def create_component_by_name(component_name: Text,
-                             config: 'RasaNLUModelConfig'
-                             ) -> Optional['Component']:
-    """Resolves a component and calls it's create method to init it based on a
-    previously persisted model."""
+def create_component_by_index(index: int,
+                              config: 'RasaNLUModelConfig'
+                              ) -> Optional['Component']:
+    """Resolves a component and calls it's create method.
 
-    component_clz = get_component_class(component_name)
-    return component_clz.create(config)
+    Inits it based on a previously persisted model.
+    """
+
+    component_name = config.for_component(index)['name']
+    component_class = get_component_class(component_name)
+    return component_class.create(index, config)

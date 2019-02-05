@@ -12,7 +12,6 @@ if typing.TYPE_CHECKING:
 
 
 class MitieFeaturizer(Featurizer):
-    name = "intent_featurizer_mitie"
 
     provides = ["text_features"]
 

@@ -56,8 +56,6 @@ def convert_duckling_format_to_rasa(matches):
 class DucklingHTTPExtractor(EntityExtractor):
     """Searches for structured entites, e.g. dates, using a duckling server."""
 
-    name = "ner_duckling_http"
-
     provides = ["entities"]
 
     defaults = {
@@ -85,11 +83,12 @@ class DucklingHTTPExtractor(EntityExtractor):
         self.language = language
 
     @classmethod
-    def create(cls, config: RasaNLUModelConfig) -> 'DucklingHTTPExtractor':
+    def create(cls,
+               index: int,
+               config: RasaNLUModelConfig
+               ) -> 'DucklingHTTPExtractor':
 
-        return cls(config.for_component(cls.name,
-                                        cls.defaults),
-                   config.language)
+        return cls(config.for_component(index, cls.defaults), config.language)
 
     def _locale(self):
         if not self.component_config.get("locale"):
@@ -176,11 +175,12 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['DucklingHTTPExtractor'] = None,
              **kwargs: Any
              ) -> 'DucklingHTTPExtractor':
 
-        component_config = model_metadata.for_component(cls.name)
+        component_config = model_metadata.for_component(index)
         return cls(component_config, model_metadata.get("language"))

@@ -18,11 +18,8 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import sklearn_crfsuite
 
-CRF_MODEL_FILE_NAME = "crf_model.pkl"
-
 
 class CRFEntityExtractor(EntityExtractor):
-    name = "ner_crf"
 
     provides = ["entities"]
 
@@ -115,10 +112,6 @@ class CRFEntityExtractor(EntityExtractor):
               training_data: TrainingData,
               config: RasaNLUModelConfig,
               **kwargs: Any) -> None:
-
-        self.component_config = config.for_component(self.name, self.defaults)
-
-        self._validate_configuration()
 
         # checks whether there is at least one
         # example with an entity annotation
@@ -349,6 +342,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
+             index: int,
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['CRFEntityExtractor'] = None,
@@ -356,8 +350,8 @@ class CRFEntityExtractor(EntityExtractor):
              ) -> 'CRFEntityExtractor':
         from sklearn.externals import joblib
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("classifier_file", CRF_MODEL_FILE_NAME)
+        meta = model_metadata.for_component(index)
+        file_name = meta.get("file")
         model_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(model_file):
@@ -366,19 +360,20 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return cls(meta)
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                index: int,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again."""
 
         from sklearn.externals import joblib
-
+        file_name = self._file_name(index) + ".pkl"
         if self.ent_tagger:
-            model_file_name = os.path.join(model_dir, CRF_MODEL_FILE_NAME)
-
+            model_file_name = os.path.join(model_dir, file_name)
             joblib.dump(self.ent_tagger, model_file_name)
 
-        return {"classifier_file": CRF_MODEL_FILE_NAME}
+        return {"file": file_name}
 
     def _sentence_to_features(self,
                               sentence: List[Tuple[Text, Text, Text, Text]]
