@@ -18,7 +18,9 @@ Changed
 -------
 - ``MessageProcessor`` now also passes ``message_id`` to the interpreter
   when parsing with a ``RasaNLUHttpInterpreter``
-
+- starter packs are now tested in parallel with the unittests,
+  and only on master and branches ending in ``.x`` (i.e. new version releases)
+  
 Removed
 -------
 
