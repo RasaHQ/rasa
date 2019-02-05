@@ -241,7 +241,7 @@ class MessageProcessor(object):
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = RegexInterpreter().parse(message.text)
-        elif self.interpreter is type(RasaNLUHttpInterpreter):
+        elif isinstance(self.interpreter, RasaNLUHttpInterpreter):
             parse_data = self.interpreter.parse(message.text,
                                                 message.message_id)
         else:
