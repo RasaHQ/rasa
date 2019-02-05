@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 def create_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
-            description='run a Rasa NLU model locally on the command line '
-                        'for manual testing')
+        description='run a Rasa NLU model locally on the command line '
+                    'for manual testing')
 
     parser.add_argument('-m', '--model', required=True,
                         help="path to model")

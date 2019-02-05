@@ -20,15 +20,15 @@ class SpacyTokenizer(Tokenizer, Component):
     def train(self,
               training_data: TrainingData,
               config: RasaNLUModelConfig,
-              **kwargs: Any)-> None:
+              **kwargs: Any) -> None:
 
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.get("spacy_doc")))
 
-    def process(self, message: Message, **kwargs: Any)-> None:
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         message.set("tokens", self.tokenize(message.get("spacy_doc")))
 
-    def tokenize(self, doc: 'Doc')-> typing.List[Token]:
+    def tokenize(self, doc: 'Doc') -> typing.List[Token]:
 
         return [Token(t.text, t.idx) for t in doc]

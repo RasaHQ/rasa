@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
-            description='train a custom language parser')
+        description='train a custom language parser')
 
     parser.add_argument('-o', '--path',
                         default="models/nlu/",

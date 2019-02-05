@@ -43,7 +43,7 @@ class Persistor(object):
                              "found.".format(model_directory))
 
         file_key, tar_path = self._compress(
-                model_directory, model_name, project)
+            model_directory, model_name, project)
         self._persist_tar(file_key, tar_path)
 
     def retrieve(self,
@@ -122,7 +122,7 @@ class Persistor(object):
 
         with tarfile.open(compressed_path, "r:gz") as tar:
             tar.extractall(
-                    target_path)  # project dir will be created if it not exists
+                target_path)  # project dir will be created if it not exists
 
 
 class AWSPersistor(Persistor):
@@ -205,7 +205,7 @@ class GCSPersistor(Persistor):
 
         try:
             blob_iterator = self.bucket.list_blobs(
-                    prefix=self._project_prefix(project))
+                prefix=self._project_prefix(project))
             return [self._project_and_model_from_filename(b.name)[1]
                     for b in blob_iterator]
         except Exception as e:
@@ -259,9 +259,9 @@ class AzurePersistor(Persistor):
         super(AzurePersistor, self).__init__()
 
         self.blob_client = azureblob.BlockBlobService(
-                account_name=azure_account_name,
-                account_key=azure_account_key,
-                endpoint_suffix="core.windows.net")
+            account_name=azure_account_name,
+            account_key=azure_account_key,
+            endpoint_suffix="core.windows.net")
 
         self._ensure_container_exists(azure_container)
         self.container_name = azure_container
@@ -276,8 +276,8 @@ class AzurePersistor(Persistor):
 
         try:
             blob_iterator = self.blob_client.list_blobs(
-                    self.container_name,
-                    prefix=self._project_prefix(project)
+                self.container_name,
+                prefix=self._project_prefix(project)
             )
             return [self._project_and_model_from_filename(b.name)[1]
                     for b in blob_iterator]
@@ -290,8 +290,8 @@ class AzurePersistor(Persistor):
         try:
             # noinspection PyTypeChecker
             blob_iterator = self.blob_client.list_blobs(
-                    self.container_name,
-                    prefix=None
+                self.container_name,
+                prefix=None
             )
             projects_set = {self._project_and_model_from_filename(b.name)[0]
                             for b in blob_iterator}
@@ -305,16 +305,16 @@ class AzurePersistor(Persistor):
         """Uploads a model persisted in the `target_dir` to Azure."""
 
         self.blob_client.create_blob_from_path(
-                self.container_name,
-                file_key,
-                tar_path
+            self.container_name,
+            file_key,
+            tar_path
         )
 
     def _retrieve_tar(self, target_filename: Text) -> None:
         """Downloads a model that has previously been persisted to Azure."""
 
         self.blob_client.get_blob_to_path(
-                self.container_name,
-                target_filename,
-                target_filename
+            self.container_name,
+            target_filename,
+            target_filename
         )

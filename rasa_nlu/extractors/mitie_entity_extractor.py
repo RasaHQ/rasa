@@ -75,7 +75,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         # filter out pre-trained entity examples
         filtered_entity_examples = self.filter_trainable_entities(
-                training_data.training_examples)
+            training_data.training_examples)
 
         for example in filtered_entity_examples:
             sample = self._prepare_mitie_sample(example)
@@ -97,7 +97,7 @@ class MitieEntityExtractor(EntityExtractor):
             try:
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(
-                        ent, text, tokens)
+                    ent, text, tokens)
             except ValueError as e:
                 logger.warning("Example skipped: {}".format(str(e)))
                 continue
