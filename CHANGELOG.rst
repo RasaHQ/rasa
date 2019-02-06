@@ -21,6 +21,12 @@ Changed
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
 
+Removed
+-------
+
+Fixed
+-----
+
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
 
