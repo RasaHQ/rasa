@@ -564,7 +564,7 @@ class ReminderScheduled(Event):
 class ReminderCancelled(Event):
     """ Cancel all jobs with a specific name."""
 
-    type_name = "cancel"
+    type_name = "cancel_reminder"
 
     def __init__(self, name, timestamp=None):
         """
