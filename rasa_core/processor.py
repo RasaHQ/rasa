@@ -344,7 +344,7 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderCancelled):
-                    name_to_check = e.name + "__sender_id:" + tracker.sender_id
+                    name_to_check = e.action_name + "__sender_id:" + tracker.sender_id
                     for j in scheduler.get_jobs():
                         if j.name == name_to_check:
                             scheduler.remove_job(j.id)
