@@ -587,7 +587,8 @@ class ReminderCancelled(Event):
                      ".format(self.action_name, self.name))
 
     def as_story_string(self):
-        return self.type_name
+        props = json.dumps(self._data_obj())
+        return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
     def _from_story_string(
@@ -595,7 +596,7 @@ class ReminderCancelled(Event):
             parameters: Dict[Text, Any]
     ) -> Optional[List[Event]]:
         return [ReminderCancelled(parameters.get("action"),
-                                                       parameters.get("name", None),
+                                  parameters.get("name", None),
                                   parameters.get("timestamp"))]
 
 
