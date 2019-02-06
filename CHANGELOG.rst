@@ -4,25 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-.. _master-release:
-
-[Unreleased 0.14.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. note:: This version is not yet released and is under active development.
-
-Added
------
+[0.13.2] - 2019-02-06
+^^^^^^^^^^^^^^^^^^^^^
 
 Changed
 -------
 - ``MessageProcessor`` now also passes ``message_id`` to the interpreter
   when parsing with a ``RasaNLUHttpInterpreter``
-
-Removed
--------
-
-Fixed
------
 
 [0.13.1] - 2019-01-29
 ^^^^^^^^^^^^^^^^^^^^^
