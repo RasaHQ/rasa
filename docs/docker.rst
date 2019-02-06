@@ -1,5 +1,3 @@
-:desc: Using Rasa Core with Docker.
-
 .. _docker:
 
 Using Docker

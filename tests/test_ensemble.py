@@ -90,8 +90,7 @@ def test_valid_policy_configurations(valid_config):
     {"police": [{"name": "MemoizationPolicy"}]},
     {"policies": []},
     {"policies": [{"name": "ykaüoppodas"}]},
-    {"policy": [{"name": "ykaüoppodas"}]},
-    {"policy": [{"name": "ykaüoppodas.bladibla"}]}])
+    {"policy": [{"name": "ykaüoppodas"}]}])
 def test_invalid_policy_configurations(invalid_config):
     with pytest.raises(InvalidPolicyConfig):
         PolicyEnsemble.from_dict(invalid_config)

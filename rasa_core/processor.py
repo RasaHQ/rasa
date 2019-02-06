@@ -336,8 +336,7 @@ class MessageProcessor(object):
                                       run_date=e.trigger_date_time,
                                       args=[e, dispatcher],
                                       id=e.name,
-                                      replace_existing=True,
-                                      name=str(e.action_name))
+                                      replace_existing=True)
 
     def _run_action(self, action, tracker, dispatcher, policy=None,
                     confidence=None):

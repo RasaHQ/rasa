@@ -249,11 +249,12 @@ class PolicyEnsemble(object):
                 # override policy's featurizer with real featurizer class
                 policy['featurizer'] = featurizer_func(**featurizer_config)
 
-            try:
-                constr_func = utils.class_from_module_path(policy_name)
+            constr_func = utils.class_from_module_path(policy_name)
+
+            if constr_func:
                 policy_object = constr_func(**policy)
                 parsed_policies.append(policy_object)
-            except(ImportError, AttributeError):
+            else:
                 raise InvalidPolicyConfig("Module for policy '{}' could not be "
                                           "loaded. Please make sure the name "
                                           "is a valid policy."

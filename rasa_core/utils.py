@@ -92,12 +92,7 @@ def class_from_module_path(module_path: Text) -> Any:
         # get the class, will raise AttributeError if class cannot be found
         return getattr(m, class_name)
     else:
-        module = globals().get(module_path, locals().get(module_path))
-        if module is not None:
-            return module
-        else:
-            raise ImportError("Cannot retrieve class from path {}."
-                              "".format(module_path))
+        return globals().get(module_path, locals().get(module_path))
 
 
 def module_path_from_instance(inst: Any) -> Text:
