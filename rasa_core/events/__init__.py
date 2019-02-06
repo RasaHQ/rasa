@@ -591,7 +591,8 @@ class ReminderCancelled(Event):
             cls,
             parameters: Dict[Text, Any]
     ) -> Optional[List[Event]]:
-        return [ReminderCancelled(parameters.get("name"),
+        return [ReminderCancelled(parameters.get("action"),
+                                                       parameters.get("name", None),
                                   parameters.get("timestamp"))]
 
 
