@@ -16,19 +16,24 @@ Added
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
 
-
 Changed
 -------
-- ``MessageProcessor`` now also passes ``message_id`` to the interpreter
-  when parsing with a ``RasaNLUHttpInterpreter``
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
-  
+
 Removed
 -------
 
 Fixed
 -----
+
+[0.13.2] - 2019-02-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- ``MessageProcessor`` now also passes ``message_id`` to the interpreter
+  when parsing with a ``RasaNLUHttpInterpreter``
 
 [0.13.1] - 2019-01-29
 ^^^^^^^^^^^^^^^^^^^^^
