@@ -572,7 +572,9 @@ class ReminderCancelled(Event):
             name: name of the scheduled action to be cancelled
         """
 
+        self.action_name = action_name
         self.name = name
+        super(ReminderCancelled, self).__init__(timestamp)
 
     def __hash__(self):
         return hash((self.name))
