@@ -581,7 +581,8 @@ class ReminderCancelled(Event):
         return isinstance(other, ReminderCancelled)
 
     def __str__(self):
-        return ("ReminderCancelled(name: {}".format(self.name))
+        return ("ReminderCancelled(action: {}, name: {})"
+                     ".format(self.action_name, self.name))
 
     def as_story_string(self):
         return self.type_name
