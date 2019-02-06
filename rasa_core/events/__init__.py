@@ -561,6 +561,41 @@ class ReminderScheduled(Event):
 
 
 # noinspection PyProtectedMember
+class ReminderCancelled(Event):
+    """ Cancel all jobs with a specific name."""
+
+    type_name = "cancel"
+
+    def __init__(self, name, timestamp=None):
+        """
+        Args:
+            name: name of the scheduled action to be cancelled
+        """
+
+        self.name = name
+
+    def __hash__(self):
+        return hash((self.name))
+
+    def __eq__(self, other):
+        return isinstance(other, ReminderCancelled)
+
+    def __str__(self):
+        return ("ReminderCancelled(name: {}".format(self.name))
+
+    def as_story_string(self):
+        return self.type_name
+
+    @classmethod
+    def _from_story_string(
+            cls,
+            parameters: Dict[Text, Any]
+    ) -> Optional[List[Event]]:
+        return [ReminderCancelled(parameters.get("name"),
+                                  parameters.get("timestamp"))]
+
+
+# noinspection PyProtectedMember
 class ActionReverted(Event):
     """Bot undoes its last action.
 
