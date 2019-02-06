@@ -566,7 +566,7 @@ class ReminderCancelled(Event):
 
     type_name = "cancel_reminder"
 
-    def __init__(self, name, timestamp=None):
+    def __init__(self, action_name, name=None, timestamp=None):
         """
         Args:
             name: name of the scheduled action to be cancelled
