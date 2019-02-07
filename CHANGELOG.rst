@@ -26,6 +26,8 @@ Added
 - **support for python 3.7**
 - ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
   access to message triggering the form
+- `MappingPolicy` which can be used to directly map and intent to an action
+  by adding the `maps_to` keyword to an intent in the domain.
 
 Changed
 -------
