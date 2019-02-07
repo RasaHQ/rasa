@@ -20,6 +20,7 @@ from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
+from rasa_core.policies.mapping_policy import MappingPolicy
 from rasa_core.policies.memoization import (
     MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.policies.sklearn_policy import SklearnPolicy
@@ -178,6 +179,14 @@ class TestFallbackPolicy(PolicyTestCollection):
 
         assert trained_policy.should_nlu_fallback(
             nlu_confidence, last_action_name) is should_nlu_fallback
+
+
+class TestMappingPolicy(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        p = MappingPolicy()
+        return p
 
 
 class TestMemoizationPolicy(PolicyTestCollection):

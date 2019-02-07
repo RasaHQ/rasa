@@ -80,7 +80,8 @@ def class_from_module_path(module_path: Text) -> Any:
     from rasa_core.policies.embedding_policy import EmbeddingPolicy
     from rasa_core.policies.form_policy import FormPolicy
     from rasa_core.policies.sklearn_policy import SklearnPolicy
-
+    from rasa_core.policies.mapping_policy import MappingPolicy
+    
     from rasa_core.featurizers import (
         FullDialogueTrackerFeaturizer,
         MaxHistoryTrackerFeaturizer,

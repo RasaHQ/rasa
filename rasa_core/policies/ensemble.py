@@ -17,6 +17,7 @@ from rasa_core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies import Policy
+from rasa_core.policies.mapping_policy import MappingPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.memoization import (
     MemoizationPolicy,
@@ -248,9 +249,15 @@ class PolicyEnsemble(object):
 
                 # override policy's featurizer with real featurizer class
                 policy['featurizer'] = featurizer_func(**featurizer_config)
+<<<<<<< Updated upstream
 
             try:
                 constr_func = utils.class_from_module_path(policy_name)
+=======
+            constr_func = utils.class_from_module_path(policy_name)
+
+            if constr_func:
+>>>>>>> Stashed changes
                 policy_object = constr_func(**policy)
                 parsed_policies.append(policy_object)
             except(ImportError, AttributeError):
