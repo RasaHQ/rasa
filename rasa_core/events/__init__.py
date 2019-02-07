@@ -232,7 +232,7 @@ class UserUttered(Event):
         d.update({
             "text": self.text,
             "parse_data": self.parse_data,
-            "input_channel": self.input_channel
+            "input_channel": self.input_channel if hasattr(self, "input_channel") else None
         })
         return d
 
@@ -761,8 +761,8 @@ class ActionExecuted(Event):
         d = super(ActionExecuted, self).as_dict()
         d.update({
             "name": self.action_name,
-            "policy": self.policy,
-            "confidence": self.confidence
+            "policy": self.policy if hasattr(self,"policy") else None,
+            "confidence": self.confidence if hasattr(self,"confidence") else None
         })
         return d
 
