@@ -1,6 +1,6 @@
 intents:
-  - greet: {maps_to: utter_goodbye}
-  - goodbye: {maps_to: utter_test}
+  - greet
+  - goodbye
   - mood_affirm
   - mood_deny
   - mood_great
@@ -12,7 +12,6 @@ actions:
 - utter_did_that_help
 - utter_happy
 - utter_goodbye
-- utter_test
 
 templates:
   utter_greet:
@@ -35,6 +34,3 @@ templates:
 
   utter_goodbye:
   - text: "Bye"
-
-  utter_test:
-  - text: "blabla"
