@@ -37,8 +37,10 @@ def configure_file_logging(loglevel, logfile):
 def add_logging_option_arguments(parser):
     """Add options to an argument parser to configure logging levels."""
 
+    logging_arguments = parser.add_argument_group('Python Logging Options')
+
     # arguments for logging configuration
-    parser.add_argument(
+    logging_arguments.add_argument(
         '-v', '--verbose',
         help="Be verbose. Sets logging level to INFO",
         action="store_const",
@@ -46,7 +48,7 @@ def add_logging_option_arguments(parser):
         const=logging.INFO,
         default=logging.INFO,
     )
-    parser.add_argument(
+    logging_arguments.add_argument(
         '-vv', '--debug',
         help="Print lots of debugging statements. "
              "Sets logging level to DEBUG",
@@ -54,7 +56,7 @@ def add_logging_option_arguments(parser):
         dest="loglevel",
         const=logging.DEBUG,
     )
-    parser.add_argument(
+    logging_arguments.add_argument(
         '--quiet',
         help="Be quiet! Sets logging level to WARNING",
         action="store_const",
@@ -323,12 +325,12 @@ def replace_environment_variables():
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
-def read_yaml_file(filename):
+def read_yaml_file(filename: Text) -> Dict[Text, Any]:
     """Read contents of `filename` interpreting them as yaml."""
     return read_yaml_string(read_file(filename))
 
 
-def read_yaml_string(string):
+def read_yaml_string(string: Text) -> Dict[Text, Any]:
     replace_environment_variables()
     import ruamel.yaml
 
@@ -336,7 +338,7 @@ def read_yaml_string(string):
     yaml_parser.version = "1.1"
     yaml_parser.unicode_supplementary = True
 
-    return yaml_parser.load(string)
+    return yaml_parser.load(string) or {}
 
 
 def _dump_yaml(obj, output):
