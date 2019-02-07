@@ -249,15 +249,9 @@ class PolicyEnsemble(object):
 
                 # override policy's featurizer with real featurizer class
                 policy['featurizer'] = featurizer_func(**featurizer_config)
-<<<<<<< Updated upstream
 
             try:
                 constr_func = utils.class_from_module_path(policy_name)
-=======
-            constr_func = utils.class_from_module_path(policy_name)
-
-            if constr_func:
->>>>>>> Stashed changes
                 policy_object = constr_func(**policy)
                 parsed_policies.append(policy_object)
             except(ImportError, AttributeError):
