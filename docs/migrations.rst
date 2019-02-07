@@ -24,6 +24,16 @@ Function Naming
 
 .. _migration-to-0-13-0:
 
+0.13.x to 0.14.0
+
+General
+~~~~~~~
+
+-The `MappingPolicy` is now included in `default_config.yml`. If you are using
+  a custom policy configuration make sure to update it appropriately.
+
+.. _migration-to-0-13-0:
+
 0.12.x to 0.13.0
 ----------------
 
