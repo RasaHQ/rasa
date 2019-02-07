@@ -12,6 +12,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- `MappingPolicy` which can be used to directly map and intent to an action
+  by adding the `maps_to` keyword to an intent in the domain.
 
 Changed
 -------
