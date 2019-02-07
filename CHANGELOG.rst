@@ -12,11 +12,19 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+<<<<<<< HEAD
 - `MappingPolicy` which can be used to directly map and intent to an action
   by adding the `maps_to` keyword to an intent in the domain.
+=======
+- ``tf.ConfigProto`` configuration can now be specified
+  for tensorflow based pipelines
+- open api spec for the Rasa Core SDK action server
+>>>>>>> master
 
 Changed
 -------
+- starter packs are now tested in parallel with the unittests,
+  and only on master and branches ending in ``.x`` (i.e. new version releases)
 
 Removed
 -------
@@ -24,12 +32,20 @@ Removed
 Fixed
 -----
 
+[0.13.2] - 2019-02-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- ``MessageProcessor`` now also passes ``message_id`` to the interpreter
+  when parsing with a ``RasaNLUHttpInterpreter``
+
 [0.13.1] - 2019-01-29
 ^^^^^^^^^^^^^^^^^^^^^
 
-Removed
--------
-- ``message_id`` can now be passed in the payload to the ``NLUHttpInterpreter``
+Added
+-----
+- ``message_id`` can now be passed in the payload to the ``RasaNLUHttpInterpreter``
 
 Fixed
 -----
