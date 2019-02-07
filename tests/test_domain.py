@@ -231,3 +231,20 @@ templates:
     assert not domain.store_entities_as_slots
     # conflicts should take value from domain_2
     assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}
+
+
+@pytest.mark.parametrize('intent_list, intent_properties', [
+    (['greet', 'goodbye'], {'greet': {'use_entities': True},
+                            'goodbye': {'use_entities': True}}),
+    ([{'greet': {'use_entities': False}}, 'goodbye'],
+        {'greet': {'use_entities': False},
+         'goodbye': {'use_entities': True}}),
+    ([{'greet': {'maps_to': 'utter_goodbye'}}, 'goodbye'],
+        {'greet': {'use_entities': True, 'maps_to': 'utter_goodbye'},
+         'goodbye': {'use_entities': True}}),
+    ([{'greet': {'maps_to': 'utter_goodbye', 'use_entities': False}},
+      {'goodbye': {'use_entities': False}}],
+     {'greet': {'use_entities': False, 'maps_to': 'utter_goodbye'},
+      'goodbye': {'use_entities': False}})])
+def test_collect_intent_properties(intent_list, intent_properties):
+    assert Domain.collect_intent_properties(intent_list) == intent_properties
