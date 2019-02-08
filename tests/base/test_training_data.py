@@ -73,7 +73,7 @@ def test_dialogflow_data():
     assert {td.lookup_tables[0]['name'],
             td.lookup_tables[1]['name']} == {'location', 'cuisine'}
     assert{len(td.lookup_tables[0]['elements']),
-            len(td.lookup_tables[1]['elements'])} == {4,6}
+            len(td.lookup_tables[1]['elements'])} == {4, 6}
 
 def test_lookup_table_json():
     lookup_fname = 'data/test/lookup_tables/plates.txt'
