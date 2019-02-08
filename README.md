@@ -18,6 +18,9 @@
 - **I'm ready to install Rasa Core! 🚀**
   [Installation](https://rasa.com/docs/core/installation.html)
 
+- **I'm ready to start building! 🤖**
+  [Rasa Stack starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
+
 - **I have a question ❓**
   [Rasa Community Forum](https://forum.rasa.com)
 
