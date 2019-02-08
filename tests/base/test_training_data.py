@@ -72,7 +72,7 @@ def test_dialogflow_data():
     # The order changes based on different computers hence the grouping
     assert {td.lookup_tables[0]['name'],
             td.lookup_tables[1]['name']} == {'location', 'cuisine'}
-    assert{len(td.lookup_tables[0]['elements']),
+    assert {len(td.lookup_tables[0]['elements']),
             len(td.lookup_tables[1]['elements'])} == {4, 6}
 
 
