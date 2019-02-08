@@ -21,20 +21,12 @@ class MappingPolicy(Policy):
     any other policy."""
 
     def __init__(self) -> None:
-        """Create a new Mapping policy.
-
-        Args:
-            domain: the domain object
-        """
+        """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__()
         self.last_action_name = None
 
-    def train(self,
-              training_trackers: List[DialogueStateTracker],
-              domain: Domain,
-              **kwargs: Any
-              ) -> None:
+    def train(self, *args, **kwargs) -> None:
         """Does nothing. This policy is deterministic."""
 
         pass
@@ -46,11 +38,10 @@ class MappingPolicy(Policy):
 
         If the current intent is assigned to an action that action will be
         predicted with the highest probability of all policies. If it is not
-        the policy will predict zero for every action.
-        """
+        the policy will predict zero for every action."""
 
-        current_intent = tracker.latest_message.intent['name']
-        action_name = domain.intent_properties[current_intent].get('maps_to')
+        current_intent = tracker.latest_message.intent.get('name')
+        action_name = domain.intent_properties.get(current_intent).get('maps_to')
 
         prediction = [0.0] * domain.num_actions
         if action_name is not None:
