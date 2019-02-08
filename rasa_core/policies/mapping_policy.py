@@ -40,8 +40,8 @@ class MappingPolicy(Policy):
         predicted with the highest probability of all policies. If it is not
         the policy will predict zero for every action."""
 
-        current_intent = tracker.latest_message.intent.get('name')
-        action_name = domain.intent_properties.get(current_intent).get('maps_to')
+        intent = tracker.latest_message.intent.get('name')
+        action_name = domain.intent_properties.get(intent, {}).get('maps_to')
 
         prediction = [0.0] * domain.num_actions
         if action_name is not None:
