@@ -69,11 +69,11 @@ def test_dialogflow_data():
     assert non_trivial_synonyms == {"mexico": "mexican",
                                     "china": "chinese",
                                     "india": "indian"}
-    assert td.lookup_tables[0]['name'] == 'location'
-    assert len(td.lookup_tables[0]['elements']) == 4
-    assert td.lookup_tables[1]['name'] == 'cuisine'
-    assert len(td.lookup_tables[1]['elements']) == 6
-
+    # The order changes based on different computers hence the grouping
+    assert {td.lookup_tables[0]['name'],
+            td.lookup_tables[1]['name']} == {'location', 'cuisine'}
+    assert{len(td.lookup_tables[0]['elements']),
+            len(td.lookup_tables[1]['elements'])} == {4,6}
 
 def test_lookup_table_json():
     lookup_fname = 'data/test/lookup_tables/plates.txt'
