@@ -75,6 +75,7 @@ def test_dialogflow_data():
     assert{len(td.lookup_tables[0]['elements']),
             len(td.lookup_tables[1]['elements'])} == {4, 6}
 
+
 def test_lookup_table_json():
     lookup_fname = 'data/test/lookup_tables/plates.txt'
     td_lookup = training_data.load_data(
