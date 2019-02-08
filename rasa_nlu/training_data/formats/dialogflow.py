@@ -92,11 +92,11 @@ class DialogflowReader(TrainingDataReader):
     @staticmethod
     def _extract_lookup_tables(name, examples):
         """Extract the lookup table from the entity synonyms"""
-        lookup_tables = []
         synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
         synonyms = DialogflowReader._flatten(synonyms)
         elements = [synonym for synonym in synonyms if "@" not in synonym]
-        if len(lookup_tables) == 0:
+
+        if len(elements) == 0:
             return False
         return [{
             'name': name,

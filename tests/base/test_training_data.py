@@ -62,7 +62,6 @@ def test_dialogflow_data():
     assert len(td.intent_examples) == 24
     assert len(td.training_examples) == 24
     assert len(td.lookup_tables) == 2
-
     assert td.intents == {"affirm", "goodbye", "hi", "inform"}
     assert td.entities == {"cuisine", "location"}
     non_trivial_synonyms = {k: v
