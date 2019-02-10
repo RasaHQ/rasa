@@ -17,6 +17,7 @@ tests_requires = [
     "pytest~=3.3",
     "pytest-pycodestyle~=1.4",
     "pytest-cov~=2.5",
+    "pytest_sanic~=0.1.0",
     "treq~=17.8",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
@@ -37,7 +38,10 @@ install_requires = [
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
     "coloredlogs~=10.0",
-    "scikit-learn~=0.20.2"
+    "scikit-learn~=0.20.2",
+    "sanic~=18.12.0",
+    "sanic-cors~=0.9.0",
+    "sanic-jwt~=1.2",
 ]
 
 extras_requires = {
