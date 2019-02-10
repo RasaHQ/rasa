@@ -16,8 +16,8 @@ networkx==2.2
 fbmessenger==5.3.2
 pykwalify==1.7.0
 coloredlogs==10.0
-sanic==0.8.3
-sanic-cors==0.9.6
+sanic==18.12.0
+sanic-cors==0.9.7
 sanic-jwt==1.2.1
 aiohttp==3.5.4
 scikit-learn==0.20.2
