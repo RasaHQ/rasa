@@ -296,7 +296,7 @@ class DataRouter(object):
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
 
-        task: Task = loop.run_in_executor(self.pool,
+        task = loop.run_in_executor(self.pool,
                                           do_train_in_worker,
                                           train_config,
                                           data_file,
