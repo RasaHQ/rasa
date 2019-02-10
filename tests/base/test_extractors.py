@@ -223,7 +223,7 @@ def test_unintentional_synonyms_capitalized(component_builder):
 
 def test_spacy_ner_extractor(spacy_nlp):
     ext = SpacyEntityExtractor()
-    example = Message("anywhere in the West", {
+    example = Message("anywhere in the U.K.", {
         "intent": "restaurant_search",
         "entities": [],
         "spacy_doc": spacy_nlp("anywhere in the west")})
@@ -235,6 +235,6 @@ def test_spacy_ner_extractor(spacy_nlp):
         'start': 16,
         'extractor': 'ner_spacy',
         'end': 20,
-        'value': 'West',
-        'entity': 'LOC',
+        'value': 'U.K.',
+        'entity': 'GPE',
         'confidence': None}

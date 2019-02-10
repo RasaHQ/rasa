@@ -346,7 +346,9 @@ class NGramFeaturizer(Featurizer):
         if existing_text_features is None:
             return 0.0
 
-        clf = LogisticRegression(class_weight='balanced')
+        clf = LogisticRegression(class_weight='balanced',
+                                 solver="liblinear",
+                                 multi_class="auto")
 
         no_ngrams_X = self._append_ngram_features(
                 examples, existing_text_features, max_ngrams)

@@ -1,7 +1,9 @@
 import errno
 from collections import namedtuple
 
+import asyncio
 import glob
+import inspect
 import io
 import json
 import logging
@@ -11,8 +13,11 @@ import requests
 import ruamel.yaml as yaml
 import simplejson
 import tempfile
+import warnings
+from asyncio import AbstractEventLoop
 from requests import Response
 from requests.auth import HTTPBasicAuth
+from sanic.request import Request
 from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 
@@ -511,3 +516,38 @@ class EndpointConfig(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+
+def arguments_of(func):
+    """Return the parameters of the function `func` as a list of names."""
+
+    return list(inspect.signature(func).parameters.keys())
+
+
+def default_arg(request: Request,
+                key: Text,
+                default: Any = None) -> Optional[Any]:
+    """Return an argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a value.
+    If not, `default` is returned."""
+    found = request.raw_args.get(key)
+    if found is not None:
+        return found
+    else:
+        return default
+
+
+def enable_async_loop_debugging(event_loop: AbstractEventLoop):
+    logging.info("Enabling coroutine debugging. "
+                 "Loop id {}".format(id(asyncio.get_event_loop())))
+
+    # Enable debugging
+    event_loop.set_debug(True)
+
+    # Make the threshold for "slow" tasks very very small for
+    # illustration. The default is 0.1, or 100 milliseconds.
+    event_loop.slow_callback_duration = 0.001
+
+    # Report all mistakes managing asynchronous resources.
+    warnings.simplefilter('always', ResourceWarning)

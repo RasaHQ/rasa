@@ -17,7 +17,6 @@ tests_requires = [
     "pytest~=3.3",
     "pytest-pep8~=1.0",
     "pytest-cov~=2.5",
-    "pytest-twisted<1.6",
     "treq~=17.8",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
@@ -26,7 +25,6 @@ tests_requires = [
 install_requires = [
     "cloudpickle~=0.6.1",
     "gevent~=1.2",
-    "klein~=17.10",
     "boto3~=1.5",
     "packaging~=17.1",
     "typing~=3.6",
