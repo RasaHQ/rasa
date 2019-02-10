@@ -86,11 +86,6 @@ def create_argument_parser():
                              'requests. Increasing this value will have a '
                              'great impact on memory usage. It is '
                              'recommended to keep the default value.')
-    parser.add_argument('--num_threads',
-                        type=int,
-                        default=1,
-                        help='Number of parallel threads to use for '
-                             'handling parse requests.')
     parser.add_argument('--endpoints',
                         help='Configuration file for the model server '
                              'as a yaml file')
@@ -224,7 +219,6 @@ async def configure_logging():
 def create_app(data_router,
                loglevel='INFO',
                logfile=None,
-               num_threads=1,
                token=None,
                cors_origins=None,
                default_config_path=None):
@@ -418,7 +412,6 @@ if __name__ == '__main__':
         router,
         cmdline_args.loglevel,
         cmdline_args.write,
-        cmdline_args.num_threads,
         cmdline_args.token,
         cmdline_args.cors,
         default_config_path=cmdline_args.config
