@@ -12,7 +12,12 @@ Added
 
 Changed
 -------
+- validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
+- starter packs now also tested when attempting to merge a branch to master
+
+=======
+- replace pep8 with pycodestyle
 
 Removed
 -------
@@ -21,16 +26,38 @@ Removed
 Fixed
 -----
 
-.. _v0-14-0:
+[0.14.3] - 2019-02-01
+^^^^^^^^^^^^^^^^^^^^^
 
-[0.14.1] - 2018-01-23
+Changed
+-------
+- starter packs are now tested in parallel with the unittests,
+  and only on branches ending in ``.x`` (i.e. new version releases)
+- pinned ``coloredlogs``, ``future`` and ``packaging``
+
+[0.14.2] - 2019-01-29
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- ``rasa_nlu.evaluate`` now exports reports into a folder and also
+  includes the entity extractor reports
+
+Changed
+-------
+- updated requirements to match Core and SDK
+- pinned keras dependecies
+
+[0.14.1] - 2019-01-23
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - scikit-learn is a global requirement
 
-[0.14.0] - 2018-01-23
+.. _v0-14-0:
+
+[0.14.0] - 2019-01-23
 ^^^^^^^^^^^^^^^^^^^^^
 
 Added
@@ -56,6 +83,8 @@ Changed
 - updated TensorFlow version to 1.12.0
 - updated scikit-learn version to 0.20.2
 - updated cloudpickle version to 0.6.1
+- updated requirements to match Core and SDK
+- pinned keras dependecies
 
 Removed
 -------

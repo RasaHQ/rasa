@@ -1,17 +1,16 @@
-import argparse
 import asyncio
+
+import argparse
 import logging
 import simplejson
-import warnings
-from asyncio import AbstractEventLoop
 from functools import wraps
 from inspect import isawaitable
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
-from typing import Any, Optional, Text, Callable
+from typing import Any, Callable, Optional, Text
 
-from rasa_nlu import config, utils, constants
+from rasa_nlu import config, constants, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
@@ -267,7 +266,6 @@ def create_app(data_router,
             request_params['q'] = request_params.pop('query')
         if 'q' not in request_params:
             request_params['q'] = ""
-
         return await parse_response(request_params)
 
     @app.post("/parse")

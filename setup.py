@@ -15,7 +15,7 @@ with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 tests_requires = [
     "pytest~=3.3",
-    "pytest-pep8~=1.0",
+    "pytest-pycodestyle~=1.4",
     "pytest-cov~=2.5",
     "treq~=17.8",
     "responses~=0.9.0",
@@ -26,9 +26,9 @@ install_requires = [
     "cloudpickle~=0.6.1",
     "gevent~=1.2",
     "boto3~=1.5",
-    "packaging~=17.1",
+    "packaging~=18.0",
     "typing~=3.6",
-    "future~=0.16.0",
+    "future~=0.17.1",
     "tqdm~=4.19",
     "requests~=2.20",
     "jsonschema~=2.6",
@@ -36,7 +36,7 @@ install_requires = [
     "numpy>=1.13",
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
-    "coloredlogs~=9.0",
+    "coloredlogs~=10.0",
     "scikit-learn~=0.20.2"
 ]
 
@@ -48,7 +48,9 @@ extras_requires = {
               ],
     'tensorflow': ["sklearn-crfsuite~=0.3.6",
                    "scipy~=1.1",
-                   "tensorflow~=1.12"
+                   "tensorflow~=1.12",
+                   "keras-applications==1.0.6",
+                   "keras-preprocessing==1.0.5"
                    ],
     'mitie': ["mitie"],
 }
