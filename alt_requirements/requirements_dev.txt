@@ -6,7 +6,7 @@
 python-coveralls==2.9.1
 pytest-pycodestyle==1.4.0
 pytest-cov==2.5.1
-pytest-sanic==1.6
+pytest-sanic==0.1.12
 pytest==3.3.2
 treq==17.8.0
 moto==1.2.0
