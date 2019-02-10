@@ -297,13 +297,13 @@ class DataRouter(object):
         self.project_store[project].current_training_processes += 1
 
         task = loop.run_in_executor(self.pool,
-                                          do_train_in_worker,
-                                          train_config,
-                                          data_file,
-                                          self.project_dir,
-                                          project,
-                                          model_name,
-                                          self.remote_storage)
+                                    do_train_in_worker,
+                                    train_config,
+                                    data_file,
+                                    self.project_dir,
+                                    project,
+                                    model_name,
+                                    self.remote_storage)
 
         try:
             model_path = await task
