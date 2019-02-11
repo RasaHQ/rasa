@@ -1,7 +1,10 @@
 import argparse
 import logging
-import simplejson
+import sys
 from functools import wraps
+
+import simplejson
+from flask import send_file
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -297,6 +300,7 @@ class RasaNLU(object):
         if 'yml' in content_type:
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
+            # parameter attached to it
 
             model_config = utils.read_yaml(request_content)
             data = model_config.get("data")
@@ -340,16 +344,18 @@ class RasaNLU(object):
 
         data_file = dump_to_data_file(data)
 
-        request.setHeader('Content-Type', 'application/json')
+        request.setHeader('Content-Type', 'application/zip')
 
         try:
             request.setResponseCode(200)
 
-            response = yield self.data_router.start_train_process(
+            path_to_model = yield self.data_router.start_train_process(
                 data_file, project,
                 RasaNLUModelConfig(model_config), model_name)
-            returnValue(json_to_string({'info': 'new model trained',
-                                        'model': response}))
+            zipped_path = utils.zip_folder(path_to_model)
+
+            return send_file(zipped_path, "application/zip")
+
         except MaxTrainingError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
@@ -358,6 +364,12 @@ class RasaNLU(object):
             returnValue(json_to_string({"error": "{}".format(e)}))
         except TrainingException as e:
             request.setResponseCode(500)
+            returnValue(json_to_string({"error": "{}".format(e)}))
+        except:
+            err_list = sys.exc_info()
+            e = err_list[0]
+            logger.info(err_list)
+            logger.error(e)
             returnValue(json_to_string({"error": "{}".format(e)}))
 
     @app.route("/evaluate", methods=['POST', 'OPTIONS'])

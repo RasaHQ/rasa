@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-import time
-
 import io
 import json
+import tempfile
+import time
+
 import pytest
 import ruamel.yaml as yaml
-import tempfile
 from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter
@@ -142,6 +142,20 @@ def test_post_train(app, rasa_default_train_data):
     rjs = yield response.json()
     assert response.code == 404, "A project name to train must be specified"
     assert "error" in rjs
+
+
+@utilities.slowtest
+@pytest.inlineCallbacks
+def test_post_train_success(app, rasa_default_train_data):
+    # with app.app_context():
+    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
+
+    response = app.post("http://dummy-uri/train?project=test&model=tobi",
+                        json=model_config)
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    assert response.code == 200
 
 
 @utilities.slowtest
