@@ -1,4 +1,4 @@
-:desc: How to use Rasa NLU in a Python project
+:desc: Configure the Python API for serverless NLP using open source chatbot framework Rasa Stack.
 .. _section_python:
 
 Python API
@@ -129,5 +129,3 @@ ComponentBuilder
 
 
 .. include:: feedback.inc
-   
-

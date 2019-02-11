@@ -1,4 +1,5 @@
-:desc: The Rasa NLU REST API
+:desc: Access and configure the HTTP API of Rasa NLU to run the nlp library as a server.
+
 .. _section_http:
 
 HTTP API
@@ -62,7 +63,7 @@ to start the training:
 
     $ curl -XPOST -H "Content-Type: application/x-yml" localhost:5000/train?project=my_project \
         -d @sample_configs/config_train_server_md.yml
-        
+
 .. note::
 
     The request should always be sent as application/x-yml regardless of wether you use json or md for the data format. Do not send json as application/json for example.
@@ -133,7 +134,7 @@ also returns a list of available projects the server can use to fulfill ``/parse
 .. code-block:: bash
 
     $ curl localhost:5000/status | python -mjson.tool
-    
+
     {
       "available_projects": {
         "my_restaurant_search_bot" : {
@@ -159,7 +160,7 @@ This will return the current version of the Rasa NLU instance, as well as the mi
       "minimum_compatible_version": "0.13.0"
     }
 
-    
+
 ``GET /config``
 ^^^^^^^^^^^^^^^
 
@@ -187,5 +188,3 @@ This will unload a model from the server memory
 
 
 .. include:: feedback.inc
-	
-

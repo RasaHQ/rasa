@@ -1,4 +1,5 @@
-:desc: Entity Extraction with Rasa NLU
+:desc: Use open source named entity recognition like spacy and duckling for building contextual AI Assistants.
+
 .. _section_entities:
 
 Entity Extraction
@@ -19,8 +20,8 @@ Custom Entities
 ^^^^^^^^^^^^^^^
 
 Almost every chatbot and voice app will have some custom entities.
-In a restaurant bot, ``chinese`` is a cuisine, but in a language-learning app it would mean something very different. 
-The ``ner_crf`` component can learn custom entities in any language. 
+In a restaurant bot, ``chinese`` is a cuisine, but in a language-learning app it would mean something very different.
+The ``ner_crf`` component can learn custom entities in any language.
 
 
 Extracting Places, Dates, People, Organisations
@@ -38,7 +39,7 @@ Dates, Amounts of Money, Durations, Distances, Ordinals
 
 The `duckling <https://duckling.wit.ai/>`_ library does a great job
 of turning expressions like "next Thursday at 8pm" into actual datetime
-objects that you can use, e.g. 
+objects that you can use, e.g.
 
 .. code-block:: python
 
@@ -47,8 +48,8 @@ objects that you can use, e.g.
 
 
 The list of supported langauges is `here <https://github.com/facebook/duckling/tree/master/Duckling/Dimensions>`_.
-Duckling can also handle durations like "two hours", 
-amounts of money, distances, and ordinals. 
+Duckling can also handle durations like "two hours",
+amounts of money, distances, and ordinals.
 Fortunately, there is a duckling docker container ready to use,
 that you just need to spin up and connect to Rasa NLU.
 (see :ref:`ner_duckling_http`)
@@ -59,11 +60,11 @@ Regular Expressions (regex)
 
 You can use regular expressions to help the CRF model learn to recognize entities.
 In the :ref:`section_dataformat` you can provide a list of regular expressions, each of which provides
-the ``ner_crf`` with an extra binary feature, which says if the regex was found (1) or not (0). 
+the ``ner_crf`` with an extra binary feature, which says if the regex was found (1) or not (0).
 
 For example, the names of German streets often end in ``strasse``. By adding this as a regex,
 we are telling the model to pay attention to words ending this way, and will quickly learn to
-associate that with a location entity. 
+associate that with a location entity.
 
 If you just want to match regular expressions exactly, you can do this in your code,
 as a postprocessing step after receiving the response form Rasa NLU.
@@ -103,13 +104,13 @@ Some extractors, like ``duckling``, may include additional information. For exam
 
 .. code-block:: json
 
-   {  
-     "additional_info":{  
+   {
+     "additional_info":{
        "grain":"day",
        "type":"value",
        "value":"2018-06-21T00:00:00.000-07:00",
-       "values":[  
-         {  
+       "values":[
+         {
            "grain":"day",
            "type":"value",
            "value":"2018-06-21T00:00:00.000-07:00"
@@ -134,5 +135,3 @@ Some extractors, like ``duckling``, may include additional information. For exam
 
 
 .. include:: feedback.inc
-	
-

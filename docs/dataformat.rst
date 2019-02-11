@@ -1,4 +1,5 @@
-:desc: The Rasa NLU Training Data Format
+:desc: Read more about how to format training data with Rasa NLU for open source natural language processing.
+
 .. _section_dataformat:
 
 Training Data Format
@@ -9,13 +10,13 @@ Data Format
 ~~~~~~~~~~~
 
 You can provide training data as markdown or as json, as a single file or as a directory containing multiple files.
-Note that markdown is usually easier to work with. 
+Note that markdown is usually easier to work with.
 
 
 Markdown Format
 ---------------
 
-Markdown is the easiest Rasa NLU format for humans to read and write. 
+Markdown is the easiest Rasa NLU format for humans to read and write.
 Examples are listed using the unordered
 list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
 Examples are grouped by intent, and entities are annotated as markdown links.
@@ -47,10 +48,10 @@ Examples are grouped by intent, and entities are annotated as markdown links.
     path/to/currencies.txt
 
 The training data for Rasa NLU is structured into different parts:
-examples, synonyms, regex features, and lookup tables. 
+examples, synonyms, regex features, and lookup tables.
 
 Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
-However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up. 
+However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up.
 
 Lookup tables may be specified either directly as lists or as txt files containing newline-separated words or phrases.  Upon loading the training data, these files are used to generate case-insensitive regex patterns that are added to the regex features.  For example, in this case a list of currency names is supplied so that it is easier to pick out this entity.
 
@@ -73,7 +74,7 @@ The most important one is ``common_examples``.
     }
 
 The ``common_examples`` are used to train your model. You should put all of your training
-examples in the ``common_examples`` array. 
+examples in the ``common_examples`` array.
 Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
 
@@ -86,7 +87,7 @@ and after training a model. Luckily, there's a
 for creating training data in rasa's format.
 - created by `@azazdeaz <https://github.com/azazdeaz>`_ -
 and it's also extremely helpful for inspecting and modifying existing data.
-`Rasa Platform <https://rasa.com/products/rasa-platform>`_ (Rasa's commercial product) also has 
+`Rasa Platform <https://rasa.com/products/rasa-platform>`_ (Rasa's commercial product) also has
 a full-featured UI for annotating data.
 
 
@@ -101,8 +102,8 @@ data in the GUI before training.
 Generating More Entity Examples
 -------------------------------
 
-It is sometimes helpful to generate a bunch of entity examples, for 
-example if you have a database of restaurant names. There are a couple 
+It is sometimes helpful to generate a bunch of entity examples, for
+example if you have a database of restaurant names. There are a couple
 of great tools built by the community to help with that.
 
 You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
@@ -297,7 +298,7 @@ you could have a folder called ``nlu_data``:
 
    nlu_data/
    ├── restaurants.md
-   ├── smalltalk.md  
+   ├── smalltalk.md
 
 To train a model with this data, pass the path to the directory to the train script:
 
@@ -316,6 +317,4 @@ To train a model with this data, pass the path to the directory to the train scr
     and json
 
 
-.. include:: feedback.inc	
-	
-
+.. include:: feedback.inc

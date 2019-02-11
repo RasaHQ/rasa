@@ -1,4 +1,4 @@
-:desc: Evaluating ML models trained with Rasa NLU
+:desc: Evaluate and validate your machine learning models for open source library Rasa NLU to improve intent recognition and entity extraction. 
 
 .. _section_evaluation:
 
@@ -8,17 +8,17 @@ Evaluating and Improving Models
 Improving your models from feedback
 -----------------------------------
 
-Once you have a version of your bot running, the Rasa NLU server will log 
+Once you have a version of your bot running, the Rasa NLU server will log
 every request made to the ``/parse`` endpoint to a file. By default
-these are saved in the folder ``logs``. 
+these are saved in the folder ``logs``.
 
 
 .. code-block:: javascript
 
-   {  
-     "user_input":{  
+   {
+     "user_input":{
        "entities":[]   ],
-       "intent":{  
+       "intent":{
          "confidence":0.32584617693743012,
          "name":"restaurant_search"
        },
@@ -34,7 +34,7 @@ these are saved in the folder ``logs``.
 The things your users say are the best source of training data for refining your models.
 Of course your model won't be perfect, so you will have to manually go through
 each of these predictions and correct any mistakes before adding them to your training data.
-In this case, the entity 'thai' was not picked up as a cuisine. 
+In this case, the entity 'thai' was not picked up as a cuisine.
 
 
 Evaluating Models
@@ -56,8 +56,8 @@ If you've done this, you can see how well your model predicts the test cases usi
 Where the ``--data`` argument points to your test data, and ``--model`` points to your trained model.
 
 
-If you don't have a separate test set, you can 
-still estimate how well your model generalises using cross-validation. 
+If you don't have a separate test set, you can
+still estimate how well your model generalises using cross-validation.
 To do this, run the evaluation script with the ``--mode crossvalidation`` flag:
 
 
@@ -104,7 +104,7 @@ to the left of the plot.
 
 .. warning::
     If any of your entities are incorrectly annotated, your evaluation may fail. One common problem
-    is that an entity cannot stop or start inside a token. 
+    is that an entity cannot stop or start inside a token.
     For example, if you have an example for a ``name`` entity
     like ``[Brian](name)'s house``, this is only valid if your tokenizer splits ``Brian's`` into
     multiple tokens. A whitespace tokenizer would not work in this case.
@@ -114,7 +114,7 @@ Entity Extraction
 
 The ``ner_crf`` is the only entity extractor which you train using your own data,
 and so is the only one which will be evaluated. If you use the spaCy or duckling
-pre-trained entity extractors, Rasa NLU will not include these in the evaluation. 
+pre-trained entity extractors, Rasa NLU will not include these in the evaluation.
 
 Rasa NLU will report recall, precision, and f1 measure for each entity type that
 ``ner_crf`` is trained to recognize.
@@ -162,5 +162,3 @@ Which will produce the following output:
 
 
 .. include:: feedback.inc
-
-

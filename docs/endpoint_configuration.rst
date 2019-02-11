@@ -1,4 +1,6 @@
-:desc: Adding endpoints using an endpoint configuration file
+:desc: Add new endpoints to the configuration file of Rasa NLU to connect your API's to integrate with open source NLU.
+
+.. _section_endpoint_configuration:
 
 Endpoint Configuration
 ======================

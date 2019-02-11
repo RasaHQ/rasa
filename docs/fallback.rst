@@ -1,4 +1,4 @@
-:desc: Fallback and default actions in Rasa
+:desc: Choose smart fallback thresholds and actions to ensure accuracy and performance of your bot responses using Rasa NLU for conversational bots. 
 .. _section_fallback:
 
 Confidence and Fallback Intents
@@ -6,7 +6,7 @@ Confidence and Fallback Intents
 
 
 Each of the pipelines will report a ``confidence`` score along with the predicted intent,
-and the ``ner_crf`` component will do the same for the extracted entities. 
+and the ``ner_crf`` component will do the same for the extracted entities.
 
 You can use the confidence score to choose when to ignore Rasa NLU's prediction and trigger
 fallback behaviour, for example asking the user to rephrase. If you are using Rasa Core,
@@ -21,9 +21,9 @@ and compare the confidence values on the correctly and incorrectly predicted exa
 A Note about Confidence Scores
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Always keep in mind that the confidence score is not a true probability that the prediction 
+Always keep in mind that the confidence score is not a true probability that the prediction
 is correct, it's just a metric defined by the model that approximately describes how similar
-your input was to the training data. 
+your input was to the training data.
 
 The intent classifier in the ``spacy_sklearn`` pipeline, for example, usually reports very low
 confidence numbers, whereas the ``tensorflow_embedding`` pipeline usually provides very high confidences.
@@ -32,5 +32,3 @@ it is a "better" model. In fact, this usually means that your model is overfitti
 
 
 .. include:: feedback.inc
-
-
