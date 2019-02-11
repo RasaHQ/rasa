@@ -183,5 +183,23 @@ def test_read_yaml_string_with_env_var_not_exist():
     user: ${USER_NAME}
     password: ${PASSWORD}
     """
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError) as error_info:
         r = utils.read_yaml_string(config_with_env_var_not_exist)
+    error_message = ("Error when trying to expand the environment variables "
+                     "in '['${PASSWORD}']'. Please make sure to also set these"
+                     " environment variables: '${PASSWORD}'.")
+    assert error_message in str(error_info.value)
+
+
+def test_read_yaml_string_with_multiple_env_vars_not_exist():
+    config_with_env_vars_not_exist = """
+    user: ${USERNAME} ${PASSWORD}
+    password: ${PASSWORD}
+    """
+    with pytest.raises(ValueError) as error_info:
+        r = utils.read_yaml_string(config_with_env_vars_not_exist)
+    error_message = ("Error when trying to expand the environment variables "
+                     "in '['${USERNAME}', '${PASSWORD}']'. Please make sure "
+                     "to also set these environment variables: '${USERNAME} "
+                     "${PASSWORD}'.")
+    assert error_message in str(error_info.value)

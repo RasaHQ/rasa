@@ -312,9 +312,11 @@ def replace_environment_variables():
         value = loader.construct_scalar(node)
         expanded_vars = os.path.expandvars(value)
         if '$' in expanded_vars:
-            raise KeyError(
-                "Environment variable {} does not exist".
-                format(expanded_vars))
+            not_expanded = [w for w in expanded_vars.split() if '$' in w]
+            raise ValueError(
+                "Error when trying to expand the environment variables"
+                " in '{}'. Please make sure to also set these environment"
+                " variables: '{}'.".format(not_expanded, value))
         return expanded_vars
 
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
