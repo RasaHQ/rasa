@@ -355,7 +355,8 @@ class Interpreter(object):
         message = Message(text, self.default_output_attributes(), time=time)
 
         for component in self.pipeline:
-            component.process(message, **self.context, request_params=request_params)
+            component.process(message, **self.context,
+                              request_params=request_params)
 
         output = self.default_output_attributes()
         output.update(message.as_dict(

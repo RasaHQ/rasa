@@ -101,12 +101,11 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     def _url(self):
         """Return url of the duckling service. Environment var will override."""
-        if os.environ.get("RASA_DUCKLING_HTTP_URL"):    
+        if os.environ.get("RASA_DUCKLING_HTTP_URL"):
             return os.environ["RASA_DUCKLING_HTTP_URL"]
 
         return self.component_config.get("url")
 
-    
     def _payload(self, text, reference_time, timezone):
         return {
             "text": text,
@@ -172,9 +171,12 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         if self._url() is not None:
             params = kwargs.get('request_params', None)
-            timezone = self._timezone_from_config_or_request(self.component_config, params.get("timezone", None))
-            reference_time = self._reference_time_from_message_or_request(message, params.get("reference_time", None))
-            matches = self._duckling_parse(message.text, reference_time, timezone)
+            timezone = self._timezone_from_config_or_request(
+                self.component_config, params.get("timezone", None))
+            reference_time = self._reference_time_from_message_or_request(
+                message, params.get("reference_time", None))
+            matches = self._duckling_parse(message.text, reference_time,
+                                           timezone)
             dimensions = self.component_config["dimensions"]
             relevant_matches = filter_irrelevant_matches(matches, dimensions)
             extracted = convert_duckling_format_to_rasa(relevant_matches)
