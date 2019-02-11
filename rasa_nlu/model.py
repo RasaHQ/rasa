@@ -337,6 +337,7 @@ class Interpreter(object):
         self.model_metadata = model_metadata
 
     def parse(self, text: Text, time: Optional[datetime.datetime] = None,
+              request_params: Optional[Dict[Text, Text]]=None,
               only_output_properties: bool = True) -> Dict[Text, Any]:
         """Parse the input text, classify it and return pipeline result.
 
@@ -354,7 +355,7 @@ class Interpreter(object):
         message = Message(text, self.default_output_attributes(), time=time)
 
         for component in self.pipeline:
-            component.process(message, **self.context)
+            component.process(message, **self.context, request_params=request_params)
 
         output = self.default_output_attributes()
         output.update(message.as_dict(

@@ -239,7 +239,7 @@ class DataRouter(object):
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)
 
-    def parse(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
+    def parse(self, data: Dict[Text, Any], request_params: Optional[Dict[Text, Text]]=None) -> Dict[Text, Any]:
         project = data.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME)
         model = data.get("model")
 
@@ -264,7 +264,7 @@ class DataRouter(object):
 
         time = data.get('time')
         response = self.project_store[project].parse(data['text'], time,
-                                                     model)
+                                                     model, request_params=request_params)
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,

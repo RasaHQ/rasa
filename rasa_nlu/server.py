@@ -240,9 +240,9 @@ class RasaNLU(object):
             data = self.data_router.extract(request_params)
             try:
                 request.setResponseCode(200)
-                response = yield (self.data_router.parse(data) if self._testing
+                response = yield (self.data_router.parse(data, request_params) if self._testing
                                   else threads.deferToThread(
-                    self.data_router.parse, data))
+                        self.data_router.parse, data, request_params))
                 returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)

@@ -101,24 +101,25 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     def _url(self):
         """Return url of the duckling service. Environment var will override."""
-        if os.environ.get("RASA_DUCKLING_HTTP_URL"):
+        if os.environ.get("RASA_DUCKLING_HTTP_URL"):    
             return os.environ["RASA_DUCKLING_HTTP_URL"]
 
         return self.component_config.get("url")
 
-    def _payload(self, text, reference_time):
+    
+    def _payload(self, text, reference_time, timezone):
         return {
             "text": text,
             "locale": self._locale(),
-            "tz": self.component_config.get("timezone"),
+            "tz": timezone,
             "reftime": reference_time
         }
 
-    def _duckling_parse(self, text, reference_time):
+    def _duckling_parse(self, text, reference_time, timezone):
         """Sends the request to the duckling server and parses the result."""
 
         try:
-            payload = self._payload(text, reference_time)
+            payload = self._payload(text, reference_time, timezone)
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
             response = requests.post(self._url() + "/parse",
@@ -142,7 +143,13 @@ class DucklingHTTPExtractor(EntityExtractor):
             return []
 
     @staticmethod
-    def _reference_time_from_message(message):
+    def _timezone_from_config_or_request(component_config, timezone):
+        if timezone is not None:
+            return timezone
+        return component_config.get("timezone")
+
+    @staticmethod
+    def _reference_time_from_message_or_request(message, reference_time):
         if message.time is not None:
             try:
                 return int(message.time) * 1000
@@ -151,14 +158,23 @@ class DucklingHTTPExtractor(EntityExtractor):
                                 "current UTC time will be passed to "
                                 "duckling. Error: {}".format(message.time, e))
         # fallbacks to current time, multiplied by 1000 because duckling
-        # requires the reftime in miliseconds
+        # requires the reftime in milliseconds
+        elif reference_time is not None:
+            try:
+                return int(reference_time)
+            except ValueError as e:
+                logging.warning("Could not parse timestamp {}. Instead "
+                                "current UTC time will be passed to "
+                                "duckling. Error: {}".format(reference_time, e))
         return int(time.time()) * 1000
 
     def process(self, message: Message, **kwargs: Any) -> None:
 
         if self._url() is not None:
-            reference_time = self._reference_time_from_message(message)
-            matches = self._duckling_parse(message.text, reference_time)
+            params = kwargs.get('request_params', None)
+            timezone = self._timezone_from_config_or_request(self.component_config, params.get("timezone", None))
+            reference_time = self._reference_time_from_message_or_request(message, params.get("reference_time", None))
+            matches = self._duckling_parse(message.text, reference_time, timezone)
             dimensions = self.component_config["dimensions"]
             relevant_matches = filter_irrelevant_matches(matches, dimensions)
             extracted = convert_duckling_format_to_rasa(relevant_matches)
