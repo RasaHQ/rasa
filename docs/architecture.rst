@@ -1,3 +1,5 @@
+:desc: Check the architecture to understand how Rasa Core uses machine learning, context and state of the conversation to predict the next action of the AI Assistant.
+
 .. _architecture:
 
 High-Level Architecture
@@ -32,4 +34,3 @@ The process is handled by the :class:`rasa_core.agent.Agent` class.
 
 
 .. include:: feedback.inc
-

@@ -1,3 +1,7 @@
+:desc: Define the message you sent with your open source chatbot to your using including buttons and other GUI elements.
+
+.. _dispatcher:
+
 Dispatcher
 ==========
 

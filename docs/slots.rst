@@ -1,3 +1,5 @@
+:desc: Store information the user provided as well as information from database queries in slots to influence how the machine learning based dialogue continues. 
+
 .. _slots:
 
 Using Slots
@@ -211,5 +213,3 @@ can learn from these how to handle the different situations:
 
 
 .. include:: feedback.inc
-
-

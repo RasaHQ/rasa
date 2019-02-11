@@ -1,3 +1,5 @@
+:desc: Check this tutorial on how to get started with our open source framework for building contextual AI assistants and chatbots.  
+
 .. _quickstart:
 
 Quickstart
@@ -478,7 +480,5 @@ this:
        - title: "super sad"
          payload: "super sad"
 
-		
+
 .. include:: feedback.inc
-
-
