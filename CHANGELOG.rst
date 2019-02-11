@@ -9,6 +9,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- query strings arguments passed to the pipeline components
 
 Changed
 -------
