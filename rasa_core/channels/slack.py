@@ -28,6 +28,7 @@ class SlackBot(SlackClient, OutputChannel):
 
     def send_text_message(self, recipient_id, message):
         recipient = self.slack_channel or recipient_id
+        print("slack.py send_text_message ::",message)
         for message_part in message.split("\n\n"):
             super(SlackBot, self).api_call("chat.postMessage",
                                            channel=recipient,
@@ -37,6 +38,7 @@ class SlackBot(SlackClient, OutputChannel):
         image_attachment = [{"image_url": image_url,
                              "text": message}]
         recipient = self.slack_channel or recipient_id
+        print("slack.py send_image_url ::",message)
         return super(SlackBot, self).api_call("chat.postMessage",
                                               channel=recipient,
                                               as_user=True,
@@ -44,6 +46,7 @@ class SlackBot(SlackClient, OutputChannel):
 
     def send_attachment(self, recipient_id, attachment, message=""):
         recipient = self.slack_channel or recipient_id
+        print("slack.py send_attachment ::",message)
         return super(SlackBot, self).api_call("chat.postMessage",
                                               channel=recipient,
                                               as_user=True,
@@ -54,6 +57,7 @@ class SlackBot(SlackClient, OutputChannel):
     def _convert_to_slack_buttons(buttons):
         return [{"text": b['title'],
                  "name": b['payload'],
+                 "value": b['payload'],
                  "type": "button"} for b in buttons]
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
@@ -68,7 +72,7 @@ class SlackBot(SlackClient, OutputChannel):
                               "callback_id": message.replace(' ', '_')[:20],
                               "actions": self._convert_to_slack_buttons(
                                   buttons)}]
-
+        print("slack.py send_button ::",button_attachment)
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
                                        as_user=True,
@@ -129,13 +133,19 @@ class SlackInput(InputChannel):
 
     @staticmethod
     def _is_button_reply(slack_event):
-        return (slack_event.get('payload') and
-                slack_event['payload'][0] and
-                'name' in slack_event['payload'][0])
+        pay = json.loads(slack_event['payload']);
+        evaluation = (pay['type'] == u"interactive_message") and (pay['actions'][0]['type'] == u"button");
+        ## print("Is it a button ? ",evaluation);
+        return( evaluation );
+        ##        return (slack_event.get('payload') and
+        ##                slack_event['payload'][0] and
+        ##                'name' in slack_event['payload'][0])
 
     @staticmethod
     def _get_button_reply(slack_event):
-        return json.loads(slack_event['payload'][0])['actions'][0]['name']
+        return json.loads(slack_event['payload'])['actions'][0]['name']
+        ## return json.loads(slack_event['payload'][0])['actions'][0]['name']
+        
 
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
@@ -172,16 +182,20 @@ class SlackInput(InputChannel):
         """
         retry_reason = request.headers.environ.get('HTTP_X_SLACK_RETRY_REASON')
         retry_count = request.headers.environ.get('HTTP_X_SLACK_RETRY_NUM')
-        if retry_count and retry_reason in self.errors_ignore_retry:
+        ## if retry_count and retry_reason in self.errors_ignore_retry:        
+        if retry_count:
             logger.warning("Received retry #{} request from slack"
                            " due to {}".format(retry_count, retry_reason))
 
             return Response(status=201, headers={'X-Slack-No-Retry': 1})
 
         try:
+            ## print("slack.py here ... L182 ", self.slack_token, " ", self.slack_channel);
             out_channel = SlackBot(self.slack_token, self.slack_channel)
+            print("--->> user text ::",retry_count,":: ",text);
             user_msg = UserMessage(text, out_channel, sender_id,
                                    input_channel=self.name())
+
             on_new_message(user_msg)
         except Exception as e:
             logger.error("Exception when trying to handle "
@@ -215,7 +229,8 @@ class SlackInput(InputChannel):
             elif request.form:
                 output = dict(request.form)
                 if self._is_button_reply(output):
-                    sender_id = json.loads(output['payload'][0])['user']['id']
+                    ## sender_id = json.loads(output['payload'][0])['user']['id']
+                    sender_id = json.loads(output['payload'])['user']['id']
                     return self.process_message(
                         on_new_message,
                         text=self._get_button_reply(output),
