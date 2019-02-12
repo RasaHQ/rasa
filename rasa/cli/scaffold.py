@@ -63,9 +63,6 @@ def print_run_or_instructions(args):
 
 
 def init_project(args, path):
-    if not os.path.isdir(path):
-        os.makedirs(path)
-
     copy_tree(scaffold_path(), path)
 
     print("Created project directory at '{}'.".format(os.path.abspath(path)))
@@ -75,16 +72,27 @@ def init_project(args, path):
 def run(args):
     path = questionary.text("Please enter a folder path for the bot "
                             "[default: current directory]", ".").ask()
+
+    if not os.path.isdir(path):
+        should_create = questionary.confirm("Path '{}' does not exist. Should "
+                                            "I create it?".format(path)).ask()
+        if should_create:
+            os.makedirs(path)
+        else:
+            print("Ok. Then I stop here.")
+            exit(0)
+
     if path is None or not os.path.isdir(path):
         print("Path '{}' is not a valid directory. Aborted creation."
               "".format(path))
         exit(1)
-    else:
-        if len(os.listdir(path)) > 0:
-            overwrite = questionary.confirm(
-                "Directory '{}' is not empty. Continue?"
-                "".format(os.path.abspath(path))).ask()
-            if not overwrite:
-                print("Aborted creation.")
-                exit(1)
-        init_project(args, path)
+
+    if len(os.listdir(path)) > 0:
+        overwrite = questionary.confirm(
+            "Directory '{}' is not empty. Continue?"
+            "".format(os.path.abspath(path))).ask()
+        if not overwrite:
+            print("Aborted creation.")
+            exit(1)
+
+    init_project(args, path)
