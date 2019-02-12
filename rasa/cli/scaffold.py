@@ -36,14 +36,14 @@ def print_train_or_instructions(args, path):
 
         args.model = train.train(args)
 
-        print_run_or_instructions(args)
+        print_run_or_instructions(args, path)
 
     else:
         print("Great. To train your bot, run `cd {} && rasa train`."
               "".format(path))
 
 
-def print_run_or_instructions(args):
+def print_run_or_instructions(args, path):
     should_run = questionary.confirm("Do you want me to run the trained model "
                                      "in the command line?").ask()
 
@@ -59,7 +59,7 @@ def print_run_or_instructions(args):
         shell(args)
     else:
         print("Great. To run your bot, run `cd {} && rasa shell`."
-              "".format(args.model))
+              "".format(path))
 
 
 def init_project(args, path):
