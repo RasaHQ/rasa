@@ -24,11 +24,6 @@ def add_subparser(subparsers, parents):
 
 def _add_interactive_arguments(parser):
     parser.add_argument(
-        '--finetune',
-        default=False,
-        action='store_true',
-        help="retrain the model immediately based on feedback.")
-    parser.add_argument(
         "--skip_visualization",
         default=False,
         action="store_true",
