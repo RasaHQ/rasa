@@ -316,7 +316,7 @@ def replace_environment_variables():
             raise ValueError(
                 "Error when trying to expand the environment variables"
                 " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(not_expanded, value))
+                " variables: '{}'.".format(value, not_expanded))
         return expanded_vars
 
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
