@@ -15,7 +15,7 @@ Added
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
-- SQLTrackerStore class
+- ``SQLTrackerStore`` class
 
 Changed
 -------
