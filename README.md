@@ -39,7 +39,7 @@ Chat Bots on:
 - Telegram
 - Twilio
 
-But you can also build assistants as:
+But you can also build assistants using:
 - Alexa Skills
 - Google Home Actions
 
