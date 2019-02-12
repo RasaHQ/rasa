@@ -246,3 +246,22 @@ class MongoTrackerStore(TrackerStore):
 
     def keys(self):
         return [c["sender_id"] for c in self.conversations.find()]
+
+
+class SQLTrackerStore(TrackerStore):
+    def __init__(self,
+                 domain: Optional[Domain],
+                 event_broker: Optional[EventChannel] = None) -> None:
+        import sqlite3
+        self.domain = domain
+        self.event_broker = event_broker
+        super(SQLTrackerStore, self).__init__(domain, event_broker)
+
+    def keys(self):
+        pass
+
+    def retrieve(self, sender_id: Text):
+        pass
+
+    def save(self, tracker):
+        pass
