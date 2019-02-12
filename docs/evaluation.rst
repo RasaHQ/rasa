@@ -1,4 +1,5 @@
-:desc: Evaluate and validate your machine learning models for open source library Rasa NLU to improve intent recognition and entity extraction. 
+:desc: Evaluate and validate your machine learning models for open source
+       library Rasa NLU to improve intent recognition and entity extraction. 
 
 .. _section_evaluation:
 

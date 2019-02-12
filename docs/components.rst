@@ -1,4 +1,5 @@
-:desc: Configure the custom components of your ML model to optimise the processes performed on the user input of your contextual assistant.
+:desc: Configure the custom components of your ML model to optimise the
+       processes performed on the user input of your contextual assistant.
 
 .. _section_pipeline:
 

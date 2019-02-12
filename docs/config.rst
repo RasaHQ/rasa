@@ -1,4 +1,5 @@
-:desc: Read more on configuring open source library Rasa NLU to access machine learning based prediction of intents and entities as a server.
+:desc: Read more on configuring open source library Rasa NLU to access machine
+       learning based prediction of intents and entities as a server.
 
 .. _section_configuration:
 

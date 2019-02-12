@@ -1,4 +1,6 @@
-:desc: Handle Rasa NLU models on premise or in your private cloud for gdpr compliant intent recognition and entity extraction. 
+:desc: Handle Rasa NLU models on premise or in your private cloud for
+       gdpr compliant intent recognition and entity extraction.
+
 .. _section_persistence:
 
 Storing Models in the Cloud

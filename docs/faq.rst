@@ -1,4 +1,5 @@
-:desc: Read more about language support, number of training data examples and other FAQ's about open source NLP library Rasa NLU.
+:desc: Read more about language support, number of training data examples and
+       other FAQ's about open source NLP library Rasa NLU.
 
 .. _section_faq:
 

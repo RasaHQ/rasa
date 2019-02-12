@@ -1,4 +1,5 @@
-:desc: Read more about how to format training data with Rasa NLU for open source natural language processing.
+:desc: Read more about how to format training data with Rasa NLU for open
+       source natural language processing.
 
 .. _section_dataformat:
 

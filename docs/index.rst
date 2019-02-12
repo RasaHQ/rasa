@@ -1,4 +1,5 @@
-:desc: Learn more about open-source natural language processing library Rasa NLU for intent classification and entity extraction in on premise chatbots.
+:desc: Learn more about open-source natural language processing library Rasa NLU
+       for intent classification and entity extraction in on premise chatbots.
 
 .. _section_index:
 

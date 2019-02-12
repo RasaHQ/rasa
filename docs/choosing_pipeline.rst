@@ -1,4 +1,6 @@
-:desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText or fit them specifically on your dataset using the tensorflow pipeline for open source NLU.
+:desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
+       or fit them specifically on your dataset using the tensorflow pipeline
+       for open source NLU.
 
 .. _choosing_pipeline:
 

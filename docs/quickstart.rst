@@ -1,4 +1,5 @@
-:desc: Check out the tutorial for open source NLP library as an on premise solution for on premise intent recognition and entity extraction. 
+:desc: Check out the tutorial for open source NLP library as an on premise
+       solution for on premise intent recognition and entity extraction. 
 
 .. _section_quickstart:
 

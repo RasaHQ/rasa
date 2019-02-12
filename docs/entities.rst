@@ -1,4 +1,5 @@
-:desc: Use open source named entity recognition like spacy and duckling for building contextual AI Assistants.
+:desc: Use open source named entity recognition like spacy and duckling
+       for building contextual AI Assistants.
 
 .. _section_entities:
 

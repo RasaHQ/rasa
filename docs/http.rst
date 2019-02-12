@@ -1,4 +1,5 @@
-:desc: Access and configure the HTTP API of Rasa NLU to run the nlp library as a server.
+:desc: Access and configure the HTTP API of Rasa NLU to run
+       the nlp library as a server.
 
 .. _section_http:
 

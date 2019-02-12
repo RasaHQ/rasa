@@ -1,4 +1,5 @@
-:desc: Manage our open source NLU on premise to allow local intent recognition, entity extraction and customisation of the language models.
+:desc: Manage our open source NLU on premise to allow local intent recognition,
+       entity extraction and customisation of the language models.
 :meta_image: https://i.imgur.com/nGF1K8f.jpg
 
 .. _section_backends:

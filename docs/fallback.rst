@@ -1,4 +1,6 @@
-:desc: Choose smart fallback thresholds and actions to ensure accuracy and performance of your bot responses using Rasa NLU for conversational bots. 
+:desc: Choose smart fallback thresholds and actions to ensure accuracy and
+       performance of your bot responses using Rasa NLU for conversational bots.
+
 .. _section_fallback:
 
 Confidence and Fallback Intents
