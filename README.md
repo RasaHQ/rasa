@@ -30,7 +30,7 @@
 ## Introduction
 
 Rasa Core is a framework for building conversational software, which includes
-Chat Bots on :
+Chat Bots on:
 - Facebook Messenger
 - Slack
 - Microsoft Bot Framework
@@ -39,7 +39,7 @@ Chat Bots on :
 - Telegram
 - Twilio
 
-But you can also build assistants as
+But you can also build assistants as:
 - Alexa Skills
 - Google Home Actions
 
@@ -49,7 +49,7 @@ you need to have some memory and build on things that were said earlier.
 Rasa Core lets you do that in a scalable way.
 
 There's a lot more background information in this
-[blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a)
+[blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
 
 ## Where to get help
 
@@ -86,7 +86,7 @@ In general the process is rather simple:
 You pull request will be reviewed by a maintainer, who might get
 back to you about any necessary changes or questions. You will
 also be asked to sign a
-[Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa_core)
+[Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa_core).
 
 
 ## Development Internals
@@ -99,7 +99,7 @@ pip install -r dev-requirements.txt
 ```
 
 After the installation has finished, you can run and view the documentation
-locally using
+locally using:
 ```
 make livedocs
 ```
