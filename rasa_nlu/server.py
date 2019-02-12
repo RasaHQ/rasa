@@ -21,7 +21,13 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(description='parse incoming text')
+    add_run_arguments(parser)
+    utils.add_logging_option_arguments(parser)
 
+    return parser
+
+
+def add_run_arguments(parser):
     parser.add_argument('-e', '--emulate',
                         choices=['wit', 'luis', 'dialogflow'],
                         help='which service to emulate (default: None i.e. use'
@@ -89,10 +95,6 @@ def create_argument_parser():
     parser.add_argument('-c', '--config',
                         help="Default model configuration file used for "
                              "training.")
-
-    utils.add_logging_option_arguments(parser)
-
-    return parser
 
 
 def check_cors(f):
@@ -406,23 +408,20 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
-if __name__ == '__main__':
-    # Running as standalone python application
-    cmdline_args = create_argument_parser().parse_args()
+def main(args):
+    utils.configure_colored_logging(args.loglevel)
+    pre_load = args.pre_load
 
-    utils.configure_colored_logging(cmdline_args.loglevel)
-    pre_load = cmdline_args.pre_load
-
-    _endpoints = read_endpoints(cmdline_args.endpoints)
+    _endpoints = read_endpoints(args.endpoints)
 
     router = DataRouter(
-        cmdline_args.path,
-        cmdline_args.max_training_processes,
-        cmdline_args.response_log,
-        cmdline_args.emulate,
-        cmdline_args.storage,
+        args.path,
+        args.max_training_processes,
+        args.response_log,
+        args.emulate,
+        args.storage,
         model_server=_endpoints.model,
-        wait_time_between_pulls=cmdline_args.wait_time_between_pulls
+        wait_time_between_pulls=args.wait_time_between_pulls
     )
     if pre_load:
         logger.debug('Preloading....')
@@ -432,13 +431,19 @@ if __name__ == '__main__':
 
     rasa = RasaNLU(
         router,
-        cmdline_args.loglevel,
-        cmdline_args.write,
-        cmdline_args.num_threads,
-        cmdline_args.token,
-        cmdline_args.cors,
-        default_config_path=cmdline_args.config
+        args.loglevel,
+        args.write,
+        args.num_threads,
+        args.token,
+        args.cors,
+        default_config_path=args.config
     )
 
-    logger.info('Started http server on port %s' % cmdline_args.port)
-    rasa.app.run('0.0.0.0', cmdline_args.port)
+    logger.info('Started http server on port %s' % args.port)
+    rasa.app.run('0.0.0.0', args.port)
+
+
+if __name__ == '__main__':
+    # Running as standalone python application
+    cmdline_args = create_argument_parser().parse_args()
+    main(cmdline_args)

@@ -39,6 +39,13 @@ def create_argument_parser():
         description='evaluate a Rasa NLU pipeline with cross '
                     'validation or on external data')
 
+    utils.add_logging_option_arguments(parser, default=logging.INFO)
+    _add_arguments(parser)
+
+    return parser
+
+
+def _add_arguments(parser):
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
 
@@ -74,10 +81,6 @@ def create_argument_parser():
 
     parser.add_argument('--confmat', required=False, default="confmat.png",
                         help="output path for the confusion matrix plot")
-
-    utils.add_logging_option_arguments(parser, default=logging.INFO)
-
-    return parser
 
 
 def plot_confusion_matrix(cm,
