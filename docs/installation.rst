@@ -1,4 +1,6 @@
-:desc: Join our community by installing open source Rasa Core for machine learning based dialogue management to develop on premise contextual assistants and chatbots. 
+:desc: Join our community by installing open source Rasa Core for machine
+       learning based dialogue management to develop on premise contextual
+       assistants and chatbots. 
 
 .. _installation:
 

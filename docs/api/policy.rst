@@ -1,4 +1,6 @@
-:desc: Manage policies to enable machine learning based predictions of the next action to ensure contextual conversations using open source libraries from Rasa Stack.
+:desc: Manage policies to enable machine learning based predictions of the
+       next action to ensure contextual conversations using open source
+      libraries from Rasa Stack.
 
 .. policy:
 

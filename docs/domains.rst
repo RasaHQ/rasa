@@ -1,4 +1,5 @@
-:desc: Define intents, entities, slots and actions in Rasa to build contextual AI Assistants and chatbots using open source bot framework Rasa Stack. 
+:desc: Define intents, entities, slots and actions in Rasa to build contextual
+       AI Assistants and chatbots using open source bot framework Rasa Stack. 
 
 .. _domain:
 

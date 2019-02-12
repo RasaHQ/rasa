@@ -1,4 +1,5 @@
-:desc: Use events in open source library Rasa Core to support functionalities like resetting slots, scheduling reminder or pausing a conversation.
+:desc: Use events in open source library Rasa Core to support functionalities
+       like resetting slots, scheduling reminder or pausing a conversation.
 
 .. _events:
 

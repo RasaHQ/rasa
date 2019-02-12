@@ -1,4 +1,5 @@
-:desc: Find out how to apply machine learning algorithms to conversational AI using vector representations of conversations with Rasa Stack.
+:desc: Find out how to apply machine learning algorithms to conversational AI
+       using vector representations of conversations with Rasa Stack.
 
 .. _featurization:
 

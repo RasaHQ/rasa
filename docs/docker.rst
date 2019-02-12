@@ -1,4 +1,5 @@
-:desc: Find out how to setup Rasa Core with Docker in your own infrastructure as a chatbot framework. 
+:desc: Find out how to setup Rasa Core with Docker in your own infrastructure
+       as a chatbot framework. 
 
 .. _docker:
 

@@ -1,4 +1,5 @@
-:desc: Follow a rule-based process of information gathering using FormActions in open source bot framework Rasa Stack. 
+:desc: Follow a rule-based process of information gathering using FormActions
+       in open source bot framework Rasa Stack. 
 
 .. _slotfilling:
 

@@ -1,4 +1,5 @@
-:desc: Check this tutorial on how to get started with our open source framework for building contextual AI assistants and chatbots.  
+:desc: Check this tutorial on how to get started with our open source framework
+       for building contextual AI assistants and chatbots.  
 
 .. _quickstart:
 

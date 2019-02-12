@@ -1,4 +1,5 @@
-:desc: Read how Rasa Stack interprets a message or non-textual input like buttons or other structured input for contextual conversation design.
+:desc: Read how Rasa Stack interprets a message or non-textual input like
+       buttons or other structured input for contextual conversation design.
 
 .. _interpreters:
 

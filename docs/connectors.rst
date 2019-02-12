@@ -1,4 +1,6 @@
-:desc: Choose Facebook, Slack or Telegram as your channel for contextual Assistants and chatbots or build new ones for your own app or website using open source Rasa Stack. 
+:desc: Choose Facebook, Slack or Telegram as your channel for contextual
+       Assistants and chatbots or build new ones for your own app or website
+       using open source Rasa Stack. 
 
 .. _connectors:
 

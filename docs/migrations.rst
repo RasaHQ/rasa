@@ -1,4 +1,5 @@
-:desc: Information about changes between major versions of chatbot framework Rasa Core and how you can migrate from one version to another.
+:desc: Information about changes between major versions of chatbot framework
+       Rasa Core and how you can migrate from one version to another.
 
 .. _migration:
 

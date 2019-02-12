@@ -1,4 +1,5 @@
-:desc: Read more how to learn from real user input and behaviour by debugging your contextual AI assistants and chatbots using open source libraries.
+:desc: Read more how to learn from real user input and behaviour by debugging
+       your contextual AI assistants and chatbots using open source libraries.
 
 .. _debugging:
 

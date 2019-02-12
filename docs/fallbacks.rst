@@ -1,4 +1,5 @@
-:desc: Define custom fallback actions with thresholds for NLU and Core for letting your conversation fail gracefully with open source dialogue management.
+:desc: Define custom fallback actions with thresholds for NLU and Core for letting
+       your conversation fail gracefully with open source dialogue management.
 
 .. _fallbacks:
 

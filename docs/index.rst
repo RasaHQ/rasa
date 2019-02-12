@@ -1,4 +1,5 @@
-:desc: Get started with machine learning dialogue management to scale your bot development using Rasa Stack as a conversational AI platform.
+:desc: Get started with machine learning dialogue management to scale your bot
+       development using Rasa Stack as a conversational AI platform.
 
 .. _index:
 

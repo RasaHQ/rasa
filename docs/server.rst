@@ -1,4 +1,5 @@
-:desc: Find out how to use the HTTP API of Rasa Core to integrate with your backend components.
+:desc: Find out how to use the HTTP API of Rasa Core to integrate
+       with your backend components.
 
 .. _section_http:
 

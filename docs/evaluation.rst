@@ -1,4 +1,6 @@
-:desc: Evaluate and validate your machine learning models for open source library Rasa Core to improve the dialogue management of your contextual AI Assistant. 
+:desc: Evaluate and validate your machine learning models for open source
+       library Rasa Core to improve the dialogue management of your contextual
+       AI Assistant. 
 
 .. _evaluation:
 

@@ -1,4 +1,6 @@
-:desc: Define different slots variables to store contextual information that can personalise user experience using machine learning based dialogue management. 
+:desc: Define different slots variables to store contextual information that can
+       personalise user experience using machine learning based dialogue
+       management. 
 
 .. _slot_types:
 

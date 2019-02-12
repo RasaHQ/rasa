@@ -1,4 +1,6 @@
-:desc: Use Interactive learning to continuously validate and improve the performance of your AI Assistant using machine learning based open source dialogue management. 
+:desc: Use Interactive learning to continuously validate and improve the
+       performance of your AI Assistant using machine learning based
+       open source dialogue management. 
 
 .. _interactive_learning:
 

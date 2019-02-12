@@ -1,4 +1,5 @@
-:desc: Read more how to define bot utterances or use a service to generate the responses using Rasa Stack as an open source chatbot platform. 
+:desc: Read more how to define bot utterances or use a service to generate the
+       responses using Rasa Stack as an open source chatbot platform. 
 
 .. _responses:
 

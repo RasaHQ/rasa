@@ -1,4 +1,6 @@
-:desc: The tracker stores and maintains the state of the dialogue with a single user enabling contextual dialogues based on machine learning library Rasa Core.
+:desc: The tracker stores and maintains the state of the dialogue with a single
+       user enabling contextual dialogues based on machine learning library
+       Rasa Core.
 
 .. _dialogue_state_tracker:
 
