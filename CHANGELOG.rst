@@ -12,6 +12,7 @@ Added
 
 Changed
 -------
+- validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
 
