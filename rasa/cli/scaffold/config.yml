@@ -1,8 +1,0 @@
-# configuration for Rasa NLU
-language: en
-pipeline: tensorflow_embedding
-
-# configuration for Rasa Core
-policies:
-  - name: MemoizationPolicy
-  - name: KerasPolicy
