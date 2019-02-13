@@ -27,6 +27,7 @@ from rasa_core.events import (
     ActionExecutionRejected)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
+    RasaNLUHttpInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
@@ -240,6 +241,9 @@ class MessageProcessor(object):
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
             parse_data = RegexInterpreter().parse(message.text)
+        elif isinstance(self.interpreter, RasaNLUHttpInterpreter):
+            parse_data = self.interpreter.parse(message.text,
+                                                message.message_id)
         else:
             parse_data = self.interpreter.parse(message.text)
 
@@ -262,7 +266,8 @@ class MessageProcessor(object):
         # - instead pass its events to log
         tracker.update(UserUttered(message.text, parse_data["intent"],
                                    parse_data["entities"], parse_data,
-                                   input_channel=message.input_channel))
+                                   input_channel=message.input_channel,
+                                   message_id=message.message_id))
         # store all entities as slots
         for e in self.domain.slots_for_entities(parse_data["entities"]):
             tracker.update(e)
@@ -331,7 +336,8 @@ class MessageProcessor(object):
                                       run_date=e.trigger_date_time,
                                       args=[e, dispatcher],
                                       id=e.name,
-                                      replace_existing=True)
+                                      replace_existing=True,
+                                      name=str(e.action_name))
 
     def _run_action(self, action, tracker, dispatcher, policy=None,
                     confidence=None):

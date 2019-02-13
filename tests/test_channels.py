@@ -3,6 +3,8 @@ import json
 from httpretty import httpretty
 
 from rasa_core import utils
+from rasa_core.agent import Agent
+from rasa_core.interpreter import RegexInterpreter
 from rasa_core.utils import EndpointConfig
 from tests import utilities
 from tests.conftest import MOODBOT_MODEL_PATH
@@ -716,9 +718,19 @@ def test_channel_inheritance():
 def test_int_sender_id_in_user_message():
     from rasa_core.channels import UserMessage
 
+    # noinspection PyTypeChecker
     message = UserMessage("A text", sender_id=1234567890)
 
     assert message.sender_id == "1234567890"
+
+
+def test_int_message_id_in_user_message():
+    from rasa_core.channels import UserMessage
+
+    # noinspection PyTypeChecker
+    message = UserMessage("B text", message_id=987654321)
+
+    assert message.message_id == "987654321"
 
 
 def test_send_custom_messages_without_buttons():
@@ -739,3 +751,24 @@ def test_newsline_strip():
     message = UserMessage("\n/restart\n")
 
     assert message.text == "/restart"
+
+
+def test_register_channel_without_route():
+    """Check we properly connect the input channel blueprint if route is None"""
+    from rasa_core.channels import RestInput
+    from flask import Flask
+    import rasa_core
+
+    # load your trained agent
+    agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+    input_channel = RestInput()
+
+    app = Flask(__name__)
+    rasa_core.channels.channel.register([input_channel],
+                                        app,
+                                        agent.handle_message,
+                                        route=None)
+
+    routes_list = utils.list_routes(app)
+    assert routes_list.get("/webhook").startswith(
+        "custom_webhook_RestInput.receive")
