@@ -1,13 +1,12 @@
 import argparse
 import logging
-import sys
 from functools import wraps
 
 import simplejson
-from flask import send_file
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.web.static import File
 
 from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
@@ -324,7 +323,7 @@ class RasaNLU(object):
         else:
             return content_type[0]
 
-    @app.route("/train", methods=['POST', 'OPTIONS'])
+    @app.route("/train", methods=['POST', 'OPTIONS'], branch=True)
     @requires_auth
     @check_cors
     @inlineCallbacks
@@ -352,9 +351,9 @@ class RasaNLU(object):
             path_to_model = yield self.data_router.start_train_process(
                 data_file, project,
                 RasaNLUModelConfig(model_config), model_name)
-            zipped_path = utils.zip_folder(path_to_model)
+            zipped_path = utils.zip_folder(returnValue(path_to_model))
 
-            return send_file(zipped_path, "application/zip")
+            return File(zipped_path)
 
         except MaxTrainingError as e:
             request.setResponseCode(403)
@@ -364,12 +363,6 @@ class RasaNLU(object):
             returnValue(json_to_string({"error": "{}".format(e)}))
         except TrainingException as e:
             request.setResponseCode(500)
-            returnValue(json_to_string({"error": "{}".format(e)}))
-        except:
-            err_list = sys.exc_info()
-            e = err_list[0]
-            logger.info(err_list)
-            logger.error(e)
             returnValue(json_to_string({"error": "{}".format(e)}))
 
     @app.route("/evaluate", methods=['POST', 'OPTIONS'])

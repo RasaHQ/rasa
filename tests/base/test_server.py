@@ -147,15 +147,14 @@ def test_post_train(app, rasa_default_train_data):
 @utilities.slowtest
 @pytest.inlineCallbacks
 def test_post_train_success(app, rasa_default_train_data):
-    # with app.app_context():
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
 
-    response = app.post("http://dummy-uri/train?project=test&model=tobi",
+    response = app.post("http://dummy-uri/train?project=test&model=test",
                         json=model_config)
-    time.sleep(3)
+    time.sleep(30)
     app.flush()
-    response = yield response
-    assert response.code == 200
+    rjs = yield response.json()
+    assert response.result.code == 200
 
 
 @utilities.slowtest
