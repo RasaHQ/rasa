@@ -38,6 +38,7 @@ class KerasPolicy(Policy):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: int = 1,
                  model: Optional[tf.keras.models.Sequential] = None,
                  graph: Optional[tf.Graph] = None,
                  session: Optional[tf.Session] = None,
@@ -47,7 +48,7 @@ class KerasPolicy(Policy):
                  ) -> None:
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(KerasPolicy, self).__init__(featurizer)
+        super(KerasPolicy, self).__init__(featurizer, priority)
 
         self._load_params(**kwargs)
         self.model = model

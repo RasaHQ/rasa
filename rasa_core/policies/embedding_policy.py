@@ -139,6 +139,7 @@ class EmbeddingPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[FullDialogueTrackerFeaturizer] = None,
+        priority: int = 1,
         encoded_all_actions: Optional[np.ndarray] = None,
         graph: Optional[tf.Graph] = None,
         session: Optional[tf.Session] = None,
@@ -167,7 +168,7 @@ class EmbeddingPolicy(Policy):
                 raise TypeError("Passed tracker featurizer of type {}, "
                                 "should be FullDialogueTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-        super(EmbeddingPolicy, self).__init__(featurizer)
+        super(EmbeddingPolicy, self).__init__(featurizer, priority)
 
         # flag if to use the same embeddings for user and bot
         try:

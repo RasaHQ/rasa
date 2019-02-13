@@ -31,6 +31,7 @@ class SklearnPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
+        priority: int = 1,
         model: 'sklearn.base.BaseEstimator' = LogisticRegression(),
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
@@ -62,7 +63,7 @@ class SklearnPolicy(Policy):
                 raise TypeError("Passed featurizer of type {}, should be "
                                 "MaxHistoryTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-        super(SklearnPolicy, self).__init__(featurizer)
+        super(SklearnPolicy, self).__init__(featurizer, priority)
 
         self.model = model
         self.cv = cv

@@ -6,7 +6,7 @@ from typing import Any, List, Text
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 from rasa_core import utils
-from rasa_core.constants import FALLBACK_SCORE
+# from rasa_core.constants import FALLBACK_SCORE
 from rasa_core.domain import Domain
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
@@ -26,6 +26,7 @@ class FallbackPolicy(Policy):
         return None
 
     def __init__(self,
+                 priority: int = 3,
                  nlu_threshold: float = 0.3,
                  core_threshold: float = 0.3,
                  fallback_action_name: Text = "action_default_fallback"
@@ -42,8 +43,7 @@ class FallbackPolicy(Policy):
                 predict fallback action with confidence 1.0.
             fallback_action_name: name of the action to execute as a fallback
         """
-
-        super(FallbackPolicy, self).__init__()
+        super(FallbackPolicy, self).__init__(priority=priority)
 
         self.nlu_threshold = nlu_threshold
         self.core_threshold = core_threshold
@@ -72,7 +72,7 @@ class FallbackPolicy(Policy):
         return (nlu_confidence < self.nlu_threshold and
                 last_action_name == ACTION_LISTEN_NAME)
 
-    def fallback_scores(self, domain, fallback_score=FALLBACK_SCORE):
+    def fallback_scores(self, domain, fallback_score=1.0):
         """Prediction scores used if a fallback is necessary."""
 
         result = [0.0] * domain.num_actions
@@ -89,6 +89,8 @@ class FallbackPolicy(Policy):
         or no other policy has a high-confidence prediction.
         """
 
+        # TODO: check in on priorities with nlu vs core fallback
+
         nlu_data = tracker.latest_message.parse_data
 
         # if NLU interpreter does not provide confidence score,
@@ -99,7 +101,7 @@ class FallbackPolicy(Policy):
         if tracker.latest_action_name == self.fallback_action_name:
             result = [0.0] * domain.num_actions
             idx = domain.index_for_action(ACTION_LISTEN_NAME)
-            result[idx] = FALLBACK_SCORE
+            result[idx] = 1.0
 
         elif self.should_nlu_fallback(nlu_confidence,
                                       tracker.latest_action_name):
@@ -108,6 +110,7 @@ class FallbackPolicy(Policy):
                          "".format(nlu_confidence, self.nlu_threshold))
             # we set this to 1.2 to make sure fallback overrides
             # the memoization policy
+            # TODO: check into handling this case
             result = self.fallback_scores(domain)
 
         else:
