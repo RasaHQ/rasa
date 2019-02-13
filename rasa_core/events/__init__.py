@@ -763,15 +763,15 @@ class ActionExecuted(Event):
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
         policy = None
-        if hasattr(self, "policy"):   
+        if hasattr(self, "policy"):
             policy = self.policy
         confidence = None
-        if hasattr(self, "confidence"):   
+        if hasattr(self, "confidence"):
             confidence = self.confidence
 
         d.update({
             "name": self.action_name,
-            "policy": policy, 
+            "policy": policy,
             "confidence": confidence
         })
         return d
