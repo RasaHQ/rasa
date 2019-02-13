@@ -251,8 +251,26 @@ class MongoTrackerStore(TrackerStore):
 class SQLTrackerStore(TrackerStore):
     def __init__(self,
                  domain: Optional[Domain],
+                 drivername: Text = 'server',
+                 host: Text = 'localhost',
+                 port: int = 1433,
+                 db: Text = 'rasa',
+                 username: Text = None,
+                 password: Text = None,
                  event_broker: Optional[EventChannel] = None) -> None:
-        import sqlite3
+        import sqlalchemy
+        from sqlalchemy.engine.url import URL
+
+        engine_url = URL(drivername,
+                         username,
+                         password,
+                         host,
+                         port,
+                         db)
+
+        self.engine = sqlalchemy.create_engine(engine_url)
+
+        self.conn = self.engine.connect()
         self.domain = domain
         self.event_broker = event_broker
         super(SQLTrackerStore, self).__init__(domain, event_broker)
@@ -264,4 +282,20 @@ class SQLTrackerStore(TrackerStore):
         pass
 
     def save(self, tracker):
-        pass
+
+        trans = self.conn.begin()
+        if self.event_broker:
+            self.stream_events(tracker)
+
+        state = tracker.current_state(EventVerbosity.ALL)
+
+        set_string = " ".join(["{} = {}".format(k, v) for k, v in state.items()])
+
+        self.conn.execute("UPDATE %s"
+                          "SET %s"
+                          "WHERE sender_id=%d",
+                          (self.db,
+                           set_string,
+                           tracker.sender_id))
+
+        trans.commit()

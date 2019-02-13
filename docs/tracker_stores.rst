@@ -107,7 +107,7 @@ Custom Tracker Store
 
 :Steps:
     1. Extend the `TrackerStore` base class. Note that your constructor has to
-       provide a parameter ``url``.
+       provide a parameter ``host``.
     2. In your endpoints.yml put in the module path to your custom tracker store
        and the parameters you require:
 
