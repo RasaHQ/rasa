@@ -32,6 +32,8 @@ def _add_interactive_arguments(parser):
 
 
 def interactive(args):
+    args.finetune = False # Don't support finetuning
+
     zipped_model = cli.train.train(args)
     model_path, core_path, nlu_path = unpack_model(zipped_model,
                                                    subdirectories=True)
