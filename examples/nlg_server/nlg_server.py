@@ -1,8 +1,8 @@
 import argparse
 import logging
 
-from flask import Flask, request, jsonify
-from gevent.pywsgi import WSGIServer
+from sanic import Sanic
+from sanic.response import json
 
 from rasa_core.domain import Domain
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
@@ -11,6 +11,8 @@ from rasa_core.trackers import DialogueStateTracker
 logger = logging.getLogger(__name__)
 
 DEFAULT_SERVER_PORT = 5056
+
+app = Sanic(__name__)
 
 
 def create_argument_parser():
@@ -24,6 +26,11 @@ def create_argument_parser():
         type=int,
         help="port to run the server at")
     parser.add_argument(
+        '--sanic_workers',
+        default=1,
+        type=int,
+        help="Number of sanic workers")
+    parser.add_argument(
         '-d', '--domain',
         type=str,
         default=None,
@@ -34,6 +41,9 @@ def create_argument_parser():
 
 
 def generate_response(nlg_call, domain):
+    """Mock response generator which generates the responses from the
+    bot's domain file.
+    """
     kwargs = nlg_call.get("arguments", {})
     template = nlg_call.get("template")
     sender_id = nlg_call.get("tracker", {}).get("sender_id")
@@ -46,20 +56,13 @@ def generate_response(nlg_call, domain):
         template, tracker, channel_name, **kwargs)
 
 
-def create_app(domain):
-    app = Flask(__name__)
+@app.route("/nlg", methods=['POST', 'OPTIONS'])
+async def nlg(request):
+    """Generates the bot's response."""
+    nlg_call = request.json
+    response = await generate_response(nlg_call, domain)
 
-    logging.basicConfig(level=logging.DEBUG)
-
-    @app.route("/nlg", methods=['POST', 'OPTIONS'])
-    def nlg():
-        """Check if the server is running and responds with the version."""
-        nlg_call = request.json
-
-        response = generate_response(nlg_call, domain)
-        return jsonify(response)
-
-    return app
+    return json(response)
 
 
 if __name__ == '__main__':
@@ -70,11 +73,7 @@ if __name__ == '__main__':
     cmdline_args = arg_parser.parse_args()
 
     domain = Domain.load(cmdline_args.domain)
-    app = create_app(domain)
-    http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
 
-    http_server.start()
-    logger.info("NLG endpoint is up and running. on {}"
-                "".format(http_server.address))
-
-    http_server.serve_forever()
+    app.run(host='0.0.0.0',
+            port=cmdline_args.port,
+            workers=cmdline_args.sanic_workers)
