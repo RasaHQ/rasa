@@ -69,7 +69,7 @@ def _add_core_arguments(parser):
 
 def _add_core_subparser_arguments(parser):
     parser.add_argument(
-        '--model',
+        '-m', '--model',
         type=str,
         default=get_latest_model(DEFAULT_MODELS_PATH),
         help="Path to a pre-trained model. If it is a directory all models "
