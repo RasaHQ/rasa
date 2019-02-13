@@ -46,11 +46,9 @@ def add_subparser(subparsers, parents):
 
 
 def _add_core_arguments(parser):
-    # TODO: Fix
-    # import rasa_core.evaluate
+    from rasa_core.cli.evaluation import add_evaluation_arguments
 
-    # rasa_core.evaluate.add_args_to_parser(parser)
-
+    add_evaluation_arguments(parser)
     add_model_param(parser, "Core")
     add_stories_param(parser, "test")
 

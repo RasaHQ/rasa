@@ -2,7 +2,6 @@ import argparse
 import logging
 import os
 import shutil
-import tempfile
 
 from rasa.cli.default_arguments import add_model_param
 from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
@@ -11,9 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 def add_subparser(subparsers, parents):
-    # TODO: Fix
-    # import rasa_nlu.server
-
     run_parser = subparsers.add_parser(
         "run",
         parents=parents,
@@ -42,8 +38,6 @@ def add_subparser(subparsers, parents):
         help="Run a trained NLU model"
     )
 
-    # TODO: Fix
-    # rasa_nlu.server.add_run_arguments(nlu_subparser)
     _add_nlu_arguments(nlu_subparser)
     nlu_subparser.set_defaults(func=run_nlu)
 
@@ -59,10 +53,9 @@ def add_subparser(subparsers, parents):
 
 
 def add_run_arguments(parser):
-    # TODO: Fix
-    # import rasa_core.run
+    from rasa_core.cli.run import add_run_arguments
 
-    # rasa_core.run.add_run_options(parser)
+    add_run_arguments(parser)
     add_model_param(parser)
 
     parser.add_argument(
@@ -72,6 +65,9 @@ def add_run_arguments(parser):
 
 
 def _add_nlu_arguments(parser):
+    from rasa_nlu.cli.server import add_server_arguments
+
+    add_server_arguments(parser)
     parser.add_argument('--path',
                         default=DEFAULT_MODELS_PATH,
                         help="working directory of the server. Models are"
@@ -83,6 +79,7 @@ def _add_nlu_arguments(parser):
 
 def run_nlu(args):
     import rasa_nlu.server
+    import tempfile
 
     model = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()

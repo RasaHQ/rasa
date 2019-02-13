@@ -29,10 +29,9 @@ def add_subparser(subparsers, parents):
 
 
 def add_core_visualization_params(parser):
-    # TODO: Fix
-    # import rasa_core.visualize as visualize
+    from rasa_core.cli.visualization import add_visualization_arguments
 
-    # visualize.add_visualization_arguments(parser)
+    add_visualization_arguments(parser)
     add_domain_param(parser)
     add_stories_param(parser)
 

@@ -1,11 +1,8 @@
-import time
-
 import argparse
 import os
 import tempfile
 
-import rasa
-from rasa import model
+import rasa.model as model
 from rasa.cli.default_arguments import (
     add_config_param, add_domain_param,
     add_stories_param)
@@ -16,8 +13,7 @@ from rasa.model import (
 
 
 def add_subparser(subparsers, parents):
-    # TODO: Fix
-    # import rasa_core.train
+    from rasa_core.cli.train import add_general_args
 
     train_parser = subparsers.add_parser(
         "train",
@@ -44,8 +40,7 @@ def add_subparser(subparsers, parents):
 
     for p in [train_core_parser, train_parser]:
         add_core_arguments(p)
-        # TODO: Fix
-        # rasa_core.train.add_general_args(p)
+        add_general_args(p)
     _add_core_compare_arguments(train_core_parser)
 
     for p in [train_nlu_parser, train_parser]:
@@ -99,6 +94,8 @@ def add_nlu_arguments(parser):
 
 
 def create_default_output_path(model_directory=DEFAULT_MODELS_PATH, prefix=""):
+    import time
+
     time_format = "%Y%m%d-%H%M%S"
     return "{}/{}{}.tar".format(model_directory, prefix,
                                 time.strftime(time_format))
@@ -140,8 +137,8 @@ def train(args):
         print("NLU configuration did not change. No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
-        rasa.model.create_package_rasa(train_path, "rasa_model", output,
-                                       new_fingerprint)
+        model.create_package_rasa(train_path, "rasa_model", output,
+                                  new_fingerprint)
 
         print("Train path: '{}'.".format(train_path))
 
@@ -203,8 +200,9 @@ def train_nlu(args, train_path=None):
 
     if not train_path:
         output_path = args.out or create_default_output_path(prefix="nlu-")
-        new_fingerprint = model_fingerprint(args.config, nlu_data=args.stories)
-        model.create_package_rasa(_train_path, "rasa_model", output_path)
+        new_fingerprint = model_fingerprint(args.config, nlu_data=args.stories,)
+        model.create_package_rasa(_train_path, "rasa_model", output_path,
+                                  new_fingerprint)
         print_success("Your Rasa NLU model is trained and saved at '{}'."
                       "".format(output_path))
 

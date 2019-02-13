@@ -1,5 +1,4 @@
 import os
-from distutils.dir_util import copy_tree
 
 import questionary
 from rasa.cli import train
@@ -64,6 +63,8 @@ def print_run_or_instructions(args, path):
 
 
 def init_project(args, path):
+    from distutils.dir_util import copy_tree
+
     copy_tree(scaffold_path(), path)
 
     print("Created project directory at '{}'.".format(os.path.abspath(path)))
