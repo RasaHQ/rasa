@@ -1,4 +1,6 @@
-:desc: Rasa NLU: frequently asked questions
+:desc: Read more about language support, number of training data examples and
+       other FAQ's about open source NLP library Rasa NLU.
+
 .. _section_faq:
 
 Frequently Asked Questions
@@ -23,7 +25,7 @@ You can read more about the Rasa NLU supported languages in
 
 How many training examples do I need?
 -------------------------------------
-Unfortunately, the answer is *it depends*. 
+Unfortunately, the answer is *it depends*.
 
 A good starting point is to have 10 examples for each intent
 and build up from there.
@@ -88,5 +90,3 @@ feel free to create an issue or directly provide a fix.
 
 
 .. include:: feedback.inc
-
-
