@@ -234,7 +234,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
    slack:
      slack_token: "xoxb-286425452756-safjasdf7sl38KLls"
-     slack_channel: "@my_channel"
+     slack_channel: "#my_channel"
 
 
 The endpoint for receiving slack messages is
