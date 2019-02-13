@@ -229,10 +229,13 @@ class UserUttered(Event):
 
     def as_dict(self):
         d = super(UserUttered, self).as_dict()
+        input_channel = None
+        if hasattr(self, "input_channel"):
+            input_channel = self.input_channel
         d.update({
             "text": self.text,
             "parse_data": self.parse_data,
-            "input_channel": self.input_channel if hasattr(self, "input_channel") else None
+            "input_channel": input_channel
         })
         return d
 
@@ -759,10 +762,17 @@ class ActionExecuted(Event):
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
+        policy = None
+        if hasattr(self, "policy"):   
+            policy = self.policy
+        confidence = None
+        if hasattr(self, "confidence"):   
+            confidence = self.confidence
+
         d.update({
             "name": self.action_name,
-            "policy": self.policy if hasattr(self,"policy") else None,
-            "confidence": self.confidence if hasattr(self,"confidence") else None
+            "policy": policy, 
+            "confidence": confidence
         })
         return d
 
