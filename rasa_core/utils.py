@@ -34,37 +34,6 @@ def configure_file_logging(loglevel, logfile):
     logging.captureWarnings(True)
 
 
-def add_logging_option_arguments(parser):
-    """Add options to an argument parser to configure logging levels."""
-
-    logging_arguments = parser.add_argument_group('Python Logging Options')
-
-    # arguments for logging configuration
-    logging_arguments.add_argument(
-        '-v', '--verbose',
-        help="Be verbose. Sets logging level to INFO",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
-        default=logging.INFO,
-    )
-    logging_arguments.add_argument(
-        '-vv', '--debug',
-        help="Print lots of debugging statements. "
-             "Sets logging level to DEBUG",
-        action="store_const",
-        dest="loglevel",
-        const=logging.DEBUG,
-    )
-    logging_arguments.add_argument(
-        '--quiet',
-        help="Be quiet! Sets logging level to WARNING",
-        action="store_const",
-        dest="loglevel",
-        const=logging.WARNING,
-    )
-
-
 # noinspection PyUnresolvedReferences
 def class_from_module_path(module_path: Text) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
