@@ -1,8 +1,6 @@
 import os
 
 import questionary
-import rasa_core.utils
-from rasa_core.utils import print_error, print_success
 
 
 def add_subparser(subparsers):
@@ -17,6 +15,9 @@ def add_subparser(subparsers):
 
 
 def configure_channel(channel):
+    from rasa_core.utils import print_error, print_success
+    import rasa_core.utils
+
     credentials_file = questionary.text(
         "Please enter a path where to store the credentials file",
         default="credentials.yml").ask()

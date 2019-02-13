@@ -3,9 +3,6 @@ from distutils.dir_util import copy_tree
 
 import questionary
 from rasa.cli import train
-from rasa_core.utils import print_success
-from rasa_core import constants
-
 from rasa.cli.shell import shell
 from rasa.cli.train import create_default_output_path
 
@@ -24,6 +21,8 @@ def scaffold_path():
 
 
 def print_train_or_instructions(args, path):
+    from rasa_core.utils import print_success
+
     print_success("Your bot initial_project is ready to go!")
     should_train = questionary.confirm("Do you want me to train an initial "
                                        "model for the bot?").ask()
@@ -44,6 +43,8 @@ def print_train_or_instructions(args, path):
 
 
 def print_run_or_instructions(args, path):
+    from rasa_core import constants
+
     should_run = questionary.confirm("Do you want me to run the trained model "
                                      "in the command line?").ask()
 

@@ -1,24 +1,24 @@
-import argparse
-import os
-import shutil
-import tempfile
 import time
 
-import rasa
-import rasa_nlu.train
-import rasa_core.train
-from rasa_core.utils import print_success
-from rasa_nlu import config
+import argparse
+import os
+import tempfile
 
+import rasa
 from rasa import model
-from rasa.cli.default_arguments import add_stories_param, add_domain_param, \
-    add_config_param
-from rasa.model import unpack_model, fingerprint_from_path, \
-    core_fingerprint_changed, model_fingerprint, get_latest_model, \
-    nlu_fingerprint_changed, merge_model, DEFAULT_MODELS_PATH
+from rasa.cli.default_arguments import (
+    add_config_param, add_domain_param,
+    add_stories_param)
+from rasa.model import (
+    DEFAULT_MODELS_PATH, core_fingerprint_changed,
+    fingerprint_from_path, get_latest_model, merge_model, model_fingerprint,
+    nlu_fingerprint_changed, unpack_model)
 
 
 def add_subparser(subparsers, parents):
+    # TODO: Fix
+    # import rasa_core.train
+
     train_parser = subparsers.add_parser(
         "train",
         help="Train the Rasa bot")
@@ -44,7 +44,8 @@ def add_subparser(subparsers, parents):
 
     for p in [train_core_parser, train_parser]:
         add_core_arguments(p)
-        rasa_core.train.add_general_args(p)
+        # TODO: Fix
+        # rasa_core.train.add_general_args(p)
     _add_core_compare_arguments(train_core_parser)
 
     for p in [train_nlu_parser, train_parser]:
@@ -104,6 +105,8 @@ def create_default_output_path(model_directory=DEFAULT_MODELS_PATH, prefix=""):
 
 
 def train(args):
+    from rasa_core.utils import print_success
+
     output = args.out or create_default_output_path()
     train_path = tempfile.mkdtemp()
     old_model = get_latest_model(output)
@@ -153,6 +156,9 @@ def train(args):
 
 
 def train_core(args, train_path=None):
+    import rasa_core.train
+    from rasa_core.utils import print_success
+
     _train_path = train_path or tempfile.mkdtemp()
 
     if not isinstance(args.config, list) or len(args.config) == 1:
@@ -183,6 +189,10 @@ def train_core(args, train_path=None):
 
 
 def train_nlu(args, train_path=None):
+    import rasa_nlu.train
+    from rasa_core.utils import print_success
+    from rasa_nlu import config
+
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa_nlu.train.do_train(
         config.load(args.config),

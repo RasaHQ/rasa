@@ -1,10 +1,9 @@
 import argparse
 import os
 
-import rasa_core.visualize as visualize
-
-from rasa.cli.default_arguments import add_domain_param, add_stories_param, \
-    add_config_param
+from rasa.cli.default_arguments import (
+    add_config_param, add_domain_param,
+    add_stories_param)
 from rasa.model import DEFAULTS_NLU_DATA_PATH
 
 
@@ -30,12 +29,17 @@ def add_subparser(subparsers, parents):
 
 
 def add_core_visualization_params(parser):
-    visualize.add_visualization_arguments(parser)
+    # TODO: Fix
+    # import rasa_core.visualize as visualize
+
+    # visualize.add_visualization_arguments(parser)
     add_domain_param(parser)
     add_stories_param(parser)
 
 
 def show(args):
+    import rasa_core.visualize as visualize
+
     args.config = [args.config]
     args.url = None
 

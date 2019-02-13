@@ -4,20 +4,16 @@ import os
 import shutil
 import tempfile
 
-from rasa_core.broker import PikaProducer
-from rasa_core.interpreter import RasaNLUInterpreter
-import rasa_core.run
-from rasa_core.tracker_store import TrackerStore
-from rasa_core.utils import AvailableEndpoints
-import rasa_nlu.server
-
 from rasa.cli.default_arguments import add_model_param
-from rasa.model import get_latest_model, get_model, DEFAULT_MODELS_PATH
+from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
 
 
 def add_subparser(subparsers, parents):
+    # TODO: Fix
+    # import rasa_nlu.server
+
     run_parser = subparsers.add_parser(
         "run",
         parents=parents,
@@ -46,7 +42,8 @@ def add_subparser(subparsers, parents):
         help="Run a trained NLU model"
     )
 
-    rasa_nlu.server.add_run_arguments(nlu_subparser)
+    # TODO: Fix
+    # rasa_nlu.server.add_run_arguments(nlu_subparser)
     _add_nlu_arguments(nlu_subparser)
     nlu_subparser.set_defaults(func=run_nlu)
 
@@ -62,7 +59,10 @@ def add_subparser(subparsers, parents):
 
 
 def add_run_arguments(parser):
-    rasa_core.run.add_run_options(parser)
+    # TODO: Fix
+    # import rasa_core.run
+
+    # rasa_core.run.add_run_options(parser)
     add_model_param(parser)
 
     parser.add_argument(
@@ -82,6 +82,8 @@ def _add_nlu_arguments(parser):
 
 
 def run_nlu(args):
+    import rasa_nlu.server
+
     model = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()
     model_path = model.unpack_model(model, working_directory)
@@ -97,6 +99,12 @@ def run_sdk(args):
 
 
 def run(args):
+    from rasa_core.broker import PikaProducer
+    from rasa_core.interpreter import RasaNLUInterpreter
+    import rasa_core.run
+    from rasa_core.tracker_store import TrackerStore
+    from rasa_core.utils import AvailableEndpoints
+
     model_paths = get_model(args.model, subdirectories=True)
 
     if model_paths is None:

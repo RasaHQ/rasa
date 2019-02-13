@@ -1,7 +1,6 @@
-from rasa_nlu import convert
-
-
 def add_subparser(subparsers, parents):
+    from rasa_nlu import convert
+
     data_parser = subparsers.add_parser(
         "data",
         conflict_handler="resolve",
@@ -13,7 +12,7 @@ def add_subparser(subparsers, parents):
         "convert", help="Convert Rasa data between different formats.")
 
     convert_subparsers = convert_parser.add_subparsers()
-    convert_nlu_parser=convert_subparsers.add_parser(
+    convert_nlu_parser = convert_subparsers.add_parser(
         "nlu", help="Convert NLU training data between markdown and json.")
 
     convert.add_arguments(convert_parser)
