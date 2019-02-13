@@ -6,6 +6,7 @@ import rasa.model as model
 from rasa.cli.default_arguments import (
     add_config_param, add_domain_param,
     add_stories_param)
+from rasa.cli.utils import check_path_exists
 from rasa.model import (
     DEFAULT_MODELS_PATH, core_fingerprint_changed,
     fingerprint_from_path, get_latest_model, merge_model, model_fingerprint,
@@ -53,7 +54,7 @@ def add_general_arguments(parser):
     add_config_param(parser)
     parser.add_argument(
         "-o", "--out",
-        type=str,
+        type=lambda v: check_path_exists(v, "--o", noneValid=True),
         default=None,
         help="Directory where your models are stored.")
 
@@ -77,7 +78,6 @@ def _add_core_compare_arguments(parser):
         help="Number of runs for experiments")
     parser.add_argument(
         "-c", "--config",
-        type=str,
         nargs='*',
         default=["config.yml"],
         help="The policy and NLU pipeline configuration of your bot."
@@ -88,7 +88,7 @@ def _add_core_compare_arguments(parser):
 def add_nlu_arguments(parser):
     parser.add_argument(
         "-u", "--nlu",
-        type=str,
+        type=lambda v: check_path_exists(v, "--nlu", "data/nlu"),
         default="data/nlu",
         help="File or folder containing your NLU training data.")
 

@@ -4,6 +4,7 @@ import os
 import shutil
 
 from rasa.cli.default_arguments import add_model_param
+from rasa.cli.utils import check_path_exists
 from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ def add_run_arguments(parser):
 
     parser.add_argument(
         "--credentials",
+        type=lambda v: check_path_exists(v, "--credentials", "credentials.yml"),
         default="credentials.yml",
         help="Authentication credentials for the connector as a yml file")
 
@@ -70,6 +72,8 @@ def _add_nlu_arguments(parser):
     add_server_arguments(parser)
     parser.add_argument('--path',
                         default=DEFAULT_MODELS_PATH,
+                        type=lambda v: check_path_exists(v, "--path",
+                                                         DEFAULT_MODELS_PATH),
                         help="working directory of the server. Models are"
                              "loaded from this directory and trained models "
                              "will be saved here.")

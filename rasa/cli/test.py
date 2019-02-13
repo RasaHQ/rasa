@@ -3,6 +3,7 @@ import logging
 import os
 
 from rasa.cli.default_arguments import add_model_param, add_stories_param
+from rasa.cli.utils import check_path_exists
 from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
@@ -61,20 +62,25 @@ def _add_core_arguments(parser):
 
 
 def _add_core_subparser_arguments(parser):
+    default_path=get_latest_model(DEFAULT_MODELS_PATH)
     parser.add_argument(
         '-m', '--model',
-        type=str,
-        default=get_latest_model(DEFAULT_MODELS_PATH),
+        type=lambda v: check_path_exists(v, "--model", default_path),
+        default=default_path,
         help="Path to a pre-trained model. If it is a directory all models "
              "in this directory will be compared.")
 
 
 def _add_nlu_arguments(parser):
     parser.add_argument('-u', '--nlu',
-                        type=str, default="data/nlu",
+                        type=lambda v: check_path_exists(v, "--nlu",
+                                                         "data/nlu"),
+                        default="data/nlu",
                         help="file containing training/evaluation data")
 
     parser.add_argument('-c', '--config',
+                        type=lambda v: check_path_exists(v, "--config",
+                                                         "config.yml"),
                         default="config.yml",
                         help="model configuration file (crossvalidation only)")
 
@@ -103,7 +109,7 @@ def _add_nlu_arguments(parser):
 def _add_nlu_subparser_arguments(parser):
     parser.add_argument(
         '--model',
-        type=str,
+        type=lambda v: check_path_exists(v, "--model"),
         default=None,
         help="Path to a pre-trained model. If none is given it will "
              "perform crossvalidation.")
