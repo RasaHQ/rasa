@@ -149,6 +149,7 @@ class PolicyEnsemble(object):
     def persist(self, path: Text,
                 dump_flattened_stories: bool = False) -> None:
         """Persists the policy to storage."""
+        # TODO: make sure priority persists
 
         self._persist_metadata(path, dump_flattened_stories)
 
@@ -220,8 +221,8 @@ class PolicyEnsemble(object):
         policies = dictionary.get('policies') or dictionary.get('policy')
         if policies is None:
             raise InvalidPolicyConfig("You didn't define any policies. "
-                                      "Please define them under 'policies:' in "
-                                      "your policy configuration file.")
+                                      "Please define them under 'policies:' "
+                                      "in your policy configuration file.")
         if len(policies) == 0:
             raise InvalidPolicyConfig("The policy configuration file has to "
                                       "include at least one policy.")
@@ -255,9 +256,9 @@ class PolicyEnsemble(object):
                 policy_object = constr_func(**policy)
                 parsed_policies.append(policy_object)
             else:
-                raise InvalidPolicyConfig("Module for policy '{}' could not be "
-                                          "loaded. Please make sure the name "
-                                          "is a valid policy."
+                raise InvalidPolicyConfig("Module for policy '{}' could not "
+                                          "be loaded. Please make sure the "
+                                          "name is a valid policy."
                                           "".format(policy_name))
 
         return parsed_policies
@@ -316,17 +317,38 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         result = None
         max_confidence = -1
         best_policy_name = None
+        best_policy_priority = -1
 
         for i, p in enumerate(self.policies):
+            print('***\npolicy_{}_{}'.format(i, type(p).__name__))
+            print("priority: {}".format(p.priority))
             probabilities = p.predict_action_probabilities(tracker, domain)
+            # print("current result: {}".format(result))
+            # print("probabilities: {}".format(probabilities))
             if isinstance(tracker.events[-1], ActionExecutionRejected):
                 probabilities[domain.index_for_action(
                     tracker.events[-1].action_name)] = 0.0
             confidence = np.max(probabilities)
+            print("confidence(max prob): {}".format(confidence))
             if confidence > max_confidence:
                 max_confidence = confidence
+                print("new max confidence: {}".format(max_confidence))
                 result = probabilities
+                # print("new result: {}".format(result))
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
+                best_policy_priority = p.priority
+                print("new max priority: {}".format(best_policy_priority))
+                # update priority level of new policy
+            elif confidence == max_confidence:
+                if p.priority > best_policy_priority:
+                    max_confidence = confidence
+                    result = probabilities
+                    best_policy_name = 'policy_{}_{}'.format(i,
+                                                             type(p).__name__)
+                    best_policy_priority = p.priority
+                    print("new max priority: {}".format(best_policy_priority))
+
+        print("best policy: {}".format(best_policy_name))
 
         if (result.index(max_confidence) ==
                 domain.index_for_action(ACTION_LISTEN_NAME) and
@@ -355,6 +377,8 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_name = 'policy_{}_{}'.format(
                     fallback_idx,
                     type(fallback_policy).__name__)
+                # TODO: Update priority here
+                # best_policy_priority = self.priority(best_policy_name)
 
         # normalize probablilities
         if np.sum(result) != 0:
