@@ -1,3 +1,4 @@
 questionary==1.0.0
 rasa_core==0.13.0a5
 rasa_nlu==0.15.0a1
+rasa_core_sdk==0.12.1
