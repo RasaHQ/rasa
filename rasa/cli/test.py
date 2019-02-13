@@ -1,17 +1,9 @@
 import argparse
 import logging
 import os
-import tempfile
-
-import rasa_core.evaluate
-import rasa_nlu
-from rasa_core.utils import AvailableEndpoints
-from rasa_nlu import utils as nlu_utils
-from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.agent import Agent
 
 from rasa.cli.default_arguments import add_model_param, add_stories_param
-from rasa.model import get_model, get_latest_model, DEFAULT_MODELS_PATH
+from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +46,9 @@ def add_subparser(subparsers, parents):
 
 
 def _add_core_arguments(parser):
-    rasa_core.evaluate.add_args_to_parser(parser)
+    from rasa_core.cli.evaluation import add_evaluation_arguments
 
+    add_evaluation_arguments(parser)
     add_model_param(parser, "Core")
     add_stories_param(parser, "test")
 
@@ -117,6 +110,12 @@ def _add_nlu_subparser_arguments(parser):
 
 
 def test_core(args, model_path=None):
+    import rasa_core.evaluate
+    from rasa_nlu import utils as nlu_utils
+    from rasa_core.utils import AvailableEndpoints
+    from rasa_core.interpreter import NaturalLanguageInterpreter
+    from rasa_core.agent import Agent
+
     logging.basicConfig(level=args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(
         args.endpoints)
@@ -159,6 +158,8 @@ def test_core(args, model_path=None):
 
 
 def test_nlu(args, model_path=None):
+    import rasa_nlu
+
     model_path = model_path or args.model
     if model_path:
         unpacked_model = get_model(args.model)

@@ -2,17 +2,9 @@ import argparse
 import logging
 import os
 import shutil
-import tempfile
-
-from rasa_core.broker import PikaProducer
-from rasa_core.interpreter import RasaNLUInterpreter
-import rasa_core.run
-from rasa_core.tracker_store import TrackerStore
-from rasa_core.utils import AvailableEndpoints
-import rasa_nlu.server
 
 from rasa.cli.default_arguments import add_model_param
-from rasa.model import get_latest_model, get_model, DEFAULT_MODELS_PATH
+from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +38,6 @@ def add_subparser(subparsers, parents):
         help="Run a trained NLU model"
     )
 
-    rasa_nlu.server.add_run_arguments(nlu_subparser)
     _add_nlu_arguments(nlu_subparser)
     nlu_subparser.set_defaults(func=run_nlu)
 
@@ -62,7 +53,9 @@ def add_subparser(subparsers, parents):
 
 
 def add_run_arguments(parser):
-    rasa_core.run.add_run_options(parser)
+    from rasa_core.cli.run import add_run_arguments
+
+    add_run_arguments(parser)
     add_model_param(parser)
 
     parser.add_argument(
@@ -72,6 +65,9 @@ def add_run_arguments(parser):
 
 
 def _add_nlu_arguments(parser):
+    from rasa_nlu.cli.server import add_server_arguments
+
+    add_server_arguments(parser)
     parser.add_argument('--path',
                         default=DEFAULT_MODELS_PATH,
                         help="working directory of the server. Models are"
@@ -82,6 +78,9 @@ def _add_nlu_arguments(parser):
 
 
 def run_nlu(args):
+    import rasa_nlu.server
+    import tempfile
+
     model = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()
     model_path = model.unpack_model(model, working_directory)
@@ -97,6 +96,12 @@ def run_sdk(args):
 
 
 def run(args):
+    from rasa_core.broker import PikaProducer
+    from rasa_core.interpreter import RasaNLUInterpreter
+    import rasa_core.run
+    from rasa_core.tracker_store import TrackerStore
+    from rasa_core.utils import AvailableEndpoints
+
     model_paths = get_model(args.model, subdirectories=True)
 
     if model_paths is None:

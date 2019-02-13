@@ -1,10 +1,7 @@
-import os
 import shutil
 
 import rasa.cli as cli
 from rasa.model import unpack_model
-
-from rasa_core.train import do_interactive_learning
 
 
 def add_subparser(subparsers, parents):
@@ -32,7 +29,9 @@ def _add_interactive_arguments(parser):
 
 
 def interactive(args):
-    args.finetune = False # Don't support finetuning
+    from rasa_core.train import do_interactive_learning
+
+    args.finetune = False  # Don't support finetuning
 
     zipped_model = cli.train.train(args)
     model_path, core_path, nlu_path = unpack_model(zipped_model,
