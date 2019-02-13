@@ -251,9 +251,9 @@ class MongoTrackerStore(TrackerStore):
 class SQLTrackerStore(TrackerStore):
     def __init__(self,
                  domain: Optional[Domain],
-                 drivername: Text = 'server',
-                 host: Text = 'localhost',
-                 port: int = 1433,
+                 drivername: Text = 'sqlite',
+                 host: Text = None,
+                 port: int = None,
                  db: Text = 'rasa',
                  username: Text = None,
                  password: Text = None,
@@ -268,12 +268,28 @@ class SQLTrackerStore(TrackerStore):
                          port,
                          db)
 
+        self.db = db
+
         self.engine = sqlalchemy.create_engine(engine_url)
 
         self.conn = self.engine.connect()
         self.domain = domain
         self.event_broker = event_broker
         super(SQLTrackerStore, self).__init__(domain, event_broker)
+
+        self._ensure_indices()
+
+    def _ensure_indices(self):
+        trans = self.conn.begin()
+        self.conversations.create_index("sender_id")
+
+        self.conn.execute("INSERT INTO {} "
+                          "SET {} "
+                          .format
+                          (self.db,
+                           set_string))
+
+        trans.commit()
 
     def keys(self):
         pass
@@ -287,13 +303,13 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        state = tracker.current_state(EventVerbosity.ALL)
+        state = tracker.current_state()
 
         set_string = " ".join(["{} = {}".format(k, v) for k, v in state.items()])
 
-        self.conn.execute("UPDATE %s"
-                          "SET %s"
-                          "WHERE sender_id=%d",
+        self.conn.execute("UPDATE {} "
+                          "SET {} "
+                          "WHERE sender_id='{}'".format
                           (self.db,
                            set_string,
                            tracker.sender_id))
