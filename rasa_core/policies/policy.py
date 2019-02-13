@@ -28,12 +28,30 @@ class Policy(object):
         else:
             return cls._standard_featurizer()
 
-    def __init__(self, featurizer: Optional[TrackerFeaturizer] = None) -> None:
+    @classmethod
+    def _set_priority(cls, priority=None):
+        if priority:
+            print("Setting priority: {} (class method)".format(priority))
+            return copy.deepcopy(priority)
+        else:
+            print("*** Recieved no policy priority")
+            # TODO: Raise no priority error here
+            pass
+
+    def __init__(self,
+                 featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: int = None
+                 ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
+        self.__priority = self._set_priority(priority)
 
     @property
     def featurizer(self):
         return self.__featurizer
+
+    @property
+    def priority(self):
+        return self.__priority
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
