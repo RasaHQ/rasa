@@ -5,6 +5,7 @@ import warnings
 from difflib import SequenceMatcher
 from typing import Text, Optional, List, Tuple
 
+import rasa_core.cli.arguments
 from rasa_core import utils, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
@@ -42,7 +43,7 @@ def create_argument_parser():
         action="store_true",
         help="Start the web server api in addition to the input channel")
 
-    utils.add_logging_option_arguments(parser)
+    rasa_core.cli.arguments.add_logging_option_arguments(parser)
 
     return parser
 

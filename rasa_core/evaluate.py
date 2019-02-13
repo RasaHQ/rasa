@@ -8,6 +8,8 @@ import logging
 import numpy as np
 import os
 import warnings
+
+import rasa_core.cli.arguments
 from sklearn.exceptions import UndefinedMetricWarning
 from tqdm import tqdm
 from typing import List, Optional, Any, Text, Dict, Tuple
@@ -41,10 +43,10 @@ def create_argument_parser():
     parser = argparse.ArgumentParser(
         description='evaluates a dialogue model')
     parent_parser = argparse.ArgumentParser(add_help=False)
-    add_args_to_parser(parent_parser)
+    cli.evaluation.add_evaluation_arguments(parent_parser)
     cli.arguments.add_model_and_story_group(parent_parser,
                                             allow_pretrained_model=False)
-    utils.add_logging_option_arguments(parent_parser)
+    rasa_core.cli.arguments.add_logging_option_arguments(parent_parser)
     subparsers = parser.add_subparsers(help='mode', dest='mode')
     subparsers.add_parser('default',
                           help='default mode: evaluate a dialogue'
@@ -55,42 +57,6 @@ def create_argument_parser():
                                ' dialogue models to compare '
                                'policies',
                           parents=[parent_parser])
-
-    return parser
-
-
-def add_args_to_parser(parser):
-    parser.add_argument(
-        '-m', '--max_stories',
-        type=int,
-        help="maximum number of stories to test on")
-    parser.add_argument(
-        '-u', '--nlu',
-        type=str,
-        help="nlu model to run with the server. None for regex interpreter")
-    parser.add_argument(
-        '-o', '--output',
-        type=str,
-        default="results",
-        help="output path for the any files created from the evaluation")
-    parser.add_argument(
-        '--e2e', '--end-to-end',
-        action='store_true',
-        help="Run an end-to-end evaluation for combined action and "
-             "intent prediction. Requires a story file in end-to-end "
-             "format.")
-    parser.add_argument(
-        '--endpoints',
-        default=None,
-        help="Configuration file for the connectors as a yml file")
-    parser.add_argument(
-        '--fail_on_prediction_errors',
-        action='store_true',
-        help="If a prediction error is encountered, an exception "
-             "is thrown. This can be used to validate stories during "
-             "tests, e.g. on travis.")
-
-    cli.arguments.add_core_model_arg(parser)
 
     return parser
 

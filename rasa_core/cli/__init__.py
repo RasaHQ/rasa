@@ -1,4 +1,8 @@
 import rasa_core.cli.arguments
+import rasa_core.cli.evaluation
+import rasa_core.cli.run
+import rasa_core.cli.train
+import rasa_core.cli.visualization
 from rasa_core import utils
 
 
