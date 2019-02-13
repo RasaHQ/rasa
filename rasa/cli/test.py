@@ -39,12 +39,12 @@ def add_subparser(subparsers, parents):
         help="Test Rasa NLU")
 
     for p in [test_parser, test_core_parser]:
-        core_arguments = p.add_argument_group("Core training arguments")
+        core_arguments = p.add_argument_group("Core test arguments")
         _add_core_arguments(core_arguments)
     _add_core_subparser_arguments(test_core_parser)
 
     for p in [test_parser, test_nlu_parser]:
-        nlu_arguments = p.add_argument_group("NLU training arguments")
+        nlu_arguments = p.add_argument_group("NLU test arguments")
         _add_nlu_arguments(nlu_arguments)
     _add_nlu_subparser_arguments(test_nlu_parser)
 
