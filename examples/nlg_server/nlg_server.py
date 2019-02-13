@@ -58,7 +58,7 @@ def generate_response(nlg_call, domain):
 
 @app.route("/nlg", methods=['POST', 'OPTIONS'])
 async def nlg(request):
-    """Generates the bot's response."""
+    """Endpoints which processes the Core request for a bot response."""
     nlg_call = request.json
     response = await generate_response(nlg_call, domain)
 
