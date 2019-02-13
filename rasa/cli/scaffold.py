@@ -22,9 +22,9 @@ def scaffold_path():
 def print_train_or_instructions(args, path):
     from rasa_core.utils import print_success
 
-    print_success("Your bot initial_project is ready to go!")
+    print_success("Your bot is ready to go!")
     should_train = questionary.confirm("Do you want me to train an initial "
-                                       "model for the bot?").ask()
+                                       "model for the bot? 💪🏽").ask()
     if should_train:
         args.config = os.path.join(path, "config.yml")
         args.stories = os.path.join(path, "data/core")
@@ -37,15 +37,16 @@ def print_train_or_instructions(args, path):
         print_run_or_instructions(args, path)
 
     else:
-        print("Great. To train your bot, run `cd {} && rasa train`."
+        print("No problem 👍🏼. You can also train me later by going to the "
+              "project directory and running 'rasa train'."
               "".format(path))
 
 
 def print_run_or_instructions(args, path):
     from rasa_core import constants
 
-    should_run = questionary.confirm("Do you want me to run the trained model "
-                                     "in the command line?").ask()
+    should_run = questionary.confirm("Do you want to speak to the trained bot "
+                                     "on the command line? 🤖").ask()
 
     if should_run:
         # provide defaults for command line arguments
@@ -58,7 +59,8 @@ def print_run_or_instructions(args, path):
 
         shell(args)
     else:
-        print("Great. To run your bot, run `cd {} && rasa shell`."
+        print("Ok 👍🏼. If you want to speak to the bot later, change into the"
+              "project directory and run 'rasa shell'."
               "".format(path))
 
 
@@ -71,30 +73,45 @@ def init_project(args, path):
     print_train_or_instructions(args, path)
 
 
+def print_cancel():
+    print("Ok. Then I stop here. If you need me again, simply type "
+          "'rasa init' 🙋🏽‍♀️")
+    exit(0)
+
+
 def run(args):
-    path = questionary.text("Please enter a folder path for the bot "
-                            "[default: current directory]", ".").ask()
+    from rasa_core.utils import print_success
+
+    print_success("Welcome to Rasa! 🤖\n")
+    print("To get started quickly, I can assist you to create an "
+          "initial project.\n"
+          "If you need some help to get from this template to a "
+          "bad ass contextual assistant, checkout our quickstart guide"
+          "here: https://rasa.com/docs/core/quickstart \n\n"
+          "Now let's start! 👇🏽\n")
+    path = questionary.text("Please enter a folder path where I should create "
+                            "the initial project [default: current directory]",
+                            default=".").ask()
 
     if not os.path.isdir(path):
-        should_create = questionary.confirm("Path '{}' does not exist. Should "
-                                            "I create it?".format(path)).ask()
+        should_create = questionary.confirm("Path '{}' does not exist 🧐. "
+                                            "Should I create it?"
+                                            "".format(path)).ask()
         if should_create:
             os.makedirs(path)
         else:
-            print("Ok. Then I stop here.")
+            print("Ok. Then I stop here. If you need me again, simply type "
+                  "'rasa init' 🙋🏽‍♀️")
             exit(0)
 
     if path is None or not os.path.isdir(path):
-        print("Path '{}' is not a valid directory. Aborted creation."
-              "".format(path))
-        exit(1)
+        print_cancel()
 
     if len(os.listdir(path)) > 0:
         overwrite = questionary.confirm(
             "Directory '{}' is not empty. Continue?"
             "".format(os.path.abspath(path))).ask()
         if not overwrite:
-            print("Aborted creation.")
-            exit(1)
+            print_cancel()
 
     init_project(args, path)

@@ -16,10 +16,11 @@ def create_argument_parser():
     """Parse all the command line arguments for the training script."""
     parser = argparse.ArgumentParser(
         prog="rasa",
-        description='Rasa command line interface. Rasa allows you to build '
-                    'your own conversational assistants. The `rasa` command '
-                    'allows you to easily run most common commands like '
-                    'creating a new bot, training or evaluating models.')
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Rasa command line interface. Rasa allows you to build "
+                    "your own conversational assistants 🤖. The 'rasa' command "
+                    "allows you to easily run most common commands like "
+                    "creating a new bot, training or evaluating models.")
 
     parser.add_argument("--version", action='store_true',
                         help="Print installed Rasa version.")
