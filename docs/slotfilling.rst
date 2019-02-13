@@ -168,6 +168,10 @@ list of supported cuisines.
 .. literalinclude:: ../examples/formbot/actions.py
    :pyobject: RestaurantForm.validate
 
+You can also deactivate the form directly during this validation step (in case the
+slot is filled with something that you are certain can't be handled) by returning
+``self.deactivate()``
+
 If nothing is extracted from the user's utterance for any of the required slots, an
 ``ActionExecutionRejection`` error will be raised, meaning the action execution
 was rejected and therefore Core will fall back onto a different policy to
