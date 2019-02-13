@@ -287,7 +287,7 @@ def do_compare_training(cmdline_args, stories, additional_arguments):
     utils.dump_obj_as_json_to_file(story_n_path, story_range)
 
 
-def do_interactive_learning(cmdline_args, stories, additional_arguments):
+def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
