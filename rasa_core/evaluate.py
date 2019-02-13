@@ -556,7 +556,7 @@ def plot_story_evaluation(test_y, predictions,
 def run_comparison_evaluation(models: Text,
                               stories_file: Text,
                               output: Text) -> None:
-    """Evaluates multiple trained models on a test set"""
+    """Evaluates multiple trained models on a test set."""
 
     num_correct = defaultdict(list)
 

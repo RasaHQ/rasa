@@ -8,15 +8,21 @@ from rasa_core.agent import Agent
 logger = logging.getLogger(__name__)
 
 
-def create_argument_parser():
+def add_arguments(parser):
     """Parse all the command line arguments for the visualisation script."""
+    utils.add_logging_option_arguments(parser)
+    add_visualization_arguments(parser)
+    cli.arguments.add_config_arg(parser, nargs=1)
+    cli.arguments.add_domain_arg(parser)
+    cli.arguments.add_model_and_story_group(parser,
+                                            allow_pretrained_model=False)
+    return parser
 
-    parser = argparse.ArgumentParser(
-        description='Visualize the stories in a dialogue training file')
 
+def add_visualization_arguments(parser):
     parser.add_argument(
         '-o', '--output',
-        required=True,
+        default="graph.html",
         type=str,
         help="filename of the output path, e.g. 'graph.html")
     parser.add_argument(
@@ -32,41 +38,42 @@ def create_argument_parser():
         help="path of the Rasa NLU training data, "
              "used to insert example messages into the graph")
 
-    utils.add_logging_option_arguments(parser)
 
-    cli.arguments.add_config_arg(parser, nargs=1)
-    cli.arguments.add_domain_arg(parser)
-    cli.arguments.add_model_and_story_group(parser,
-                                            allow_pretrained_model=False)
-    return parser
+def visualize(args):
+    utils.configure_colored_logging(args.loglevel)
 
+    policies = config.load(args.config[0])
 
-if __name__ == '__main__':
-    arg_parser = create_argument_parser()
-    cmdline_arguments = arg_parser.parse_args()
-
-    utils.configure_colored_logging(cmdline_arguments.loglevel)
-
-    policies = config.load(cmdline_arguments.config[0])
-
-    agent = Agent(cmdline_arguments.domain, policies=policies)
+    agent = Agent(args.domain, policies=policies)
 
     # this is optional, only needed if the `/greet` type of
     # messages in the stories should be replaced with actual
     # messages (e.g. `hello`)
-    if cmdline_arguments.nlu_data is not None:
+    if args.nlu_data is not None:
         from rasa_nlu.training_data import load_data
 
-        nlu_data = load_data(cmdline_arguments.nlu_data)
+        nlu_data = load_data(args.nlu_data)
     else:
         nlu_data = None
 
-    stories = cli.stories_from_cli_args(cmdline_arguments)
+    stories = cli.stories_from_cli_args(args)
 
     logger.info("Starting to visualize stories...")
-    agent.visualize(stories, cmdline_arguments.output,
-                    cmdline_arguments.max_history,
+    agent.visualize(stories, args.output,
+                    args.max_history,
                     nlu_training_data=nlu_data)
 
     logger.info("Finished graph creation. Saved into file://{}".format(
-        os.path.abspath(cmdline_arguments.output)))
+        os.path.abspath(args.output)))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Visualize the stories in a dialogue training file')
+
+    arg_parser = add_arguments(parser)
+    cmdline_arguments = arg_parser.parse_args()
+
+    visualize(cmdline_arguments)
+
+
