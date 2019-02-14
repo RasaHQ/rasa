@@ -4,7 +4,7 @@ import os
 import shutil
 
 from rasa.cli.default_arguments import add_model_param
-from rasa.cli.utils import check_path_exists
+from rasa.cli.utils import validate, check_path_exists
 from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
@@ -43,14 +43,14 @@ def add_subparser(subparsers, parents):
     nlu_subparser.set_defaults(func=run_nlu)
 
     sdk_subparser = run_subparsers.add_parser(
-        "sdk",
+        "actions",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Run the action server"
     )
-
-    sdk_subparser.set_defaults(func=run_sdk)
+    _adk_sdk_arguments(sdk_subparser)
+    sdk_subparser.set_defaults(func=run_actions)
 
 
 def add_run_arguments(parser):
@@ -81,6 +81,17 @@ def _add_nlu_arguments(parser):
     add_model_param(parser, "NLU")
 
 
+def _adk_sdk_arguments(parser):
+    import rasa_core_sdk.cli.arguments as sdk
+
+    sdk.add_endpoint_arguments(parser)
+    parser.add_argument(
+        '--actions',
+        type=str,
+        default="actions",
+        help="name of action package to be loaded")
+
+
 def run_nlu(args):
     import rasa_nlu.server
     import tempfile
@@ -95,8 +106,18 @@ def run_nlu(args):
     shutil.rmtree(model_path)
 
 
-def run_sdk(args):
-    print("Nothing here yet.")
+def run_actions(args):
+    import rasa_core_sdk.endpoint as sdk
+    import sys
+
+    args.actions = args.actions or DEFAULT_ACTIONS_PATH
+
+    # insert current path in syspath so module is found
+    sys.path.insert(1, os.getcwd())
+    path = args.actions.replace('.', '/') + ".py"
+    check_path_exists(path, "action", DEFAULT_ACTIONS_PATH)
+
+    sdk.run(args)
 
 
 def run(args):

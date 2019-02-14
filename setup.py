@@ -17,7 +17,7 @@ tests_requires = [
 install_requires = [
     "rasa-core>=0.13.0a5",
     "rasa-nlu[tensorflow]",
-    "rasa-core-sdk~=0.12.1",
+    "rasa-core-sdk~=0.13.0a1",
     "questionary~=1.0",
 ]
 
@@ -27,12 +27,11 @@ setup(
         'console_scripts': ['rasa=rasa.__main__:main'],
     },
     classifiers=[
-        "Development Scd ..tatus :: 4 - Beta",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",
