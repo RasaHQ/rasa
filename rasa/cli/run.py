@@ -5,6 +5,8 @@ import shutil
 
 from rasa.cli.default_arguments import add_model_param
 from rasa.cli.utils import validate, check_path_exists
+from rasa.cli.constants import (DEFAULT_ENDPOINTS_PATH,
+                                DEFAULT_ACTIONS_PATH, DEFAULT_CREDENTIALS_PATH)
 from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
@@ -61,7 +63,7 @@ def add_run_arguments(parser):
 
     parser.add_argument(
         "--credentials",
-        type=lambda v: check_path_exists(v, "--credentials", "credentials.yml"),
+        type=str,
         default="credentials.yml",
         help="Authentication credentials for the connector as a yml file")
 
@@ -72,8 +74,7 @@ def _add_nlu_arguments(parser):
     add_server_arguments(parser)
     parser.add_argument('--path',
                         default=DEFAULT_MODELS_PATH,
-                        type=lambda v: check_path_exists(v, "--path",
-                                                         DEFAULT_MODELS_PATH),
+                        type=str,
                         help="working directory of the server. Models are"
                              "loaded from this directory and trained models "
                              "will be saved here.")
@@ -95,6 +96,9 @@ def _adk_sdk_arguments(parser):
 def run_nlu(args):
     import rasa_nlu.server
     import tempfile
+
+    validate(args, [("path", DEFAULT_MODELS_PATH)])
+    args.model = args.path
 
     model = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()
@@ -127,10 +131,11 @@ def run(args):
     from rasa_core.tracker_store import TrackerStore
     from rasa_core.utils import AvailableEndpoints
 
-    model_paths = get_model(args.model, subdirectories=True)
+    validate(args, [("model", DEFAULT_MODELS_PATH),
+                    ("endpoints", DEFAULT_ENDPOINTS_PATH, True),
+                    ("credentials", DEFAULT_CREDENTIALS_PATH, True)])
 
-    if model_paths is None:
-        print("No model found for path '{}'.".format(args.model))
+    model_paths = get_model(args.model, subdirectories=True)
 
     model_path, core_path, nlu_path = model_paths
     _endpoints = AvailableEndpoints.read_endpoints(args.endpoints)

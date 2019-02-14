@@ -3,7 +3,9 @@ import logging
 import os
 
 from rasa.cli.default_arguments import add_model_param, add_stories_param
-from rasa.cli.utils import check_path_exists
+from rasa.cli.utils import validate
+from rasa.cli.constants import (DEFAULT_ENDPOINTS_PATH,
+                                DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA_PATH)
 from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
@@ -65,7 +67,7 @@ def _add_core_subparser_arguments(parser):
     default_path=get_latest_model(DEFAULT_MODELS_PATH)
     parser.add_argument(
         '-m', '--model',
-        type=lambda v: check_path_exists(v, "--model", default_path),
+        type=str,
         default=default_path,
         help="Path to a pre-trained model. If it is a directory all models "
              "in this directory will be compared.")
@@ -73,14 +75,12 @@ def _add_core_subparser_arguments(parser):
 
 def _add_nlu_arguments(parser):
     parser.add_argument('-u', '--nlu',
-                        type=lambda v: check_path_exists(v, "--nlu",
-                                                         "data/nlu"),
+                        type=str,
                         default="data/nlu",
                         help="file containing training/evaluation data")
 
     parser.add_argument('-c', '--config',
-                        type=lambda v: check_path_exists(v, "--config",
-                                                         "config.yml"),
+                        type=str,
                         default="config.yml",
                         help="model configuration file (crossvalidation only)")
 
@@ -109,7 +109,7 @@ def _add_nlu_arguments(parser):
 def _add_nlu_subparser_arguments(parser):
     parser.add_argument(
         '--model',
-        type=lambda v: check_path_exists(v, "--model"),
+        type=str,
         default=None,
         help="Path to a pre-trained model. If none is given it will "
              "perform crossvalidation.")
@@ -122,7 +122,10 @@ def test_core(args, model_path=None):
     from rasa_core.interpreter import NaturalLanguageInterpreter
     from rasa_core.agent import Agent
 
-    logging.basicConfig(level=args.loglevel)
+    validate(args, [("model", DEFAULT_MODELS_PATH),
+                    ("endpoints", DEFAULT_ENDPOINTS_PATH, True),
+                    ("config", DEFAULT_CONFIG_PATH)])
+
     _endpoints = AvailableEndpoints.read_endpoints(
         args.endpoints)
 
@@ -166,6 +169,9 @@ def test_core(args, model_path=None):
 def test_nlu(args, model_path=None):
     import rasa_nlu
 
+    validate(args, [("model", DEFAULT_MODELS_PATH),
+                    ("nlu", DEFAULT_NLU_DATA_PATH)])
+
     model_path = model_path or args.model
     if model_path:
         unpacked_model = get_model(args.model)
@@ -203,6 +209,7 @@ def test_nlu(args, model_path=None):
 
 
 def test(args):
+    validate(args, [("model", DEFAULT_MODELS_PATH)])
     model_path = get_model(args.model)
 
     test_core(args, model_path)

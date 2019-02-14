@@ -6,7 +6,9 @@ import rasa.model as model
 from rasa.cli.default_arguments import (
     add_config_param, add_domain_param,
     add_stories_param)
-from rasa.cli.utils import check_path_exists
+from rasa.cli.utils import check_path_exists, validate
+from rasa.cli.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
+                                DEFAULT_STORIES_PATH, DEFAULT_NLU_DATA_PATH)
 from rasa.model import (
     DEFAULT_MODELS_PATH, core_fingerprint_changed,
     fingerprint_from_path, get_latest_model, merge_model, model_fingerprint,
@@ -104,6 +106,12 @@ def create_default_output_path(model_directory=DEFAULT_MODELS_PATH, prefix=""):
 def train(args):
     from rasa_core.utils import print_success
 
+    validate(args, [("out", DEFAULT_MODELS_PATH, True),
+                    ("domain", DEFAULT_DOMAIN_PATH),
+                    ("config", DEFAULT_CONFIG_PATH),
+                    ("nlu", DEFAULT_NLU_DATA_PATH),
+                    ("stories", DEFAULT_STORIES_PATH)])
+
     output = args.out or create_default_output_path()
     train_path = tempfile.mkdtemp()
     old_model = get_latest_model(output)
@@ -156,11 +164,19 @@ def train_core(args, train_path=None):
     import rasa_core.train
     from rasa_core.utils import print_success
 
+    args.out = train_path or args.out
+
+    validate(args, [("domain", DEFAULT_DOMAIN_PATH),
+                    ("stories", DEFAULT_STORIES_PATH),
+                    ("out", DEFAULT_MODELS_PATH, True)])
+
     _train_path = train_path or tempfile.mkdtemp()
 
     if not isinstance(args.config, list) or len(args.config) == 1:
         if isinstance(args.config, list):
             args.config = args.config[0]
+
+        validate(args, [("config", DEFAULT_CONFIG_PATH)])
 
         # normal (not compare) training
         core_model = rasa_core.train.train_dialogue_model(
@@ -189,6 +205,12 @@ def train_nlu(args, train_path=None):
     import rasa_nlu.train
     from rasa_core.utils import print_success
     from rasa_nlu import config
+
+    args.out = train_path or args.out
+
+    validate(args, [("out", DEFAULT_MODELS_PATH, True),
+                    ("config", DEFAULT_CONFIG_PATH),
+                    ("nlu", DEFAULT_NLU_DATA_PATH)])
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa_nlu.train.do_train(
