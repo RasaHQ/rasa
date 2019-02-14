@@ -1,0 +1,7 @@
+DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
+DEFAULT_CREDENTIALS_PATH = "credentials.yml"
+DEFAULT_CONFIG_PATH = "config.yml"
+DEFAULT_DOMAIN_PATH = "domain.yml"
+DEFAULT_STORIES_PATH = "data/core"
+DEFAULT_NLU_DATA_PATH = "data/nlu"
+DEFAULT_ACTIONS_PATH = "actions"

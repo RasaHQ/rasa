@@ -2,11 +2,15 @@ import os
 
 
 def check_path_exists(current, parameter, default=None, none_is_valid=False):
+    print(parameter)
+    print(not (current is None and none_is_valid))
     if not (current is None and none_is_valid) and not os.path.exists(current):
         if os.path.exists(default):
             print("'{}' not found. Using default location '{}' instead."
                   "".format(current, default))
             current = default
+        elif none_is_valid:
+            current = None
         else:
             cancel_cause_not_found(current, parameter, default)
 
@@ -18,7 +22,7 @@ def cancel_cause_not_found(current, parameter, default):
     if default:
         default_clause = ("use the default location ('{}') or "
                           "".format(default))
-    print("'{}' does not exist. Please make sure to {}specify it "
+    print("The path '{}' does not exist. Please make sure to {}specify it "
           "with '--{}'.".format(current, default_clause, parameter))
     exit(1)
 
