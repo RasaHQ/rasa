@@ -249,6 +249,8 @@ class MongoTrackerStore(TrackerStore):
 
 
 class SQLTrackerStore(TrackerStore):
+    """Store which can save and retrieve trackers from an SQL database"""
+
     def __init__(self,
                  domain: Optional[Domain],
                  drivername: Text = 'sqlite',
@@ -259,6 +261,7 @@ class SQLTrackerStore(TrackerStore):
                  password: Text = None,
                  event_broker: Optional[EventChannel] = None) -> None:
         import sqlalchemy
+        from sqlalchemy import Table, Column, Integer, String, MetaData, JSON
         from sqlalchemy.engine.url import URL
 
         engine_url = URL(drivername,
@@ -271,23 +274,24 @@ class SQLTrackerStore(TrackerStore):
         self.db = db
 
         self.engine = sqlalchemy.create_engine(engine_url)
-
         self.conn = self.engine.connect()
         self.domain = domain
         self.event_broker = event_broker
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
-        self._ensure_indices()
+        self._ensure_table()
 
-    def _ensure_indices(self):
+    def _ensure_table(self):
+        """Creates the events table if not already present in the database"""
         trans = self.conn.begin()
-        self.conversations.create_index("sender_id")
-
-        self.conn.execute("INSERT INTO {} "
-                          "SET {} "
-                          .format
-                          (self.db,
-                           set_string))
+        query = """ CREATE TABLE IF NOT EXISTS events (
+                                        id INTEGER PRIMARY KEY,
+                                        sender_id TEXT,
+                                        type_name TEXT,
+                                        timestamp float,
+                                        data JSON
+                                    ); """
+        self.conn.execute(query)
 
         trans.commit()
 
@@ -295,23 +299,31 @@ class SQLTrackerStore(TrackerStore):
         pass
 
     def retrieve(self, sender_id: Text):
+        """Returns a tracker with the same state as the one in the database"""
         pass
 
     def save(self, tracker):
+        """Updates database with events from the current conversation"""
 
         trans = self.conn.begin()
         if self.event_broker:
             self.stream_events(tracker)
 
-        state = tracker.current_state()
+        events = tracker.events
 
-        set_string = " ".join(["{} = {}".format(k, v) for k, v in state.items()])
+        for event in events:
 
-        self.conn.execute("UPDATE {} "
-                          "SET {} "
-                          "WHERE sender_id='{}'".format
-                          (self.db,
-                           set_string,
-                           tracker.sender_id))
+            set_string = """INSERT INTO events (sender_id, name, timestamp) VALUES ({}, {}, {})""".format(tracker.sender_id,
+                                                              event.type_name,
+                                                              event.timestamp,
+                                                              event.as_dict())
+
+            print(set_string)
+
+            self.conn.execute(set_string)
+
+            print(set_string)
+            print(self.conn)
+            print(trans.commit())
 
         trans.commit()
