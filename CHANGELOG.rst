@@ -29,6 +29,7 @@ Added
   (as long as the event itself is enabled in the application hosting the bot)
 - Added sanitization mechanism for SlackInput that (in its current shape and form)
   strips bot's self mentions from messages posted using the said @mentions.
+- Added max_event_history in tracker_store to set this value in DialogueStateTracker
 
 Removed
 -------
