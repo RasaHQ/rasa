@@ -16,6 +16,7 @@ Added
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
 - ``SQLTrackerStore`` class
+- documentation about early deactivation of a form in validation
 
 Changed
 -------
