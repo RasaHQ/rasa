@@ -2,7 +2,7 @@ import argparse
 import logging
 
 from sanic import Sanic
-from sanic.response import json
+from sanic import response
 
 from rasa_core.domain import Domain
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
