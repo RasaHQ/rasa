@@ -237,7 +237,8 @@ class KerasPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
-            meta = {"model": "keras_model.h5",
+            meta = {"priority": self.priority,
+                    "model": "keras_model.h5",
                     "epochs": self.current_epoch}
 
             meta_file = os.path.join(path, 'keras_policy.json')
@@ -281,6 +282,7 @@ class KerasPolicy(Policy):
                         model = load_model(model_file)
 
                 return cls(featurizer=featurizer,
+                           priority=meta["priority"],
                            model=model,
                            graph=graph,
                            session=session,

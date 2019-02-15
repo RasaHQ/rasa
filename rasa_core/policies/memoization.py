@@ -209,6 +209,7 @@ class MemoizationPolicy(Policy):
 
         memorized_file = os.path.join(path, 'memorized_turns.json')
         data = {
+            "priority": self.priority,
             "max_history": self.max_history,
             "lookup": self.lookup
         }
@@ -222,7 +223,8 @@ class MemoizationPolicy(Policy):
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
             data = json.loads(utils.read_file(memorized_file))
-            return cls(featurizer=featurizer, lookup=data["lookup"])
+            return cls(featurizer=featurizer, priority=data["priority"],
+                       lookup=data["lookup"])
         else:
             logger.info("Couldn't load memoization for policy. "
                         "File '{}' doesn't exist. Falling back to empty "

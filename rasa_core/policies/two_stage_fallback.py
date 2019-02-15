@@ -166,6 +166,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         """Persists the policy to storage."""
         config_file = os.path.join(path, 'two_stage_fallback_policy.json')
         meta = {
+            "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "core_threshold": self.core_threshold,
             "fallback_core_action_name": self.fallback_action_name,

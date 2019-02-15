@@ -127,6 +127,7 @@ class FallbackPolicy(Policy):
 
         config_file = os.path.join(path, 'fallback_policy.json')
         meta = {
+            "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name

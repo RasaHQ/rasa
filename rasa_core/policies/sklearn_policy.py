@@ -1,5 +1,5 @@
 import typing
-
+import json
 import logging
 import numpy as np
 import os
@@ -13,6 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
 
+from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.featurizers import (
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
@@ -170,6 +171,11 @@ class SklearnPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
+            meta = {"priority": self.priority}
+
+            meta_file = os.path.join(path, 'sklearn_policy.json')
+            utils.dump_obj_as_json_to_file(meta_file, meta)
+
             filename = os.path.join(path, 'sklearn_model.pkl')
             with open(filename, 'wb') as f:
                 pickle.dump(self._state, f)
@@ -189,7 +195,13 @@ class SklearnPolicy(Policy):
             ("Loaded featurizer of type {}, should be "
              "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
 
-        policy = cls(featurizer=featurizer)
+        meta_file = os.path.join(path, "sklearn_policy.json")
+        if os.path.isfile(meta_file):
+            meta = json.loads(utils.read_file(meta_file))
+
+            policy = cls(featurizer=featurizer, priority=meta["priority"])
+        else:
+            policy = cls(featurizer=featurizer)
 
         with open(filename, 'rb') as f:
             state = pickle.load(f)
