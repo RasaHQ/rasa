@@ -62,7 +62,7 @@ async def nlg(request):
     nlg_call = request.json
     response = await generate_response(nlg_call, domain)
 
-    return json(response)
+    return response.json(response)
 
 
 if __name__ == '__main__':
