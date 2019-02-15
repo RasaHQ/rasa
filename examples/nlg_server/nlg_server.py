@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SERVER_PORT = 5056
 
+DEFAULT_SANIC_WORKERS = 1
+
 app = Sanic(__name__)
 
 
@@ -27,7 +29,7 @@ def create_argument_parser():
         help="port to run the server at")
     parser.add_argument(
         '--sanic_workers',
-        default=1,
+        default=DEFAULT_SANIC_WORKERS,
         type=int,
         help="Number of sanic workers")
     parser.add_argument(
@@ -40,7 +42,7 @@ def create_argument_parser():
     return parser
 
 
-def generate_response(nlg_call, domain):
+async def generate_response(nlg_call, domain):
     """Mock response generator which generates the responses from the
     bot's domain file.
     """
@@ -52,17 +54,22 @@ def generate_response(nlg_call, domain):
         sender_id, events, domain.slots)
     channel_name = nlg_call.get("channel")
 
-    return TemplatedNaturalLanguageGenerator(domain.templates).generate(
+    return await TemplatedNaturalLanguageGenerator(domain.templates).generate(
         template, tracker, channel_name, **kwargs)
 
 
-@app.route("/nlg", methods=['POST', 'OPTIONS'])
-async def nlg(request):
-    """Endpoints which processes the Core request for a bot response."""
-    nlg_call = request.json
-    response = await generate_response(nlg_call, domain)
+def run_server(domain, port, sanic_workers):
+    @app.route("/nlg", methods=['POST', 'OPTIONS'])
+    async def nlg(request):
+        """Endpoints which processes the Core request for a bot response."""
+        nlg_call = request.json
+        bot_response = await generate_response(nlg_call, domain)
 
-    return response.json(response)
+        return response.json(bot_response)
+
+    app.run(host='0.0.0.0',
+            port=port,
+            workers=sanic_workers)
 
 
 if __name__ == '__main__':
@@ -71,9 +78,6 @@ if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
-
     domain = Domain.load(cmdline_args.domain)
 
-    app.run(host='0.0.0.0',
-            port=cmdline_args.port,
-            workers=cmdline_args.sanic_workers)
+    run_server(domain, cmdline_args.port, cmdline_args.sanic_workers)
