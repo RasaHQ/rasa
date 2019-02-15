@@ -28,9 +28,11 @@ jobs:
     - npm install -g swagger-cli
     script:
     - swagger-cli validate docs/_static/spec/server.yml
+    - swagger-cli validate docs/_static/spec/action_server.yml
     after_success:
     - coveralls
-  - stage: integration
+  - stage: test
+    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only master and new Core builds test the starter pack
     name: "Test stack starter pack"
     script:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
@@ -90,6 +92,7 @@ jobs:
     - git commit --allow-empty -m "trigger core docs update"
     - git push origin master
   - stage: deploy
+    name: "Deploy to PyPI"
     python: 3.6
     install: skip
     script: skip

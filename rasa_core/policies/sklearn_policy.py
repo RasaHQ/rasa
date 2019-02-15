@@ -37,6 +37,7 @@ class SklearnPolicy(Policy):
         scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
+        **kwargs: Any
     ) -> None:
         """Create a new sklearn policy.
 
@@ -73,15 +74,17 @@ class SklearnPolicy(Policy):
         # attributes that need to be restored after loading
         self._pickle_params = [
             'model', 'cv', 'param_grid', 'scoring', 'label_encoder']
+        self._train_params = kwargs
 
     @property
     def _state(self):
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
-    def model_architecture(self, **kwargs):
+    def model_architecture(self):
         # filter out kwargs that cannot be passed to model
-        params = self._get_valid_params(self.model.__init__, **kwargs)
-        return self.model.set_params(**params)
+        self._train_params = self._get_valid_params(self.model.__init__,
+                                                    **self._train_params)
+        return self.model.set_params(**self._train_params)
 
     def _extract_training_data(self, training_data):
         # transform y from one-hot to num_classes
