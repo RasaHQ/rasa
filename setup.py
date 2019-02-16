@@ -70,7 +70,7 @@ install_requires = [
     "questionary>=1.0.1",
     "python-socketio~=3.0",
     "pydot~=1.4",
-    "async_generator~=1.10"
+    "async_generator~=1.10",
     "keras-applications==1.0.6",
     "keras-preprocessing==1.0.5"
 ]

@@ -259,7 +259,9 @@ class KerasPolicy(Policy):
                 with graph.as_default():
                     session = tf.Session()
                     with session.as_default():
-                        model = load_model(model_file)
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore")
+                            model = load_model(model_file)
 
                 return cls(featurizer=featurizer,
                            model=model,

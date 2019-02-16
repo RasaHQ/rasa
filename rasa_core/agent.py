@@ -1,19 +1,21 @@
 import asyncio
-from asyncio import Future
+from asyncio import Future, AbstractEventLoop
 
 import aiohttp
 import logging
 import os
+
 import shutil
 import tempfile
 import typing
 import uuid
 import zipfile
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from io import BytesIO as IOReader
-from signal import SIGINT, signal
+from pytz import UnknownTimeZoneError
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 
-import rasa_core
 from rasa_core import constants, training, utils
 from rasa_core.channels import InputChannel, OutputChannel, UserMessage
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -28,7 +30,7 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.utils import EndpointConfig
+from rasa_core.utils import EndpointConfig, LockCounter
 from rasa_nlu.utils import is_url
 
 logger = logging.getLogger(__name__)
@@ -46,18 +48,16 @@ async def load_from_server(
 ) -> 'Agent':
     """Load a persisted model from a server."""
 
+    await _update_model_from_server(model_server, agent)
+
     wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
                                                       100)
-    if wait_time_between_pulls is not None and (
-        isinstance(wait_time_between_pulls,
-                   int) or wait_time_between_pulls.isdigit()):
+
+    if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
         schedule_model_pulling(model_server,
                                int(wait_time_between_pulls),
                                agent)
-    else:
-        # just pull the model once
-        await _update_model_from_server(model_server, agent)
 
     return agent
 
@@ -165,23 +165,22 @@ async def _run_model_pulling_worker(model_server: EndpointConfig,
     while True:
         # noinspection PyBroadException
         try:
+            await asyncio.sleep(wait_time_between_pulls)
             await _update_model_from_server(model_server, agent)
         except Exception:
             logger.exception("An exception was raised, while fetching "
                              "a model. Continuing anyways...")
-        finally:
-            await asyncio.sleep(wait_time_between_pulls)
 
 
 def schedule_model_pulling(model_server: EndpointConfig,
                            wait_time_between_pulls: int,
                            agent: 'Agent'):
-    f = asyncio.ensure_future(_run_model_pulling_worker(
-        model_server, wait_time_between_pulls, agent))
-
-    f.add_done_callback(utils.create_task_error_logger(
-        error_message="Error while fetching a model - "
-                      "Model pulling is stopped!"))
+    agent.scheduler.add_job(
+        _run_model_pulling_worker, "interval",
+        seconds=wait_time_between_pulls,
+        args=[model_server, wait_time_between_pulls, agent],
+        id="pull-model-from-server",
+        replace_existing=True)
 
 
 class Agent(object):
@@ -199,7 +198,8 @@ class Agent(object):
         generator: Union[EndpointConfig, 'NLG', None] = None,
         tracker_store: Optional['TrackerStore'] = None,
         action_endpoint: Optional[EndpointConfig] = None,
-        fingerprint: Optional[Text] = None
+        fingerprint: Optional[Text] = None,
+        loop: [AbstractEventLoop] = None
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -229,8 +229,23 @@ class Agent(object):
         self.tracker_store = self.create_tracker_store(
             tracker_store, self.domain)
         self.action_endpoint = action_endpoint
+        self.conversations_in_processing = {}
+        self.scheduler = self._init_scheduler(loop)
 
         self._set_fingerprint(fingerprint)
+
+    @staticmethod
+    def _init_scheduler(loop=None):
+        try:
+            scheduler = AsyncIOScheduler(event_loop=loop)
+            scheduler.start()
+            return scheduler
+        except UnknownTimeZoneError:
+            logger.warning("apscheduler failed to start. This is probably "
+                           "because your system timezone is not set"
+                           "Set it with e.g. echo \"Europe/Berlin\" > "
+                           "/etc/timezone")
+        return None
 
     def update_model(self,
                      domain: Union[Text, Domain],
@@ -253,6 +268,7 @@ class Agent(object):
              generator: Union[EndpointConfig, 'NLG'] = None,
              tracker_store: Optional['TrackerStore'] = None,
              action_endpoint: Optional[EndpointConfig] = None,
+             loop: AbstractEventLoop = None
              ) -> 'Agent':
         """Load a persisted model from the passed path."""
 
@@ -281,7 +297,8 @@ class Agent(object):
                    interpreter=interpreter,
                    generator=generator,
                    tracker_store=tracker_store,
-                   action_endpoint=action_endpoint)
+                   action_endpoint=action_endpoint,
+                   loop=loop)
 
     def is_ready(self):
         """Check if all necessary components are instantiated to use agent."""
@@ -311,10 +328,30 @@ class Agent(object):
             return None
 
         if not self.is_ready():
-            return noop(message)  #
+            return noop(message)
 
         processor = self.create_processor(message_preprocessor)
-        return await processor.handle_message(message)
+
+        # get the lock for the current conversation
+        lock = self.conversations_in_processing.get(message.sender_id)
+        if not lock:
+            logger.debug("created a new lock for conversation '{}'"
+                         "".format(message.sender_id))
+            lock = LockCounter()
+            self.conversations_in_processing[message.sender_id] = lock
+
+        try:
+            async with lock:
+                # this makes sure that there can always only be one coroutine
+                # handling a conversation at any point in time
+                return await processor.handle_message(message)
+        finally:
+            if not lock.is_someone_waiting():
+                # dispose the lock if no one needs it to avoid
+                # accumulating locks
+                del self.conversations_in_processing[message.sender_id]
+                logger.debug("deleted lock for conversation '{}' (unused)"
+                             "".format(message.sender_id))
 
     # noinspection PyUnusedLocal
     def predict_next(

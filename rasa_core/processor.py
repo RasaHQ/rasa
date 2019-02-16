@@ -4,7 +4,6 @@ import json
 import logging
 import numpy as np
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pytz import UnknownTimeZoneError
 from types import LambdaType
 from typing import Optional, List, Dict, Any, Tuple
 from typing import Text
@@ -37,14 +36,6 @@ from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
-try:
-    scheduler = AsyncIOScheduler()
-    scheduler.start()
-except UnknownTimeZoneError:
-    logger.warning("apscheduler failed to start. "
-                   "This is probably because your system timezone is not set"
-                   "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
-
 
 class MessageProcessor(object):
     def __init__(self,
@@ -56,7 +47,8 @@ class MessageProcessor(object):
                  action_endpoint: Optional[EndpointConfig] = None,
                  max_number_of_predictions: int = 10,
                  message_preprocessor: Optional[LambdaType] = None,
-                 on_circuit_break: Optional[LambdaType] = None
+                 on_circuit_break: Optional[LambdaType] = None,
+                 scheduler: [AsyncIOScheduler] = None
                  ):
         self.interpreter = interpreter
         self.nlg = generator
@@ -67,6 +59,7 @@ class MessageProcessor(object):
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
+        self.scheduler = scheduler
 
     async def handle_message(self,
                              message: UserMessage) -> Optional[List[Text]]:
@@ -337,13 +330,11 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderScheduled):
-                    # TODO async we need to fix this, most likely this is using
-                    # the wrong scheduler
-                    scheduler.add_job(self.handle_reminder, "date",
-                                      run_date=e.trigger_date_time,
-                                      args=[e, dispatcher],
-                                      id=e.name,
-                                      replace_existing=True)
+                    self.scheduler.add_job(self.handle_reminder, "date",
+                                           run_date=e.trigger_date_time,
+                                           args=[e, dispatcher],
+                                           id=e.name,
+                                           replace_existing=True)
 
     async def _run_action(self, action, tracker, dispatcher, policy=None,
                           confidence=None):

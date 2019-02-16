@@ -5,6 +5,7 @@ import zipfile
 from functools import wraps
 from inspect import isawaitable
 from sanic import Sanic, response
+from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic_cors import CORS
 from sanic_jwt import Initialize
@@ -50,7 +51,7 @@ def ensure_loaded_agent(agent):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not agent.is_ready():
+            if not agent or not agent.is_ready():
                 raise ErrorResponse(
                     503,
                     "NoAgent",
@@ -170,8 +171,7 @@ async def authenticate(request):
     return dict(user_id='some_id')
 
 
-def create_app(agent,
-               cors_origins: Union[Text, List[Text]] = "*",
+def create_app(cors_origins: Union[Text, List[Text]] = "*",
                auth_token: Optional[Text] = None,
                jwt_secret: Optional[Text] = None,
                jwt_method: Optional[Text] = "HS256",
@@ -195,25 +195,29 @@ def create_app(agent,
                    algorithm=jwt_method,
                    user_id="username")
 
-    if not agent.is_ready():
-        logger.info("The loaded agent is not ready to be used yet "
-                    "(e.g. only the NLU interpreter is configured, "
-                    "but no Core model is loaded). This is NOT AN ISSUE "
-                    "some endpoints are not available until the agent "
-                    "is ready though.")
+    app.agent = None
 
-    @app.exception(ErrorResponse)
+    @app.listener('after_server_start')
+    async def warn_if_agent_is_unavailable(app, loop):
+        if not app.agent or not app.agent.is_ready():
+            logger.info("The loaded agent is not ready to be used yet "
+                        "(e.g. only the NLU interpreter is configured, "
+                        "but no Core model is loaded). This is NOT AN ISSUE "
+                        "some endpoints are not available until the agent "
+                        "is ready though.")
+
+    @app.exception(NotFound)
     async def ignore_404s(request: Request, exception: ErrorResponse):
         return response.json(exception.error_info,
                              status=exception.status)
 
     @app.get("/")
-    async def hello(request):
+    async def hello(request: Request):
         """Check if the server is running and responds with the version."""
         return response.text("hello from Rasa Core: " + __version__)
 
     @app.get("/version")
-    async def version(request):
+    async def version(request: Request):
         """respond with the version number of the installed rasa core."""
 
         return response.json({
@@ -224,8 +228,8 @@ def create_app(agent,
     # <sender_id> can be be 'default' if there's only 1 client
     @app.post("/conversations/<sender_id>/execute")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def execute_action(request, sender_id):
+    @ensure_loaded_agent(app.agent)
+    async def execute_action(request: Request, sender_id: Text):
         request_params = request.json
 
         # we'll accept both parameters to specify the actions name
@@ -239,14 +243,14 @@ def create_app(agent,
 
         try:
             out = CollectingOutputChannel()
-            await agent.execute_action(sender_id,
+            await app.agent.execute_action(sender_id,
                                        action_to_execute,
                                        out,
                                        policy,
                                        confidence)
 
             # retrieve tracker and set to requested state
-            tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+            tracker = app.agent.tracker_store.get_or_create_tracker(sender_id)
             state = tracker.current_state(verbosity)
             return response.json({"tracker": state,
                                   "messages": out.messages})
@@ -264,19 +268,19 @@ def create_app(agent,
 
     @app.post("/conversations/<sender_id>/tracker/events")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def append_event(request, sender_id):
+    @ensure_loaded_agent(app.agent)
+    async def append_event(request: Request, sender_id: Text):
         """Append a list of events to the state of a conversation"""
 
         request_params = request.json
         evt = Event.from_parameters(request_params)
-        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        tracker = app.agent.tracker_store.get_or_create_tracker(sender_id)
         verbosity = event_verbosity_parameter(request,
                                               EventVerbosity.AFTER_RESTART)
 
         if evt:
             tracker.update(evt)
-            agent.tracker_store.save(tracker)
+            app.agent.tracker_store.save(tracker)
             return response.json(tracker.current_state(verbosity))
         else:
             logger.warning(
@@ -290,8 +294,8 @@ def create_app(agent,
 
     @app.put("/conversations/<sender_id>/tracker/events")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def replace_events(request, sender_id):
+    @ensure_loaded_agent(app.agent)
+    async def replace_events(request: Request, sender_id: Text):
         """Use a list of events to set a conversations tracker to a state."""
 
         request_params = request.json
@@ -300,16 +304,16 @@ def create_app(agent,
 
         tracker = DialogueStateTracker.from_dict(sender_id,
                                                  request_params,
-                                                 agent.domain.slots)
+                                                 app.agent.domain.slots)
         # will override an existing tracker with the same id!
-        agent.tracker_store.save(tracker)
+        app.agent.tracker_store.save(tracker)
         return response.json(tracker.current_state(verbosity))
 
     @app.get("/conversations")
     @requires_auth(app, auth_token)
-    async def list_trackers(request):
-        if agent.tracker_store:
-            keys = list(agent.tracker_store.keys())
+    async def list_trackers(request: Request):
+        if app.agent.tracker_store:
+            keys = list(app.agent.tracker_store.keys())
         else:
             keys = []
 
@@ -317,10 +321,10 @@ def create_app(agent,
 
     @app.get("/conversations/<sender_id>/tracker")
     @requires_auth(app, auth_token)
-    async def retrieve_tracker(request, sender_id):
+    async def retrieve_tracker(request: Request, sender_id: Text):
         """Get a dump of a conversations tracker including its events."""
 
-        if not agent.tracker_store:
+        if not app.agent.tracker_store:
             raise ErrorResponse(503, "NoTrackerStore",
                                 "No tracker store available. Make sure to "
                                 "configure a tracker store when starting "
@@ -346,7 +350,7 @@ def create_app(agent,
                                               default_verbosity)
 
         # retrieve tracker and set to requested state
-        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        tracker = app.agent.tracker_store.get_or_create_tracker(sender_id)
         if not tracker:
             raise ErrorResponse(503,
                                 "NoDomain",
@@ -364,17 +368,17 @@ def create_app(agent,
 
     @app.get("/conversations/<sender_id>/story")
     @requires_auth(app, auth_token)
-    async def retrieve_story(request, sender_id):
+    async def retrieve_story(request: Request, sender_id: Text):
         """Get an end-to-end story corresponding to this conversation."""
 
-        if not agent.tracker_store:
+        if not app.agent.tracker_store:
             raise ErrorResponse(503, "NoTrackerStore",
                                 "No tracker store available. Make sure to "
                                 "configure "
                                 "a tracker store when starting the server.")
 
         # retrieve tracker and set to requested state
-        tracker = agent.tracker_store.get_or_create_tracker(sender_id)
+        tracker = app.agent.tracker_store.get_or_create_tracker(sender_id)
         if not tracker:
             raise ErrorResponse(503,
                                 "NoDomain",
@@ -391,8 +395,8 @@ def create_app(agent,
 
     @app.route("/conversations/<sender_id>/respond", methods=['GET', 'POST'])
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def respond(request, sender_id):
+    @ensure_loaded_agent(app.agent)
+    async def respond(request: Request, sender_id: Text):
         request_params = request_parameters(request)
 
         if 'query' in request_params:
@@ -409,7 +413,7 @@ def create_app(agent,
             # Set the output channel
             out = CollectingOutputChannel()
             # Fetches the appropriate bot response in a json format
-            responses = await agent.handle_text(message,
+            responses = await app.agent.handle_text(message,
                                                 output_channel=out,
                                                 sender_id=sender_id)
             return response.json(responses)
@@ -421,11 +425,11 @@ def create_app(agent,
 
     @app.post("/conversations/<sender_id>/predict")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def predict(request, sender_id):
+    @ensure_loaded_agent(app.agent)
+    async def predict(request: Request, sender_id: Text):
         try:
             # Fetches the appropriate bot response in a json format
-            responses = agent.predict_next(sender_id)
+            responses = app.agent.predict_next(sender_id)
             return response.json(responses)
 
         except Exception as e:
@@ -435,8 +439,8 @@ def create_app(agent,
 
     @app.post("/conversations/<sender_id>/messages")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def log_message(request, sender_id):
+    @ensure_loaded_agent(app.agent)
+    async def log_message(request: Request, sender_id: Text):
         request_params = request.json
         try:
             message = request_params["message"]
@@ -459,7 +463,7 @@ def create_app(agent,
 
         try:
             usermsg = UserMessage(message, None, sender_id, parse_data)
-            tracker = await agent.log_message(usermsg)
+            tracker = await app.agent.log_message(usermsg)
             return response.json(tracker.current_state(verbosity))
 
         except Exception as e:
@@ -500,7 +504,7 @@ def create_app(agent,
                                    "domain.yml")
         domain = Domain.load(domain_path)
         ensemble = PolicyEnsemble.load(model_directory)
-        agent.update_model(domain, ensemble, None)
+        app.agent.update_model(domain, ensemble, None)
         logger.debug("Finished loading new agent.")
         return '', 204
 
@@ -512,7 +516,7 @@ def create_app(agent,
                                                         mode='w+b')
         use_e2e = utils.bool_arg(request, 'e2e', default=False)
         try:
-            evaluation = await run_story_evaluation(tmp_file, agent,
+            evaluation = await run_story_evaluation(tmp_file, app.agent,
                                                     use_e2e=use_e2e)
             return response.json(evaluation)
         except ValueError as e:
@@ -522,16 +526,16 @@ def create_app(agent,
 
     @app.get("/domain")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def get_domain(request):
+    @ensure_loaded_agent(app.agent)
+    async def get_domain(request: Request):
         """Get current domain in yaml or json format."""
 
         accepts = request.headers.get("Accept", default="application/json")
         if accepts.endswith("json"):
-            domain = agent.domain.as_dict()
+            domain = app.agent.domain.as_dict()
             return response.json(domain)
         elif accepts.endswith("yml"):
-            domain_yaml = agent.domain.as_yaml()
+            domain_yaml = app.agent.domain.as_yaml()
             return response.text(domain_yaml,
                                  status=200,
                                  content_type="application/x-yml")
@@ -547,8 +551,8 @@ def create_app(agent,
 
     @app.post("/finetune")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def continue_training(request):
+    @ensure_loaded_agent(app.agent)
+    async def continue_training(request: Request):
         epochs = request.raw_args.get("epochs", 30)
         batch_size = request.raw_args.get("batch_size", 5)
         request_params = request.json
@@ -557,7 +561,7 @@ def create_app(agent,
         try:
             tracker = DialogueStateTracker.from_dict(sender_id,
                                                      request_params,
-                                                     agent.domain.slots)
+                                                     app.agent.domain.slots)
         except Exception as e:
             raise ErrorResponse(400, "InvalidParameter",
                                 "Supplied events are not valid. {}".format(e),
@@ -565,7 +569,7 @@ def create_app(agent,
 
         try:
             # Fetches the appropriate bot response in a json format
-            agent.continue_training([tracker],
+            app.agent.continue_training([tracker],
                                     epochs=epochs,
                                     batch_size=batch_size)
             return '', 204
@@ -577,16 +581,16 @@ def create_app(agent,
 
     @app.get("/status")
     @requires_auth(app, auth_token)
-    async def status(request):
+    async def status(request: Request):
         return response.json({
-            "model_fingerprint": agent.fingerprint,
-            "is_ready": agent.is_ready()
+            "model_fingerprint": app.agent.fingerprint,
+            "is_ready": app.agent.is_ready()
         })
 
     @app.post("/predict")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(agent)
-    async def tracker_predict(request):
+    @ensure_loaded_agent(app.agent)
+    async def tracker_predict(request: Request):
         """ Given a list of events, predicts the next action"""
 
         sender_id = UserMessage.DEFAULT_SENDER_ID
@@ -597,19 +601,19 @@ def create_app(agent,
         try:
             tracker = DialogueStateTracker.from_dict(sender_id,
                                                      request_params,
-                                                     agent.domain.slots)
+                                                     app.agent.domain.slots)
         except Exception as e:
             raise ErrorResponse(400, "InvalidParameter",
                                 "Supplied events are not valid. {}".format(e),
                                 {"parameter": "", "in": "body"})
 
-        policy_ensemble = agent.policy_ensemble
+        policy_ensemble = app.agent.policy_ensemble
         probabilities, policy = \
             policy_ensemble.probabilities_using_best_policy(tracker,
-                                                            agent.domain)
+                                                            app.agent.domain)
 
         scores = [{"action": a, "score": p}
-                  for a, p in zip(agent.domain.action_names, probabilities)]
+                  for a, p in zip(app.agent.domain.action_names, probabilities)]
 
         return response.json({
             "scores": scores,

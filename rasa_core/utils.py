@@ -780,3 +780,20 @@ def create_task_error_logger(error_message=""):
                              "{}".format(error_message))
 
     return handler
+
+
+class LockCounter(asyncio.Lock):
+
+    def __init__(self):
+        super().__init__()
+        self.wait_counter = 0
+
+    async def acquire(self):
+        self.wait_counter += 1
+        try:
+            return await super(LockCounter, self).acquire()
+        finally:
+            self.wait_counter -= 1
+
+    def is_someone_waiting(self):
+        return self.wait_counter != 0

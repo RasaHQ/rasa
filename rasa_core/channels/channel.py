@@ -1,5 +1,5 @@
 import asyncio
-from asyncio import Queue
+from asyncio import Queue, CancelledError
 
 import inspect
 import json
@@ -62,15 +62,17 @@ class UserMessage(object):
 
 def register(input_channels: List['InputChannel'],
              app: Sanic,
-             on_new_message: Callable[[UserMessage], Awaitable[None]],
              route: Optional[Text]
              ) -> None:
+    async def handler(*args, **kwargs):
+        await app.agent.handle_message(*args, **kwargs)
+
     for channel in input_channels:
         if route:
             p = urljoin(route, channel.url_prefix())
         else:
             p = None
-        app.blueprint(channel.blueprint(on_new_message), url_prefix=p)
+        app.blueprint(channel.blueprint(handler), url_prefix=p)
 
 
 def button_to_string(button, idx=0):
@@ -384,8 +386,16 @@ class RestInput(InputChannel):
                     content_type='text/event-stream')
             else:
                 collector = CollectingOutputChannel()
-                await on_new_message(UserMessage(text, collector, sender_id,
-                                                 input_channel=self.name()))
+                # noinspection PyBroadException
+                try:
+                    await on_new_message(UserMessage(text, collector, sender_id,
+                                                     input_channel=self.name()))
+                except CancelledError:
+                    logger.error("Message handling timed out for "
+                                 "user message '{}'.".format(text))
+                except Exception:
+                    logger.exception("An exception occured while handling "
+                                     "user message '{}'.".format(text))
                 return response.json(collector.messages)
 
         return custom_webhook

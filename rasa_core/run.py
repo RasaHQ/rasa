@@ -2,23 +2,19 @@ import asyncio
 
 import argparse
 import logging
-import warnings
 from sanic import Sanic
 from sanic_cors import CORS
-from typing import Text, Optional, List
+from typing import List, Optional, Text
 
 import rasa_core
-from rasa_core import constants, agent
-from rasa_core import utils, server
+from rasa_core import agent, constants, server, utils
 from rasa_core.agent import Agent
 from rasa_core.broker import PikaProducer
-from rasa_core.channels import (
-    console, InputChannel,
-    BUILTIN_CHANNELS)
+from rasa_core.channels import (BUILTIN_CHANNELS, InputChannel, console)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter)
 from rasa_core.tracker_store import TrackerStore
-from rasa_core.utils import read_yaml_file, AvailableEndpoints
+from rasa_core.utils import AvailableEndpoints, read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
 
@@ -95,8 +91,8 @@ def create_argument_parser():
 
 
 def create_http_input_channels(
-    channel: Optional[Text],
-    credentials_file: Optional[Text]
+        channel: Optional[Text],
+        credentials_file: Optional[Text]
 ) -> List[InputChannel]:
     """Instantiate the chosen input channel."""
 
@@ -132,7 +128,6 @@ def _create_single_channel(channel, credentials):
 def configure_app(input_channels=None,
                   cors=None,
                   auth_token=None,
-                  initial_agent=None,
                   enable_api=True,
                   jwt_secret=None,
                   jwt_method=None,
@@ -140,8 +135,7 @@ def configure_app(input_channels=None,
     """Run the agent."""
 
     if enable_api:
-        app = server.create_app(initial_agent,
-                                cors_origins=cors,
+        app = server.create_app(cors_origins=cors,
                                 auth_token=auth_token,
                                 jwt_secret=jwt_secret,
                                 jwt_method=jwt_method)
@@ -154,7 +148,6 @@ def configure_app(input_channels=None,
     if input_channels:
         rasa_core.channels.channel.register(input_channels,
                                             app,
-                                            initial_agent.handle_message,
                                             route=route)
 
     if logger.isEnabledFor(logging.DEBUG):
@@ -170,7 +163,8 @@ def configure_app(input_channels=None,
     return app
 
 
-def serve_application(initial_agent,
+def serve_application(core_model=None,
+                      nlu_model=None,
                       channel=None,
                       port=constants.DEFAULT_SERVER_PORT,
                       credentials_file=None,
@@ -186,13 +180,8 @@ def serve_application(initial_agent,
 
     input_channels = create_http_input_channels(channel, credentials_file)
 
-    app = configure_app(input_channels, cors, auth_token,
-                        initial_agent, enable_api,
+    app = configure_app(input_channels, cors, auth_token, enable_api,
                         jwt_secret, jwt_method)
-
-    if endpoints and endpoints.model:
-        app.add_task(agent.load_from_server(initial_agent,
-                                            model_server=endpoints.model))
 
     if channel == "cmdline":
         async def run_cmdline_io(running_app: Sanic):
@@ -202,33 +191,47 @@ def serve_application(initial_agent,
                 server_url=constants.DEFAULT_SERVER_FORMAT.format(port))
 
             logger.info("Killing Sanic server now.")
-            running_app.stop()      # kill the sanic serverx
+            running_app.stop()  # kill the sanic serverx
 
         app.add_task(run_cmdline_io)
 
     logger.info("Rasa Core server is up and running on "
                 "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
 
-    # make sure there are no leftover tasks before starting the sanic
-    # asyncio loop
-    pending = asyncio.Task.all_tasks()
-    loop.run_until_complete(asyncio.gather(*pending))
+    load_agent_on_start(app, core_model, endpoints, nlu_model)
     app.run(host='0.0.0.0', port=port,
             access_log=logger.isEnabledFor(logging.DEBUG))
 
 
-def load_agent(core_model, interpreter, endpoints, tracker_store=None):
-    if endpoints.model:
-        return Agent(interpreter=interpreter,
-                     generator=endpoints.nlg,
-                     tracker_store=tracker_store,
-                     action_endpoint=endpoints.action)
-    else:
-        return Agent.load(core_model,
-                          interpreter=interpreter,
-                          generator=endpoints.nlg,
-                          tracker_store=tracker_store,
-                          action_endpoint=endpoints.action)
+def load_agent_on_start(app, core_model, endpoints, nlu_model):
+    # noinspection PyUnusedLocal,PyShadowingNames
+    async def _load(app, loop):
+        _interpreter = NaturalLanguageInterpreter.create(nlu_model,
+                                                         _endpoints.nlu)
+        _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+
+        _tracker_store = TrackerStore.find_tracker_store(
+            None, _endpoints.tracker_store, _broker)
+
+        if endpoints.model:
+            app.agent = Agent(interpreter=_interpreter,
+                              generator=endpoints.nlg,
+                              tracker_store=_tracker_store,
+                              action_endpoint=endpoints.action,
+                              loop=loop)
+        else:
+            app.agent = Agent.load(core_model,
+                                   interpreter=_interpreter,
+                                   generator=endpoints.nlg,
+                                   tracker_store=_tracker_store,
+                                   action_endpoint=endpoints.action,
+                                   loop=loop)
+
+        if endpoints and endpoints.model:
+            await agent.load_from_server(app.agent,
+                                         model_server=endpoints.model)
+
+    app.register_listener(_load, 'before_server_start')
 
 
 if __name__ == '__main__':
@@ -247,20 +250,9 @@ if __name__ == '__main__':
                                  cmdline_args.log_file)
 
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
-    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
 
-    _tracker_store = TrackerStore.find_tracker_store(
-        None, _endpoints.tracker_store, _broker)
-
-    loop = asyncio.get_event_loop()
-    _agent = load_agent(cmdline_args.core,
-                        interpreter=_interpreter,
-                        tracker_store=_tracker_store,
-                        endpoints=_endpoints)
-
-    serve_application(_agent,
+    serve_application(cmdline_args.core,
+                      cmdline_args.nlu,
                       cmdline_args.connector,
                       cmdline_args.port,
                       cmdline_args.credentials,
