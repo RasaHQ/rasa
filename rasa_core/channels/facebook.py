@@ -1,11 +1,9 @@
-import asyncio
 import hashlib
 import hmac
 import logging
 from typing import Text, List, Dict, Any, Callable, Awaitable
 
-from fbmessenger import (
-    BaseMessenger, MessengerClient, attachments)
+from fbmessenger import (MessengerClient, attachments)
 from fbmessenger.elements import Text as FBText
 from sanic import Blueprint, response
 
@@ -14,7 +12,7 @@ from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 logger = logging.getLogger(__name__)
 
 
-class Messenger(BaseMessenger):
+class Messenger:
     """Implement a fbmessenger to parse incoming webhooks and send msgs."""
 
     @classmethod
@@ -26,9 +24,12 @@ class Messenger(BaseMessenger):
                  on_new_message: Callable[[UserMessage], Awaitable[None]]
                  ) -> None:
 
-        self.page_access_token = page_access_token
         self.on_new_message = on_new_message
-        super(Messenger, self).__init__(self.page_access_token)
+        self.client = MessengerClient(page_access_token)
+        self.last_message = {}
+
+    def get_user_id(self):
+        return self.last_message['sender']['id']
 
     @staticmethod
     def _is_audio_message(message: Dict[Text, Any]) -> bool:
@@ -44,7 +45,16 @@ class Messenger(BaseMessenger):
                 message['message'].get('text') and
                 not message['message'].get("is_echo"))
 
-    def message(self, message: Dict[Text, Any]) -> None:
+    async def handle(self, payload):
+        for entry in payload['entry']:
+            for message in entry['messaging']:
+                self.last_message = message
+                if message.get('message'):
+                    return await self.message(message)
+                elif message.get('postback'):
+                    return await self.postback(message)
+
+    async def message(self, message: Dict[Text, Any]) -> None:
         """Handle an incoming event from the fb webhook."""
 
         if self._is_user_message(message):
@@ -57,17 +67,13 @@ class Messenger(BaseMessenger):
                            "handle. Message: {}".format(message))
             return
 
-        # TODO AS this needs fixing
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(
-            self._handle_user_message(text, self.get_user_id()))
+        await self._handle_user_message(text, self.get_user_id())
 
-    def postback(self, message: Dict[Text, Any]) -> None:
+    async def postback(self, message: Dict[Text, Any]) -> None:
         """Handle a postback (e.g. quick reply button)."""
 
         text = message['postback']['payload']
-        self._handle_user_message(text, self.get_user_id())
+        await self._handle_user_message(text, self.get_user_id())
 
     async def _handle_user_message(self, text: Text, sender_id: Text) -> None:
         """Pass on the text to the dialogue engine for processing."""
@@ -83,22 +89,6 @@ class Messenger(BaseMessenger):
             logger.exception("Exception when trying to handle webhook "
                              "for facebook message.")
             pass
-
-    def delivery(self, message: Dict[Text, Any]) -> None:
-        """Do nothing. Method to handle `message_deliveries`"""
-        pass
-
-    def read(self, message: Dict[Text, Any]) -> None:
-        """Do nothing. Method to handle `message_reads`"""
-        pass
-
-    def account_linking(self, message: Dict[Text, Any]) -> None:
-        """Do nothing. Method to handle `account_linking`"""
-        pass
-
-    def optin(self, message: Dict[Text, Any]) -> None:
-        """Do nothing. Method to handle `messaging_optins`"""
-        pass
 
 
 class MessengerBot(OutputChannel):
@@ -265,7 +255,7 @@ class FacebookInput(InputChannel):
 
             messenger = Messenger(self.fb_access_token, on_new_message)
 
-            messenger.handle(request.json)
+            await messenger.handle(request.json)
             return response.text("success")
 
         return fb_webhook
