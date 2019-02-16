@@ -2,13 +2,16 @@ import datetime
 import pytest
 import uuid
 
-from rasa_core.channels import CollectingOutputChannel
-from rasa_core.channels import UserMessage
+from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.dispatcher import Button, Dispatcher
 from rasa_core.events import (
     ReminderScheduled, UserUttered, ActionExecuted,
     BotUttered, Restarted)
 from rasa_nlu.training_data import Message
+from rasa_core.processor import MessageProcessor
+from rasa_core.interpreter import RasaNLUHttpInterpreter
+from rasa_core.utils import EndpointConfig
+from httpretty import httpretty
 
 
 @pytest.fixture(scope="module")
@@ -42,6 +45,26 @@ async def test_parsing(default_processor):
     parsed = await default_processor._parse_message(message)
     assert parsed["intent"]["name"] == 'greet'
     assert parsed["entities"][0]["entity"] == 'name'
+
+
+async def test_http_parsing():
+    message = UserMessage('lunch?')
+    httpretty.register_uri(httpretty.GET,
+                           'https://interpreter.com/parse')
+
+    endpoint = EndpointConfig('https://interpreter.com')
+    httpretty.enable()
+    inter = RasaNLUHttpInterpreter(endpoint=endpoint)
+    try:
+        await MessageProcessor(inter,
+                               None, None, None, None)._parse_message(message)
+    except KeyError:
+        pass  # logger looks for intent and entities, so we except
+
+    query = httpretty.last_request.querystring
+    httpretty.disable()
+
+    assert query['message_id'][0] == message.message_id
 
 
 async def test_reminder_scheduled(default_processor):

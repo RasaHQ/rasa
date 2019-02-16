@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class NaturalLanguageInterpreter(object):
-    async def parse(self, text):
+    async def parse(self, text, message_id=None):
         raise NotImplementedError(
             "Interpreter needs to be able to parse "
             "messages into structured output.")
@@ -137,7 +137,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                            "'{}'. ".format(user_input))
             return None, 0.0, []
 
-    async def parse(self, text):
+    async def parse(self, text, message_id=None):
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)
@@ -238,7 +238,7 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         else:
             self.interpreter = None
 
-    async def parse(self, text):
+    async def parse(self, text, message_id=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
