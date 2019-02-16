@@ -1,5 +1,6 @@
 import copy
 import logging
+import re
 
 import numpy as np
 from rasa_core.trackers import DialogueStateTracker
@@ -76,7 +77,10 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Filling the template variables in the template
         if template_vars:
             try:
-                template["text"] = template["text"].format(**template_vars)
+                # blacklist characters that probably should not be
+                # part of slot name and replace with old %-formatting
+                text = re.sub(r'{([^\n,]+?)}', r'{0[\1]}', template["text"])
+                template["text"] = text.format(template_vars)
             except KeyError as e:
                 logger.exception(
                     "Failed to fill utterance template '{}'. "

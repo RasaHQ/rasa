@@ -1,4 +1,5 @@
 import uuid
+from unittest import mock
 
 import jsonschema
 import pytest
@@ -9,6 +10,7 @@ from rasa_core import utils
 from rasa_core.nlg.callback import (
     nlg_request_format_spec,
     CallbackNaturalLanguageGenerator)
+from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa_core.utils import EndpointConfig
 from rasa_core.agent import Agent
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
@@ -79,3 +81,45 @@ def test_nlg_schema_validation_empty_buttons():
 def test_nlg_schema_validation_empty_image():
     content = {"text": "Hey there!", "image": None}
     assert CallbackNaturalLanguageGenerator.validate_response(content)
+
+
+@pytest.mark.parametrize("filled_slots", [
+    {"tag_w_underscore": "a"},
+    {"tag with space": "bacon", "tag_w_int_val": 123},
+    {"tag.with.dot": "chocolate", "tag_2": "b"},
+    {"tag-w-dash": "apple pie", "tag.with.float.val": 1.3},
+    {"tag-w-$": "banana"},
+    {"tag-w-@": "one", "tagCamelCase": "two", "tag-w-*": "three"},
+])
+def test_nlg_fill_template_text(filled_slots):
+    template_text = ", ".join(["{" + t + "}" for t in filled_slots.keys()])
+    resolved_text = ", ".join([str(s) for s in filled_slots.values()])
+
+    template = {'text': template_text}
+    t = TemplatedNaturalLanguageGenerator(templates=dict(
+        bot_message_1=[template]
+    ))
+    result = t._fill_template_text(
+        template=template,
+        filled_slots=filled_slots
+    )
+    assert result == {'text': resolved_text}
+
+
+@pytest.mark.parametrize("filled_slots", [
+    {"tag_w_\n": "a"},
+    {"tag,w,": "a"},
+])
+@mock.patch('rasa_core.nlg.template.logger')
+def test_nlg_fill_template_text_w_bad_slot_name(mock_logger, filled_slots):
+    template_text = ", ".join(["{" + t + "}" for t in filled_slots.keys()])
+    template = {'text': template_text}
+    t = TemplatedNaturalLanguageGenerator(templates=dict(
+        bot_message_1=[template]
+    ))
+    result = t._fill_template_text(
+        template=template,
+        filled_slots=filled_slots
+    )
+    assert mock_logger.exception.call_count == 1
+    assert result['text'] == template_text
