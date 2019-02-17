@@ -608,7 +608,7 @@ def extract_confidence(result):  # pragma: no cover
 
 def get_predictions(interpreter, test_data,
                     intent_targets):  # pragma: no cover
-    """Runs the model for the test set and extracts intent and entity 
+    """Runs the model for the test set and extracts intent and entity
         predictions. Returns intent and entity predictions, the
         original messages and the confidences of the predictions"""
     logger.info("Running model for predictions:")
@@ -800,11 +800,11 @@ def combine_result(intent_results, entity_results, interpreter, data):
                                                                    data)
 
     intent_results = {k: v + intent_results[k]
-        for k, v in intent_current_result.items()}
+                      for k, v in intent_current_result.items()}
 
     for k, v in entity_current_result.items():
         entity_results[k] = {key: val + entity_results[k][key]
-            for key, val in v.items()}
+                             for key, val in v.items()}
 
     return intent_results, entity_results
 
