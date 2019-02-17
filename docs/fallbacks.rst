@@ -1,4 +1,5 @@
-:desc: Fallback and Default Actions in Rasa Core
+:desc: Define custom fallback actions with thresholds for NLU and Core for letting
+       your conversation fail gracefully with open source dialogue management.
 
 .. _fallbacks:
 
@@ -65,7 +66,7 @@ policy configuration file. For example:
       core_threshold: 0.3
       fallback_action_name: "my_fallback_action"
 
-  
+
 .. note::
   If your custom fallback action does not return a ``UserUtteranceReverted`` event,
   the next predictions of your bot may become inaccurate, as it is very likely that
@@ -82,6 +83,3 @@ called ``out_of_scope``, then you should add this as a story:
 
 
 .. include:: feedback.inc
-
-
-
