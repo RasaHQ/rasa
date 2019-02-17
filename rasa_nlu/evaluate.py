@@ -606,10 +606,11 @@ def extract_confidence(result):  # pragma: no cover
     return result.get('intent', {}).get('confidence')
 
 
-def get_predictions(interpreter, test_data, intent_targets):  # pragma: no cover
-    """Runs the model for the test set and extracts intent and entity predictions.
-        Returns intent and entity predictions, the original messages
-        and the confidences of the predictions"""
+def get_predictions(interpreter, test_data,
+                    intent_targets):  # pragma: no cover
+    """Runs the model for the test set and extracts intent and entity 
+        predictions. Returns intent and entity predictions, the
+        original messages and the confidences of the predictions"""
     logger.info("Running model for predictions:")
 
     intent_results, entity_predictions, tokens = [], [], []
@@ -629,8 +630,8 @@ def get_predictions(interpreter, test_data, intent_targets):  # pragma: no cover
             try:
                 tokens.append(res["tokens"])
             except KeyError:
-                logger.debug("No tokens present, which is fine if you don't have a"
-                            " tokenizer in your pipeline")
+                logger.debug("No tokens present, which is fine if you don't"
+                             " have a tokenizer in your pipeline")
     else:
         for e in tqdm(test_data.training_examples):
             res = interpreter.parse(e.text, only_output_properties=False)
@@ -639,8 +640,8 @@ def get_predictions(interpreter, test_data, intent_targets):  # pragma: no cover
             try:
                 tokens.append(res["tokens"])
             except KeyError:
-                logger.debug("No tokens present, which is fine if you don't have a"
-                            " tokenizer in your pipeline")
+                logger.debug("No tokens present, which is fine if you don't"
+                             " have a tokenizer in your pipeline")
 
     return intent_results, entity_predictions, tokens
 
@@ -795,12 +796,15 @@ def generate_folds(n, td):
 def combine_result(intent_results, entity_results, interpreter, data):
     """Combines intent and entity result for crossvalidation folds"""
 
-    intent_current_result, entity_current_result = compute_metrics(interpreter, data)
+    intent_current_result, entity_current_result = compute_metrics(interpreter,
+                                                                   data)
 
-    intent_results = {k: v + intent_results[k] for k, v in intent_current_result.items()}
+    intent_results = {k: v + intent_results[k]
+        for k, v in intent_current_result.items()}
 
     for k, v in entity_current_result.items():
-        entity_results[k] = {key: val + entity_results[k][key] for key, val in v.items()}
+        entity_results[k] = {key: val + entity_results[k][key]
+            for key, val in v.items()}
 
     return intent_results, entity_results
 
@@ -836,13 +840,15 @@ def run_cv_evaluation(data: TrainingData,
 
     shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    return (CVEvaluationResult(dict(intent_train_results), dict(intent_test_results)),
+    return (CVEvaluationResult(dict(intent_train_results),
+                               dict(intent_test_results)),
             CVEvaluationResult(dict(entity_train_results),
                                dict(entity_test_results)))
 
 
 def _targets_predictions_from(intent_results):
     return zip(*[(r.target, r.prediction) for r in intent_results])
+
 
 def compute_metrics(interpreter, corpus):
     """Computes metrics for intent classification and entity extraction."""
