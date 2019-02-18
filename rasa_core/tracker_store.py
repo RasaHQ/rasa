@@ -248,8 +248,25 @@ class MongoTrackerStore(TrackerStore):
         return [c["sender_id"] for c in self.conversations.find()]
 
 
+from sqlalchemy import Table, Column, Integer, String, MetaData, JSON, Float
+
+
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database"""
+
+    from sqlalchemy.ext.declarative import declarative_base
+    Base = declarative_base()
+
+    class SQLEvent(Base):
+        __tablename__ = 'events'
+
+        id = Column(Integer, primary_key=True)
+        sender_id = Column(String, nullable=False)
+        type_name = Column(String, nullable=False)
+        timestamp = Column(Float, nullable=False)
+        intent = Column(String)
+        action = Column(String)
+        data = Column(JSON)
 
     def __init__(self,
                  domain: Optional[Domain],
@@ -261,8 +278,9 @@ class SQLTrackerStore(TrackerStore):
                  password: Text = None,
                  event_broker: Optional[EventChannel] = None) -> None:
         import sqlalchemy
-        from sqlalchemy import Table, Column, Integer, String, MetaData, JSON
+        from sqlalchemy import Table, Column, Integer, String, MetaData, JSON, Float
         from sqlalchemy.engine.url import URL
+        from sqlalchemy.orm import sessionmaker
 
         engine_url = URL(drivername,
                          username,
@@ -271,29 +289,29 @@ class SQLTrackerStore(TrackerStore):
                          port,
                          db)
 
-        self.db = db
-
         self.engine = sqlalchemy.create_engine(engine_url)
+        self.Session = sessionmaker(bind=self.engine)
         self.conn = self.engine.connect()
+        self.metadata = MetaData()
         self.domain = domain
         self.event_broker = event_broker
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
-        self._ensure_table()
+        self.session = self.Session()
+        self.ensure_event_table()  # might be able to skip this method
 
-    def _ensure_table(self):
+    def ensure_event_table(self):
         """Creates the events table if not already present in the database"""
-        trans = self.conn.begin()
-        query = """ CREATE TABLE IF NOT EXISTS events (
-                                        id INTEGER PRIMARY KEY,
-                                        sender_id TEXT,
-                                        type_name TEXT,
-                                        timestamp float,
-                                        data JSON
-                                    ); """
-        self.conn.execute(query)
+        Table("events", self.metadata,
+              Column("id", Integer, primary_key=True),
+              Column("sender_id", String, nullable=False),
+              Column("type_name", String, nullable=False),
+              Column("timestamp", Float, nullable=False),
+              Column("intent", String),
+              Column("action", String),
+              Column("data", JSON))
 
-        trans.commit()
+        self.metadata.create_all(self.engine)
 
     def keys(self):
         pass
@@ -305,7 +323,6 @@ class SQLTrackerStore(TrackerStore):
     def save(self, tracker):
         """Updates database with events from the current conversation"""
 
-        trans = self.conn.begin()
         if self.event_broker:
             self.stream_events(tracker)
 
@@ -313,17 +330,16 @@ class SQLTrackerStore(TrackerStore):
 
         for event in events:
 
-            set_string = """INSERT INTO events (sender_id, name, timestamp) VALUES ({}, {}, {})""".format(tracker.sender_id,
-                                                              event.type_name,
-                                                              event.timestamp,
-                                                              event.as_dict())
+            event_data = event.as_dict()
+            print(event_data)
 
-            print(set_string)
+            intent = event_data.get("parse_data", {}).get("intent")
+            action = event_data.get("name")  # works for reminder, slotset, form, followupactions...
 
-            self.conn.execute(set_string)
-
-            print(set_string)
-            print(self.conn)
-            print(trans.commit())
-
-        trans.commit()
+            self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
+                                           type_name=event.type_name,
+                                           timestamp=event.timestamp,
+                                           intent=intent,
+                                           action=action,
+                                           data=event_data))
+        self.session.commit()
