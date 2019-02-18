@@ -248,7 +248,7 @@ class MongoTrackerStore(TrackerStore):
         return [c["sender_id"] for c in self.conversations.find()]
 
 
-from sqlalchemy import Table, Column, Integer, String, MetaData, JSON, Float
+from sqlalchemy import Table, Column, Integer, String, Float, Unicode
 
 
 class SQLTrackerStore(TrackerStore):
@@ -266,7 +266,7 @@ class SQLTrackerStore(TrackerStore):
         timestamp = Column(Float, nullable=False)
         intent = Column(String)
         action = Column(String)
-        data = Column(JSON)
+        data = Column(String)
 
     def __init__(self,
                  domain: Optional[Domain],
@@ -277,19 +277,13 @@ class SQLTrackerStore(TrackerStore):
                  username: Text = None,
                  password: Text = None,
                  event_broker: Optional[EventChannel] = None) -> None:
-        import sqlalchemy
-        from sqlalchemy import Table, Column, Integer, String, MetaData, JSON, Float
+        from sqlalchemy import MetaData, create_engine
         from sqlalchemy.engine.url import URL
         from sqlalchemy.orm import sessionmaker
 
-        engine_url = URL(drivername,
-                         username,
-                         password,
-                         host,
-                         port,
-                         db)
+        engine_url = URL(drivername, username, password, host, port, db)
 
-        self.engine = sqlalchemy.create_engine(engine_url)
+        self.engine = create_engine(engine_url)
         self.Session = sessionmaker(bind=self.engine)
         self.conn = self.engine.connect()
         self.metadata = MetaData()
@@ -298,7 +292,7 @@ class SQLTrackerStore(TrackerStore):
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
         self.session = self.Session()
-        self.ensure_event_table()  # might be able to skip this method
+        self.ensure_event_table()
 
     def ensure_event_table(self):
         """Creates the events table if not already present in the database"""
@@ -309,7 +303,7 @@ class SQLTrackerStore(TrackerStore):
               Column("timestamp", Float, nullable=False),
               Column("intent", String),
               Column("action", String),
-              Column("data", JSON))
+              Column("data", String))
 
         self.metadata.create_all(self.engine)
 
@@ -317,8 +311,22 @@ class SQLTrackerStore(TrackerStore):
         pass
 
     def retrieve(self, sender_id: Text):
-        """Returns a tracker with the same state as the one in the database"""
-        pass
+        """Recreates the tracker from all previously stored events"""
+
+        import ast
+
+        query = self.session.query(self.SQLEvent).filter_by(sender_id=sender_id).all()
+        events = [ast.literal_eval(event.data) for event in query]
+
+        if self.domain:
+            return DialogueStateTracker.from_dict(sender_id,
+                                                  events,
+                                                  self.domain.slots)
+        else:
+            logger.warning("Can't recreate tracker from SQL storage "
+                           "because no domain is set. Returning `None` "
+                           "instead.")
+            return None
 
     def save(self, tracker):
         """Updates database with events from the current conversation"""
@@ -326,13 +334,8 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        events = tracker.events
-
-        for event in events:
-
+        for event in tracker.events:
             event_data = event.as_dict()
-            print(event_data)
-
             intent = event_data.get("parse_data", {}).get("intent")
             action = event_data.get("name")  # works for reminder, slotset, form, followupactions...
 
@@ -341,5 +344,5 @@ class SQLTrackerStore(TrackerStore):
                                            timestamp=event.timestamp,
                                            intent=intent,
                                            action=action,
-                                           data=event_data))
+                                           data=str(event_data)))
         self.session.commit()
