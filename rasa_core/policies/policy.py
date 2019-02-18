@@ -36,7 +36,7 @@ class Policy(object):
         else:
             logger.warning("Policy should have a default priority defined " +
                            "in its initialization. Without a default or " +
-                           "configured value , priority is set to zero.")
+                           "configured value, priority is set to zero.")
             return 0
 
     @staticmethod

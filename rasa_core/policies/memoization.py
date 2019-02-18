@@ -14,7 +14,6 @@ from rasa_core.featurizers import (
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
-# from rasa_core.constants import MEMO_SCORE
 
 logger = logging.getLogger(__name__)
 

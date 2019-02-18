@@ -2,7 +2,6 @@ import logging
 from typing import List, Optional, Dict, Text
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-# from rasa_core.constants import FORM_SCORE
 from rasa_core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
 from rasa_core.events import FormValidation
 from rasa_core.featurizers import TrackerFeaturizer

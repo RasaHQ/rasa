@@ -162,7 +162,6 @@ class PolicyEnsemble(object):
     def persist(self, path: Text,
                 dump_flattened_stories: bool = False) -> None:
         """Persists the policy to storage."""
-        # TODO: make sure priority persists
 
         self._persist_metadata(path, dump_flattened_stories)
 

@@ -426,7 +426,6 @@ def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
 
     last_user_event = tracker.get_last_event_for(UserUttered)
     last_user_event = copy.deepcopy(last_user_event)
-
     last_user_event.parse_data['intent']['confidence'] = 1.0
 
     # User affirms the rephrased intent

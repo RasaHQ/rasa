@@ -6,7 +6,6 @@ from typing import Any, List, Text
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 from rasa_core import utils
-# from rasa_core.constants import FALLBACK_SCORE
 from rasa_core.domain import Domain
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
@@ -88,8 +87,6 @@ class FallbackPolicy(Policy):
         The fallback action is predicted if the NLU confidence is low
         or no other policy has a high-confidence prediction.
         """
-
-        # TODO: check in on priorities with nlu vs core fallback
 
         nlu_data = tracker.latest_message.parse_data
 
