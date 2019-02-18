@@ -1,5 +1,6 @@
 language: python
 sudo: enabled
+dist: xenial
 cache:
   directories:
   - $HOME/.cache/pip
