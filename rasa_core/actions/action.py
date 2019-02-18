@@ -484,7 +484,7 @@ class ActionDefaultAskAffirmation(Action):
                                                       intent_to_affirm)},
                                                  {'title': 'No',
                                                   'payload': '/{}'.format(
-                                                     USER_INTENT_OUT_OF_SCOPE)}
+                                                      USER_INTENT_OUT_OF_SCOPE)}
                                                  ])
 
         return []
