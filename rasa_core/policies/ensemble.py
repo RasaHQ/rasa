@@ -41,6 +41,8 @@ class PolicyEnsemble(object):
         else:
             self.action_fingerprints = {}
 
+        self._check_priorities()
+
     @staticmethod
     def _training_events_from_trackers(training_trackers):
         events_metadata = defaultdict(set)
@@ -54,6 +56,17 @@ class PolicyEnsemble(object):
                     events_metadata[action_name].add(event)
 
         return events_metadata
+
+    def _check_priorities(self) -> None:
+        priorities = []
+        for p in self.policies:
+            if p.priority not in priorities:
+                priorities.append(p.priority)
+            else:
+                logger.warn("Multiple policies with the same priority " +
+                            "found in PolicyEnsemble. When personalizing "
+                            "priorities, be sure to give all policies "
+                            "different priorities.")
 
     def train(self,
               training_trackers: List[DialogueStateTracker],
@@ -319,25 +332,20 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         best_policy_priority = -1
 
         for i, p in enumerate(self.policies):
-            print('***\npolicy_{}_{}'.format(i, type(p).__name__))
-            print("priority: {}".format(p.priority))
             probabilities = p.predict_action_probabilities(tracker, domain)
-            # print("current result: {}".format(result))
-            # print("probabilities: {}".format(probabilities))
+
             if isinstance(tracker.events[-1], ActionExecutionRejected):
                 probabilities[domain.index_for_action(
                     tracker.events[-1].action_name)] = 0.0
             confidence = np.max(probabilities)
-            print("confidence(max prob): {}".format(confidence))
+
             if confidence > max_confidence:
                 max_confidence = confidence
-                print("new max confidence: {}".format(max_confidence))
                 result = probabilities
-                # print("new result: {}".format(result))
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
                 best_policy_priority = p.priority
-                print("new max priority: {}".format(best_policy_priority))
-                # update priority level of new policy
+
+            # higher priority wins when confidence equal
             elif confidence == max_confidence:
                 if p.priority > best_policy_priority:
                     max_confidence = confidence
@@ -345,9 +353,6 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     best_policy_name = 'policy_{}_{}'.format(i,
                                                              type(p).__name__)
                     best_policy_priority = p.priority
-                    print("new max priority: {}".format(best_policy_priority))
-
-        print("best policy: {}".format(best_policy_name))
 
         if (result.index(max_confidence) ==
                 domain.index_for_action(ACTION_LISTEN_NAME) and
@@ -376,10 +381,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_name = 'policy_{}_{}'.format(
                     fallback_idx,
                     type(fallback_policy).__name__)
-                # TODO: Update priority here
-                # best_policy_priority = self.priority(best_policy_name)
-
-        # normalize probablilities
+        # normalize probabilities
         if np.sum(result) != 0:
             result = result / np.nansum(result)
 
