@@ -25,7 +25,7 @@ tests_requires = [
 
 install_requires = [
     "cloudpickle~=0.6.1",
-    "gevent~=1.2",
+    "gevent~=1.3",
     "klein~=17.10",
     "boto3~=1.5",
     "packaging~=18.0",
