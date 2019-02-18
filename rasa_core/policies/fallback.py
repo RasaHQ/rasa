@@ -26,7 +26,7 @@ class FallbackPolicy(Policy):
         return None
 
     def __init__(self,
-                 priority: int = 3,
+                 priority: int = 5,
                  nlu_threshold: float = 0.3,
                  core_threshold: float = 0.3,
                  fallback_action_name: Text = "action_default_fallback"
@@ -108,9 +108,6 @@ class FallbackPolicy(Policy):
             logger.debug("NLU confidence {} is lower "
                          "than NLU threshold {}. "
                          "".format(nlu_confidence, self.nlu_threshold))
-            # we set this to 1.2 to make sure fallback overrides
-            # the memoization policy
-            # TODO: check into handling this case
             result = self.fallback_scores(domain)
 
         else:

@@ -41,7 +41,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     """
 
     def __init__(self,
-                 priority: int = 3,
+                 priority: int = 6,
                  nlu_threshold: float = 0.3,
                  core_threshold: float = 0.3,
                  fallback_core_action_name:

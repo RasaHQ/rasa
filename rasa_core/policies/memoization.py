@@ -56,7 +56,7 @@ class MemoizationPolicy(Policy):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
-                 priority: int = 2,
+                 priority: int = 4,
                  max_history: Optional[int] = None,
                  lookup: Optional[Dict] = None
                  ) -> None:
