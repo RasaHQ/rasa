@@ -1,0 +1,6 @@
+language: "en"
+
+pipeline:
+- name: "intent_featurizer_bert"
+  model_dir: "/path/ending/with/uncased_L-24_H-1024_A-16/"
+- name: "intent_classifier_sklearn"

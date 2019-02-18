@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import numpy as np
 import typing
 from typing import Any
+import os
 
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
@@ -49,15 +50,26 @@ class BertFeaturizer(Featurizer):
         # makes sure the name of the configuration is part of the config
         # this is important for e.g. persistence
         component_config["name"] = self.name
-        print("hi")
         self.component_config = config.override_defaults(
                 self.defaults, component_config)
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
         self.layer_indexes = [-2]
-        bert_config = modeling.BertConfig.from_json_file("/Users/oakela/Documents/RASA/bert/uncased_L-24_H-1024_A-16/bert_config.json")
-        self.tokenizer = tokenization.FullTokenizer(vocab_file="/Users/oakela/Documents/RASA/bert/uncased_L-24_H-1024_A-16/vocab.txt", do_lower_case=True)
+
+        model_dir = component_config.get("model_dir")
+        print("Loading model from", model_dir)
+
+        dir_files = os.listdir(model_dir)
+
+        if all(file not in dir_files for file in ('bert_config.json', 'vocab.txt')):
+            raise Exception("To use BertFeaturizer you need to specify a "
+                            "directory path to a pre-trained model, i.e. "
+                            "containing the files 'bert_config.json', "
+                            "'vocab.txt' and model checkpoint")
+
+        bert_config = modeling.BertConfig.from_json_file(os.path.join(model_dir, "bert_config.json"))
+        self.tokenizer = tokenization.FullTokenizer(vocab_file=os.path.join(model_dir, "vocab.txt"), do_lower_case=True)
         is_per_host = tf.contrib.tpu.InputPipelineConfig.PER_HOST_V2
         run_config = tf.contrib.tpu.RunConfig(
             master=None,
@@ -66,7 +78,7 @@ class BertFeaturizer(Featurizer):
                 per_host_input_for_training=is_per_host))
         model_fn = model_fn_builder(
           bert_config=bert_config,
-          init_checkpoint="/Users/oakela/Documents/RASA/bert/uncased_L-24_H-1024_A-16/bert_model.ckpt",
+          init_checkpoint=os.path.join(model_dir, "bert_model.ckpt"),
           layer_indexes=self.layer_indexes,
           use_tpu=False,
           use_one_hot_embeddings=False)
