@@ -309,6 +309,7 @@ class SQLTrackerStore(TrackerStore):
         self.metadata.create_all(self.engine)
 
     def keys(self):
+        """Returns the keys of the items stored in the database"""
         pass
 
     def retrieve(self, sender_id: Text):
