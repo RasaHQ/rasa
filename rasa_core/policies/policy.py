@@ -32,12 +32,12 @@ class Policy(object):
     @classmethod
     def _set_priority(cls, priority=None):
         if priority:
-            print("Setting priority: {} (class method)".format(priority))
             return copy.deepcopy(priority)
         else:
-            print("*** Recieved no policy priority")
-            # TODO: Raise no priority error here
-            pass
+            logger.warning("Policy should have a default priority defined " +
+                           "in its initialization. Without a default or " +
+                           "configured value , priority is set to zero.")
+            return 0
 
     @staticmethod
     def _load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
