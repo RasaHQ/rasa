@@ -310,7 +310,8 @@ class SQLTrackerStore(TrackerStore):
 
     def keys(self):
         """Returns the keys of the items stored in the database"""
-        pass
+        from sqlalchemy.inspection import inspect
+        return [key.name for key in inspect(self.SQLEvent).primary_key]
 
     def retrieve(self, sender_id: Text):
         """Recreates the tracker from all previously stored events"""
@@ -354,12 +355,12 @@ class SQLTrackerStore(TrackerStore):
 
         from sqlalchemy import func
 
-        query = self.session.query(func.max(self.SQLEvent.timestamp)).filter_by(sender_id=tracker.sender_id).scalar()
+        max_timestamp = self.session.query(func.max(self.SQLEvent.timestamp)).filter_by(sender_id=tracker.sender_id).scalar()
 
         latest_events = []
 
         for event in reversed(tracker.events):
-            if event.timestamp > query:
+            if event.timestamp > max_timestamp:
                 latest_events.append(event)
             else:
                 break
