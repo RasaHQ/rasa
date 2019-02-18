@@ -248,7 +248,7 @@ class MongoTrackerStore(TrackerStore):
         return [c["sender_id"] for c in self.conversations.find()]
 
 
-from sqlalchemy import Table, Column, Integer, String, Float, Unicode
+from sqlalchemy import Table, Column, Integer, String, Float
 
 
 class SQLTrackerStore(TrackerStore):
@@ -264,8 +264,8 @@ class SQLTrackerStore(TrackerStore):
         sender_id = Column(String, nullable=False)
         type_name = Column(String, nullable=False)
         timestamp = Column(Float, nullable=False)
-        intent = Column(String)
-        action = Column(String)
+        intent_name = Column(String)
+        action_name = Column(String)
         data = Column(String)
 
     def __init__(self,
@@ -301,8 +301,8 @@ class SQLTrackerStore(TrackerStore):
               Column("sender_id", String, nullable=False),
               Column("type_name", String, nullable=False),
               Column("timestamp", Float, nullable=False),
-              Column("intent", String),
-              Column("action", String),
+              Column("intent_name", String),
+              Column("action_name", String),
               Column("data", String))
 
         self.metadata.create_all(self.engine)
@@ -313,20 +313,18 @@ class SQLTrackerStore(TrackerStore):
     def retrieve(self, sender_id: Text):
         """Recreates the tracker from all previously stored events"""
 
-        import ast
-
         query = self.session.query(self.SQLEvent).filter_by(sender_id=sender_id).all()
-        events = [ast.literal_eval(event.data) for event in query]
+        events = [json.loads(event.data) for event in query]
 
         if self.domain:
-            return DialogueStateTracker.from_dict(sender_id,
-                                                  events,
-                                                  self.domain.slots)
+            tracker = DialogueStateTracker.from_dict(sender_id, events,
+                                                     self.domain.slots)
         else:
             logger.warning("Can't recreate tracker from SQL storage "
                            "because no domain is set. Returning `None` "
                            "instead.")
-            return None
+            tracker = None
+        return tracker
 
     def save(self, tracker):
         """Updates database with events from the current conversation"""
@@ -342,7 +340,7 @@ class SQLTrackerStore(TrackerStore):
             self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
                                            type_name=event.type_name,
                                            timestamp=event.timestamp,
-                                           intent=intent,
-                                           action=action,
-                                           data=str(event_data)))
+                                           intent_name=intent,
+                                           action_name=action,
+                                           data=json.dumps(event_data)))
         self.session.commit()
