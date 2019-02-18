@@ -292,10 +292,11 @@ class SQLTrackerStore(TrackerStore):
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
         self.session = self.Session()
-        self.ensure_event_table()
+        self._ensure_event_table()
 
-    def ensure_event_table(self):
+    def _ensure_event_table(self):
         """Creates the events table if not already present in the database"""
+
         Table("events", self.metadata,
               Column("id", Integer, primary_key=True),
               Column("sender_id", String, nullable=False),
@@ -335,7 +336,7 @@ class SQLTrackerStore(TrackerStore):
         for event in tracker.events:
             event_data = event.as_dict()
             intent = event_data.get("parse_data", {}).get("intent")
-            action = event_data.get("name")  # works for reminder, slotset, form, followupactions...
+            action = event_data.get("name")
 
             self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
                                            type_name=event.type_name,
@@ -344,3 +345,7 @@ class SQLTrackerStore(TrackerStore):
                                            action_name=action,
                                            data=json.dumps(event_data)))
         self.session.commit()
+
+    def _event_buffer(self, tracker):
+        """Returns events from the tracker which aren't currently stored"""
+        pass
