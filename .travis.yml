@@ -7,6 +7,7 @@ cache:
 python:
   - '3.5'
   - '3.6'
+  - '3.7'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940

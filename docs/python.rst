@@ -5,7 +5,7 @@
 Python API
 ==========
 Apart from running Rasa NLU as a HTTP server you can use it directly in your python program.
-Rasa NLU supports python 3.5 and 3.6 (supported for python 2.7 up until version 0.14).
+Rasa NLU supports python 3.5, 3.6 and 3.7 (supported for python 2.7 up until version 0.14).
 
 Training a Model
 ----------------
