@@ -613,7 +613,7 @@ class EmbeddingPolicy(Policy):
                           embed_for_no_intent: tf.Tensor,
                           embed_for_no_action: tf.Tensor,
                           embed_for_action_listen: tf.Tensor
-                          ) -> tf.contrib.rnn.RNNCell:  # type:
+                          ) -> tf.contrib.rnn.RNNCell:
         """Wrap cell in attention wrapper with given memory."""
 
         if self.attn_before_rnn:
