@@ -203,7 +203,7 @@ class UserUttered(Event):
 
     @staticmethod
     def _from_parse_data(text, parse_data, timestamp=None, input_channel=None):
-        return UserUttered(text, parse_data.get("intent"), parse_data.get("entities"),
+        return UserUttered(text, parse_data.get("intent"), parse_data.get("entities", {}),
                            parse_data, timestamp, input_channel)
 
     def __hash__(self):
