@@ -333,7 +333,9 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        for event in tracker.events:
+        events = self._event_buffer(tracker)
+
+        for event in events:
             event_data = event.as_dict()
             intent = event_data.get("parse_data", {}).get("intent")
             action = event_data.get("name")
@@ -348,4 +350,17 @@ class SQLTrackerStore(TrackerStore):
 
     def _event_buffer(self, tracker):
         """Returns events from the tracker which aren't currently stored"""
-        pass
+
+        from sqlalchemy import func
+
+        query = self.session.query(func.max(self.SQLEvent.timestamp)).filter_by(sender_id=tracker.sender_id).scalar()
+
+        latest_events = []
+
+        for event in reversed(tracker.events):
+            if event.timestamp > query:
+                latest_events.append(event)
+            else:
+                break
+
+        return reversed(latest_events)
