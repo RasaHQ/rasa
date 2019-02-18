@@ -16,4 +16,4 @@ httpretty==0.9.5
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
-boto3==1.5.20
+boto3==1.9.96
