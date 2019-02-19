@@ -44,8 +44,12 @@ def visualize(args):
                     args.max_history,
                     nlu_training_data=nlu_data)
 
+    full_output_path = "file://{}".format(os.path.abspath(args.output))
     logger.info("Finished graph creation. Saved into file://{}".format(
-        os.path.abspath(args.output)))
+        full_output_path))
+
+    import webbrowser
+    webbrowser.open("file://{}".format(full_output_path))
 
 
 if __name__ == '__main__':

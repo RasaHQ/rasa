@@ -56,9 +56,9 @@ logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-PATHS = {"stories": "data/stories.md",
-         "nlu": "data/nlu.md",
-         "backup": "data/nlu_interactive.md",
+PATHS = {"stories": "data/core/stories.md",
+         "nlu": "data/nlu/nlu.md",
+         "backup": "data/nlu/nlu_interactive.md",
          "domain": "domain.yml"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
@@ -1060,7 +1060,7 @@ def _enter_user_message(sender_id: Text,
                         endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
-    question = questionary.text("Next user input (Ctr-c to abort):")
+    question = questionary.text("Your input ->")
 
     message = _ask_or_abort(question, sender_id, endpoint,
                             lambda a: not a)
