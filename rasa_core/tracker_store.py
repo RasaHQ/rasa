@@ -13,6 +13,8 @@ from rasa_core.trackers import (
     DialogueStateTracker, ActionExecuted,
     EventVerbosity)
 from rasa_core.utils import class_from_module_path
+from sqlalchemy import Table, Column, Integer, String, Float
+from sqlalchemy.engine.base import Engine
 
 logger = logging.getLogger(__name__)
 
@@ -248,9 +250,6 @@ class MongoTrackerStore(TrackerStore):
         return [c["sender_id"] for c in self.conversations.find()]
 
 
-from sqlalchemy import Table, Column, Integer, String, Float
-
-
 class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database"""
 
@@ -269,23 +268,15 @@ class SQLTrackerStore(TrackerStore):
         data = Column(String)
 
     def __init__(self,
-                 domain: Optional[Domain],
-                 drivername: Text = 'sqlite',
-                 host: Text = None,
-                 port: int = None,
-                 db: Text = 'rasa',
-                 username: Text = None,
-                 password: Text = None,
+                 engine: Engine,
+                 domain: Optional[Domain] = None,
                  event_broker: Optional[EventChannel] = None) -> None:
-        from sqlalchemy import MetaData, create_engine
-        from sqlalchemy.engine.url import URL
+        from sqlalchemy import MetaData
         from sqlalchemy.orm import sessionmaker
 
-        engine_url = URL(drivername, username, password, host, port, db)
-
-        self.engine = create_engine(engine_url)
+        self.engine = engine
         self.Session = sessionmaker(bind=self.engine)
-        self.conn = self.engine.connect()
+        # self.conn = self.engine.connect()
         self.metadata = MetaData()
         self.domain = domain
         self.event_broker = event_broker
@@ -293,6 +284,26 @@ class SQLTrackerStore(TrackerStore):
 
         self.session = self.Session()
         self._ensure_event_table()
+
+    @classmethod
+    def from_params(cls,
+                    domain: Optional[Domain],
+                    event_broker: Optional[EventChannel] = None,
+                    drivername: Text = 'sqlite',
+                    host: Text = None,
+                    port: int = None,
+                    db: Text = 'rasa',
+                    username: Text = None,
+                    password: Text = None) -> 'SQLTrackerStore':
+
+        from sqlalchemy.engine.url import URL
+        from sqlalchemy import create_engine
+        engine_url = URL(drivername, username, password, host, port, db)
+        engine = create_engine(engine_url)
+        return cls(engine,
+                   domain,
+                   event_broker)
+
 
     def _ensure_event_table(self):
         """Creates the events table if not already present in the database"""

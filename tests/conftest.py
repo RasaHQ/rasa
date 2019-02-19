@@ -17,9 +17,11 @@ from rasa_core.policies.memoization import (
     Policy, MemoizationPolicy, AugmentedMemoizationPolicy)
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
-from rasa_core.tracker_store import InMemoryTrackerStore
+from rasa_core.tracker_store import InMemoryTrackerStore, SQLTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import zip_folder
+from pytest_postgresql.factories import postgresql
+from psycopg2.extras import RealDictCursor
 
 matplotlib.use('Agg')
 
@@ -184,3 +186,16 @@ def default_tracker(default_domain):
     import uuid
     uid = str(uuid.uuid1())
     return DialogueStateTracker(uid, default_domain.slots)
+
+
+@pytest.fixture(scope="module")
+def default_sql_tracker_store(default_domain):
+    t_store = SQLTrackerStore(domain=domain,
+                              db=postgresql.r)
+
+
+@pytest.fixture
+def db_connection(postgresql: connection):
+    db = postgresql
+    db.cursor_factory = RealDictCursor
+    yield db
