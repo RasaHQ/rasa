@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
 import io
 import json
 import os
 import pickle
-import tempfile
-
 import pytest
+import tempfile
 from httpretty import httpretty
+
 from rasa_nlu import utils
 from rasa_nlu.utils import (
-    relative_normpath, create_dir, is_url, ordered, is_model_dir, remove_model,
-    write_json_to_file, write_to_file, EndpointConfig)
+    EndpointConfig, create_dir, is_model_dir, is_url, ordered,
+    relative_normpath, remove_model, write_json_to_file, write_to_file)
 
 
 @pytest.fixture
@@ -63,12 +59,13 @@ def test_ordered():
     assert ordered(target) == [('a', [1, 2, 3]), ('b', 1), ('c', 'a')]
 
 
-@pytest.mark.parametrize(("model_dir", "expected"),
-                         [("test_models/test_model_mitie/model_20170628-002704", True),
-                          ("test_models/test_model_mitie_sklearn/model_20170628-002712", True),
-                          ("test_models/test_model_spacy_sklearn/model_20170628-002705", True),
-                          ("test_models/", False),
-                          ("test_models/nonexistent_for_sure_123", False)])
+@pytest.mark.parametrize(
+    ("model_dir", "expected"),
+    [("test_models/test_model_mitie/model_20170628-002704", True),
+     ("test_models/test_model_mitie_sklearn/model_20170628-002712", True),
+     ("test_models/test_model_spacy_sklearn/model_20170628-002705", True),
+     ("test_models/", False),
+     ("test_models/nonexistent_for_sure_123", False)])
 def test_is_model_dir(model_dir, expected):
     assert is_model_dir(model_dir) == expected
 
@@ -114,20 +111,20 @@ def test_is_url():
 
 def test_endpoint_config():
     endpoint = EndpointConfig(
-            "https://abc.defg/",
-            params={"A": "B"},
-            headers={"X-Powered-By": "Rasa"},
-            basic_auth={"username": "user",
-                        "password": "pass"},
-            token="mytoken",
-            token_name="letoken"
+        "https://abc.defg/",
+        params={"A": "B"},
+        headers={"X-Powered-By": "Rasa"},
+        basic_auth={"username": "user",
+                    "password": "pass"},
+        token="mytoken",
+        token_name="letoken"
     )
 
     httpretty.register_uri(
-            httpretty.POST,
-            'https://abc.defg/test',
-            status=500,
-            body='')
+        httpretty.POST,
+        'https://abc.defg/test',
+        status=500,
+        body='')
 
     httpretty.enable()
     endpoint.request("post", subpath="test",
@@ -200,28 +197,40 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
 def test_emojis_in_yaml():
     test_data = """
     data:
-        - one 😁
-        - two £
+        - one 😁💯 👩🏿‍💻👨🏿‍💻
+        - two £ (?u)\\b\\w+\\b f\u00fcr
     """
     actual = utils.read_yaml(test_data)
 
-    assert actual["data"][0] == "one 😁"
-    assert actual["data"][1] == "two £"
+    assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
+    assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
 
 
 def test_emojis_in_tmp_file():
     test_data = """
         data:
-            - one 😁
-            - two £
+            - one 😁💯 👩🏿‍💻👨🏿‍💻
+            - two £ (?u)\\b\\w+\\b f\u00fcr
         """
     test_file = utils.create_temporary_file(test_data)
     with io.open(test_file, mode='r', encoding="utf-8") as f:
         content = f.read()
     actual = utils.read_yaml(content)
 
-    assert actual["data"][0] == "one 😁"
-    assert actual["data"][1] == "two £"
+    assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
+    assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
+
+
+def test_read_emojis_from_json():
+    import json
+    from rasa_nlu.utils import read_yaml
+    d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} f\u00fcr"}
+    json_string = json.dumps(d, indent=2)
+
+    s = read_yaml(json_string)
+
+    expected = "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} für"
+    assert s.get('text') == expected
 
 
 def test_bool_str():

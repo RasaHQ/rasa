@@ -1,4 +1,6 @@
-:desc: Understanding a Rasa NLU Pipeline
+:desc: Configure the custom components of your ML model to optimise the
+       processes performed on the user input of your contextual assistant.
+
 .. _section_pipeline:
 
 Component Configuration
@@ -126,13 +128,13 @@ intent_featurizer_count_vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: Creates bag-of-words representation of intent features
-:Outputs: 
-   nothing, used as an input to intent classifiers that 
-   need bag-of-words representation of intent features  
+:Outputs:
+   nothing, used as an input to intent classifiers that
+   need bag-of-words representation of intent features
    (e.g. ``intent_classifier_tensorflow_embedding``)
 :Description:
     Creates bag-of-words representation of intent features using
-    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. 
+    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
     .. note::
@@ -435,7 +437,7 @@ tokenizer_whitespace
 :Description:
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
-                                                                   
+
 tokenizer_jieba
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -687,7 +689,5 @@ ner_duckling_http
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
 
-		  
-.. include:: feedback.inc		  
-		  
 
+.. include:: feedback.inc

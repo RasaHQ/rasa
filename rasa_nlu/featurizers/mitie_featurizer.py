@@ -1,23 +1,14 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import numpy as np
 import typing
-from typing import Any
-from typing import List
-from typing import Text
+from typing import Any, List, Text
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.tokenizers import Token
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
     import mitie
-    from builtins import str
 
 
 class MitieFeaturizer(Featurizer):
@@ -28,17 +19,17 @@ class MitieFeaturizer(Featurizer):
     requires = ["tokens", "mitie_feature_extractor"]
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["mitie", "numpy"]
 
-    def ndim(self, feature_extractor):
-        # type: (mitie.total_word_feature_extractor) -> int
+    def ndim(self, feature_extractor: 'mitie.total_word_feature_extractor'):
 
         return feature_extractor.num_dimensions
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         for example in training_data.intent_examples:
@@ -46,10 +37,9 @@ class MitieFeaturizer(Featurizer):
                                                 mitie_feature_extractor)
             example.set("text_features",
                         self._combine_with_existing_text_features(
-                                example, features))
+                            example, features))
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         mitie_feature_extractor = self._mitie_feature_extractor(**kwargs)
         features = self.features_for_tokens(message.get("tokens"),
@@ -68,8 +58,11 @@ class MitieFeaturizer(Featurizer):
                             "configuration.")
         return mitie_feature_extractor
 
-    def features_for_tokens(self, tokens, feature_extractor):
-        # type: (List[Token], mitie.total_word_feature_extractor) -> np.ndarray
+    def features_for_tokens(
+            self,
+            tokens: List[Token],
+            feature_extractor: 'mitie.total_word_feature_extractor'
+    ) -> np.ndarray:
 
         vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:

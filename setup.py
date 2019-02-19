@@ -14,47 +14,45 @@ with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 tests_requires = [
-    "pytest",
-    "pytest-pep8",
-    "pytest-cov",
+    "pytest~=3.3",
+    "pytest-pycodestyle~=1.4",
+    "pytest-cov~=2.5",
     "pytest-twisted<1.6",
-    "treq",
+    "treq~=17.8",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
 ]
 
 install_requires = [
-    "pathlib",
-    "cloudpickle",
-    "gevent",
-    "klein",
-    "boto3",
-    "packaging",
-    "typing",
-    "future",
-    "six",
-    "tqdm",
-    "requests",
-    "jsonschema",
+    "cloudpickle~=0.6.1",
+    "gevent~=1.2",
+    "klein~=17.10",
+    "boto3~=1.5",
+    "packaging~=18.0",
+    "typing~=3.6",
+    "future~=0.17.1",
+    "tqdm~=4.19",
+    "requests~=2.20",
+    "jsonschema~=2.6",
     "matplotlib~=2.0",
     "numpy>=1.13",
-    "simplejson",
-    "ruamel.yaml~=0.15",
-    "coloredlogs",
-    "msgpack>=0.3.0,<0.6"
+    "simplejson~=3.13",
+    "ruamel.yaml~=0.15.7",
+    "coloredlogs~=10.0",
+    "scikit-learn~=0.20.2"
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["scikit-learn<0.20",
-              "sklearn-crfsuite",
-              "scipy",
-              "spacy<=2.0.12,>2.0",
+    'spacy': ["sklearn-crfsuite~=0.3.6",
+              "scipy~=1.1",
+              "spacy<=2.0.18,>2.0",
               ],
-    'tensorflow': ["scikit-learn<0.20",
-                   "sklearn-crfsuite",
-                   "scipy",
-                   "tensorflow"
+    'tensorflow': ["sklearn-crfsuite~=0.3.6",
+                   "scipy~=1.1",
+                   "tensorflow~=1.12",
+                   "keras-applications==1.0.6",
+                   "keras-preprocessing==1.0.5"
                    ],
     'mitie': ["mitie"],
 }
@@ -68,7 +66,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Libraries",

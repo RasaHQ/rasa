@@ -1,4 +1,6 @@
-:desc: Setting up a Rasa NLU pipeline
+:desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
+       or fit them specifically on your dataset using the tensorflow pipeline
+       for open source NLU.
 
 .. _choosing_pipeline:
 
@@ -38,7 +40,7 @@ doesn't use any pre-trained word vectors, but instead fits these specifically fo
 The advantage of the ``pretrained_embeddings`` pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
 already knows that the words "apples" and "pears" are very similar. This is especially useful
-if you don't have very much training data. 
+if you don't have very much training data.
 
 The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised 
 for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
@@ -46,23 +48,23 @@ but very different to the word "cash". In a banking domain, "balance" and "cash"
 and you'd like your model to capture that. This pipeline doesn't use a language-specific model,
 so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
 
-You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ . 
+You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ .
 
 
-There are also the ``mitie`` and ``mitie_sklearn`` pipelines, which use MITIE as a source of word vectors. 
+There are also the ``mitie`` and ``mitie_sklearn`` pipelines, which use MITIE as a source of word vectors.
 We do not recommend that you use these; they are likely to be deprecated in a future release.
 
 .. note::
 
     Intent classification is independent of entity extraction. So sometimes
-    NLU will get the intent right but entities wrong, or the other way around. 
-    You need to provide enough data for both intents and entities. 
+    NLU will get the intent right but entities wrong, or the other way around.
+    You need to provide enough data for both intents and entities.
 
 
 Multiple Intents
 ----------------
 
-If you want to split intents into multiple labels, 
+If you want to split intents into multiple labels,
 e.g. for predicting multiple intents or for modeling hierarchical intent structure,
 you can only do this with the supervised embeddings pipeline.
 To do this, use these flags:
@@ -70,7 +72,7 @@ To do this, use these flags:
     - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use a bag-of-words representations for them;
     - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
 
-`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`_ is a tutorial on how to use multiple intents in Rasa Core and NLU. 
+`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`_ is a tutorial on how to use multiple intents in Rasa Core and NLU.
 
 Here's an example configuration:
 
@@ -93,7 +95,7 @@ In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
 in a so-called processing pipeline. There are components for entity extraction, for intent classification,
 pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out :ref:`section_customcomponents`. 
+do sentiment analysis, check out :ref:`section_customcomponents`.
 
 Each component processes the input and creates an output. The ouput can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
@@ -180,7 +182,7 @@ exactly. Instead it will return the trained synonym.
 Pre-configured Pipelines
 ------------------------
 
-A template is just a shortcut for 
+A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:
 
 .. literalinclude:: ../sample_configs/config_pretrained_embeddings.yml
@@ -255,7 +257,7 @@ default is to use a simple whitespace tokenizer:
     - name: "intent_classifier_tensorflow_embedding"
 
 If you have a custom tokenizer for your language, you can replace the whitespace
-tokenizer with something more accurate. 
+tokenizer with something more accurate.
 
 .. _section_mitie_pipeline:
 
@@ -320,5 +322,3 @@ If you want to use custom components in your pipeline, see :ref:`section_customc
 
 
 .. include:: feedback.inc
-
-

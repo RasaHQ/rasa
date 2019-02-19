@@ -1,20 +1,12 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import argparse
 import logging
-from functools import wraps
-
 import simplejson
-import six
-from builtins import str
+from functools import wraps
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from rasa_nlu import utils, config
+from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
@@ -45,7 +37,8 @@ def create_argument_parser():
                              'server. \nIf given `all` as input all the models '
                              'will be loaded.\nElse you can specify a list of '
                              'specific project names.\nEg: python -m '
-                             'rasa_nlu.server --pre_load project1 --path projects '
+                             'rasa_nlu.server --pre_load project1 '
+                             '--path projects '
                              '-c config.yaml')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
@@ -77,7 +70,8 @@ def create_argument_parser():
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
     parser.add_argument('--endpoints',
-                        help='Configuration file for the model server as a yaml file')
+                        help='Configuration file for the model server '
+                             'as a yaml file')
     parser.add_argument('--wait_time_between_pulls',
                         type=int,
                         default=10,
@@ -113,8 +107,18 @@ def check_cors(f):
         if origin:
             if '*' in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', '*')
+                request.setHeader(
+                    'Access-Control-Allow-Headers', 'Content-Type')
+                request.setHeader(
+                    'Access-Control-Allow-Methods',
+                    'POST, GET, OPTIONS, PUT, DELETE')
             elif origin in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', origin)
+                request.setHeader(
+                    'Access-Control-Allow-Headers', 'Content-Type')
+                request.setHeader(
+                    'Access-Control-Allow-Methods',
+                    'POST, GET, OPTIONS, PUT, DELETE')
             else:
                 request.setResponseCode(403)
                 return 'forbidden'
@@ -134,10 +138,7 @@ def requires_auth(f):
     def decorated(*args, **kwargs):
         self = args[0]
         request = args[1]
-        if six.PY3:
-            token = request.args.get(b'token', [b''])[0].decode("utf8")
-        else:
-            token = str(request.args.get('token', [''])[0])
+        token = request.args.get(b'token', [b''])[0].decode("utf8")
         if self.access_token is None or token == self.access_token:
             return f(*args, **kwargs)
         request.setResponseCode(401)
@@ -147,9 +148,8 @@ def requires_auth(f):
 
 
 def decode_parameters(request):
-    """Make sure all the parameters have the same encoding.
+    """Make sure all the parameters have the same encoding."""
 
-    Ensures  py2 / py3 compatibility."""
     return {
         key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
         for key, value in request.args.items()}
@@ -163,7 +163,7 @@ def parameter_or_default(request, name, default=None):
 
 
 def dump_to_data_file(data):
-    if isinstance(data, six.string_types):
+    if isinstance(data, str):
         data_string = data
     else:
         data_string = utils.json_to_string(data)
@@ -189,7 +189,7 @@ class RasaNLU(object):
         self._configure_logging(loglevel, logfile)
 
         self.default_model_config = self._load_default_config(
-                default_config_path)
+            default_config_path)
 
         self.data_router = data_router
         self._testing = testing
@@ -226,7 +226,7 @@ class RasaNLU(object):
             request_params = decode_parameters(request)
         else:
             request_params = simplejson.loads(
-                    request.content.read().decode('utf-8', 'strict'))
+                request.content.read().decode('utf-8', 'strict'))
 
         if 'query' in request_params:
             request_params['q'] = request_params.pop('query')
@@ -234,7 +234,7 @@ class RasaNLU(object):
         if 'q' not in request_params:
             request.setResponseCode(404)
             dumped = json_to_string(
-                    {"error": "Invalid parse parameter specified"})
+                {"error": "Invalid parse parameter specified"})
             returnValue(dumped)
         else:
             data = self.data_router.extract(request_params)
@@ -242,7 +242,7 @@ class RasaNLU(object):
                 request.setResponseCode(200)
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(
-                        self.data_router.parse, data))
+                    self.data_router.parse, data))
                 returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)
@@ -260,8 +260,8 @@ class RasaNLU(object):
 
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(
-                {'version': __version__,
-                 'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
+            {'version': __version__,
+             'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
         )
 
     @app.route("/status", methods=['GET', 'OPTIONS'])
@@ -333,6 +333,7 @@ class RasaNLU(object):
 
         try:
             model_config, data = self.extract_data_and_config(request)
+
         except Exception as e:
             request.setResponseCode(400)
             returnValue(json_to_string({"error": "{}".format(e)}))
@@ -345,8 +346,8 @@ class RasaNLU(object):
             request.setResponseCode(200)
 
             response = yield self.data_router.start_train_process(
-                    data_file, project,
-                    RasaNLUModelConfig(model_config), model_name)
+                data_file, project,
+                RasaNLUModelConfig(model_config), model_name)
             returnValue(json_to_string({'info': 'new model trained',
                                         'model': response}))
         except MaxTrainingError as e:
@@ -395,9 +396,8 @@ class RasaNLU(object):
         try:
             request.setResponseCode(200)
             response = self.data_router.unload_model(
-                    params.get('project',
-                               RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
-                    params.get('model')
+                params.get('project', RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
+                params.get('model')
             )
             return simplejson.dumps(response)
         except Exception as e:
@@ -416,13 +416,13 @@ if __name__ == '__main__':
     _endpoints = read_endpoints(cmdline_args.endpoints)
 
     router = DataRouter(
-            cmdline_args.path,
-            cmdline_args.max_training_processes,
-            cmdline_args.response_log,
-            cmdline_args.emulate,
-            cmdline_args.storage,
-            model_server=_endpoints.model,
-            wait_time_between_pulls=cmdline_args.wait_time_between_pulls
+        cmdline_args.path,
+        cmdline_args.max_training_processes,
+        cmdline_args.response_log,
+        cmdline_args.emulate,
+        cmdline_args.storage,
+        model_server=_endpoints.model,
+        wait_time_between_pulls=cmdline_args.wait_time_between_pulls
     )
     if pre_load:
         logger.debug('Preloading....')
@@ -431,13 +431,13 @@ if __name__ == '__main__':
         router._pre_load(pre_load)
 
     rasa = RasaNLU(
-            router,
-            cmdline_args.loglevel,
-            cmdline_args.write,
-            cmdline_args.num_threads,
-            cmdline_args.token,
-            cmdline_args.cors,
-            default_config_path=cmdline_args.config
+        router,
+        cmdline_args.loglevel,
+        cmdline_args.write,
+        cmdline_args.num_threads,
+        cmdline_args.token,
+        cmdline_args.cors,
+        default_config_path=cmdline_args.config
     )
 
     logger.info('Started http server on port %s' % cmdline_args.port)

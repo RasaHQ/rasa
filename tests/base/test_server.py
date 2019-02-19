@@ -1,16 +1,11 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import time
 
 import io
 import json
-import tempfile
-
 import pytest
-import time
 import ruamel.yaml as yaml
+import tempfile
 from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter
@@ -248,7 +243,8 @@ def test_unload_model_error(app):
     response = yield app.delete(model_err)
     rjs = yield response.json()
     assert response.code == 500, "Model not found"
-    assert rjs['error'] == "Failed to unload model my_model for project default."
+    assert rjs['error'] == ("Failed to unload model my_model for project "
+                            "default.")
 
 
 @pytest.inlineCallbacks

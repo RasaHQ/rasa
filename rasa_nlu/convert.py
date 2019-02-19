@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import argparse
 
 from rasa_nlu import training_data
@@ -11,7 +6,7 @@ from rasa_nlu.utils import write_to_file
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
-            description='Convert training data formats into one another')
+        description='Convert training data formats into one another')
 
     parser.add_argument('-d', '--data_file',
                         required=True,
@@ -45,8 +40,8 @@ def convert_training_data(data_file, out_file, output_format, language):
 
 
 if __name__ == "__main__":
-    parser = create_argument_parser()
-    args = parser.parse_args()
+    arg_parser = create_argument_parser()
+    args = arg_parser.parse_args()
 
     convert_training_data(args.data_file,
                           args.out_file,

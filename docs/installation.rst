@@ -1,4 +1,5 @@
-:desc: Installing Rasa NLU on Mac, Windows, and Linux
+:desc: Manage our open source NLU on premise to allow local intent recognition,
+       entity extraction and customisation of the language models.
 :meta_image: https://i.imgur.com/nGF1K8f.jpg
 
 .. _section_backends:
@@ -11,10 +12,11 @@ Prerequisites
 ~~~~~~~~~~~~~
 For windows
 -----------
+
 Make sure the Microsoft VC++ Compiler is installed, so python can compile
 any dependencies. You can get the compiler from:
 https://visualstudio.microsoft.com/visual-cpp-build-tools/
-Download the installer and select VC++ Build tools in the list. 
+Download the installer and select VC++ Build tools in the list.
 
 Setting up Rasa NLU
 ~~~~~~~~~~~~~~~~~~~
@@ -29,7 +31,7 @@ the latest stable version of Rasa NLU:
     pip install rasa_nlu
 
 Latest (Most recent github)
----------------------------	
+---------------------------
 If you want to use the bleeding edge version you can get it from github:
 
 .. code-block:: bash
@@ -39,7 +41,7 @@ If you want to use the bleeding edge version you can get it from github:
     pip install -r requirements.txt
     pip install -e .
 
-Rasa NLU has different components for recognizing intents and entities, 
+Rasa NLU has different components for recognizing intents and entities,
 most of these will have some additional dependencies.
 
 When you train your model, Rasa NLU will check if all required dependencies are
@@ -83,7 +85,7 @@ visit the `spacy docs <https://spacy.io/usage/models>`_):
 This will install Rasa NLU as well as spacy and its language model
 for the english language. We recommend using at least the
 "medium" sized models (``_md``) instead of the spacy's
-default small ``en_core_web_sm`` model. Small models require less 
+default small ``en_core_web_sm`` model. Small models require less
 memory to run, but will somewhat reduce intent classification performance.
 
 
@@ -157,6 +159,7 @@ sklearn:
 
 Train your first custom Rasa NLU model!
 ---------------------------------------
+
 After following the quickstart and installing Rasa NLU, the next step is to 
 build something yourself! To get you started, we have prepared a 
 Rasa NLU starter-pack which has all the files you need to train your
@@ -172,7 +175,10 @@ Let us know how you are getting on! If you have any questions
 about the starter-pack or using Rasa NLU in general, post your questions on
 `Rasa Community Forum <https://forum.rasa.com>`_!
 
+`Rasa NLU starter-pack <https://github.com/RasaHQ/starter-pack-rasa-nlu>`_
+
+Let us know how you are getting on! If you have any questions about the starter-pack or
+using Rasa NLU in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!
+
 
 .. include:: feedback.inc
-
-

@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import pytest
 
 from rasa_nlu import registry
@@ -85,10 +80,10 @@ def test_example_component(component_builder, tmpdir_factory):
         {"name": "tests.example_component.MyComponent"}]})
 
     interpreter = utilities.interpreter_for(
-            component_builder,
-            data="./data/examples/rasa/demo-rasa.json",
-            path=tmpdir_factory.mktemp("projects").strpath,
-            config=conf)
+        component_builder,
+        data="./data/examples/rasa/demo-rasa.json",
+        path=tmpdir_factory.mktemp("projects").strpath,
+        config=conf)
 
     r = interpreter.parse("test")
     assert r is not None
