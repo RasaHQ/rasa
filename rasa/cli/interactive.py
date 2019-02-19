@@ -4,6 +4,7 @@ from typing import List
 
 import rasa.cli as cli
 from rasa.model import unpack_model
+import rasa.cli.default_arguments as defaults
 
 
 def add_subparser(subparsers: _SubParsersAction,
@@ -17,7 +18,7 @@ def add_subparser(subparsers: _SubParsersAction,
     cli.run.add_run_arguments(interactive_parser)
     cli.train.add_general_arguments(interactive_parser)
     cli.train.add_core_arguments(interactive_parser)
-    cli.train.add_nlu_arguments(interactive_parser)
+    defaults.add_nlu_data_param(interactive_parser)
     _add_interactive_arguments(interactive_parser)
     interactive_parser.set_defaults(func=interactive)
 

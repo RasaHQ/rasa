@@ -27,7 +27,9 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
     add_core_visualization_params(show_stories_subparser)
     add_config_param(show_stories_subparser)
-    show_stories_subparser.set_defaults(func=show)
+    show_stories_subparser.set_defaults(func=show_stories)
+
+    show_parser.set_defaults(func=lambda _: show_parser.print_help(None))
 
 
 def add_core_visualization_params(parser: argparse.ArgumentParser):
@@ -38,7 +40,7 @@ def add_core_visualization_params(parser: argparse.ArgumentParser):
     add_stories_param(parser)
 
 
-def show(args: argparse.Namespace):
+def show_stories(args: argparse.Namespace):
     import rasa_core.visualize as visualize
 
     args.config = [args.config]

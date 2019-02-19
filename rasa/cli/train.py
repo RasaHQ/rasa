@@ -4,11 +4,9 @@ import tempfile
 from typing import List, Text, Optional
 
 import rasa.model as model
-from rasa.cli.default_arguments import (
-    add_config_param, add_domain_param,
-    add_stories_param)
-from rasa.cli.utils import (check_path_exists, validate,
-                            create_default_output_path)
+from rasa.cli.default_arguments import (add_config_param, add_domain_param,
+                                        add_stories_param, add_nlu_data_param)
+from rasa.cli.utils import validate, create_default_output_path
 from rasa.cli.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
                                 DEFAULT_STORIES_PATH, DEFAULT_NLU_DATA_PATH)
 from rasa.model import (
@@ -50,7 +48,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
     _add_core_compare_arguments(train_core_parser)
 
     for p in [train_nlu_parser, train_parser]:
-        add_nlu_arguments(p)
+        add_nlu_data_param(p)
 
     train_parser.set_defaults(func=train)
 
@@ -59,7 +57,7 @@ def add_general_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
     parser.add_argument(
         "-o", "--out",
-        type=lambda v: check_path_exists(v, "--o", noneValid=True),
+        type=str,
         default=None,
         help="Directory where your models are stored.")
 
@@ -88,14 +86,6 @@ def _add_core_compare_arguments(parser: argparse.ArgumentParser):
         help="The policy and NLU pipeline configuration of your bot."
              "If multiple configuration files are provided, multiple dialogue "
              "models are trained to compare policies.")
-
-
-def add_nlu_arguments(parser: argparse.ArgumentParser):
-    parser.add_argument(
-        "-u", "--nlu",
-        type=lambda v: check_path_exists(v, "--nlu", "data/nlu"),
-        default="data/nlu",
-        help="File or folder containing your NLU training data.")
 
 
 def train(args: argparse.Namespace) -> Text:

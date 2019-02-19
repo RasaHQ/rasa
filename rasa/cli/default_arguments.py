@@ -1,21 +1,22 @@
 import argparse
 from typing import Text
 
+from rasa.cli.constants import DEFAULT_NLU_DATA_PATH
+from rasa.cli.utils import check_path_exists
 from rasa.model import DEFAULT_MODELS_PATH
 
 
 def add_model_param(parser: argparse.ArgumentParser, model_name: Text = "Rasa"
                     ) -> None:
     defaults = {"type": str,
-                "default": DEFAULT_MODELS_PATH,
                 "help": "Path to a trained {} model. If a directory "
                         "is specified, it will use the latest model "
                         "in this directory.".format( model_name)}
-    parser.add_argument("model",
-                        nargs='?',
-                        **defaults)
-
     parser.add_argument("-m", "--model",
+                        default=DEFAULT_MODELS_PATH,
+                        **defaults)
+    parser.add_argument("model-as-positional-argument",
+                        nargs='?',
                         **defaults)
 
 
@@ -26,6 +27,14 @@ def add_stories_param(parser: argparse.ArgumentParser,
         type=str,
         default="data/core",
         help="File or folder containing {} stories.".format(stories_name))
+
+
+def add_nlu_data_param(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        "-u", "--nlu",
+        type=str,
+        default=DEFAULT_NLU_DATA_PATH,
+        help="File or folder containing your NLU training data.")
 
 
 def add_domain_param(parser: argparse.ArgumentParser) -> None:

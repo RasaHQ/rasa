@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Text, Optional, List
+from typing import Text, Optional, List, Tuple, Union
 
 from rasa.model import DEFAULT_MODELS_PATH
 
@@ -32,7 +32,9 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
     exit(1)
 
 
-def validate(args: argparse.Namespace, params: List[Text]) -> None:
+def validate(args: argparse.Namespace,
+             params: List[Union[Tuple[Text, Text], Tuple[Text, Text, Text]]]
+             ) -> None:
     for p in params:
         none_is_valid = False if len(p) == 2 else p[2]
         validated = check_path_exists(getattr(args, p[0]), p[0], p[1],

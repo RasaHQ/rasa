@@ -20,7 +20,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Run a trained model")
+        help="Start a Rasa server which loads a trained model.")
     add_run_arguments(run_parser)
     run_parser.set_defaults(func=run)
 
@@ -32,6 +32,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Run a trained Core model"
     )
+    add_run_arguments(run_core_parser)
     run_core_parser.set_defaults(func=run)
 
     nlu_subparser = run_subparsers.add_parser(
@@ -53,7 +54,6 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         help="Run the action server"
     )
     _adk_sdk_arguments(sdk_subparser)
-    add_run_arguments(run_core_parser)
     sdk_subparser.set_defaults(func=run_actions)
 
 
