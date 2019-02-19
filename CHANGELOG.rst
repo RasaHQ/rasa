@@ -21,6 +21,8 @@ Changed
 -------
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
+- ``scores`` array returned by the ``/conversations/{sender_id}/predict``
+  endpoint is now sorted according to the actions' scores.
 
 Removed
 -------
