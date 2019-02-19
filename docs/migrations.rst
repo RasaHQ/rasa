@@ -1,4 +1,8 @@
-:desc: Updating your Rasa NLU Project to a New Version
+:desc: Read more about changes between major versions of our open source
+       NLP engine and how to migrate from one version to another.
+
+.. _section_migration_guide:
+
 Migration Guide
 ===============
 This page contains information about changes between major versions and
@@ -217,7 +221,4 @@ persistors:
       }
 
 
-.. include:: feedback.inc  
-	  
-
-   
+.. include:: feedback.inc
