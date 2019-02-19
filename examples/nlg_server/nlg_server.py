@@ -26,7 +26,7 @@ def create_argument_parser():
         type=int,
         help="port to run the server at")
     parser.add_argument(
-        '--sanic_workers',
+        '--workers',
         default=DEFAULT_SANIC_WORKERS,
         type=int,
         help="Number of sanic workers")
