@@ -39,7 +39,7 @@ run-webexteams:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c webexteams --credentials credentials.yml
 
 run-cmdline:
-	python -m rasa_core.run -d models/dialogue -u models/nlu/current --debug
+	python -m rasa_core.run -d models/dialogue -u models/nlu/current
 
 evaluate-nlu:
 	python -m rasa_nlu.evaluate  --model models/nlu/current --data ./data/nlu.md

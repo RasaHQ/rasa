@@ -110,7 +110,8 @@ class Action(object):
 
         raise NotImplementedError
 
-    async def run(self, dispatcher: 'Dispatcher',
+    async def run(self,
+                  dispatcher: 'Dispatcher',
                   tracker: 'DialogueStateTracker',
                   domain: 'Domain') -> List['Event']:
         """
@@ -362,8 +363,11 @@ class RemoteAction(Action):
             raise Exception("Failed to execute custom action.")
 
         except aiohttp.ClientError as e:
+            # not all errors have a status attribute, but
+            # helpfull to log if they got it
+
             # noinspection PyUnresolvedReferences
-            status = e.status if hasattr(e.__class__, "status") else None
+            status = getattr(e, 'status', None)
             logger.error("Failed to run custom action '{}'. Action server "
                          "responded with a non 200 status code of {}. "
                          "Make sure your action server properly runs actions "
@@ -401,7 +405,8 @@ class ActionRevertFallbackEvents(Action):
     def name(self) -> Text:
         return ACTION_REVERT_FALLBACK_EVENTS_NAME
 
-    async def run(self, dispatcher: 'Dispatcher',
+    async def run(self,
+                  dispatcher: 'Dispatcher',
                   tracker: 'DialogueStateTracker',
                   domain: 'Domain') -> List[Event]:
         from rasa_core.policies.two_stage_fallback import (
@@ -475,7 +480,8 @@ class ActionDefaultAskAffirmation(Action):
     def name(self) -> Text:
         return ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    async def run(self, dispatcher: 'Dispatcher',
+    async def run(self,
+                  dispatcher: 'Dispatcher',
                   tracker: 'DialogueStateTracker',
                   domain: 'Domain') -> List[Event]:
         intent_to_affirm = tracker.latest_message.intent.get('name')
@@ -497,7 +503,8 @@ class ActionDefaultAskRephrase(Action):
     def name(self) -> Text:
         return ACTION_DEFAULT_ASK_REPHRASE_NAME
 
-    async def run(self, dispatcher: 'Dispatcher',
+    async def run(self,
+                  dispatcher: 'Dispatcher',
                   tracker: 'DialogueStateTracker',
                   domain: 'Domain') -> List[Event]:
         await dispatcher.utter_template("utter_ask_rephrase", tracker,

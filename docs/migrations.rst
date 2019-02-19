@@ -8,6 +8,14 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+.. _migration-to-0-14-0:
+
+0.13.x to 0.14.0
+----------------
+- lots of async function in agent -> clarify API changes
+- channels now need to provide Sanic blueprint & await on_new_message
+
+
 .. _migration-to-0-13-0:
 
 0.12.x to 0.13.0

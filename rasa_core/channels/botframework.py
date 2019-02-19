@@ -71,7 +71,8 @@ class BotFramework(OutputChannel):
         else:
             return BotFramework.headers
 
-    async def send(self, recipient_id: Text,
+    async def send(self,
+                   recipient_id: Text,
                    message_data: Dict[Text, Any]) -> None:
 
         post_message_uri = ('{}conversations/{}/activities'

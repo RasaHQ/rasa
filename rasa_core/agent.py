@@ -48,6 +48,12 @@ async def load_from_server(
 ) -> 'Agent':
     """Load a persisted model from a server."""
 
+    # we are going to pull the model once first, and then schedule a recurring
+    # job. the benefit of this approach is, that we can be sure that there
+    # is a model after this function completes -> allows to do proper
+    # "is alive" check on a startup servers `/status` endpoint. If the server
+    # is started, we can be sure that it also already loaded (or tried to)
+    # a model.
     await _update_model_from_server(model_server, agent)
 
     wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
@@ -236,6 +242,10 @@ class Agent(object):
 
     @staticmethod
     def _init_scheduler(loop=None):
+        """Create a (thread) global shared task scheduler.
+
+        Used to schedule model pulling as well as running reminders."""
+
         try:
             scheduler = AsyncIOScheduler(event_loop=loop)
             scheduler.start()
@@ -344,6 +354,11 @@ class Agent(object):
             async with lock:
                 # this makes sure that there can always only be one coroutine
                 # handling a conversation at any point in time
+                # Note: this doesn't support multi-processing, it just works
+                # for coroutines. If there are multiple processes handling
+                # messages, an external system needs to make sure messages
+                # for the same conversation are always processed by the same
+                # process.
                 return await processor.handle_message(message)
         finally:
             if not lock.is_someone_waiting():
