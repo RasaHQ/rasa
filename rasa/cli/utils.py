@@ -40,6 +40,14 @@ def validate(args: argparse.Namespace, params: List[Text]) -> None:
         setattr(args, p[0], validated)
 
 
+def parse_last_positional_argument_as_model_path() -> None:
+    import sys
+
+    if sys.argv[1] in ["run", "test"] and not sys.argv[-1].startswith('-'):
+        sys.argv.append(sys.argv[-1])
+        sys.argv[-2] = "--model"
+
+
 def create_default_output_path(model_directory: Text = DEFAULT_MODELS_PATH,
                                prefix: Text = "") -> Text:
     import time
