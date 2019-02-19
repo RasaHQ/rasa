@@ -80,4 +80,4 @@ if __name__ == '__main__':
     cmdline_args = arg_parser.parse_args()
     domain = Domain.load(cmdline_args.domain)
 
-    run_server(domain, cmdline_args.port, cmdline_args.sanic_workers)
+    run_server(domain, cmdline_args.port, cmdline_args.workers)
