@@ -1,7 +1,11 @@
 import pytest
 
 from rasa_core.policies import Policy
-from rasa_core.policies.ensemble import PolicyEnsemble, InvalidPolicyConfig
+from rasa_core.policies.ensemble import (PolicyEnsemble, InvalidPolicyConfig,
+                                         SimplePolicyEnsemble)
+from rasa_core.domain import Domain
+from rasa_core.trackers import DialogueStateTracker
+from rasa_core.events import UserUttered
 
 
 class WorkingPolicy(Policy):
@@ -29,6 +33,76 @@ def test_policy_loading_simple(tmpdir):
 
     loaded_policy_ensemble = PolicyEnsemble.load(str(tmpdir))
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
+
+
+class Priority_1_Policy(Policy):
+    def __init__(self,
+                 priority: int = 1,
+                 ) -> None:
+        super(Priority_1_Policy, self).__init__(priority=priority)
+
+    @classmethod
+    def load(cls, path):
+        pass
+
+    def persist(self, path):
+        pass
+
+    def train(self, training_trackers, domain, **kwargs):
+        pass
+
+    def predict_action_probabilities(self, tracker, domain):
+        result = [0.0] * domain.num_actions
+        result[0] = 1.0
+        return result
+
+
+class Priority_2_Policy(Policy):
+    def __init__(self,
+                 priority: int = 2,
+                 ) -> None:
+        super(Priority_2_Policy, self).__init__(priority=priority)
+
+    @classmethod
+    def load(cls, path):
+        pass
+
+    def persist(self, path):
+        pass
+
+    def train(self, training_trackers, domain, **kwargs):
+        pass
+
+    def predict_action_probabilities(self, tracker, domain):
+        result = [0.0] * domain.num_actions
+        result[1] = 1.0
+        return result
+
+
+def test_policy_priority():
+    domain = Domain.load("data/test_domains/default.yml")
+    tracker = DialogueStateTracker.from_events("test", [UserUttered("hi")], [])
+
+    priority_1 = Priority_1_Policy()
+    priority_2 = Priority_2_Policy()
+
+    policy_ensemble_0 = SimplePolicyEnsemble([priority_1, priority_2])
+    policy_ensemble_1 = SimplePolicyEnsemble([priority_2, priority_1])
+
+    priority_2_result = priority_2.predict_action_probabilities(tracker,
+                                                                domain)
+
+    i = 1  # index of priority_2 in ensemble_0
+    result, best_policy = policy_ensemble_0.probabilities_using_best_policy(
+        tracker, domain)
+    assert best_policy == 'policy_{}_{}'.format(i, type(priority_2).__name__)
+    assert (result.tolist() == priority_2_result)
+
+    i = 0  # index of priority_2 in ensemble_1
+    result, best_policy = policy_ensemble_1.probabilities_using_best_policy(
+        tracker, domain)
+    assert best_policy == 'policy_{}_{}'.format(i, type(priority_2).__name__)
+    assert (result.tolist() == priority_2_result)
 
 
 class LoadReturnsNonePolicy(Policy):
