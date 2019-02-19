@@ -14,8 +14,6 @@ DEFAULT_SERVER_PORT = 5056
 
 DEFAULT_SANIC_WORKERS = 1
 
-app = Sanic(__name__)
-
 
 def create_argument_parser():
     """Parse all the command line arguments for the nlg server script."""
@@ -59,6 +57,8 @@ async def generate_response(nlg_call, domain):
 
 
 def run_server(domain, port, sanic_workers):
+    app = Sanic(__name__)
+
     @app.route("/nlg", methods=['POST', 'OPTIONS'])
     async def nlg(request):
         """Endpoints which processes the Core request for a bot response."""
