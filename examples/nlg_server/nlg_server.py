@@ -56,7 +56,7 @@ async def generate_response(nlg_call, domain):
         template, tracker, channel_name, **kwargs)
 
 
-def run_server(domain, port, sanic_workers):
+def run_server(domain, port, workers):
     app = Sanic(__name__)
 
     @app.route("/nlg", methods=['POST', 'OPTIONS'])
