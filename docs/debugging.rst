@@ -1,4 +1,5 @@
-:desc: Tips for Debugging a Rasa bot
+:desc: Read more how to learn from real user input and behaviour by debugging
+       your contextual AI assistants and chatbots using open source libraries.
 
 .. _debugging:
 
@@ -106,5 +107,3 @@ for example ``--nlu_data mydata.json``.
 
 
 .. include:: feedback.inc
-
-

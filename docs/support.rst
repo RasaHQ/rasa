@@ -1,4 +1,5 @@
-:desc: Support channels for Rasa Core
+:desc: Check the available channels for your support questions related
+       to open source Rasa Stack. 
 
 .. _support:
 
