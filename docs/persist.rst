@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-:desc: Persisting Rasa NLU models in the cloud
-=======
 :desc: Handle Rasa NLU models on premise or in your private cloud for
        gdpr compliant intent recognition and entity extraction.
->>>>>>> master
 
 .. _section_persistence:
 
