@@ -1,4 +1,5 @@
 import argparse
+import io
 import logging
 from functools import wraps
 
@@ -6,7 +7,6 @@ import simplejson
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.web.static import File
 
 from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
@@ -347,13 +347,14 @@ class RasaNLU(object):
 
         try:
             request.setResponseCode(200)
-
+            request.setHeader("Content-Disposition", "attachment")
             path_to_model = yield self.data_router.start_train_process(
                 data_file, project,
                 RasaNLUModelConfig(model_config), model_name)
-            zipped_path = utils.zip_folder(returnValue(path_to_model))
+            zipped_path = utils.zip_folder(path_to_model, 'zipfile')
 
-            return File(zipped_path)
+            logger.info(zipped_path)
+            return returnValue(io.open(zipped_path, 'wb').read())
 
         except MaxTrainingError as e:
             request.setResponseCode(403)

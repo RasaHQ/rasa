@@ -1,19 +1,19 @@
 import errno
-from collections import namedtuple
-
 import glob
 import io
 import json
 import logging
 import os
 import re
+import tempfile
+from collections import namedtuple
+from typing import Any, Callable, Dict, List, Optional, Text, Type
+
 import requests
 import ruamel.yaml as yaml
 import simplejson
-import tempfile
 from requests import Response
 from requests.auth import HTTPBasicAuth
-from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -369,16 +369,33 @@ def create_temporary_file(data: Any,
     return f.name
 
 
-def zip_folder(folder: Text) -> Text:
+def _zipdir(path, ziph):
+    # ziph is zipfile handle
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file))
+
+
+def zip_folder(folder: Text, library: Text = None) -> Text:
     """Create an archive from a folder."""
     import tempfile
     import shutil
+    import zipfile
 
     zipped_path = tempfile.NamedTemporaryFile(delete=False)
     zipped_path.close()
 
+    if library == 'zipfile':
+        zip_name = zipped_path.name
+        file = zipfile.ZipFile(zip_name, 'w',
+                               zipfile.ZIP_DEFLATED)
+        _zipdir(folder, file)
+        file.close()
+        return zip_name
+        # return "{}/{}".format(zipped_path.name, model_name)
     # WARN: not thread save!
-    return shutil.make_archive(zipped_path.name, str("zip"), folder)
+    else:
+        return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 
 def concat_url(base: Text, subpath: Optional[Text]) -> Text:

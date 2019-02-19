@@ -153,8 +153,16 @@ def test_post_train_success(app, rasa_default_train_data):
                         json=model_config)
     time.sleep(30)
     app.flush()
-    rjs = yield response.json()
-    assert response.result.code == 200
+    response = yield response
+    content = yield response.content()
+    with io.open('./test_download.zip', 'wb') as f:
+        f.write(content)
+    import zipfile
+    zip_test = zipfile.is_zipfile("./test_download.zip")
+    assert zip_test == zipfile.ZIP_DEFLATED
+    zip_ref = zipfile.ZipFile("./test_download.zip", 'r')
+    zip_ref.extractall("./test_unzip")
+    zip_ref.close()
 
 
 @utilities.slowtest
