@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import shutil
+from typing import List
 
 from rasa.cli.default_arguments import add_model_param
 from rasa.cli.utils import validate, check_path_exists
@@ -12,7 +13,8 @@ from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 logger = logging.getLogger(__name__)
 
 
-def add_subparser(subparsers, parents):
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     run_parser = subparsers.add_parser(
         "run",
         parents=parents,
@@ -55,7 +57,7 @@ def add_subparser(subparsers, parents):
     sdk_subparser.set_defaults(func=run_actions)
 
 
-def add_run_arguments(parser):
+def add_run_arguments(parser: argparse.ArgumentParser):
     from rasa_core.cli.run import add_run_arguments
 
     add_run_arguments(parser)
@@ -68,7 +70,7 @@ def add_run_arguments(parser):
         help="Authentication credentials for the connector as a yml file")
 
 
-def _add_nlu_arguments(parser):
+def _add_nlu_arguments(parser: argparse.ArgumentParser):
     from rasa_nlu.cli.server import add_server_arguments
 
     add_server_arguments(parser)
@@ -82,7 +84,7 @@ def _add_nlu_arguments(parser):
     add_model_param(parser, "NLU")
 
 
-def _adk_sdk_arguments(parser):
+def _adk_sdk_arguments(parser: argparse.ArgumentParser):
     import rasa_core_sdk.cli.arguments as sdk
 
     sdk.add_endpoint_arguments(parser)
@@ -93,7 +95,7 @@ def _adk_sdk_arguments(parser):
         help="name of action package to be loaded")
 
 
-def run_nlu(args):
+def run_nlu(args: argparse.Namespace):
     import rasa_nlu.server
     import tempfile
 
@@ -110,7 +112,7 @@ def run_nlu(args):
     shutil.rmtree(model_path)
 
 
-def run_actions(args):
+def run_actions(args: argparse.Namespace):
     import rasa_core_sdk.endpoint as sdk
     import sys
 
@@ -124,7 +126,7 @@ def run_actions(args):
     sdk.run(args)
 
 
-def run(args):
+def run(args: argparse.Namespace):
     from rasa_core.broker import PikaProducer
     from rasa_core.interpreter import RasaNLUInterpreter
     import rasa_core.run

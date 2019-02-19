@@ -1,8 +1,11 @@
 import argparse
+from typing import List
+
 import rasa.cli.run
 
 
-def add_subparser(subparsers, parents):
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     shell_parser = subparsers.add_parser(
         "shell",
         parents=parents,
@@ -13,6 +16,6 @@ def add_subparser(subparsers, parents):
     shell_parser.set_defaults(func=shell)
 
 
-def shell(args):
+def shell(args: argparse.Namespace):
     args.connector = "cmdline"
     rasa.cli.run.run(args)

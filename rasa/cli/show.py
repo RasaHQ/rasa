@@ -1,5 +1,6 @@
 import argparse
 import os
+from typing import List
 
 from rasa.cli.default_arguments import (
     add_config_param, add_domain_param,
@@ -7,7 +8,8 @@ from rasa.cli.default_arguments import (
 from rasa.model import DEFAULTS_NLU_DATA_PATH
 
 
-def add_subparser(subparsers, parents):
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     show_parser = subparsers.add_parser(
         "show",
         parents=parents,
@@ -28,7 +30,7 @@ def add_subparser(subparsers, parents):
     show_stories_subparser.set_defaults(func=show)
 
 
-def add_core_visualization_params(parser):
+def add_core_visualization_params(parser: argparse.ArgumentParser):
     from rasa_core.cli.visualization import add_visualization_arguments
 
     add_visualization_arguments(parser)
@@ -36,7 +38,7 @@ def add_core_visualization_params(parser):
     add_stories_param(parser)
 
 
-def show(args):
+def show(args: argparse.Namespace):
     import rasa_core.visualize as visualize
 
     args.config = [args.config]

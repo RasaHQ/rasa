@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from typing import List, Optional, Text
 
 from rasa.cli.default_arguments import add_model_param, add_stories_param
 from rasa.cli.utils import validate
@@ -11,7 +12,8 @@ from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
 logger = logging.getLogger(__name__)
 
 
-def add_subparser(subparsers, parents):
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     test_parser = subparsers.add_parser(
         "test",
         parents=parents,
@@ -48,7 +50,7 @@ def add_subparser(subparsers, parents):
     test_parser.set_defaults(func=test)
 
 
-def _add_core_arguments(parser):
+def _add_core_arguments(parser: argparse.ArgumentParser):
     from rasa_core.cli.evaluation import add_evaluation_arguments
 
     add_evaluation_arguments(parser)
@@ -63,7 +65,7 @@ def _add_core_arguments(parser):
              "to the supplied URL.")
 
 
-def _add_core_subparser_arguments(parser):
+def _add_core_subparser_arguments(parser: argparse.ArgumentParser):
     default_path=get_latest_model(DEFAULT_MODELS_PATH)
     parser.add_argument(
         '-m', '--model',
@@ -73,7 +75,7 @@ def _add_core_subparser_arguments(parser):
              "in this directory will be compared.")
 
 
-def _add_nlu_arguments(parser):
+def _add_nlu_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('-u', '--nlu',
                         type=str,
                         default="data/nlu",
@@ -106,7 +108,7 @@ def _add_nlu_arguments(parser):
                         help="output path for the confusion matrix plot")
 
 
-def _add_nlu_subparser_arguments(parser):
+def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         '--model',
         type=str,
@@ -115,7 +117,8 @@ def _add_nlu_subparser_arguments(parser):
              "perform crossvalidation.")
 
 
-def test_core(args, model_path=None):
+def test_core(args: argparse.Namespace, model_path: Optional[Text] = None
+              ) -> None:
     import rasa_core.evaluate
     from rasa_nlu import utils as nlu_utils
     from rasa_core.utils import AvailableEndpoints
@@ -166,7 +169,8 @@ def test_core(args, model_path=None):
         rasa_core.evaluate.plot_curve(args.output, number_of_stories)
 
 
-def test_nlu(args, model_path=None):
+def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None
+             ) -> None:
     import rasa_nlu
 
     validate(args, [("model", DEFAULT_MODELS_PATH),
@@ -208,7 +212,7 @@ def test_nlu(args, model_path=None):
                                                     "test")
 
 
-def test(args):
+def test(args: argparse.Namespace):
     validate(args, [("model", DEFAULT_MODELS_PATH)])
     model_path = get_model(args.model)
 

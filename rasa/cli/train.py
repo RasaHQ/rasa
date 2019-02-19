@@ -1,12 +1,14 @@
 import argparse
 import os
 import tempfile
+from typing import List, Text, Optional
 
 import rasa.model as model
 from rasa.cli.default_arguments import (
     add_config_param, add_domain_param,
     add_stories_param)
-from rasa.cli.utils import check_path_exists, validate
+from rasa.cli.utils import (check_path_exists, validate,
+                            create_default_output_path)
 from rasa.cli.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
                                 DEFAULT_STORIES_PATH, DEFAULT_NLU_DATA_PATH)
 from rasa.model import (
@@ -15,7 +17,8 @@ from rasa.model import (
     nlu_fingerprint_changed, unpack_model)
 
 
-def add_subparser(subparsers, parents):
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     from rasa_core.cli.train import add_general_args
 
     train_parser = subparsers.add_parser(
@@ -52,7 +55,7 @@ def add_subparser(subparsers, parents):
     train_parser.set_defaults(func=train)
 
 
-def add_general_arguments(parser):
+def add_general_arguments(parser: argparse.ArgumentParser):
     add_config_param(parser)
     parser.add_argument(
         "-o", "--out",
@@ -61,12 +64,12 @@ def add_general_arguments(parser):
         help="Directory where your models are stored.")
 
 
-def add_core_arguments(parser):
+def add_core_arguments(parser: argparse.ArgumentParser):
     add_domain_param(parser)
     add_stories_param(parser)
 
 
-def _add_core_compare_arguments(parser):
+def _add_core_compare_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--percentages",
         nargs="*",
@@ -87,7 +90,7 @@ def _add_core_compare_arguments(parser):
              "models are trained to compare policies.")
 
 
-def add_nlu_arguments(parser):
+def add_nlu_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-u", "--nlu",
         type=lambda v: check_path_exists(v, "--nlu", "data/nlu"),
@@ -95,15 +98,7 @@ def add_nlu_arguments(parser):
         help="File or folder containing your NLU training data.")
 
 
-def create_default_output_path(model_directory=DEFAULT_MODELS_PATH, prefix=""):
-    import time
-
-    time_format = "%Y%m%d-%H%M%S"
-    return "{}/{}{}.tar".format(model_directory, prefix,
-                                time.strftime(time_format))
-
-
-def train(args):
+def train(args: argparse.Namespace) -> Text:
     from rasa_core.utils import print_success
 
     validate(args, [("out", DEFAULT_MODELS_PATH, True),
@@ -160,7 +155,8 @@ def train(args):
         return old_model
 
 
-def train_core(args, train_path=None):
+def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
+               ) -> Optional[Text]:
     import rasa_core.train
     from rasa_core.utils import print_success
 
@@ -201,7 +197,8 @@ def train_core(args, train_path=None):
         return None
 
 
-def train_nlu(args, train_path=None):
+def train_nlu(args: argparse.Namespace, train_path: Optional[Text] = None
+              ) -> Optional["Interpreter"]:
     import rasa_nlu.train
     from rasa_core.utils import print_success
     from rasa_nlu import config

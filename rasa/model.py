@@ -3,12 +3,14 @@ import os
 import glob
 import shutil
 import tempfile
-from typing import Text
+from typing import Text, Tuple, Union, Optional, List, Dict
 
 from rasa_core.utils import get_file_hash, dump_obj_as_json_to_file
 import rasa_core
 import rasa_nlu
 import rasa
+
+Fingerprint = Dict[Text, Union[Text, List[Text]]]
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +29,16 @@ FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_MESSAGES_KEY = "messages"
 
 
-def get_model(model_path, subdirectories=False):
+def get_model(model_path: Text, subdirectories: bool = False) -> Text:
     if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
 
     return unpack_model(model_path, subdirectories=subdirectories)
 
 
-def unpack_model(model_file, working_directory=None, subdirectories=False):
+def unpack_model(model_file: Text, working_directory: Text = None,
+                 subdirectories: bool = False
+                 ) -> Union[Text, Tuple[Text, Text, Text]]:
     import tarfile
 
     if working_directory is None:
@@ -55,7 +59,7 @@ def unpack_model(model_file, working_directory=None, subdirectories=False):
         return model_directory, core_subdirectory, nlu_subdirectory
 
 
-def get_latest_model(model_path):
+def get_latest_model(model_path: Text) -> Optional[Text]:
     if not os.path.exists(model_path) or os.path.isfile(model_path):
         model_path = os.path.dirname(model_path)
 
@@ -67,12 +71,13 @@ def get_latest_model(model_path):
     return max(list_of_files, key=os.path.getctime)
 
 
-def get_models(model_path):
+def get_models(model_path: Text) -> List[Text]:
     return glob.glob(os.path.join(model_path, "*.tar"))
 
 
-def create_package_rasa(training_directory, model_directory, output_filename,
-                        fingerprint=None):
+def create_package_rasa(training_directory: Text, model_directory: Text,
+                        output_filename: Text,
+                        fingerprint: Optional[Fingerprint] = None) -> Text:
     import tarfile
 
     full_path = os.path.join(training_directory, model_directory)
@@ -90,7 +95,10 @@ def create_package_rasa(training_directory, model_directory, output_filename,
     return output_filename
 
 
-def model_fingerprint(config_file, domain_file=None, nlu_data=None, stories=None):
+def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
+                      nlu_data: Optional[Text] = None,
+                      stories: Optional[Text] = None
+                      ) -> Fingerprint:
     fingerprint = {
         FINGERPRINT_CONFIG_KEY: get_file_hash(config_file),
         FINGERPRINT_NLU_VERSION_KEY: rasa_nlu.__version__,
@@ -120,7 +128,7 @@ def model_fingerprint(config_file, domain_file=None, nlu_data=None, stories=None
     return fingerprint
 
 
-def fingerprint_from_path(model_path):
+def fingerprint_from_path(model_path: Text) -> Fingerprint:
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE)
 
     if os.path.isfile(fingerprint_path):
@@ -129,12 +137,13 @@ def fingerprint_from_path(model_path):
         return {}
 
 
-def persist_fingerprint(path, fingerprint):
-    path = os.path.join(path, FINGERPRINT_FILE)
+def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
+    path = os.path.join(output_path, FINGERPRINT_FILE)
     dump_obj_as_json_to_file(path, fingerprint)
 
 
-def core_fingerprint_changed(fingerprint1, fingerprint2):
+def core_fingerprint_changed(fingerprint1: Fingerprint,
+                             fingerprint2: Fingerprint) -> bool:
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_CORE_VERSION_KEY,
                      FINGERPRINT_DOMAIN_KEY, FINGERPRINT_RASA_VERSION_KEY,
                      FINGERPRINT_STORIES_KEY]
@@ -143,7 +152,8 @@ def core_fingerprint_changed(fingerprint1, fingerprint2):
         [fingerprint1.get(k) != fingerprint2.get(k) for k in relevant_keys])
 
 
-def nlu_fingerprint_changed(fingerprint1, fingerprint2):
+def nlu_fingerprint_changed(fingerprint1: Fingerprint,
+                            fingerprint2: Fingerprint) -> bool:
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_VERSION_KEY,
                      FINGERPRINT_RASA_VERSION_KEY, FINGERPRINT_MESSAGES_KEY]
 

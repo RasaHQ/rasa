@@ -1,4 +1,9 @@
-def add_subparser(subparsers, parents):
+from argparse import ArgumentParser, _SubParsersAction
+from typing import List
+
+
+def add_subparser(subparsers: _SubParsersAction,
+                  parents: List[ArgumentParser]):
     from rasa_nlu import convert
 
     data_parser = subparsers.add_parser(

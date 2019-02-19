@@ -1,12 +1,15 @@
 import os
+import argparse
+from typing import List, Text
 
 import questionary
 from rasa.cli import train
 from rasa.cli.shell import shell
-from rasa.cli.train import create_default_output_path
+from rasa.cli.utils import create_default_output_path
 
 
-def add_subparser(subparsers, parents):
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     scaffold_parser = subparsers.add_parser(
         "init",
         parents=parents,
@@ -14,12 +17,12 @@ def add_subparser(subparsers, parents):
     scaffold_parser.set_defaults(func=run)
 
 
-def scaffold_path():
+def scaffold_path() -> Text:
     import pkg_resources
     return pkg_resources.resource_filename(__name__, "initial_project")
 
 
-def print_train_or_instructions(args, path):
+def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa_core.utils import print_success
 
     print_success("Your bot is ready to go!")
@@ -42,7 +45,7 @@ def print_train_or_instructions(args, path):
               "".format(path))
 
 
-def print_run_or_instructions(args, path):
+def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa_core import constants
 
     should_run = questionary.confirm("Do you want to speak to the trained bot "
@@ -64,7 +67,7 @@ def print_run_or_instructions(args, path):
               "".format(path))
 
 
-def init_project(args, path):
+def init_project(args: argparse.Namespace, path: Text) -> None:
     from distutils.dir_util import copy_tree
 
     copy_tree(scaffold_path(), path)
@@ -73,13 +76,13 @@ def init_project(args, path):
     print_train_or_instructions(args, path)
 
 
-def print_cancel():
+def print_cancel() -> None:
     print("Ok. Then I stop here. If you need me again, simply type "
           "'rasa init' 🙋🏽‍♀️")
     exit(0)
 
 
-def run(args):
+def run(args: argparse.Namespace) -> None:
     from rasa_core.utils import print_success
 
     print_success("Welcome to Rasa! 🤖\n")

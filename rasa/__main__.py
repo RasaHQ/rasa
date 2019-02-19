@@ -9,10 +9,12 @@ from rasa.cli import (scaffold, run, train, configure, interactive, shell, test,
 from rasa_core.cli.arguments import add_logging_option_arguments
 from rasa_core.utils import configure_colored_logging
 
+from rasa.cli.utils import parse_last_positional_argument_as_model_path
+
 logger = logging.getLogger(__name__)
 
 
-def create_argument_parser():
+def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the training script."""
     parser = argparse.ArgumentParser(
         prog="rasa",
@@ -44,11 +46,11 @@ def create_argument_parser():
     return parser
 
 
-def print_version():
+def print_version() -> None:
     print("Rasa", version.__version__)
 
 
-def main():
+def main() -> None:
     # Running as standalone python application
     arg_parser = create_argument_parser()
     cmdline_arguments = arg_parser.parse_args()
