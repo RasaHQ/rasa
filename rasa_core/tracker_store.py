@@ -310,13 +310,13 @@ class SQLTrackerStore(TrackerStore):
 
     def keys(self):
         """Returns the keys of the items stored in the database"""
-        from sqlalchemy.inspection import inspect
-        return [key.name for key in inspect(self.SQLEvent).primary_key]
+        return self.SQLEvent.__table__.columns.keys()
 
     def retrieve(self, sender_id: Text):
         """Recreates the tracker from all previously stored events"""
 
-        query = self.session.query(self.SQLEvent).filter_by(sender_id=sender_id).all()
+        subquery = self.session.query(self.SQLEvent)
+        query = subquery.filter_by(sender_id=sender_id).all()
         events = [json.loads(event.data) for event in query]
 
         if self.domain:
@@ -354,8 +354,11 @@ class SQLTrackerStore(TrackerStore):
         """Returns events from the tracker which aren't currently stored"""
 
         from sqlalchemy import func
+        query = self.session.query(func.max(self.SQLEvent.timestamp))
+        max_timestamp = query.filter_by(sender_id=tracker.sender_id).scalar()
 
-        max_timestamp = self.session.query(func.max(self.SQLEvent.timestamp)).filter_by(sender_id=tracker.sender_id).scalar()
+        if max_timestamp is None:
+            max_timestamp = 0
 
         latest_events = []
 
