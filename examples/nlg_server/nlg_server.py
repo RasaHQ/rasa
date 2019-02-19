@@ -29,7 +29,7 @@ def create_argument_parser():
         '--workers',
         default=DEFAULT_SANIC_WORKERS,
         type=int,
-        help="Number of sanic workers")
+        help="Number of processes to spin up")
     parser.add_argument(
         '-d', '--domain',
         type=str,
