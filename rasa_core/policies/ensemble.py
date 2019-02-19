@@ -380,6 +380,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 best_policy_name = 'policy_{}_{}'.format(
                     fallback_idx,
                     type(fallback_policy).__name__)
+
         # normalize probabilities
         if np.sum(result) != 0:
             result = result / np.nansum(result)
