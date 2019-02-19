@@ -16,7 +16,7 @@ WORKDIR ${RASA_NLU_HOME}
 
 COPY . ${RASA_NLU_HOME}
 
-RUN pip install -r alt_requirements/requirements_tensorflow_sklearn.txt
+RUN pip install -r alt_requirements/requirements_supervised_embeddings.txt
 
 RUN pip install -e .
 

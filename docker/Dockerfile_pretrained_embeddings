@@ -19,7 +19,7 @@ COPY . ${RASA_NLU_HOME}
 # use bash always
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-RUN pip install -r alt_requirements/requirements_spacy_sklearn.txt
+RUN pip install -r alt_requirements/requirements_pretrained_embeddings.txt
 
 RUN pip install -e .
 
