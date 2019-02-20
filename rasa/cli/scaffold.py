@@ -6,6 +6,7 @@ import questionary
 from rasa.cli import train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_default_output_path
+from rasa_core.utils import print_success
 
 
 def add_subparser(subparsers: argparse._SubParsersAction,
@@ -18,8 +19,6 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
 
 def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
-    from rasa_core.utils import print_success
-
     print_success("Your bot is ready to go!")
     should_train = questionary.confirm("Do you want me to train an initial "
                                        "model for the bot? 💪🏽").ask()
@@ -35,9 +34,9 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         print_run_or_instructions(args, path)
 
     else:
-        print("No problem 👍🏼. You can also train me later by going to the "
-              "project directory and running 'rasa train'."
-              "".format(path))
+        print_success("No problem 👍🏼. You can also train me later by going "
+                      "to the project directory and running 'rasa train'."
+                      "".format(path))
 
 
 def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
@@ -57,9 +56,9 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
         shell(args)
     else:
-        print("Ok 👍🏼. If you want to speak to the bot later, change into the"
-              "project directory and run 'rasa shell'."
-              "".format(path))
+        print_success("Ok 👍🏼. If you want to speak to the bot later, "
+                      "change into the project directory and run 'rasa shell'."
+                      "".format(path))
 
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
@@ -80,8 +79,8 @@ def scaffold_path() -> Text:
 
 
 def print_cancel() -> None:
-    print("Ok. Then I stop here. If you need me again, simply type "
-          "'rasa init' 🙋🏽‍♀️")
+    print_success("Ok. Then I stop here. If you need me again, simply type "
+                  "'rasa init' 🙋🏽‍♀️")
     exit(0)
 
 
@@ -92,8 +91,8 @@ def _ask_create_path(path: Text) -> None:
     if should_create:
         os.makedirs(path)
     else:
-        print("Ok. Then I stop here. If you need me again, simply type "
-              "'rasa init' 🙋🏽‍♀️")
+        print_success("Ok. Then I stop here. If you need me again, simply type "
+                      "'rasa init' 🙋🏽‍♀️")
         exit(0)
 
 

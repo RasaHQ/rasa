@@ -8,12 +8,13 @@ from rasa.model import DEFAULT_MODELS_PATH
 def check_path_exists(current: Optional[Text], parameter: Text,
                       default: Optional[Text] = None,
                       none_is_valid: bool = False) -> Optional[Text]:
+    from rasa_core.utils import print_warning
 
     if (current is None or
             current is not None and not os.path.exists(current)):
         if default is not None and os.path.exists(default):
-            print("'{}' not found. Using default location '{}' instead."
-                  "".format(current, default))
+            print_warning("'{}' not found. Using default location '{}' instead."
+                          "".format(current, default))
             current = default
         elif none_is_valid:
             current = None
@@ -25,12 +26,14 @@ def check_path_exists(current: Optional[Text], parameter: Text,
 
 def cancel_cause_not_found(current: Optional[Text], parameter: Text,
                            default: Optional[Text]) -> None:
+    from rasa_core.utils import print_error
+
     default_clause = ""
     if default:
         default_clause = ("use the default location ('{}') or "
                           "".format(default))
-    print("The path '{}' does not exist. Please make sure to {}specify it "
-          "with '--{}'.".format(current, default_clause, parameter))
+    print_error("The path '{}' does not exist. Please make sure to {}specify it"
+                " with '--{}'.".format(current, default_clause, parameter))
     exit(1)
 
 
