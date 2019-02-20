@@ -17,11 +17,6 @@ def add_subparser(subparsers: argparse._SubParsersAction,
     scaffold_parser.set_defaults(func=run)
 
 
-def scaffold_path() -> Text:
-    import pkg_resources
-    return pkg_resources.resource_filename(__name__, "initial_project")
-
-
 def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa_core.utils import print_success
 
@@ -68,18 +63,45 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
+    _create_initial_project(path)
+    print("Created project directory at '{}'.".format(os.path.abspath(path)))
+    print_train_or_instructions(args, path)
+
+
+def _create_initial_project(path: Text) -> None:
     from distutils.dir_util import copy_tree
 
     copy_tree(scaffold_path(), path)
 
-    print("Created project directory at '{}'.".format(os.path.abspath(path)))
-    print_train_or_instructions(args, path)
+
+def scaffold_path() -> Text:
+    import pkg_resources
+    return pkg_resources.resource_filename(__name__, "initial_project")
 
 
 def print_cancel() -> None:
     print("Ok. Then I stop here. If you need me again, simply type "
           "'rasa init' 🙋🏽‍♀️")
     exit(0)
+
+
+def _ask_create_path(path: Text) -> None:
+    should_create = questionary.confirm("Path '{}' does not exist 🧐. "
+                                        "Should I create it?"
+                                        "".format(path)).ask()
+    if should_create:
+        os.makedirs(path)
+    else:
+        print("Ok. Then I stop here. If you need me again, simply type "
+              "'rasa init' 🙋🏽‍♀️")
+        exit(0)
+
+
+def _ask_overwrite(path: Text) -> None:
+    overwrite = questionary.confirm("Directory '{}' is not empty. Continue?"
+                                    "".format(os.path.abspath(path))).ask()
+    if not overwrite:
+        print_cancel()
 
 
 def run(args: argparse.Namespace) -> None:
@@ -97,24 +119,12 @@ def run(args: argparse.Namespace) -> None:
                             default=".").ask()
 
     if not os.path.isdir(path):
-        should_create = questionary.confirm("Path '{}' does not exist 🧐. "
-                                            "Should I create it?"
-                                            "".format(path)).ask()
-        if should_create:
-            os.makedirs(path)
-        else:
-            print("Ok. Then I stop here. If you need me again, simply type "
-                  "'rasa init' 🙋🏽‍♀️")
-            exit(0)
+        _ask_create_path(path)
 
     if path is None or not os.path.isdir(path):
         print_cancel()
 
     if len(os.listdir(path)) > 0:
-        overwrite = questionary.confirm(
-            "Directory '{}' is not empty. Continue?"
-            "".format(os.path.abspath(path))).ask()
-        if not overwrite:
-            print_cancel()
+        _ask_overwrite(path)
 
     init_project(args, path)

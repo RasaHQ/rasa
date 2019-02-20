@@ -8,8 +8,10 @@ from rasa.model import DEFAULT_MODELS_PATH
 def check_path_exists(current: Optional[Text], parameter: Text,
                       default: Optional[Text] = None,
                       none_is_valid: bool = False) -> Optional[Text]:
-    if not (current is None and none_is_valid) and not os.path.exists(current):
-        if os.path.exists(default):
+
+    if (current is None or
+            current is not None and not os.path.exists(current)):
+        if default is not None and os.path.exists(default):
             print("'{}' not found. Using default location '{}' instead."
                   "".format(current, default))
             current = default
@@ -33,7 +35,7 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
 
 
 def validate(args: argparse.Namespace,
-             params: List[Union[Tuple[Text, Text], Tuple[Text, Text, Text]]]
+             params: List[Union[Tuple[Text, Text], Tuple[Text, Text, bool]]]
              ) -> None:
     for p in params:
         none_is_valid = False if len(p) == 2 else p[2]
@@ -45,7 +47,10 @@ def validate(args: argparse.Namespace,
 def parse_last_positional_argument_as_model_path() -> None:
     import sys
 
-    if sys.argv[1] in ["run", "test"] and not sys.argv[-1].startswith('-'):
+    if (len(sys.argv) >= 2 and
+            sys.argv[1] in ["run", "test"] and not
+            sys.argv[-2].startswith('-') and
+            os.path.exists(sys.argv[-1])):
         sys.argv.append(sys.argv[-1])
         sys.argv[-2] = "--model"
 
@@ -55,5 +60,5 @@ def create_default_output_path(model_directory: Text = DEFAULT_MODELS_PATH,
     import time
 
     time_format = "%Y%m%d-%H%M%S"
-    return "{}/{}{}.tar".format(model_directory, prefix,
+    return "{}/{}{}.tar.gz".format(model_directory, prefix,
                                 time.strftime(time_format))

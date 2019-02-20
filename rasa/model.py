@@ -18,7 +18,7 @@ DEFAULT_MODELS_PATH = "models/"
 DEFAULT_DATA_PATH = "data"
 DEFAULTS_NLU_DATA_PATH = os.path.join(DEFAULT_DATA_PATH, "nlu")
 
-FINGERPRINT_FILE = "fingerprint.json"
+FINGERPRINT_FILE_PATH = "fingerprint.json"
 
 FINGERPRINT_CONFIG_KEY = "config"
 FINGERPRINT_DOMAIN_KEY = "domain"
@@ -26,7 +26,7 @@ FINGERPRINT_NLU_VERSION_KEY = "nlu_version"
 FINGERPRINT_CORE_VERSION_KEY = "core_version"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
-FINGERPRINT_MESSAGES_KEY = "messages"
+FINGERPRINT_NLU_DATA_KEY = "messages"
 
 
 def get_model(model_path: Text, subdirectories: bool = False) -> Text:
@@ -34,6 +34,18 @@ def get_model(model_path: Text, subdirectories: bool = False) -> Text:
         model_path = get_latest_model(model_path)
 
     return unpack_model(model_path, subdirectories=subdirectories)
+
+
+def get_latest_model(model_path: Text) -> Optional[Text]:
+    if not os.path.exists(model_path) or os.path.isfile(model_path):
+        model_path = os.path.dirname(model_path)
+
+    list_of_files = glob.glob(os.path.join(model_path, "*.tar.gz"))
+
+    if len(list_of_files) == 0:
+        return None
+
+    return max(list_of_files, key=os.path.getctime)
 
 
 def unpack_model(model_file: Text, working_directory: Text = None,
@@ -57,22 +69,6 @@ def unpack_model(model_file: Text, working_directory: Text = None,
         nlu_subdirectory = os.path.join(model_directory, "nlu")
         core_subdirectory = os.path.join(model_directory, "core")
         return model_directory, core_subdirectory, nlu_subdirectory
-
-
-def get_latest_model(model_path: Text) -> Optional[Text]:
-    if not os.path.exists(model_path) or os.path.isfile(model_path):
-        model_path = os.path.dirname(model_path)
-
-    list_of_files = get_models(model_path)
-
-    if len(list_of_files) == 0:
-        return None
-
-    return max(list_of_files, key=os.path.getctime)
-
-
-def get_models(model_path: Text) -> List[Text]:
-    return glob.glob(os.path.join(model_path, "*.tar"))
 
 
 def create_package_rasa(training_directory: Text, model_directory: Text,
@@ -99,37 +95,30 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
                       nlu_data: Optional[Text] = None,
                       stories: Optional[Text] = None
                       ) -> Fingerprint:
-    fingerprint = {
-        FINGERPRINT_CONFIG_KEY: get_file_hash(config_file),
+    return {
+        FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
+        FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file),
+        FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
+        FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_NLU_VERSION_KEY: rasa_nlu.__version__,
         FINGERPRINT_CORE_VERSION_KEY: rasa_core.__version__,
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__
     }
 
-    if domain_file and os.path.isfile(domain_file):
-        fingerprint[FINGERPRINT_DOMAIN_KEY] = get_file_hash(domain_file)
 
-    if nlu_data and os.path.isdir(nlu_data):
-        fingerprint[FINGERPRINT_MESSAGES_KEY] = [
-            get_file_hash(os.path.join(nlu_data, f))
-            for f in os.listdir(nlu_data)
-            if not f.startswith('.')]
-    elif nlu_data:
-        fingerprint[FINGERPRINT_MESSAGES_KEY] = [get_file_hash(nlu_data)]
+def _get_hashes_for_paths(path: Text) -> List[Text]:
+    files = []
+    if path and os.path.isdir(path):
+        files = [os.path.join(path, f) for f in os.listdir(path)
+                 if not f.startswith('.')]
+    elif path and os.path.isfile(path):
+        files = [path]
 
-    if stories and os.path.isdir(stories):
-        fingerprint[FINGERPRINT_STORIES_KEY] = [
-            get_file_hash(os.path.join(stories, f))
-            for f in os.listdir(stories)
-            if not f.startswith('.')]
-    elif stories:
-        fingerprint[FINGERPRINT_STORIES_KEY] = [get_file_hash(stories)]
-
-    return fingerprint
+    return [get_file_hash(f) for f in files]
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
-    fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE)
+    fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
         return rasa_core.utils.read_json_file(fingerprint_path)
@@ -138,15 +127,14 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
 
 
 def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
-    path = os.path.join(output_path, FINGERPRINT_FILE)
+    path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
     dump_obj_as_json_to_file(path, fingerprint)
 
 
 def core_fingerprint_changed(fingerprint1: Fingerprint,
                              fingerprint2: Fingerprint) -> bool:
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_CORE_VERSION_KEY,
-                     FINGERPRINT_DOMAIN_KEY, FINGERPRINT_RASA_VERSION_KEY,
-                     FINGERPRINT_STORIES_KEY]
+                     FINGERPRINT_DOMAIN_KEY, FINGERPRINT_STORIES_KEY]
 
     return any(
         [fingerprint1.get(k) != fingerprint2.get(k) for k in relevant_keys])
@@ -155,7 +143,7 @@ def core_fingerprint_changed(fingerprint1: Fingerprint,
 def nlu_fingerprint_changed(fingerprint1: Fingerprint,
                             fingerprint2: Fingerprint) -> bool:
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_VERSION_KEY,
-                     FINGERPRINT_RASA_VERSION_KEY, FINGERPRINT_MESSAGES_KEY]
+                     FINGERPRINT_NLU_DATA_KEY]
 
     return any(
         [fingerprint1.get(k) != fingerprint2.get(k) for k in relevant_keys])
@@ -164,8 +152,8 @@ def nlu_fingerprint_changed(fingerprint1: Fingerprint,
 def merge_model(source: Text, target: Text) -> bool:
     try:
         shutil.move(source, target)
-        return False
+        return True
     except Exception as e:
         logging.debug(e)
-        return True
+        return False
 

@@ -10,7 +10,7 @@ from rasa.cli.utils import validate, create_default_output_path
 from rasa.cli.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
                                 DEFAULT_STORIES_PATH, DEFAULT_NLU_DATA_PATH)
 from rasa.model import (
-    DEFAULT_MODELS_PATH, core_fingerprint_changed,
+    core_fingerprint_changed,
     fingerprint_from_path, get_latest_model, merge_model, model_fingerprint,
     nlu_fingerprint_changed, unpack_model)
 
@@ -90,9 +90,7 @@ def _add_core_compare_arguments(parser: argparse.ArgumentParser):
 
 def train(args: argparse.Namespace) -> Text:
     from rasa_core.utils import print_success
-
-    validate(args, [("out", DEFAULT_MODELS_PATH, True),
-                    ("domain", DEFAULT_DOMAIN_PATH),
+    validate(args, [("domain", DEFAULT_DOMAIN_PATH),
                     ("config", DEFAULT_CONFIG_PATH),
                     ("nlu", DEFAULT_NLU_DATA_PATH),
                     ("stories", DEFAULT_STORIES_PATH)])
@@ -112,11 +110,11 @@ def train(args: argparse.Namespace) -> Text:
 
         if not core_fingerprint_changed(last_fingerprint, new_fingerprint):
             target_path = os.path.join(train_path, "rasa_model", "core")
-            retrain_core = merge_model(old_core, target_path)
+            retrain_core = not merge_model(old_core, target_path)
 
         if not nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
             target_path = os.path.join(train_path, "rasa_model", "nlu")
-            retrain_nlu = merge_model(old_nlu, target_path)
+            retrain_nlu = not merge_model(old_nlu, target_path)
 
     if retrain_core:
         train_core(args, train_path)
@@ -150,11 +148,10 @@ def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
     import rasa_core.train
     from rasa_core.utils import print_success
 
-    args.out = train_path or args.out
+    output = train_path or args.out
 
     validate(args, [("domain", DEFAULT_DOMAIN_PATH),
-                    ("stories", DEFAULT_STORIES_PATH),
-                    ("out", DEFAULT_MODELS_PATH, True)])
+                    ("stories", DEFAULT_STORIES_PATH)])
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -173,7 +170,7 @@ def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
 
         if not train_path:
             # Only Core was trained.
-            output_path = args.out or create_default_output_path(prefix="core-")
+            output_path = output or create_default_output_path(prefix="core-")
             new_fingerprint = model_fingerprint(args.config, args.domain,
                                                 stories=args.stories)
             model.create_package_rasa(_train_path, "rasa_model", output_path,
@@ -193,10 +190,9 @@ def train_nlu(args: argparse.Namespace, train_path: Optional[Text] = None
     from rasa_core.utils import print_success
     from rasa_nlu import config
 
-    args.out = train_path or args.out
+    output = train_path or args.out
 
-    validate(args, [("out", DEFAULT_MODELS_PATH, True),
-                    ("config", DEFAULT_CONFIG_PATH),
+    validate(args, [("config", DEFAULT_CONFIG_PATH),
                     ("nlu", DEFAULT_NLU_DATA_PATH)])
 
     _train_path = train_path or tempfile.mkdtemp()
@@ -208,7 +204,7 @@ def train_nlu(args: argparse.Namespace, train_path: Optional[Text] = None
         fixed_model_name="nlu")
 
     if not train_path:
-        output_path = args.out or create_default_output_path(prefix="nlu-")
+        output_path = output or create_default_output_path(prefix="nlu-")
         new_fingerprint = model_fingerprint(args.config, nlu_data=args.stories,)
         model.create_package_rasa(_train_path, "rasa_model", output_path,
                                   new_fingerprint)
