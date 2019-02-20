@@ -252,9 +252,9 @@ def test_spacy_ner_extractor(spacy_nlp):
         'value': 'West',
         'entity': 'LOC',
         'confidence': None}
-    
+
     # Test dimension filtering
-    
+
     example = Message("anywhere in the West", {
         "intent": "restaurant_search",
         "entities": [],

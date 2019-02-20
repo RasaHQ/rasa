@@ -31,7 +31,7 @@ class EntityExtractor(Component):
                     for entity in extracted
                     if entity["entity"] in requested_dimensions]
         else:
-            return extracted    
+            return extracted
 
     @staticmethod
     def find_entity(ent, text, tokens):

@@ -32,7 +32,8 @@ class SpacyEntityExtractor(EntityExtractor):
         doc = spacy_nlp(message.text)
         all_extracted = self.add_extractor_name(self.extract_entities(doc))
         dimensions = self.component_config["dimensions"]
-        extracted = SpacyEntityExtractor.filter_irrelevant_entities(all_extracted, dimensions)
+        extracted = SpacyEntityExtractor.filter_irrelevant_entities(
+            all_extracted, dimensions)
         message.set("entities",
                     message.get("entities", []) + extracted,
                     add_to_output=True)
