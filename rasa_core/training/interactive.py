@@ -555,6 +555,21 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strs
 
 
+def _write_story_write_nlu(sender_id: Text, endpoint: EndpointConfig):
+    """Write stories and nlu data to file."""
+
+    story_path, nlu_path, domain_path = _request_export_info()
+
+    tracker = retrieve_tracker(endpoint, sender_id)
+    evts = tracker.get("events", [])
+
+    _write_stories_to_file(story_path, evts)
+    _write_nlu_to_file(nlu_path, evts)
+    _write_domain_to_file(domain_path, evts, endpoint)
+
+    logger.info("Successfully wrote stories and NLU data")
+
+
 def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
@@ -570,16 +585,7 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
 
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        story_path, nlu_path, domain_path = _request_export_info()
-
-        tracker = retrieve_tracker(endpoint, sender_id)
-        evts = tracker.get("events", [])
-
-        _write_stories_to_file(story_path, evts)
-        _write_nlu_to_file(nlu_path, evts)
-        _write_domain_to_file(domain_path, evts, endpoint)
-
-        logger.info("Successfully wrote stories and NLU data")
+        _write_story_write_nlu(sender_id, endpoint)
         sys.exit()
     elif answer == "continue":
         # in this case we will just return, and the original
@@ -589,16 +595,7 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
         raise UndoLastStep()
     elif answer == "fork":
         # a fork is created and the first story line saved as if quit
-        story_path, nlu_path, domain_path = _request_export_info()
-
-        tracker = retrieve_tracker(endpoint, sender_id)
-        evts = tracker.get("events", [])
-
-        _write_stories_to_file(story_path, evts)
-        _write_nlu_to_file(nlu_path, evts)
-        _write_domain_to_file(domain_path, evts, endpoint)
-
-        logger.info("Successfully wrote stories and NLU data")
+        _write_story_write_nlu(sender_id, endpoint)
         raise ForkTracker()
     elif answer == "restart":
         raise RestartConversation()
