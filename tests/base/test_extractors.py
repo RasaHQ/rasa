@@ -190,7 +190,7 @@ def test_duckling_entity_extractor(component_builder):
         httpretty.POST,
         "http://localhost:8000/parse",
         body="""[{"body":"5","start":10,"value":{"value":5,
-        "type":"value"},"end":11,"dim":"number"}]d"""
+        "type":"value"},"end":11,"dim":"number"}]"""
     )
 
     message = Message("There are 5 people in a room")
@@ -252,7 +252,13 @@ def test_spacy_ner_extractor(spacy_nlp):
         'value': 'West',
         'entity': 'LOC',
         'confidence': None}
-     
+    
+    # Test dimension filtering
+    
+    example = Message("anywhere in the West", {
+        "intent": "restaurant_search",
+        "entities": [],
+        "spacy_doc": spacy_nlp("anywhere in the west")})
     ext = SpacyEntityExtractor({"dimensions": ["EVENT"]})
     ext.process(example, spacy_nlp=spacy_nlp)
 
