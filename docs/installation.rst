@@ -124,37 +124,15 @@ find this file.
 
 The complete pipeline for mitie can be found here
 
-.. literalinclude:: ../sample_configs/config_mitie.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
-.. warning::
+Using MITIE alone can be quite slow to train, but you can use it with this configuration
 
-    Training MITIE can be quite slow on datasets
-    with more than a few intents. You can try
 
-        - to use the sklearn + MITIE backend instead
-          (which uses sklearn for the training) or
-        - you can install `our mitie fork <https://github.com/tmbo/mitie>`_
-          which should reduce the training time as well.
-
-Another Alternative: sklearn + MITIE
-------------------------------------
-There is another backend that combines the advantages of the two previous ones:
-
-1. the fast and good intent classification from sklearn and
-2. the good entitiy recognition and feature vector creation from MITIE
-
-Especially, if you have a larger number of intents (more than 10),
-training intent classifiers with MITIE can take very long.
-
-To use this backend you need to follow the instructions for
-installing both, sklearn and MITIE.
-
-Example pipeline configuration for the use of MITIE together with
-sklearn:
-
-.. literalinclude:: ../sample_configs/config_mitie_sklearn.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
+
 
 
 Train your first custom Rasa NLU model!

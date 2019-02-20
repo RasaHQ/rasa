@@ -11,9 +11,9 @@ The Short Answer
 ----------------
 
 If you have less than 1000 total training examples, and there is a spaCy model for your 
-language, use the ``pretrained_embeddings`` pipeline:
+language, use the ``pretrained_embeddings_spacy`` pipeline:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 
@@ -32,12 +32,12 @@ for the ``supervised_embeddings`` pipeline this parameter doesn't affect anythin
 A Longer Answer
 ---------------
 
-The two most important pipelines are ``supervised_embeddings`` and ``pretrained_embeddings``.
-The biggest difference between them is that the ``pretrained_embeddings`` pipeline uses pre-trained
+The two most important pipelines are ``supervised_embeddings`` and ``pretrained_embeddings_spacy``.
+The biggest difference between them is that the ``pretrained_embeddings_spacy`` pipeline uses pre-trained
 word vectors from either GloVe or fastText. Instead, supervised embeddings embedding pipeline
 doesn't use any pre-trained word vectors, but instead fits these specifically for your dataset.
 
-The advantage of the ``pretrained_embeddings`` pipeline is that if you have a training example like:
+The advantage of the ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
 already knows that the words "apples" and "pears" are very similar. This is especially useful
 if you don't have very much training data.
@@ -116,7 +116,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
         ]
     }
 
-This is created as a combination of the results of the different components in the pre-configured pipeline ``pretrained_embeddings``.
+This is created as a combination of the results of the different components in the pre-configured pipeline ``pretrained_embeddings_spacy``.
 For example, the ``entities`` attribute is created by the ``ner_crf`` component.
 
 
@@ -185,7 +185,7 @@ Pre-configured Pipelines
 A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 .. code-block:: yaml
@@ -203,14 +203,14 @@ a full list of components. For example, these two configurations are equivalent:
 
 Below is a list of all the pre-configured pipeline templates.
 
-.. _section_pretrained_embeddings_pipeline:
+.. _section_pretrained_embeddings_spacy_pipeline:
 
-Pretrained_embeddings
+pretrained_embeddings_spacy
 ~~~~~~~~~~~~~~~~~~~~~
 
-To use the ``pretrained_embeddings`` template:
+To use the ``pretrained_embeddings_spacy`` template:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 See :ref:`section_languages` for possible values for ``language``. To use
@@ -267,16 +267,16 @@ mitie
 There is no pipeline template, as you need to configure the location
 of mities featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_mitie.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
-mitie_sklearn
+mitie_2
 ~~~~~~~~~~~~~
 
 There is no pipeline template, as you need to configure the location
 of mities featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_mitie_sklearn.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
 
 keyword
