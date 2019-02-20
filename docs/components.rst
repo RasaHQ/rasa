@@ -686,5 +686,12 @@ ner_duckling_http
           url: "http://localhost:8000"
           # dimensions to extract
           dimensions: ["time", "number", "amount-of-money", "distance"]
+          # allows you to configure the locale, by default the language is
+          # used
+          locale: "de_DE"
+          # if not set the default timezone of Duckling is going to be used
+          # needed to calculate dates from relative expressions like "tomorrow"
+          timezone: "Europe/Berlin"
+
 
 .. include:: feedback.inc
