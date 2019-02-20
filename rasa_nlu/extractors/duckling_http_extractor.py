@@ -23,6 +23,7 @@ def extract_value(match):
 
     return value
 
+
 def convert_duckling_format_to_rasa(matches):
     extracted = []
 
