@@ -13,7 +13,7 @@ from rasa_core.trackers import (
     DialogueStateTracker, ActionExecuted,
     EventVerbosity)
 from rasa_core.utils import class_from_module_path
-from sqlalchemy import Table, Column, Integer, String, Float
+from sqlalchemy import Table, Column, Integer, String, Float, MetaData
 from sqlalchemy.engine.base import Engine
 
 logger = logging.getLogger(__name__)
@@ -271,19 +271,21 @@ class SQLTrackerStore(TrackerStore):
                  engine: Engine,
                  domain: Optional[Domain] = None,
                  event_broker: Optional[EventChannel] = None) -> None:
-        from sqlalchemy import MetaData
         from sqlalchemy.orm import sessionmaker
 
         self.engine = engine
-        self.Session = sessionmaker(bind=self.engine)
-        # self.conn = self.engine.connect()
-        self.metadata = MetaData()
+
+        logger.debug('Attempting to connect to database '
+                     'via "{}"...'.format(engine.__str__()))
+
+        self.session = sessionmaker(bind=self.engine)()
+        self._ensure_event_table()
+
+        logger.debug('Connection successful')
+
         self.domain = domain
         self.event_broker = event_broker
         super(SQLTrackerStore, self).__init__(domain, event_broker)
-
-        self.session = self.Session()
-        self._ensure_event_table()
 
     @classmethod
     def from_params(cls,
@@ -304,11 +306,12 @@ class SQLTrackerStore(TrackerStore):
                    domain,
                    event_broker)
 
-
     def _ensure_event_table(self):
         """Creates the events table if not already present in the database"""
 
-        Table("events", self.metadata,
+        metadata = MetaData()
+
+        Table("events", metadata,
               Column("id", Integer, primary_key=True),
               Column("sender_id", String, nullable=False),
               Column("type_name", String, nullable=False),
@@ -317,7 +320,7 @@ class SQLTrackerStore(TrackerStore):
               Column("action_name", String),
               Column("data", String))
 
-        self.metadata.create_all(self.engine)
+        metadata.create_all(self.engine)
 
     def keys(self):
         """Returns the keys of the items stored in the database"""
@@ -331,6 +334,9 @@ class SQLTrackerStore(TrackerStore):
         events = [json.loads(event.data) for event in query]
 
         if self.domain:
+            logger.debug('Recreating tracker '
+                         'from {} stored events'.format(len(events)))
+
             tracker = DialogueStateTracker.from_dict(sender_id, events,
                                                      self.domain.slots)
         else:
@@ -346,7 +352,7 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        events = self._event_buffer(tracker)
+        events = self._event_buffer(tracker)  # only store recent events
 
         for event in events:
             event_data = event.as_dict()
@@ -379,4 +385,5 @@ class SQLTrackerStore(TrackerStore):
             else:
                 break
 
+        logger.debug('Storing {} recent events'.format(len(latest_events)))
         return reversed(latest_events)
