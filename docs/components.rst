@@ -527,6 +527,19 @@ ner_spacy
     As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
     This extractor does not provide any confidence scores.
 
+:Configuration:
+    Configure which dimensions, i.e. entity types, the spacy component
+    should extract. A full list of available dimensions can be found in
+    the `spacy documentation <https://spacy.io/api/annotation#section-named-entities>`_.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "ner_spacy"
+          # dimensions to extract
+          dimensions: ["PERSON", "LOG", "ORG", "PRODUCT"]
+
+
 ner_synonyms
 ~~~~~~~~~~~~
 
@@ -662,7 +675,7 @@ ner_duckling_http
 
 :Configuration:
     Configure which dimensions, i.e. entity types, the duckling component
-    to extract. A full list of available dimensions can be found in
+    should extract. A full list of available dimensions can be found in
     the `duckling documentation <https://duckling.wit.ai/>`_.
 
     .. code-block:: yaml
@@ -673,12 +686,5 @@ ner_duckling_http
           url: "http://localhost:8000"
           # dimensions to extract
           dimensions: ["time", "number", "amount-of-money", "distance"]
-          # allows you to configure the locale, by default the language is
-          # used
-          locale: "de_DE"
-          # if not set the default timezone of Duckling is going to be used
-          # needed to calculate dates from relative expressions like "tomorrow"
-          timezone: "Europe/Berlin"
-
 
 .. include:: feedback.inc

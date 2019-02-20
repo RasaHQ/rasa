@@ -184,6 +184,20 @@ def test_duckling_entity_extractor(component_builder):
     assert entities[0]["text"] == "tomorrow"
     assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
 
+    # Test dimension filtering
+
+    httpretty.register_uri(
+        httpretty.POST,
+        "http://localhost:8000/parse",
+        body="""[{"body":"5","start":10,"value":{"value":5,
+        "type":"value"},"end":11,"dim":"number"}]d"""
+    )
+
+    message = Message("There are 5 people in a room")
+    duckling.process(message)
+    entities = message.get("entities")
+    assert len(entities) == 0
+
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
     _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
@@ -222,7 +236,7 @@ def test_unintentional_synonyms_capitalized(component_builder):
 
 
 def test_spacy_ner_extractor(spacy_nlp):
-    ext = SpacyEntityExtractor()
+    ext = SpacyEntityExtractor({"dimensions": ["LOC"]})
     example = Message("anywhere in the West", {
         "intent": "restaurant_search",
         "entities": [],
@@ -238,3 +252,8 @@ def test_spacy_ner_extractor(spacy_nlp):
         'value': 'West',
         'entity': 'LOC',
         'confidence': None}
+     
+    ext = SpacyEntityExtractor({"dimensions": ["EVENT"]})
+    ext.process(example, spacy_nlp=spacy_nlp)
+
+    assert len(example.get("entities", [])) == 0

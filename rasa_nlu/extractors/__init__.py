@@ -23,6 +23,17 @@ class EntityExtractor(Component):
         return entity
 
     @staticmethod
+    def filter_irrelevant_entities(extracted, requested_dimensions):
+        """Only return dimensions the user configured"""
+
+        if requested_dimensions:
+            return [entity
+                    for entity in extracted
+                    if entity["entity"] in requested_dimensions]
+        else:
+            return extracted    
+
+    @staticmethod
     def find_entity(ent, text, tokens):
         offsets = [token.offset for token in tokens]
         ends = [token.end for token in tokens]
