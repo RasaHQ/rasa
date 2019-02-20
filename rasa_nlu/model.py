@@ -166,6 +166,8 @@ class Trainer(object):
 
         self.training_data = data
 
+        self.training_data.validate()
+
         context = kwargs
 
         for component in self.pipeline:

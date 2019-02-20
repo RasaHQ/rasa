@@ -1,4 +1,5 @@
-:desc: Using Rasa NLU with Docker
+:desc: Setup Rasa NLU with Docker in your own infrastructure for local
+       intent recognition and entity recognition. 
 
 .. _section_docker:
 
