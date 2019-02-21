@@ -8,6 +8,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/core)
 
+<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
 - **What do Rasa Core & NLU do? 🤔**
   [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
