@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from rasa_nlu.evaluate import (
+from rasa_nlu.test import (
     is_token_within_entity, do_entities_overlap,
     merge_labels, remove_duckling_entities,
     remove_empty_intent_examples, get_entity_extractors,
@@ -12,10 +12,10 @@ from rasa_nlu.evaluate import (
     find_component, remove_duckling_extractors, drop_intents_below_freq,
     run_cv_evaluation, substitute_labels, IntentEvaluationResult,
     evaluate_intents, evaluate_entities)
-from rasa_nlu.evaluate import does_token_cross_borders
-from rasa_nlu.evaluate import align_entity_predictions
-from rasa_nlu.evaluate import determine_intersection
-from rasa_nlu.evaluate import determine_token_labels
+from rasa_nlu.test import does_token_cross_borders
+from rasa_nlu.test import align_entity_predictions
+from rasa_nlu.test import determine_intersection
+from rasa_nlu.test import determine_token_labels
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu import utils

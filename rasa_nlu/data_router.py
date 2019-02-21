@@ -14,7 +14,7 @@ from rasa_nlu import config, utils
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.emulators import NoEmulator
-from rasa_nlu.evaluate import run_evaluation
+from rasa_nlu.test import run_evaluation
 from rasa_nlu.model import InvalidProjectError
 from rasa_nlu.project import (
     Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server)
