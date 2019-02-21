@@ -8,7 +8,7 @@ ENV RASA_NLU_DOCKER="YES" \
 # - build-essential: Compile specific dependencies
 # - git-core: Checkout git repos
 RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends build-essential git-core \
+    && apt-get install -y --no-install-recommends build-essential git-core openssl libssl-dev libffi6 libffi-dev curl  \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -16,11 +16,15 @@ WORKDIR ${RASA_NLU_HOME}
 
 COPY . ${RASA_NLU_HOME}
 
-RUN pip install -r alt_requirements/requirements_supervised_embeddings.txt
+# use bash always
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+RUN pip install -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
 
 RUN pip install -e .
 
-COPY sample_configs/config_embedding.yml ${RASA_NLU_HOME}/config.yml
+RUN pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
+    && python -m spacy link de_core_news_sm de
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
