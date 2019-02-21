@@ -10,7 +10,7 @@
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
 Rasa Core is a framework for building conversational software, which includes
-Chat Bots on:
+chatbots on:
 - Facebook Messenger
 - Slack
 - Microsoft Bot Framework
