@@ -4,7 +4,7 @@
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa_nlu.svg)](https://pypi.python.org/pypi/rasa_nlu)
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
-[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://nlu.rasa.com/)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/nlu/)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu?ref=badge_shield)
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
@@ -30,13 +30,13 @@ Rasa then uses machine learning to pick up patterns and generalise to unseen sen
 
 You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 
-If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](https://nlu.rasa.com/tutorial.html).
+If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](https://rasa.com/docs/nlu/quickstart/).
 
 - **What does Rasa NLU do? 🤔** [Read About the Rasa Stack](http://rasa.com/products/rasa-stack/)
 
-- **I'd like to read the detailed docs 🤓** [Read The Docs](https://nlu.rasa.com)
+- **I'd like to read the detailed docs 🤓** [Read The Docs](https://rasa.com/docs/nlu/)
 
-- **I'm ready to install Rasa NLU! 🚀** [Installation](https://nlu.rasa.com/installation.html)
+- **I'm ready to install Rasa NLU! 🚀** [Installation](https://rasa.com/docs/nlu/installation/)
 
 - **I have a question ❓** [Rasa Community Forum](https://forum.rasa.com)
 
@@ -51,7 +51,7 @@ will the next major release). If you want to use Rasa NLU with python
 
 # Quick Install
 
-For the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.com/installation.html)
+For the full installation instructions, please head over to the documentation: [Installation](https://rasa.com/docs/nlu/installation/)
 
 **Via Docker Image**
 From docker hub:
@@ -88,7 +88,7 @@ curl 'http://localhost:5000/version'
 
 ### Training New Models
 [Examples](https://github.com/RasaHQ/rasa_nlu/tree/master/data/examples/rasa)
-and [Documentation](https://nlu.rasa.com/dataformat.html) of the training data
+and [Documentation](https://rasa.com/docs/nlu/dataformat/) of the training data
 format are provided. But as a quick start execute the below command to train
 a new model
 
@@ -120,7 +120,7 @@ curl 'http://localhost:5000/parse?q=hello&project=test_model'
 # FAQ
 
 ### Who is it for?
-The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://www.luis.ai), or [Dialogflow](https://dialogflow.com). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](https://nlu.rasa.com/http.html). If your project is written in Python you can [simply import the relevant classes](https://nlu.rasa.com/python.html). If you're currently using wit/LUIS/Dialogflow, you just:
+The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://www.luis.ai), or [Dialogflow](https://dialogflow.com). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](https://rasa.com/docs/nlu/http/). If your project is written in Python you can [simply import the relevant classes](https://rasa.com/docs/nlu/python/). If you're currently using wit/LUIS/Dialogflow, you just:
 
 1. Download your app data from wit, LUIS, or Dialogflow and feed it into Rasa NLU
 2. Run Rasa NLU on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.
@@ -134,10 +134,10 @@ These points are laid out in more detail in a [blog post](https://blog.rasa.com/
 
 ### What languages does it support?
 It depends. Some things, like intent classification with the `tensorflow_embedding` pipeline, work in any language. 
-Other features are more restricted. See details [here](https://nlu.rasa.com/languages.html)
+Other features are more restricted. See details [here](https://rasa.com/docs/nlu/languages/)
 
 ### How to contribute
-We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://nlu.rasa.com/contribute.html).
+We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://rasa.com/docs/contributing/).
 
 In general the process is rather simple:
 1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/RasaHQ/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
@@ -162,7 +162,7 @@ pip install -r alt_requirements/requirements_dev.txt
 pip install -e .
 ```
 
-To test the installation use (this will run a very stupid default model. you need to [train your own model](https://nlu.rasa.com/tutorial.html) to do something useful!):
+To test the installation use (this will run a very stupid default model. you need to [train your own model](https://rasa.com/docs/nlu/quickstart/) to do something useful!):
 
 ### Advanced Docker
 Before you start, ensure you have the latest version of docker engine on your machine. You can check if you have docker installed by typing ```docker -v``` in your terminal.
@@ -174,7 +174,7 @@ docker run -p 5000:5000 rasa/rasa_nlu:latest-full
 
 There are also three volumes, which you may want to map: `/app/projects`, `/app/logs`, and `/app/data`. It is also possible to override the config file used by the server by mapping a new config file to the volume `/app/config.json`. For complete docker usage instructions go to the official [docker hub readme](https://hub.docker.com/r/rasa/rasa_nlu/).
 
-To test run the below command after the container has started. For more info on using the HTTP API see [here](https://nlu.rasa.com/http.html#endpoints)
+To test run the below command after the container has started. For more info on using the HTTP API see [here](https://rasa.com/docs/nlu/http/#endpoints)
 ```
 curl 'http://localhost:5000/parse?q=hello'
 ```
