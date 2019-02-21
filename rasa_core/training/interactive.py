@@ -511,7 +511,8 @@ def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
             bot_column.append(colored(evt['name'], 'autocyan'))
             if evt['confidence'] is not None:
                 bot_column[-1] += (
-                    colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
+                    colored(" {:03.2f}".format(evt['confidence']),
+                            'autowhite'))
 
         elif evt.get("event") == UserUttered.type_name:
             if bot_column:
@@ -615,7 +616,8 @@ def _request_action_from_user(
                 "value": a.get("action")}
                for a in sorted_actions]
 
-    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
+    choices = ([{"name": "<create new action>", "value": OTHER_ACTION}] +
+               choices)
     question = questionary.select("What is the next action of the bot?",
                                   choices)
 
