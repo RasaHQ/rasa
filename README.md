@@ -39,7 +39,7 @@ There's a lot more background information in this
   [Read The Docs](https://rasa.com/docs/core)
 
 - **I'm ready to install Rasa Core! 🚀**
-  [Installation](https://rasa.com/docs/core/installation.html)
+  [Installation](https://rasa.com/docs/core/installation/)
 
 - **I'm ready to start building! 🤖**
   [Rasa Stack starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
@@ -65,7 +65,6 @@ Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
 questions.
 
 
-
 ### README Contents:
 - [How to contribute](#how-to-contribute)
 - [Development Internals](#development-internals)
@@ -74,7 +73,7 @@ questions.
 ### How to contribute
 We are very happy to receive and merge your contributions. There is
 some more information about the style of the code and docs in the
-[documentation](https://nlu.rasa.com/contribute.html).
+[documentation](https://rasa.com/docs/contributing/).
 
 In general the process is rather simple:
 1. create an issue describing the feature you want to work on (or
