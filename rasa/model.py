@@ -10,6 +10,7 @@ import rasa_core
 import rasa_nlu
 import rasa
 
+# Type alias for the fingerprint
 Fingerprint = Dict[Text, Union[Text, List[Text]]]
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,19 @@ FINGERPRINT_NLU_DATA_KEY = "messages"
 
 
 def get_model(model_path: Text, subdirectories: bool = False) -> Text:
+    """Gets a model and unpacks it.
+
+    Args:
+        model_path: Path to the zipped model. If it's a directory, the latest
+                    trained model is returned.
+        subdirectories: If `True` it also returns the model subdirectories for
+                        Core and NLU, if `False` it only returns the path
+                        for the unpacked model directory.
+
+    Returns:
+        Path to the unpacked model.
+
+    """
     if os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
 
@@ -37,6 +51,15 @@ def get_model(model_path: Text, subdirectories: bool = False) -> Text:
 
 
 def get_latest_model(model_path: Text) -> Optional[Text]:
+    """Gets the latest model from a path.
+
+    Args:
+        model_path: Path to a directory containing zipped models.
+
+    Returns:
+        Path to latest model in the given directory.
+
+    """
     if not os.path.exists(model_path) or os.path.isfile(model_path):
         model_path = os.path.dirname(model_path)
 
@@ -51,6 +74,20 @@ def get_latest_model(model_path: Text) -> Optional[Text]:
 def unpack_model(model_file: Text, working_directory: Text = None,
                  subdirectories: bool = False
                  ) -> Union[Text, Tuple[Text, Text, Text]]:
+    """Unpacks a zipped Rasa model.
+
+    Args:
+        model_file: Path to zipped model.
+        working_directory: Location where the model should be unpacked to.
+                           If `None` a tempory directory will be created.
+        subdirectories: If `True` it also returns the model subdirectories for
+                        Core and NLU, if `False` it only returns the path
+                        for the unpacked model directory.
+
+    Returns:
+        Path to unpacked Rasa model.
+
+    """
     import tarfile
 
     if working_directory is None:
@@ -74,6 +111,20 @@ def unpack_model(model_file: Text, working_directory: Text = None,
 def create_package_rasa(training_directory: Text, model_directory: Text,
                         output_filename: Text,
                         fingerprint: Optional[Fingerprint] = None) -> Text:
+    """Creates a zipped Rasa model from trained model files.
+
+    Args:
+        training_directory: Path to the directory which contains the trained
+                            model files.
+        model_directory: Name of the subdirectory in the zipped file which
+                         should contain the trained models.
+        output_filename: Name of the zipped model file to be created.
+        fingerprint: A unique fingerprint to identify the model version.
+
+    Returns:
+        Path to zipped model.
+
+    """
     import tarfile
 
     full_path = os.path.join(training_directory, model_directory)
@@ -95,6 +146,19 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
                       nlu_data: Optional[Text] = None,
                       stories: Optional[Text] = None
                       ) -> Fingerprint:
+    """Creates a model fingerprint from its used configuration and training
+    data.
+
+    Args:
+        config_file: Path to the configuration file.
+        domain_file: Path to the models domain file.
+        nlu_data: Path to the used NLU training data.
+        stories: Path to the used story training data.
+
+    Returns:
+        The fingerprint.
+
+    """
     return {
         FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
         FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file),
@@ -118,6 +182,14 @@ def _get_hashes_for_paths(path: Text) -> List[Text]:
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
+    """Loads a persisted fingerprint.
+
+    Args:
+        model_path: Path to directory containing the fingerprint.
+
+    Returns:
+        The fingerprint or an empty dict if no fingerprint was found.
+    """
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
@@ -127,12 +199,29 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
 
 
 def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
+    """Persists a model fingerprint.
+
+    Args:
+        output_path: Directory in which the fingerprint should be saved.
+        fingerprint: The fingerprint to be persisted.
+
+    """
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
     dump_obj_as_json_to_file(path, fingerprint)
 
 
 def core_fingerprint_changed(fingerprint1: Fingerprint,
                              fingerprint2: Fingerprint) -> bool:
+    """Checks whether the fingerprints of the Core model changed.
+
+    Args:
+        fingerprint1: A fingerprint.
+        fingerprint2: Another fingerprint.
+
+    Returns:
+        `True` if the fingerprint for the Core model changed, else `False`.
+
+    """
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_CORE_VERSION_KEY,
                      FINGERPRINT_DOMAIN_KEY, FINGERPRINT_STORIES_KEY]
 
@@ -142,6 +231,16 @@ def core_fingerprint_changed(fingerprint1: Fingerprint,
 
 def nlu_fingerprint_changed(fingerprint1: Fingerprint,
                             fingerprint2: Fingerprint) -> bool:
+    """Checks whether the fingerprints of the NLU model changed.
+
+    Args:
+        fingerprint1: A fingerprint.
+        fingerprint2: Another fingerprint.
+
+    Returns:
+        `True` if the fingerprint for the NLU model changed, else `False`.
+
+    """
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_VERSION_KEY,
                      FINGERPRINT_NLU_DATA_KEY]
 
@@ -150,10 +249,19 @@ def nlu_fingerprint_changed(fingerprint1: Fingerprint,
 
 
 def merge_model(source: Text, target: Text) -> bool:
+    """Merges two model directories.
+
+    Args:
+        source: The original folder which should be merged in another.
+        target: The destination folder where it should be moved to.
+
+    Returns:
+        `True` if the merge was successful, else `False`.
+
+    """
     try:
         shutil.move(source, target)
         return True
     except Exception as e:
         logging.debug(e)
         return False
-

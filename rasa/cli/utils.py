@@ -8,6 +8,20 @@ from rasa.model import DEFAULT_MODELS_PATH
 def check_path_exists(current: Optional[Text], parameter: Text,
                       default: Optional[Text] = None,
                       none_is_valid: bool = False) -> Optional[Text]:
+    """Check whether a file path which was given through the command line
+    arguments is valid.
+
+    Args:
+        current: The parsed value.
+        parameter: The name of the parameter.
+        default: The default value of the parameter.
+        none_is_valid: `True` if `None` is valid value for the path,
+                        else `False``
+
+    Returns:
+        The current value if it was valid, else the default value of the
+        argument if it is valid, else `None`.
+    """
     from rasa_core.utils import print_warning
 
     if (current is None or
@@ -26,6 +40,14 @@ def check_path_exists(current: Optional[Text], parameter: Text,
 
 def cancel_cause_not_found(current: Optional[Text], parameter: Text,
                            default: Optional[Text]) -> None:
+    """Exits with an error because the given path was not valid.
+
+    Args:
+        current: The path given by the user.
+        parameter: The name of the parameter.
+        default: The default value of the parameter.
+
+    """
     from rasa_core.utils import print_error
 
     default_clause = ""
@@ -40,6 +62,14 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
 def validate(args: argparse.Namespace,
              params: List[Union[Tuple[Text, Text], Tuple[Text, Text, bool]]]
              ) -> None:
+    """Validates the parsed command line arguments.
+
+    Args:
+        args: The parsd command line arguments.
+        params: A list of parameters and their default values which should be
+                validated.
+
+    """
     for p in params:
         none_is_valid = False if len(p) == 2 else p[2]
         validated = check_path_exists(getattr(args, p[0]), p[0], p[1],
@@ -48,6 +78,7 @@ def validate(args: argparse.Namespace,
 
 
 def parse_last_positional_argument_as_model_path() -> None:
+    """Fixes the parsing of a potential positional model path argument."""
     import sys
 
     if (len(sys.argv) >= 2 and
@@ -60,6 +91,15 @@ def parse_last_positional_argument_as_model_path() -> None:
 
 def create_default_output_path(model_directory: Text = DEFAULT_MODELS_PATH,
                                prefix: Text = "") -> Text:
+    """Creates an output path which includes the current timestamp.
+
+    Args:
+        model_directory: The parent directory.
+        prefix: A prefix which should be included in the output path.
+
+    Returns:
+        The generated output path, e.g. "20191201-103002".
+    """
     import time
 
     time_format = "%Y%m%d-%H%M%S"
