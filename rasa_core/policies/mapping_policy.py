@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class MappingPolicy(Policy):
     """Policy which maps intents directly to actions.
 
-    Intents can be assigned actioins in the domain file which are to be
+    Intents can be assigned actions in the domain file which are to be
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
