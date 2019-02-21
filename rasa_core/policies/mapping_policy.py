@@ -47,7 +47,11 @@ class MappingPolicy(Policy):
         prediction = [0.0] * domain.num_actions
         if msg_id != self.last_msg_id and action_name is not None:
             idx = domain.index_for_action(action_name)
-            prediction[idx] = MAPPING_SCORE
+            if idx is None:
+                logger.warning("MappingPolicy tried to predict unkown action "
+                               "'{}'".format(action_name))
+            else:
+                prediction[idx] = MAPPING_SCORE
             self.last_msg_id = msg_id
         return prediction
 
