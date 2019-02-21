@@ -80,7 +80,8 @@ def test_remove_model_empty(empty_model_dir):
 
 def test_remove_model_with_files(empty_model_dir):
     metadata_file = "metadata.json"
-    metadata_content = {"pipeline": "pretrained_embeddings_spacy", "language": "en"}
+    metadata_content = {"pipeline": "pretrained_embeddings_spacy",
+                        "language": "en"}
     metadata_path = os.path.join(empty_model_dir, metadata_file)
     write_json_to_file(metadata_path, metadata_content)
 

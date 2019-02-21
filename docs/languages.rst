@@ -80,14 +80,14 @@ Once the training is finished, you can test your model's Norwegian language skil
 Pre-trained Word Vectors
 ------------------------
 
-With the ``pretrained_embeddings`` pipeline you can also load fastText vectors, which are available 
+With the ``pretrained_embeddings_spacy`` pipeline you can also load fastText vectors, which are available 
 for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md>`_.
 
 
 =====================   =================================
-backend        		supported languages
+pretrained-embeddings	supported languages
 =====================   =================================
-pretrained-embeddings   english (``en``),
+spacy            	english (``en``),
                		german (``de``),
                		spanish (``es``),
                		portuguese (``pt``),
