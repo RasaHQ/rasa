@@ -12,7 +12,7 @@ from flask_jwt_simple import JWTManager, view_decorators
 import rasa_nlu
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.evaluate import run_story_evaluation
+from rasa_core.test import run_story_evaluation
 from rasa_core.events import Event
 from rasa_core.domain import Domain
 from rasa_core.policies import PolicyEnsemble
