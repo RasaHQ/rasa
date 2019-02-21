@@ -16,7 +16,9 @@ Added
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
 - `MappingPolicy` which can be used to directly map an intent to an action
-  by adding the `maps_to` keyword to an intent in the domain.
+  by adding the `triggers` keyword to an intent in the domain.
+- documentation about early deactivation of a form in validation
+
 
 Changed
 -------
