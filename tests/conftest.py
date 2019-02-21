@@ -55,7 +55,7 @@ def default_config():
 
 @pytest.fixture(scope="session")
 def zipped_nlu_model():
-    spacy_config_path = "sample_configs/config_spacy.yml"
+    spacy_config_path = "sample_configs/config_pretrained_embeddings_spacy.yml"
 
     cfg = config.load(spacy_config_path)
     trainer = Trainer(cfg)

@@ -159,9 +159,9 @@ def train_models(component_builder, data):
         trainer.train(training_data)
         trainer.persist("test_projects", project_name=project_name)
 
-    train("sample_configs/config_spacy.yml",
-          "test_project_spacy_sklearn")
-    train("sample_configs/config_mitie.yml",
+    train("sample_configs/config_pretrained_embeddings_spacy.yml",
+          "test_project_spacy")
+    train("sample_configs/config_pretrained_embeddings_mitie.yml",
           "test_project_mitie")
-    train("sample_configs/config_mitie_sklearn.yml",
-          "test_project_mitie_sklearn")
+    train("sample_configs/config_pretrained_embeddings_mitie_2.yml",
+          "test_project_mitie_2")

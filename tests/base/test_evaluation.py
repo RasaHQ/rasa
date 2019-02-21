@@ -239,7 +239,7 @@ def test_drop_intents_below_freq():
 
 def test_run_cv_evaluation():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    nlu_config = config.load("sample_configs/config_spacy.yml")
+    nlu_config = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
 
     n_folds = 2
     results, entity_results = run_cv_evaluation(td, n_folds, nlu_config)

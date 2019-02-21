@@ -55,7 +55,7 @@ def test_default_config_file():
 
 
 def test_set_attr_on_component(default_config):
-    cfg = config.load("sample_configs/config_spacy.yml")
+    cfg = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
     cfg.set_component_attr("intent_classifier_sklearn", C=324)
 
     expected = {"C": 324, "name": "intent_classifier_sklearn"}
