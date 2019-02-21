@@ -60,21 +60,18 @@ class PolicyEnsemble(object):
     def _check_priorities(self) -> None:
         """Checks for duplicate policy priorities within PolicyEnsemble."""
 
-        priority_dict = {}
+        priority_dict = defaultdict(list)
         for p in self.policies:
-            if p.priority in priority_dict:
-                priority_dict[p.priority].append(type(p).__name__)
-            else:
-                priority_dict[p.priority] = [type(p).__name__]
+            priority_dict[p.priority].append(type(p).__name__)
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                logger.warn(("Found policies {} with same priority {} "
-                             "in PolicyEnsemble. When personalizing "
-                             "priorities, be sure to give all policies "
-                             "different priorities. More information: "
-                             "https://rasa.com/docs/core/policies/").format(v,
-                                                                            k))
+                logger.warning(("Found policies {} with same priority {} "
+                                "in PolicyEnsemble. When personalizing "
+                                "priorities, be sure to give all policies "
+                                "different priorities. More information: "
+                                "https://rasa.com/docs/core/"
+                                "policies/").format(v, k))
 
     def train(self,
               training_trackers: List[DialogueStateTracker],
