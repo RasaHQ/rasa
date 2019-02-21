@@ -24,6 +24,7 @@ Changed
 
 Removed
 -------
+- ``admin_token`` from ``RasaChatInput`` since it wasn't used
 
 Fixed
 -----
