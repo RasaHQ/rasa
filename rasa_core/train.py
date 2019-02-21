@@ -56,13 +56,13 @@ def create_argument_parser():
     return parser
 
 
-def train_dialogue_model(domain_file, stories_file, output_path,
-                         interpreter=None,
-                         endpoints=AvailableEndpoints(),
-                         dump_stories=False,
-                         policy_config=None,
-                         exclusion_percentage=None,
-                         kwargs=None):
+def train(domain_file, stories_file, output_path,
+          interpreter=None,
+          endpoints=AvailableEndpoints(),
+          dump_stories=False,
+          policy_config=None,
+          exclusion_percentage=None,
+          kwargs=None):
     if not kwargs:
         kwargs = {}
 
@@ -135,7 +135,7 @@ def train_comparison_models(stories,
                              "".format(policy_name, current_round,
                                        len(exclusion_percentages), i))
 
-                train_dialogue_model(
+                train(
                     domain, stories, output,
                     policy_config=policy_config,
                     exclusion_percentage=i,
@@ -154,12 +154,12 @@ def get_no_of_stories(story_file, domain):
 def do_default_training(cmdline_args, stories, additional_arguments):
     """Train a model."""
 
-    train_dialogue_model(domain_file=cmdline_args.domain,
-                         stories_file=stories,
-                         output_path=cmdline_args.out,
-                         dump_stories=cmdline_args.dump_stories,
-                         policy_config=cmdline_args.config[0],
-                         kwargs=additional_arguments)
+    train(domain_file=cmdline_args.domain,
+          stories_file=stories,
+          output_path=cmdline_args.out,
+          dump_stories=cmdline_args.dump_stories,
+          policy_config=cmdline_args.config[0],
+          kwargs=additional_arguments)
 
 
 def do_compare_training(cmdline_args, stories, additional_arguments):
@@ -214,15 +214,15 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
         else:
             model_directory = tempfile.mkdtemp(suffix="_core_model")
 
-        _agent = train_dialogue_model(cmdline_args.domain,
-                                      stories,
-                                      model_directory,
-                                      _interpreter,
-                                      _endpoints,
-                                      cmdline_args.dump_stories,
-                                      cmdline_args.config[0],
-                                      None,
-                                      additional_arguments)
+        _agent = train(cmdline_args.domain,
+                       stories,
+                       model_directory,
+                       _interpreter,
+                       _endpoints,
+                       cmdline_args.dump_stories,
+                       cmdline_args.config[0],
+                       None,
+                       additional_arguments)
 
     interactive.run_interactive_learning(
         _agent, stories,

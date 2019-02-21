@@ -1,7 +1,7 @@
 import pytest
 
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.train import train_dialogue_model
+from rasa_core.train import train
 from rasa_core.agent import Agent
 from rasa_core.policies.form_policy import FormPolicy
 
@@ -44,16 +44,16 @@ def test_story_visualization_with_merging(default_domain):
 
 
 def test_training_script(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                         tmpdir.strpath,
-                         policy_config='data/test_config/max_hist_config.yml',
-                         interpreter=RegexInterpreter(),
-                         kwargs={})
+    train(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+          tmpdir.strpath,
+          policy_config='data/test_config/max_hist_config.yml',
+          interpreter=RegexInterpreter(),
+          kwargs={})
     assert True
 
 
 def test_training_script_without_max_history_set(tmpdir):
-    train_dialogue_model(
+    train(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
@@ -70,11 +70,11 @@ def test_training_script_without_max_history_set(tmpdir):
 
 
 def test_training_script_with_max_history_set(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                         tmpdir.strpath,
-                         interpreter=RegexInterpreter(),
-                         policy_config='data/test_config/max_hist_config.yml',
-                         kwargs={})
+    train(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+          tmpdir.strpath,
+          interpreter=RegexInterpreter(),
+          policy_config='data/test_config/max_hist_config.yml',
+          kwargs={})
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
@@ -85,12 +85,12 @@ def test_training_script_with_max_history_set(tmpdir):
 
 
 def test_training_script_with_restart_stories(tmpdir):
-    train_dialogue_model(DEFAULT_DOMAIN_PATH,
+    train(DEFAULT_DOMAIN_PATH,
                          "data/test_stories/stories_restart.md",
-                         tmpdir.strpath,
-                         interpreter=RegexInterpreter(),
-                         policy_config='data/test_config/max_hist_config.yml',
-                         kwargs={})
+          tmpdir.strpath,
+          interpreter=RegexInterpreter(),
+          policy_config='data/test_config/max_hist_config.yml',
+          kwargs={})
     assert True
 
 
@@ -104,14 +104,14 @@ def configs_for_random_seed_test():
 def test_random_seed(tmpdir, config_file):
     # set random seed in config file to
     # generate a reproducible training result
-    agent_1 = train_dialogue_model(
+    agent_1 = train(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "1",
         interpreter=RegexInterpreter(),
         policy_config=config_file,
         kwargs={})
 
-    agent_2 = train_dialogue_model(
+    agent_2 = train(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "2",
         interpreter=RegexInterpreter(),
