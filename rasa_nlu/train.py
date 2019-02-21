@@ -1,6 +1,6 @@
 import argparse
 import logging
-from typing import Any, Optional, Text, Tuple
+from typing import Any, Optional, Text, Tuple, Union
 
 from rasa_nlu import config, utils
 from rasa_nlu.components import ComponentBuilder
@@ -106,37 +106,39 @@ def do_train_in_worker(cfg: RasaNLUModelConfig,
     """Loads the trainer and the data and runs the training in a worker."""
 
     try:
-        _, _, persisted_path = do_train(cfg, data, path, project,
-                                        fixed_model_name, storage,
-                                        component_builder)
+        _, _, persisted_path = train(cfg, data, path, project,
+                                     fixed_model_name, storage,
+                                     component_builder)
         return persisted_path
     except BaseException as e:
         logger.exception("Failed to train project '{}'.".format(project))
         raise TrainingException(project, e)
 
 
-def do_train(cfg: RasaNLUModelConfig,
-             data: Text,
-             path: Optional[Text] = None,
-             project: Optional[Text] = None,
-             fixed_model_name: Optional[Text] = None,
-             storage: Optional[Text] = None,
-             component_builder: Optional[ComponentBuilder] = None,
-             training_data_endpoint: Optional[EndpointConfig] = None,
-             **kwargs: Any
-             ) -> Tuple[Trainer, Interpreter, Text]:
+def train(nlu_config: Union[Text, RasaNLUModelConfig],
+          data: Text,
+          path: Optional[Text] = None,
+          project: Optional[Text] = None,
+          fixed_model_name: Optional[Text] = None,
+          storage: Optional[Text] = None,
+          component_builder: Optional[ComponentBuilder] = None,
+          training_data_endpoint: Optional[EndpointConfig] = None,
+          **kwargs: Any
+          ) -> Tuple[Trainer, Interpreter, Text]:
     """Loads the trainer and the data and runs the training of the model."""
 
+    if isinstance(nlu_config, str):
+        nlu_config = config.load(nlu_config)
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
     # trained in another subprocess
-    trainer = Trainer(cfg, component_builder)
+    trainer = Trainer(nlu_config, component_builder)
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
         training_data = load_data_from_endpoint(training_data_endpoint,
-                                                cfg.language)
+                                                nlu_config.language)
     else:
-        training_data = load_data(data, cfg.language)
+        training_data = load_data(data, nlu_config.language)
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
@@ -160,12 +162,12 @@ if __name__ == '__main__':
     else:
         data_endpoint = read_endpoints(cmdline_args.endpoints).data
 
-    do_train(config.load(cmdline_args.config),
-             cmdline_args.data,
-             cmdline_args.path,
-             cmdline_args.project,
-             cmdline_args.fixed_model_name,
-             cmdline_args.storage,
-             data_endpoint=data_endpoint,
-             num_threads=cmdline_args.num_threads)
+    train(cmdline_args.config,
+          cmdline_args.data,
+          cmdline_args.path,
+          cmdline_args.project,
+          cmdline_args.fixed_model_name,
+          cmdline_args.storage,
+          data_endpoint=data_endpoint,
+          num_threads=cmdline_args.num_threads)
     logger.info("Finished training")
