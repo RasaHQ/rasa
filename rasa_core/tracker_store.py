@@ -40,6 +40,11 @@ class TrackerStore(object):
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
+        elif store.store_type == 'SQL':
+            return SQLTrackerStore(domain=domain,
+                                   host=store.url,
+                                   event_broker=event_broker,
+                                   **store.kwargs)
         else:
             return TrackerStore.load_tracker_from_module_string(domain, store)
 
@@ -268,43 +273,31 @@ class SQLTrackerStore(TrackerStore):
         data = Column(String)
 
     def __init__(self,
-                 engine: Engine,
                  domain: Optional[Domain] = None,
-                 event_broker: Optional[EventChannel] = None) -> None:
+                 drivername: Text = None,
+                 host: Text = None,
+                 event_broker: Optional[EventChannel] = None,
+                 db: Text = 'rasa.db',
+                 username: Text = None,
+                 password: Text = None) -> None:
         from sqlalchemy.orm import sessionmaker
-
-        self.engine = engine
-
-        logger.debug('Attempting to connect to database '
-                     'via "{}"...'.format(engine.__str__()))
-
-        self.session = sessionmaker(bind=self.engine)()
-        self._ensure_event_table()
-
-        logger.debug('Connection successful')
-
-        self.domain = domain
-        self.event_broker = event_broker
-        super(SQLTrackerStore, self).__init__(domain, event_broker)
-
-    @classmethod
-    def from_params(cls,
-                    domain: Optional[Domain],
-                    event_broker: Optional[EventChannel] = None,
-                    drivername: Text = 'sqlite',
-                    host: Text = None,
-                    port: int = None,
-                    db: Text = 'rasa',
-                    username: Text = None,
-                    password: Text = None) -> 'SQLTrackerStore':
-
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
-        engine_url = URL(drivername, username, password, host, port, db)
-        engine = create_engine(engine_url)
-        return cls(engine,
-                   domain,
-                   event_broker)
+
+        engine_url = URL(drivername, username, password, host, database=db)
+
+        logger.debug('Attempting to connect to database '
+                     'via "{}"...'.format(engine_url.__to_string__()))
+
+        self.engine = create_engine(engine_url)
+        self.session = sessionmaker(bind=self.engine)()
+
+        logger.debug('Connection successful, ensuring events table...')
+
+        self._ensure_event_table()
+        super(SQLTrackerStore, self).__init__(domain, event_broker)
+
+        logger.debug('SQL tracker store successfully initialised')
 
     def _ensure_event_table(self):
         """Creates the events table if not already present in the database"""
