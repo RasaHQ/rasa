@@ -78,6 +78,7 @@ MongoTrackerStore
                 db: <name of the db within your mongo instance, e.g. rasa>
                 username: <username used for authentication>
                 password: <password used for authentication>
+                auth_source: <database name associated with the user’s credentials>
         
         You can also add more advanced configurations (like enabling ssl) by appending
         a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true
@@ -95,6 +96,7 @@ MongoTrackerStore
     - ``password`` (default: ``None``): The password which is used for authentication
     - ``collection`` (default: ``conversations``): The collection name which is
       used to store the conversations
+    - ``auth_source`` (default: ``the database specified in the connection string``): database name associated with the user’s credentials.
 
 Custom Tracker Store
 ~~~~~~~~~~~~~~~~~~~~
