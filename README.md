@@ -1,6 +1,5 @@
 # Rasa Core 
 
-
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa_core.svg)](https://pypi.python.org/pypi/rasa_core)
@@ -9,26 +8,6 @@
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/core)
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
-
-- **What do Rasa Core & NLU do? 🤔**
-  [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
-
-- **I'd like to read the detailed docs 🤓**
-  [Read The Docs](https://rasa.com/docs/core)
-
-- **I'm ready to install Rasa Core! 🚀**
-  [Installation](https://rasa.com/docs/core/installation.html)
-
-- **I'm ready to start building! 🤖**
-  [Rasa Stack starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
-
-- **I have a question ❓**
-  [Rasa Community Forum](https://forum.rasa.com)
-
-- **I would like to contribute 🤗**
-  [How to contribute](#how-to-contribute)
-
-## Introduction
 
 Rasa Core is a framework for building conversational software, which includes
 Chat Bots on:
@@ -52,6 +31,26 @@ Rasa Core lets you do that in a scalable way.
 There's a lot more background information in this
 [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
 
+---
+- **What do Rasa Core & NLU do? 🤔**
+  [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
+
+- **I'd like to read the detailed docs 🤓**
+  [Read The Docs](https://rasa.com/docs/core)
+
+- **I'm ready to install Rasa Core! 🚀**
+  [Installation](https://rasa.com/docs/core/installation.html)
+
+- **I'm ready to start building! 🤖**
+  [Rasa Stack starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
+
+- **I have a question ❓**
+  [Rasa Community Forum](https://forum.rasa.com)
+
+- **I would like to contribute 🤗**
+  [How to contribute](#how-to-contribute)
+  
+---  
 ## Where to get help
 
 There is extensive documentation:
