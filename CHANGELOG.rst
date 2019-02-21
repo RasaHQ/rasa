@@ -15,7 +15,7 @@ Added
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
-- `MappingPolicy` which can be used to directly map and intent to an action
+- `MappingPolicy` which can be used to directly map an intent to an action
   by adding the `maps_to` keyword to an intent in the domain.
 
 Changed
