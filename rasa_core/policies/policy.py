@@ -29,16 +29,6 @@ class Policy(object):
         else:
             return cls._standard_featurizer()
 
-    @classmethod
-    def _set_priority(cls, priority=None):
-        if priority:
-            return copy.deepcopy(priority)
-        else:
-            logger.warning("Policy should have a default priority defined " +
-                           "in its initialization. Without a default or " +
-                           "configured value, priority is set to zero.")
-            return 0
-
     @staticmethod
     def _load_tf_config(config: Dict[Text, Any]) -> Optional[tf.ConfigProto]:
         """Prepare tf.ConfigProto for training"""
@@ -49,18 +39,14 @@ class Policy(object):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
-                 priority: int = None
+                 priority: Optional[int] = 1
                  ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
-        self.__priority = self._set_priority(priority)
+        self.priority = priority
 
     @property
     def featurizer(self):
         return self.__featurizer
-
-    @property
-    def priority(self):
-        return self.__priority
 
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:

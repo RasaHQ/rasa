@@ -58,15 +58,23 @@ class PolicyEnsemble(object):
         return events_metadata
 
     def _check_priorities(self) -> None:
-        priorities = []
+        """Checks for duplicate policy priorities within PolicyEnsemble."""
+
+        priority_dict = {}
         for p in self.policies:
-            if p.priority not in priorities:
-                priorities.append(p.priority)
+            if p.priority in priority_dict:
+                priority_dict[p.priority].append(type(p).__name__)
             else:
-                logger.warn("Multiple policies with the same priority " +
-                            "found in PolicyEnsemble. When personalizing "
-                            "priorities, be sure to give all policies "
-                            "different priorities.")
+                priority_dict[p.priority] = [type(p).__name__]
+
+        for k, v in priority_dict.items():
+            if len(v) > 1:
+                logger.warn(("Found policies {} with same priority {} "
+                             "in PolicyEnsemble. When personalizing "
+                             "priorities, be sure to give all policies "
+                             "different priorities. More information: "
+                             "https://rasa.com/docs/core/policies/").format(v,
+                                                                            k))
 
     def train(self,
               training_trackers: List[DialogueStateTracker],
@@ -338,20 +346,12 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     tracker.events[-1].action_name)] = 0.0
             confidence = np.max(probabilities)
 
-            if confidence > max_confidence:
+            if (confidence, p.priority) > (max_confidence,
+                                           best_policy_priority):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
                 best_policy_priority = p.priority
-
-            # higher priority wins when confidence equal
-            elif confidence == max_confidence:
-                if p.priority > best_policy_priority:
-                    max_confidence = confidence
-                    result = probabilities
-                    best_policy_name = 'policy_{}_{}'.format(i,
-                                                             type(p).__name__)
-                    best_policy_priority = p.priority
 
         if (result.index(max_confidence) ==
                 domain.index_for_action(ACTION_LISTEN_NAME) and

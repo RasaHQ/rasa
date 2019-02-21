@@ -44,8 +44,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                  priority: int = 3,
                  nlu_threshold: float = 0.3,
                  core_threshold: float = 0.3,
-                 fallback_core_action_name:
-                 Text = ACTION_DEFAULT_FALLBACK_NAME,
+                 fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
                  fallback_nlu_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
                  deny_suggestion_intent_name: Text = USER_INTENT_OUT_OF_SCOPE,
                  ) -> None:

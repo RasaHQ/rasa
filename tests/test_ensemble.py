@@ -35,11 +35,13 @@ def test_policy_loading_simple(tmpdir):
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
 
 
-class Priority_1_Policy(Policy):
+class ConstantPolicy(Policy):
     def __init__(self,
-                 priority: int = 1,
+                 priority: int = None,
+                 predict_index: int = None,
                  ) -> None:
-        super(Priority_1_Policy, self).__init__(priority=priority)
+        super(ConstantPolicy, self).__init__(priority=priority)
+        self.predict_index = predict_index
 
     @classmethod
     def load(cls, path):
@@ -53,29 +55,7 @@ class Priority_1_Policy(Policy):
 
     def predict_action_probabilities(self, tracker, domain):
         result = [0.0] * domain.num_actions
-        result[0] = 1.0
-        return result
-
-
-class Priority_2_Policy(Policy):
-    def __init__(self,
-                 priority: int = 2,
-                 ) -> None:
-        super(Priority_2_Policy, self).__init__(priority=priority)
-
-    @classmethod
-    def load(cls, path):
-        pass
-
-    def persist(self, path):
-        pass
-
-    def train(self, training_trackers, domain, **kwargs):
-        pass
-
-    def predict_action_probabilities(self, tracker, domain):
-        result = [0.0] * domain.num_actions
-        result[1] = 1.0
+        result[self.predict_index] = 1.0
         return result
 
 
@@ -83,8 +63,8 @@ def test_policy_priority():
     domain = Domain.load("data/test_domains/default.yml")
     tracker = DialogueStateTracker.from_events("test", [UserUttered("hi")], [])
 
-    priority_1 = Priority_1_Policy()
-    priority_2 = Priority_2_Policy()
+    priority_1 = ConstantPolicy(priority=1, predict_index=0)
+    priority_2 = ConstantPolicy(priority=2, predict_index=1)
 
     policy_ensemble_0 = SimplePolicyEnsemble([priority_1, priority_2])
     policy_ensemble_1 = SimplePolicyEnsemble([priority_2, priority_1])
