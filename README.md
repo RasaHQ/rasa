@@ -7,6 +7,8 @@
 [![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://nlu.rasa.com/)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu?ref=badge_shield)
 
+<img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
+
 Rasa NLU (Natural Language Understanding) is a tool for understanding what is being said in short pieces of text.
 For example, taking a short message like:
 
