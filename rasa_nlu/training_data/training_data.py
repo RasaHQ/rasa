@@ -125,11 +125,15 @@ class TrainingData(object):
         from rasa_nlu.training_data.formats import MarkdownWriter
         return MarkdownWriter().dumps(self)
 
-    def persist(self, dir_name: Text) -> Dict[Text, Any]:
+    def persist(self, dir_name: Text, filename: Text = "training_data.json"
+                ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
         information to load it again."""
 
-        data_file = os.path.join(dir_name, "training_data.json")
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+
+        data_file = os.path.join(dir_name, filename)
         write_to_file(data_file, self.as_json(indent=2))
 
         return {
