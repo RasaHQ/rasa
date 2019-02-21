@@ -193,12 +193,13 @@ class Domain(object):
         intent_properties = {}
         for intent in intent_list:
             if isinstance(intent, dict):
-                if 'use_entities' not in list(intent.values())[0].keys():
-                    # add 'use_entities' with value 'True' to properties
-                    list(intent.values())[0].update({'use_entities': True})
+                for properties in intent.values():
+                    if 'use_entities' not in properties:
+                        properties['use_entities'] = True
                 intent_properties.update(intent)
             else:
                 intent_properties.update({intent: {'use_entities': True}})
+            print(intent)
         return intent_properties
 
     @staticmethod
