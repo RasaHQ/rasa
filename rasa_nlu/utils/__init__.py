@@ -92,7 +92,7 @@ def list_directory(path):
 
     if not isinstance(path, str):
         raise ValueError("Resourcename must be a string type. "
-                         "Got `{}` instead".format(path))
+                         "Got `{}` instead".format(type(path)))
 
     if os.path.isfile(path):
         return [path]
