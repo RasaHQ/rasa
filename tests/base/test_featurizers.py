@@ -25,7 +25,8 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
     from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 
-    ftr = MitieFeaturizer.create(config.load("sample_configs/config_pretrained_embeddings_mitie.yml"))
+    ftr = MitieFeaturizer.create(config.load(
+        "sample_configs/config_pretrained_embeddings_mitie.yml"))
     sentence = "Hey how are you today"
     tokens = MitieTokenizer().tokenize(sentence)
     vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)
