@@ -111,31 +111,31 @@ def get_component_class(component_name: Text) -> Type['Component']:
     return registered_components[component_name]
 
 
-def load_component_by_index(index: int,
-                            model_dir: Text,
-                            metadata: Metadata,
-                            cached_component: Optional['Component'],
-                            **kwargs: Any
-                            ) -> Optional['Component']:
+def load_component_by_meta(component_meta: Dict,
+                           model_dir: Text,
+                           metadata: Metadata,
+                           cached_component: Optional['Component'],
+                           **kwargs: Any
+                           ) -> Optional['Component']:
     """Resolves a component and calls its load method.
 
     Inits it based on a previously persisted model.
     """
 
-    component_name = metadata.component_name(index)
+    component_name = component_meta['name']
     component_class = get_component_class(component_name)
-    return component_class.load(index, model_dir, metadata,
+    return component_class.load(component_meta, model_dir, metadata,
                                 cached_component, **kwargs)
 
 
-def create_component_by_index(index: int,
-                              config: 'RasaNLUModelConfig'
-                              ) -> Optional['Component']:
+def create_component_by_config(component_config: Dict,
+                               config: 'RasaNLUModelConfig'
+                               ) -> Optional['Component']:
     """Resolves a component and calls it's create method.
 
     Inits it based on a previously persisted model.
     """
 
-    component_name = config.for_component(index)['name']
+    component_name = component_config['name']
     component_class = get_component_class(component_name)
-    return component_class.create(index, config)
+    return component_class.create(component_config, config)

@@ -79,14 +79,13 @@ class JiebaTokenizer(Tokenizer, Component):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Optional[Text] = None,
              model_metadata: Optional['Metadata'] = None,
              cached_component: Optional[Component] = None,
              **kwargs: Any
              ) -> 'JiebaTokenizer':
 
-        meta = model_metadata.for_component(index)
         relative_dictionary_path = meta.get("dictionary_path")
 
         # get real path of dictionary path, if any
@@ -108,13 +107,12 @@ class JiebaTokenizer(Tokenizer, Component):
             shutil.copy2(target_file, output_dir)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
         # copy custom dictionaries to model dir, if any
         if self.dictionary_path is not None:
-            file_name = self._file_name(index)
             target_dictionary_path = os.path.join(model_dir, file_name)
             self.copy_files_dir_to_dir(self.dictionary_path,
                                        target_dictionary_path)

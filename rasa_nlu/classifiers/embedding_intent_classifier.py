@@ -608,7 +608,7 @@ class EmbeddingIntentClassifier(Component):
         message.set("intent_ranking", intent_ranking, add_to_output=True)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
@@ -618,7 +618,6 @@ class EmbeddingIntentClassifier(Component):
         if self.session is None:
             return {"file": None}
 
-        file_name = self._file_name(index)
         checkpoint = os.path.join(model_dir, file_name + ".ckpt")
 
         try:
@@ -664,14 +663,12 @@ class EmbeddingIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Text = None,
              model_metadata: 'Metadata' = None,
              cached_component: Optional['EmbeddingIntentClassifier'] = None,
              **kwargs: Any
              ) -> 'EmbeddingIntentClassifier':
-
-        meta = model_metadata.for_component(index)
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")

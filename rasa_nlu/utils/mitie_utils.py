@@ -22,7 +22,7 @@ class MitieNLP(Component):
     }
 
     def __init__(self,
-                 component_config: Dict[Text, Any] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  extractor=None
                  ) -> None:
         """Construct a new language model from the MITIE framework."""
@@ -36,11 +36,12 @@ class MitieNLP(Component):
         return ["mitie"]
 
     @classmethod
-    def create(cls, index: int, cfg: RasaNLUModelConfig) -> 'MitieNLP':
+    def create(cls,
+               component_config: Dict,
+               config: RasaNLUModelConfig) -> 'MitieNLP':
         import mitie
 
-        component_conf = cfg.for_component(index, cls.defaults)
-        model_file = component_conf.get("model")
+        model_file = component_config.get("model")
         if not model_file:
             raise Exception("The MITIE component 'nlp_mitie' needs "
                             "the configuration value for 'model'."
@@ -51,14 +52,12 @@ class MitieNLP(Component):
         extractor = mitie.total_word_feature_extractor(model_file)
         cls.ensure_proper_language_model(extractor)
 
-        return MitieNLP(component_conf, extractor)
+        return cls(component_config, extractor)
 
     @classmethod
     def cache_key(cls,
-                  index: int,
+                  component_meta: Dict,
                   model_metadata: 'Metadata') -> Optional[Text]:
-
-        component_meta = model_metadata.for_component(index)
 
         mitie_file = component_meta.get("model", None)
         if mitie_file is not None:
@@ -81,7 +80,7 @@ class MitieNLP(Component):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['MitieNLP'] = None,
@@ -92,13 +91,11 @@ class MitieNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.for_component(index)
-        mitie_file = component_meta.get("model")
-        return cls(component_meta,
-                   mitie.total_word_feature_extractor(mitie_file))
+        mitie_file = meta.get("model")
+        return cls(meta, mitie.total_word_feature_extractor(mitie_file))
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         return {

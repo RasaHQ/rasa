@@ -122,14 +122,13 @@ class RegexFeaturizer(Featurizer):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Optional[Text] = None,
              model_metadata: Optional['Metadata'] = None,
              cached_component: Optional['RegexFeaturizer'] = None,
              **kwargs: Any
              ) -> 'RegexFeaturizer':
 
-        meta = model_metadata.for_component(index)
         file_name = meta.get("file")
         regex_file = os.path.join(model_dir, file_name)
 
@@ -140,12 +139,12 @@ class RegexFeaturizer(Featurizer):
             return RegexFeaturizer(meta)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again."""
-        file_name = self._file_name(index) + ".pkl"
+        file_name = file_name + ".pkl"
         regex_file = os.path.join(model_dir, file_name)
         utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
 

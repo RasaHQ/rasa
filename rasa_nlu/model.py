@@ -9,9 +9,11 @@ from typing import Optional
 from typing import Text
 
 import rasa_nlu
-from rasa_nlu import components, utils, config
+from rasa_nlu import components, utils
 from rasa_nlu.components import Component, ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import (RasaNLUModelConfig,
+                             component_config_from_pipeline,
+                             make_path_absolute)
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir, write_json_to_file
@@ -90,9 +92,9 @@ class Metadata(object):
         return len(self.get('pipeline', []))
 
     def for_component(self, index, defaults=None):
-        return config.component_config_from_pipeline(index,
-                                                     self.get('pipeline', []),
-                                                     defaults)
+        return component_config_from_pipeline(index,
+                                              self.get('pipeline', []),
+                                              defaults)
 
     @property
     def language(self) -> Optional[Text]:
@@ -156,7 +158,8 @@ class Trainer(object):
 
         # Transform the passed names of the pipeline components into classes
         for i in range(len(cfg.pipeline)):
-            component = component_builder.create_component(i, cfg)
+            component_cfg = cfg.for_component(i)
+            component = component_builder.create_component(component_cfg, cfg)
             pipeline.append(component)
 
         return pipeline
@@ -194,6 +197,10 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context)
 
+    @staticmethod
+    def _file_name(index, name):
+        return 'component_{}_{}'.format(index, name)
+
     def persist(self,
                 path: Text,
                 persistor: Optional[Persistor] = None,
@@ -217,7 +224,7 @@ class Trainer(object):
         else:
             model_name = "model_" + timestamp
 
-        path = config.make_path_absolute(path)
+        path = make_path_absolute(path)
         dir_name = os.path.join(path, project_name, model_name)
 
         create_dir(dir_name)
@@ -226,7 +233,8 @@ class Trainer(object):
             metadata.update(self.training_data.persist(dir_name))
 
         for i, component in enumerate(self.pipeline):
-            update = component.persist(i, dir_name)
+            file_name = self._file_name(i, component.name)
+            update = component.persist(file_name, dir_name)
             component_meta = component.component_config
             if update:
                 component_meta.update(update)
@@ -316,8 +324,9 @@ class Interpreter(object):
             components.validate_requirements(model_metadata.component_names)
 
         for i in range(model_metadata.number_of_components):
+            component_meta = model_metadata.for_component(i)
             component = component_builder.load_component(
-                i, model_metadata.model_dir,
+                component_meta, model_metadata.model_dir,
                 model_metadata, **context)
             try:
                 updates = component.provide_context()

@@ -64,7 +64,7 @@ class MyComponent(Component):
         pass
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this component to disk for future loading."""
 
@@ -72,7 +72,7 @@ class MyComponent(Component):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Optional[Text] = None,
              model_metadata: Optional['Metadata'] = None,
              cached_component: Optional['Component'] = None,
@@ -83,5 +83,4 @@ class MyComponent(Component):
         if cached_component:
             return cached_component
         else:
-            component_config = model_metadata.for_component(index)
-            return cls(component_config)
+            return cls(meta)

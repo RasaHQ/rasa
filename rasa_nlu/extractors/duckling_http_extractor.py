@@ -4,7 +4,7 @@ import logging
 import os
 import requests
 import simplejson
-from typing import Any, List, Optional, Text
+from typing import Any, List, Optional, Text, Dict
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
@@ -76,7 +76,7 @@ class DucklingHTTPExtractor(EntityExtractor):
     }
 
     def __init__(self,
-                 component_config: Text = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  language: Optional[List[Text]] = None) -> None:
 
         super(DucklingHTTPExtractor, self).__init__(component_config)
@@ -84,11 +84,11 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     @classmethod
     def create(cls,
-               index: int,
+               component_config: Dict,
                config: RasaNLUModelConfig
                ) -> 'DucklingHTTPExtractor':
 
-        return cls(config.for_component(index, cls.defaults), config.language)
+        return cls(component_config, config.language)
 
     def _locale(self):
         if not self.component_config.get("locale"):
@@ -175,12 +175,11 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['DucklingHTTPExtractor'] = None,
              **kwargs: Any
              ) -> 'DucklingHTTPExtractor':
 
-        component_config = model_metadata.for_component(index)
-        return cls(component_config, model_metadata.get("language"))
+        return cls(meta, model_metadata.get("language"))

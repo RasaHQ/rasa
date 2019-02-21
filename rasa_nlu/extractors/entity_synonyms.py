@@ -43,11 +43,11 @@ class EntitySynonymMapper(EntityExtractor):
         message.set("entities", updated_entities, add_to_output=True)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         if self.synonyms:
-            file_name = self._file_name(index) + ".json"
+            file_name = file_name + ".json"
             entity_synonyms_file = os.path.join(model_dir, file_name)
             write_json_to_file(entity_synonyms_file, self.synonyms,
                                separators=(',', ': '))
@@ -57,14 +57,13 @@ class EntitySynonymMapper(EntityExtractor):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['EntitySynonymMapper'] = None,
              **kwargs: Any
              ) -> 'EntitySynonymMapper':
 
-        meta = model_metadata.for_component(index)
         file_name = meta.get("file")
         if not file_name:
             synonyms = None

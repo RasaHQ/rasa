@@ -203,14 +203,13 @@ class SklearnIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['SklearnIntentClassifier'] = None,
              **kwargs: Any
              ) -> 'SklearnIntentClassifier':
 
-        meta = model_metadata.for_component(index)
         file_name = meta.get("file")
         classifier_file = os.path.join(model_dir, file_name)
 
@@ -220,11 +219,11 @@ class SklearnIntentClassifier(Component):
             return cls(meta)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
-        file_name = self._file_name(index) + ".pkl"
+        file_name = file_name + ".pkl"
         classifier_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(classifier_file, self)
         return {"file": file_name}

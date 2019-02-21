@@ -265,28 +265,26 @@ class CountVectorsFeaturizer(Featurizer):
                                                                   bag))
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again.
         """
 
-        file_name = self._file_name(index) + ".pkl"
+        file_name = file_name + ".pkl"
         featurizer_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(featurizer_file, self)
         return {"file": file_name}
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['CountVectorsFeaturizer'] = None,
              **kwargs: Any
              ) -> 'CountVectorsFeaturizer':
-
-        meta = model_metadata.for_component(index)
 
         if model_dir and meta.get("file"):
             file_name = meta.get("file")

@@ -148,7 +148,7 @@ def module_path_from_object(o: Any) -> Text:
     return o.__class__.__module__ + "." + o.__class__.__name__
 
 
-def class_from_module_path(module_path: Text) -> Type[Any]:
+def class_from_module_path(module_path: Text) -> Type['Any']:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects. """

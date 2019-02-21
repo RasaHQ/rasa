@@ -18,7 +18,7 @@ class MitieIntentClassifier(Component):
     requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self,
-                 component_config: Dict[Text, Any] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  clf=None
                  ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
@@ -77,7 +77,7 @@ class MitieIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['MitieIntentClassifier'] = None,
@@ -85,7 +85,6 @@ class MitieIntentClassifier(Component):
              ) -> 'MitieIntentClassifier':
         import mitie
 
-        meta = model_metadata.for_component(index)
         file_name = meta.get("file")
 
         if not file_name:
@@ -98,15 +97,14 @@ class MitieIntentClassifier(Component):
             return cls(meta)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         import os
 
         if self.clf:
-
-            classifier_file = os.path.join(model_dir,
-                                           self._file_name(index) + ".dat")
+            file_name = file_name + ".dat"
+            classifier_file = os.path.join(model_dir, file_name)
             self.clf.save_to_disk(classifier_file, pure_model=True)
-            return {"file": self._file_name(index) + ".dat"}
+            return {"file": file_name}
         else:
             return {"file": None}

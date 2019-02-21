@@ -124,15 +124,13 @@ class MitieEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['MitieEntityExtractor'] = None,
              **kwargs: Any
              ) -> 'MitieEntityExtractor':
         import mitie
-
-        meta = model_metadata.for_component(index)
 
         file_name = meta.get("file")
 
@@ -147,11 +145,11 @@ class MitieEntityExtractor(EntityExtractor):
             return cls(meta)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         if self.ner:
-            file_name = self._file_name(index) + ".dat"
+            file_name = file_name + ".dat"
             entity_extractor_file = os.path.join(model_dir, file_name)
             self.ner.save_to_disk(entity_extractor_file, pure_model=True)
             return {"file": file_name}

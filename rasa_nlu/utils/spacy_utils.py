@@ -45,30 +45,29 @@ class SpacyNLP(Component):
         return ["spacy"]
 
     @classmethod
-    def create(cls, index: int, cfg: RasaNLUModelConfig) -> 'SpacyNLP':
+    def create(cls,
+               component_config: Dict,
+               config: RasaNLUModelConfig) -> 'SpacyNLP':
         import spacy
 
-        component_conf = cfg.for_component(index, cls.defaults)
-        spacy_model_name = component_conf.get("model")
+        spacy_model_name = component_config.get("model")
 
         # if no model is specified, we fall back to the language string
         if not spacy_model_name:
-            spacy_model_name = cfg.language
-            component_conf["model"] = cfg.language
+            spacy_model_name = config.language
+            component_config["model"] = config.language
 
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
 
         nlp = spacy.load(spacy_model_name, disable=['parser'])
         cls.ensure_proper_language_model(nlp)
-        return SpacyNLP(component_conf, nlp)
+        return cls(component_config, nlp)
 
     @classmethod
     def cache_key(cls,
-                  index: int,
+                  component_meta: Dict,
                   model_metadata: 'Metadata') -> Optional[Text]:
-
-        component_meta = model_metadata.for_component(index)
 
         # Fallback, use the language name, e.g. "en",
         # as the model name if no explicit name is defined
@@ -99,7 +98,7 @@ class SpacyNLP(Component):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Text = None,
              model_metadata: 'Metadata' = None,
              cached_component: Optional['SpacyNLP'] = None,
@@ -109,12 +108,11 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.for_component(index)
-        model_name = component_meta.get("model")
+        model_name = meta.get("model")
 
         nlp = spacy.load(model_name, disable=['parser'])
         cls.ensure_proper_language_model(nlp)
-        return cls(component_meta, nlp)
+        return cls(meta, nlp)
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional['Language']) -> None:

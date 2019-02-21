@@ -71,7 +71,7 @@ class CRFEntityExtractor(EntityExtractor):
     }
 
     def __init__(self,
-                 component_config: 'sklearn_crfsuite.CRF' = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  ent_tagger: Optional[Dict[Text, Any]] = None) -> None:
 
         super(CRFEntityExtractor, self).__init__(component_config)
@@ -342,7 +342,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             index: int,
+             meta: Dict,
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['CRFEntityExtractor'] = None,
@@ -350,7 +350,6 @@ class CRFEntityExtractor(EntityExtractor):
              ) -> 'CRFEntityExtractor':
         from sklearn.externals import joblib
 
-        meta = model_metadata.for_component(index)
         file_name = meta.get("file")
         model_file = os.path.join(model_dir, file_name)
 
@@ -361,14 +360,14 @@ class CRFEntityExtractor(EntityExtractor):
             return cls(meta)
 
     def persist(self,
-                index: int,
+                file_name: Text,
                 model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again."""
 
         from sklearn.externals import joblib
-        file_name = self._file_name(index) + ".pkl"
+        file_name = file_name + ".pkl"
         if self.ent_tagger:
             model_file_name = os.path.join(model_dir, file_name)
             joblib.dump(self.ent_tagger, model_file_name)
