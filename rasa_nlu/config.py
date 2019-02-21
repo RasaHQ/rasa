@@ -111,7 +111,7 @@ class RasaNLUModelConfig(object):
             pipeline = registry.pipeline_template(template_name)
 
             if pipeline:
-                new_names = {"spacy_sklearn": "pretrained_embeddings",
+                new_names = {"spacy_sklearn": "pretrained_embeddings_spacy",
                              "tensorflow_embedding": "supervised_embeddings"}
                 if template_name in new_names:
                     logger.warning("You have specified the pipeline template "
