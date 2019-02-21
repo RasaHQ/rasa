@@ -20,7 +20,7 @@ WORKDIR ${RASA_NLU_HOME}
 
 COPY . ${RASA_NLU_HOME}
 
-RUN pip install -r alt_requirements/requirements_mitie.txt
+RUN pip install -r alt_requirements/requirements_pretrained_embeddings_mitie.txt
 
 RUN pip install -e .
 
