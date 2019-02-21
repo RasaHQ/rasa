@@ -126,7 +126,7 @@ class TrainingData(object):
         return MarkdownWriter().dumps(self)
 
     def persist(
-        self, dir_name: Text, filename: Text="training_data.json"
+        self, dir_name: Text, filename: Text = "training_data.json"
     ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
         information to load it again."""
