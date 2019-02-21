@@ -24,7 +24,7 @@ class MappingPolicy(Policy):
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__()
-        self.last_action_name = None
+        self.last_msg_id = None
 
     def train(self, *args, **kwargs) -> None:
         """Does nothing. This policy is deterministic."""
@@ -41,17 +41,14 @@ class MappingPolicy(Policy):
         the policy will predict zero for every action."""
 
         intent = tracker.latest_message.intent.get('name')
-        action_name = domain.intent_properties.get(intent, {}).get('maps_to')
+        msg_id = tracker.latest_message.message_id
+        action_name = domain.intent_properties.get(intent, {}).get('triggers')
 
         prediction = [0.0] * domain.num_actions
-        if action_name is not None:
-            if self.last_action_name == action_name:
-                idx = domain.index_for_action(ACTION_LISTEN_NAME)
-                prediction[idx] = MAPPING_SCORE
-            else:
-                idx = domain.index_for_action(action_name)
-                prediction[idx] = MAPPING_SCORE
-                self.last_action_name = action_name
+        if msg_id != self.last_msg_id and action_name is not None:
+            idx = domain.index_for_action(action_name)
+            prediction[idx] = MAPPING_SCORE
+            self.last_msg_id = msg_id
         return prediction
 
     def persist(self, *args) -> None:
