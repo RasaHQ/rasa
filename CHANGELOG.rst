@@ -15,6 +15,9 @@ Changed
 - validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
+- new consistent naming scheme for pipelines:
+  - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
+  - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
 
 =======
 - replace pep8 with pycodestyle
@@ -74,8 +77,6 @@ Added
 
 Changed
 -------
-- ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
-- ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings``
 - ``EmbeddingIntentClassifier`` has been refactored, including changes to the
   config parameters as well as comments and types for all class functions.
 - the http server's ``POST /evaluate`` endpoint returns evaluation results
