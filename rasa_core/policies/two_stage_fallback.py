@@ -9,7 +9,7 @@ from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_ASK_REPHRASE_NAME,
                                       ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
                                       ACTION_LISTEN_NAME)
-from rasa_core.constants import FALLBACK_SCORE, USER_INTENT_OUT_OF_SCOPE
+from rasa_core.constants import USER_INTENT_OUT_OF_SCOPE
 from rasa_core.domain import Domain, InvalidDomain
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.policy import confidence_scores_for
@@ -41,6 +41,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
     """
 
     def __init__(self,
+                 priority: int = 3,
                  nlu_threshold: float = 0.3,
                  core_threshold: float = 0.3,
                  fallback_core_action_name: Text = ACTION_DEFAULT_FALLBACK_NAME,
@@ -61,10 +62,11 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                 threshold is not met.
             fallback_nlu_action_name: This action is executed if the user
                 denies the recognised intent for the second time.
-            deny_suggestion_intent_name: The name of the intent which is used to
-                 detect that the user denies the suggested intents.
+            deny_suggestion_intent_name: The name of the intent which is used
+                 to detect that the user denies the suggested intents.
         """
         super(TwoStageFallbackPolicy, self).__init__(
+            priority,
             nlu_threshold,
             core_threshold,
             fallback_core_action_name)
@@ -92,7 +94,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         user_rephrased = has_user_rephrased(tracker)
 
         if self._is_user_input_expected(tracker):
-            result = confidence_scores_for(ACTION_LISTEN_NAME, FALLBACK_SCORE,
+            result = confidence_scores_for(ACTION_LISTEN_NAME, 1.0,
                                            domain)
         elif self._has_user_denied(last_intent_name, tracker):
             logger.debug("User '{}' denied suggested intents.".format(
@@ -103,12 +105,13 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                          "for intent '{}'".format(tracker.sender_id,
                                                   last_intent_name))
             result = confidence_scores_for(ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-                                           FALLBACK_SCORE,
+                                           1.0,
                                            domain)
         elif user_rephrased:
-            logger.debug("User '{}' rephrased intent".format(tracker.sender_id))
+            logger.debug(
+                "User '{}' rephrased intent".format(tracker.sender_id))
             result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS_NAME,
-                                           FALLBACK_SCORE, domain)
+                                           1.0, domain)
         elif tracker.last_executed_action_has(
                 ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
             if not should_nlu_fallback:
@@ -117,15 +120,15 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                                        last_intent_name))
                 result = confidence_scores_for(
                     ACTION_REVERT_FALLBACK_EVENTS_NAME,
-                    FALLBACK_SCORE, domain)
+                    1.0, domain)
             else:
                 result = confidence_scores_for(self.fallback_nlu_action_name,
-                                               FALLBACK_SCORE, domain)
+                                               1.0, domain)
         elif should_nlu_fallback:
             logger.debug("User '{}' has to affirm intent '{}'.".format(
                 tracker.sender_id, last_intent_name))
             result = confidence_scores_for(ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-                                           FALLBACK_SCORE,
+                                           1.0,
                                            domain)
         else:
             result = self.fallback_scores(domain, self.core_threshold)
@@ -153,15 +156,16 @@ class TwoStageFallbackPolicy(FallbackPolicy):
 
         if has_denied_before:
             return confidence_scores_for(self.fallback_nlu_action_name,
-                                         FALLBACK_SCORE, domain)
+                                         1.0, domain)
         else:
             return confidence_scores_for(ACTION_DEFAULT_ASK_REPHRASE_NAME,
-                                         FALLBACK_SCORE, domain)
+                                         1.0, domain)
 
     def persist(self, path: Text) -> None:
         """Persists the policy to storage."""
         config_file = os.path.join(path, 'two_stage_fallback_policy.json')
         meta = {
+            "priority": self.priority,
             "nlu_threshold": self.nlu_threshold,
             "core_threshold": self.core_threshold,
             "fallback_core_action_name": self.fallback_action_name,
