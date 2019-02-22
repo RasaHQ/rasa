@@ -370,7 +370,6 @@ def create_temporary_file(data: Any,
 
 
 def _zipdir(path, ziph):
-    # ziph is zipfile handle
     for root, dirs, files in os.walk(path):
         for file in files:
             ziph.write(os.path.join(root, file))
@@ -387,7 +386,7 @@ def zip_folder(folder: Text, library: Text = None) -> Text:
 
     if library == 'zipfile':
         zip_name = zipped_path.name
-        file = zipfile.ZipFile(zip_name, 'rb',
+        file = zipfile.ZipFile(zip_name, 'r',
                                zipfile.ZIP_DEFLATED)
         _zipdir(folder, file)
         file.close()
