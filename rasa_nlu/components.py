@@ -353,7 +353,7 @@ class ComponentBuilder(object):
         self.component_cache = {}
 
     def __get_cached_component(self,
-                               component_meta: Dict,
+                               component_meta: Dict[Text, Any],
                                model_metadata: 'Metadata'
                                ) -> Tuple[Optional[Component], Optional[Text]]:
         """Load a component from the cache, if it exists.
