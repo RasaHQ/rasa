@@ -383,7 +383,7 @@ class ComponentBuilder(object):
                         "".format(component.name, cache_key))
 
     def load_component(self,
-                       component_meta: Dict,
+                       component_meta: Dict[Text, Any],
                        model_dir: Text,
                        model_metadata: 'Metadata',
                        **context: Any) -> Component:
