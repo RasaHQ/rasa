@@ -663,7 +663,7 @@ class EmbeddingIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             meta: Dict,
+             meta: Dict[Text, Any],
              model_dir: Text = None,
              model_metadata: 'Metadata' = None,
              cached_component: Optional['EmbeddingIntentClassifier'] = None,
