@@ -275,7 +275,7 @@ class Component(object):
 
     @classmethod
     def cache_key(cls,
-                  component_meta: Dict,
+                  component_meta: Dict[Text, Any],
                   model_metadata: 'Metadata') -> Optional[Text]:
         """This key is used to cache components.
 
