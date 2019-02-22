@@ -1,9 +1,13 @@
+:desc: Learn more about open-source natural language processing library Rasa NLU
+       for intent classification and entity extraction in on premise chatbots.
+
+.. _section_index:
 
 Rasa NLU: Language Understanding for chatbots and AI assistants
 ===============================================================
 
 .. note::
-    This is the documentation for version |release| of Rasa NLU. Please make sure you are reading the documentation 
+    This is the documentation for version |release| of Rasa NLU. Please make sure you are reading the documentation
     that matches the version you have installed.
 
 
@@ -18,7 +22,7 @@ and returning structured data like
 
 .. code-block:: json
 
-    { 
+    {
       "intent": "search_restaurant",
       "entities": {
         "cuisine" : "Mexican",
@@ -36,7 +40,7 @@ The main reasons for using open source NLU are that:
 - Rasa NLU runs wherever you want, so you don't have to make an extra network request for every message that comes in.
 
 You can read about the advantages of using open source NLU in this `blog post <https://medium.com/rasa-blog/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
-You can see an independent benchmark comparing Rasa NLU to closed source alternatives `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_. 
+You can see an independent benchmark comparing Rasa NLU to closed source alternatives `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_.
 
 .. include:: feedback.inc
 
@@ -85,4 +89,3 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    license
    changelog
    support
-
