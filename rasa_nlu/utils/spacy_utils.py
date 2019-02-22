@@ -66,7 +66,7 @@ class SpacyNLP(Component):
 
     @classmethod
     def cache_key(cls,
-                  component_meta: Dict,
+                  component_meta: Dict[Text, Any],
                   model_metadata: 'Metadata') -> Optional[Text]:
 
         # Fallback, use the language name, e.g. "en",
