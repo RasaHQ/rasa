@@ -90,7 +90,7 @@ def list_directory(path):
     If the path points to a file, returns the file. This is a recursive
     implementation returning files in any depth of the path."""
 
-    if not isinstance(path, str):
+    if not isinstance(path, six.string_types):
         raise ValueError("`resource_name` must be a string type. "
                          "Got `{}` instead".format(type(path)))
 
