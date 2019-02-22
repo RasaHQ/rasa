@@ -91,7 +91,7 @@ def list_directory(path):
     implementation returning files in any depth of the path."""
 
     if not isinstance(path, str):
-        raise ValueError("Resourcename must be a string type. "
+        raise ValueError("`resource_name` must be a string type. "
                          "Got `{}` instead".format(type(path)))
 
     if os.path.isfile(path):
