@@ -56,7 +56,7 @@ class MitieNLP(Component):
 
     @classmethod
     def cache_key(cls,
-                  component_meta: Dict,
+                  component_meta: Dict[Text, Any],
                   model_metadata: 'Metadata') -> Optional[Text]:
 
         mitie_file = component_meta.get("model", None)
