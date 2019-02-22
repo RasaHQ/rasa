@@ -185,10 +185,8 @@ def test_handles_pipeline_with_non_existing_component(component_builder):
     _config = utilities.base_test_conf("spacy_sklearn")
     _config.pipeline.append({"name": "my_made_up_component"})
     with pytest.raises(Exception) as execinfo:
-        train.train(
-            _config,
-            data=DEFAULT_DATA_PATH,
-            component_builder=component_builder)
+        train(_config, data=DEFAULT_DATA_PATH,
+              component_builder=component_builder)
     assert "Failed to find component" in str(execinfo.value)
 
 
