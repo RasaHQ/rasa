@@ -44,10 +44,39 @@ def check_domain_sanity(domain):
                 for item, count in collections.Counter(my_items).items()
                 if count > 1]
 
-    def get_exception_message(
+    def check_mappings(intent_properties):
+        """Check whether intent-action mappings use proper action names."""
+        incorrect_mappings = list()
+        for intent, properties in intent_properties.items():
+            if 'triggers' in properties:
+                if properties.get('triggers') not in domain.action_names:
+                    incorrect_mappings.append((intent, properties['triggers']))
+        return incorrect_mappings
+
+    def get_exception_message(duplicates=None, mappings=None):
+        """Return a message given a list of error locations."""
+
+        msg = ""
+        if duplicates:
+            msg += get_duplicate_exception_message(duplicates)
+        if mappings:
+            if msg: msg += "\n"
+            msg += get_mapping_exception_message(mappings)
+        return msg
+
+    def get_mapping_exception_message(mappings):
+        """Return a message given a list of duplicates."""
+
+        msg = ""
+        for name, action in mappings:
+            if msg: msg += "\n"
+            msg += ("Intent '{}' is set to trigger action '{}', which is not "
+                    "defined in the domain.".format(name, action))
+        return msg
+    def get_duplicate_exception_message(
         duplicates: List[Tuple[List[Text], Text]]
     ) -> Text:
-        """Return a message given a list of error locations."""
+        """Return a message given a list of duplicates."""
 
         msg = ""
         for d, name in duplicates:
@@ -63,14 +92,15 @@ def check_domain_sanity(domain):
     duplicate_intents = get_duplicates(domain.intents[:])
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
     duplicate_entities = get_duplicates(domain.entities[:])
+    incorrect_mappings = check_mappings(domain.intent_properties)
 
-    if (duplicate_actions or duplicate_intents or
-            duplicate_slots or duplicate_entities):
+    if (duplicate_actions or duplicate_intents or duplicate_slots
+            or duplicate_entities or incorrect_mappings):
         raise InvalidDomain(get_exception_message([
             (duplicate_actions, "actions"),
             (duplicate_intents, "intents"),
             (duplicate_slots, "slots"),
-            (duplicate_entities, "entities")]))
+            (duplicate_entities, "entities")], incorrect_mappings))
 
 
 class Domain(object):
@@ -201,8 +231,8 @@ class Domain(object):
                         properties['use_entities'] = True
                 intent_properties.update(intent)
             else:
-                intent_properties.update({intent: {'use_entities': True}})
-            print(intent)
+                intent = {intent: {'use_entities': True}}
+                intent_properties.update(intent)
         return intent_properties
 
     @staticmethod
