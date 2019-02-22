@@ -16,12 +16,6 @@ DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
-MEMO_SCORE = 1.1
-
-FALLBACK_SCORE = 1.2
-
-FORM_SCORE = 1.3
-
 REQUESTED_SLOT = 'requested_slot'
 
 # start of special user message section
