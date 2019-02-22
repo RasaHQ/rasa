@@ -209,7 +209,7 @@ class Component(object):
 
     @classmethod
     def create(cls,
-               component_config: Dict,
+               component_config: Dict[Text, Any],
                config: RasaNLUModelConfig) -> 'Component':
         """Creates this component (e.g. before a training is started).
 
