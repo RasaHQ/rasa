@@ -363,6 +363,7 @@ class RasaNLU(object):
             request.setResponseCode(404)
             returnValue(json_to_string({"error": "{}".format(e)}))
         except TrainingException as e:
+            logger.error(e)
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
 

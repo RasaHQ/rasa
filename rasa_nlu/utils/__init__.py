@@ -387,7 +387,7 @@ def zip_folder(folder: Text, library: Text = None) -> Text:
 
     if library == 'zipfile':
         zip_name = zipped_path.name
-        file = zipfile.ZipFile(zip_name, 'r',
+        file = zipfile.ZipFile(zip_name, 'rb',
                                zipfile.ZIP_DEFLATED)
         _zipdir(folder, file)
         file.close()

@@ -190,7 +190,7 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     response = app.post(train_u,
                         headers={b"Content-Type": b"application/x-yml"},
                         data=model_str)
-    time.sleep(3)
+    time.sleep(30)
     app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
