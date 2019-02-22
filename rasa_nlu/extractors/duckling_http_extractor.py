@@ -84,7 +84,7 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     @classmethod
     def create(cls,
-               component_config: Dict,
+               component_config: Dict[Text, Any],
                config: RasaNLUModelConfig
                ) -> 'DucklingHTTPExtractor':
 
