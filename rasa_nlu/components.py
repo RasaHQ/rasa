@@ -420,7 +420,7 @@ class ComponentBuilder(object):
                             "{}".format(component_meta.get("file"), e))
 
     def create_component(self,
-                         component_config: Dict,
+                         component_config: Dict[Text, Any],
                          cfg: RasaNLUModelConfig) -> Component:
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
