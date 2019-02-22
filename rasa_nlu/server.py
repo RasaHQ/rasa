@@ -2,6 +2,7 @@ import argparse
 import io
 import logging
 from functools import wraps
+from zipfile import BadZipFile
 
 import simplejson
 from klein import Klein
@@ -11,8 +12,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
-    DataRouter, InvalidProjectError,
-    MaxTrainingError)
+    DataRouter, InvalidProjectError, MaxTrainingError)
 from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
 from rasa_nlu.train import TrainingException
 from rasa_nlu.utils import json_to_string, read_endpoints
@@ -328,7 +328,6 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
-
         # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
         # if set will not generate a model name but use the passed one
@@ -351,10 +350,9 @@ class RasaNLU(object):
             path_to_model = yield self.data_router.start_train_process(
                 data_file, project,
                 RasaNLUModelConfig(model_config), model_name)
-            zipped_path = utils.zip_folder(path_to_model, 'zipfile')
+            zipped_path = utils.zip_folder(path_to_model)
 
-            logger.info(zipped_path)
-            return returnValue(io.open(zipped_path, 'wb').read())
+            return returnValue(io.open(zipped_path, 'r+b').read())
 
         except MaxTrainingError as e:
             request.setResponseCode(403)
@@ -364,6 +362,9 @@ class RasaNLU(object):
             returnValue(json_to_string({"error": "{}".format(e)}))
         except TrainingException as e:
             logger.error(e)
+            request.setResponseCode(500)
+            returnValue(json_to_string({"error": "{}".format(e)}))
+        except BadZipFile as e:
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
 

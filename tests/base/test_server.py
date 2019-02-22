@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import io
 import json
+import os
 import tempfile
 import time
 
@@ -151,7 +152,7 @@ def test_post_train_success(app, rasa_default_train_data):
 
     response = app.post("http://dummy-uri/train?project=test&model=test",
                         json=model_config)
-    time.sleep(30)
+    time.sleep(3)
     app.flush()
     response = yield response
     content = yield response.content()
@@ -159,11 +160,9 @@ def test_post_train_success(app, rasa_default_train_data):
     with io.open('./test_download.zip', 'wb') as f:
         f.write(content)
     import zipfile
-    zip_test = zipfile.is_zipfile("./test_download.zip")
-    assert zip_test == zipfile.ZIP_DEFLATED
-    zip_ref = zipfile.ZipFile("./test_download.zip", 'r')
-    zip_ref.extractall("./test_unzip")
-    zip_ref.close()
+    zip_name = "./test_download.zip"
+    assert zipfile.is_zipfile(zip_name)
+    os.remove(zip_name)
 
 
 @utilities.slowtest
