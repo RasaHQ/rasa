@@ -88,10 +88,10 @@ def check_domain_sanity(domain):
                         "the domain: {1}".format(name, ", ".join(d)))
         return msg
 
-    duplicate_actions = get_duplicates(domain.action_names[:])
-    duplicate_intents = get_duplicates(domain.intents[:])
+    duplicate_actions = get_duplicates(domain.action_names)
+    duplicate_intents = get_duplicates(domain.intents)
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
-    duplicate_entities = get_duplicates(domain.entities[:])
+    duplicate_entities = get_duplicates(domain.entities)
     incorrect_mappings = check_mappings(domain.intent_properties)
 
     if (duplicate_actions or duplicate_intents or duplicate_slots
