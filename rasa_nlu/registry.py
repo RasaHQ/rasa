@@ -128,7 +128,7 @@ def load_component_by_meta(component_meta: Dict,
                                 cached_component, **kwargs)
 
 
-def create_component_by_config(component_config: Dict,
+def create_component_by_config(component_config: Dict[Text, Any],
                                config: 'RasaNLUModelConfig'
                                ) -> Optional['Component']:
     """Resolves a component and calls it's create method.
