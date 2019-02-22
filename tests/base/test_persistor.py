@@ -24,7 +24,7 @@ def test_list_projects_method_in_AWSPersistor(component_builder, tmpdir):
     os.environ["BUCKET_NAME"] = 'rasa-test'
     os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
 
-    (trained, _, persisted_path) = train.train(
+    (trained, _, persisted_path) = train(
         _config,
         data="data/test/demo-rasa-small.json",
         path=tmpdir.strpath,
