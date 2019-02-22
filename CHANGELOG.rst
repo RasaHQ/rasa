@@ -14,6 +14,11 @@ Changed
 -------
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
+- renamed ``rasa_nlu.evaluate`` to ``rasa_nlu.test``
+- renamed ``rasa_nlu.test.run_cv_evaluation`` to 
+  ``rasa_nlu.test.cross_validate``
+- renamed ``rasa_nlu.train.do_train()`` to ``rasa_nlu.train.train()``
+- train command can now also load config from file
 
 =======
 - replace pep8 with pycodestyle
