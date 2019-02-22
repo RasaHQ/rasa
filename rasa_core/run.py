@@ -29,7 +29,6 @@ def create_argument_parser():
 
     parser = argparse.ArgumentParser(
         description='starts the bot')
-
     parser.add_argument(
         '-d', '--core',
         required=True,

@@ -218,15 +218,15 @@ def print_color(text: Text, color: Text):
 
 
 def print_warning(text: Text):
-    print(wrap_with_color(text, bcolors.WARNING))
+    print_color(text, bcolors.WARNING)
 
 
 def print_error(text: Text):
-    print(wrap_with_color(text, bcolors.WARNING))
+    print_color(text, bcolors.FAIL)
 
 
 def print_success(text: Text):
-    print(wrap_with_color(text, bcolors.OKGREEN))
+    print_color(text, bcolors.OKGREEN)
 
 
 class HashableNDArray(object):

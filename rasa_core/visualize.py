@@ -43,11 +43,11 @@ def visualize(config_path: Text, domain_path: Text, stories_path: Text,
                     nlu_training_data=nlu_data_path)
 
     full_output_path = "file://{}".format(os.path.abspath(output_path))
-    logger.info("Finished graph creation. Saved into file://{}".format(
+    logger.info("Finished graph creation. Saved into {}".format(
         full_output_path))
 
     import webbrowser
-    webbrowser.open("file://{}".format(full_output_path))
+    webbrowser.open(full_output_path)
 
 
 if __name__ == '__main__':

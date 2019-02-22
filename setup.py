@@ -58,7 +58,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2018.9",
     "python-dateutil~=2.7",
-    "rasa_nlu",
+    "rasa_nlu~=0.15.0a1",
     "rasa_core_sdk~=0.13.0a1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
