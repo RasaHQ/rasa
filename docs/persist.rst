@@ -57,6 +57,11 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
 
 Models are gzipped before saving to cloud. The gzipped file naming convention
 is `{PROJECT}___{MODEL_NAME}.tar.gz` and should be in the root folder of the storage service.
+Currently, you are not able to specify the path on cloud storage.
+
+If storing trained models, rasa_nlu will gzip the new model and upload to the root. If retrieving/loading models
+from the cloud storage, rasa_nlu will download the gzipped model locally an extract the contents to the specific location
+specified by the `--path` flag.
 
 
 .. include:: feedback.inc
