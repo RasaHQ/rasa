@@ -46,7 +46,7 @@ class SpacyNLP(Component):
 
     @classmethod
     def create(cls,
-               component_config: Dict,
+               component_config: Dict[Text, Any],
                config: RasaNLUModelConfig) -> 'SpacyNLP':
         import spacy
 
