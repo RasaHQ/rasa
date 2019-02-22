@@ -18,6 +18,7 @@ Changed
 - new consistent naming scheme for pipelines:
   - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
   - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
+  - requirements files, sample configs, and dockerfiles renamed accordingly
 
 =======
 - replace pep8 with pycodestyle
