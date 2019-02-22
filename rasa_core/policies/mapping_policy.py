@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Any, List, Text
 
-from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.actions.action import ACTION_LISTEN_NAME, ACTION_RESTART_NAME
 
 from rasa_core import utils
 from rasa_core.domain import Domain
@@ -24,15 +24,13 @@ class MappingPolicy(Policy):
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__()
-        self.last_msg_id = None
 
     def train(self, *args, **kwargs) -> None:
         """Does nothing. This policy is deterministic."""
 
         pass
 
-    def predict_action_probabilities(self,
-                                     tracker: DialogueStateTracker,
+    def predict_action_probabilities(self, tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
         """Predicts the assigned action.
 
@@ -40,19 +38,17 @@ class MappingPolicy(Policy):
         predicted with the highest probability of all policies. If it is not
         the policy will predict zero for every action."""
 
-        intent = tracker.latest_message.intent.get('name')
-        msg_id = tracker.latest_message.message_id
-        action_name = domain.intent_properties.get(intent, {}).get('triggers')
-
         prediction = [0.0] * domain.num_actions
-        if msg_id != self.last_msg_id and action_name is not None:
-            idx = domain.index_for_action(action_name)
-            if idx is None:
-                logger.warning("MappingPolicy tried to predict unkown action "
-                               "'{}'".format(action_name))
-            else:
-                prediction[idx] = MAPPING_SCORE
-            self.last_msg_id = msg_id
+        if tracker.latest_action_name == ACTION_LISTEN_NAME:
+            intent = tracker.latest_message.intent.get('name')
+            action = domain.intent_properties.get(intent, {}).get('triggers')
+            if action:
+                idx = domain.index_for_action(action)
+                if idx is None:
+                    logger.warning("MappingPolicy tried to predict unkown "
+                                   "action '{}'.".format(action))
+                else:
+                    prediction[idx] = MAPPING_SCORE
         return prediction
 
     def persist(self, *args) -> None:
