@@ -135,9 +135,9 @@ the company [Rasa](https://rasa.com). Rasa NLU is the natural language
 understanding module, and the first component to be open-sourced. 
 
 ### What languages does it support?
-It depends. Some things, like intent classification with the 
-`supervised_embeddings` pipeline, work in any language. Other features are 
-more restricted. See details [here](https://nlu.rasa.com/languages.html)
+The `supervised_embeddings` pipeline works in any language.
+If you want to use pre-trained word embeddings, there are models available for
+many languages. See details [here](https://rasa.com/docs/nlu/languages/)
 
 ### How to contribute
 We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://nlu.rasa.com/contribute.html).

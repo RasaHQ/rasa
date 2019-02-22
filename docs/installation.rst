@@ -66,11 +66,11 @@ Installing Pipeline Dependencies
 Section :ref:`section_pipeline` will help you choose which pipeline
 you want to use.
 
-Great for getting started: spaCy + sklearn
-------------------------------------------
+Great for getting started: pretrained embeddings from spaCy
+-----------------------------------------------------------
 
 
-The ``spacy_sklearn`` pipeline combines a few different libraries and
+The ``pretrained_embeddings_spacy`` pipeline combines a few different libraries and
 is a popular option.
 
 You can install it with this command (for more information
@@ -94,7 +94,7 @@ First Alternative: Tensorflow
 -----------------------------
 
 To use the ``supervised_embeddings`` pipeline you will need to install
-tensorflow as well as the scikit-learn and sklearn-crfsuite libraries.
+tensorflow and, for entity recognition, the sklearn-crfsuite library.
 To do this, run the following command:
 
 .. code-block:: bash

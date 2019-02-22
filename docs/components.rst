@@ -9,7 +9,7 @@ Component Configuration
 .. note::
    For clarity, we have renamed the pre-defined pipelines to reflect
    what they *do* rather than which libraries they use as of Rasa NLU
-   0.14. The ``tensorflow_embedding`` pipeline is now called
+   0.15. The ``tensorflow_embedding`` pipeline is now called
    ``supervised_embeddings``, and ``spacy_sklearn`` is now known as
    ``pretrained_embeddings_spacy``. Please update your code if you are using these.
 

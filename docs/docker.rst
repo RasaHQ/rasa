@@ -13,7 +13,7 @@ Images
 
 `Rasa NLU docker images <https://hub.docker.com/r/rasa/rasa_nlu/tags/>`_ are provided for different backends:
 
-- ``spacy``: If you use the :ref:`section_pretrained_embeddings_pipeline` pipeline
+- ``spacy``: If you use the :ref:`section_pretrained_embeddings_spacy_pipeline` pipeline
 - ``tensorflow``: If you use the :ref:`section_supervised_embeddings_pipeline`
   pipeline
 - ``mitie``: If you use the :ref:`section_mitie_pipeline` pipeline
