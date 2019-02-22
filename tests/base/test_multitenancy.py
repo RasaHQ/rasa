@@ -86,12 +86,12 @@ def test_get_parse_invalid_model(app, response_test):
     ResponseTest(
         "http://dummy-uri/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "project": "test_project_mitie_sklearn"}
+        payload={"q": "food", "project": "test_project_mitie_2"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "project": "test_project_spacy_sklearn"}
+        payload={"q": "food", "project": "test_project_spacy"}
     ),
 ])
 @pytest.inlineCallbacks
@@ -107,13 +107,13 @@ def test_post_parse(app, response_test):
 def test_post_parse_specific_model(app):
     status = yield app.get("http://dummy-uri/status")
     sjs = yield status.json()
-    project = sjs["available_projects"]["test_project_spacy_sklearn"]
+    project = sjs["available_projects"]["test_project_spacy"]
     model = project["available_models"][0]
 
     query = ResponseTest("http://dummy-uri/parse",
                          {"entities": [], "intent": "affirm", "text": "food"},
                          payload={"q": "food",
-                                  "project": "test_project_spacy_sklearn",
+                                  "project": "test_project_spacy",
                                   "model": model})
 
     response = yield app.post(query.endpoint, json=query.payload)
@@ -122,7 +122,7 @@ def test_post_parse_specific_model(app):
     # check that that model now is loaded in the server
     status = yield app.get("http://dummy-uri/status")
     sjs = yield status.json()
-    project = sjs["available_projects"]["test_project_spacy_sklearn"]
+    project = sjs["available_projects"]["test_project_spacy"]
     assert model in project["loaded_models"]
 
 
