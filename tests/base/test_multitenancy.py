@@ -42,11 +42,11 @@ def app(component_builder):
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?q=food&project=test_project_mitie_sklearn",
+        "http://dummy-uri/parse?q=food&project=test_project_mitie_2",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?q=food&project=test_project_spacy_sklearn",
+        "http://dummy-uri/parse?q=food&project=test_project_spacy",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
