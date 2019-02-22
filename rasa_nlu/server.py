@@ -6,7 +6,8 @@ from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from rasa_nlu import config, utils, cli
+from rasa_nlu import config, utils
+import rasa_nlu.cli.server as cli
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(description='parse incoming text')
-    cli.server.add_server_arguments(parser)
+    cli.add_server_arguments(parser)
     utils.add_logging_option_arguments(parser)
 
     return parser

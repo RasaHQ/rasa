@@ -129,6 +129,7 @@ def train(nlu_config: Union[Text, RasaNLUModelConfig],
 
     if isinstance(nlu_config, str):
         nlu_config = config.load(nlu_config)
+
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
     # trained in another subprocess
