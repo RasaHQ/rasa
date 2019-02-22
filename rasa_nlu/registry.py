@@ -111,7 +111,7 @@ def get_component_class(component_name: Text) -> Type['Component']:
     return registered_components[component_name]
 
 
-def load_component_by_meta(component_meta: Dict,
+def load_component_by_meta(component_meta: Dict[Text, Any],
                            model_dir: Text,
                            metadata: Metadata,
                            cached_component: Optional['Component'],
