@@ -10,7 +10,7 @@ from rasa_nlu.test import (
     remove_empty_intent_examples, get_entity_extractors,
     get_duckling_dimensions, known_duckling_dimensions,
     find_component, remove_duckling_extractors, drop_intents_below_freq,
-    run_cv_evaluation, substitute_labels, IntentEvaluationResult,
+    cross_validate, substitute_labels, IntentEvaluationResult,
     evaluate_intents, evaluate_entities)
 from rasa_nlu.test import does_token_cross_borders
 from rasa_nlu.test import align_entity_predictions
@@ -242,7 +242,7 @@ def test_run_cv_evaluation():
     nlu_config = config.load("sample_configs/config_spacy.yml")
 
     n_folds = 2
-    results, entity_results = run_cv_evaluation(td, n_folds, nlu_config)
+    results, entity_results = cross_validate(td, n_folds, nlu_config)
 
     assert len(results.train["Accuracy"]) == n_folds
     assert len(results.train["Precision"]) == n_folds
