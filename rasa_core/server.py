@@ -12,7 +12,7 @@ from flask_jwt_simple import JWTManager, view_decorators
 import rasa_nlu
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.test import run_story_evaluation
+from rasa_core.test import test
 from rasa_core.events import Event
 from rasa_core.domain import Domain
 from rasa_core.policies import PolicyEnsemble
@@ -497,7 +497,7 @@ def create_app(agent,
                                                         mode='w+b')
         use_e2e = utils.bool_arg('e2e', default=False)
         try:
-            evaluation = run_story_evaluation(tmp_file, agent, use_e2e=use_e2e)
+            evaluation = test(tmp_file, agent, use_e2e=use_e2e)
             return jsonify(evaluation)
         except ValueError as e:
             return error(400, "FailedEvaluation",

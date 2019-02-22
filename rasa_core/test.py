@@ -26,7 +26,7 @@ from rasa_core.utils import (
     AvailableEndpoints, pad_list_to_size,
     set_default_subparser)
 from rasa_nlu import utils as nlu_utils
-from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
+from rasa_nlu.test import plot_confusion_matrix, get_evaluation_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def create_argument_parser():
     parser = argparse.ArgumentParser(
         description='evaluates a dialogue model')
     parent_parser = argparse.ArgumentParser(add_help=False)
-    cli.evaluation.add_evaluation_arguments(parent_parser)
+    cli.test.add_evaluation_arguments(parent_parser)
     cli.arguments.add_model_and_story_group(parent_parser,
                                             allow_pretrained_model=False)
     rasa_core.cli.arguments.add_logging_option_arguments(parent_parser)
@@ -431,14 +431,15 @@ def log_failed_stories(failed, out_directory):
                 f.write("\n\n")
 
 
-def run_story_evaluation(resource_name, agent,
-                         max_stories=None,
-                         out_directory=None,
-                         fail_on_prediction_errors=False,
-                         use_e2e=False):
+def test(stories: Text,
+         agent: Agent,
+         max_stories: Optional[int] = None,
+         out_directory: Optional[Text] = None,
+         fail_on_prediction_errors: bool = False,
+         use_e2e: bool = False):
     """Run the evaluation of the stories, optionally plots the results."""
 
-    completed_trackers = _generate_trackers(resource_name, agent,
+    completed_trackers = _generate_trackers(stories, agent,
                                             max_stories, use_e2e)
 
     story_evaluation, _ = collect_story_predictions(completed_trackers, agent,
@@ -519,9 +520,9 @@ def plot_story_evaluation(test_y, predictions,
                 bbox_inches='tight')
 
 
-def run_comparison_evaluation(models: Text,
-                              stories_file: Text,
-                              output: Text) -> None:
+def compare(models: Text,
+            stories_file: Text,
+            output: Text) -> None:
     """Evaluates multiple trained models on a test set."""
 
     num_correct = defaultdict(list)
@@ -612,15 +613,15 @@ def main():
 
         stories = cli.stories_from_cli_args(cmdline_arguments)
 
-        run_story_evaluation(stories, _agent, cmdline_arguments.max_stories,
-                             cmdline_arguments.output,
-                             cmdline_arguments.fail_on_prediction_errors,
-                             cmdline_arguments.e2e)
+        test(stories, _agent, cmdline_arguments.max_stories,
+             cmdline_arguments.output,
+             cmdline_arguments.fail_on_prediction_errors,
+             cmdline_arguments.e2e)
 
     elif cmdline_arguments.mode == 'compare':
-        run_comparison_evaluation(cmdline_arguments.core,
-                                  cmdline_arguments.stories,
-                                  cmdline_arguments.output)
+        compare(cmdline_arguments.core,
+                cmdline_arguments.stories,
+                cmdline_arguments.output)
 
         story_n_path = os.path.join(cmdline_arguments.core, 'num_stories.json')
 

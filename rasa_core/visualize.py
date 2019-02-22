@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from typing import Text
 
 import rasa_core.cli.arguments
 from rasa_core import utils, config, cli
@@ -9,7 +10,7 @@ from rasa_core.agent import Agent
 logger = logging.getLogger(__name__)
 
 
-def add_arguments(parser):
+def add_arguments(parser: argparse.ArgumentParser):
     """Parse all the command line arguments for the visualisation script."""
     rasa_core.cli.arguments.add_logging_option_arguments(parser)
     cli.visualization.add_visualization_arguments(parser)
@@ -20,31 +21,28 @@ def add_arguments(parser):
     return parser
 
 
-def visualize(args):
-    utils.configure_colored_logging(args.loglevel)
+def visualize(config_path: Text, domain_path: Text, stories_path: Text,
+              nlu_data_path: Text, output_path: Text, max_history: int):
+    policies = config.load(config_path)
 
-    policies = config.load(args.config[0])
-
-    agent = Agent(args.domain, policies=policies)
+    agent = Agent(domain_path, policies=policies)
 
     # this is optional, only needed if the `/greet` type of
     # messages in the stories should be replaced with actual
     # messages (e.g. `hello`)
-    if args.nlu_data is not None:
+    if nlu_data_path is not None:
         from rasa_nlu.training_data import load_data
 
-        nlu_data = load_data(args.nlu_data)
+        nlu_data_path = load_data(nlu_data_path)
     else:
-        nlu_data = None
-
-    stories = cli.stories_from_cli_args(args)
+        nlu_data_path = None
 
     logger.info("Starting to visualize stories...")
-    agent.visualize(stories, args.output,
-                    args.max_history,
-                    nlu_training_data=nlu_data)
+    agent.visualize(stories_path, output_path,
+                    max_history,
+                    nlu_training_data=nlu_data_path)
 
-    full_output_path = "file://{}".format(os.path.abspath(args.output))
+    full_output_path = "file://{}".format(os.path.abspath(output_path))
     logger.info("Finished graph creation. Saved into file://{}".format(
         full_output_path))
 
@@ -55,10 +53,13 @@ def visualize(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Visualize the stories in a dialogue training file')
-
     arg_parser = add_arguments(parser)
-    cmdline_arguments = arg_parser.parse_args()
+    args = arg_parser.parse_args()
 
-    visualize(cmdline_arguments)
+    utils.configure_colored_logging(args.loglevel)
+    stories = cli.stories_from_cli_args(args)
+
+    visualize(args.config[0], args.domain, stories, args.nlu_data,
+              args.output, args.max_history)
 
 

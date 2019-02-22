@@ -2,7 +2,7 @@ import os
 
 from rasa_core import test
 from rasa_core.test import (
-    run_story_evaluation,
+    test,
     collect_story_predictions)
 from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE, \
     E2E_STORY_FILE_UNKNOWN_ENTITY
@@ -15,8 +15,8 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     stories_path = os.path.join(tmpdir.strpath, "failed_stories.md")
     img_path = os.path.join(tmpdir.strpath, "story_confmat.pdf")
 
-    run_story_evaluation(
-        resource_name=DEFAULT_STORIES_FILE,
+    test(
+        stories=DEFAULT_STORIES_FILE,
         agent=default_agent,
         out_directory=tmpdir.strpath,
         max_stories=None,
