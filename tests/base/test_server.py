@@ -155,6 +155,7 @@ def test_post_train_success(app, rasa_default_train_data):
     app.flush()
     response = yield response
     content = yield response.content()
+    assert response.code == 200
     with io.open('./test_download.zip', 'wb') as f:
         f.write(content)
     import zipfile
@@ -190,7 +191,7 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     response = app.post(train_u,
                         headers={b"Content-Type": b"application/x-yml"},
                         data=model_str)
-    time.sleep(30)
+    time.sleep(3)
     app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
