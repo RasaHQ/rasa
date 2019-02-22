@@ -12,9 +12,15 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- utility functions for colored logging
+- open webbrowser when visualizing stories
 
 Changed
 -------
+- renamed ``train_dialogue_model`` to ``train``
+- renamed ``rasa_core.evaluate`` to ``rasa_core.test``
+- changed export paths for interactive training to ``data/core/stories.md``,
+  ``data/nlu/nlu.md`` and ``data/nlu/nlu_interactive.md``
 
 Removed
 -------
