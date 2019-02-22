@@ -169,6 +169,6 @@ if __name__ == '__main__':
           cmdline_args.project,
           cmdline_args.fixed_model_name,
           cmdline_args.storage,
-          data_endpoint=data_endpoint,
+          training_data_endpoint=data_endpoint,
           num_threads=cmdline_args.num_threads)
     logger.info("Finished training")

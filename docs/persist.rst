@@ -1,4 +1,6 @@
-:desc: Persisting Rasa NLU models in the cloud
+:desc: Handle Rasa NLU models on premise or in your private cloud for
+       gdpr compliant intent recognition and entity extraction.
+
 .. _section_persistence:
 
 Storing Models in the Cloud
@@ -40,7 +42,7 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     variable to the path of that key file.
 
 * Azure Storage
-    Azure is supported using the ``azure-storage-blob`` package 
+    Azure is supported using the ``azure-storage-blob`` package
     which you can install with ``pip install azure-storage-blob``
 
     Start the Rasa NLU server with ``storage`` option set to ``azure``.
@@ -57,4 +59,3 @@ Models are gzipped before saving to cloud.
 
 
 .. include:: feedback.inc
-
