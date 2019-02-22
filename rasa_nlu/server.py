@@ -2,7 +2,6 @@ import argparse
 import io
 import logging
 from functools import wraps
-from zipfile import BadZipFile
 
 import simplejson
 from klein import Klein
@@ -361,9 +360,6 @@ class RasaNLU(object):
             request.setResponseCode(404)
             returnValue(json_to_string({"error": "{}".format(e)}))
         except TrainingException as e:
-            request.setResponseCode(500)
-            returnValue(json_to_string({"error": "{}".format(e)}))
-        except BadZipFile as e:
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
 

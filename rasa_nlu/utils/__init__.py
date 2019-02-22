@@ -369,7 +369,7 @@ def create_temporary_file(data: Any,
     return f.name
 
 
-def zip_folder(folder: Text, library: Text = None) -> Text:
+def zip_folder(folder: Text) -> Text:
     """Create an archive from a folder."""
     import tempfile
     import shutil
