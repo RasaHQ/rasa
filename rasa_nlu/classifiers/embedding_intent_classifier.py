@@ -609,7 +609,7 @@ class EmbeddingIntentClassifier(Component):
 
     def persist(self,
                 file_name: Text,
-                model_dir: Text) -> Optional[Dict[Text, Any]]:
+                model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
