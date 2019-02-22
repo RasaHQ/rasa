@@ -98,7 +98,7 @@ class MitieIntentClassifier(Component):
 
     def persist(self,
                 file_name: Text,
-                model_dir: Text) -> Optional[Dict[Text, Any]]:
+                model_dir: Text) -> Dict[Text, Any]:
         import os
 
         if self.clf:
