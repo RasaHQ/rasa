@@ -57,7 +57,7 @@ class EntitySynonymMapper(EntityExtractor):
 
     @classmethod
     def load(cls,
-             meta: Dict,
+             meta: Dict[Text, Any],
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['EntitySynonymMapper'] = None,
