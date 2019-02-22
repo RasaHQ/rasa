@@ -4,8 +4,8 @@ import os
 from typing import Text
 
 import rasa_core.cli.arguments
-from rasa_core import utils, config, cli
-from rasa_core.agent import Agent
+from rasa_core import utils
+import rasa_core.cli
 
 logger = logging.getLogger(__name__)
 
@@ -13,16 +13,19 @@ logger = logging.getLogger(__name__)
 def add_arguments(parser: argparse.ArgumentParser):
     """Parse all the command line arguments for the visualisation script."""
     rasa_core.cli.arguments.add_logging_option_arguments(parser)
-    cli.visualization.add_visualization_arguments(parser)
-    cli.arguments.add_config_arg(parser, nargs=1)
-    cli.arguments.add_domain_arg(parser)
-    cli.arguments.add_model_and_story_group(parser,
-                                            allow_pretrained_model=False)
+    rasa_core.cli.visualization.add_visualization_arguments(parser)
+    rasa_core.cli.arguments.add_config_arg(parser, nargs=1)
+    rasa_core.cli.arguments.add_domain_arg(parser)
+    rasa_core.cli.arguments.add_model_and_story_group(
+        parser, allow_pretrained_model=False)
     return parser
 
 
 def visualize(config_path: Text, domain_path: Text, stories_path: Text,
               nlu_data_path: Text, output_path: Text, max_history: int):
+    from rasa_core.agent import Agent
+    from rasa_core import config
+
     policies = config.load(config_path)
 
     agent = Agent(domain_path, policies=policies)
@@ -57,7 +60,7 @@ if __name__ == '__main__':
     args = arg_parser.parse_args()
 
     utils.configure_colored_logging(args.loglevel)
-    stories = cli.stories_from_cli_args(args)
+    stories = rasa_core.cli.stories_from_cli_args(args)
 
     visualize(args.config[0], args.domain, stories, args.nlu_data,
               args.output, args.max_history)

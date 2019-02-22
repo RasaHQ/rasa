@@ -12,7 +12,6 @@ from requests.exceptions import InvalidURL, RequestException
 from threading import Thread
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
-import rasa_core
 from rasa_core import training, constants
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
@@ -520,6 +519,7 @@ class Agent(object):
         Otherwise the webserver will be started, and the method will
         return afterwards."""
         from flask import Flask
+        import rasa_core
 
         app = Flask(__name__)
         rasa_core.channels.channel.register(channels,
@@ -603,8 +603,7 @@ class Agent(object):
                           max_history, self.interpreter,
                           nlu_training_data, should_merge_nodes, fontsize)
 
-    def _ensure_agent_is_ready(self):
-        # type: () -> None
+    def _ensure_agent_is_ready(self) -> None:
         """Checks that an interpreter and a tracker store are set.
 
         Necessary before a processor can be instantiated from this agent.
@@ -670,8 +669,7 @@ class Agent(object):
                 "of type '{}', but should be policy, an array of "
                 "policies, or a policy ensemble".format(passed_type))
 
-    def _form_policy_not_present(self):
-        # type: () -> bool
+    def _form_policy_not_present(self) -> bool:
         """Check whether form policy is not present
             if there is a form action in the domain
         """

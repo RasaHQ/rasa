@@ -16,7 +16,6 @@ from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
 
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
-from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
@@ -1315,7 +1314,7 @@ def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
             abort(404)
 
 
-def run_interactive_learning(agent: Agent,
+def run_interactive_learning(agent: 'Agent',
                              stories: Text = None,
                              finetune: bool = False,
                              serve_forever: bool = True,

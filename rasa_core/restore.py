@@ -8,7 +8,6 @@ from typing import Text, Optional, List, Tuple
 import rasa_core.cli.arguments
 from rasa_core import utils, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage, CollectingOutputChannel, console
 from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
@@ -96,7 +95,7 @@ def actions_since_last_utterance(tracker: DialogueStateTracker) -> List[Text]:
     return actions
 
 
-def replay_events(tracker: DialogueStateTracker, agent: Agent) -> None:
+def replay_events(tracker: DialogueStateTracker, agent: 'Agent') -> None:
     """Take a tracker and replay the logged user utterances against an agent.
 
     During replaying of the user utterances, the executed actions and events

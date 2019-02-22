@@ -5,13 +5,11 @@ import tempfile
 
 from rasa_core import config, cli
 from rasa_core import utils
-from rasa_core.agent import Agent
 from rasa_core.broker import PikaProducer
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.run import AvailableEndpoints
 from rasa_core.tracker_store import TrackerStore
-from rasa_core.training import interactive
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.utils import set_default_subparser
 
@@ -63,6 +61,8 @@ def train(domain_file, stories_file, output_path,
           policy_config=None,
           exclusion_percentage=None,
           kwargs=None):
+    from rasa_core.agent import Agent
+
     if not kwargs:
         kwargs = {}
 
@@ -188,6 +188,8 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
     _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
                                                      _endpoints.nlu)
+    from rasa_core.agent import Agent
+    from rasa_core.training import interactive
 
     if cmdline_args.core:
         if cmdline_args.finetune:

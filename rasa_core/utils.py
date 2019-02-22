@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import errno
-import inspect
 import io
 import json
 import logging
@@ -10,20 +9,19 @@ import sys
 import tempfile
 import argparse
 from hashlib import sha1, md5
-from random import Random
 from threading import Thread
-from typing import Text, Any, List, Optional, Tuple, Dict, Set
+from typing import Text, Any, List, Optional, Tuple, Dict, Set, TYPE_CHECKING
 
 import requests
-from numpy import all, array
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import InvalidURL
 from io import StringIO
 from urllib.parse import unquote
 
-from rasa_nlu import utils as nlu_utils
-
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from random import Random
 
 
 def configure_file_logging(loglevel, logfile):
@@ -88,7 +86,7 @@ def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
 def subsample_array(arr: List[Any],
                     max_values: int,
                     can_modify_incoming_array: bool = True,
-                    rand: Optional[Random] = None) -> List[Any]:
+                    rand: Optional['Random'] = None) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -253,11 +251,15 @@ class HashableNDArray(object):
             Optional. If True, a copy of the input ndaray is created.
             Defaults to False.
         """
+        from numpy import array
+
         self.__tight = tight
         self.__wrapped = array(wrapped) if tight else wrapped
         self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)
 
     def __eq__(self, other):
+        from numpy import all
+
         return all(self.__wrapped == other.__wrapped)
 
     def __hash__(self):
@@ -268,6 +270,7 @@ class HashableNDArray(object):
 
         If the wrapper is "tight", a copy of the encapsulated ndarray is
         returned. Otherwise, the encapsulated ndarray itself is returned."""
+        from numpy import array
 
         if self.__tight:
             return array(self.__wrapped)
@@ -462,6 +465,7 @@ def extract_args(kwargs: Dict[Text, Any],
 
 def arguments_of(func):
     """Return the parameters of the function `func` as a list of names."""
+    import inspect
 
     return list(inspect.signature(func).parameters.keys())
 
@@ -548,6 +552,7 @@ def download_file_from_url(url: Text) -> Text:
 
     Returns the file path of the temp file that contains the
     downloaded content."""
+    from rasa_nlu import utils as nlu_utils
 
     if not nlu_utils.is_url(url):
         raise InvalidURL(url)

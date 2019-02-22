@@ -5,21 +5,16 @@ import argparse
 import io
 import json
 import logging
-import numpy as np
 import os
 import warnings
 
 import rasa_core.cli.arguments
-from sklearn.exceptions import UndefinedMetricWarning
-from tqdm import tqdm
 from typing import List, Optional, Any, Text, Dict, Tuple
 
 from rasa_core import training, cli
 from rasa_core import utils
-from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies import SimplePolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.utils import (
@@ -356,6 +351,8 @@ def _in_training_data_fraction(action_list):
     """Given a list of action items, returns the fraction of actions
 
     that were predicted using one of the Memoization policies."""
+    from rasa_core.policies import SimplePolicyEnsemble
+
     in_training_data = [
         a["action"] for a in action_list
         if not SimplePolicyEnsemble.is_not_memo_policy(a["policy"])
@@ -366,11 +363,13 @@ def _in_training_data_fraction(action_list):
 
 def collect_story_predictions(
     completed_trackers: List[DialogueStateTracker],
-    agent: Agent,
+    agent: 'Agent',
     fail_on_prediction_errors: bool = False,
     use_e2e: bool = False
 ) -> Tuple[StoryEvalution, int]:
     """Test the stories from a file, running them through the stored model."""
+
+    from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
     failed = []
@@ -432,7 +431,7 @@ def log_failed_stories(failed, out_directory):
 
 
 def test(stories: Text,
-         agent: Agent,
+         agent: 'Agent',
          max_stories: Optional[int] = None,
          out_directory: Optional[Text] = None,
          fail_on_prediction_errors: bool = False,
@@ -449,6 +448,8 @@ def test(stories: Text,
     evaluation_store = story_evaluation.evaluation_store
 
     with warnings.catch_warnings():
+        from sklearn.exceptions import UndefinedMetricWarning
+
         warnings.simplefilter("ignore", UndefinedMetricWarning)
         report, precision, f1, accuracy = get_evaluation_metrics(
             evaluation_store.serialise_targets(),
@@ -524,6 +525,7 @@ def compare(models: Text,
             stories_file: Text,
             output: Text) -> None:
     """Evaluates multiple trained models on a test set."""
+    from rasa_core.agent import Agent
 
     num_correct = defaultdict(list)
 
@@ -562,6 +564,7 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
         no_stories: Number of stories per run
     """
     import matplotlib.pyplot as plt
+    import numpy as np
 
     ax = plt.gca()
 
@@ -590,6 +593,8 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
 
 
 def main():
+    from rasa_core.agent import Agent
+
     # Running as standalone python application
     arg_parser = create_argument_parser()
     set_default_subparser(arg_parser, 'default')
