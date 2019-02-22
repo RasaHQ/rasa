@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-import time
-
 import io
 import json
+import tempfile
+import time
+
 import pytest
 import ruamel.yaml as yaml
-import tempfile
 from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter

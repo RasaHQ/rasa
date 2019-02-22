@@ -1,7 +1,9 @@
 import argparse
 import logging
-import simplejson
+import os
 from functools import wraps
+
+import simplejson
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -406,6 +408,25 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
+def conflicting_tokens(token1, token2):
+    return token1 is not None and token2 is not None
+
+
+def get_token():
+    clitoken = cmdline_args.token
+    envtoken = os.environ["RASA_NLU_TOKEN"]
+    if conflicting_tokens(clitoken, envtoken):
+        raise Exception(
+            "RASA_NLU_TOKEN is set both with the -t option,"
+            " with value `{}`, and with and environment variable, "
+            "with value `{}`. "
+            "Please set the token with just one method "
+            "to avoid unexpected behaviours.".format(
+                clitoken, envtoken))
+    token = clitoken or envtoken
+    return token
+
+
 if __name__ == '__main__':
     # Running as standalone python application
     cmdline_args = create_argument_parser().parse_args()
@@ -429,13 +450,12 @@ if __name__ == '__main__':
         if 'all' in pre_load:
             pre_load = router.project_store.keys()
         router._pre_load(pre_load)
-
     rasa = RasaNLU(
         router,
         cmdline_args.loglevel,
         cmdline_args.write,
         cmdline_args.num_threads,
-        cmdline_args.token,
+        get_token(),
         cmdline_args.cors,
         default_config_path=cmdline_args.config
     )
