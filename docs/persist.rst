@@ -60,7 +60,7 @@ is `{PROJECT}___{MODEL_NAME}.tar.gz` and should be in the root folder of the sto
 Currently, you are not able to specify the path on cloud storage.
 
 If storing trained models, rasa_nlu will gzip the new model and upload to the root. If retrieving/loading models
-from the cloud storage, rasa_nlu will download the gzipped model locally an extract the contents to the specific location
+from the cloud storage, rasa_nlu will download the gzipped model locally an extract the contents to the location
 specified by the `--path` flag.
 
 
