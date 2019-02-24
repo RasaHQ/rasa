@@ -1,15 +1,13 @@
 import logging
 import re
-import typing
-from typing import Any, Text
+from typing import Any, Text, TYPE_CHECKING
 
 from rasa_nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter)
-from rasa_nlu.training_data.util import check_duplicate_synonym
 from rasa_nlu.utils import build_entity
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from rasa_nlu.training_data import Message, TrainingData
 
 INTENT = "intent"
@@ -143,6 +141,8 @@ class MarkdownReader(TrainingDataReader):
         return entities
 
     def _add_synonym(self, text, value):
+        from rasa_nlu.training_data.util import check_duplicate_synonym
+
         check_duplicate_synonym(self.entity_synonyms, text, value,
                                 "reading markdown")
         self.entity_synonyms[text] = value
