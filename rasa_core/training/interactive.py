@@ -34,8 +34,6 @@ from rasa_core.utils import EndpointConfig
 
 import questionary
 from questionary import Choice, Form, Question
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
@@ -716,6 +714,7 @@ def _write_nlu_to_file(
     evts: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
+    from rasa_nlu.training_data import TrainingData
 
     msgs = _collect_messages(evts)
 
@@ -956,6 +955,7 @@ def _validate_action(action_name: Text,
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
+    from rasa_nlu.training_data.formats import MarkdownWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data.get("text")
@@ -1043,6 +1043,7 @@ def _correct_entities(latest_message: Dict[Text, Any],
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
+    from rasa_nlu.training_data.formats import MarkdownReader
 
     entity_str = _as_md_message(latest_message.get("parse_data", {}))
     question = questionary.text(

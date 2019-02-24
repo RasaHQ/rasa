@@ -2,8 +2,7 @@ from collections import defaultdict, deque
 
 import random
 import re
-import typing
-from typing import Any, Text, List, Dict, Optional
+from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.domain import Domain
@@ -11,9 +10,9 @@ from rasa_core.events import UserUttered, ActionExecuted, Event
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.training.structures import StoryGraph, StoryStep
-from rasa_nlu.training_data import TrainingData, Message
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
+    from rasa_nlu.training_data import TrainingData, Message
     import networkx
 
 EDGE_NONE_LABEL = "NONE"

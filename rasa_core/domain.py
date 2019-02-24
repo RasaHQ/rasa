@@ -3,20 +3,17 @@ import typing
 import collections
 import json
 import logging
-import numpy as np
 import os
 import pkg_resources
 from pykwalify.errors import SchemaError
+
 from rasa_core import utils
 from rasa_core.actions import Action, action
 from rasa_core.constants import REQUESTED_SLOT
 from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from typing import Dict, Any, Tuple
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Dict, Any, Tuple, List, Optional, Text
 
 logger = logging.getLogger(__name__)
 
@@ -326,6 +323,8 @@ class Domain(object):
                         "".format(action_name, action_names))
 
     def random_template_for(self, utter_action):
+        import numpy as np
+
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
         else:

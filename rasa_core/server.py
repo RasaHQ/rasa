@@ -9,7 +9,6 @@ from flask import Flask, request, abort, Response, jsonify, json
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 
-import rasa_nlu
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.test import test
@@ -492,6 +491,8 @@ def create_app(agent,
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def evaluate_stories():
+        import rasa_nlu
+
         """Evaluate stories against the currently loaded model."""
         tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
                                                         mode='w+b')
