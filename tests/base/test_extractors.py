@@ -33,7 +33,8 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     sentence = 'anywhere in the west'
     doc = {"spacy_doc": spacy_nlp(sentence)}
     crf_format = ext._from_text_to_crf(Message(sentence, doc))
-    assert [word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west']
+    assert [word[0] for word in crf_format] == ['anywhere', 'in',
+                                                'the', 'west']
     feats = ext._sentence_to_features(crf_format)
     assert 'BOS' in feats[0]
     assert 'EOS' in feats[-1]
@@ -46,7 +47,8 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     ], 'Entity without extractor remains'
     assert filtered[1].get('entities') == [
         {"start": 8, "end": 14,
-         "value": "indian", "entity": "cuisine", "extractor": "CRFEntityExtractor"}
+         "value": "indian", "entity": "cuisine",
+         "extractor": "CRFEntityExtractor"}
     ], 'Only CRFEntityExtractor entity annotation remains'
     assert examples[1].get('entities')[0] == {
         "start": 0, "end": 7,
@@ -200,7 +202,8 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
                                                   _config)
     message = Message("He was 6 feet away")
     duckling.process(message)
-    # checks that the synonym processor can handle entities that have int values
+    # checks that the synonym processor
+    # can handle entities that have int values
     synonyms.process(message)
     assert message is not None
 
