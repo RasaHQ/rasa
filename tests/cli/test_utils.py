@@ -32,7 +32,6 @@ def test_parse_no_positional_model_path_argument(argv):
 
     parse_last_positional_argument_as_model_path()
 
-    print(sys.argv)
     assert sys.argv == argv
 
 
