@@ -1,4 +1,5 @@
-:desc: Understanding Rasa Core Domains
+:desc: Define intents, entities, slots and actions in Rasa to build contextual
+       AI Assistants and chatbots using open source bot framework Rasa Stack. 
 
 .. _domain:
 
@@ -232,6 +233,3 @@ featurized as normal.
 
 
 .. include:: feedback.inc
-
-
-	
