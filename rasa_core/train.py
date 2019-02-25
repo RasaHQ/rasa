@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import tempfile
+from typing import Text, Dict, Optional
 
 from rasa_core import config, cli
 from rasa_core import utils
@@ -54,13 +55,13 @@ def create_argument_parser():
     return parser
 
 
-def train(domain_file, stories_file, output_path,
-          interpreter=None,
-          endpoints=AvailableEndpoints(),
-          dump_stories=False,
-          policy_config=None,
-          exclusion_percentage=None,
-          kwargs=None):
+def train(domain_file: Text, stories_file: Text, output_path: Text,
+          interpreter: Optional[NaturalLanguageInterpreter] = None,
+          endpoints: AvailableEndpoints = AvailableEndpoints(),
+          dump_stories: bool = False,
+          policy_config: Text = None,
+          exclusion_percentage: int = None,
+          kwargs: Optional[Dict] = None):
     from rasa_core.agent import Agent
 
     if not kwargs:
