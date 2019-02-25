@@ -1,7 +1,12 @@
+:desc: Read more about how to run custom actions and code with open source Rasa
+       Stack to integrate your contextual Assistant in your processes and databases. 
+
 .. _customactions:
 
 Actions
 =======
+
+.. contents::
 
 Actions are the things your bot runs in response to user input.
 There are three kinds of actions in Rasa Core:
@@ -127,131 +132,6 @@ There is an example of a ``SlotSet`` event
 :ref:`below <custom_action_example>`, and a full list of possible
 events in :ref:`events`.
 
-
-Execute Actions in other Code
------------------------------
-
-Action Request Format
-~~~~~~~~~~~~~~~~~~~~~
-
-Rasa Core will send an HTTP ``POST`` request to your server containing
-information on which action to run. Here is an example request you'll
-receive from rasa core:
-
-.. code-block:: json
-
-    {
-      "next_action": "action_search_concerts",
-      "sender_id": "default",
-      "tracker": {
-        "sender_id": "default",
-        "slots": {"concerts": null, "venues": null},
-        "latest_message": {
-          "text": "/search_concerts",
-          "intent": {"name": "search_concerts", "confidence": 1.0},
-          "intent_ranking": [{"name": "search_concerts", "confidence": 1.0}],
-          "entities": []
-        },
-        "latest_event_time": 1535092548.4191391,
-        "followup_action": "action_listen",
-        "paused": false,
-        "events": [
-          {
-            "event": "action",
-            "timestamp": 1535092548.41875,
-            "name": "action_listen"
-          },
-          {
-            "event": "user",
-            "timestamp": 1535092548.4191391,
-            "text": "/search_concerts",
-            "parse_data": {
-              "text": "/search_concerts",
-              "intent": {"name": "search_concerts", "confidence": 1.0},
-              "intent_ranking": [{"name": "search_concerts", "confidence": 1.0}],
-              "entities": []
-            }
-          }
-        ]
-      },
-      "domain": {
-        "config": {"store_entities_as_slots": true},
-        "intents": [
-          {"greet": {"use_entities": true}},
-          {"thankyou": {"use_entities": true}},
-          {"goodbye": {"use_entities": true}},
-          {"search_concerts": {"use_entities": true}},
-          {"search_venues": {"use_entities": true}},
-          {"compare_reviews": {"use_entities": true}}
-        ],
-        "entities": ["name"],
-        "slots": {
-          "concerts": {"type": "rasa_core.slots.ListSlot", "initial_value": null},
-          "venues": {"type": "rasa_core.slots.ListSlot", "initial_value": null}
-        },
-        "templates": {
-          "utter_default": [{"text": "default message"}],
-          "utter_goodbye": [{"text": "goodbye :("}],
-          "utter_greet": [{"text": "hey there!"}],
-          "utter_youarewelcome": [{"text": "you're very welcome"}]
-        },
-        "actions": [
-          "utter_default",
-          "utter_greet",
-          "utter_goodbye",
-          "utter_youarewelcome",
-          "action_search_concerts",
-          "action_search_venues",
-          "action_show_concert_reviews",
-          "action_show_venue_reviews"
-        ]
-      }
-    }
-
-This request contains the next action as well as a lot of information
-about the conversation:
-
-+-----------------+-------------------------------------------------+
-| ``next_action`` | name of the predicted action that should be run |
-+-----------------+-------------------------------------------------+
-| ``sender_id``   | id of the conversation                          |
-+-----------------+-------------------------------------------------+
-| ``tracker``     | serialised state of the conversations tracker   |
-+-----------------+-------------------------------------------------+
-| ``domain``      | configuration of the domain                     |
-+-----------------+-------------------------------------------------+
-
-Action Response Format
-~~~~~~~~~~~~~~~~~~~~~~
-
-As a response to the action call from Core, you can modify the tracker,
-e.g. by setting slots and send responses back to the user.
-All of the modifications are done using events.
-
-Here is an example json response:
-
-.. code-block:: json
-
-    {
-      "events": [
-        {
-          "event": "slot",
-          "timestamp": null,
-          "name": "concerts",
-          "value": [
-            {"artist": "Foo Fighters", "reviews": 4.5},
-            {"artist": "Katy Perry", "reviews": 5.0}
-          ]
-        }
-      ],
-      "responses": [
-        {"text": "Foo Fighters, Katy Perry"}
-      ]
-    }
-
-There is a list of all possible event types in :ref:`events`.
-
-
 Default Actions
 ---------------
 
@@ -280,5 +160,26 @@ to the list of actions in your domain:
 Rasa Core will then call your action endpoint and treat it as every other
 custom action.
 
+Execute Actions in Other Code
+-----------------------------
+
+Rasa Core will send an HTTP ``POST`` request to your server containing
+information on which action to run. Furthermore, this request will contain all
+information about the conversation.
+
+As a response to the action call from Core, you can modify the tracker,
+e.g. by setting slots and send responses back to the user.
+All of the modifications are done using events.
+There is a list of all possible event types in :ref:`events`.
+
+
+Action Server API
+~~~~~~~~~~~~~~~~~
+
+Documentation of the action server API as
+:download:`OpenAPI Spec <_static/spec/action_server.yml>`.
+
+.. apidoc::
+   :path: ../_static/spec/action_server.yml
 
 .. include:: feedback.inc

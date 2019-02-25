@@ -1,7 +1,11 @@
 import pytest
 
 from rasa_core.policies import Policy
-from rasa_core.policies.ensemble import PolicyEnsemble, InvalidPolicyConfig
+from rasa_core.policies.ensemble import (PolicyEnsemble, InvalidPolicyConfig,
+                                         SimplePolicyEnsemble)
+from rasa_core.domain import Domain
+from rasa_core.trackers import DialogueStateTracker
+from rasa_core.events import UserUttered
 
 
 class WorkingPolicy(Policy):
@@ -29,6 +33,56 @@ def test_policy_loading_simple(tmpdir):
 
     loaded_policy_ensemble = PolicyEnsemble.load(str(tmpdir))
     assert original_policy_ensemble.policies == loaded_policy_ensemble.policies
+
+
+class ConstantPolicy(Policy):
+    def __init__(self,
+                 priority: int = None,
+                 predict_index: int = None,
+                 ) -> None:
+        super(ConstantPolicy, self).__init__(priority=priority)
+        self.predict_index = predict_index
+
+    @classmethod
+    def load(cls, path):
+        pass
+
+    def persist(self, path):
+        pass
+
+    def train(self, training_trackers, domain, **kwargs):
+        pass
+
+    def predict_action_probabilities(self, tracker, domain):
+        result = [0.0] * domain.num_actions
+        result[self.predict_index] = 1.0
+        return result
+
+
+def test_policy_priority():
+    domain = Domain.load("data/test_domains/default.yml")
+    tracker = DialogueStateTracker.from_events("test", [UserUttered("hi")], [])
+
+    priority_1 = ConstantPolicy(priority=1, predict_index=0)
+    priority_2 = ConstantPolicy(priority=2, predict_index=1)
+
+    policy_ensemble_0 = SimplePolicyEnsemble([priority_1, priority_2])
+    policy_ensemble_1 = SimplePolicyEnsemble([priority_2, priority_1])
+
+    priority_2_result = priority_2.predict_action_probabilities(tracker,
+                                                                domain)
+
+    i = 1  # index of priority_2 in ensemble_0
+    result, best_policy = policy_ensemble_0.probabilities_using_best_policy(
+        tracker, domain)
+    assert best_policy == 'policy_{}_{}'.format(i, type(priority_2).__name__)
+    assert (result.tolist() == priority_2_result)
+
+    i = 0  # index of priority_2 in ensemble_1
+    result, best_policy = policy_ensemble_1.probabilities_using_best_policy(
+        tracker, domain)
+    assert best_policy == 'policy_{}_{}'.format(i, type(priority_2).__name__)
+    assert (result.tolist() == priority_2_result)
 
 
 class LoadReturnsNonePolicy(Policy):
@@ -90,7 +144,8 @@ def test_valid_policy_configurations(valid_config):
     {"police": [{"name": "MemoizationPolicy"}]},
     {"policies": []},
     {"policies": [{"name": "ykaüoppodas"}]},
-    {"policy": [{"name": "ykaüoppodas"}]}])
+    {"policy": [{"name": "ykaüoppodas"}]},
+    {"policy": [{"name": "ykaüoppodas.bladibla"}]}])
 def test_invalid_policy_configurations(invalid_config):
     with pytest.raises(InvalidPolicyConfig):
         PolicyEnsemble.from_dict(invalid_config)

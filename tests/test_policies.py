@@ -28,6 +28,34 @@ from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from tests.utilities import read_dialogue_file, user_uttered, get_tracker
 
 
+def tf_defaults():
+    return {
+        "tf_config": {
+            "device_count": {"CPU": 4},
+            # tell tf.Session to use CPU limit, if you have
+            # more CPU, you can increase this value appropriately
+            "inter_op_parallelism_threads": 0,
+            # the number of threads in the thread pool available
+            # for each process for blocking operation nodes set to 0
+            # to allow the system to select the appropriate value.
+            "intra_op_parallelism_threads": 0,  # tells the degree of thread
+            # parallelism of the tf.Session operation.
+            # the smaller the value, the less reuse the thread will have
+            # and the more likely it will use more CPU cores.
+            # if the value is 0,
+            # tensorflow will automatically select an appropriate value.
+            "gpu_options": {"allow_growth": True}
+            # if set True, will try to allocate
+            # as much GPU memory as possible to support running
+        }
+    }
+
+
+def session_config():
+    import tensorflow as tf
+    return tf.ConfigProto(**tf_defaults()["tf_config"])
+
+
 def train_trackers(domain):
     trackers = training.load_data(
         DEFAULT_STORIES_FILE,
@@ -49,7 +77,7 @@ class PolicyTestCollection(object):
 
     max_history = 3  # this is the amount of history we test on
 
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         raise NotImplementedError
 
     @pytest.fixture(scope="module")
@@ -59,9 +87,13 @@ class PolicyTestCollection(object):
         return featurizer
 
     @pytest.fixture(scope="module")
-    def trained_policy(self, featurizer):
+    def priority(self):
+        return 1
+
+    @pytest.fixture(scope="module")
+    def trained_policy(self, featurizer, priority):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy(featurizer)
+        policy = self.create_policy(featurizer, priority)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain)
         return policy
@@ -84,29 +116,54 @@ class PolicyTestCollection(object):
         probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain)
         assert len(probabilities) == default_domain.num_actions
-        assert max(probabilities) <= 1.1
+        assert max(probabilities) <= 1.0
         assert min(probabilities) >= 0.0
 
     def test_persist_and_load_empty_policy(self, tmpdir):
-        empty_policy = self.create_policy(None)
+        empty_policy = self.create_policy(None, None)
         empty_policy.persist(tmpdir.strpath)
         loaded = empty_policy.__class__.load(tmpdir.strpath)
         assert loaded is not None
+
+    def test_tf_config(self, trained_policy, tmpdir):
+        if hasattr(trained_policy, 'session'):
+            # noinspection PyProtectedMember
+            assert trained_policy.session._config is None
+            trained_policy.persist(tmpdir.strpath)
+            loaded = trained_policy.__class__.load(tmpdir.strpath)
+            # noinspection PyProtectedMember
+            assert loaded.session._config is None
 
 
 class TestKerasPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
-        p = KerasPolicy(featurizer)
+    def create_policy(self, featurizer, priority):
+        p = KerasPolicy(featurizer, priority)
         return p
+
+
+class TestKerasPolicyWithTfConfig(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer, priority):
+        p = KerasPolicy(featurizer, priority, **tf_defaults())
+        return p
+
+    def test_tf_config(self, trained_policy, tmpdir):
+        # noinspection PyProtectedMember
+        assert trained_policy.session._config == session_config()
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        # noinspection PyProtectedMember
+        assert loaded.session._config == session_config()
 
 
 class TestFallbackPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
-        p = FallbackPolicy()
+    def create_policy(self, featurizer, priority):
+        p = FallbackPolicy(priority=priority)
         return p
 
     @pytest.mark.parametrize(
@@ -130,11 +187,11 @@ class TestFallbackPolicy(PolicyTestCollection):
 class TestMemoizationPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
             max_history = featurizer.max_history
-        p = MemoizationPolicy(max_history=max_history)
+        p = MemoizationPolicy(priority=priority, max_history=max_history)
         return p
 
     def test_memorise(self, trained_policy, default_domain):
@@ -171,18 +228,19 @@ class TestMemoizationPolicy(PolicyTestCollection):
 class TestAugmentedMemoizationPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
             max_history = featurizer.max_history
-        p = AugmentedMemoizationPolicy(max_history=max_history)
+        p = AugmentedMemoizationPolicy(priority=priority,
+                                       max_history=max_history)
         return p
 
 
 class TestSklearnPolicy(PolicyTestCollection):
 
-    def create_policy(self, featurizer, **kwargs):
-        p = SklearnPolicy(featurizer, **kwargs)
+    def create_policy(self, featurizer, priority, **kwargs):
+        p = SklearnPolicy(featurizer, priority, **kwargs)
         return p
 
     @pytest.yield_fixture
@@ -210,17 +268,20 @@ class TestSklearnPolicy(PolicyTestCollection):
                                              mock_search,
                                              default_domain,
                                              trackers,
-                                             featurizer):
-        policy = self.create_policy(featurizer=featurizer, cv=None)
+                                             featurizer,
+                                             priority):
+        policy = self.create_policy(featurizer=featurizer, priority=priority,
+                                    cv=None)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count == 0
         assert policy.model != 'mockmodel'
 
     def test_cv_not_none_param_grid_none_triggers_search_without_params(
-            self, mock_search, default_domain, trackers, featurizer):
+            self, mock_search, default_domain, trackers, featurizer, priority):
 
-        policy = self.create_policy(featurizer=featurizer, cv=3)
+        policy = self.create_policy(featurizer=featurizer, priority=priority,
+                                    cv=3)
         policy.train(trackers, domain=default_domain)
 
         assert mock_search.call_count > 0
@@ -229,10 +290,11 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert policy.model == 'mockmodel'
 
     def test_cv_not_none_param_grid_none_triggers_search_with_params(
-            self, mock_search, default_domain, trackers, featurizer):
+            self, mock_search, default_domain, trackers, featurizer, priority):
         param_grid = {'n_estimators': 50}
         policy = self.create_policy(
             featurizer=featurizer,
+            priority=priority,
             cv=3,
             param_grid=param_grid,
         )
@@ -244,11 +306,12 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert policy.model == 'mockmodel'
 
     def test_missing_classes_filled_correctly(
-            self, default_domain, trackers, tracker, featurizer):
+            self, default_domain, trackers, tracker, featurizer, priority):
         # Pretend that a couple of classes are missing and check that
         # those classes are predicted as 0, while the other class
         # probabilities are predicted normally.
-        policy = self.create_policy(featurizer=featurizer, cv=None)
+        policy = self.create_policy(featurizer=featurizer, priority=priority,
+                                    cv=None)
 
         classes = [1, 3]
         new_trackers = []
@@ -279,14 +342,16 @@ class TestSklearnPolicy(PolicyTestCollection):
                 assert prob == 0.0
 
     def test_train_kwargs_are_set_on_model(
-            self, default_domain, trackers, featurizer):
-        policy = self.create_policy(featurizer=featurizer, cv=None, C=123)
+            self, default_domain, trackers, featurizer, priority):
+        policy = self.create_policy(featurizer=featurizer, priority=priority,
+                                    cv=None, C=123)
         policy.train(trackers, domain=default_domain)
         assert policy.model.C == 123
 
     def test_train_with_shuffle_false(
-            self, default_domain, trackers, featurizer):
-        policy = self.create_policy(featurizer=featurizer, shuffle=False)
+            self, default_domain, trackers, featurizer, priority):
+        policy = self.create_policy(featurizer=featurizer, priority=priority,
+                                    shuffle=False)
         # does not raise
         policy.train(trackers, domain=default_domain)
 
@@ -294,48 +359,70 @@ class TestSklearnPolicy(PolicyTestCollection):
 class TestEmbeddingPolicyNoAttention(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(attn_before_rnn=False, attn_after_rnn=False)
+        p = EmbeddingPolicy(priority=priority, attn_before_rnn=False,
+                            attn_after_rnn=False)
         return p
 
 
 class TestEmbeddingPolicyAttentionBeforeRNN(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(attn_before_rnn=True, attn_after_rnn=False)
+        p = EmbeddingPolicy(priority=priority, attn_before_rnn=True,
+                            attn_after_rnn=False)
         return p
 
 
 class TestEmbeddingPolicyAttentionAfterRNN(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(attn_before_rnn=False, attn_after_rnn=True)
+        p = EmbeddingPolicy(priority=priority, attn_before_rnn=False,
+                            attn_after_rnn=True)
         return p
 
 
 class TestEmbeddingPolicyAttentionBoth(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         # use standard featurizer from EmbeddingPolicy,
         # since it is using FullDialogueTrackerFeaturizer
-        p = EmbeddingPolicy(attn_before_rnn=True, attn_after_rnn=True)
+        p = EmbeddingPolicy(priority=priority, attn_before_rnn=True,
+                            attn_after_rnn=True)
         return p
+
+
+class TestEmbeddingPolicyWithTfConfig(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer, priority):
+        # use standard featurizer from EmbeddingPolicy,
+        # since it is using FullDialogueTrackerFeaturizer
+        p = EmbeddingPolicy(priority=priority, **tf_defaults())
+        return p
+
+    def test_tf_config(self, trained_policy, tmpdir):
+        # noinspection PyProtectedMember
+        assert trained_policy.session._config == session_config()
+        trained_policy.persist(tmpdir.strpath)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
+        # noinspection PyProtectedMember
+        assert loaded.session._config == session_config()
 
 
 class TestFormPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
-        p = FormPolicy()
+    def create_policy(self, featurizer, priority):
+        p = FormPolicy(priority=priority)
         return p
 
     def test_memorise(self, trained_policy, default_domain):
@@ -392,8 +479,9 @@ class TestFormPolicy(PolicyTestCollection):
 class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
-        p = TwoStageFallbackPolicy(deny_suggestion_intent_name='deny')
+    def create_policy(self, featurizer, priority):
+        p = TwoStageFallbackPolicy(priority=priority,
+                                   deny_suggestion_intent_name='deny')
         return p
 
     @pytest.fixture(scope="class")

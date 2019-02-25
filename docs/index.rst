@@ -1,3 +1,7 @@
+:desc: Get started with machine learning dialogue management to scale your bot
+       development using Rasa Stack as a conversational AI platform.
+
+.. _index:
 
 The Rasa Core dialogue engine
 =============================
@@ -64,7 +68,7 @@ The Rasa Core dialogue engine
 
    architecture
    connectors
-   customactions
+   run-code-in-custom-actions
    slots
    slotfilling
    responses
@@ -103,5 +107,3 @@ The Rasa Core dialogue engine
    docker
    changelog
    support
-
-
