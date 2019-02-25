@@ -1,14 +1,14 @@
-import multiprocessing
-
 import datetime
 import io
 import logging
+import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
+from typing import Any, Dict, List, Optional, Text
+
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import Logger, jsonFileLogObserver
-from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import config, utils
 from rasa_nlu.components import ComponentBuilder
@@ -327,7 +327,7 @@ class DataRouter(object):
                     self.project_store[project].current_training_processes ==
                     0):
                 self.project_store[project].status = STATUS_READY
-            return model_dir
+            return model_path
 
         def training_errback(failure):
             logger.warning(failure)

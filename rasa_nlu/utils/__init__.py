@@ -1,19 +1,19 @@
 import errno
-from collections import namedtuple
-
 import glob
 import io
 import json
 import logging
 import os
 import re
+import tempfile
+from collections import namedtuple
+from typing import Any, Callable, Dict, List, Optional, Text, Type
+
 import requests
 import ruamel.yaml as yaml
 import simplejson
-import tempfile
 from requests import Response
 from requests.auth import HTTPBasicAuth
-from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -375,10 +375,9 @@ def zip_folder(folder: Text) -> Text:
     import tempfile
     import shutil
 
+    # WARN: not thread save!
     zipped_path = tempfile.NamedTemporaryFile(delete=False)
     zipped_path.close()
-
-    # WARN: not thread save!
     return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 
