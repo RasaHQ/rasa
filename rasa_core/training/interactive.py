@@ -1006,6 +1006,7 @@ def _validate_user_text(latest_message: Dict[Text, Any],
     else:
         question = questionary.confirm(
             "Is the NLU classification for '{}' with intent '{}' correct?"
+            "\n    AND are all occurring entities labeled correctly?"
             "".format(text, intent))
 
         return _ask_or_abort(question, sender_id, endpoint)
