@@ -408,22 +408,24 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
-def conflicting_tokens(token1, token2):
-    return token1 is not None and token2 is not None
-
-
 def get_token():
-    clitoken = cmdline_args.token
-    envtoken = os.environ["RASA_NLU_TOKEN"]
-    if conflicting_tokens(clitoken, envtoken):
+    _clitoken = cmdline_args.token
+
+    if "RASA_NLU_TOKEN" not in os.environ.keys():
+        _envtoken = None
+    else:
+        _envtoken = os.environ["RASA_NLU_TOKEN"]
+
+    if _clitoken and _envtoken:
         raise Exception(
             "RASA_NLU_TOKEN is set both with the -t option,"
             " with value `{}`, and with and environment variable, "
             "with value `{}`. "
             "Please set the token with just one method "
             "to avoid unexpected behaviours.".format(
-                clitoken, envtoken))
-    token = clitoken or envtoken
+                _clitoken, _envtoken))
+
+    token = _clitoken or _envtoken
     return token
 
 
