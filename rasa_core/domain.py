@@ -262,8 +262,7 @@ class Domain(object):
                  templates: Dict[Text, Any],
                  action_names: List[Text],
                  form_names: List[Text],
-                 store_entities_as_slots: bool = True,
-                 restart_intent="restart"  # type: Text
+                 store_entities_as_slots: bool = True
                  ) -> None:
 
         self.intent_properties = intent_properties
@@ -278,7 +277,6 @@ class Domain(object):
         self.action_names = action.combine_user_with_default_actions(
             action_names) + form_names
         self.store_entities_as_slots = store_entities_as_slots
-        self.restart_intent = restart_intent
 
         action.ensure_action_name_uniqueness(self.action_names)
 
