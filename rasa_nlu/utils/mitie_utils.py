@@ -11,7 +11,6 @@ if typing.TYPE_CHECKING:
 
 
 class MitieNLP(Component):
-    name = "nlp_mitie"
 
     provides = ["mitie_feature_extractor", "mitie_file"]
 
@@ -61,7 +60,7 @@ class MitieNLP(Component):
 
         mitie_file = component_meta.get("model", None)
         if mitie_file is not None:
-            return cls.__name__ + "-" + str(os.path.abspath(mitie_file))
+            return cls.name() + "-" + str(os.path.abspath(mitie_file))
         else:
             return None
 

@@ -74,6 +74,10 @@ def component_config_from_pipeline(
         c = pipeline[index]
         return override_defaults(defaults, c)
     except IndexError:
+        logger.warning("Tried to get configuration value for component "
+                       "number {} which is not part of the pipeline. "
+                       "Returning `defaults`."
+                       "".format(index))
         return override_defaults(defaults, {})
 
 

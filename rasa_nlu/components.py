@@ -67,7 +67,7 @@ def validate_arguments(pipeline: List['Component'],
             if r not in provided_properties:
                 raise Exception("Failed to validate at component "
                                 "'{}'. Missing property: '{}'"
-                                "".format(component.name, r))
+                                "".format(component.name(), r))
         provided_properties.update(component.provides)
 
 
@@ -131,9 +131,9 @@ class Component(object):
     # pipeline. E.g. ``[ComponentA, ComponentB]``
     # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
-    @property
-    def name(self):
-        return self.__class__.__name__
+    @classmethod
+    def name(cls):
+        return cls.__name__
 
     # Defines what attributes the pipeline component will
     # provide when called. The listed attributes
@@ -168,7 +168,7 @@ class Component(object):
 
         # makes sure the name of the configuration is part of the config
         # this is important for e.g. persistence
-        component_config["name"] = self.name
+        component_config["name"] = self.name()
 
         self.component_config = override_defaults(self.defaults,
                                                   component_config)
@@ -219,7 +219,7 @@ class Component(object):
         language = config.language
         if not cls.can_handle_language(language):
             # check failed
-            raise UnsupportedLanguageError(cls.__name__, language)
+            raise UnsupportedLanguageError(cls.name(), language)
 
         return cls(component_config)
 
@@ -380,7 +380,7 @@ class ComponentBuilder(object):
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info("Added '{}' to component cache. Key '{}'."
-                        "".format(component.name, cache_key))
+                        "".format(component.name(), cache_key))
 
     def load_component(self,
                        component_meta: Dict[Text, Any],

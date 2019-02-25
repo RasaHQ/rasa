@@ -379,7 +379,7 @@ def test_get_duckling_dimensions(duckling_interpreter):
 
 
 def test_find_component(duckling_interpreter):
-    name = find_component(duckling_interpreter, "ner_duckling_http").name
+    name = find_component(duckling_interpreter, "ner_duckling_http").name()
     assert name == "ner_duckling_http"
 
 

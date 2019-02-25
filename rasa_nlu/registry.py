@@ -53,7 +53,7 @@ component_classes = [
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
-registered_components = {c.__name__: c for c in component_classes}
+registered_components = {c.name(): c for c in component_classes}
 
 # To simplify usage, there are a couple of model templates, that already add
 # necessary components in the right order. They also implement
