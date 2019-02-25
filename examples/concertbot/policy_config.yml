@@ -5,3 +5,4 @@ policies:
     max_training_samples: 300
   - name: FallbackPolicy
   - name: MemoizationPolicy
+  - name: MappingPolicy
