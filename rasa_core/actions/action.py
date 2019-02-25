@@ -36,13 +36,14 @@ ACTION_DEFAULT_ASK_AFFIRMATION_NAME = 'action_default_ask_affirmation'
 
 ACTION_DEFAULT_ASK_REPHRASE_NAME = 'action_default_ask_rephrase'
 
+ACTION_BACK_NAME = 'action_back'
 
 def default_actions() -> List['Action']:
     """List default actions."""
     return [ActionListen(), ActionRestart(),
             ActionDefaultFallback(), ActionDeactivateForm(),
             ActionRevertFallbackEvents(), ActionDefaultAskAffirmation(),
-            ActionDefaultAskRephrase()]
+            ActionDefaultAskRephrase(), ActionBack()]
 
 
 def default_action_names() -> List[Text]:
@@ -156,6 +157,17 @@ class UtterAction(Action):
     def __str__(self) -> Text:
         return "UtterAction('{}')".format(self.name())
 
+
+class ActionBack(Action):
+    """Revert the tracker state by two user utterances."""
+
+    def name(self) -> Text:
+        return ACTION_BACK_NAME
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import UserUtteranceReverted
+
+        return [UserUtteranceReverted(), UserUtteranceReverted()]
 
 class ActionListen(Action):
     """The first action in any turn - bot waits for a user message.
