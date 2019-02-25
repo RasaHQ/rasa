@@ -6,8 +6,8 @@ import rasa_core
 import rasa_nlu
 
 import rasa
-from rasa.cli.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
-                                DEFAULT_NLU_DATA_PATH, DEFAULT_STORIES_PATH)
+from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
+                            DEFAULT_NLU_DATA_PATH, DEFAULT_STORIES_PATH)
 from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
                         FINGERPRINT_NLU_VERSION_KEY,
                         FINGERPRINT_CORE_VERSION_KEY,
@@ -72,15 +72,14 @@ def test_persist_and_load_fingerprint():
 
 def test_core_fingerprint_unchanged():
     fingerprint1 = _fingerprint()
-    fingerprint2 = _fingerprint(nlu_version="other", nlu=[], rasa_version="100")
+    fingerprint2 = _fingerprint(nlu_version="other", nlu=[])
 
     assert core_fingerprint_changed(fingerprint1, fingerprint2) is False
 
 
 def test_nlu_fingerprint_unchanged():
     fingerprint1 = _fingerprint()
-    fingerprint2 = _fingerprint(core_version="other", stories=[],
-                                rasa_version="100")
+    fingerprint2 = _fingerprint(core_version="other", stories=[])
 
     assert nlu_fingerprint_changed(fingerprint1, fingerprint2) is False
 

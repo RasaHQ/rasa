@@ -1,9 +1,7 @@
 import argparse
 from typing import Text
 
-from rasa.cli.constants import DEFAULT_NLU_DATA_PATH
-from rasa.cli.utils import check_path_exists
-from rasa.model import DEFAULT_MODELS_PATH
+from rasa.constants import DEFAULT_NLU_DATA_PATH, DEFAULT_MODELS_PATH
 
 
 def add_model_param(parser: argparse.ArgumentParser, model_name: Text = "Rasa"
@@ -11,7 +9,7 @@ def add_model_param(parser: argparse.ArgumentParser, model_name: Text = "Rasa"
     defaults = {"type": str,
                 "help": "Path to a trained {} model. If a directory "
                         "is specified, it will use the latest model "
-                        "in this directory.".format( model_name)}
+                        "in this directory.".format(model_name)}
     parser.add_argument("-m", "--model",
                         default=DEFAULT_MODELS_PATH,
                         **defaults)

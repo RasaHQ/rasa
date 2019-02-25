@@ -1,8 +1,8 @@
 import argparse
 import os
-from typing import Text, Optional, List, Tuple, Union
+from typing import Text, Optional, List, Tuple, Union, Dict, Callable, Any
 
-from rasa.model import DEFAULT_MODELS_PATH
+from rasa.constants import DEFAULT_MODELS_PATH
 
 
 def check_path_exists(current: Optional[Text], parameter: Text,
@@ -89,19 +89,40 @@ def parse_last_positional_argument_as_model_path() -> None:
         sys.argv[-2] = "--model"
 
 
-def create_default_output_path(model_directory: Text = DEFAULT_MODELS_PATH,
-                               prefix: Text = "") -> Text:
+def create_output_path(output_path: Text = DEFAULT_MODELS_PATH,
+                       prefix: Text = "") -> Text:
     """Creates an output path which includes the current timestamp.
 
     Args:
-        model_directory: The parent directory.
+        output_path: The path where the model should be stored.
         prefix: A prefix which should be included in the output path.
 
     Returns:
-        The generated output path, e.g. "20191201-103002".
+        The generated output path, e.g. "20191201-103002.tar.gz".
     """
     import time
 
-    time_format = "%Y%m%d-%H%M%S"
-    return "{}/{}{}.tar.gz".format(model_directory, prefix,
-                                time.strftime(time_format))
+    if output_path.endswith("tar.gz"):
+        return output_path
+    else:
+        time_format = "%Y%m%d-%H%M%S"
+        file_name = "{}{}.tar.gz".format(prefix, time.strftime(time_format))
+        return os.path.join(output_path, file_name)
+
+
+def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
+    """Returns only the kwargs which are required by a function.
+
+    Args:
+        kwargs: All available kwargs.
+        func: The function which should be called.
+
+    Returns:
+        Subset of kwargs which are accepted by `func`.
+
+    """
+    from rasa_core.utils import arguments_of
+
+    possible_arguments = arguments_of(func)
+
+    return {k: v for k, v in kwargs.items() if k in possible_arguments}

@@ -5,7 +5,7 @@ from typing import List
 from rasa.cli.default_arguments import (
     add_config_param, add_domain_param,
     add_stories_param)
-from rasa.model import DEFAULTS_NLU_DATA_PATH
+from rasa.constants import DEFAULT_NLU_DATA_PATH
 
 
 def add_subparser(subparsers: argparse._SubParsersAction,
@@ -41,12 +41,13 @@ def add_core_visualization_params(parser: argparse.ArgumentParser):
 
 
 def show_stories(args: argparse.Namespace):
-    import rasa_core.visualize as visualize
+    import rasa_core.visualize
 
-    args.config = [args.config]
+    args.config = args.config
     args.url = None
 
-    if os.path.isdir(DEFAULTS_NLU_DATA_PATH):
-        args.nlu = DEFAULTS_NLU_DATA_PATH
+    if os.path.isdir(DEFAULT_NLU_DATA_PATH):
+        args.nlu = DEFAULT_NLU_DATA_PATH
 
-    visualize.visualize(args)
+    rasa_core.visualize(args.config, args.domain, args.stories, args.nlu_data,
+                        args.output, args.max_history)

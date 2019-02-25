@@ -5,7 +5,7 @@ from typing import List, Text
 import questionary
 from rasa.cli import train
 from rasa.cli.shell import shell
-from rasa.cli.utils import create_default_output_path
+from rasa.cli.utils import create_output_path
 from rasa_core.utils import print_success
 
 
@@ -27,7 +27,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
         args.stories = os.path.join(path, "data/core")
         args.domain = os.path.join(path, "domain.yml")
         args.nlu = os.path.join(path, "data/nlu")
-        args.out = os.path.join(path, create_default_output_path())
+        args.out = os.path.join(path, create_output_path())
 
         args.model = train.train(args)
 

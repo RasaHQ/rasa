@@ -6,9 +6,9 @@ from typing import List
 
 from rasa.cli.default_arguments import add_model_param
 from rasa.cli.utils import validate, check_path_exists
-from rasa.cli.constants import (DEFAULT_ENDPOINTS_PATH,
-                                DEFAULT_ACTIONS_PATH, DEFAULT_CREDENTIALS_PATH)
-from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
+from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_ACTIONS_PATH,
+                            DEFAULT_CREDENTIALS_PATH, DEFAULT_MODELS_PATH)
+from rasa.model import get_latest_model
 
 logger = logging.getLogger(__name__)
 
@@ -123,58 +123,14 @@ def run_actions(args: argparse.Namespace):
     path = args.actions.replace('.', '/') + ".py"
     check_path_exists(path, "action", DEFAULT_ACTIONS_PATH)
 
-    sdk.run(args)
+    sdk.main(args)
 
 
 def run(args: argparse.Namespace):
-    from rasa_core.broker import PikaProducer
-    from rasa_core.interpreter import RasaNLUInterpreter
-    import rasa_core.run
-    from rasa_core.tracker_store import TrackerStore
-    from rasa_core.utils import AvailableEndpoints
+    import rasa.run
 
     validate(args, [("model", DEFAULT_MODELS_PATH),
                     ("endpoints", DEFAULT_ENDPOINTS_PATH, True),
                     ("credentials", DEFAULT_CREDENTIALS_PATH, True)])
 
-    model_paths = get_model(args.model, subdirectories=True)
-
-    model_path, core_path, nlu_path = model_paths
-    _endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
-
-    _interpreter = None
-    if os.path.exists(nlu_path):
-        _interpreter = RasaNLUInterpreter(model_directory=nlu_path)
-    else:
-        _interpreter = None
-        logging.info("No NLU model found. Running without NLU.")
-
-    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
-
-    _tracker_store = TrackerStore.find_tracker_store(None,
-                                                     _endpoints.tracker_store,
-                                                     _broker)
-    _agent = rasa_core.run.load_agent(core_path,
-                                      interpreter=_interpreter,
-                                      tracker_store=_tracker_store,
-                                      endpoints=_endpoints)
-
-    if not args.connector and not args.credentials:
-        channel = "cmdline"
-        logger.info("No chat connector configured, falling back to the "
-                    "command line. Use `rasa configure channel` to connect"
-                    "the bot to e.g. facebook messenger.")
-    else:
-        channel = args.connector
-
-    rasa_core.run.serve_application(_agent,
-                                    channel,
-                                    args.port,
-                                    args.credentials,
-                                    args.cors,
-                                    args.auth_token,
-                                    args.enable_api,
-                                    args.jwt_secret,
-                                    args.jwt_method)
-
-    shutil.rmtree(model_path)
+    rasa.run(**vars(args))

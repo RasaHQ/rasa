@@ -5,19 +5,12 @@ import shutil
 import tempfile
 from typing import Text, Tuple, Union, Optional, List, Dict
 
-from rasa_core.utils import get_file_hash, dump_obj_as_json_to_file
-import rasa_core
-import rasa_nlu
-import rasa
+from rasa.constants import DEFAULT_MODELS_PATH
 
 # Type alias for the fingerprint
 Fingerprint = Dict[Text, Union[Text, List[Text]]]
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_MODELS_PATH = "models/"
-DEFAULT_DATA_PATH = "data"
-DEFAULTS_NLU_DATA_PATH = os.path.join(DEFAULT_DATA_PATH, "nlu")
 
 FINGERPRINT_FILE_PATH = "fingerprint.json"
 
@@ -30,7 +23,8 @@ FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
 
 
-def get_model(model_path: Text, subdirectories: bool = False) -> Text:
+def get_model(model_path: Text = DEFAULT_MODELS_PATH,
+              subdirectories: bool = False) -> Optional[Text]:
     """Gets a model and unpacks it.
 
     Args:
@@ -44,13 +38,15 @@ def get_model(model_path: Text, subdirectories: bool = False) -> Text:
         Path to the unpacked model.
 
     """
-    if os.path.isdir(model_path):
+    if not model_path:
+        return None
+    elif os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
 
     return unpack_model(model_path, subdirectories=subdirectories)
 
 
-def get_latest_model(model_path: Text) -> Optional[Text]:
+def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     """Gets the latest model from a path.
 
     Args:
@@ -159,6 +155,10 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
         The fingerprint.
 
     """
+    import rasa_core
+    import rasa_nlu
+    import rasa
+
     return {
         FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
         FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file),
@@ -171,6 +171,8 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
 
 
 def _get_hashes_for_paths(path: Text) -> List[Text]:
+    from rasa_core.utils import get_file_hash
+
     files = []
     if path and os.path.isdir(path):
         files = [os.path.join(path, f) for f in os.listdir(path)
@@ -190,6 +192,8 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     Returns:
         The fingerprint or an empty dict if no fingerprint was found.
     """
+    import rasa_core
+
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
@@ -206,6 +210,8 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
         fingerprint: The fingerprint to be persisted.
 
     """
+    from rasa_core.utils import dump_obj_as_json_to_file
+
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
     dump_obj_as_json_to_file(path, fingerprint)
 
@@ -223,7 +229,8 @@ def core_fingerprint_changed(fingerprint1: Fingerprint,
 
     """
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_CORE_VERSION_KEY,
-                     FINGERPRINT_DOMAIN_KEY, FINGERPRINT_STORIES_KEY]
+                     FINGERPRINT_DOMAIN_KEY, FINGERPRINT_STORIES_KEY,
+                     FINGERPRINT_RASA_VERSION_KEY]
 
     return any(
         [fingerprint1.get(k) != fingerprint2.get(k) for k in relevant_keys])
@@ -242,7 +249,7 @@ def nlu_fingerprint_changed(fingerprint1: Fingerprint,
 
     """
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_VERSION_KEY,
-                     FINGERPRINT_NLU_DATA_KEY]
+                     FINGERPRINT_NLU_DATA_KEY, FINGERPRINT_RASA_VERSION_KEY]
 
     return any(
         [fingerprint1.get(k) != fingerprint2.get(k) for k in relevant_keys])

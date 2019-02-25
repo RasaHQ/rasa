@@ -2,9 +2,9 @@ from typing import Text
 import os
 import pytest
 
-from rasa.cli.constants import (DEFAULT_DOMAIN_PATH, DEFAULT_CONFIG_PATH,
-                                DEFAULT_NLU_DATA_PATH, DEFAULT_STORIES_PATH)
-from rasa.model import DEFAULT_MODELS_PATH
+from rasa.constants import (DEFAULT_DOMAIN_PATH, DEFAULT_CONFIG_PATH,
+                            DEFAULT_NLU_DATA_PATH, DEFAULT_STORIES_PATH,
+                            DEFAULT_MODELS_PATH)
 
 
 @pytest.fixture(scope="session")

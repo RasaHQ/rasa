@@ -1,0 +1,12 @@
+import os
+
+DEFAULT_ENDPOINTS_PATH = "endpoints.yml"
+DEFAULT_CREDENTIALS_PATH = "credentials.yml"
+DEFAULT_CONFIG_PATH = "config.yml"
+DEFAULT_DOMAIN_PATH = "domain.yml"
+DEFAULT_ACTIONS_PATH = "actions"
+DEFAULT_MODELS_PATH = "models/"
+DEFAULT_DATA_PATH = "data"
+DEFAULT_STORIES_PATH = os.path.join(DEFAULT_DATA_PATH, "core")
+DEFAULT_NLU_DATA_PATH = os.path.join(DEFAULT_DATA_PATH, "nlu")
+DEFAULT_RESULTS_PATH = "results"

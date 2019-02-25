@@ -1,5 +1,3 @@
-# coding: utf8
-
 import argparse
 import logging
 
@@ -25,6 +23,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
                     "creating a new bot, training or evaluating models.")
 
     parser.add_argument("--version", action='store_true',
+                        default=argparse.SUPPRESS,
                         help="Print installed Rasa version.")
 
     parent_parser = argparse.ArgumentParser(add_help=False)
@@ -37,7 +36,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     run.add_subparser(subparsers, parents=parent_parsers)
     shell.add_subparser(subparsers, parents=parent_parsers)
     train.add_subparser(subparsers, parents=parent_parsers)
-    #configure.add_subparser(subparsers)
+    # configure.add_subparser(subparsers)
     interactive.add_subparser(subparsers, parents=parent_parsers)
     test.add_subparser(subparsers, parents=parent_parsers)
     show.add_subparser(subparsers, parents=parent_parsers)
@@ -59,7 +58,7 @@ def main() -> None:
     if hasattr(cmdline_arguments, "func"):
         configure_colored_logging(cmdline_arguments.loglevel)
         cmdline_arguments.func(cmdline_arguments)
-    elif cmdline_arguments.version:
+    elif hasattr(cmdline_arguments, "version"):
         print_version()
     else:
         # user has not provided a subcommand, let's print the help

@@ -1,13 +1,12 @@
 import argparse
 import logging
-import os
-from typing import List, Optional, Text
+from typing import List, Optional, Text, Union
 
 from rasa.cli.default_arguments import add_model_param, add_stories_param
 from rasa.cli.utils import validate
-from rasa.cli.constants import (DEFAULT_ENDPOINTS_PATH,
-                                DEFAULT_CONFIG_PATH, DEFAULT_NLU_DATA_PATH)
-from rasa.model import DEFAULT_MODELS_PATH, get_latest_model, get_model
+from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_CONFIG_PATH,
+                            DEFAULT_NLU_DATA_PATH, DEFAULT_MODELS_PATH)
+from rasa.model import get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +49,9 @@ def add_subparser(subparsers: argparse._SubParsersAction,
     test_parser.set_defaults(func=test)
 
 
-def _add_core_arguments(parser: argparse.ArgumentParser):
-    from rasa_core.cli.evaluation import add_evaluation_arguments
+def _add_core_arguments(parser: Union[argparse.ArgumentParser,
+                                      argparse._ActionsContainer]):
+    from rasa_core.cli.test import add_evaluation_arguments
 
     add_evaluation_arguments(parser)
     add_model_param(parser, "Core")
@@ -66,7 +66,7 @@ def _add_core_arguments(parser: argparse.ArgumentParser):
 
 
 def _add_core_subparser_arguments(parser: argparse.ArgumentParser):
-    default_path=get_latest_model(DEFAULT_MODELS_PATH)
+    default_path = get_latest_model(DEFAULT_MODELS_PATH)
     parser.add_argument(
         '-m', '--model',
         type=str,
@@ -75,7 +75,8 @@ def _add_core_subparser_arguments(parser: argparse.ArgumentParser):
              "in this directory will be compared.")
 
 
-def _add_nlu_arguments(parser: argparse.ArgumentParser):
+def _add_nlu_arguments(parser: Union[argparse.ArgumentParser,
+                                     argparse._ActionsContainer]):
     parser.add_argument('-u', '--nlu',
                         type=str,
                         default="data/nlu",
@@ -119,97 +120,32 @@ def _add_nlu_subparser_arguments(parser: argparse.ArgumentParser):
 
 def test_core(args: argparse.Namespace, model_path: Optional[Text] = None
               ) -> None:
-    import rasa_core.evaluate
-    from rasa_nlu import utils as nlu_utils
-    from rasa_core.utils import AvailableEndpoints
-    from rasa_core.interpreter import NaturalLanguageInterpreter
-    from rasa_core.agent import Agent
+    from rasa.test import test_core
 
     validate(args, [("model", DEFAULT_MODELS_PATH),
                     ("endpoints", DEFAULT_ENDPOINTS_PATH, True),
                     ("config", DEFAULT_CONFIG_PATH)])
 
-    _endpoints = AvailableEndpoints.read_endpoints(
-        args.endpoints)
-
-    if args.output:
-        nlu_utils.create_dir(args.output)
-
-    if os.path.isfile(args.model):
-        model_path = get_model(args.model)
-
-    if model_path:
-        # Single model: Normal evaluation
-        model_path = get_model(args.model)
-        core_path = os.path.join(model_path, "core")
-        nlu_path = os.path.join(model_path, "nlu")
-
-        _interpreter = NaturalLanguageInterpreter.create(
-            nlu_path,
-            _endpoints.nlu)
-
-        _agent = Agent.load(core_path,
-                            interpreter=_interpreter)
-
-        stories = rasa_core.cli.stories_from_cli_args(args)
-
-        rasa_core.evaluate.run_story_evaluation(stories,
-                                                _agent,
-                                                args.max_stories,
-                                                args.output,
-                                                args.fail_on_prediction_errors,
-                                                args.e2e)
-    else:
-        rasa_core.evaluate.run_comparison_evaluation(args.model,
-                                                     args.stories, args.output)
-
-        story_n_path = os.path.join(args.core, 'num_stories.json')
-
-        number_of_stories = rasa_core.utils.read_json_file(story_n_path)
-        rasa_core.evaluate.plot_curve(args.output, number_of_stories)
+    test_core(model_path=model_path, **vars(args))
 
 
 def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None
              ) -> None:
-    import rasa_nlu
+    from rasa.test import test_nlu, test_nlu_with_cross_validation
 
     validate(args, [("model", DEFAULT_MODELS_PATH),
                     ("nlu", DEFAULT_NLU_DATA_PATH)])
 
     model_path = model_path or args.model
+
     if model_path:
-        unpacked_model = get_model(args.model)
-
-        nlu_model = os.path.join(unpacked_model, "nlu")
-
-        rasa_nlu.evaluate.run_evaluation(args.nlu,
-                                         nlu_model,
-                                         args.report,
-                                         args.successes,
-                                         args.errors,
-                                         args.confmat,
-                                         args.histogram)
+        test_nlu(nlu_data=args.nlu, **vars(args))
     else:
         print("No model specified. Model will be trained using cross "
               "validation.")
+        validate(args, [("config", DEFAULT_CONFIG_PATH)])
 
-        nlu_config = rasa_nlu.config.load(args.config)
-        data = rasa_nlu.training_data.load_data(args.nlu)
-        data = rasa_nlu.evaluate.drop_intents_below_freq(data, cutoff=5)
-        results, entity_results = rasa_nlu.evaluate.run_cv_evaluation(
-            data, int(args.folds), nlu_config)
-        logger.info("CV evaluation (n={})".format(args.folds))
-
-        if any(results):
-            logger.info("Intent evaluation results")
-            rasa_nlu.evaluate.return_results(results.train, "train")
-            rasa_nlu.evaluate.return_results(results.test, "test")
-        if any(entity_results):
-            logger.info("Entity evaluation results")
-            rasa_nlu.evaluate.return_entity_results(entity_results.train,
-                                                    "train")
-            rasa_nlu.evaluate.return_entity_results(entity_results.test,
-                                                    "test")
+        test_nlu_with_cross_validation(args.config, args.nlu, args.folds)
 
 
 def test(args: argparse.Namespace):
