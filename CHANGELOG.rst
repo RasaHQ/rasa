@@ -17,6 +17,7 @@ Changed
 - starter packs now also tested when attempting to merge a branch to master
 - `/train` endpoint now returns a zipfile of the trained model. This is done to avoid sharing a folder between `api`
   service and `nlu` service when running NLU in the platform.
+- support multiple environment variables in yml configuration files
 
 =======
 - replace pep8 with pycodestyle

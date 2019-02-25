@@ -105,8 +105,8 @@ def test_remove_model_invalid(empty_model_dir):
 
 
 def test_is_url():
-    assert not is_url('./some/file/path')
-    assert is_url('https://rasa.com/')
+    assert not is_url("./some/file/path")
+    assert is_url("https://rasa.com/")
 
 
 def test_endpoint_config():
@@ -122,9 +122,9 @@ def test_endpoint_config():
 
     httpretty.register_uri(
         httpretty.POST,
-        'https://abc.defg/test',
+        "https://abc.defg/test",
         status=500,
-        body='')
+        body="")
 
     httpretty.enable()
     endpoint.request("post", subpath="test",
@@ -150,48 +150,31 @@ def test_environment_variable_not_existing():
 
 
 def test_environment_variable_dict_without_prefix_and_postfix():
-    os.environ['variable'] = 'test'
+    os.environ["variable"] = "test"
     content = "model: \n  test: ${variable}"
 
     result = utils.read_yaml(content)
 
-    assert result['model']['test'] == 'test'
+    assert result["model"]["test"] == "test"
 
 
 def test_environment_variable_in_list():
-    os.environ['variable'] = 'test'
+    os.environ["variable"] = "test"
     content = "model: \n  - value\n  - ${variable}"
 
     result = utils.read_yaml(content)
 
-    assert result['model'][1] == 'test'
+    assert result["model"][1] == "test"
 
 
-def test_environment_variable_dict_with_prefix():
-    os.environ['variable'] = 'test'
-    content = "model: \n  test: dir/${variable}"
-
-    result = utils.read_yaml(content)
-
-    assert result['model']['test'] == 'dir/test'
-
-
-def test_environment_variable_dict_with_postfix():
-    os.environ['variable'] = 'test'
-    content = "model: \n  test: ${variable}/dir"
+def test_multiple_environment_variables():
+    os.environ["variable"] = "test"
+    os.environ["variable2"] = "test2"
+    content = "model: \n  - value\n  - ${variable} ${variable2}"
 
     result = utils.read_yaml(content)
 
-    assert result['model']['test'] == 'test/dir'
-
-
-def test_environment_variable_dict_with_prefix_and_with_postfix():
-    os.environ['variable'] = 'test'
-    content = "model: \n  test: dir/${variable}/dir"
-
-    result = utils.read_yaml(content)
-
-    assert result['model']['test'] == 'dir/test/dir'
+    assert result["model"][1] == "test test2"
 
 
 def test_emojis_in_yaml():
@@ -230,7 +213,7 @@ def test_read_emojis_from_json():
     s = read_yaml(json_string)
 
     expected = "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} für"
-    assert s.get('text') == expected
+    assert s.get("text") == expected
 
 
 def test_bool_str():
@@ -249,22 +232,22 @@ def test_bool_str():
 
 def test_default_token_name():
     test_data = {
-        'url': 'http://test',
-        'token': 'token'
+        "url": "http://test",
+        "token": "token"
     }
 
     actual = EndpointConfig.from_dict(test_data)
 
-    assert actual.token_name == 'token'
+    assert actual.token_name == "token"
 
 
 def test_custom_token_name():
     test_data = {
-        'url': 'http://test',
-        'token': 'token',
-        'token_name': 'test_token'
+        "url": "http://test",
+        "token": "token",
+        "token_name": "test_token"
     }
 
     actual = EndpointConfig.from_dict(test_data)
 
-    assert actual.token_name == 'test_token'
+    assert actual.token_name == "test_token"

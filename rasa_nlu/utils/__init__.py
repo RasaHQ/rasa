@@ -225,8 +225,7 @@ def replace_environment_variables() -> None:
     def env_var_constructor(loader, node):
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
-        prefix, env_var, postfix = env_var_pattern.match(value).groups()
-        return prefix + os.environ[env_var] + postfix
+        return os.path.expandvars(value)
 
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
