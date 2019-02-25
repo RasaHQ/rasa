@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, List, Text
+from typing import Any, List, Text, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME, ACTION_RESTART_NAME
 
@@ -8,7 +8,6 @@ from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.constants import MAPPING_SCORE
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +19,10 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self) -> None:
+    def __init__(self, priority: Optional[int] = 5) -> None:
         """Create a new Mapping policy."""
 
-        super(MappingPolicy, self).__init__()
+        super(MappingPolicy, self).__init__(priority=priority)
 
     def train(self, *args, **kwargs) -> None:
         """Does nothing. This policy is deterministic."""
@@ -48,7 +47,10 @@ class MappingPolicy(Policy):
                     logger.warning("MappingPolicy tried to predict unkown "
                                    "action '{}'.".format(action))
                 else:
-                    prediction[idx] = MAPPING_SCORE
+                    prediction[idx] = 1
+            elif tracker.latest_message.intent.get('name') == 'restart':
+                idx = domain.index_for_action(ACTION_RESTART_NAME)
+                prediction[idx] = 1
         return prediction
 
     def persist(self, *args) -> None:
