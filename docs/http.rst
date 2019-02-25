@@ -42,7 +42,8 @@ You can also query against a specific model for a project :
 
 You can post your training data to this endpoint to train a new model for a project.
 This request will wait for the server answer: either the model
-was trained successfully or the training exited with an error.
+was trained successfully or the training exited with an error. If the model
+is trained successfully a zip file is returned with the trained model.
 Using the HTTP server, you must specify the project you want to train a
 new model for to be able to use it during parse requests later on :
 ``/train?project=my_project``. The configuration of the model should be

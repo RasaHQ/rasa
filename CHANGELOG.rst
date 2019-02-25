@@ -15,6 +15,8 @@ Changed
 - validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
+- `/train` endpoint now returns a zipfile of the trained model. This is done to avoid sharing a folder between `api`
+  service and `nlu` service when running NLU in the platform.
 
 =======
 - replace pep8 with pycodestyle
