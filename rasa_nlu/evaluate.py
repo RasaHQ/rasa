@@ -1,12 +1,12 @@
 import itertools
-from collections import defaultdict, namedtuple
-
 import json
-import os
 import logging
-import numpy as np
+import os
 import shutil
+from collections import defaultdict, namedtuple
 from typing import List, Optional, Text
+
+import numpy as np
 
 from rasa_nlu import config, training_data, utils
 from rasa_nlu.config import RasaNLUModelConfig
@@ -521,10 +521,28 @@ def determine_token_labels(token, entities, extractors):
     return pick_best_entity_fit(token, candidates)
 
 
+def determine_true_token_labels(token, entities):
+    """Determines the token label given entities that do not overlap.
+    Args:
+        token: a single token
+        entities: entities found by a single extractor
+    Returns:
+        entity type
+    """
+    if len(entities) == 0:
+        return "O"
+
+    if do_entities_overlap(entities):
+        raise ValueError("The possible entities should not overlap")
+
+    candidates = find_intersecting_entites(token, entities)
+    return pick_best_entity_fit(token, candidates)
+
+
 def do_extractors_support_overlap(extractors):
     """Checks if extractors support overlapping entities
     """
-    return extractors is None or CRFEntityExtractor.name not in extractors
+    return CRFEntityExtractor.name not in extractors
 
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
@@ -547,7 +565,7 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
     extractor_labels = {extractor: [] for extractor in extractors}
     for t in tokens:
         true_token_labels.append(
-            determine_token_labels(t, targets, None))
+            determine_true_token_labels(t, targets))
         for extractor, entities in entities_by_extractors.items():
             extracted = determine_token_labels(t, entities, extractor)
             extractor_labels[extractor].append(extracted)

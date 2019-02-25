@@ -1,7 +1,8 @@
 import argparse
 import logging
-import simplejson
 from functools import wraps
+
+import simplejson
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
