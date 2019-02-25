@@ -1,6 +1,6 @@
 import argparse
+import io
 import logging
-import os
 from functools import wraps
 
 import simplejson
@@ -11,8 +11,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
-    DataRouter, InvalidProjectError,
-    MaxTrainingError)
+    DataRouter, InvalidProjectError, MaxTrainingError)
 from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
 from rasa_nlu.train import TrainingException
 from rasa_nlu.utils import json_to_string, read_endpoints
@@ -322,12 +321,11 @@ class RasaNLU(object):
         else:
             return content_type[0]
 
-    @app.route("/train", methods=['POST', 'OPTIONS'])
+    @app.route("/train", methods=['POST', 'OPTIONS'], branch=True)
     @requires_auth
     @check_cors
     @inlineCallbacks
     def train(self, request):
-
         # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
         # if set will not generate a model name but use the passed one
@@ -342,16 +340,19 @@ class RasaNLU(object):
 
         data_file = dump_to_data_file(data)
 
-        request.setHeader('Content-Type', 'application/json')
+        request.setHeader('Content-Type', 'application/zip')
 
         try:
             request.setResponseCode(200)
-
-            response = yield self.data_router.start_train_process(
+            request.setHeader("Content-Disposition", "attachment")
+            path_to_model = yield self.data_router.start_train_process(
                 data_file, project,
                 RasaNLUModelConfig(model_config), model_name)
-            returnValue(json_to_string({'info': 'new model trained',
-                                        'model': response}))
+            zipped_path = utils.zip_folder(path_to_model)
+
+            zip_content = io.open(zipped_path, 'r+b').read()
+            return returnValue(zip_content)
+
         except MaxTrainingError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
@@ -449,6 +450,7 @@ if __name__ == '__main__':
         if 'all' in pre_load:
             pre_load = router.project_store.keys()
         router._pre_load(pre_load)
+
     rasa = RasaNLU(
         router,
         cmdline_args.loglevel,
