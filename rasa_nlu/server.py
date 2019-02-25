@@ -298,7 +298,6 @@ class RasaNLU(object):
         if 'yml' in content_type:
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
-            # parameter attached to it
 
             model_config = utils.read_yaml(request_content)
             data = model_config.get("data")
