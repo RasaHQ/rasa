@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import io
 import json
-import os
 import tempfile
 import time
 
@@ -148,6 +147,7 @@ def test_post_train(app, rasa_default_train_data):
 @utilities.slowtest
 @pytest.inlineCallbacks
 def test_post_train_success(app, rasa_default_train_data):
+    import zipfile
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
 
     response = app.post("http://dummy-uri/train?project=test&model=test",
@@ -157,12 +157,7 @@ def test_post_train_success(app, rasa_default_train_data):
     response = yield response
     content = yield response.content()
     assert response.code == 200
-    with io.open('./test_download.zip', 'wb') as f:
-        f.write(content)
-    import zipfile
-    zip_name = "./test_download.zip"
-    assert zipfile.is_zipfile(zip_name)
-    os.remove(zip_name)
+    assert zipfile.ZipFile(io.BytesIO(content)).testzip() is None
 
 
 @utilities.slowtest
