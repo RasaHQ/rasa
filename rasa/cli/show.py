@@ -15,7 +15,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Visualize Rasa Stack data.")
+        help="Visualize Rasa Stack data")
 
     show_subparsers = show_parser.add_subparsers()
     show_stories_subparser = show_subparsers.add_parser(

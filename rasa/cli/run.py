@@ -20,7 +20,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Start a Rasa server which loads a trained model.")
+        help="Start a Rasa server which loads a trained model")
     add_run_arguments(run_parser)
     run_parser.set_defaults(func=run)
 
@@ -77,9 +77,9 @@ def _add_nlu_arguments(parser: argparse.ArgumentParser):
     parser.add_argument('--path',
                         default=DEFAULT_MODELS_PATH,
                         type=str,
-                        help="working directory of the server. Models are"
+                        help="Working directory of the server. Models are"
                              "loaded from this directory and trained models "
-                             "will be saved here.")
+                             "will be saved here")
 
     add_model_param(parser, "NLU")
 

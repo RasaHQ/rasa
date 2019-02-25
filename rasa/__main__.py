@@ -24,7 +24,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--version", action='store_true',
                         default=argparse.SUPPRESS,
-                        help="Print installed Rasa version.")
+                        help="Print installed Rasa version")
 
     parent_parser = argparse.ArgumentParser(add_help=False)
     add_logging_option_arguments(parent_parser)

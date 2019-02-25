@@ -54,7 +54,7 @@ def add_general_arguments(parser: argparse.ArgumentParser):
         "-o", "--out",
         type=str,
         default=DEFAULT_MODELS_PATH,
-        help="Directory where your models are stored.")
+        help="Directory where your models are stored")
 
 
 def add_core_arguments(parser: argparse.ArgumentParser):
