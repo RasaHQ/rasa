@@ -680,7 +680,10 @@ class Agent(object):
     def set_interpreter(self,
                         interpreter: Optional[NaturalLanguageInterpreter]
                         ) -> None:
-        if not isinstance(interpreter, NaturalLanguageInterpreter):
+        from rasa_nlu.model import Interpreter
+
+        if not (isinstance(interpreter, NaturalLanguageInterpreter) or
+                isinstance(interpreter, Interpreter)):
             if interpreter is not None:
                 logger.warning(
                     "Passing a value for interpreter to an agent "
@@ -688,6 +691,6 @@ class Agent(object):
                     "is deprecated. Construct the interpreter, before"
                     "passing it to the agent, e.g. "
                     "`interpreter = NaturalLanguageInterpreter.create(nlu)`.")
-            interpreter = NaturalLanguageInterpreter.create(interpreter, None)
 
+            interpreter = NaturalLanguageInterpreter.create(interpreter, None)
         self.interpreter = interpreter
