@@ -351,7 +351,8 @@ class RasaNLU(object):
                 RasaNLUModelConfig(model_config), model_name)
             zipped_path = utils.zip_folder(path_to_model)
 
-            return returnValue(io.open(zipped_path, 'r+b').read())
+            zip_content = io.open(zipped_path, 'r+b').read()
+            return returnValue(zip_content)
 
         except MaxTrainingError as e:
             request.setResponseCode(403)
