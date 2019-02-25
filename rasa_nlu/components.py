@@ -362,7 +362,8 @@ class ComponentBuilder(object):
         """
 
         from rasa_nlu import registry
-        component_name = component_meta['name']
+        # try to get class name first, else create by name
+        component_name = component_meta.get('class', component_meta['name'])
         component_class = registry.get_component_class(component_name)
         cache_key = component_class.cache_key(component_meta, model_metadata)
         if (cache_key is not None and

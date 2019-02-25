@@ -41,13 +41,17 @@ if typing.TYPE_CHECKING:
 # Classes of all known components. If a new component should be added,
 # its class name should be listed here.
 component_classes = [
+    # utils
     SpacyNLP, MitieNLP,
-    SpacyEntityExtractor, MitieEntityExtractor,
-    CRFEntityExtractor, DucklingHTTPExtractor,
-    EntitySynonymMapper,
+    # tokenizers
+    MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer, JiebaTokenizer,
+    # extractors
+    SpacyEntityExtractor, MitieEntityExtractor, CRFEntityExtractor,
+    DucklingHTTPExtractor, EntitySynonymMapper,
+    # featurizers
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     CountVectorsFeaturizer,
-    MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer, JiebaTokenizer,
+    # classifiers
     SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
     EmbeddingIntentClassifier
 ]
@@ -60,23 +64,24 @@ registered_components = {c.name(): c for c in component_classes}
 # the preexisting `backends`.
 registered_pipeline_templates = {
     "spacy_sklearn": [
-        "nlp_spacy",
-        "tokenizer_spacy",
-        "intent_featurizer_spacy",
-        "intent_entity_featurizer_regex",
-        "ner_crf",
-        "ner_synonyms",
-        "intent_classifier_sklearn",
+        "SpacyNLP",
+        "SpacyTokenizer",
+        "SpacyFeaturizer",
+        "RegexFeaturizer",
+        "CRFEntityExtractor",
+        "EntitySynonymMapper",
+        "SklearnIntentClassifier",
     ],
     "keyword": [
-        "intent_classifier_keyword",
+        "KeywordIntentClassifier",
     ],
     "tensorflow_embedding": [
-        "tokenizer_whitespace",
-        "ner_crf",
-        "ner_synonyms",
-        "intent_featurizer_count_vectors",
-        "intent_classifier_tensorflow_embedding"
+        "WhitespaceTokenizer",
+        "RegexFeaturizer",
+        "CRFEntityExtractor",
+        "EntitySynonymMapper",
+        "CountVectorsFeaturizer",
+        "EmbeddingIntentClassifier"
     ]
 }
 
@@ -122,7 +127,9 @@ def load_component_by_meta(component_meta: Dict[Text, Any],
     Inits it based on a previously persisted model.
     """
 
-    component_name = component_meta['name']
+    # try to get class name first, else create by name
+    component_name = component_meta.get('class', component_meta['name'])
+    print(component_meta)
     component_class = get_component_class(component_name)
     return component_class.load(component_meta, model_dir, metadata,
                                 cached_component, **kwargs)
@@ -136,6 +143,7 @@ def create_component_by_config(component_config: Dict[Text, Any],
     Inits it based on a previously persisted model.
     """
 
-    component_name = component_config['name']
+    # try to get class name first, else create by name
+    component_name = component_config.get('class', component_config['name'])
     component_class = get_component_class(component_name)
     return component_class.create(component_config, config)

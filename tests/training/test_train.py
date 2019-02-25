@@ -23,31 +23,31 @@ def pipelines_for_tests():
     # generate this automatically.
 
     # first is language followed by list of components
-    return [("en", as_pipeline("nlp_spacy",
-                               "nlp_mitie",
-                               "tokenizer_whitespace",
-                               "tokenizer_mitie",
-                               "tokenizer_spacy",
-                               "intent_featurizer_mitie",
-                               "intent_featurizer_spacy",
-                               "intent_featurizer_ngrams",
-                               "intent_entity_featurizer_regex",
-                               "intent_featurizer_count_vectors",
-                               "ner_mitie",
-                               "ner_crf",
-                               "ner_spacy",
-                               "ner_duckling_http",
-                               "ner_synonyms",
-                               "intent_classifier_keyword",
-                               "intent_classifier_sklearn",
-                               "intent_classifier_mitie",
-                               "intent_classifier_tensorflow_embedding"
+    return [("en", as_pipeline("SpacyNLP",
+                               "MitieNLP",
+                               "WhitespaceTokenizer",
+                               "MitieTokenizer",
+                               "SpacyTokenizer",
+                               "MitieFeaturizer",
+                               "SpacyFeaturizer",
+                               "NGramFeaturizer",
+                               "RegexFeaturizer",
+                               "CountVectorsFeaturizer",
+                               "MitieEntityExtractor",
+                               "CRFEntityExtractor",
+                               "SpacyEntityExtractor",
+                               "DucklingHTTPExtractor",
+                               "EntitySynonymMapper",
+                               "KeywordIntentClassifier",
+                               "SklearnIntentClassifier",
+                               "MitieIntentClassifier",
+                               "EmbeddingIntentClassifier"
                                )),
-            ("zh", as_pipeline("nlp_mitie",
-                               "tokenizer_jieba",
-                               "intent_featurizer_mitie",
-                               "ner_mitie",
-                               "intent_classifier_sklearn",
+            ("zh", as_pipeline("MitieNLP",
+                               "JiebaTokenizer",
+                               "MitieFeaturizer",
+                               "MitieEntityExtractor",
+                               "SklearnIntentClassifier",
                                )),
             ]
 
@@ -86,8 +86,7 @@ def test_random_seed(component_builder, tmpdir):
 
     _config = utilities.base_test_conf("tensorflow_embedding")
     # set fixed random seed to 1
-    _config.set_component_attr("intent_classifier_tensorflow_embedding",
-                               random_seed=1)
+    _config.set_component_attr(5, random_seed=1)
     # first run
     (trained_a, _, persisted_path_a) = train.do_train(
         _config,

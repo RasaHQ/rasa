@@ -15,14 +15,14 @@ from rasa_nlu.model import Interpreter, Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
-duckling_extractors = {"ner_duckling_http"}
+duckling_extractors = {"DucklingHTTPExtractor"}
 
 known_duckling_dimensions = {"amount-of-money", "distance", "duration",
                              "email", "number",
                              "ordinal", "phone-number", "timezone",
                              "temperature", "time", "url", "volume"}
 
-entity_processors = {"ner_synonyms"}
+entity_processors = {"EntitySynonymMapper"}
 
 CVEvaluationResult = namedtuple('Results', 'train test')
 

@@ -56,23 +56,22 @@ def test_default_config_file():
 
 def test_set_attr_on_component(default_config):
     cfg = config.load("sample_configs/config_spacy.yml")
-    cfg.set_component_attr("intent_classifier_sklearn", C=324)
+    cfg.set_component_attr(6, C=324)
 
-    expected = {"C": 324, "name": "intent_classifier_sklearn"}
-
-    assert cfg.for_component("intent_classifier_sklearn") == expected
-    assert cfg.for_component("tokenizer_spacy") == {"name": "tokenizer_spacy"}
+    assert cfg.for_component(1) == {"name": "SpacyTokenizer"}
+    assert cfg.for_component(6) == {"name": "SklearnIntentClassifier",
+                                    "C": 324}
 
 
 def test_override_defaults_tensorflow_embedding_pipeline():
     cfg = config.load("data/test/config_embedding_test.yml")
     builder = ComponentBuilder()
 
-    name1 = "intent_featurizer_count_vectors"
+    component1_cfg = cfg.for_component(0)
 
-    component1 = builder.create_component(name1, cfg)
+    component1 = builder.create_component(component1_cfg, cfg)
     assert component1.max_ngram == 3
 
-    name2 = "intent_classifier_tensorflow_embedding"
-    component2 = builder.create_component(name2, cfg)
+    component2_cfg = cfg.for_component(1)
+    component2 = builder.create_component(component2_cfg, cfg)
     assert component2.epochs == 10

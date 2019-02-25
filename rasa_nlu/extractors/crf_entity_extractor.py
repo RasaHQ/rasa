@@ -144,7 +144,7 @@ class CRFEntityExtractor(EntityExtractor):
                 'Could not find `spacy_doc` attribute for '
                 'message {}\n'
                 'POS features require a pipeline component '
-                'that provides `spacy_doc` attributes, i.e. `nlp_spacy`. '
+                'that provides `spacy_doc` attributes, i.e. `SpacyNLP`. '
                 'See https://nlu.rasa.com/pipeline.html#nlp-spacy '
                 'for details'.format(message.text))
 

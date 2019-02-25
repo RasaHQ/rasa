@@ -239,6 +239,7 @@ class Trainer(object):
             if update:
                 component_meta.update(update)
             component_meta["class"] = utils.module_path_from_object(component)
+
             metadata["pipeline"].append(component_meta)
 
         Metadata(metadata, dir_name).persist(dir_name)

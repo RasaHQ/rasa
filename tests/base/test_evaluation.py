@@ -29,7 +29,7 @@ logging.basicConfig(level="DEBUG")
 
 @pytest.fixture(scope="session")
 def duckling_interpreter(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
+    conf = RasaNLUModelConfig({"pipeline": [{"name": "DucklingHTTPExtractor"}]})
     return utilities.interpreter_for(
         component_builder,
         data="./data/examples/rasa/demo-rasa.json",
@@ -170,7 +170,7 @@ def test_determine_token_labels_throws_error():
     with pytest.raises(ValueError):
         determine_token_labels(CH_correct_segmentation,
                                [CH_correct_entity,
-                                CH_wrong_entity], ["ner_crf"])
+                                CH_wrong_entity], ["CRFEntityExtractor"])
 
 
 def test_determine_token_labels_no_extractors():
@@ -204,14 +204,14 @@ def test_duckling_patching():
             "end": 56,
             "value": "near Alexanderplatz",
             "entity": "location",
-            "extractor": "ner_crf"
+            "extractor": "CRFEntityExtractor"
         },
         {
             "start": 57,
             "end": 64,
             "value": "tonight",
             "entity": "Time",
-            "extractor": "ner_duckling_http"
+            "extractor": "DucklingHTTPExtractor"
 
         }
     ]]
@@ -221,7 +221,7 @@ def test_duckling_patching():
             "end": 56,
             "value": "near Alexanderplatz",
             "entity": "location",
-            "extractor": "ner_crf"
+            "extractor": "CRFEntityExtractor"
         }
     ]]
     assert remove_duckling_entities(entities) == patched
@@ -250,12 +250,12 @@ def test_run_cv_evaluation():
     assert len(results.test["Accuracy"]) == n_folds
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
-    assert len(entity_results.train['ner_crf']["Accuracy"]) == n_folds
-    assert len(entity_results.train['ner_crf']["Precision"]) == n_folds
-    assert len(entity_results.train['ner_crf']["F1-score"]) == n_folds
-    assert len(entity_results.test['ner_crf']["Accuracy"]) == n_folds
-    assert len(entity_results.test['ner_crf']["Precision"]) == n_folds
-    assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
+    assert len(entity_results.train['CRFEntityExtractor']["Accuracy"]) == n_folds
+    assert len(entity_results.train['CRFEntityExtractor']["Precision"]) == n_folds
+    assert len(entity_results.train['CRFEntityExtractor']["F1-score"]) == n_folds
+    assert len(entity_results.test['CRFEntityExtractor']["Accuracy"]) == n_folds
+    assert len(entity_results.test['CRFEntityExtractor']["Precision"]) == n_folds
+    assert len(entity_results.test['CRFEntityExtractor']["F1-score"]) == n_folds
 
 
 def test_intent_evaluation_report(tmpdir_factory):
@@ -370,23 +370,23 @@ def test_evaluate_entities_cv():
 
 
 def test_get_entity_extractors(duckling_interpreter):
-    assert get_entity_extractors(duckling_interpreter) == {"ner_duckling_http"}
+    assert get_entity_extractors(duckling_interpreter) == {"DucklingHTTPExtractor"}
 
 
 def test_get_duckling_dimensions(duckling_interpreter):
-    dims = get_duckling_dimensions(duckling_interpreter, "ner_duckling_http")
+    dims = get_duckling_dimensions(duckling_interpreter, "DucklingHTTPExtractor")
     assert set(dims) == known_duckling_dimensions
 
 
 def test_find_component(duckling_interpreter):
-    name = find_component(duckling_interpreter, "ner_duckling_http").name()
-    assert name == "ner_duckling_http"
+    name = find_component(duckling_interpreter, "DucklingHTTPExtractor").name()
+    assert name == "DucklingHTTPExtractor"
 
 
 def test_remove_duckling_extractors(duckling_interpreter):
     target = set([])
 
-    patched = remove_duckling_extractors({"ner_duckling_http"})
+    patched = remove_duckling_extractors({"DucklingHTTPExtractor"})
     assert patched == target
 
 

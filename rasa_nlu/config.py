@@ -94,7 +94,10 @@ class RasaNLUModelConfig(object):
         self.override(DEFAULT_CONFIG)
         self.override(configuration_values)
 
-        if isinstance(self.__dict__['pipeline'], str):
+        if self.__dict__['pipeline'] is None:
+            # replaces None with empty list
+            self.__dict__['pipeline'] = []
+        elif isinstance(self.__dict__['pipeline'], str):
             from rasa_nlu import registry
 
             template_name = self.__dict__['pipeline']
