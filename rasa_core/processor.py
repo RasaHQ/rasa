@@ -276,9 +276,7 @@ class MessageProcessor(object):
                      "tracker now has {} events".format(len(tracker.events)))
 
     def _should_handle_message(self, tracker):
-        return (not tracker.is_paused() or
-                tracker.latest_message.intent.get("name") ==
-                self.domain.restart_intent)
+        return not tracker.is_paused()
 
     def _predict_and_execute_next_action(self, message, tracker):
         # this will actually send the response to the user
@@ -467,8 +465,5 @@ class MessageProcessor(object):
                     "Instead of running that, we will ignore the action "
                     "and predict the next action.".format(followup_action))
 
-        if (tracker.latest_message.intent.get("name") ==
-                self.domain.restart_intent):
-            return self._prob_array_for_action(ACTION_RESTART_NAME)
         return self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain)
