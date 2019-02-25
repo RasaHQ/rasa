@@ -2,7 +2,8 @@ import logging
 import os
 from typing import Any, List, Text, Optional
 
-from rasa_core.actions.action import ACTION_LISTEN_NAME, ACTION_RESTART_NAME
+from rasa_core.actions.action import (ACTION_LISTEN_NAME, ACTION_RESTART_NAME,
+                                      ACTION_BACK_NAME)
 
 from rasa_core import utils
 from rasa_core.domain import Domain
@@ -50,6 +51,9 @@ class MappingPolicy(Policy):
                     prediction[idx] = 1
             elif tracker.latest_message.intent.get('name') == 'restart':
                 idx = domain.index_for_action(ACTION_RESTART_NAME)
+                prediction[idx] = 1
+            elif tracker.latest_message.intent.get('name') == 'back':
+                idx = domain.index_for_action(ACTION_BACK_NAME)
                 prediction[idx] = 1
         return prediction
 
