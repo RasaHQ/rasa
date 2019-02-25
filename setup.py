@@ -16,7 +16,7 @@ tests_requires = [
 
 install_requires = [
     "rasa-core>=0.13.0a5",
-    "rasa-nlu[tensorflow]",
+    "rasa-nlu[tensorflow]>=0.15.0a1",
     "rasa-core-sdk~=0.13.0a1",
     "questionary~=1.0",
 ]
