@@ -196,6 +196,19 @@ training data. It predicts the next action with confidence ``1.0``
 if this exact conversation exists in the training data, otherwise it
 predicts ``None`` with confidence ``0.0``.
 
+Mapping Policy
+^^^^^^^^^^^^^^^^^^
+
+The ``MappingPolicy`` can be used to directly map intents to actions such that
+the mapped action will always be executed. The mappins are assigned by giving
+and intent the property `'triggers'`, e.g.:
+
+.. code-block:: yaml
+
+  intents:
+   - greet: {triggers: utter_goodbye}
+
+An intent can only be mapped to at most one action.
 
 Keras Policy
 ^^^^^^^^^^^^
