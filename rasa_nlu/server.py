@@ -411,10 +411,7 @@ class RasaNLU(object):
 def get_token():
     _clitoken = cmdline_args.token
 
-    if "RASA_NLU_TOKEN" not in os.environ.keys():
-        _envtoken = None
-    else:
-        _envtoken = os.environ["RASA_NLU_TOKEN"]
+    _envtoken = os.environ.get("RASA_NLU_TOKEN")
 
     if _clitoken and _envtoken:
         raise Exception(

@@ -1,9 +1,18 @@
 # coding=utf-8
 
+import json
 import logging
+import os
 
 import pytest
 
+from rasa_nlu import training_data, config
+from rasa_nlu import utils
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.evaluate import align_entity_predictions
+from rasa_nlu.evaluate import determine_intersection
+from rasa_nlu.evaluate import determine_token_labels
+from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import (
     is_token_within_entity, do_entities_overlap,
     merge_labels, remove_duckling_entities,
@@ -12,16 +21,7 @@ from rasa_nlu.evaluate import (
     find_component, remove_duckling_extractors, drop_intents_below_freq,
     run_cv_evaluation, substitute_labels, IntentEvaluationResult,
     evaluate_intents, evaluate_entities)
-from rasa_nlu.evaluate import does_token_cross_borders
-from rasa_nlu.evaluate import align_entity_predictions
-from rasa_nlu.evaluate import determine_intersection
-from rasa_nlu.evaluate import determine_token_labels
-from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
-from rasa_nlu import utils
-import json
-import os
-from rasa_nlu import training_data, config
 from tests import utilities
 
 logging.basicConfig(level="DEBUG")
@@ -259,7 +259,6 @@ def test_run_cv_evaluation():
 
 
 def test_intent_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
@@ -297,7 +296,6 @@ def test_intent_evaluation_report(tmpdir_factory):
 
 
 def test_entity_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
 
