@@ -602,13 +602,10 @@ def _request_action_from_user(
 
     _print_history(sender_id, endpoint)
 
-    sorted_actions = sorted(predictions,
-                            key=lambda k: (-k['score'], k['action']))
-
     choices = [{"name": "{:03.2f} {:40}".format(a.get("score"),
                                                 a.get("action")),
                 "value": a.get("action")}
-               for a in sorted_actions]
+               for a in predictions]
 
     choices = ([{"name": "<create new action>", "value": OTHER_ACTION}] +
                choices)
