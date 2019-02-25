@@ -258,17 +258,17 @@ def test_run_cv_evaluation():
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
     assert len(entity_results.train[
-                   'CRFEntityExtractor']["Accuracy"]) == n_folds
+        'CRFEntityExtractor']["Accuracy"]) == n_folds
     assert len(entity_results.train[
-                   'CRFEntityExtractor']["Precision"]) == n_folds
+        'CRFEntityExtractor']["Precision"]) == n_folds
     assert len(entity_results.train[
-                   'CRFEntityExtractor']["F1-score"]) == n_folds
+        'CRFEntityExtractor']["F1-score"]) == n_folds
     assert len(entity_results.test[
-                   'CRFEntityExtractor']["Accuracy"]) == n_folds
+        'CRFEntityExtractor']["Accuracy"]) == n_folds
     assert len(entity_results.test[
-                   'CRFEntityExtractor']["Precision"]) == n_folds
+        'CRFEntityExtractor']["Precision"]) == n_folds
     assert len(entity_results.test[
-                   'CRFEntityExtractor']["F1-score"]) == n_folds
+        'CRFEntityExtractor']["F1-score"]) == n_folds
 
 
 def test_intent_evaluation_report(tmpdir_factory):
