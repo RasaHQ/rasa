@@ -36,7 +36,6 @@ def create_argument_parser() -> argparse.ArgumentParser:
     run.add_subparser(subparsers, parents=parent_parsers)
     shell.add_subparser(subparsers, parents=parent_parsers)
     train.add_subparser(subparsers, parents=parent_parsers)
-    # configure.add_subparser(subparsers)
     interactive.add_subparser(subparsers, parents=parent_parsers)
     test.add_subparser(subparsers, parents=parent_parsers)
     show.add_subparser(subparsers, parents=parent_parsers)
