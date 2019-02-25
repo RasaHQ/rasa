@@ -186,16 +186,3 @@ def default_tracker(default_domain):
     import uuid
     uid = str(uuid.uuid1())
     return DialogueStateTracker(uid, default_domain.slots)
-
-
-@pytest.fixture(scope="module")
-def default_sql_tracker_store(default_domain):
-    t_store = SQLTrackerStore(domain=domain,
-                              db=postgresql.r)
-
-
-@pytest.fixture
-def db_connection(postgresql: connection):
-    db = postgresql
-    db.cursor_factory = RealDictCursor
-    yield db
