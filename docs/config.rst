@@ -124,7 +124,7 @@ Authentication
 --------------
 To protect your server, you can specify a token in your Rasa NLU configuration,
 by passing the ``--token`` argument when starting the server,
-or by setting the ``RASA_TOKEN`` environment variable.
+or by setting the ``RASA_NLU_TOKEN`` environment variable.
 If set, this token must be passed as a query parameter in all requests, e.g. :
 
 .. code-block:: bash
