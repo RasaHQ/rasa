@@ -77,7 +77,7 @@ class Event(object):
     type_name = "event"
 
     def __init__(self, timestamp=None):
-        self.timestamp = timestamp if timestamp else time.time()
+        self.timestamp = timestamp
 
     def __ne__(self, other):
         # Not strictly necessary, but to avoid having both x==y and x!=y

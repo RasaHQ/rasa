@@ -1,6 +1,7 @@
 import itertools
 
 import json
+import time
 import logging
 import pickle
 # noinspection PyPep8Naming
@@ -14,7 +15,6 @@ from rasa_core.trackers import (
     EventVerbosity)
 from rasa_core.utils import class_from_module_path
 from sqlalchemy import Table, Column, Integer, String, Float, MetaData
-from sqlalchemy.engine.base import Engine
 
 logger = logging.getLogger(__name__)
 
@@ -267,17 +267,17 @@ class SQLTrackerStore(TrackerStore):
         id = Column(Integer, primary_key=True)
         sender_id = Column(String, nullable=False)
         type_name = Column(String, nullable=False)
-        timestamp = Column(Float, nullable=False)
+        timestamp = Column(Float)
         intent_name = Column(String)
         action_name = Column(String)
         data = Column(String)
 
     def __init__(self,
                  domain: Optional[Domain] = None,
-                 drivername: Text = None,
+                 drivername: Text = 'sqlite',
                  host: Text = None,
                  event_broker: Optional[EventChannel] = None,
-                 db: Text = 'rasa.db',
+                 db: Text = '',
                  username: Text = None,
                  password: Text = None) -> None:
         from sqlalchemy.orm import sessionmaker
@@ -308,7 +308,7 @@ class SQLTrackerStore(TrackerStore):
               Column("id", Integer, primary_key=True),
               Column("sender_id", String, nullable=False),
               Column("type_name", String, nullable=False),
-              Column("timestamp", Float, nullable=False),
+              Column("timestamp", Float),
               Column("intent_name", String),
               Column("action_name", String),
               Column("data", String))
@@ -326,16 +326,15 @@ class SQLTrackerStore(TrackerStore):
         query = subquery.filter_by(sender_id=sender_id).all()
         events = [json.loads(event.data) for event in query]
 
-        if self.domain:
+        if self.domain and len(events) > 0:
             logger.debug('Recreating tracker '
                          'from {} stored events'.format(len(events)))
 
             tracker = DialogueStateTracker.from_dict(sender_id, events,
                                                      self.domain.slots)
         else:
-            logger.warning("Can't recreate tracker from SQL storage "
-                           "because no domain is set. Returning `None` "
-                           "instead.")
+            logger.warning("Can't retrieve tracker from SQL storage.  "
+                           "Returning `None` instead.")
             tracker = None
         return tracker
 
@@ -345,19 +344,29 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        events = self._event_buffer(tracker)  # only store recent events
+        serialised_tracker = self.serialise_tracker(tracker)
 
-        for event in events:
-            event_data = event.as_dict()
-            intent = event_data.get("parse_data", {}).get("intent")
-            action = event_data.get("name")
+        # events = self._event_buffer(tracker)  # only store recent events
+
+        for event in tracker.events:
+
+            try:
+                data = event.as_dict()
+            except AttributeError as e:
+                logger.warning("Unable to serialise event: {}.  Using "
+                               "__dict__ method instead".format(e))
+                data = event.__dict__
+
+            intent = data.get("parse_data", {}).get("intent", {}).get("name")
+            action = data.get("name")
+            timestamp = data.get("timestamp")
 
             self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
                                            type_name=event.type_name,
-                                           timestamp=event.timestamp,
+                                           timestamp=timestamp,
                                            intent_name=intent,
                                            action_name=action,
-                                           data=json.dumps(event_data)))
+                                           data=json.dumps(data)))
         self.session.commit()
 
     def _event_buffer(self, tracker):

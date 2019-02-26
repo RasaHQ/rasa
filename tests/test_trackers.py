@@ -11,7 +11,7 @@ from rasa_core.domain import Domain
 from rasa_core.events import (
     UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
-from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
+from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore, SQLTrackerStore
 from rasa_core.tracker_store import (
     TrackerStore)
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
@@ -29,14 +29,24 @@ class MockRedisTrackerStore(RedisTrackerStore):
         TrackerStore.__init__(self, domain)
 
 
+class MockSQL(SQLTrackerStore):
+    def __init__(self, domain):
+        # self.db_file = tmpdir.strpath
+        SQLTrackerStore.__init__(self,
+                                 domain,
+                                 drivername='sqlite')
+
+
 def stores_to_be_tested():
     return [MockRedisTrackerStore(domain),
-            InMemoryTrackerStore(domain)]
+            InMemoryTrackerStore(domain),
+            MockSQL(domain)]
 
 
 def stores_to_be_tested_ids():
     return ["redis-tracker",
-            "in-memory-tracker"]
+            "in-memory-tracker",
+            "SQL-tracker"]
 
 
 def test_tracker_duplicate():

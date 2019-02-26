@@ -9,8 +9,6 @@ from rasa_core.tracker_store import (
     SQLTrackerStore)
 from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
-from pytest_postgresql.factories import postgresql
-from psycopg2.extras import RealDictCursor
 
 domain = Domain.load("data/test_domains/default.yml")
 
@@ -129,6 +127,3 @@ def test_sql_tracker_store_keys(default_domain):
                     'intent_name',
                     'action_name',
                     'data']
-
-def test_sql_tracker_store_save(default_domain):
-    store = SQLTrackerStore(default_domain)
