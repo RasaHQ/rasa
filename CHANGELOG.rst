@@ -15,11 +15,18 @@ Added
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
+- documentation about early deactivation of a form in validation
+- utility functions for colored logging
+- open webbrowser when visualizing stories
 
 Changed
 -------
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
+- renamed ``train_dialogue_model`` to ``train``
+- renamed ``rasa_core.evaluate`` to ``rasa_core.test``
+- changed export paths for interactive training to ``data/core/stories.md``,
+  ``data/nlu/nlu.md`` and ``data/nlu/nlu_interactive.md``
 
 Removed
 -------

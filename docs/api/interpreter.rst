@@ -1,3 +1,6 @@
+:desc: Read how Rasa Stack interprets a message or non-textual input like
+       buttons or other structured input for contextual conversation design.
+
 .. _interpreters:
 
 Interpreters
@@ -85,5 +88,5 @@ and entities:
 
     /add_to_shopping_list@0.825{"item": ["milk", "salt"]}
 
-	
+
 .. include:: ../feedback.inc

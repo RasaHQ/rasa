@@ -16,7 +16,6 @@ from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
 
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
-from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
@@ -35,8 +34,6 @@ from rasa_core.utils import EndpointConfig
 
 import questionary
 from questionary import Choice, Form, Question
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
@@ -56,9 +53,9 @@ logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-PATHS = {"stories": "data/stories.md",
-         "nlu": "data/nlu.md",
-         "backup": "data/nlu_interactive.md",
+PATHS = {"stories": "data/core/stories.md",
+         "nlu": "data/nlu/nlu.md",
+         "backup": "data/nlu/nlu_interactive.md",
          "domain": "domain.yml"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
@@ -511,7 +508,8 @@ def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
             bot_column.append(colored(evt['name'], 'autocyan'))
             if evt['confidence'] is not None:
                 bot_column[-1] += (
-                    colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
+                    colored(" {:03.2f}".format(evt['confidence']),
+                            'autowhite'))
 
         elif evt.get("event") == UserUttered.type_name:
             if bot_column:
@@ -609,7 +607,8 @@ def _request_action_from_user(
                 "value": a.get("action")}
                for a in sorted_actions]
 
-    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
+    choices = ([{"name": "<create new action>", "value": OTHER_ACTION}] +
+               choices)
     question = questionary.select("What is the next action of the bot?",
                                   choices)
 
@@ -717,6 +716,7 @@ def _write_nlu_to_file(
     evts: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
+    from rasa_nlu.training_data import TrainingData
 
     msgs = _collect_messages(evts)
 
@@ -957,6 +957,7 @@ def _validate_action(action_name: Text,
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
+    from rasa_nlu.training_data.formats import MarkdownWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data.get("text")
@@ -1044,6 +1045,7 @@ def _correct_entities(latest_message: Dict[Text, Any],
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
+    from rasa_nlu.training_data.formats import MarkdownReader
 
     entity_str = _as_md_message(latest_message.get("parse_data", {}))
     question = questionary.text(
@@ -1060,7 +1062,7 @@ def _enter_user_message(sender_id: Text,
                         endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
-    question = questionary.text("Next user input (Ctr-c to abort):")
+    question = questionary.text("Your input ->")
 
     message = _ask_or_abort(question, sender_id, endpoint,
                             lambda a: not a)
@@ -1315,7 +1317,7 @@ def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
             abort(404)
 
 
-def run_interactive_learning(agent: Agent,
+def run_interactive_learning(agent: 'Agent',
                              stories: Text = None,
                              finetune: bool = False,
                              serve_forever: bool = True,
