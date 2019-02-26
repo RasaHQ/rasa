@@ -18,14 +18,14 @@
 # https://rasa.com/docs/core/tracker_stores/
 
 #tracker_store:
-#    store_type: redis
+#    type: redis
 #    url: <host of the redis instance, e.g. localhost>
 #    port: <port of your redis instance, usually 6379>
 #    db: <number of your database within redis, e.g. 0>
 #    password: <password used for authentication>
 
 #tracker_store:
-#    store_type: mongod
+#    type: mongod
 #    url: <url to your mongo instance, e.g. mongodb://localhost:27017>
 #    db: <name of the db within your mongo instance, e.g. rasa>
 #    username: <username used for authentication>
