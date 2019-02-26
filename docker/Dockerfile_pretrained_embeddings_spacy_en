@@ -12,25 +12,19 @@ RUN apt-get update -qq \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-
-# use bash always
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-
 WORKDIR ${RASA_NLU_HOME}
 
 COPY . ${RASA_NLU_HOME}
 
-RUN pip install -r alt_requirements/requirements_mitie.txt
+# use bash always
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+RUN pip install -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
 
 RUN pip install -e .
 
-RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends wget \
-    && wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
-    && apt-get remove -y wget \
-    && apt-get autoremove -y
-
-COPY sample_configs/config_mitie.yml ${RASA_NLU_HOME}/config.yml
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
+    && python -m spacy link en_core_web_md en 
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 

@@ -16,9 +16,11 @@ Changed
 - validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
+- new consistent naming scheme for pipelines:
+  - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
+  - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
+  - requirements files, sample configs, and dockerfiles renamed accordingly
 - `/train` endpoint now returns a zipfile of the trained model.
-
-=======
 - replace pep8 with pycodestyle
 
 Removed
