@@ -416,7 +416,7 @@ def get_token(_clitoken):
     if _clitoken and _envtoken:
         raise Exception(
             "RASA_NLU_TOKEN is set both with the -t option,"
-            " with value `{}`, and with and environment variable, "
+            " with value `{}`, and with an environment variable, "
             "with value `{}`. "
             "Please set the token with just one method "
             "to avoid unexpected behaviours.".format(
