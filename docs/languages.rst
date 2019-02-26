@@ -86,7 +86,7 @@ for `hundreds of languages <https://github.com/facebookresearch/fastText/blob/ma
 =====================   =================================
 pretrained-embeddings	supported languages
 =====================   =================================
-spacy            	english (``en``),
+spacy           	english (``en``),
                		german (``de``),
                		spanish (``es``),
                		portuguese (``pt``),
