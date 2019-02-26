@@ -59,6 +59,30 @@ component_classes = [
 # Mapping from a components name to its class to allow name based lookup.
 registered_components = {c.name(): c for c in component_classes}
 
+# TODO insures compatibility, remove in future versions
+old_style_names = {
+    "nlp_spacy": "SpacyNLP",
+    "nlp_mitie": "MitieNLP",
+    "ner_spacy": "SpacyEntityExtractor",
+    "ner_mitie": "MitieEntityExtractor",
+    "ner_crf": "CRFEntityExtractor",
+    "ner_duckling_http": "DucklingHTTPExtractor",
+    "ner_synonyms": "EntitySynonymMapper",
+    "intent_featurizer_spacy": "SpacyFeaturizer",
+    "intent_featurizer_mitie": "MitieFeaturizer",
+    "intent_featurizer_ngrams": "NGramFeaturizer",
+    "intent_entity_featurizer_regex": "RegexFeaturizer",
+    "intent_featurizer_count_vectors": "CountVectorsFeaturizer",
+    "tokenizer_mitie": "MitieTokenizer",
+    "tokenizer_spacy": "SpacyTokenizer",
+    "tokenizer_whitespace": "WhitespaceTokenizer",
+    "tokenizer_jieba": "JiebaTokenizer",
+    "intent_classifier_sklearn": "SklearnIntentClassifier",
+    "intent_classifier_mitie": "MitieIntentClassifier",
+    "intent_classifier_keyword": "KeywordIntentClassifier",
+    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier"
+}
+
 # To simplify usage, there are a couple of model templates, that already add
 # necessary components in the right order. They also implement
 # the preexisting `backends`.
@@ -102,17 +126,22 @@ def get_component_class(component_name: Text) -> Type['Component']:
     """Resolve component name to a registered components class."""
 
     if component_name not in registered_components:
-        try:
-            return utils.class_from_module_path(component_name)
-        except Exception:
-            raise Exception(
-                "Failed to find component class for '{}'. Unknown "
-                "component name. Check your configured pipeline and make "
-                "sure the mentioned component is not misspelled. If you "
-                "are creating your own component, make sure it is either "
-                "listed as part of the `component_classes` in "
-                "`rasa_nlu.registry.py` or is a proper name of a class "
-                "in a module.".format(component_name))
+        if component_name not in old_style_names:
+            try:
+                return utils.class_from_module_path(component_name)
+            except Exception:
+                raise Exception(
+                    "Failed to find component class for '{}'. Unknown "
+                    "component name. Check your configured pipeline and make "
+                    "sure the mentioned component is not misspelled. If you "
+                    "are creating your own component, make sure it is either "
+                    "listed as part of the `component_classes` in "
+                    "`rasa_nlu.registry.py` or is a proper name of a class "
+                    "in a module.".format(component_name))
+        else:
+            # TODO insures compatibility, remove in future versions
+            component_name = old_style_names[component_name]
+
     return registered_components[component_name]
 
 
