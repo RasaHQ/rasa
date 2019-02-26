@@ -206,7 +206,7 @@ Below is a list of all the pre-configured pipeline templates.
 .. _section_pretrained_embeddings_spacy_pipeline:
 
 pretrained_embeddings_spacy
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use the ``pretrained_embeddings_spacy`` template:
 
