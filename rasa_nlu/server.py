@@ -410,7 +410,7 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
-def get_token(_clitoken):
+def get_token(_clitoken: Optional[Text]) -> Text:
     _envtoken = os.environ.get("RASA_NLU_TOKEN")
 
     if _clitoken and _envtoken:
