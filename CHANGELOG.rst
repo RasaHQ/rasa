@@ -16,6 +16,9 @@ Changed
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
 - `/train` endpoint now returns a zipfile of the trained model.
+- pipeline components in the config file should be provided
+  with their class name
+- persisted components file name changed
 
 =======
 - replace pep8 with pycodestyle
@@ -23,6 +26,7 @@ Changed
 Removed
 -------
 - **removed python 2.7 support**
+- removed `Component.name` property
 
 Fixed
 -----
