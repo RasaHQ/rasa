@@ -96,7 +96,7 @@ MongoTrackerStore
     - ``password`` (default: ``None``): The password which is used for authentication
     - ``collection`` (default: ``conversations``): The collection name which is
       used to store the conversations
-    - ``auth_source`` (default: ``the database specified in the connection string``): database name associated with the user’s credentials.
+    - ``auth_source`` (default: ``admin``): database name associated with the user’s credentials.
 
 Custom Tracker Store
 ~~~~~~~~~~~~~~~~~~~~
