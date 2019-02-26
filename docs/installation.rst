@@ -94,7 +94,7 @@ First Alternative: Tensorflow
 -----------------------------
 
 To use the ``supervised_embeddings`` pipeline you will need to install
-tensorflow and, for entity recognition, the sklearn-crfsuite library.
+Tensorflow and, for entity recognition, the sklearn-crfsuite library.
 To do this, run the following command:
 
 .. code-block:: bash

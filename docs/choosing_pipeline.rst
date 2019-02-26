@@ -265,7 +265,7 @@ mitie
 ~~~~~
 
 There is no pipeline template, as you need to configure the location
-of mities featurizer. To use the components and configure them separately:
+of MITIE's featurizer. To use the components and configure them separately:
 
 .. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
@@ -273,8 +273,10 @@ of mities featurizer. To use the components and configure them separately:
 mitie_2
 ~~~~~~~~~~~~~
 
+This pipeline uses MITIE's featurizer and also its multiclass classifier.
+Training can be quite slow, so this is not recommended for large datasets.
 There is no pipeline template, as you need to configure the location
-of mities featurizer. To use the components and configure them separately:
+of MITIE's featurizer. To use the components and configure them separately:
 
 .. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
