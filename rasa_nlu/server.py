@@ -410,9 +410,7 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
-def get_token():
-    _clitoken = cmdline_args.token
-
+def get_token(_clitoken):
     _envtoken = os.environ.get("RASA_NLU_TOKEN")
 
     if _clitoken and _envtoken:
@@ -457,7 +455,7 @@ if __name__ == '__main__':
         cmdline_args.loglevel,
         cmdline_args.write,
         cmdline_args.num_threads,
-        get_token(),
+        get_token(cmdline_args.token),
         cmdline_args.cors,
         default_config_path=cmdline_args.config
     )
