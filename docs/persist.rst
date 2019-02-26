@@ -55,12 +55,12 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
 
     If there is no container with the name ``AZURE_CONTAINER`` Rasa will create it.
 
-Models are gzipped before saving to cloud. The gzipped file naming convention
-is `{PROJECT}___{MODEL_NAME}.tar.gz` and should be in the root folder of the storage service.
-Currently, you are not able to specify the path on cloud storage.
+Models are gzipped before they are saved in the cloud. The gzipped file naming convention
+is `{PROJECT}___{MODEL_NAME}.tar.gz` and in the root folder of the storage service.
+Currently, you are not able manually to specify the path on cloud storage.
 
-If storing trained models, rasa_nlu will gzip the new model and upload to the root. If retrieving/loading models
-from the cloud storage, rasa_nlu will download the gzipped model locally an extract the contents to the location
+If storing trained models, Rasa NLU will gzip the new model and upload to the container. If retrieving/loading models
+from the cloud storage, Rasa NLU will download the gzipped model locally an extract the contents to the location
 specified by the `--path` flag.
 
 
