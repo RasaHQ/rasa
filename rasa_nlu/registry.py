@@ -12,6 +12,7 @@ from rasa_nlu.classifiers.embedding_intent_classifier import \
     EmbeddingIntentClassifier
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
+from rasa_nlu.classifiers.custom_keyword_intent_classifier import CustomKeywordIntentClassifier
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
@@ -48,7 +49,7 @@ component_classes = [
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     CountVectorsFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer, JiebaTokenizer,
-    SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
+    SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier, CustomKeywordIntentClassifier,
     EmbeddingIntentClassifier
 ]
 
@@ -77,6 +78,9 @@ registered_pipeline_templates = {
         "ner_synonyms",
         "intent_featurizer_count_vectors",
         "intent_classifier_tensorflow_embedding"
+    ],
+    "custom_keyword": [
+        "intent_classifier_custom_keyword"
     ]
 }
 
