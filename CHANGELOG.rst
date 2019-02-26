@@ -9,6 +9,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
 
 Changed
 -------

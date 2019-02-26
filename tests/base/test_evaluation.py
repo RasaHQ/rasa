@@ -259,7 +259,6 @@ def test_run_cv_evaluation():
 
 
 def test_intent_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
@@ -297,7 +296,6 @@ def test_intent_evaluation_report(tmpdir_factory):
 
 
 def test_entity_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
 
