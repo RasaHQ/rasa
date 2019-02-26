@@ -2,6 +2,8 @@ from typing import Any, Dict, Optional, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import Message
+import pickle
+import os
 
 
 class CustomKeywordIntentClassifier(Component):
@@ -53,9 +55,6 @@ class CustomKeywordIntentClassifier(Component):
 
 
     def persist(self, model_dir: Text) -> Dict[Text, Any]:
-        import os
-        import pickle
-
         keyword_file = os.path.join(model_dir, "keys.p")
         pickle.dump(self.intent_keyword_map,  open(keyword_file, "wb"))
 
@@ -68,7 +67,8 @@ class CustomKeywordIntentClassifier(Component):
              cached_component: Optional['Component'] = None,
              **kwargs: Any) -> 'CustomKeywordIntentClassifier':
 
-        import pickle
-        self.intent_keyword_map = pickle.load(open(model_dir + "/keys.p", "rb"))
+        keyword_file = os.path.join(model_dir, "keys.p")
+
+        self.intent_keyword_map = pickle.load(open(keyword_file, "rb"))
 
         return self()
