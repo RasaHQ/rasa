@@ -16,6 +16,7 @@ Added
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
 - documentation about early deactivation of a form in validation
+- added ability to use multiple env vars per line in yaml files
 
 Changed
 -------
