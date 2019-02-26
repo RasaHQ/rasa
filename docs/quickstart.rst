@@ -133,7 +133,7 @@ We are also passing the ``--project current`` and ``--fixed_model_name nlu`` par
 --------------
 
 There are two ways you can use your model, directly from python, or by starting a http server.
-Details of running the Rasa NLU HTTP server are in :ref:`config`.
+Details of running the Rasa NLU HTTP server are in :ref:`section_configuration`.
 
 To use your new model in python, create an ``Interpreter`` object and pass a message to its ``parse()`` method:
 
