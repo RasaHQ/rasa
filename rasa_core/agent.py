@@ -5,14 +5,12 @@ import shutil
 import tempfile
 import typing
 import uuid
-import zipfile
 from gevent.pywsgi import WSGIServer
-from io import BytesIO as IOReader
 from requests.exceptions import InvalidURL, RequestException
 from threading import Thread
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
-from rasa_core import training, constants
+from rasa_core import training, constants, utils
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
@@ -85,6 +83,38 @@ def _init_model_from_server(model_server: EndpointConfig
     return fingerprint, model_directory
 
 
+def _is_stack_model(model_directory: Text):
+    """Decide whether a persisted model is a stack or a core model."""
+
+    # TODO: find a better way to check this
+    return os.path.exists(os.path.join(model_directory, "rasa_model"))
+
+
+def _load_and_set_updated_model(agent: 'Agent',
+                                model_directory: Text,
+                                fingerprint: Text):
+    """Load the persisted model into memory and set the model on the agent."""
+    if _is_stack_model(model_directory):
+        from rasa_core.interpreter import RasaNLUInterpreter
+        nlu_model = os.path.join(model_directory, "rasa_model", "nlu")
+        core_model = os.path.join(model_directory, "rasa_model", "core")
+        interpreter = RasaNLUInterpreter(model_directory=nlu_model)
+    else:
+        interpreter = agent.interpreter
+        core_model = model_directory
+
+    domain_path = os.path.join(os.path.abspath(core_model), "domain.yml")
+    domain = Domain.load(domain_path)
+
+    # noinspection PyBroadException
+    try:
+        policy_ensemble = PolicyEnsemble.load(core_model)
+        agent.update_model(domain, policy_ensemble, fingerprint, interpreter)
+    except Exception:
+        logger.exception("Failed to load policy and update agent. "
+                         "The previous model will stay loaded instead.")
+
+
 def _update_model_from_server(model_server: EndpointConfig,
                               agent: 'Agent'
                               ) -> None:
@@ -98,11 +128,8 @@ def _update_model_from_server(model_server: EndpointConfig,
     new_model_fingerprint = _pull_model_and_fingerprint(
         model_server, model_directory, agent.fingerprint)
     if new_model_fingerprint:
-        domain_path = os.path.join(os.path.abspath(model_directory),
-                                   "domain.yml")
-        domain = Domain.load(domain_path)
-        policy_ensemble = PolicyEnsemble.load(model_directory)
-        agent.update_model(domain, policy_ensemble, new_model_fingerprint)
+        _load_and_set_updated_model(agent, model_directory,
+                                    new_model_fingerprint)
     else:
         logger.debug("No new model found at "
                      "URL {}".format(model_server.url))
@@ -145,8 +172,7 @@ def _pull_model_and_fingerprint(model_server: EndpointConfig,
                        "".format(response.status_code))
         return None
 
-    zip_ref = zipfile.ZipFile(IOReader(response.content))
-    zip_ref.extractall(model_directory)
+    utils.unarchive(response.content, model_directory)
     logger.debug("Unzipped model to {}"
                  "".format(os.path.abspath(model_directory)))
 
@@ -212,9 +238,14 @@ class Agent(object):
     def update_model(self,
                      domain: Union[Text, Domain],
                      policy_ensemble: PolicyEnsemble,
-                     fingerprint: Optional[Text]) -> None:
+                     fingerprint: Optional[Text],
+                     interpreter: Optional[NaturalLanguageInterpreter] = None
+                     ) -> None:
         self.domain = domain
         self.policy_ensemble = policy_ensemble
+
+        if interpreter:
+            self.interpreter = interpreter
 
         self._set_fingerprint(fingerprint)
 
@@ -552,7 +583,7 @@ class Agent(object):
         if not os.path.exists(model_path):
             return
 
-        domain_spec_path = os.path.join(model_path, 'policy_metadata.json')
+        domain_spec_path = os.path.join(model_path, 'metadata.json')
         # check if there were a model before
         if os.path.exists(domain_spec_path):
             logger.info("Model directory {} exists and contains old "

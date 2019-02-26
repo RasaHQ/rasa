@@ -6,11 +6,14 @@ import logging
 import os
 import re
 import sys
+import tarfile
 import tempfile
 import argparse
+import zipfile
 from hashlib import sha1, md5
 from threading import Thread
 from typing import Text, Any, List, Optional, Tuple, Dict, Set, TYPE_CHECKING
+from io import BytesIO as IOReader
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -390,6 +393,23 @@ def zip_folder(folder):
     return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 
+def unarchive(byte_array: bytes, directory: Text):
+    """Tries to unpack a byte array interpreting it as an archive.
+
+    Tries to use tar first to unpack, if that fails, zip will be used."""
+
+    try:
+        tar = tarfile.open(fileobj=IOReader(byte_array))
+        tar.extractall(directory)
+        tar.close()
+        return directory
+    except tarfile.TarError:
+        zip_ref = zipfile.ZipFile(IOReader(byte_array))
+        zip_ref.extractall(directory)
+        zip_ref.close()
+        return directory
+
+
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
@@ -618,7 +638,7 @@ class AvailableEndpoints(object):
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
-    def __init__(self, url, params=None, headers=None, basic_auth=None,
+    def __init__(self, url=None, params=None, headers=None, basic_auth=None,
                  token=None, token_name="token", **kwargs):
         self.url = url
         self.params = params if params else {}
@@ -626,7 +646,7 @@ class EndpointConfig(object):
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
-        self.store_type = kwargs.pop('store_type', None)
+        self.type = kwargs.pop('store_type', kwargs.pop('type', None))
         self.kwargs = kwargs
 
     def request(self,

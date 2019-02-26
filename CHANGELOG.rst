@@ -18,6 +18,9 @@ Added
 - documentation about early deactivation of a form in validation
 - utility functions for colored logging
 - open webbrowser when visualizing stories
+- added ``/parse`` endpoint to query for NLU results
+- File based event store
+- ability to configure event store using the endpoints file
 
 Changed
 -------
@@ -27,6 +30,10 @@ Changed
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
 - changed export paths for interactive training to ``data/core/stories.md``,
   ``data/nlu/nlu.md`` and ``data/nlu/nlu_interactive.md``
+- ``event_broker.publish`` receives the event as a dict instead of text
+- configuration key ``store_type`` of the tracker store endpoint configuration
+  has been renamed to ``type`` to allow usage accross endpoints
+- renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 
 Removed
 -------

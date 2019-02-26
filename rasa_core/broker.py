@@ -1,16 +1,53 @@
+import json
 import logging
+from typing import Any, Dict, Text, Optional
+
 import pika
-from typing import Text
+from rasa_core.utils import class_from_module_path, EndpointConfig
 
 logger = logging.getLogger(__name__)
 
 
+def load_event_channel_from_module_string(broker_config: EndpointConfig
+                                          ) -> Optional['EventChannel']:
+    """Instantiate an event channel based on its class name."""
+
+    try:
+        event_channel = class_from_module_path(broker_config.type)
+        return event_channel.from_endpoint_config(broker_config)
+    except (AttributeError, ImportError):
+        logger.warning("EventChannel type {} not found. "
+                       "Not using any event channel."
+                       .format(broker_config.type))
+        return None
+
+
+def from_endpoint_config(broker_config: Optional[EndpointConfig]
+                         ) -> Optional['EventChannel']:
+    """Instantiate an event channel based on its configuration."""
+
+    if broker_config is None:
+        return None
+    elif broker_config.type == 'pika' or broker_config.type is None:
+        return PikaProducer.from_endpoint_config(broker_config)
+    elif broker_config.type == 'file':
+        return FileProducer.from_endpoint_config(broker_config)
+    else:
+        return load_event_channel_from_module_string(broker_config)
+
+
 class EventChannel(object):
-    def publish(self, event: Text) -> None:
+    @classmethod
+    def from_endpoint_config(cls, broker_config: EndpointConfig
+                             ) -> 'EventChannel':
+        raise NotImplementedError("Event broker must implement the "
+                                  "`from_endpoint_config` method.")
+
+    def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a json-formatted Rasa Core event into an event queue."""
 
         raise NotImplementedError("Event broker must implement the `publish` "
-                                  "method")
+                                  "method.")
 
 
 class PikaProducer(EventChannel):
@@ -33,7 +70,7 @@ class PikaProducer(EventChannel):
 
     def publish(self, event):
         self._open_connection()
-        self._publish(event)
+        self._publish(json.dumps(event))
         self._close()
 
     def _open_connection(self):
@@ -52,3 +89,44 @@ class PikaProducer(EventChannel):
 
     def _close(self):
         self.connection.close()
+
+
+class FileProducer(EventChannel):
+    """Log events to a file in json format.
+
+    There will be one event per line and each event is stored as json."""
+
+    DEFAULT_LOG_FILE_NAME = "rasa_event.log"
+
+    def __init__(self, path=None) -> None:
+        self.event_logger = self._event_logger(path)
+
+    @classmethod
+    def from_endpoint_config(cls, broker_config) -> Optional['FileProducer']:
+        if broker_config is None:
+            return None
+
+        # noinspection PyArgumentList
+        return cls(**broker_config.kwargs)
+
+    def _event_logger(self, file_name):
+        """Instantiate the file logger"""
+
+        logger_file = file_name or self.DEFAULT_LOG_FILE_NAME
+        # noinspection PyTypeChecker
+        query_logger = logging.getLogger('event-logger')
+        query_logger.setLevel(logging.INFO)
+        ch = logging.FileHandler(logger_file)
+        ch.setFormatter(logging.Formatter('%(message)s'))
+        query_logger.propagate = False
+        query_logger.addHandler(ch)
+
+        logger.info("Logging events to '{}'.".format(logger_file))
+
+        return query_logger
+
+    def publish(self, event):
+        """Write event to file."""
+
+        self.event_logger.info(json.dumps(event))
+        self.event_logger.handlers[0].flush()

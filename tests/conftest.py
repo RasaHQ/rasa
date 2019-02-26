@@ -111,7 +111,7 @@ def trained_moodbot_path():
 @pytest.fixture(scope="session")
 def zipped_moodbot_model():
     # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'policy_metadata.json')
+    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'metadata.json')
     if not os.path.isfile(policy_file):
         trained_moodbot_path()
 

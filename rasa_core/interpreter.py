@@ -239,7 +239,14 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        return self.interpreter.parse(text)
+        result = self.interpreter.parse(text)
+
+        # TODO: hotfix to append attributes that NLU is adding as a server
+        #   but where the interpreter does not add them
+        if result:
+            result["model"] = "current"
+            result["project"] = "default"
+        return result
 
     def _load_interpreter(self):
         from rasa_nlu.model import Interpreter

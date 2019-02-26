@@ -29,7 +29,7 @@ jsonschema==2.6.0
 packaging==18.0
 gevent==1.4.0
 pytz==2018.9
-rasa_core_sdk~=0.12.1
+rasa_core_sdk~=0.13
 pymongo==3.7.2
 python-dateutil==2.7.5
 rocketchat_API==0.6.25
