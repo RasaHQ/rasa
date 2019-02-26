@@ -151,7 +151,7 @@ Click the link below to get the Rasa NLU starter-pack:
 	
 Let us know how you are getting on! If you have any questions
 about the starter-pack or using Rasa NLU in general, post your questions on
-`Rasa Community Forum <https://forum.rasa.com>`_!
+the `Rasa Community Forum <https://forum.rasa.com>`_!
 
 `Rasa NLU starter-pack <https://github.com/RasaHQ/starter-pack-rasa-nlu>`_
 
