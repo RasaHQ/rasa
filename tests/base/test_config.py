@@ -55,7 +55,7 @@ def test_default_config_file():
 
 
 def test_set_attr_on_component(default_config):
-    cfg = config.load("sample_configs/config_spacy.yml")
+    cfg = config.load("sample_configs/config_pretrained_embeddings_spacy.yml")
     cfg.set_component_attr(6, C=324)
 
     assert cfg.for_component(1) == {"name": "SpacyTokenizer"}
@@ -63,7 +63,7 @@ def test_set_attr_on_component(default_config):
                                     "C": 324}
 
 
-def test_override_defaults_tensorflow_embedding_pipeline():
+def test_override_defaults_supervised_embeddings_pipeline():
     cfg = config.load("data/test/config_embedding_test.yml")
     builder = ComponentBuilder()
 

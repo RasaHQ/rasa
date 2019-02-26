@@ -9,18 +9,21 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
 
 Changed
 -------
 - validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
+- new consistent naming scheme for pipelines:
+  - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
+  - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
+  - requirements files, sample configs, and dockerfiles renamed accordingly
 - `/train` endpoint now returns a zipfile of the trained model.
 - pipeline components in the config file should be provided
   with their class name
 - persisted components file name changed
-
-=======
 - replace pep8 with pycodestyle
 
 Removed

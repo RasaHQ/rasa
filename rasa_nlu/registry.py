@@ -87,7 +87,7 @@ old_style_names = {
 # necessary components in the right order. They also implement
 # the preexisting `backends`.
 registered_pipeline_templates = {
-    "spacy_sklearn": [
+    "pretrained_embeddings_spacy": [
         "SpacyNLP",
         "SpacyTokenizer",
         "SpacyFeaturizer",
@@ -99,7 +99,7 @@ registered_pipeline_templates = {
     "keyword": [
         "KeywordIntentClassifier",
     ],
-    "tensorflow_embedding": [
+    "supervised_embeddings": [
         "WhitespaceTokenizer",
         "RegexFeaturizer",
         "CRFEntityExtractor",

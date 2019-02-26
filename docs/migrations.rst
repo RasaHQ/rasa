@@ -8,6 +8,13 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.14.x to 0.15.0
+----------------
+
+- The standard pipelines have been renamed. ``spacy_sklearn`` is now 
+  ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now 
+  ``supervised_embeddings``. 
+
 0.13.x to 0.14.0
 ----------------
 - ``/config`` endpoint removed, when training a new model, the user should
