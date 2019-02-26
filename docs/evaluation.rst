@@ -66,7 +66,7 @@ To do this, run the evaluation script with the ``--mode crossvalidation`` flag:
 
     python -m rasa_nlu.evaluate \
         --data data/examples/rasa/demo-rasa.json \
-        --config sample_configs/config_spacy.yml \
+        --config sample_configs/config_pretrained_embeddings_spacy.yml \
         --mode crossvalidation
 
 
