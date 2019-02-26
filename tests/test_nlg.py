@@ -1,5 +1,4 @@
 import uuid
-from unittest import mock
 
 import jsonschema
 import pytest
@@ -96,9 +95,7 @@ def test_nlg_fill_template_text(filled_slots):
     resolved_text = ", ".join([str(s) for s in filled_slots.values()])
 
     template = {'text': template_text}
-    t = TemplatedNaturalLanguageGenerator(templates=dict(
-        bot_message_1=[template]
-    ))
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
     result = t._fill_template_text(
         template=template,
         filled_slots=filled_slots
@@ -106,20 +103,30 @@ def test_nlg_fill_template_text(filled_slots):
     assert result == {'text': resolved_text}
 
 
-@pytest.mark.parametrize("filled_slots", [
-    {"tag_w_\n": "a"},
-    {"tag,w,": "a"},
+@pytest.mark.parametrize("slot_name, slot_value", [
+    ("tag_w_underscore", "a"),
+    ("tag.with.float.val", 1.3),
+    ("tag-w-$", "banana"),
+    ("tagCamelCase", "two"),
 ])
-@mock.patch('rasa_core.nlg.template.logger')
-def test_nlg_fill_template_text_w_bad_slot_name(mock_logger, filled_slots):
-    template_text = ", ".join(["{" + t + "}" for t in filled_slots.keys()])
-    template = {'text': template_text}
-    t = TemplatedNaturalLanguageGenerator(templates=dict(
-        bot_message_1=[template]
-    ))
+def test_nlg_fill_template_text2(slot_name, slot_value):
+    template = {'text': "{" + slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
     result = t._fill_template_text(
         template=template,
-        filled_slots=filled_slots
+        filled_slots={slot_name: slot_value}
     )
-    assert mock_logger.exception.call_count == 1
+    assert result == {'text': str(slot_value)}
+
+
+@pytest.mark.parametrize("slot_name, slot_value", [
+    ("tag_w_\n", "a"),
+])
+def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
+    template_text = "{" + slot_name + "}"
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template_text(
+        template={'text': template_text},
+        filled_slots={slot_name: slot_value}
+    )
     assert result['text'] == template_text
