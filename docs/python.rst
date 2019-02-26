@@ -49,7 +49,7 @@ Reducing Memory Use When Loading Multiple Models
 ------------------------------------------------
 
 If multiple models are created, it is reasonable to share components between the different models. E.g.
-the ``'nlp_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
+the ``'SpacyNLP'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
 can be cached to avoid storing the large word vectors more than once in main memory. To use the caching,
 a ``ComponentBuilder`` should be passed when loading and training models.
 

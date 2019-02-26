@@ -44,7 +44,7 @@ class MitieNLP(Component):
 
         model_file = component_config.get("model")
         if not model_file:
-            raise Exception("The MITIE component 'nlp_mitie' needs "
+            raise Exception("The MITIE component 'MitieNLP' needs "
                             "the configuration value for 'model'."
                             "Please take a look at the "
                             "documentation in the pipeline section "

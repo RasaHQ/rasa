@@ -64,7 +64,7 @@ class MitieEntityExtractor(EntityExtractor):
         if not model_file:
             raise Exception("Can not run MITIE entity extractor without a "
                             "language model. Make sure this component is "
-                            "preceeded by the 'nlp_mitie' component.")
+                            "preceeded by the 'MitieNLP' component.")
 
         trainer = mitie.ner_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
@@ -113,7 +113,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception("Failed to train 'intent_featurizer_mitie'. "
+            raise Exception("Failed to train 'MitieFeaturizer'. "
                             "Missing a proper MITIE feature extractor.")
 
         ents = self.extract_entities(message.text, message.get("tokens"),

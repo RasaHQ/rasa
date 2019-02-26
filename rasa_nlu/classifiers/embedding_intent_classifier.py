@@ -36,8 +36,8 @@ class EmbeddingIntentClassifier(Component):
     The embedding intent classifier needs to be preceded by
     a featurizer in the pipeline.
     This featurizer creates the features used for the embeddings.
-    It is recommended to use ``intent_featurizer_count_vectors`` that
-    can be optionally preceded by ``nlp_spacy`` and ``tokenizer_spacy``.
+    It is recommended to use ``CountVectorsFeaturizer`` that
+    can be optionally preceded by ``SpacyNLP`` and ``SpacyTokenizer``.
 
     Based on the starspace idea from: https://arxiv.org/abs/1709.03856.
     However, in this implementation the `mu` parameter is treated differently

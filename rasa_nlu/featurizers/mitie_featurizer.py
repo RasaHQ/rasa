@@ -50,10 +50,10 @@ class MitieFeaturizer(Featurizer):
     def _mitie_feature_extractor(self, **kwargs):
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception("Failed to train 'intent_featurizer_mitie'. "
+            raise Exception("Failed to train 'MitieFeaturizer'. "
                             "Missing a proper MITIE feature extractor. "
                             "Make sure this component is preceded by "
-                            "the 'nlp_mitie' component in the pipeline "
+                            "the 'MitieNLP' component in the pipeline "
                             "configuration.")
         return mitie_feature_extractor
 

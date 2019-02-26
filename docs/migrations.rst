@@ -13,8 +13,8 @@ how you can migrate from one version to another.
 - ``/config`` endpoint removed, when training a new model, the user should
   always post the configuration as part of the request instead of relying
   on the servers config.
-- ``ner_duckling`` support has been removed. Use ``ner_duckling_http``
-  instead. More info about ``ner_duckling_http`` can be found at
+- ``ner_duckling`` support has been removed. Use ``DucklingHTTPExtractor``
+  instead. More info about ``DucklingHTTPExtractor`` can be found at
   https://rasa.com/docs/nlu/components/#ner-duckling-http.
 
 0.13.x to 0.13.3
@@ -99,7 +99,7 @@ The feature names for the features of the entity CRF have changed:
 | word5            | suffix5          |
 +------------------+------------------+
 
-Please change these keys in your pipeline configuration of the ``ner_crf``
+Please change these keys in your pipeline configuration of the ``CRFEntityExtractor``
 components ``features`` attribute if you use them.
 
 0.11.x to 0.12.0
@@ -125,9 +125,9 @@ parameters. Example:
       langauge: "en"
 
       pipeline:
-      - name: "nlp_spacy"
+      - name: "SpacyNLP"
         model: "en"               # parameter of the spacy component
-      - name: "ner_synonyms"
+      - name: "EntitySynonymMapper"
 
 
 All other parameters have either been moved to the scripts
@@ -163,7 +163,7 @@ persistors:
 
 0.8.x to 0.9.x
 ---------------
-- add ``tokenizer_spacy`` to trained spacy_sklearn models metadata (right after the ``nlp_spacy``). alternative is to retrain the model
+- add ``SpacyTokenizer`` to trained spacy_sklearn models metadata (right after the ``SpacyNLP``). alternative is to retrain the model
 
 0.7.x to 0.8.x
 ---------------
