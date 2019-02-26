@@ -9,6 +9,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
 
 Changed
 -------
@@ -19,10 +20,7 @@ Changed
   - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
   - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
   - requirements files, sample configs, and dockerfiles renamed accordingly
-- `/train` endpoint now returns a zipfile of the trained model. This is done to avoid sharing a folder between `api`
-  service and `nlu` service when running NLU in the platform.
-
-=======
+- `/train` endpoint now returns a zipfile of the trained model.
 - replace pep8 with pycodestyle
 
 Removed

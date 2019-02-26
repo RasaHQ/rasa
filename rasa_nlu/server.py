@@ -1,6 +1,7 @@
 import argparse
 import io
 import logging
+import os
 from functools import wraps
 
 import simplejson
@@ -409,6 +410,22 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
+def get_token(_clitoken: str) -> str:
+    _envtoken = os.environ.get("RASA_NLU_TOKEN")
+
+    if _clitoken and _envtoken:
+        raise Exception(
+            "RASA_NLU_TOKEN is set both with the -t option,"
+            " with value `{}`, and with an environment variable, "
+            "with value `{}`. "
+            "Please set the token with just one method "
+            "to avoid unexpected behaviours.".format(
+                _clitoken, _envtoken))
+
+    token = _clitoken or _envtoken
+    return token
+
+
 if __name__ == '__main__':
     # Running as standalone python application
     cmdline_args = create_argument_parser().parse_args()
@@ -438,7 +455,7 @@ if __name__ == '__main__':
         cmdline_args.loglevel,
         cmdline_args.write,
         cmdline_args.num_threads,
-        cmdline_args.token,
+        get_token(cmdline_args.token),
         cmdline_args.cors,
         default_config_path=cmdline_args.config
     )
