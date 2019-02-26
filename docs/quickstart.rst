@@ -95,7 +95,7 @@ and save it in a file called ``nlu.md``.
 2. Define your Machine Learning Model
 -------------------------------------
 
-Rasa NLU has a number of different components, which together make a pipeline. Create a markdown file with the pipeline you want to use. In this case, we're using the pre-defined ``tensorflow_embedding`` pipeline. If you are running this locally instead of here in the docs, copy the text between the (``"""``)
+Rasa NLU has a number of different components, which together make a pipeline. Create a markdown file with the pipeline you want to use. In this case, we're using the pre-defined ``supervised_embeddings`` pipeline. If you are running this locally instead of here in the docs, copy the text between the (``"""``)
 and save it in a file called ``nlu_config.yml``.
 
 .. runnable::
@@ -103,7 +103,7 @@ and save it in a file called ``nlu_config.yml``.
 
    nlu_config = """
    language: en
-   pipeline: tensorflow_embedding
+   pipeline: supervised_embeddings
    """
    %store nlu_config > nlu_config.yml
 
@@ -133,7 +133,7 @@ We are also passing the ``--project current`` and ``--fixed_model_name nlu`` par
 --------------
 
 There are two ways you can use your model, directly from python, or by starting a http server.
-Details of running the Rasa NLU HTTP server are in :ref:`config`.
+Details of running the Rasa NLU HTTP server are in :ref:`section_configuration`.
 
 To use your new model in python, create an ``Interpreter`` object and pass a message to its ``parse()`` method:
 

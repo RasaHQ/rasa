@@ -12,7 +12,9 @@ Prerequisites
 ~~~~~~~~~~~~~
 For windows
 -----------
-Make sure the Microsoft VC++ Compiler is installed, so python can compile any dependencies. You can get the compiler from:
+
+Make sure the Microsoft VC++ Compiler is installed, so python can compile
+any dependencies. You can get the compiler from:
 https://visualstudio.microsoft.com/visual-cpp-build-tools/
 Download the installer and select VC++ Build tools in the list.
 
@@ -21,7 +23,8 @@ Setting up Rasa NLU
 
 Stable (Recommended)
 --------------------
-The recommended way to install Rasa NLU is using pip which will install the latest stable version of Rasa NLU:
+The recommended way to install Rasa NLU is using pip which will install
+the latest stable version of Rasa NLU:
 
 .. copyable::
 
@@ -60,13 +63,15 @@ installed and tell you if any are missing.
 Installing Pipeline Dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Section :ref:`section_pipeline` will help you choose which pipeline you want to use.
+Section :ref:`section_pipeline` will help you choose which pipeline
+you want to use.
 
-Great for getting started: spaCy + sklearn
-------------------------------------------
+Great for getting started: pretrained embeddings from spaCy
+-----------------------------------------------------------
 
 
-The ``spacy_sklearn`` pipeline combines a few different libraries and is a popular option.
+The ``pretrained_embeddings_spacy`` pipeline combines a few different libraries and
+is a popular option.
 
 You can install it with this command (for more information
 visit the `spacy docs <https://spacy.io/usage/models>`_):
@@ -88,7 +93,9 @@ memory to run, but will somewhat reduce intent classification performance.
 First Alternative: Tensorflow
 -----------------------------
 
-To use the ``tensorflow_embedding`` pipeline you will need to install tensorflow as well as the scikit-learn and sklearn-crfsuite libraries. To do this, run the following command:
+To use the ``supervised_embeddings`` pipeline you will need to install
+Tensorflow and, for entity recognition, the sklearn-crfsuite library.
+To do this, run the following command:
 
 .. code-block:: bash
 
@@ -98,7 +105,9 @@ To use the ``tensorflow_embedding`` pipeline you will need to install tensorflow
 Second Alternative: MITIE
 -------------------------
 
-The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend performs well for small datasets, but training can take very long if you have more than a couple of hundred examples. We may deprecate the MITIE backend in the future.
+The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend performs well for
+small datasets, but training can take very long if you have more than a
+couple of hundred examples. We may deprecate the MITIE backend in the future.
 
 First, run
 
@@ -107,55 +116,42 @@ First, run
     pip install git+https://github.com/mit-nlp/MITIE.git
     pip install rasa_nlu[mitie]
 
-and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.
+and then download the
+`MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.
 The file you need is ``total_word_feature_extractor.dat``. Save this
 somewhere, if you want to use mitie, you need to tell it where to
 find this file.
 
 The complete pipeline for mitie can be found here
 
-.. literalinclude:: ../sample_configs/config_mitie.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
-.. warning::
+Using MITIE alone can be quite slow to train, but you can use it with this configuration
 
-    Training MITIE can be quite slow on datasets
-    with more than a few intents. You can try
 
-        - to use the sklearn + MITIE backend instead
-          (which uses sklearn for the training) or
-        - you can install `our mitie fork <https://github.com/tmbo/mitie>`_
-          which should reduce the training time as well.
-
-Another Alternative: sklearn + MITIE
-------------------------------------
-There is another backend that combines the advantages of the two previous ones:
-
-1. the fast and good intent classification from sklearn and
-2. the good entitiy recognition and feature vector creation from MITIE
-
-Especially, if you have a larger number of intents (more than 10),
-training intent classifiers with MITIE can take very long.
-
-To use this backend you need to follow the instructions for
-installing both, sklearn and MITIE.
-
-Example pipeline configuration for the use of MITIE together with
-sklearn:
-
-.. literalinclude:: ../sample_configs/config_mitie_sklearn.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
+
 
 
 Train your first custom Rasa NLU model!
 ---------------------------------------
-After following the quickstart and installing Rasa NLU, the next step is to
-build something yourself! To get you started, we have prepared a
-Rasa NLU starter-pack which has all the files you need to train your first custom Rasa NLU model.
-On top of that, the starter-pack includes a training dataset ready
+
+After following the quickstart and installing Rasa NLU, the next step is to 
+build something yourself! To get you started, we have prepared a 
+Rasa NLU starter-pack which has all the files you need to train your
+first custom Rasa NLU model.
+On top of that, the starter-pack includes a training dataset ready 
 for you to use.
 
 Click the link below to get the Rasa NLU starter-pack:
+	
+`Rasa NLU starter-pack <https://github.com/RasaHQ/starter-pack-rasa-nlu>`_
+	
+Let us know how you are getting on! If you have any questions
+about the starter-pack or using Rasa NLU in general, post your questions on
+the `Rasa Community Forum <https://forum.rasa.com>`_!
 
 `Rasa NLU starter-pack <https://github.com/RasaHQ/starter-pack-rasa-nlu>`_
 
