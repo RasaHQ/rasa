@@ -739,13 +739,17 @@ def _write_nlu_to_file(
         previous_examples = TrainingData()
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
-
+    
+    if _guess_format(export_nlu_path) in {"md", "unk"}:
+            fformat = "md"
+        else:
+            fformat = "json"
+            
     with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
-        if _guess_format(export_nlu_path) in {"md", "unk"}:
+        if fformat == "md":
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
-
 
 def _entities_from_messages(messages):
     """Return all entities that occur in atleast one of the messages."""
