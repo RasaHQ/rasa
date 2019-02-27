@@ -20,7 +20,7 @@ from rasa_nlu.utils import create_dir, write_json_to_file
 
 logger = logging.getLogger(__name__)
 
-MINIMUM_COMPATIBLE_VERSION = "0.13.0a2"
+MINIMUM_COMPATIBLE_VERSION = '0.15.0a2'
 
 
 class InvalidProjectError(Exception):
