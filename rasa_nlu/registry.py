@@ -59,7 +59,7 @@ component_classes = [
 # Mapping from a components name to its class to allow name based lookup.
 registered_components = {c.name: c for c in component_classes}
 
-# TODO insures compatibility, remove in future versions
+# DEPRECATED ensures compatibility, will be remove in future versions
 old_style_names = {
     "nlp_spacy": "SpacyNLP",
     "nlp_mitie": "MitieNLP",
