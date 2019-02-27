@@ -43,7 +43,7 @@ class SlackBot(SlackClient, OutputChannel):
                                               attachments=image_attachment)
 
     def send_attachment(self, recipient_id, attachment, message=""):
-        recipient = self.slack_channel or recipient_id        
+        recipient = self.slack_channel or recipient_id
         return super(SlackBot, self).api_call("chat.postMessage",
                                               channel=recipient,
                                               as_user=True,
@@ -57,13 +57,11 @@ class SlackBot(SlackClient, OutputChannel):
                  "value": b['payload'],
                  "type": "button"} for b in buttons]
 
-    
     @staticmethod
     def _get_text_from_slack_buttons(buttons):
-        val = [ bb['title'] for bb in buttons]
-        val = "".join(val);
-        return val;
-
+        val = [bb['title'] for bb in buttons]
+        val = "".join(val)
+        return val
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
         recipient = self.slack_channel or recipient_id
@@ -73,18 +71,17 @@ class SlackBot(SlackClient, OutputChannel):
                            "If you add more, all will be ignored.")
             return self.send_text_message(recipient, message)
 
-        if(len(message) > 0):        
-            callback_string = message.replace(' ', '_')[:20];
-        else:        
-            callback_string = self._get_text_from_slack_buttons(buttons);
-            callback_string = callback_string.replace(' ', '_')[:20];
-        
-        
+        if(len(message) > 0):
+            callback_string = message.replace(' ', '_')[:20]
+        else:
+            callback_string = self._get_text_from_slack_buttons(buttons)
+            callback_string = callback_string.replace(' ', '_')[:20]
+
         button_attachment = [{"fallback": message,
-	                      "callback_id": callback_string,
-	                      "actions": self._convert_to_slack_buttons(
-                                  buttons)}]
-        
+                              "callback_id": callback_string,
+                              "actions": self._convert_to_slack_buttons(
+                               buttons)}]
+
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
                                        as_user=True,
@@ -150,24 +147,23 @@ class SlackInput(InputChannel):
     @staticmethod
     def _is_button(payload):
         return (payload['actions'][0]['type'] == u"button")
-        
+
     @staticmethod
     def _is_button_reply(slack_event):
-        payload = json.loads(slack_event['payload']);
+        payload = json.loads(slack_event['payload'])
         return (SlackInput._is_interactive_message(payload) and
                 SlackInput._is_button(payload))
 
     @staticmethod
     def _get_button_reply(slack_event):
         return json.loads(slack_event['payload'])['actions'][0]['name']
-        
 
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
         """Remove superfluous/wrong/problematic tokens from a message.
 
-        Probably a good starting point for pre-formatting of user-provided text,
-        to make NLU's life easier in case they go funky to the power of extreme.
+        Probably a good starting point for pre-formatting of user-provided text
+        to make NLU's life easier in case they go funky to the power of extreme
 
         In the current state will just drop self-mentions of bot itself
 
@@ -197,8 +193,7 @@ class SlackInput(InputChannel):
         """
         retry_reason = request.headers.environ.get('HTTP_X_SLACK_RETRY_REASON')
         retry_count = request.headers.environ.get('HTTP_X_SLACK_RETRY_NUM')
-        ## if retry_count and retry_reason in self.errors_ignore_retry:        
-        if retry_count:
+        if retry_count and retry_reason in self.errors_ignore_retry:
             logger.warning("Received retry #{} request from slack"
                            " due to {}".format(retry_count, retry_reason))
 
