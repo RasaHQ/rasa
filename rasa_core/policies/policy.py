@@ -38,9 +38,11 @@ class Policy(object):
             return None
 
     def __init__(self,
-                 featurizer: Optional[TrackerFeaturizer] = None
+                 featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: Optional[int] = 1
                  ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
+        self.priority = priority
 
     @property
     def featurizer(self):
