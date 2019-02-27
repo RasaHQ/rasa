@@ -1,3 +1,6 @@
+:desc: Read more how to define bot utterances or use a service to generate the
+       responses using Rasa Stack as an open source chatbot platform. 
+
 .. _responses:
 
 Bot Responses
@@ -141,5 +144,3 @@ The bot will then use this response and sent it back to the user.
 
 
 .. include:: feedback.inc
-
-
