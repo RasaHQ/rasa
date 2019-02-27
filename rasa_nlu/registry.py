@@ -139,7 +139,7 @@ def get_component_class(component_name: Text) -> Type['Component']:
                     "`rasa_nlu.registry.py` or is a proper name of a class "
                     "in a module.".format(component_name))
         else:
-            # TODO insures compatibility, remove in future versions
+            # DEPRECATED ensures compatibility, remove in future versions
             component_name = old_style_names[component_name]
 
     return registered_components[component_name]
