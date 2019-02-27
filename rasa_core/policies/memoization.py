@@ -14,7 +14,6 @@ from rasa_core.featurizers import (
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.constants import MEMO_SCORE
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +55,7 @@ class MemoizationPolicy(Policy):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: int = 2,
                  max_history: Optional[int] = None,
                  lookup: Optional[Dict] = None
                  ) -> None:
@@ -63,7 +63,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super(MemoizationPolicy, self).__init__(featurizer)
+        super(MemoizationPolicy, self).__init__(featurizer, priority)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
@@ -192,10 +192,9 @@ class MemoizationPolicy(Policy):
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
                 # user message to set the confidence of the action
-                score = tracker.latest_message.intent.get("confidence",
-                                                          MEMO_SCORE)
+                score = tracker.latest_message.intent.get("confidence", 1.0)
             else:
-                score = MEMO_SCORE
+                score = 1.0
 
             result[recalled] = score
         else:
@@ -209,6 +208,7 @@ class MemoizationPolicy(Policy):
 
         memorized_file = os.path.join(path, 'memorized_turns.json')
         data = {
+            "priority": self.priority,
             "max_history": self.max_history,
             "lookup": self.lookup
         }
@@ -222,7 +222,8 @@ class MemoizationPolicy(Policy):
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
             data = json.loads(utils.read_file(memorized_file))
-            return cls(featurizer=featurizer, lookup=data["lookup"])
+            return cls(featurizer=featurizer, priority=data["priority"],
+                       lookup=data["lookup"])
         else:
             logger.info("Couldn't load memoization for policy. "
                         "File '{}' doesn't exist. Falling back to empty "

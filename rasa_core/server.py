@@ -407,6 +407,9 @@ def create_app(agent,
         try:
             # Fetches the appropriate bot response in a json format
             responses = agent.predict_next(sender_id)
+            responses['scores'] = sorted(responses['scores'],
+                                         key = lambda k: (-k['score'],
+                                                          k['action']))
             return jsonify(responses)
 
         except Exception as e:
