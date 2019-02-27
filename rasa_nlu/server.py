@@ -1,7 +1,10 @@
 import argparse
+import io
 import logging
-import simplejson
+import os
 from functools import wraps
+
+import simplejson
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -9,8 +12,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from rasa_nlu import config, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
-    DataRouter, InvalidProjectError,
-    MaxTrainingError)
+    DataRouter, InvalidProjectError, MaxTrainingError)
 from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
 from rasa_nlu.train import TrainingException
 from rasa_nlu.utils import json_to_string, read_endpoints
@@ -320,12 +322,11 @@ class RasaNLU(object):
         else:
             return content_type[0]
 
-    @app.route("/train", methods=['POST', 'OPTIONS'])
+    @app.route("/train", methods=['POST', 'OPTIONS'], branch=True)
     @requires_auth
     @check_cors
     @inlineCallbacks
     def train(self, request):
-
         # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
         # if set will not generate a model name but use the passed one
@@ -340,16 +341,19 @@ class RasaNLU(object):
 
         data_file = dump_to_data_file(data)
 
-        request.setHeader('Content-Type', 'application/json')
+        request.setHeader('Content-Type', 'application/zip')
 
         try:
             request.setResponseCode(200)
-
-            response = yield self.data_router.start_train_process(
+            request.setHeader("Content-Disposition", "attachment")
+            path_to_model = yield self.data_router.start_train_process(
                 data_file, project,
                 RasaNLUModelConfig(model_config), model_name)
-            returnValue(json_to_string({'info': 'new model trained',
-                                        'model': response}))
+            zipped_path = utils.zip_folder(path_to_model)
+
+            zip_content = io.open(zipped_path, 'r+b').read()
+            return returnValue(zip_content)
+
         except MaxTrainingError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
@@ -406,6 +410,22 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
+def get_token(_clitoken: str) -> str:
+    _envtoken = os.environ.get("RASA_NLU_TOKEN")
+
+    if _clitoken and _envtoken:
+        raise Exception(
+            "RASA_NLU_TOKEN is set both with the -t option,"
+            " with value `{}`, and with an environment variable, "
+            "with value `{}`. "
+            "Please set the token with just one method "
+            "to avoid unexpected behaviours.".format(
+                _clitoken, _envtoken))
+
+    token = _clitoken or _envtoken
+    return token
+
+
 if __name__ == '__main__':
     # Running as standalone python application
     cmdline_args = create_argument_parser().parse_args()
@@ -435,7 +455,7 @@ if __name__ == '__main__':
         cmdline_args.loglevel,
         cmdline_args.write,
         cmdline_args.num_threads,
-        cmdline_args.token,
+        get_token(cmdline_args.token),
         cmdline_args.cors,
         default_config_path=cmdline_args.config
     )

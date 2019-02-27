@@ -1,4 +1,6 @@
-:desc: Setting up a Rasa NLU pipeline
+:desc: Set up a pipeline of pre-trained word vectors form GloVe or fastText
+       or fit them specifically on your dataset using the tensorflow pipeline
+       for open source NLU.
 
 .. _choosing_pipeline:
 
@@ -9,68 +11,68 @@ The Short Answer
 ----------------
 
 If you have less than 1000 total training examples, and there is a spaCy model for your 
-language, use the ``spacy_sklearn`` pipeline:
+language, use the ``pretrained_embeddings_spacy`` pipeline:
 
-.. literalinclude:: ../sample_configs/config_spacy.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 
 If you have 1000 or more labelled utterances,
-use the ``tensorflow_embedding`` pipeline:
+use the ``supervised_embeddings`` pipeline:
 
 .. code-block:: yaml
 
     language: "en"
 
-    pipeline: "tensorflow_embedding"
+    pipeline: "supervised_embeddings"
 
 It's good practice to define the ``language`` parameter in your configuration, but
-for the ``tensorflow_embedding`` pipeline this parameter doesn't affect anything.
+for the ``supervised_embeddings`` pipeline this parameter doesn't affect anything.
 
 A Longer Answer
 ---------------
 
-The two most important pipelines are ``tensorflow_embedding`` and ``spacy_sklearn``.
-The biggest difference between them is that the ``spacy_sklearn`` pipeline uses pre-trained
-word vectors from either GloVe or fastText. Instead, the tensorflow embedding pipeline
+The two most important pipelines are ``supervised_embeddings`` and ``pretrained_embeddings_spacy``.
+The biggest difference between them is that the ``pretrained_embeddings_spacy`` pipeline uses pre-trained
+word vectors from either GloVe or fastText. Instead, the supervised embeddings pipeline
 doesn't use any pre-trained word vectors, but instead fits these specifically for your dataset.
 
-The advantage of the ``spacy_sklearn`` pipeline is that if you have a training example like:
+The advantage of the ``pretrained_embeddings_spacy`` pipeline is that if you have a training example like:
 "I want to buy apples", and Rasa is asked to predict the intent for "get pears", your model
 already knows that the words "apples" and "pears" are very similar. This is especially useful
-if you don't have very much training data. 
+if you don't have very much training data.
 
-The advantage of the ``tensorflow_embedding`` pipeline is that your word vectors will be customised 
+The advantage of the ``supervised_embeddings`` pipeline is that your word vectors will be customised
 for your domain. For example, in general English, the word "balance" is closely related to "symmetry",
 but very different to the word "cash". In a banking domain, "balance" and "cash" are closely related
 and you'd like your model to capture that. This pipeline doesn't use a language-specific model,
 so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
 
-You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ . 
+You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ .
 
 
-There are also the ``mitie`` and ``mitie_sklearn`` pipelines, which use MITIE as a source of word vectors. 
+There are also the ``mitie`` and ``mitie_sklearn`` pipelines, which use MITIE as a source of word vectors.
 We do not recommend that you use these; they are likely to be deprecated in a future release.
 
 .. note::
 
     Intent classification is independent of entity extraction. So sometimes
-    NLU will get the intent right but entities wrong, or the other way around. 
-    You need to provide enough data for both intents and entities. 
+    NLU will get the intent right but entities wrong, or the other way around.
+    You need to provide enough data for both intents and entities.
 
 
 Multiple Intents
 ----------------
 
-If you want to split intents into multiple labels, 
+If you want to split intents into multiple labels,
 e.g. for predicting multiple intents or for modeling hierarchical intent structure,
-you can only do this with the tensorflow pipeline.
+you can only do this with the supervised embeddings pipeline.
 To do this, use these flags:
 
     - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use a bag-of-words representations for them;
     - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
 
-`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`_ is a tutorial on how to use multiple intents in Rasa Core and NLU. 
+`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`_ is a tutorial on how to use multiple intents in Rasa Core and NLU.
 
 Here's an example configuration:
 
@@ -93,7 +95,7 @@ In Rasa NLU, incoming messages are processed by a sequence of components.
 These components are executed one after another
 in a so-called processing pipeline. There are components for entity extraction, for intent classification,
 pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
-do sentiment analysis, check out :ref:`section_customcomponents`. 
+do sentiment analysis, check out :ref:`section_customcomponents`.
 
 Each component processes the input and creates an output. The ouput can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
@@ -114,7 +116,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
         ]
     }
 
-This is created as a combination of the results of the different components in the pre-configured pipeline ``spacy_sklearn``.
+This is created as a combination of the results of the different components in the pre-configured pipeline ``pretrained_embeddings_spacy``.
 For example, the ``entities`` attribute is created by the ``ner_crf`` component.
 
 
@@ -180,10 +182,10 @@ exactly. Instead it will return the trained synonym.
 Pre-configured Pipelines
 ------------------------
 
-A template is just a shortcut for 
+A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:
 
-.. literalinclude:: ../sample_configs/config_spacy.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 .. code-block:: yaml
@@ -201,14 +203,14 @@ a full list of components. For example, these two configurations are equivalent:
 
 Below is a list of all the pre-configured pipeline templates.
 
-.. _section_spacy_pipeline:
+.. _section_pretrained_embeddings_spacy_pipeline:
 
-spacy_sklearn
-~~~~~~~~~~~~~
+pretrained_embeddings_spacy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To use spacy as a template:
+To use the ``pretrained_embeddings_spacy`` template:
 
-.. literalinclude:: ../sample_configs/config_spacy.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 See :ref:`section_languages` for possible values for ``language``. To use
@@ -227,10 +229,10 @@ the components and configure them separately:
     - name: "ner_synonyms"
     - name: "intent_classifier_sklearn"
 
-.. _section_tensorflow_embedding_pipeline:
+.. _section_supervised_embeddings_pipeline:
 
-tensorflow_embedding
-~~~~~~~~~~~~~~~~~~~~
+supervised_embeddings
+~~~~~~~~~~~~~~~~~~~~~
 
 To use it as a template:
 
@@ -238,9 +240,9 @@ To use it as a template:
 
     language: "en"
 
-    pipeline: "tensorflow_embedding"
+    pipeline: "supervised_embeddings"
 
-The tensorflow pipeline supports any language that can be tokenized. The
+The supervised embeddings pipeline supports any language that can be tokenized. The
 default is to use a simple whitespace tokenizer:
 
 .. code-block:: yaml
@@ -255,7 +257,7 @@ default is to use a simple whitespace tokenizer:
     - name: "intent_classifier_tensorflow_embedding"
 
 If you have a custom tokenizer for your language, you can replace the whitespace
-tokenizer with something more accurate. 
+tokenizer with something more accurate.
 
 .. _section_mitie_pipeline:
 
@@ -263,18 +265,20 @@ mitie
 ~~~~~
 
 There is no pipeline template, as you need to configure the location
-of mities featurizer. To use the components and configure them separately:
+of MITIE's featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_mitie.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
-mitie_sklearn
+mitie_2
 ~~~~~~~~~~~~~
 
+This pipeline uses MITIE's featurizer and also its multiclass classifier.
+Training can be quite slow, so this is not recommended for large datasets.
 There is no pipeline template, as you need to configure the location
-of mities featurizer. To use the components and configure them separately:
+of MITIE's featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_mitie_sklearn.yml
+.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
 
 keyword
@@ -320,5 +324,3 @@ If you want to use custom components in your pipeline, see :ref:`section_customc
 
 
 .. include:: feedback.inc
-
-

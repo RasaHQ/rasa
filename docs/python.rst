@@ -1,4 +1,5 @@
-:desc: How to use Rasa NLU in a Python project
+:desc: Configure the Python API for serverless NLP using open source
+       chatbot framework Rasa Stack.
 .. _section_python:
 
 Python API
@@ -18,7 +19,7 @@ Or, you can train directly in python with a script like the following (using spa
     from rasa_nlu import config
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(config.load("sample_configs/config_spacy.yml"))
+    trainer = Trainer(config.load("sample_configs/config_pretrained_embeddings_spacy.yml"))
     trainer.train(training_data)
     model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
@@ -66,7 +67,7 @@ To train a model:
     builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(config.load("sample_configs/config_spacy.yml"), builder)
+    trainer = Trainer(config.load("sample_configs/config_pretrained_embeddings_spacy.yml"), builder)
     trainer.train(training_data)
     model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
@@ -129,5 +130,3 @@ ComponentBuilder
 
 
 .. include:: feedback.inc
-   
-

@@ -1,11 +1,21 @@
-:desc: Understanding a Rasa NLU Pipeline
+:desc: Configure the custom components of your ML model to optimise the
+       processes performed on the user input of your contextual assistant.
+
 .. _section_pipeline:
 
 Component Configuration
 =======================
 
-This is a reference of the configuration options for every built-in component in 
-Rasa NLU. If you want to build a custom component, check out :ref:`section_customcomponents`.
+.. note::
+   For clarity, we have renamed the pre-defined pipelines to reflect
+   what they *do* rather than which libraries they use as of Rasa NLU
+   0.15. The ``tensorflow_embedding`` pipeline is now called
+   ``supervised_embeddings``, and ``spacy_sklearn`` is now known as
+   ``pretrained_embeddings_spacy``. Please update your code if you are using these.
+
+This is a reference of the configuration options for every built-in
+component in Rasa NLU. If you want to build a custom component, check
+out :ref:`section_customcomponents`.
 
 .. contents::
 
@@ -17,7 +27,8 @@ nlp_mitie
 :Short: MITIE initializer
 :Outputs: nothing
 :Description:
-    Initializes mitie structures. Every mitie component relies on this, hence this should be put at the beginning
+    Initializes mitie structures. Every mitie component relies on this,
+    hence this should be put at the beginning
     of every pipeline that uses any mitie components.
 :Configuration:
     The MITIE library needs a language model file, that **must** be specified in
@@ -117,13 +128,13 @@ intent_featurizer_count_vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: Creates bag-of-words representation of intent features
-:Outputs: 
-   nothing, used as an input to intent classifiers that 
-   need bag-of-words representation of intent features  
+:Outputs:
+   nothing, used as an input to intent classifiers that
+   need bag-of-words representation of intent features
    (e.g. ``intent_classifier_tensorflow_embedding``)
 :Description:
     Creates bag-of-words representation of intent features using
-    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. 
+    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_.
     All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
     .. note::
@@ -426,7 +437,7 @@ tokenizer_whitespace
 :Description:
     Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
     extractor.
-                                                                   
+
 tokenizer_jieba
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -678,7 +689,5 @@ ner_duckling_http
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
 
-		  
-.. include:: feedback.inc		  
-		  
 
+.. include:: feedback.inc

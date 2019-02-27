@@ -546,7 +546,7 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
     entities_by_extractors = {extractor: [] for extractor in extractors}
     for p in predictions:
         entities_by_extractors[p["extractor"]].append(p)
-    extractor_labels = defaultdict(list)
+    extractor_labels = {extractor: [] for extractor in extractors}
     for t in tokens:
         true_token_labels.append(
             determine_token_labels(t, targets, None))
