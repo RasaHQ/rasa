@@ -30,7 +30,7 @@ Removed
 
 Fixed
 -----
-- Handles slot name contains characters that are invalid as python variable name (e.g. dot) in a template
+- Handles slot names which contain characters that are invalid as python variable name (e.g. dot) in a template
 
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
