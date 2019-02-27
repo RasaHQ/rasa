@@ -28,7 +28,7 @@ Changed
 - replace pep8 with pycodestyle
 - ``Component.name`` property returns component's class name
 - Components ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
-  additionally take component's meta/config
+  additionally take component's meta/config dicts
 - Components ``persist(...)`` method additionally takes file name prefix
 
 Removed

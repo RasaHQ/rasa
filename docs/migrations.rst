@@ -13,7 +13,14 @@ how you can migrate from one version to another.
 
 - The standard pipelines have been renamed. ``spacy_sklearn`` is now 
   ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now 
-  ``supervised_embeddings``. 
+  ``supervised_embeddings``.
+- Components names used for nlu config have been changed.
+  Use component class name in nlu config file.
+- The signature of Component's methods have been changed:
+  - ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
+    additionally take component's meta/config dicts
+  - ``persist(...)`` method additionally takes file name prefix
+  Change your custom components accordingly.
 
 0.13.x to 0.14.0
 ----------------
