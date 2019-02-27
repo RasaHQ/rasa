@@ -50,7 +50,7 @@ def test_interpreter(pipeline_template, component_builder, tmpdir):
                           {"rasa_nlu_version": "0.14.2"},
                           {"rasa_nlu_version": "0.14.3"},
                           {"rasa_nlu_version": "0.14.4"},
-                          {"rasa_nlu_version": "0.15.0a1"},])
+                          {"rasa_nlu_version": "0.15.0a1"}])
 def test_model_not_compatible(metadata):
     with pytest.raises(rasa_nlu.model.UnsupportedModelError):
         Interpreter.ensure_model_compatibility(metadata)
