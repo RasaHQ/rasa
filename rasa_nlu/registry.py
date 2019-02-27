@@ -158,7 +158,6 @@ def load_component_by_meta(component_meta: Dict[Text, Any],
 
     # try to get class name first, else create by name
     component_name = component_meta.get('class', component_meta['name'])
-    print(component_meta)
     component_class = get_component_class(component_name)
     return component_class.load(component_meta, model_dir, metadata,
                                 cached_component, **kwargs)
