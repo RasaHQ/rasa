@@ -29,15 +29,15 @@ class CustomKeywordIntentClassifier(Component):
         all_intents = list(training_data.intents)
 
         for intent in all_intents:
-            self.intent_keyword_map[intent] = [example.text.lower() for example in training_data.intent_examples if example.data['intent'] == intent]
-
+            self.intent_keyword_map[intent] = []
+            for example in training_data.intent_examples:
+                if example.data ['intent'] == intent:
+                    self.intent_keyword_map[intent].append(example.text.lower())
 
     def process(self, message: Message, **kwargs: Any) -> None:
-
         intent = {"name": self.parse(message.text), "confidence": 1.0}
         message.set("intent", intent,
                     add_to_output=True)
-
 
     def parse(self, text: Text) -> Optional[Text]:
         _text = text.lower()
@@ -45,14 +45,12 @@ class CustomKeywordIntentClassifier(Component):
         def is_present(x):
             return x in _text
 
-
         for intent in self.intent_keyword_map.keys():
             if any(map(is_present, self.intent_keyword_map[intent])):
                 return intent
 
         # If none of the keywords is in the text:
         return None
-
 
     def persist(self, model_dir: Text) -> Dict[Text, Any]:
         keyword_file = os.path.join(model_dir, "keys.p")

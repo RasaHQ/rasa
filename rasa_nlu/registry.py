@@ -12,7 +12,8 @@ from rasa_nlu.classifiers.embedding_intent_classifier import \
     EmbeddingIntentClassifier
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
-from rasa_nlu.classifiers.custom_keyword_intent_classifier import CustomKeywordIntentClassifier
+from rasa_nlu.classifiers.custom_keyword_intent_classifier import \
+    CustomKeywordIntentClassifier
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
@@ -49,8 +50,8 @@ component_classes = [
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     CountVectorsFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer, JiebaTokenizer,
-    SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier, CustomKeywordIntentClassifier,
-    EmbeddingIntentClassifier
+    SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
+    CustomKeywordIntentClassifier, EmbeddingIntentClassifier
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
