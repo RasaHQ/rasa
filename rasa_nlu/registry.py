@@ -4,6 +4,7 @@ and preconfigured templates.
 Hence, it imports all of the components. To avoid cycles, no component should
 import this in module scope."""
 
+import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
@@ -37,6 +38,9 @@ from rasa_nlu.utils.spacy_utils import SpacyNLP
 if typing.TYPE_CHECKING:
     from rasa_nlu.components import Component
     from rasa_nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+
+logger = logging.getLogger(__name__)
+
 
 # Classes of all known components. If a new component should be added,
 # its class name should be listed here.
@@ -140,6 +144,11 @@ def get_component_class(component_name: Text) -> Type['Component']:
                     "in a module.".format(component_name))
         else:
             # DEPRECATED ensures compatibility, remove in future versions
+            logger.warning("DEPRECATION warning: your nlu config file "
+                           "contains old style component name `{}`, "
+                           "you should change it to its class name: `{}`."
+                           "".format(component_name,
+                                     old_style_names[component_name]))
             component_name = old_style_names[component_name]
 
     return registered_components[component_name]
