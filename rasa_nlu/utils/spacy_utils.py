@@ -74,7 +74,7 @@ class SpacyNLP(Component):
         # as the model name if no explicit name is defined
         spacy_model_name = component_meta.get("model", model_metadata.language)
 
-        return cls.name() + "-" + spacy_model_name
+        return cls.name + "-" + spacy_model_name
 
     def provide_context(self) -> Dict[Text, Any]:
         return {"spacy_nlp": self.nlp}

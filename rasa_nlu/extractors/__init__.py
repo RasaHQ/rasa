@@ -9,16 +9,16 @@ class EntityExtractor(Component):
                            entities: List[Dict[Text, Any]]
                            ) -> List[Dict[Text, Any]]:
         for entity in entities:
-            entity["extractor"] = self.name()
+            entity["extractor"] = self.name
         return entities
 
     def add_processor_name(self,
                            entity: Dict[Text, Any]
                            ) -> Dict[Text, Any]:
         if "processors" in entity:
-            entity["processors"].append(self.name())
+            entity["processors"].append(self.name)
         else:
-            entity["processors"] = [self.name()]
+            entity["processors"] = [self.name]
 
         return entity
 
@@ -50,7 +50,7 @@ class EntityExtractor(Component):
 
         Creates a copy of entity_examples in which entities that have
         `extractor` set to something other than
-        self.name() (e.g. 'CRFEntityExtractor') are removed.
+        self.name (e.g. 'CRFEntityExtractor') are removed.
         """
 
         filtered = []
@@ -58,7 +58,7 @@ class EntityExtractor(Component):
             entities = []
             for ent in message.get("entities", []):
                 extractor = ent.get("extractor")
-                if not extractor or extractor == self.name():
+                if not extractor or extractor == self.name:
                     entities.append(ent)
             data = message.data.copy()
             data['entities'] = entities

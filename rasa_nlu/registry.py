@@ -57,7 +57,7 @@ component_classes = [
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
-registered_components = {c.name(): c for c in component_classes}
+registered_components = {c.name: c for c in component_classes}
 
 # TODO insures compatibility, remove in future versions
 old_style_names = {

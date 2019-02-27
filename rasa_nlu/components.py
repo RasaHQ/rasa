@@ -67,7 +67,7 @@ def validate_arguments(pipeline: List['Component'],
             if r not in provided_properties:
                 raise Exception("Failed to validate at component "
                                 "'{}'. Missing property: '{}'"
-                                "".format(component.name(), r))
+                                "".format(component.name, r))
         provided_properties.update(component.provides)
 
 
@@ -106,7 +106,17 @@ class UnsupportedLanguageError(Exception):
                 "".format(self.component, self.language))
 
 
-class Component(object):
+class ComponentMetaclass(type):
+    """Metaclass with `name` class property"""
+
+    @property
+    def name(cls):
+        """The name property is a function of the class - its __name__."""
+
+        return cls.__name__
+
+
+class Component(object, metaclass=ComponentMetaclass):
     """A component is a message processing unit in a pipeline.
 
     Components are collected sequentially in a pipeline. Each component
@@ -131,9 +141,11 @@ class Component(object):
     # pipeline. E.g. ``[ComponentA, ComponentB]``
     # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
-    @classmethod
-    def name(cls):
-        return cls.__name__
+    @property
+    def name(self):
+        """Access the class's property name from an instance."""
+
+        return type(self).name
 
     # Defines what attributes the pipeline component will
     # provide when called. The listed attributes
@@ -168,7 +180,7 @@ class Component(object):
 
         # makes sure the name of the configuration is part of the config
         # this is important for e.g. persistence
-        component_config["name"] = self.name()
+        component_config["name"] = self.name
 
         self.component_config = override_defaults(self.defaults,
                                                   component_config)
@@ -219,7 +231,7 @@ class Component(object):
         language = config.language
         if not cls.can_handle_language(language):
             # check failed
-            raise UnsupportedLanguageError(cls.name(), language)
+            raise UnsupportedLanguageError(cls.name, language)
 
         return cls(component_config)
 
@@ -381,7 +393,7 @@ class ComponentBuilder(object):
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
             logger.info("Added '{}' to component cache. Key '{}'."
-                        "".format(component.name(), cache_key))
+                        "".format(component.name, cache_key))
 
     def load_component(self,
                        component_meta: Dict[Text, Any],

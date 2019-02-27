@@ -187,7 +187,7 @@ class Trainer(object):
 
         for i, component in enumerate(self.pipeline):
             logger.info("Starting to train component {}"
-                        "".format(component.name()))
+                        "".format(component.name))
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config,
                                       **context)
@@ -233,7 +233,7 @@ class Trainer(object):
             metadata.update(self.training_data.persist(dir_name))
 
         for i, component in enumerate(self.pipeline):
-            file_name = self._file_name(i, component.name())
+            file_name = self._file_name(i, component.name)
             update = component.persist(file_name, dir_name)
             component_meta = component.component_config
             if update:
@@ -336,7 +336,7 @@ class Interpreter(object):
                 pipeline.append(component)
             except components.MissingArgumentError as e:
                 raise Exception("Failed to initialize component '{}'. "
-                                "{}".format(component.name(), e))
+                                "{}".format(component.name, e))
 
         return Interpreter(pipeline, context, model_metadata)
 

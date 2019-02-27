@@ -12,10 +12,10 @@ def test_no_components_with_same_name(component_class):
     """The name of the components need to be unique as they will
     be referenced by name when defining processing pipelines."""
 
-    names = [cls.name() for cls in registry.component_classes]
-    assert names.count(component_class.name()) == 1, \
+    names = [cls.name for cls in registry.component_classes]
+    assert names.count(component_class.name) == 1, \
         "There is more than one component named {}" \
-        "".format(component_class.name())
+        "".format(component_class.name)
 
 
 @pytest.mark.parametrize("pipeline_template",

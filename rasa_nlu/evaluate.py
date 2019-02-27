@@ -526,7 +526,7 @@ def determine_token_labels(token, entities, extractors):
 def do_extractors_support_overlap(extractors):
     """Checks if extractors support overlapping entities
     """
-    return extractors is None or CRFEntityExtractor.name() not in extractors
+    return extractors is None or CRFEntityExtractor.name not in extractors
 
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
@@ -644,7 +644,7 @@ def get_entity_extractors(interpreter):
     Processors are removed since they do not
     detect the boundaries themselves."""
 
-    extractors = set([c.name() for c in interpreter.pipeline
+    extractors = set([c.name for c in interpreter.pipeline
                       if "entities" in c.provides])
     return extractors - entity_processors
 
@@ -652,7 +652,7 @@ def get_entity_extractors(interpreter):
 def is_intent_classifier_present(interpreter):
     """Checks whether intent classifier is present"""
 
-    intent_classifier = [c.name() for c in interpreter.pipeline
+    intent_classifier = [c.name for c in interpreter.pipeline
                          if "intent" in c.provides]
     return intent_classifier != []
 
@@ -678,7 +678,7 @@ def find_component(interpreter, component_name):
     """Finds a component in a pipeline."""
 
     for c in interpreter.pipeline:
-        if c.name() == component_name:
+        if c.name == component_name:
             return c
     return None
 
