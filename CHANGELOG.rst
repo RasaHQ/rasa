@@ -21,16 +21,19 @@ Changed
   - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
   - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
   - requirements files, sample configs, and dockerfiles renamed accordingly
-- `/train` endpoint now returns a zipfile of the trained model.
+- ``/train`` endpoint now returns a zipfile of the trained model.
 - pipeline components in the config file should be provided
   with their class name
 - persisted components file name changed
 - replace pep8 with pycodestyle
+- ``Component.name`` property returns component's class name
+- Components ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
+  additionally take component's meta/config
+- Components ``persist(...)`` method additionally takes file name prefix
 
 Removed
 -------
 - **removed python 2.7 support**
-- removed `Component.name` property
 
 Fixed
 -----
