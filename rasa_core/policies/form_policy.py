@@ -2,7 +2,6 @@ import logging
 from typing import List, Optional, Dict, Text
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.constants import FORM_SCORE
 from rasa_core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
 from rasa_core.events import FormValidation
 from rasa_core.featurizers import TrackerFeaturizer
@@ -19,12 +18,14 @@ class FormPolicy(MemoizationPolicy):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: int = 4,
                  lookup: Optional[Dict] = None
                  ) -> None:
 
         # max history is set to 2 in order to capture
         # previous meaningful action before action listen
         super(FormPolicy, self).__init__(featurizer=featurizer,
+                                         priority=priority,
                                          max_history=2,
                                          lookup=lookup)
 
@@ -107,12 +108,12 @@ class FormPolicy(MemoizationPolicy):
                         return result
 
                 idx = domain.index_for_action(tracker.active_form['name'])
-                result[idx] = FORM_SCORE
+                result[idx] = 1.0
 
             elif tracker.latest_action_name == tracker.active_form.get('name'):
                 # predict action_listen after form action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
-                result[idx] = FORM_SCORE
+                result[idx] = 1.0
         else:
             logger.debug("There is no active form")
 
