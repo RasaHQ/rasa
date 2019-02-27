@@ -11,16 +11,30 @@ how you can migrate from one version to another.
 0.14.x to 0.15.0
 ----------------
 
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load
+  previously trained models (as the stored file names have changed as
+  well as the configuration and metadata). Please make sure to retrain
+  a model before trying to use it with this improved version.
+
+model configuration
+~~~~~~~~~~~~~~~~~~~
 - The standard pipelines have been renamed. ``spacy_sklearn`` is now 
   ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now 
   ``supervised_embeddings``.
 - Components names used for nlu config have been changed.
   Use component class name in nlu config file.
+
+custom components
+~~~~~~~~~~~~~~~~~
 - The signature of Component's methods have been changed:
   - ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
     additionally take component's meta/config dicts
   - ``persist(...)`` method additionally takes file name prefix
   Change your custom components accordingly.
+
 
 0.13.x to 0.14.0
 ----------------
