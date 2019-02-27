@@ -79,8 +79,8 @@ class SlackBot(SlackClient, OutputChannel):
 
         button_attachment = [{"fallback": message,
                               "callback_id": callback_string,
-                              "actions": self._convert_to_slack_buttons(
-                               buttons)}]
+                              "actions":
+                              self._convert_to_slack_buttons(buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
