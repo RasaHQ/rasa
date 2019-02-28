@@ -10,10 +10,10 @@ Entity Extraction
 =======================  ================  ========================    ===================================
 Component                Requires          Model           	           notes
 =======================  ================  ========================    ===================================
-``ner_crf``              sklearn-crfsuite  conditional random field    good for training custom entities
-``ner_spacy``            spaCy             averaged perceptron         provides pre-trained entities
-``ner_duckling_http``    running duckling  context-free grammar        provides pre-trained entities
-``ner_mitie``            MITIE             structured SVM              good for training custom entities
+``CRFEntityExtractor``              sklearn-crfsuite  conditional random field    good for training custom entities
+``SpacyEntityExtractor``            spaCy             averaged perceptron         provides pre-trained entities
+``DucklingHTTPExtractor``    running duckling  context-free grammar        provides pre-trained entities
+``MitieEntityExtractor``            MITIE             structured SVM              good for training custom entities
 =======================  ================  ========================    ===================================
 
 
@@ -22,7 +22,7 @@ Custom Entities
 
 Almost every chatbot and voice app will have some custom entities.
 In a restaurant bot, ``chinese`` is a cuisine, but in a language-learning app it would mean something very different.
-The ``ner_crf`` component can learn custom entities in any language.
+The ``CRFEntityExtractor`` component can learn custom entities in any language.
 
 
 Extracting Places, Dates, People, Organisations
@@ -53,7 +53,7 @@ Duckling can also handle durations like "two hours",
 amounts of money, distances, and ordinals.
 Fortunately, there is a duckling docker container ready to use,
 that you just need to spin up and connect to Rasa NLU.
-(see :ref:`ner_duckling_http`)
+(see :ref:`DucklingHTTPExtractor`)
 
 
 Regular Expressions (regex)
@@ -61,7 +61,7 @@ Regular Expressions (regex)
 
 You can use regular expressions to help the CRF model learn to recognize entities.
 In the :ref:`section_dataformat` you can provide a list of regular expressions, each of which provides
-the ``ner_crf`` with an extra binary feature, which says if the regex was found (1) or not (0).
+the ``CRFEntityExtractor`` with an extra binary feature, which says if the regex was found (1) or not (0).
 
 For example, the names of German streets often end in ``strasse``. By adding this as a regex,
 we are telling the model to pay attention to words ending this way, and will quickly learn to
@@ -93,7 +93,7 @@ exactly. Instead it will return the trained synonym.
           "end": 15,
           "value": "chinese",
           "entity": "cuisine",
-          "extractor": "ner_crf",
+          "extractor": "CRFEntityExtractor",
           "confidence": 0.854,
           "processors": []
         }
@@ -121,7 +121,7 @@ Some extractors, like ``duckling``, may include additional information. For exam
      "confidence":1.0,
      "end":5,
      "entity":"time",
-     "extractor":"ner_duckling_http",
+     "extractor":"DucklingHTTPExtractor",
      "start":0,
      "text":"today",
      "value":"2018-06-21T00:00:00.000-07:00"
@@ -130,8 +130,8 @@ Some extractors, like ``duckling``, may include additional information. For exam
 .. note::
 
     The `confidence` will be set by the CRF entity extractor
-    (`ner_crf` component). The duckling entity extractor will always return
-    `1`. The `ner_spacy` extractor does not provide this information and
+    (`CRFEntityExtractor` component). The duckling entity extractor will always return
+    `1`. The `SpacyEntityExtractor` extractor does not provide this information and
     returns `null`.
 
 

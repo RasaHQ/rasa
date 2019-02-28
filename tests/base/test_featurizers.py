@@ -2,12 +2,13 @@
 import numpy as np
 import pytest
 
-from rasa_nlu import training_data, config
+from rasa_nlu import training_data
 from rasa_nlu.tokenizers import Token
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.config import RasaNLUModelConfig
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -25,8 +26,8 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
 def test_mitie_featurizer(mitie_feature_extractor, default_config):
     from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 
-    ftr = MitieFeaturizer.create(config.load(
-        "sample_configs/config_pretrained_embeddings_mitie.yml"))
+    mitie_component_config = {'name': "MitieFeaturizer"}
+    ftr = MitieFeaturizer.create(mitie_component_config, RasaNLUModelConfig())
     sentence = "Hey how are you today"
     tokens = MitieTokenizer().tokenize(sentence)
     vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)

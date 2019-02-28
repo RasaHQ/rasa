@@ -28,7 +28,9 @@ def component_builder():
 
 @pytest.fixture(scope="session")
 def spacy_nlp(component_builder, default_config):
-    return component_builder.create_component("nlp_spacy", default_config).nlp
+    spacy_nlp_config = {'name': 'SpacyNLP'}
+    return component_builder.create_component(spacy_nlp_config,
+                                              default_config).nlp
 
 
 @pytest.fixture(scope="session")
@@ -44,7 +46,8 @@ def ner_crf_pos_feature_config():
 
 @pytest.fixture(scope="session")
 def mitie_feature_extractor(component_builder, default_config):
-    return component_builder.create_component("nlp_mitie",
+    mitie_nlp_config = {'name': 'MitieNLP'}
+    return component_builder.create_component(mitie_nlp_config,
                                               default_config).extractor
 
 

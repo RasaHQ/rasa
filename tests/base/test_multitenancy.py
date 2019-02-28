@@ -107,8 +107,9 @@ def test_post_parse(app, response_test):
 def test_post_parse_specific_model(app):
     status = yield app.get("http://dummy-uri/status")
     sjs = yield status.json()
+
     project = sjs["available_projects"]["test_project_spacy"]
-    model = project["available_models"][0]
+    model = project["available_models"][-1]
 
     query = ResponseTest("http://dummy-uri/parse",
                          {"entities": [], "intent": "affirm", "text": "food"},

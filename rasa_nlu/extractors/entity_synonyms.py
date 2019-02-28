@@ -9,11 +9,8 @@ from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.utils import write_json_to_file
 
-ENTITY_SYNONYMS_FILE_NAME = "entity_synonyms.json"
-
 
 class EntitySynonymMapper(EntityExtractor):
-    name = "ner_synonyms"
 
     provides = ["entities"]
 
@@ -45,27 +42,29 @@ class EntitySynonymMapper(EntityExtractor):
         self.replace_synonyms(updated_entities)
         message.set("entities", updated_entities, add_to_output=True)
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         if self.synonyms:
-            entity_synonyms_file = os.path.join(model_dir,
-                                                ENTITY_SYNONYMS_FILE_NAME)
+            file_name = file_name + ".json"
+            entity_synonyms_file = os.path.join(model_dir, file_name)
             write_json_to_file(entity_synonyms_file, self.synonyms,
                                separators=(',', ': '))
-            return {"synonyms_file": ENTITY_SYNONYMS_FILE_NAME}
+            return {"file": file_name}
         else:
-            return {"synonyms_file": None}
+            return {"file": None}
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['EntitySynonymMapper'] = None,
              **kwargs: Any
              ) -> 'EntitySynonymMapper':
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("synonyms_file")
+        file_name = meta.get("file")
         if not file_name:
             synonyms = None
             return cls(meta, synonyms)
