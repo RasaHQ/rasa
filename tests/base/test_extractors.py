@@ -198,7 +198,7 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
 
 
 def test_unintentional_synonyms_capitalized(component_builder):
-    _config = utilities.base_test_conf("spacy_sklearn")
+    _config = utilities.base_test_conf("pretrained_embeddings_spacy")
     ner_syn = component_builder.create_component("ner_synonyms", _config)
     examples = [
         Message("Any Mexican restaurant will do", {

@@ -27,8 +27,8 @@ Always keep in mind that the confidence score is not a true probability that the
 is correct, it's just a metric defined by the model that approximately describes how similar
 your input was to the training data.
 
-The intent classifier in the ``spacy_sklearn`` pipeline, for example, usually reports very low
-confidence numbers, whereas the ``tensorflow_embedding`` pipeline usually provides very high confidences.
+The intent classifier in the ``pretrained_embeddings_spacy`` pipeline, for example, usually reports very low
+confidence numbers, whereas the ``supervised_embeddings`` pipeline usually provides very high confidences.
 One common misconception is that if your model reports high confidence on your training examples,
 it is a "better" model. In fact, this usually means that your model is overfitting.
 

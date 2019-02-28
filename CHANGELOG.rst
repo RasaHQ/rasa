@@ -9,20 +9,25 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Added a detailed warning showing which entities are overlapping
+- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
 
 Changed
 -------
 - validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
+- new consistent naming scheme for pipelines:
+  - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
+  - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
+  - requirements files, sample configs, and dockerfiles renamed accordingly
+- `/train` endpoint now returns a zipfile of the trained model.
+- replace pep8 with pycodestyle
 - renamed ``rasa_nlu.evaluate`` to ``rasa_nlu.test``
-- renamed ``rasa_nlu.test.run_cv_evaluation`` to 
+- renamed ``rasa_nlu.test.run_cv_evaluation`` to
   ``rasa_nlu.test.cross_validate``
 - renamed ``rasa_nlu.train.do_train()`` to ``rasa_nlu.train.train()``
 - train command can now also load config from file
-
-=======
-- replace pep8 with pycodestyle
 
 Removed
 -------
@@ -800,7 +805,6 @@ Added
 - multithreading support of build in REST server (e.g. using gunicorn)
 - multitenancy implementation to allow loading multiple models which
   share the same backend
-
 Fixed
 -----
 - error propagation on failed vector model loading (spacy)
