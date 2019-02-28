@@ -217,6 +217,7 @@ class MessageProcessor(object):
             tracker.update(UserUttered.empty())
             action = self._get_action(reminder_event.action_name)
             should_continue = self._run_action(action, tracker, dispatcher)
+            logging.error("Handle reminder", should_continue)
             if should_continue:
                 user_msg = UserMessage(None,
                                        dispatcher.output_channel,
@@ -329,9 +330,13 @@ class MessageProcessor(object):
         Reminders with the same `id` property will overwrite one another
         (i.e. only one of them will eventually run)."""
 
+        logging.error(events)
         if events is not None:
             for e in events:
+                logging.error(type(e))
                 if isinstance(e, ReminderScheduled):
+                    logger.error("Schedule reminder")
+                    logging.error(e.trigger_date_time)
                     scheduler.add_job(self.handle_reminder, "date",
                                       run_date=e.trigger_date_time,
                                       args=[e, dispatcher],
@@ -361,6 +366,7 @@ class MessageProcessor(object):
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
+        logging.error("Schedule reminders")
         self._schedule_reminders(events, dispatcher)
 
         return self.should_predict_another_action(action.name(), events)

@@ -199,8 +199,7 @@ class Agent(object):
                 "FormPolicy to your policy ensemble."
             )
 
-        self.interpreter = None
-        self.set_interpreter(interpreter)
+        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(
@@ -676,21 +675,3 @@ class Agent(object):
         return (self.domain and self.domain.form_names and not
                 any(isinstance(p, FormPolicy)
                     for p in self.policy_ensemble.policies))
-
-    def set_interpreter(self,
-                        interpreter: Optional[NaturalLanguageInterpreter]
-                        ) -> None:
-        from rasa_nlu.model import Interpreter
-
-        if not (isinstance(interpreter, NaturalLanguageInterpreter) or
-                isinstance(interpreter, Interpreter)):
-            if interpreter is not None:
-                logger.warning(
-                    "Passing a value for interpreter to an agent "
-                    "where the value is not an interpreter "
-                    "is deprecated. Construct the interpreter, before"
-                    "passing it to the agent, e.g. "
-                    "`interpreter = NaturalLanguageInterpreter.create(nlu)`.")
-
-            interpreter = NaturalLanguageInterpreter.create(interpreter, None)
-        self.interpreter = interpreter

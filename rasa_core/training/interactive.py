@@ -12,7 +12,8 @@ from flask import Flask, send_file, abort
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
+from typing import (Any, Text, Dict, List, Optional, Callable, Union, Tuple,
+                    TYPE_CHECKING)
 
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
@@ -38,6 +39,8 @@ from questionary import Choice, Form, Question
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 
+if TYPE_CHECKING:
+    from rasa_core.agent import Agent
 try:
     FileNotFoundError
 except NameError:
@@ -1317,7 +1320,7 @@ def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
             abort(404)
 
 
-def run_interactive_learning(agent: 'Agent',
+def run_interactive_learning(agent: Agent,
                              stories: Text = None,
                              finetune: bool = False,
                              serve_forever: bool = True,
