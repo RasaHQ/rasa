@@ -378,6 +378,8 @@ class TrainingDataGenerator(object):
                 augm_finished_trackers)
             logger.debug("Subsampled to {} augmented training trackers."
                          "".format(len(augm_finished_trackers)))
+            logger.debug("There are {} original trackers."
+                         "".format(len(original_trackers)))
             original_trackers.extend(augm_finished_trackers)
             finished_trackers = original_trackers
 
