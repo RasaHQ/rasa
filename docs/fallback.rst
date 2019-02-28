@@ -8,7 +8,7 @@ Confidence and Fallback Intents
 
 
 Each of the pipelines will report a ``confidence`` score along with the predicted intent,
-and the ``ner_crf`` component will do the same for the extracted entities.
+and the ``CRFEntityExtractor`` component will do the same for the extracted entities.
 
 You can use the confidence score to choose when to ignore Rasa NLU's prediction and trigger
 fallback behaviour, for example asking the user to rephrase. If you are using Rasa Core,

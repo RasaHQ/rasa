@@ -66,29 +66,19 @@ def make_path_absolute(path: Text) -> Text:
 
 
 def component_config_from_pipeline(
-        name: Text,
+        index: int,
         pipeline: List[Dict[Text, Any]],
         defaults: Optional[Dict[Text, Any]] = None
 ) -> Dict[Text, Any]:
-    from rasa_nlu.registry import registered_components
-    for c in pipeline:
-        c_name = c.get("name")
-        if c_name not in registered_components:
-            c_name = get_custom_name(c)
-
-        if c_name == name:
-            return override_defaults(defaults, c)
-
-    return override_defaults(defaults, {})
-
-
-def get_custom_name(component: Dict[Text, Any]) -> Optional[Text]:
-    """Checks whether there is a separate "class" attribute or just a name
-    and returns the name in either case"""
-    if "class" in component:
-        return component.get("name")
-    else:
-        return utils.class_from_module_path(component.get("name")).name
+    try:
+        c = pipeline[index]
+        return override_defaults(defaults, c)
+    except IndexError:
+        logger.warning("Tried to get configuration value for component "
+                       "number {} which is not part of the pipeline. "
+                       "Returning `defaults`."
+                       "".format(index))
+        return override_defaults(defaults, {})
 
 
 class RasaNLUModelConfig(object):
@@ -104,7 +94,10 @@ class RasaNLUModelConfig(object):
         self.override(DEFAULT_CONFIG)
         self.override(configuration_values)
 
-        if isinstance(self.__dict__['pipeline'], str):
+        if self.__dict__['pipeline'] is None:
+            # replaces None with empty list
+            self.__dict__['pipeline'] = []
+        elif isinstance(self.__dict__['pipeline'], str):
             from rasa_nlu import registry
 
             template_name = self.__dict__['pipeline']
@@ -170,8 +163,8 @@ class RasaNLUModelConfig(object):
     def view(self):
         return json_to_string(self.__dict__, indent=4)
 
-    def for_component(self, name, defaults=None):
-        return component_config_from_pipeline(name, self.pipeline, defaults)
+    def for_component(self, index, defaults=None):
+        return component_config_from_pipeline(index, self.pipeline, defaults)
 
     @property
     def component_names(self):
@@ -180,14 +173,13 @@ class RasaNLUModelConfig(object):
         else:
             return []
 
-    def set_component_attr(self, name, **kwargs):
-        for c in self.pipeline:
-            if c.get("name") == name:
-                c.update(kwargs)
-        else:
+    def set_component_attr(self, index, **kwargs):
+        try:
+            self.pipeline[index].update(kwargs)
+        except IndexError:
             logger.warning("Tried to set configuration value for component "
-                           "'{}' which is not part of the pipeline."
-                           "".format(name))
+                           "number {} which is not part of the pipeline."
+                           "".format(index))
 
     def override(self, config):
         if config:

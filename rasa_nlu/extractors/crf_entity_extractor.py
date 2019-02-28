@@ -18,11 +18,8 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import sklearn_crfsuite
 
-CRF_MODEL_FILE_NAME = "crf_model.pkl"
-
 
 class CRFEntityExtractor(EntityExtractor):
-    name = "ner_crf"
 
     provides = ["entities"]
 
@@ -74,7 +71,7 @@ class CRFEntityExtractor(EntityExtractor):
     }
 
     def __init__(self,
-                 component_config: 'sklearn_crfsuite.CRF' = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  ent_tagger: Optional[Dict[Text, Any]] = None) -> None:
 
         super(CRFEntityExtractor, self).__init__(component_config)
@@ -116,10 +113,6 @@ class CRFEntityExtractor(EntityExtractor):
               config: RasaNLUModelConfig,
               **kwargs: Any) -> None:
 
-        self.component_config = config.for_component(self.name, self.defaults)
-
-        self._validate_configuration()
-
         # checks whether there is at least one
         # example with an entity annotation
         if training_data.entity_examples:
@@ -151,7 +144,7 @@ class CRFEntityExtractor(EntityExtractor):
                 'Could not find `spacy_doc` attribute for '
                 'message {}\n'
                 'POS features require a pipeline component '
-                'that provides `spacy_doc` attributes, i.e. `nlp_spacy`. '
+                'that provides `spacy_doc` attributes, i.e. `SpacyNLP`. '
                 'See https://nlu.rasa.com/pipeline.html#nlp-spacy '
                 'for details'.format(message.text))
 
@@ -349,6 +342,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['CRFEntityExtractor'] = None,
@@ -356,8 +350,7 @@ class CRFEntityExtractor(EntityExtractor):
              ) -> 'CRFEntityExtractor':
         from sklearn.externals import joblib
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("classifier_file", CRF_MODEL_FILE_NAME)
+        file_name = meta.get("file")
         model_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(model_file):
@@ -366,19 +359,20 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return cls(meta)
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again."""
 
         from sklearn.externals import joblib
-
+        file_name = file_name + ".pkl"
         if self.ent_tagger:
-            model_file_name = os.path.join(model_dir, CRF_MODEL_FILE_NAME)
-
+            model_file_name = os.path.join(model_dir, file_name)
             joblib.dump(self.ent_tagger, model_file_name)
 
-        return {"classifier_file": CRF_MODEL_FILE_NAME}
+        return {"file": file_name}
 
     def _sentence_to_features(self,
                               sentence: List[Tuple[Text, Text, Text, Text]]
