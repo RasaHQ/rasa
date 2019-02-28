@@ -182,7 +182,7 @@ class TrainingDataGenerator(object):
     def generate(self, silent: bool = False) -> List[TrackerWithCachedStates]:
         if (self.config.remove_duplicates and
                 self.config.unique_last_num_states):
-            logger.debug("Generated trackers will be duplicated "
+            logger.debug("Generated trackers will be deduplicated "
                          "based on their unique last {} states."
                          "".format(self.config.unique_last_num_states))
 
@@ -374,10 +374,12 @@ class TrainingDataGenerator(object):
                     augm_finished_trackers.append(t)
                 else:
                     original_trackers.append(t)
-            augm_finished_trackers = self._subsample_trackers(augm_finished_trackers)
+            augm_finished_trackers = self._subsample_trackers(
+                augm_finished_trackers)
             logger.debug("Subsampled to {} augmented training trackers."
                          "".format(len(augm_finished_trackers)))
-            finished_trackers = original_trackers.extend(augm_finished_trackers)
+            original_trackers.extend(augm_finished_trackers)
+            finished_trackers = original_trackers
 
         return finished_trackers
 
