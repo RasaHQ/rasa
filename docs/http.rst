@@ -117,7 +117,7 @@ a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
             "report": ...
         },
         "entity_evaluation": {
-            "ner_crf": {
+            "CRFEntityExtractor": {
                 "report": ...,
                 "precision": 0.7606987393295268,
                 "f1_score": 0.812633994625117,

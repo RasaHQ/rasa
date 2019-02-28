@@ -81,8 +81,8 @@ Here's an example configuration:
     language: "en"
 
     pipeline:
-    - name: "intent_featurizer_count_vectors"
-    - name: "intent_classifier_tensorflow_embedding"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
       intent_tokenization_flag: true
       intent_split_symbol: "+"
 
@@ -107,7 +107,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
     {
         "text": "I am looking for Chinese food",
         "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf", "confidence": 0.864}
+            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "CRFEntityExtractor", "confidence": 0.864}
         ],
         "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
         "intent_ranking": [
@@ -117,7 +117,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
     }
 
 This is created as a combination of the results of the different components in the pre-configured pipeline ``pretrained_embeddings_spacy``.
-For example, the ``entities`` attribute is created by the ``ner_crf`` component.
+For example, the ``entities`` attribute is created by the ``CRFEntityExtractor`` component.
 
 
 .. _section_component_lifecycle:
@@ -164,7 +164,7 @@ exactly. Instead it will return the trained synonym.
           "end": 15,
           "value": "chinese",
           "entity": "cuisine",
-          "extractor": "ner_crf",
+          "extractor": "CRFEntityExtractor",
           "confidence": 0.854,
           "processors": []
         }
@@ -174,8 +174,8 @@ exactly. Instead it will return the trained synonym.
 .. note::
 
     The ``confidence`` will be set by the CRF entity extractor
-    (``ner_crf`` component). The duckling entity extractor will always return
-    ``1``. The ``ner_spacy`` extractor does not provide this information and
+    (``CRFEntityExtractor`` component). The duckling entity extractor will always return
+    ``1``. The ``SpacyEntityExtractor`` extractor does not provide this information and
     returns ``null``.
 
 
@@ -193,13 +193,13 @@ a full list of components. For example, these two configurations are equivalent:
     language: "en"
 
     pipeline:
-    - name: "nlp_spacy"
-    - name: "tokenizer_spacy"
-    - name: "intent_entity_featurizer_regex"
-    - name: "intent_featurizer_spacy"
-    - name: "ner_crf"
-    - name: "ner_synonyms"
-    - name: "intent_classifier_sklearn"
+    - name: "SpacyNLP"
+    - name: "SpacyTokenizer"
+    - name: "RegexFeaturizer"
+    - name: "SpacyFeaturizer"
+    - name: "CRFEntityExtractor"
+    - name: "EntitySynonymMapper"
+    - name: "SklearnIntentClassifier"
 
 Below is a list of all the pre-configured pipeline templates.
 
@@ -221,13 +221,13 @@ the components and configure them separately:
     language: "en"
 
     pipeline:
-    - name: "nlp_spacy"
-    - name: "tokenizer_spacy"
-    - name: "intent_entity_featurizer_regex"
-    - name: "intent_featurizer_spacy"
-    - name: "ner_crf"
-    - name: "ner_synonyms"
-    - name: "intent_classifier_sklearn"
+    - name: "SpacyNLP"
+    - name: "SpacyTokenizer"
+    - name: "RegexFeaturizer"
+    - name: "SpacyFeaturizer"
+    - name: "CRFEntityExtractor"
+    - name: "EntitySynonymMapper"
+    - name: "SklearnIntentClassifier"
 
 .. _section_supervised_embeddings_pipeline:
 
@@ -250,11 +250,11 @@ default is to use a simple whitespace tokenizer:
     language: "en"
 
     pipeline:
-    - name: "tokenizer_whitespace"
-    - name: "ner_crf"
-    - name: "ner_synonyms"
-    - name: "intent_featurizer_count_vectors"
-    - name: "intent_classifier_tensorflow_embedding"
+    - name: "WhitespaceTokenizer"
+    - name: "CRFEntityExtractor"
+    - name: "EntitySynonymMapper"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
 
 If you have a custom tokenizer for your language, you can replace the whitespace
 tokenizer with something more accurate.
@@ -299,7 +299,7 @@ To use the components and configure them separately:
     language: "en"
 
     pipeline:
-    - name: "intent_classifier_keyword"
+    - name: "KeywordIntentClassifier"
 
 
 
@@ -312,9 +312,9 @@ by listing the names of the components you want to use:
 .. code-block:: yaml
 
     pipeline:
-    - name: "nlp_spacy"
-    - name: "ner_crf"
-    - name: "ner_synonyms"
+    - name: "SpacyNLP"
+    - name: "CRFEntityExtractor"
+    - name: "EntitySynonymMapper"
 
 This creates a pipeline that only does entity recognition, but no
 intent classification. So Rasa NLU will not predict any intents.

@@ -37,11 +37,11 @@ whitespace tokenizer:
     language: "en"
 
     pipeline:
-    - name: "tokenizer_whitespace"
-    - name: "ner_crf"
-    - name: "ner_synonyms"
-    - name: "intent_featurizer_count_vectors"
-    - name: "intent_classifier_tensorflow_embedding"
+    - name: "WhitespaceTokenizer"
+    - name: "CRFEntityExtractor"
+    - name: "EntitySynonymMapper"
+    - name: "CountVectorsFeaturizer"
+    - name: "EmbeddingIntentClassifier"
 
 If your chosen language cannot be tokenized using the whitespace you can use your own custom tokenizer
 and use it instead of the whitespace tokenizer.

@@ -1,15 +1,15 @@
 language: "en"
 
 pipeline:
-- name: "nlp_spacy"
+- name: "SpacyNLP"
   model: "en"
-- name: "tokenizer_spacy"
-- name: "ner_spacy"
-- name: "ner_duckling_http"
+- name: "SpacyTokenizer"
+- name: "SpacyEntityExtractor"
+- name: "DucklingHTTPExtractor"
   url: "http://duckling:8000"
   dimensions:
   - "NUMBER"
-- name: "ner_crf"
+- name: "CRFEntityExtractor"
   BILOU_flag: true
   features:
     # features for word before token
@@ -21,6 +21,6 @@ pipeline:
   max_iterations: 50
   L1_c: 1
   L2_c: 1e-3
-- name: "intent_classifier_sklearn"
+- name: "SklearnIntentClassifier"
   C: [1, 2, 5, 10, 20, 100]
   kernel: "linear"

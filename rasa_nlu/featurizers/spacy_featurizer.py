@@ -22,7 +22,6 @@ def features_for_doc(doc: 'Doc') -> np.ndarray:
 
 
 class SpacyFeaturizer(Featurizer):
-    name = "intent_featurizer_spacy"
 
     provides = ["text_features"]
 
