@@ -82,25 +82,24 @@ def test_nlg_schema_validation_empty_image():
     assert CallbackNaturalLanguageGenerator.validate_response(content)
 
 
-@pytest.mark.parametrize("filled_slots", [
-    {"tag_w_underscore": "a"},
-    {"tag with space": "bacon", "tag_w_int_val": 123},
-    {"tag.with.dot": "chocolate", "tag_2": "b"},
-    {"tag-w-dash": "apple pie", "tag.with.float.val": 1.3},
-    {"tag-w-$": "banana"},
-    {"tag-w-@": "one", "tagCamelCase": "two", "tag-w-*": "three"},
+@pytest.mark.parametrize("slot_name, slot_value", [
+    ("tag_w_underscore", "a"),
+    ("tag with space", "bacon"),
+    ("tag.with.dot", "chocolate"),
+    ("tag-w-dash", "apple pie"),
+    ("tag-w-$", "banana"),
+    ("tag-w-@", "one"),
+    ("tagCamelCase", "two"),
+    ("tag-w-*", "three"),
 ])
-def test_nlg_fill_template_text(filled_slots):
-    template_text = ", ".join(["{" + t + "}" for t in filled_slots.keys()])
-    resolved_text = ", ".join([str(s) for s in filled_slots.values()])
-
-    template = {'text': template_text}
+def test_nlg_fill_template_text(slot_name, slot_value):
+    template = {'text': "{" + slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
     result = t._fill_template_text(
         template=template,
-        filled_slots=filled_slots
+        filled_slots={slot_name: slot_value}
     )
-    assert result == {'text': resolved_text}
+    assert result == {'text': str(slot_value)}
 
 
 @pytest.mark.parametrize("slot_name, slot_value", [
