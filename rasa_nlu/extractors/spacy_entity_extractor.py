@@ -9,7 +9,6 @@ if typing.TYPE_CHECKING:
 
 
 class SpacyEntityExtractor(EntityExtractor):
-    name = "ner_spacy"
 
     provides = ["entities"]
 

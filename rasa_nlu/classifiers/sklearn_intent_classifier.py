@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import sklearn
 
-SKLEARN_MODEL_FILE_NAME = "intent_classifier_sklearn.pkl"
-
 
 def _sklearn_numpy_warning_fix():
     """Fixes unecessary warnings emitted by sklearns use of numpy.
@@ -32,8 +30,6 @@ def _sklearn_numpy_warning_fix():
 
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
-
-    name = "intent_classifier_sklearn"
 
     provides = ["intent", "intent_ranking"]
 
@@ -207,14 +203,14 @@ class SklearnIntentClassifier(Component):
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['SklearnIntentClassifier'] = None,
              **kwargs: Any
              ) -> 'SklearnIntentClassifier':
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("classifier_file", SKLEARN_MODEL_FILE_NAME)
+        file_name = meta.get("file")
         classifier_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(classifier_file):
@@ -222,9 +218,12 @@ class SklearnIntentClassifier(Component):
         else:
             return cls(meta)
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
-        classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
+        file_name = file_name + ".pkl"
+        classifier_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(classifier_file, self)
-        return {"classifier_file": SKLEARN_MODEL_FILE_NAME}
+        return {"file": file_name}

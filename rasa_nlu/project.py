@@ -341,7 +341,7 @@ class Project(object):
 
     def _fallback_model(self):
         meta = Metadata({"pipeline": [{
-            "name": "intent_classifier_keyword",
+            "name": "KeywordIntentClassifier",
             "class": utils.module_path_from_object(KeywordIntentClassifier())
         }]}, "")
         return Interpreter.create(meta, self._component_builder)

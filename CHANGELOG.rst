@@ -9,6 +9,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Added a detailed warning showing which entities are overlapping
+- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
 - ner_spacy supports same entity filtering as the duckling extractor
 
 Changed
@@ -16,9 +18,19 @@ Changed
 - validate training data only if used for training
 - applied spacy guidelines on how to disable pipeline components
 - starter packs now also tested when attempting to merge a branch to master
-
-=======
+- new consistent naming scheme for pipelines:
+  - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
+  - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
+  - requirements files, sample configs, and dockerfiles renamed accordingly
+- ``/train`` endpoint now returns a zipfile of the trained model.
+- pipeline components in the config file should be provided
+  with their class name
+- persisted components file name changed
 - replace pep8 with pycodestyle
+- ``Component.name`` property returns component's class name
+- Components ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
+  additionally take component's meta/config dicts
+- Components ``persist(...)`` method additionally takes file name prefix
 
 Removed
 -------
@@ -796,7 +808,6 @@ Added
 - multithreading support of build in REST server (e.g. using gunicorn)
 - multitenancy implementation to allow loading multiple models which
   share the same backend
-
 Fixed
 -----
 - error propagation on failed vector model loading (spacy)
