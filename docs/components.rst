@@ -531,13 +531,14 @@ ner_spacy
     Configure which dimensions, i.e. entity types, the spacy component
     should extract. A full list of available dimensions can be found in
     the `spacy documentation <https://spacy.io/api/annotation#section-named-entities>`_.
+    If the dimension option is not specified or set to None, all dimensions will be extracted.
 
     .. code-block:: yaml
 
         pipeline:
         - name: "ner_spacy"
           # dimensions to extract
-          dimensions: ["PERSON", "LOG", "ORG", "PRODUCT"]
+          dimensions: ["PERSON", "LOC", "ORG", "PRODUCT"]
 
 
 ner_synonyms
@@ -677,6 +678,7 @@ ner_duckling_http
     Configure which dimensions, i.e. entity types, the duckling component
     should extract. A full list of available dimensions can be found in
     the `duckling documentation <https://duckling.wit.ai/>`_.
+    If the dimension option is not specified or set to None, all dimensions will be extracted.
 
     .. code-block:: yaml
 
