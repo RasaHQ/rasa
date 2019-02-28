@@ -10,18 +10,15 @@ from rasa_nlu.training_data import Message, TrainingData
 if typing.TYPE_CHECKING:
     import mitie
 
-MITIE_MODEL_FILE_NAME = "intent_classifier.dat"
-
 
 class MitieIntentClassifier(Component):
-    name = "intent_classifier_mitie"
 
     provides = ["intent"]
 
     requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self,
-                 component_config: Dict[Text, Any] = None,
+                 component_config: Optional[Dict[Text, Any]] = None,
                  clf=None
                  ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
@@ -42,7 +39,7 @@ class MitieIntentClassifier(Component):
         if not model_file:
             raise Exception("Can not run MITIE entity extractor without a "
                             "language model. Make sure this component is "
-                            "preceeded by the 'nlp_mitie' component.")
+                            "preceeded by the 'MitieNLP' component.")
 
         trainer = mitie.text_categorizer_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
@@ -59,7 +56,7 @@ class MitieIntentClassifier(Component):
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception("Failed to train 'intent_featurizer_mitie'. "
+            raise Exception("Failed to train 'MitieFeaturizer'. "
                             "Missing a proper MITIE feature extractor.")
 
         if self.clf:
@@ -80,6 +77,7 @@ class MitieIntentClassifier(Component):
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Optional[Text] = None,
              model_metadata: Optional[Metadata] = None,
              cached_component: Optional['MitieIntentClassifier'] = None,
@@ -87,8 +85,7 @@ class MitieIntentClassifier(Component):
              ) -> 'MitieIntentClassifier':
         import mitie
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("classifier_file", MITIE_MODEL_FILE_NAME)
+        file_name = meta.get("file")
 
         if not file_name:
             return cls(meta)
@@ -99,12 +96,15 @@ class MitieIntentClassifier(Component):
         else:
             return cls(meta)
 
-    def persist(self, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Dict[Text, Any]:
         import os
 
         if self.clf:
-            classifier_file = os.path.join(model_dir, MITIE_MODEL_FILE_NAME)
+            file_name = file_name + ".dat"
+            classifier_file = os.path.join(model_dir, file_name)
             self.clf.save_to_disk(classifier_file, pure_model=True)
-            return {"classifier_file": MITIE_MODEL_FILE_NAME}
+            return {"file": file_name}
         else:
-            return {"classifier_file": None}
+            return {"file": None}
