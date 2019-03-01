@@ -564,15 +564,17 @@ class ReminderScheduled(Event):
 class ReminderCancelled(Event):
     """ Cancel all jobs with a specific name."""
 
-    type_name = "cancel"
+    type_name = "cancel_reminder"
 
-    def __init__(self, name, timestamp=None):
+    def __init__(self, action_name, name=None, timestamp=None):
         """
         Args:
             name: name of the scheduled action to be cancelled
         """
 
+        self.action_name = action_name
         self.name = name
+        super(ReminderCancelled, self).__init__(timestamp)
 
     def __hash__(self):
         return hash((self.name))
@@ -581,17 +583,20 @@ class ReminderCancelled(Event):
         return isinstance(other, ReminderCancelled)
 
     def __str__(self):
-        return ("ReminderCancelled(name: {}".format(self.name))
+        return ("ReminderCancelled(action: {}, name: {})"
+                     ".format(self.action_name, self.name))
 
     def as_story_string(self):
-        return self.type_name
+        props = json.dumps(self._data_obj())
+        return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
     def _from_story_string(
             cls,
             parameters: Dict[Text, Any]
     ) -> Optional[List[Event]]:
-        return [ReminderCancelled(parameters.get("name"),
+        return [ReminderCancelled(parameters.get("action"),
+                                  parameters.get("name", None),
                                   parameters.get("timestamp"))]
 
 

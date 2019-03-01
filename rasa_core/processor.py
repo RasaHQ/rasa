@@ -339,7 +339,9 @@ class MessageProcessor(object):
                                       args=[e, dispatcher],
                                       id=e.name,
                                       replace_existing=True,
-                                      name=str(e.action_name) + "__sender_id:" + tracker.sender_id)
+                                      name=str(e.action_name) +\
+                                           ACTION_NAME_SENDER_ID_CONNECTOR_STR +\
+                                           tracker.sender_id)
 
     def _cancel_reminders(self,
                           events: List[Event],
@@ -348,7 +350,9 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderCancelled):
-                    name_to_check = e.name + "__sender_id:" + tracker.sender_id
+                    name_to_check = e.action_name +\
+                                    ACTION_NAME_SENDER_ID_CONNECTOR_STR +\
+                                    tracker.sender_id
                     for j in scheduler.get_jobs():
                         if j.name == name_to_check:
                             scheduler.remove_job(j.id)
