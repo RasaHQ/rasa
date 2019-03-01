@@ -73,15 +73,16 @@ class RegexFeaturizer(Featurizer):
 
         matches = []
         for i, exp in enumerate(self.known_patterns):
-            match = re.search(exp["pattern"], message.text)
+            match = re.findall(exp["pattern"], message.text)
             matches.append(match)
             for token_index, t in enumerate(message.get("tokens", [])):
                 patterns = t.get("pattern", default={})
                 if match is not None:
-                    if t.offset < match.end() and t.end > match.start():
-                        patterns[exp["name"]] = True
-                    else:
-                        patterns[exp["name"]] = False
+                    for m in match:
+                        if t.offset < m.end() and t.end > m.start():
+                            patterns[exp["name"]] = True
+                        else:
+                            patterns[exp["name"]] = False
                 else:
                     patterns[exp["name"]] = False
                 t.set("pattern", patterns)
