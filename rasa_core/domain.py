@@ -57,7 +57,8 @@ def check_domain_sanity(domain):
         if duplicates:
             msg += get_duplicate_exception_message(duplicates)
         if mappings:
-            if msg: msg += "\n"
+            if msg:
+                msg += "\n"
             msg += get_mapping_exception_message(mappings)
         return msg
 
@@ -66,10 +67,12 @@ def check_domain_sanity(domain):
 
         msg = ""
         for name, action in mappings:
-            if msg: msg += "\n"
+            if msg:
+                msg += "\n"
             msg += ("Intent '{}' is set to trigger action '{}', which is not "
                     "defined in the domain.".format(name, action))
         return msg
+
     def get_duplicate_exception_message(
         duplicates: List[Tuple[List[Text], Text]]
     ) -> Text:
@@ -91,8 +94,8 @@ def check_domain_sanity(domain):
     duplicate_entities = get_duplicates(domain.entities)
     incorrect_mappings = check_mappings(domain.intent_properties)
 
-    if (duplicate_actions or duplicate_intents or duplicate_slots
-            or duplicate_entities or incorrect_mappings):
+    if (duplicate_actions or duplicate_intents or duplicate_slots or
+           duplicate_entities or incorrect_mappings):
         raise InvalidDomain(get_exception_message([
             (duplicate_actions, "actions"),
             (duplicate_intents, "intents"),
