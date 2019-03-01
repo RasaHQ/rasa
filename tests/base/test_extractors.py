@@ -249,7 +249,9 @@ def test_unintentional_synonyms_capitalized(component_builder):
 
 
 def test_spacy_ner_extractor(component_builder, spacy_nlp):
-    ext = SpacyEntityExtractor({"dimensions": ["LOC"]})
+    _config = RasaNLUModelConfig({"pipeline":
+                                 [{"name": "SpacyEntityExtractor"}]})
+    ext = component_builder.create_component(_config.for_component(0), _config)
     example = Message("anywhere in the West", {
         "intent": "restaurant_search",
         "entities": [],
