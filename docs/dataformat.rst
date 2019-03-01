@@ -179,7 +179,7 @@ example states ``NYC``. By defining the value attribute to be different from the
 and end index of the entity, you can define a synonym. Whenever the same text will be found, the value will use the
 synonym instead of the actual text in the message.
 
-To use the synonyms defined in your training data, you need to make sure the pipeline contains the ``ner_synonyms``
+To use the synonyms defined in your training data, you need to make sure the pipeline contains the ``EntitySynonymMapper``
 component (see :ref:`section_pipeline`).
 
 Alternatively, you can add an "entity_synonyms" array to define several synonyms to one entity value. Here is an example of that:
@@ -232,8 +232,8 @@ classification performance.
 Try to create your regular expressions in a way that they match as few words as possible. E.g. using ``hey[^\s]*``
 instead of ``hey.*``, as the later one might match the whole message whereas the first one only matches a single word.
 
-Regex features for entity extraction are currently only supported by the ``ner_crf`` component! Hence, other entity
-extractors, like ``ner_mitie`` or ``ner_spacy`` won't use the generated features and their presence will not improve entity recognition
+Regex features for entity extraction are currently only supported by the ``CRFEntityExtractor`` component! Hence, other entity
+extractors, like ``MitieEntityExtractor`` or ``SpacyEntityExtractor`` won't use the generated features and their presence will not improve entity recognition
 for these extractors. Currently, all intent classifiers make use of available regex features.
 
 .. note::

@@ -66,7 +66,7 @@ To do this, run the evaluation script with the ``--mode crossvalidation`` flag:
 
     python -m rasa_nlu.evaluate \
         --data data/examples/rasa/demo-rasa.json \
-        --config sample_configs/config_spacy.yml \
+        --config sample_configs/config_pretrained_embeddings_spacy.yml \
         --mode crossvalidation
 
 
@@ -113,12 +113,12 @@ to the left of the plot.
 Entity Extraction
 -----------------
 
-The ``ner_crf`` is the only entity extractor which you train using your own data,
+The ``CRFEntityExtractor`` is the only entity extractor which you train using your own data,
 and so is the only one which will be evaluated. If you use the spaCy or duckling
 pre-trained entity extractors, Rasa NLU will not include these in the evaluation.
 
 Rasa NLU will report recall, precision, and f1 measure for each entity type that
-``ner_crf`` is trained to recognize.
+``CRFEntityExtractor`` is trained to recognize.
 
 
 Entity Scoring

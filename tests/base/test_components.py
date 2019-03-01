@@ -14,7 +14,8 @@ def test_no_components_with_same_name(component_class):
 
     names = [cls.name for cls in registry.component_classes]
     assert names.count(component_class.name) == 1, \
-        "There is more than one component named {}".format(component_class.name)
+        "There is more than one component named {}" \
+        "".format(component_class.name)
 
 
 @pytest.mark.parametrize("pipeline_template",
@@ -55,7 +56,8 @@ def test_find_unavailable_packages():
 
 def test_builder_create_unknown(component_builder, default_config):
     with pytest.raises(Exception) as excinfo:
-        component_builder.create_component("my_made_up_componment",
+        component_config = {'name': "my_made_up_componment"}
+        component_builder.create_component(component_config,
                                            default_config)
     assert "Unknown component name" in str(excinfo.value)
 
@@ -64,13 +66,16 @@ def test_builder_create_by_module_path(component_builder, default_config):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 
     path = "rasa_nlu.featurizers.regex_featurizer.RegexFeaturizer"
-    component = component_builder.create_component(path, default_config)
+    component_config = {'name': path}
+    component = component_builder.create_component(component_config,
+                                                   default_config)
     assert type(component) == RegexFeaturizer
 
 
 def test_builder_load_unknown(component_builder):
     with pytest.raises(Exception) as excinfo:
-        component_builder.load_component("my_made_up_componment", "",
+        component_meta = {'name': "my_made_up_componment"}
+        component_builder.load_component(component_meta, "",
                                          Metadata({}, None))
     assert "Unknown component name" in str(excinfo.value)
 

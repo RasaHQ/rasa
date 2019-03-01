@@ -3,7 +3,7 @@ import typing
 from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu.components import Component
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import RasaNLUModelConfig, override_defaults
 from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,6 @@ if typing.TYPE_CHECKING:
 
 
 class SpacyNLP(Component):
-    name = "nlp_spacy"
 
     provides = ["spacy_doc", "spacy_nlp"]
 
@@ -45,28 +44,31 @@ class SpacyNLP(Component):
         return ["spacy"]
 
     @classmethod
-    def create(cls, cfg: RasaNLUModelConfig) -> 'SpacyNLP':
+    def create(cls,
+               component_config: Dict[Text, Any],
+               config: RasaNLUModelConfig) -> 'SpacyNLP':
         import spacy
 
-        component_conf = cfg.for_component(cls.name, cls.defaults)
-        spacy_model_name = component_conf.get("model")
+        component_config = override_defaults(cls.defaults, component_config)
+
+        spacy_model_name = component_config.get("model")
 
         # if no model is specified, we fall back to the language string
         if not spacy_model_name:
-            spacy_model_name = cfg.language
-            component_conf["model"] = cfg.language
+            spacy_model_name = config.language
+            component_config["model"] = config.language
 
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
 
         nlp = spacy.load(spacy_model_name, disable=['parser'])
         cls.ensure_proper_language_model(nlp)
-        return SpacyNLP(component_conf, nlp)
+        return cls(component_config, nlp)
 
     @classmethod
-    def cache_key(cls, model_metadata: 'Metadata') -> Text:
-
-        component_meta = model_metadata.for_component(cls.name)
+    def cache_key(cls,
+                  component_meta: Dict[Text, Any],
+                  model_metadata: 'Metadata') -> Optional[Text]:
 
         # Fallback, use the language name, e.g. "en",
         # as the model name if no explicit name is defined
@@ -97,6 +99,7 @@ class SpacyNLP(Component):
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Text = None,
              model_metadata: 'Metadata' = None,
              cached_component: Optional['SpacyNLP'] = None,
@@ -106,12 +109,11 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.for_component(cls.name)
-        model_name = component_meta.get("model")
+        model_name = meta.get("model")
 
         nlp = spacy.load(model_name, disable=['parser'])
         cls.ensure_proper_language_model(nlp)
-        return cls(component_meta, nlp)
+        return cls(meta, nlp)
 
     @staticmethod
     def ensure_proper_language_model(nlp: Optional['Language']) -> None:

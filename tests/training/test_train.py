@@ -23,31 +23,31 @@ def pipelines_for_tests():
     # generate this automatically.
 
     # first is language followed by list of components
-    return [("en", as_pipeline("nlp_spacy",
-                               "nlp_mitie",
-                               "tokenizer_whitespace",
-                               "tokenizer_mitie",
-                               "tokenizer_spacy",
-                               "intent_featurizer_mitie",
-                               "intent_featurizer_spacy",
-                               "intent_featurizer_ngrams",
-                               "intent_entity_featurizer_regex",
-                               "intent_featurizer_count_vectors",
-                               "ner_mitie",
-                               "ner_crf",
-                               "ner_spacy",
-                               "ner_duckling_http",
-                               "ner_synonyms",
-                               "intent_classifier_keyword",
-                               "intent_classifier_sklearn",
-                               "intent_classifier_mitie",
-                               "intent_classifier_tensorflow_embedding"
+    return [("en", as_pipeline("SpacyNLP",
+                               "MitieNLP",
+                               "WhitespaceTokenizer",
+                               "MitieTokenizer",
+                               "SpacyTokenizer",
+                               "MitieFeaturizer",
+                               "SpacyFeaturizer",
+                               "NGramFeaturizer",
+                               "RegexFeaturizer",
+                               "CountVectorsFeaturizer",
+                               "MitieEntityExtractor",
+                               "CRFEntityExtractor",
+                               "SpacyEntityExtractor",
+                               "DucklingHTTPExtractor",
+                               "EntitySynonymMapper",
+                               "KeywordIntentClassifier",
+                               "SklearnIntentClassifier",
+                               "MitieIntentClassifier",
+                               "EmbeddingIntentClassifier"
                                )),
-            ("zh", as_pipeline("nlp_mitie",
-                               "tokenizer_jieba",
-                               "intent_featurizer_mitie",
-                               "ner_mitie",
-                               "intent_classifier_sklearn",
+            ("zh", as_pipeline("MitieNLP",
+                               "JiebaTokenizer",
+                               "MitieFeaturizer",
+                               "MitieEntityExtractor",
+                               "SklearnIntentClassifier",
                                )),
             ]
 
@@ -84,10 +84,9 @@ def test_train_model(pipeline_template, component_builder, tmpdir):
 def test_random_seed(component_builder, tmpdir):
     """test if train result is the same for two runs of tf embedding"""
 
-    _config = utilities.base_test_conf("tensorflow_embedding")
+    _config = utilities.base_test_conf("supervised_embeddings")
     # set fixed random seed to 1
-    _config.set_component_attr("intent_classifier_tensorflow_embedding",
-                               random_seed=1)
+    _config.set_component_attr(5, random_seed=1)
     # first run
     (trained_a, _, persisted_path_a) = train.do_train(
         _config,
@@ -182,7 +181,7 @@ def test_train_named_model(component_builder, tmpdir):
 
 
 def test_handles_pipeline_with_non_existing_component(component_builder):
-    _config = utilities.base_test_conf("spacy_sklearn")
+    _config = utilities.base_test_conf("pretrained_embeddings_spacy")
     _config.pipeline.append({"name": "my_made_up_component"})
     with pytest.raises(Exception) as execinfo:
         train.do_train(

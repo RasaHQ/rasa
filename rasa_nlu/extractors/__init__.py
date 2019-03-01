@@ -60,8 +60,9 @@ class EntityExtractor(Component):
         """Filters out untrainable entity annotations.
 
         Creates a copy of entity_examples in which entities that have
-        `extractor` set to something other than self.name (e.g. 'ner_crf')
-        are removed."""
+        `extractor` set to something other than
+        self.name (e.g. 'CRFEntityExtractor') are removed.
+        """
 
         filtered = []
         for message in entity_examples:

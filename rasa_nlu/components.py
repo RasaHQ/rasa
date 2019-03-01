@@ -2,8 +2,7 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
-from rasa_nlu import config
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import RasaNLUModelConfig, override_defaults
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.training_data import TrainingData
@@ -107,7 +106,17 @@ class UnsupportedLanguageError(Exception):
                 "".format(self.component, self.language))
 
 
-class Component(object):
+class ComponentMetaclass(type):
+    """Metaclass with `name` class property"""
+
+    @property
+    def name(cls):
+        """The name property is a function of the class - its __name__."""
+
+        return cls.__name__
+
+
+class Component(object, metaclass=ComponentMetaclass):
     """A component is a message processing unit in a pipeline.
 
     Components are collected sequentially in a pipeline. Each component
@@ -128,11 +137,15 @@ class Component(object):
     features that are used by another component down
     the pipeline to do intent classification."""
 
-    # Name of the component to be used when integrating it in a
+    # Component class name is used when integrating it in a
     # pipeline. E.g. ``[ComponentA, ComponentB]``
     # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
-    name = ""
+    @property
+    def name(self):
+        """Access the class's property name from an instance."""
+
+        return type(self).name
 
     # Defines what attributes the pipeline component will
     # provide when called. The listed attributes
@@ -169,8 +182,8 @@ class Component(object):
         # this is important for e.g. persistence
         component_config["name"] = self.name
 
-        self.component_config = config.override_defaults(
-            self.defaults, component_config)
+        self.component_config = override_defaults(self.defaults,
+                                                  component_config)
 
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
@@ -186,6 +199,7 @@ class Component(object):
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Optional[Text] = None,
              model_metadata: Optional['Metadata'] = None,
              cached_component: Optional['Component'] = None,
@@ -203,22 +217,23 @@ class Component(object):
         if cached_component:
             return cached_component
         else:
-            component_config = model_metadata.for_component(cls.name)
-            return cls(component_config)
+            return cls(meta)
 
     @classmethod
-    def create(cls, cfg: RasaNLUModelConfig) -> 'Component':
+    def create(cls,
+               component_config: Dict[Text, Any],
+               config: RasaNLUModelConfig) -> 'Component':
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
 
         # Check language supporting
-        language = cfg.language
+        language = config.language
         if not cls.can_handle_language(language):
             # check failed
             raise UnsupportedLanguageError(cls.name, language)
 
-        return cls(cfg.for_component(cls.name, cls.defaults))
+        return cls(component_config)
 
     def provide_context(self) -> Optional[Dict[Text, Any]]:
         """Initialize this component for a new pipeline
@@ -263,13 +278,17 @@ class Component(object):
         of components previous to this one."""
         pass
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this component to disk for future loading."""
 
         pass
 
     @classmethod
-    def cache_key(cls, model_metadata: 'Metadata') -> Optional[Text]:
+    def cache_key(cls,
+                  component_meta: Dict[Text, Any],
+                  model_metadata: 'Metadata') -> Optional[Text]:
         """This key is used to cache components.
 
         If a component is unique to a model it should return None.
@@ -336,7 +355,8 @@ class Component(object):
 class ComponentBuilder(object):
     """Creates trainers and interpreters based on configurations.
 
-    Caches components for reuse."""
+    Caches components for reuse.
+    """
 
     def __init__(self, use_cache: bool = True) -> None:
         self.use_cache = use_cache
@@ -345,16 +365,19 @@ class ComponentBuilder(object):
         self.component_cache = {}
 
     def __get_cached_component(self,
-                               component_name: Text,
+                               component_meta: Dict[Text, Any],
                                model_metadata: 'Metadata'
                                ) -> Tuple[Optional[Component], Optional[Text]]:
         """Load a component from the cache, if it exists.
 
-        Returns the component, if found, and the cache key."""
-        from rasa_nlu import registry
+        Returns the component, if found, and the cache key.
+        """
 
+        from rasa_nlu import registry
+        # try to get class name first, else create by name
+        component_name = component_meta.get('class', component_meta['name'])
         component_class = registry.get_component_class(component_name)
-        cache_key = component_class.cache_key(model_metadata)
+        cache_key = component_class.cache_key(component_meta, model_metadata)
         if (cache_key is not None and
                 self.use_cache and
                 cache_key in self.component_cache):
@@ -373,7 +396,7 @@ class ComponentBuilder(object):
                         "".format(component.name, cache_key))
 
     def load_component(self,
-                       component_name: Text,
+                       component_meta: Dict[Text, Any],
                        model_dir: Text,
                        model_metadata: 'Metadata',
                        **context: Any) -> Component:
@@ -381,21 +404,24 @@ class ComponentBuilder(object):
         ``load`` to create a new component.
 
         Args:
-            component_name (str): the name of the component to load
-            model_dir (str): the directory to read the model from
-            model_metadata (Metadata): the model's
-            :class:`rasa_nlu.models.Metadata`
+            component_meta (dict):
+                the metadata of the component to load in the pipeline
+            model_dir (str):
+                the directory to read the model from
+            model_metadata (Metadata):
+                the model's :class:`rasa_nlu.models.Metadata`
 
         Returns:
             Component: the loaded component.
         """
+
         from rasa_nlu import registry
 
         try:
             cached_component, cache_key = self.__get_cached_component(
-                component_name, model_metadata)
-            component = registry.load_component_by_name(
-                component_name, model_dir, model_metadata,
+                component_meta, model_metadata)
+            component = registry.load_component_by_meta(
+                component_meta, model_dir, model_metadata,
                 cached_component, **context)
             if not cached_component:
                 # If the component wasn't in the cache,
@@ -403,11 +429,11 @@ class ComponentBuilder(object):
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception("Failed to load component '{}'. "
-                            "{}".format(component_name, e))
+            raise Exception("Failed to load component from file `{}`. "
+                            "{}".format(component_meta.get("file"), e))
 
     def create_component(self,
-                         component_name: Text,
+                         component_config: Dict[Text, Any],
                          cfg: RasaNLUModelConfig) -> Component:
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
@@ -416,12 +442,12 @@ class ComponentBuilder(object):
 
         try:
             component, cache_key = self.__get_cached_component(
-                component_name, Metadata(cfg.as_dict(), None))
+                component_config, Metadata(cfg.as_dict(), None))
             if component is None:
-                component = registry.create_component_by_name(component_name,
-                                                              cfg)
+                component = registry.create_component_by_config(
+                    component_config, cfg)
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover
-            raise Exception("Failed to create component '{}'. "
-                            "{}".format(component_name, e))
+            raise Exception("Failed to create component `{}`. "
+                            "{}".format(component_config['name'], e))

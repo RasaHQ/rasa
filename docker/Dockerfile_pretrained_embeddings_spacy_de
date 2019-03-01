@@ -19,16 +19,12 @@ COPY . ${RASA_NLU_HOME}
 # use bash always
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-RUN pip install -r alt_requirements/requirements_spacy_sklearn.txt
+RUN pip install -r alt_requirements/requirements_pretrained_embeddings_spacy.txt
 
 RUN pip install -e .
 
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
-    && python -m spacy link en_core_web_md en \
-    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
+RUN pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
     && python -m spacy link de_core_news_sm de
-
-COPY sample_configs/config_spacy.yml ${RASA_NLU_HOME}/config.yml
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
