@@ -213,7 +213,7 @@ def test_duckling_entity_extractor(component_builder):
     entities = message.get("entities")
     assert len(entities) == 1
     assert entities[0]["text"] == "5"
-    assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
+    assert entities[0]["value"] == 5
 
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
