@@ -190,7 +190,7 @@ class TestFallbackPolicy(PolicyTestCollection):
 class TestMappingPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
+    def create_policy(self, featurizer, priority):
         p = MappingPolicy()
         return p
 
