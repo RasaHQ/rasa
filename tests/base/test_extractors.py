@@ -248,7 +248,7 @@ def test_unintentional_synonyms_capitalized(component_builder):
     assert ner_syn.synonyms.get("tacos") == "Mexican"
 
 
-def test_spacy_ner_extractor(spacy_nlp):
+def test_spacy_ner_extractor(component_builder, spacy_nlp):
     ext = SpacyEntityExtractor({"dimensions": ["LOC"]})
     example = Message("anywhere in the West", {
         "intent": "restaurant_search",
