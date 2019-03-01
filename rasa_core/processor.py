@@ -322,8 +322,10 @@ class MessageProcessor(object):
         is_listen_action = action_name == ACTION_LISTEN_NAME
         return not is_listen_action
 
-    def _schedule_reminders(self, events: List[Event],
-                            dispatcher: Dispatcher, tracker) -> None:
+    def _schedule_reminders(self,
+                            events: List[Event],
+                            tracker: DialogueStateTracker,
+                            dispatcher: Dispatcher) -> None:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
         Reminders with the same `id` property will overwrite one another
@@ -339,7 +341,9 @@ class MessageProcessor(object):
                                       replace_existing=True,
                                       name=str(e.action_name) + "__sender_id:" + tracker.sender_id)
 
-    def _cancel_reminders(self, events: List[Event], tracker) -> None:
+    def _cancel_reminders(self,
+                          events: List[Event],
+                          tracker: DialogueStateTracker) -> None:
         # All Reminders with the same name will be cancelled
         if events is not None:
             for e in events:
@@ -371,7 +375,7 @@ class MessageProcessor(object):
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
-        self._schedule_reminders(events, dispatcher, tracker)
+        self._schedule_reminders(events, tracker, dispatcher)
         self._cancel_reminders(events, tracker)
 
         return self.should_predict_another_action(action.name(), events)
