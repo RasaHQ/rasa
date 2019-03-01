@@ -195,8 +195,9 @@ def test_duckling_entity_extractor(component_builder):
     )
     _config.set_component_attr(0, dimensions=["number"], timezone="UTC",
                                url="http://localhost:8000")
-    ducklingNumber = component_builder.create_component(_config.for_component(0),
-                                                  _config)
+    ducklingNumber = component_builder.create_component(
+        _config.for_component(0),
+        _config)
     httpretty.register_uri(
         httpretty.POST,
         "http://localhost:8000/parse",
