@@ -296,7 +296,7 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
     assert example.get("entities")[0] == {
         'start': 26,
         'extractor': 'SpacyEntityExtractor',
-        'end': 31,
+        'end': 41,
         'value': 'Sebastian Thrun',
         'entity': 'PERSON',
         'confidence': None}
