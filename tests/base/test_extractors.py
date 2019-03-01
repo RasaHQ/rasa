@@ -286,7 +286,10 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
         "intent": "restaurant_search",
         "entities": [],
         "spacy_doc": spacy_nlp("anywhere in the west")})
-    ext = SpacyEntityExtractor({"dimensions": ["EVENT"]})
+    _config = RasaNLUModelConfig({"pipeline":
+                                 [{"name": "SpacyEntityExtractor"}]})
+    _config.set_component_attr(0, dimensions=["EVENT"])
+    ext = component_builder.create_component(_config.for_component(0), _config)
     ext.process(example, spacy_nlp=spacy_nlp)
 
     assert len(example.get("entities", [])) == 0
