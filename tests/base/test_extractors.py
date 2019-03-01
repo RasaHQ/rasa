@@ -189,7 +189,7 @@ def test_duckling_entity_extractor(component_builder):
     assert entities[0]["text"] == "tomorrow"
     assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
 
-    # Test dimension filtering for numbers, as times are already tested above
+    # Test dimension filtering includes only specified dimensions
     _config = RasaNLUModelConfig(
         {"pipeline": [{"name": "DucklingHTTPExtractor"}]}
     )
