@@ -74,19 +74,18 @@ class RegexFeaturizer(Featurizer):
         matches = []
         for i, exp in enumerate(self.known_patterns):
             match = re.finditer(exp["pattern"], message.text)
-            matches.append(match)
+            matches.append(None)
             for token_index, t in enumerate(message.get("tokens", [])):
                 patterns = t.get("pattern", default={})
-                if any(True for _ in match) is True:
-                    for mat in match:
-                        if t.offset < mat.end() and t.end > mat.start():
-                            patterns[exp["name"]] = True
-                        else:
-                            patterns[exp["name"]] = False
-                else:
-                    patterns[exp["name"]] = False
+                patterns[exp["name"]] = False
+
+                for mat in match:
+                    if t.offset < mat.end() and t.end > mat.start():
+                        patterns[exp["name"]] = True
+                        matches[-1] = True
+
                 t.set("pattern", patterns)
-        found = [1.0 if any(True for _ in m) is True else 0.0 for m in matches]
+        found = [1.0 if m is not None else 0.0 for m in matches]
         return np.array(found)
 
     def _generate_lookup_regex(self, lookup_table):
