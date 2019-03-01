@@ -11,7 +11,7 @@ Added
 -----
 - Added a detailed warning showing which entities are overlapping
 - Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
-- ner_spacy supports same entity filtering as the duckling extractor
+- `SpacyEntityExtractor` supports same entity filtering as `DucklingHTTPExtractor`
 
 Changed
 -------
