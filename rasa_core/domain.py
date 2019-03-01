@@ -95,7 +95,7 @@ def check_domain_sanity(domain):
     incorrect_mappings = check_mappings(domain.intent_properties)
 
     if (duplicate_actions or duplicate_intents or duplicate_slots or
-        duplicate_entities or incorrect_mappings):
+            duplicate_entities or incorrect_mappings):
         raise InvalidDomain(get_exception_message([
             (duplicate_actions, "actions"),
             (duplicate_intents, "intents"),
