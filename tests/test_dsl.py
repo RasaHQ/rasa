@@ -133,7 +133,6 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
         default_domain,
         augmentation_factor=0
     )
-
     training_data = featurizer.featurize_trackers(training_trackers,
                                                   default_domain)
     y = training_data.y.argmax(axis=-1)
@@ -144,7 +143,8 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
 
     # if we have 4 trackers, there is going to be one example more for label 4
     num_threes = len(training_trackers) - 1
-    assert Counter(y) == {0: 6, 1: 2, 7: num_threes, 8: 1, 9: 3}
+    # if new default actions are added the keys of the actions will be changed
+    assert Counter(y) == {0: 6, 1: 2, 8: num_threes, 9: 1, 10: 3}
 
 
 def test_generate_training_data_with_unused_checkpoints(tmpdir,

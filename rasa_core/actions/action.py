@@ -38,6 +38,7 @@ ACTION_DEFAULT_ASK_REPHRASE_NAME = 'action_default_ask_rephrase'
 
 ACTION_BACK_NAME = 'action_back'
 
+
 def default_actions() -> List['Action']:
     """List default actions."""
     return [ActionListen(), ActionRestart(),
@@ -168,6 +169,7 @@ class ActionBack(Action):
         from rasa_core.events import UserUtteranceReverted
 
         return [UserUtteranceReverted(), UserUtteranceReverted()]
+
 
 class ActionListen(Action):
     """The first action in any turn - bot waits for a user message.

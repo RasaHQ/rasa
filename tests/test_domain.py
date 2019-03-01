@@ -112,7 +112,7 @@ def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = Domain.load(domain_file)
     assert len(domain.intents) == 10
-    assert len(domain.action_names) == 10
+    assert len(domain.action_names) == 11
 
 
 def test_utter_templates():
