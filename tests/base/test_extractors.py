@@ -280,7 +280,7 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
         'entity': 'LOC',
         'confidence': None}
 
-    # Test dimension filtering
+    # Test dimension filtering includes only specified dimensions
 
     example = Message("anywhere in the West with Sebastian Thrun", {
         "intent": "example_intent",
