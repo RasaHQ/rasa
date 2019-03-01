@@ -189,19 +189,31 @@ def test_duckling_entity_extractor(component_builder):
     assert entities[0]["text"] == "tomorrow"
     assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
 
-    # Test dimension filtering
-
+    # Test dimension filtering for numbers, as times are already tested above
+    _config = RasaNLUModelConfig(
+        {"pipeline": [{"name": "DucklingHTTPExtractor"}]}
+    )
+    _config.set_component_attr(0, dimensions=["number"], timezone="UTC",
+                               url="http://localhost:8000")
+    ducklingNumber = component_builder.create_component(_config.for_component(0),
+                                                  _config)
     httpretty.register_uri(
         httpretty.POST,
         "http://localhost:8000/parse",
-        body="""[{"body":"5","start":10,"value":{"value":5,
-        "type":"value"},"end":11,"dim":"number"}]"""
+        body="""[{"body":"Yesterday","start":0,"value":{"values":[{
+            "value":"2019-02-28T00:00:00.000+01:00","grain":"day",
+            "type":"value"}],"value":"2019-02-28T00:00:00.000+01:00",
+            "grain":"day","type":"value"},"end":9,"dim":"time"},
+            {"body":"5","start":21,"value":{"value":5,"type":"value"},
+            "end":22,"dim":"number"}]"""
     )
 
-    message = Message("There are 5 people in a room")
-    duckling.process(message)
+    message = Message("Yesterday there were 5 people in a room")
+    ducklingNumber.process(message)
     entities = message.get("entities")
-    assert len(entities) == 0
+    assert len(entities) == 1
+    assert entities[0]["text"] == "5"
+    assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
 
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
