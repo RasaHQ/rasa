@@ -74,12 +74,13 @@ class RegexFeaturizer(Featurizer):
         matches = []
         for i, exp in enumerate(self.known_patterns):
             match = re.finditer(exp["pattern"], message.text)
+            match_item = [mat for mat in match]
             matches.append(None)
             for token_index, t in enumerate(message.get("tokens", [])):
                 patterns = t.get("pattern", default={})
                 patterns[exp["name"]] = False
 
-                for mat in match:
+                for mat in match_item:
                     if t.offset < mat.end() and t.end > mat.start():
                         patterns[exp["name"]] = True
                         matches[-1] = True
