@@ -21,12 +21,10 @@ class RasaChatInput(RestInput):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("url"),
-                   credentials.get("admin_token"))
+        return cls(credentials.get("url"))
 
-    def __init__(self, url, admin_token=None):
+    def __init__(self, url):
         self.base_url = url
-        self.admin_token = admin_token
 
     def _check_token(self, token):
         url = "{}/users/me".format(self.base_url)
