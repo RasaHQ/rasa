@@ -16,6 +16,7 @@ from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
 from rasa_nlu.evaluate import determine_token_labels
+from rasa_nlu.evaluate import determine_true_token_labels
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu import utils
@@ -170,12 +171,12 @@ def test_determine_token_labels_throws_error():
     with pytest.raises(ValueError):
         determine_token_labels(CH_correct_segmentation,
                                [CH_correct_entity,
-                                CH_wrong_entity], ["ner_crf"])
+                                CH_wrong_entity], ["A", "B", "ner_crf"])
 
 
 def test_determine_token_labels_no_extractors():
-    determine_token_labels(CH_correct_segmentation[0],
-                           [CH_correct_entity, CH_wrong_entity], None)
+    determine_true_token_labels(CH_correct_segmentation[0],
+                                [CH_correct_entity, CH_wrong_entity])
 
 
 def test_determine_token_labels_with_extractors():
@@ -259,7 +260,6 @@ def test_run_cv_evaluation():
 
 
 def test_intent_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
@@ -297,7 +297,6 @@ def test_intent_evaluation_report(tmpdir_factory):
 
 
 def test_entity_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
 
