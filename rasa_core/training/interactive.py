@@ -397,7 +397,6 @@ def _request_fork_from_user(
                                              endpoint)
 
     if fork_idx is not None:
-
         return tracker.get("events", [])[:int(fork_idx)]
     else:
         return None
