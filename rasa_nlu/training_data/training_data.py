@@ -13,6 +13,8 @@ from rasa_nlu.training_data import Message
 from rasa_nlu.training_data.util import check_duplicate_synonym
 from rasa_nlu.utils import lazyproperty, list_to_str, write_to_file
 
+DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
+
 logger = logging.getLogger(__name__)
 
 
@@ -125,7 +127,8 @@ class TrainingData(object):
         from rasa_nlu.training_data.formats import MarkdownWriter
         return MarkdownWriter().dumps(self)
 
-    def persist(self, dir_name: Text, filename: Text = "training_data.json"
+    def persist(self, dir_name: Text,
+                filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
                 ) -> Dict[Text, Any]:
         """Persists this training data to disk and returns necessary
         information to load it again."""
@@ -137,7 +140,7 @@ class TrainingData(object):
         write_to_file(data_file, self.as_json(indent=2))
 
         return {
-            "training_data": "training_data.json"
+            "training_data": DEFAULT_TRAINING_DATA_OUTPUT_PATH
         }
 
     def sorted_entities(self) -> List[Any]:
