@@ -8,7 +8,8 @@ from rasa.constants import DEFAULT_MODELS_PATH
 
 
 def train(domain: Text, config: Text, stories: Text, nlu_data: Text,
-          output: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
+          output: Text = DEFAULT_MODELS_PATH, force_training: bool = False
+          ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
     Args:
@@ -17,6 +18,7 @@ def train(domain: Text, config: Text, stories: Text, nlu_data: Text,
         stories: Path to the Core training data.
         nlu_data: Path to the NLU training data.
         output: Output path.
+        force_training: If `True` retrain model even if data has not changed.
 
     Returns:
         Path of the trained model archive.
@@ -29,7 +31,7 @@ def train(domain: Text, config: Text, stories: Text, nlu_data: Text,
     retrain_nlu = True
 
     new_fingerprint = model.model_fingerprint(config, domain, nlu_data, stories)
-    if old_model:
+    if not force_training and old_model:
         unpacked = model.unpack_model(old_model)
         old_core, old_nlu = model.get_model_subdirectories(unpacked)
         last_fingerprint = model.fingerprint_from_path(unpacked)
@@ -43,13 +45,13 @@ def train(domain: Text, config: Text, stories: Text, nlu_data: Text,
             target_path = os.path.join(train_path, "rasa_model", "nlu")
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
-    if retrain_core:
+    if force_training or retrain_core:
         train_core(domain, config, stories, output, train_path)
     else:
         print("Core configuration did not change. No need to retrain "
               "Core model.")
 
-    if retrain_nlu:
+    if force_training or retrain_nlu:
         train_nlu(config, nlu_data, output, train_path)
     else:
         print("NLU configuration did not change. No need to retrain NLU model.")

@@ -12,11 +12,15 @@ from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
 
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
-    from rasa_core.cli.train import add_general_args
+    import rasa_core.cli.train as core_cli
 
     train_parser = subparsers.add_parser(
         "train",
         help="Train the Rasa bot")
+    train_parser.add_argument("--force",
+                              action="store_true",
+                              help="Force a model training even if the data "
+                                   "has not changed.")
 
     train_subparsers = train_parser.add_subparsers()
 
@@ -39,7 +43,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
     for p in [train_core_parser, train_parser]:
         add_core_arguments(p)
-        add_general_args(p)
+        core_cli.add_general_args(p)
     _add_core_compare_arguments(train_core_parser)
 
     for p in [train_nlu_parser, train_parser]:
@@ -91,7 +95,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     validate_path(args, "stories", DEFAULT_STORIES_PATH)
 
     return rasa.train(args.domain, args.config, args.stories, args.nlu,
-                      args.out)
+                      args.out, args.force)
 
 
 def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
