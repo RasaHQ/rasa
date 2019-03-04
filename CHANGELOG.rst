@@ -25,6 +25,7 @@ Removed
 
 Fixed
 -----
+- Overlapping entities cause an exception only if the extractor does not support them.
 
 [0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
