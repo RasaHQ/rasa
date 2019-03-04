@@ -336,7 +336,7 @@ class Agent(object):
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         output_channel: Optional[OutputChannel] = None,
         sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
-    ) -> Optional[List[Any]]:
+    ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
         If a message preprocessor is passed, the message will be passed to that
