@@ -20,7 +20,7 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self, priority: Optional[int] = 5) -> None:
+    def __init__(self, priority: int = 5) -> None:
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__(priority=priority)
