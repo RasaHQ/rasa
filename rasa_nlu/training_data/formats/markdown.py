@@ -1,13 +1,14 @@
 import logging
 import re
-from typing import Any, Text, TYPE_CHECKING
+import typing
+from typing import Any, Text
 
 from rasa_nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter)
 from rasa_nlu.utils import build_entity
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from rasa_nlu.training_data import Message, TrainingData
 
 INTENT = "intent"
