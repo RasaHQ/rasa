@@ -77,7 +77,7 @@ def _add_core_compare_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-c", "--config",
         nargs='*',
-        default=["config.yml"],
+        default=[DEFAULT_CONFIG_PATH],
         help="The policy and NLU pipeline configuration of your bot."
              "If multiple configuration files are provided, multiple dialogue "
              "models are trained to compare policies.")

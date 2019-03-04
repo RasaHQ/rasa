@@ -84,7 +84,7 @@ def _add_nlu_arguments(parser: Union[argparse.ArgumentParser,
 
     parser.add_argument('-c', '--config',
                         type=str,
-                        default="config.yml",
+                        default=DEFAULT_CONFIG_PATH,
                         help="model configuration file (crossvalidation only)")
 
     parser.add_argument('-f', '--folds', required=False, default=10,
