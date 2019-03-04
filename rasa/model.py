@@ -180,7 +180,7 @@ def _get_hashes_for_paths(path: Text) -> List[Text]:
     elif path and os.path.isfile(path):
         files = [path]
 
-    return [get_file_hash(f) for f in files]
+    return sorted([get_file_hash(f) for f in files])
 
 
 def fingerprint_from_path(model_path: Text) -> Fingerprint:
