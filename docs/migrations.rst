@@ -16,8 +16,10 @@ how you can migrate from one version to another.
 
 Function Naming
 ~~~~~~~~~~~~~~~
-- renamed ``train_dialogue_model`` to ``train``
-- renamed ``rasa_core.evaluate`` to ``rasa_core.test``
+- renamed ``train_dialogue_model`` to ``train``. Please use ``train`` from
+  now on.
+- renamed ``rasa_core.evaluate`` to ``rasa_core.test``. Please use ``test``
+  from now on.
 
 
 .. _migration-to-0-13-0:
