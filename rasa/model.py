@@ -23,16 +23,12 @@ FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
 
 
-def get_model(model_path: Text = DEFAULT_MODELS_PATH,
-              subdirectories: bool = False) -> Optional[Text]:
+def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     """Gets a model and unpacks it.
 
     Args:
         model_path: Path to the zipped model. If it's a directory, the latest
                     trained model is returned.
-        subdirectories: If `True` it also returns the model subdirectories for
-                        Core and NLU, if `False` it only returns the path
-                        for the unpacked model directory.
 
     Returns:
         Path to the unpacked model.
@@ -43,7 +39,7 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH,
     elif os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
 
-    return unpack_model(model_path, subdirectories=subdirectories)
+    return unpack_model(model_path)
 
 
 def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
@@ -68,7 +64,6 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 
 def unpack_model(model_file: Text, working_directory: Text = None,
-                 subdirectories: bool = False
                  ) -> Union[Text, Tuple[Text, Text, Text]]:
     """Unpacks a zipped Rasa model.
 
@@ -76,9 +71,6 @@ def unpack_model(model_file: Text, working_directory: Text = None,
         model_file: Path to zipped model.
         working_directory: Location where the model should be unpacked to.
                            If `None` a tempory directory will be created.
-        subdirectories: If `True` it also returns the model subdirectories for
-                        Core and NLU, if `False` it only returns the path
-                        for the unpacked model directory.
 
     Returns:
         Path to unpacked Rasa model.
@@ -94,14 +86,20 @@ def unpack_model(model_file: Text, working_directory: Text = None,
     tar.close()
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
-    model_directory = os.path.join(working_directory, "rasa_model")
+    return os.path.join(working_directory, "rasa_model")
 
-    if not subdirectories:
-        return model_directory
-    else:
-        nlu_subdirectory = os.path.join(model_directory, "nlu")
-        core_subdirectory = os.path.join(model_directory, "core")
-        return model_directory, core_subdirectory, nlu_subdirectory
+
+def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
+    """Returns paths for core and nlu model directories.
+
+    Args:
+        unpacked_model_path: Path to unpacked Rasa model.
+
+    Returns:
+        Tuple (path to Core subdirectory, path to NLU subdirectory).
+    """
+    return (os.path.join(unpacked_model_path, "core"),
+            os.path.join(unpacked_model_path, "nlu"))
 
 
 def create_package_rasa(training_directory: Text, model_directory: Text,

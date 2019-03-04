@@ -30,8 +30,8 @@ def train(domain: Text, config: Text, stories: Text, nlu_data: Text,
 
     new_fingerprint = model.model_fingerprint(config, domain, nlu_data, stories)
     if old_model:
-        unpacked, old_core, old_nlu = model.unpack_model(
-            old_model, subdirectories=True)
+        unpacked = model.unpack_model(old_model)
+        old_core, old_nlu = model.get_model_subdirectories(unpacked)
         last_fingerprint = model.fingerprint_from_path(unpacked)
 
         if not model.core_fingerprint_changed(last_fingerprint,

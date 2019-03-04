@@ -5,7 +5,7 @@ import shutil
 from typing import List
 
 from rasa.cli.default_arguments import add_model_param
-from rasa.cli.utils import validate, check_path_exists
+from rasa.cli.utils import validate_path, check_path_exists
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_ACTIONS_PATH,
                             DEFAULT_CREDENTIALS_PATH, DEFAULT_MODELS_PATH)
 from rasa.model import get_latest_model
@@ -99,7 +99,7 @@ def run_nlu(args: argparse.Namespace):
     import rasa_nlu.server
     import tempfile
 
-    validate(args, [("path", DEFAULT_MODELS_PATH)])
+    validate_path(args, "path", DEFAULT_MODELS_PATH)
     args.model = args.path
 
     model = get_latest_model(args.model)
@@ -129,8 +129,8 @@ def run_actions(args: argparse.Namespace):
 def run(args: argparse.Namespace):
     import rasa.run
 
-    validate(args, [("model", DEFAULT_MODELS_PATH),
-                    ("endpoints", DEFAULT_ENDPOINTS_PATH, True),
-                    ("credentials", DEFAULT_CREDENTIALS_PATH, True)])
+    validate_path(args, "model", DEFAULT_MODELS_PATH)
+    validate_path(args, "endpoints", DEFAULT_ENDPOINTS_PATH, True)
+    validate_path(args, "credentials", DEFAULT_CREDENTIALS_PATH, True)
 
     rasa.run(**vars(args))

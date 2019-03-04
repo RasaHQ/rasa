@@ -15,7 +15,7 @@ from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
                         FINGERPRINT_NLU_DATA_KEY, core_fingerprint_changed,
                         FINGERPRINT_DOMAIN_KEY, nlu_fingerprint_changed,
                         model_fingerprint, get_model, create_package_rasa,
-                        FINGERPRINT_FILE_PATH)
+                        FINGERPRINT_FILE_PATH, get_model_subdirectories)
 
 
 def test_get_latest_model(trained_model):
@@ -37,8 +37,8 @@ def test_get_model_from_directory(trained_model):
 
 
 def test_get_model_from_directory_with_subdirectories(trained_model):
-    unpacked, unpacked_core, unpacked_nlu = get_model(trained_model,
-                                                      subdirectories=True)
+    unpacked = get_model(trained_model)
+    unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
     assert os.path.exists(unpacked_core)
     assert os.path.exists(unpacked_nlu)

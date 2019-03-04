@@ -4,7 +4,7 @@ from typing import List
 
 from rasa.constants import DEFAULT_NLU_DATA_PATH
 from rasa.cli.default_arguments import add_nlu_data_param
-from rasa.cli.utils import validate
+from rasa.cli.utils import validate_path
 
 
 def add_subparser(subparsers: _SubParsersAction,
@@ -67,9 +67,9 @@ def _add_split_args(parser: argparse.ArgumentParser) -> None:
 def split_nlu_data(args):
     from rasa_nlu.training_data.loading import load_data
 
-    validate(args, [("nlu", DEFAULT_NLU_DATA_PATH)])
+    validate_path(args, "nlu", DEFAULT_NLU_DATA_PATH)
     data = load_data(args.nlu)
-    train, test = data.train_test_split()
+    train, test = data.train_test_split(args.training_fraction)
 
     train.persist(args.out, filename="training_data.json")
     test.persist(args.out, filename="test_data.json")

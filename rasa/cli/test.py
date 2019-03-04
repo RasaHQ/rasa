@@ -3,7 +3,7 @@ import logging
 from typing import List, Optional, Text, Union
 
 from rasa.cli.default_arguments import add_model_param, add_stories_param
-from rasa.cli.utils import validate
+from rasa.cli.utils import validate_path
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_CONFIG_PATH,
                             DEFAULT_NLU_DATA_PATH, DEFAULT_MODELS_PATH)
 from rasa.model import get_latest_model, get_model
@@ -122,9 +122,9 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None
               ) -> None:
     from rasa.test import test_core
 
-    validate(args, [("model", DEFAULT_MODELS_PATH),
-                    ("endpoints", DEFAULT_ENDPOINTS_PATH, True),
-                    ("config", DEFAULT_CONFIG_PATH)])
+    validate_path(args, "model", DEFAULT_MODELS_PATH)
+    validate_path(args, "endpoints", DEFAULT_ENDPOINTS_PATH, True)
+    validate_path(args, "config", DEFAULT_CONFIG_PATH)
 
     test_core(model_path=model_path, **vars(args))
 
@@ -133,8 +133,8 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None
              ) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
 
-    validate(args, [("model", DEFAULT_MODELS_PATH),
-                    ("nlu", DEFAULT_NLU_DATA_PATH)])
+    validate_path(args, "model", DEFAULT_MODELS_PATH)
+    validate_path(args, "nlu", DEFAULT_NLU_DATA_PATH)
 
     model_path = model_path or args.model
 
@@ -143,13 +143,13 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None
     else:
         print("No model specified. Model will be trained using cross "
               "validation.")
-        validate(args, [("config", DEFAULT_CONFIG_PATH)])
+        validate_path(args, "config", DEFAULT_CONFIG_PATH)
 
         test_nlu_with_cross_validation(args.config, args.nlu, args.folds)
 
 
 def test(args: argparse.Namespace):
-    validate(args, [("model", DEFAULT_MODELS_PATH)])
+    validate_path(args, "model", DEFAULT_MODELS_PATH)
     model_path = get_model(args.model)
 
     test_core(args, model_path)

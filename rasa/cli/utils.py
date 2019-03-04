@@ -59,22 +59,22 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
     exit(1)
 
 
-def validate(args: argparse.Namespace,
-             params: List[Union[Tuple[Text, Text], Tuple[Text, Text, bool]]]
-             ) -> None:
-    """Validates the parsed command line arguments.
+def validate_path(args: argparse.Namespace,
+                  name: Text, default: Optional[Text], is_none_allowed: bool
+                  = False) -> None:
+    """Validates the parsed command line argument whether its value or its
+    default value is a valid path.
 
     Args:
-        args: The parsd command line arguments.
-        params: A list of parameters and their default values which should be
-                validated.
+        args: The parsed command line arguments.
+        name: Name of the parameter to validate.
+        default: Default value for this parameter.
+        is_none_allowed: `True` if `None` is a valid value for this parameter.
 
     """
-    for p in params:
-        none_is_valid = False if len(p) == 2 else p[2]
-        validated = check_path_exists(getattr(args, p[0]), p[0], p[1],
-                                      none_is_valid)
-        setattr(args, p[0], validated)
+    validated = check_path_exists(getattr(args, name), name, default,
+                                  is_none_allowed)
+    setattr(args, name, validated)
 
 
 def parse_last_positional_argument_as_model_path() -> None:
