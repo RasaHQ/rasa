@@ -102,14 +102,15 @@ def run_nlu(args: argparse.Namespace):
     validate_path(args, "path", DEFAULT_MODELS_PATH)
     args.model = args.path
 
-    model = get_latest_model(args.model)
+    model_archive = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()
-    model_path = model.unpack_model(model, working_directory)
-    args.path = os.path.dirname(model_path)
+    unpacked_model = model.unpack_model(model_archive,
+                                                working_directory)
+    args.path = os.path.dirname(unpacked_model)
 
     rasa_nlu.server.main(args)
 
-    shutil.rmtree(model_path)
+    shutil.rmtree(unpacked_model)
 
 
 def run_actions(args: argparse.Namespace):
