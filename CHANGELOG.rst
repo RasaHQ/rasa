@@ -24,6 +24,8 @@ Changed
   and only on master and branches ending in ``.x`` (i.e. new version releases)
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
+- now randomly created augmented stories are subsampled during training and marked,
+ so that memo policies can ignore them
 
 Removed
 -------
