@@ -35,6 +35,12 @@ custom components
   - ``persist(...)`` method additionally takes file name prefix
   Change your custom components accordingly.
 
+function names
+~~~~~~~~~~~~~~
+- ``rasa_nlu.evaluate`` was renamed to ``rasa_nlu.test``
+- ``rasa_nlu.test.run_cv_evaluation`` was renamed to
+  ``rasa_nlu.test.cross_validate``
+- ``rasa_nlu.train.do_train()`` was renamed to to ``rasa_nlu.train.train()``
 
 0.13.x to 0.14.0
 ----------------

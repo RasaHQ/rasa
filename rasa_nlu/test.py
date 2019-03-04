@@ -6,7 +6,7 @@ import os
 import logging
 import numpy as np
 import shutil
-from typing import List, Optional, Text
+from typing import List, Optional, Text, Union
 
 from rasa_nlu import config, training_data, utils
 from rasa_nlu.config import RasaNLUModelConfig
@@ -39,6 +39,13 @@ def create_argument_parser():
         description='evaluate a Rasa NLU pipeline with cross '
                     'validation or on external data')
 
+    utils.add_logging_option_arguments(parser, default=logging.INFO)
+    _add_arguments(parser)
+
+    return parser
+
+
+def _add_arguments(parser):
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
 
@@ -74,10 +81,6 @@ def create_argument_parser():
 
     parser.add_argument('--confmat', required=False, default="confmat.png",
                         help="output path for the confusion matrix plot")
-
-    utils.add_logging_option_arguments(parser, default=logging.INFO)
-
-    return parser
 
 
 def plot_confusion_matrix(cm,
@@ -803,18 +806,25 @@ def combine_entity_result(results, interpreter, data):
     return results
 
 
-def run_cv_evaluation(data: TrainingData,
-                      n_folds: int,
-                      nlu_config: RasaNLUModelConfig) -> CVEvaluationResult:
-    """Stratified cross validation on data
-    :param data: Training Data
-    :param n_folds: integer, number of cv folds
-    :param nlu_config: nlu config file
-    :return: dictionary with key, list structure, where each entry in list
+def cross_validate(data: TrainingData, n_folds: int,
+                   nlu_config: Union[RasaNLUModelConfig, Text]
+                   ) -> CVEvaluationResult:
+    """Stratified cross validation on data.
+
+    Args:
+        data: Training Data
+        n_folds: integer, number of cv folds
+        nlu_config: nlu config file
+
+    Returns:
+        dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
     from collections import defaultdict
     import tempfile
+
+    if isinstance(nlu_config, str):
+        nlu_config = config.load(nlu_config)
 
     trainer = Trainer(nlu_config)
     train_results = defaultdict(list)
@@ -946,7 +956,7 @@ def main():
         nlu_config = config.load(cmdline_args.config)
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
-        results, entity_results = run_cv_evaluation(
+        results, entity_results = cross_validate(
             data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
