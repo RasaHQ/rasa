@@ -536,8 +536,23 @@ SpacyEntityExtractor
     As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
     This extractor does not provide any confidence scores.
 
+:Configuration:
+    Configure which dimensions, i.e. entity types, the spacy component
+    should extract. A full list of available dimensions can be found in
+    the `spacy documentation <https://spacy.io/api/annotation#section-named-entities>`_.
+    Leaving the dimensions option unspecified will extract all available dimensions.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "SpacyEntityExtractor"
+          # dimensions to extract
+          dimensions: ["PERSON", "LOC", "ORG", "PRODUCT"]
+
+
 EntitySynonymMapper
 ~~~~~~~~~~~~~~~~~~~
+
 
 :Short: Maps synonymous entity values to the same value.
 :Outputs: modifies existing entities that previous entity extraction components found
@@ -672,8 +687,9 @@ DucklingHTTPExtractor
 
 :Configuration:
     Configure which dimensions, i.e. entity types, the duckling component
-    to extract. A full list of available dimensions can be found in
+    should extract. A full list of available dimensions can be found in
     the `duckling documentation <https://duckling.wit.ai/>`_.
+    Leaving the dimensions option unspecified will extract all available dimensions.
 
     .. code-block:: yaml
 

@@ -11,6 +11,7 @@ Added
 -----
 - Added a detailed warning showing which entities are overlapping
 - Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
+- `SpacyEntityExtractor` supports same entity filtering as `DucklingHTTPExtractor`
 
 Changed
 -------
@@ -30,6 +31,11 @@ Changed
 - Components ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
   additionally take component's meta/config dicts
 - Components ``persist(...)`` method additionally takes file name prefix
+- renamed ``rasa_nlu.evaluate`` to ``rasa_nlu.test``
+- renamed ``rasa_nlu.test.run_cv_evaluation`` to
+  ``rasa_nlu.test.cross_validate``
+- renamed ``rasa_nlu.train.do_train()`` to ``rasa_nlu.train.train()``
+- train command can now also load config from file
 
 Removed
 -------
