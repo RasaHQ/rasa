@@ -72,7 +72,7 @@ class RegexFeaturizer(Featurizer):
         relating the name of the regex to whether it was matched."""
 
         matches = []
-        for i, exp in enumerate(self.known_patterns):
+        for exp in self.known_patterns:
             match = re.finditer(exp["pattern"], message.text)
             match_item = [mat for mat in match]
             matches.append(None)
