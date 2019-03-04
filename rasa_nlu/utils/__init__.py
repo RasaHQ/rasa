@@ -1,7 +1,5 @@
-import errno
-from collections import namedtuple
-
 import asyncio
+import errno
 import glob
 import inspect
 import io
@@ -9,16 +7,18 @@ import json
 import logging
 import os
 import re
-import requests
-import ruamel.yaml as yaml
-import simplejson
 import tempfile
 import warnings
 from asyncio import AbstractEventLoop
+from collections import namedtuple
+from typing import Any, Callable, Dict, List, Optional, Text, Type
+
+import requests
+import ruamel.yaml as yaml
+import simplejson
 from requests import Response
 from requests.auth import HTTPBasicAuth
 from sanic.request import Request
-from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -83,7 +83,8 @@ def list_directory(path: Text) -> List[Text]:
     implementation returning files in any depth of the path."""
 
     if not isinstance(path, str):
-        raise ValueError("Resourcename must be a string type")
+        raise ValueError("`resource_name` must be a string type. "
+                         "Got `{}` instead".format(type(path)))
 
     if os.path.isfile(path):
         return [path]
@@ -379,10 +380,9 @@ def zip_folder(folder: Text) -> Text:
     import tempfile
     import shutil
 
+    # WARN: not thread save!
     zipped_path = tempfile.NamedTemporaryFile(delete=False)
     zipped_path.close()
-
-    # WARN: not thread save!
     return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 

@@ -1,10 +1,10 @@
 # coding=utf-8
 
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa_nlu.training_data import TrainingData, Message
-from tests import utilities
 from httpretty import httpretty
+
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.training_data import Message, TrainingData
+from tests import utilities
 
 
 def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
@@ -23,7 +23,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
                 {"start": 0, "end": 7, "value": "central",
                  "entity": "location", "extractor": "random_extractor"},
                 {"start": 8, "end": 14, "value": "indian",
-                 "entity": "cuisine", "extractor": "ner_crf"}
+                 "entity": "cuisine", "extractor": "CRFEntityExtractor"}
             ],
             "spacy_doc": spacy_nlp("central indian restaurant")
         })]
@@ -33,7 +33,8 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     sentence = 'anywhere in the west'
     doc = {"spacy_doc": spacy_nlp(sentence)}
     crf_format = ext._from_text_to_crf(Message(sentence, doc))
-    assert [word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west']
+    assert [word[0] for word in crf_format] == ['anywhere', 'in',
+                                                'the', 'west']
     feats = ext._sentence_to_features(crf_format)
     assert 'BOS' in feats[0]
     assert 'EOS' in feats[-1]
@@ -46,8 +47,9 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     ], 'Entity without extractor remains'
     assert filtered[1].get('entities') == [
         {"start": 8, "end": 14,
-         "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}
-    ], 'Only ner_crf entity annotation remains'
+         "value": "indian", "entity": "cuisine",
+         "extractor": "CRFEntityExtractor"}
+    ], 'Only CRFEntityExtractor entity annotation remains'
     assert examples[1].get('entities')[0] == {
         "start": 0, "end": 7,
         "value": "central", "entity": "location",
@@ -155,10 +157,13 @@ def test_duckling_entity_extractor(component_builder):
     )
     httpretty.enable()
 
-    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
-    _config.set_component_attr("ner_duckling_http", dimensions=["time"],
-                               timezone="UTC", url="http://localhost:8000")
-    duckling = component_builder.create_component("ner_duckling_http", _config)
+    _config = RasaNLUModelConfig(
+        {"pipeline": [{"name": "DucklingHTTPExtractor"}]}
+    )
+    _config.set_component_attr(0, dimensions=["time"], timezone="UTC",
+                               url="http://localhost:8000")
+    duckling = component_builder.create_component(_config.for_component(0),
+                                                  _config)
     message = Message("Today is the 5th of May. Let us meet tomorrow.")
     duckling.process(message)
     entities = message.get("entities")
@@ -184,22 +189,57 @@ def test_duckling_entity_extractor(component_builder):
     assert entities[0]["text"] == "tomorrow"
     assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
 
+    # Test dimension filtering includes only specified dimensions
+    _config = RasaNLUModelConfig(
+        {"pipeline": [{"name": "DucklingHTTPExtractor"}]}
+    )
+    _config.set_component_attr(0, dimensions=["number"],
+                               url="http://localhost:8000")
+    ducklingNumber = component_builder.create_component(
+        _config.for_component(0),
+        _config)
+    httpretty.register_uri(
+        httpretty.POST,
+        "http://localhost:8000/parse",
+        body="""[{"body":"Yesterday","start":0,"value":{"values":[{
+            "value":"2019-02-28T00:00:00.000+01:00","grain":"day",
+            "type":"value"}],"value":"2019-02-28T00:00:00.000+01:00",
+            "grain":"day","type":"value"},"end":9,"dim":"time"},
+            {"body":"5","start":21,"value":{"value":5,"type":"value"},
+            "end":22,"dim":"number"}]"""
+    )
+
+    message = Message("Yesterday there were 5 people in a room")
+    ducklingNumber.process(message)
+    entities = message.get("entities")
+    assert len(entities) == 1
+    assert entities[0]["text"] == "5"
+    assert entities[0]["value"] == 5
+
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
-    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
-    _config.set_component_attr("ner_duckling_http", dimensions=["number"])
-    duckling = component_builder.create_component("ner_duckling_http", _config)
-    synonyms = component_builder.create_component("ner_synonyms", _config)
+    _config = RasaNLUModelConfig(
+        {"pipeline": [{"name": "DucklingHTTPExtractor"},
+                      {"name": "EntitySynonymMapper"}]}
+    )
+    _config.set_component_attr(0, dimensions=["number"])
+    duckling = component_builder.create_component(_config.for_component(0),
+                                                  _config)
+    synonyms = component_builder.create_component(_config.for_component(1),
+                                                  _config)
     message = Message("He was 6 feet away")
     duckling.process(message)
-    # checks that the synonym processor can handle entities that have int values
+    # checks that the synonym processor
+    # can handle entities that have int values
     synonyms.process(message)
     assert message is not None
 
 
 def test_unintentional_synonyms_capitalized(component_builder):
-    _config = utilities.base_test_conf("spacy_sklearn")
-    ner_syn = component_builder.create_component("ner_synonyms", _config)
+
+    _config = utilities.base_test_conf("pretrained_embeddings_spacy")
+    ner_syn = component_builder.create_component(_config.for_component(5),
+                                                 _config)
     examples = [
         Message("Any Mexican restaurant will do", {
             "intent": "restaurant_search",
@@ -221,20 +261,42 @@ def test_unintentional_synonyms_capitalized(component_builder):
     assert ner_syn.synonyms.get("tacos") == "Mexican"
 
 
-def test_spacy_ner_extractor(spacy_nlp):
-    ext = SpacyEntityExtractor()
+def test_spacy_ner_extractor(component_builder, spacy_nlp):
+    _config = RasaNLUModelConfig({"pipeline":
+                                      [{"name": "SpacyEntityExtractor"}]})
+    ext = component_builder.create_component(_config.for_component(0), _config)
     example = Message("anywhere in the U.K.", {
         "intent": "restaurant_search",
         "entities": [],
         "spacy_doc": spacy_nlp("anywhere in the west")})
-
     ext.process(example, spacy_nlp=spacy_nlp)
 
     assert len(example.get("entities", [])) == 1
     assert example.get("entities")[0] == {
         'start': 16,
-        'extractor': 'ner_spacy',
+        'extractor': 'SpacyEntityExtractor',
         'end': 20,
         'value': 'U.K.',
         'entity': 'GPE',
+        'confidence': None}
+
+    # Test dimension filtering includes only specified dimensions
+
+    example = Message("anywhere in the West with Sebastian Thrun", {
+        "intent": "example_intent",
+        "entities": [],
+        "spacy_doc": spacy_nlp("anywhere in the West with Sebastian Thrun")})
+    _config = RasaNLUModelConfig({"pipeline":
+                                 [{"name": "SpacyEntityExtractor"}]})
+    _config.set_component_attr(0, dimensions=["PERSON"])
+    ext = component_builder.create_component(_config.for_component(0), _config)
+    ext.process(example, spacy_nlp=spacy_nlp)
+
+    assert len(example.get("entities", [])) == 1
+    assert example.get("entities")[0] == {
+        'start': 26,
+        'extractor': 'SpacyEntityExtractor',
+        'end': 41,
+        'value': 'Sebastian Thrun',
+        'entity': 'PERSON',
         'confidence': None}

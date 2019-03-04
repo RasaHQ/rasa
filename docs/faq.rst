@@ -1,4 +1,6 @@
-:desc: Rasa NLU: frequently asked questions
+:desc: Read more about language support, number of training data examples and
+       other FAQ's about open source NLP library Rasa NLU.
+
 .. _section_faq:
 
 Frequently Asked Questions
@@ -10,9 +12,7 @@ Rasa NLU can be used to understand any language that can be
 tokenized (on whitespace or using a custom tokenizer),
 but some backends are restricted to specific languages.
 
-The ``tensorflow_embedding`` pipeline can be used for any language
-because it trains custom word embeddings for your domain using the
-data you provide in the NLU training examples.
+The ``supervised_embeddings`` pipeline can be used for any language because it trains custom word embeddings for your domain using the data you provide in the NLU training examples.
 
 Other backends use pre-trained word vectors and therefore are
 restricted to languages which have pre-trained vectors available.
@@ -23,7 +23,7 @@ You can read more about the Rasa NLU supported languages in
 
 How many training examples do I need?
 -------------------------------------
-Unfortunately, the answer is *it depends*. 
+Unfortunately, the answer is *it depends*.
 
 A good starting point is to have 10 examples for each intent
 and build up from there.
@@ -88,5 +88,3 @@ feel free to create an issue or directly provide a fix.
 
 
 .. include:: feedback.inc
-
-

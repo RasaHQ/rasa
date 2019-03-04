@@ -13,11 +13,8 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import mitie
 
-MITIE_ENTITY_MODEL_FILE_NAME = "entity_extractor.dat"
-
 
 class MitieEntityExtractor(EntityExtractor):
-    name = "ner_mitie"
 
     provides = ["entities"]
 
@@ -67,7 +64,7 @@ class MitieEntityExtractor(EntityExtractor):
         if not model_file:
             raise Exception("Can not run MITIE entity extractor without a "
                             "language model. Make sure this component is "
-                            "preceeded by the 'nlp_mitie' component.")
+                            "preceeded by the 'MitieNLP' component.")
 
         trainer = mitie.ner_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
@@ -116,7 +113,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception("Failed to train 'intent_featurizer_mitie'. "
+            raise Exception("Failed to train 'MitieFeaturizer'. "
                             "Missing a proper MITIE feature extractor.")
 
         ents = self.extract_entities(message.text, message.get("tokens"),
@@ -127,6 +124,7 @@ class MitieEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Text = None,
              model_metadata: Metadata = None,
              cached_component: Optional['MitieEntityExtractor'] = None,
@@ -134,9 +132,7 @@ class MitieEntityExtractor(EntityExtractor):
              ) -> 'MitieEntityExtractor':
         import mitie
 
-        meta = model_metadata.for_component(cls.name)
-
-        file_name = meta.get("classifier_file", MITIE_ENTITY_MODEL_FILE_NAME)
+        file_name = meta.get("file")
 
         if not file_name:
             return cls(meta)
@@ -148,12 +144,14 @@ class MitieEntityExtractor(EntityExtractor):
         else:
             return cls(meta)
 
-    def persist(self, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         if self.ner:
-            entity_extractor_file = os.path.join(model_dir,
-                                                 MITIE_ENTITY_MODEL_FILE_NAME)
+            file_name = file_name + ".dat"
+            entity_extractor_file = os.path.join(model_dir, file_name)
             self.ner.save_to_disk(entity_extractor_file, pure_model=True)
-            return {"classifier_file": MITIE_ENTITY_MODEL_FILE_NAME}
+            return {"file": file_name}
         else:
-            return {"classifier_file": None}
+            return {"file": None}

@@ -1,16 +1,54 @@
-:desc: Updating your Rasa NLU Project to a New Version
+:desc: Read more about changes between major versions of our open source
+       NLP engine and how to migrate from one version to another.
+
+.. _section_migration_guide:
+
 Migration Guide
 ===============
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
+
+0.14.x to 0.15.0
+----------------
+
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load
+  previously trained models (as the stored file names have changed as
+  well as the configuration and metadata). Please make sure to retrain
+  a model before trying to use it with this improved version.
+
+model configuration
+~~~~~~~~~~~~~~~~~~~
+- The standard pipelines have been renamed. ``spacy_sklearn`` is now 
+  ``pretrained_embeddings_spacy`` and ``tensorflow_embedding`` is now 
+  ``supervised_embeddings``.
+- Components names used for nlu config have been changed.
+  Use component class name in nlu config file.
+
+custom components
+~~~~~~~~~~~~~~~~~
+- The signature of Component's methods have been changed:
+  - ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
+    additionally take component's meta/config dicts
+  - ``persist(...)`` method additionally takes file name prefix
+  Change your custom components accordingly.
+
+function names
+~~~~~~~~~~~~~~
+- ``rasa_nlu.evaluate`` was renamed to ``rasa_nlu.test``
+- ``rasa_nlu.test.run_cv_evaluation`` was renamed to
+  ``rasa_nlu.test.cross_validate``
+- ``rasa_nlu.train.do_train()`` was renamed to to ``rasa_nlu.train.train()``
 
 0.13.x to 0.14.0
 ----------------
 - ``/config`` endpoint removed, when training a new model, the user should
   always post the configuration as part of the request instead of relying
   on the servers config.
-- ``ner_duckling`` support has been removed. Use ``ner_duckling_http``
-  instead. More info about ``ner_duckling_http`` can be found at
+- ``ner_duckling`` support has been removed. Use ``DucklingHTTPExtractor``
+  instead. More info about ``DucklingHTTPExtractor`` can be found at
   https://rasa.com/docs/nlu/components/#ner-duckling-http.
 
 0.13.x to 0.13.3
@@ -95,7 +133,7 @@ The feature names for the features of the entity CRF have changed:
 | word5            | suffix5          |
 +------------------+------------------+
 
-Please change these keys in your pipeline configuration of the ``ner_crf``
+Please change these keys in your pipeline configuration of the ``CRFEntityExtractor``
 components ``features`` attribute if you use them.
 
 0.11.x to 0.12.0
@@ -121,9 +159,9 @@ parameters. Example:
       langauge: "en"
 
       pipeline:
-      - name: "nlp_spacy"
+      - name: "SpacyNLP"
         model: "en"               # parameter of the spacy component
-      - name: "ner_synonyms"
+      - name: "EntitySynonymMapper"
 
 
 All other parameters have either been moved to the scripts
@@ -159,7 +197,7 @@ persistors:
 
 0.8.x to 0.9.x
 ---------------
-- add ``tokenizer_spacy`` to trained spacy_sklearn models metadata (right after the ``nlp_spacy``). alternative is to retrain the model
+- add ``SpacyTokenizer`` to trained spacy_sklearn models metadata (right after the ``SpacyNLP``). alternative is to retrain the model
 
 0.7.x to 0.8.x
 ---------------
@@ -217,7 +255,4 @@ persistors:
       }
 
 
-.. include:: feedback.inc  
-	  
-
-   
+.. include:: feedback.inc

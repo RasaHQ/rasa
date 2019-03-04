@@ -1,4 +1,6 @@
-:desc: The Rasa NLU REST API
+:desc: Access and configure the HTTP API of Rasa NLU to run
+       the nlp library as a server.
+
 .. _section_http:
 
 HTTP API
@@ -40,7 +42,8 @@ You can also query against a specific model for a project :
 
 You can post your training data to this endpoint to train a new model for a project.
 This request will wait for the server answer: either the model
-was trained successfully or the training exited with an error.
+was trained successfully or the training exited with an error. If the model
+is trained successfully a zip file is returned with the trained model.
 Using the HTTP server, you must specify the project you want to train a
 new model for to be able to use it during parse requests later on :
 ``/train?project=my_project``. The configuration of the model should be
@@ -62,7 +65,7 @@ to start the training:
 
     $ curl -XPOST -H "Content-Type: application/x-yml" localhost:5000/train?project=my_project \
         -d @sample_configs/config_train_server_md.yml
-        
+
 .. note::
 
     The request should always be sent as application/x-yml regardless of wether you use json or md for the data format. Do not send json as application/json for example.
@@ -114,7 +117,7 @@ a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
             "report": ...
         },
         "entity_evaluation": {
-            "ner_crf": {
+            "CRFEntityExtractor": {
                 "report": ...,
                 "precision": 0.7606987393295268,
                 "f1_score": 0.812633994625117,
@@ -133,7 +136,7 @@ also returns a list of available projects the server can use to fulfill ``/parse
 .. code-block:: bash
 
     $ curl localhost:5000/status | python -mjson.tool
-    
+
     {
       "available_projects": {
         "my_restaurant_search_bot" : {
@@ -159,7 +162,7 @@ This will return the current version of the Rasa NLU instance, as well as the mi
       "minimum_compatible_version": "0.13.0"
     }
 
-    
+
 ``GET /config``
 ^^^^^^^^^^^^^^^
 
@@ -187,5 +190,3 @@ This will unload a model from the server memory
 
 
 .. include:: feedback.inc
-	
-

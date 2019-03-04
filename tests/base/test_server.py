@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-import time
-
 import io
 import json
+import tempfile
+import time
+
 import pytest
 import ruamel.yaml as yaml
 import tempfile
@@ -129,6 +130,19 @@ def test_post_train(app, rasa_default_train_data):
     rjs = response.json
     assert response.status == 404, "A project name to train must be specified"
     assert "error" in rjs
+
+
+@utilities.slowtest
+def test_post_train_success(app, rasa_default_train_data):
+    import zipfile
+    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
+
+    _, response = app.post("/train?project=test&model=test",
+                           json=model_config)
+
+    content = response.body
+    assert response.status == 200
+    assert zipfile.ZipFile(io.BytesIO(content)).testzip() is None
 
 
 @utilities.slowtest

@@ -11,7 +11,9 @@ from typing import Text
 import rasa_nlu
 from rasa_nlu import components, utils, config, constants
 from rasa_nlu.components import Component, ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import (RasaNLUModelConfig,
+                             component_config_from_pipeline,
+                             make_path_absolute)
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir, write_json_to_file
@@ -83,10 +85,14 @@ class Metadata(object):
         else:
             return []
 
-    def for_component(self, name, defaults=None):
-        return config.component_config_from_pipeline(name,
-                                                     self.get('pipeline', []),
-                                                     defaults)
+    @property
+    def number_of_components(self):
+        return len(self.get('pipeline', []))
+
+    def for_component(self, index, defaults=None):
+        return component_config_from_pipeline(index,
+                                              self.get('pipeline', []),
+                                              defaults)
 
     @property
     def language(self) -> Optional[Text]:
@@ -149,9 +155,9 @@ class Trainer(object):
         pipeline = []
 
         # Transform the passed names of the pipeline components into classes
-        for component_name in cfg.component_names:
-            component = component_builder.create_component(
-                component_name, cfg)
+        for i in range(len(cfg.pipeline)):
+            component_cfg = cfg.for_component(i)
+            component = component_builder.create_component(component_cfg, cfg)
             pipeline.append(component)
 
         return pipeline
@@ -189,6 +195,10 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context)
 
+    @staticmethod
+    def _file_name(index, name):
+        return 'component_{}_{}'.format(index, name)
+
     def persist(self,
                 path: Text,
                 persistor: Optional[Persistor] = None,
@@ -212,7 +222,7 @@ class Trainer(object):
         else:
             model_name = "model_" + timestamp
 
-        path = config.make_path_absolute(path)
+        path = make_path_absolute(path)
         dir_name = os.path.join(path, project_name, model_name)
 
         create_dir(dir_name)
@@ -220,12 +230,14 @@ class Trainer(object):
         if self.training_data:
             metadata.update(self.training_data.persist(dir_name))
 
-        for component in self.pipeline:
-            update = component.persist(dir_name)
+        for i, component in enumerate(self.pipeline):
+            file_name = self._file_name(i, component.name)
+            update = component.persist(file_name, dir_name)
             component_meta = component.component_config
             if update:
                 component_meta.update(update)
             component_meta["class"] = utils.module_path_from_object(component)
+
             metadata["pipeline"].append(component_meta)
 
         Metadata(metadata, dir_name).persist(dir_name)
@@ -310,9 +322,10 @@ class Interpreter(object):
         if not skip_validation:
             components.validate_requirements(model_metadata.component_classes)
 
-        for component_name in model_metadata.component_classes:
+        for i in range(model_metadata.number_of_components):
+            component_meta = model_metadata.for_component(i)
             component = component_builder.load_component(
-                component_name, model_metadata.model_dir,
+                component_meta, model_metadata.model_dir,
                 model_metadata, **context)
             try:
                 updates = component.provide_context()

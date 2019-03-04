@@ -1,4 +1,5 @@
-:desc: Try out Rasa NLU in the browser.
+:desc: Check out the tutorial for open source NLP library as an on premise
+       solution for on premise intent recognition and entity extraction. 
 
 .. _section_quickstart:
 
@@ -7,12 +8,12 @@
 Getting Started with Rasa NLU
 =============================
 
-In this tutorial you will create your first Rasa NLU bot. You can run all of the 
+In this tutorial you will create your first Rasa NLU bot. You can run all of the
 code snippets in here directly, or you can install Rasa NLU and run the examples on your
 own machine.
 
 
-As an example we'll start a new project to help people search for restaurants. 
+As an example we'll start a new project to help people search for restaurants.
 We'll start with an extremely simple model of those conversations. You can build up from there.
 
 Let's assume that `anything` our users say can be
@@ -22,7 +23,7 @@ categorized into one of the following **intents**:
 - ``restaurant_search``
 - ``thankyou``
 
-Of course there are many ways our users might ``greet`` our bot: 
+Of course there are many ways our users might ``greet`` our bot:
 
 - `Hi!`
 - `Hey there!`
@@ -43,8 +44,8 @@ In this tutorial we'll build a model which does that.
 1. Prepare your NLU Training Data
 ---------------------------------
 
-Training data is essential for developing chatbots and voice apps. 
-The data is just a list of messages that you expect to receive, annotated with 
+Training data is essential for developing chatbots and voice apps.
+The data is just a list of messages that you expect to receive, annotated with
 the intent and entities Rasa NLU should learn to extract.
 
 The best way to get training data is from *real users*, and a good way to get it is to
@@ -83,7 +84,7 @@ and save it in a file called ``nlu.md``.
    - I am looking a restaurant in [29432](location)
 
    ## intent:thankyou
-   - thanks! 
+   - thanks!
    - thank you
    - thx
    - thanks very much
@@ -94,15 +95,15 @@ and save it in a file called ``nlu.md``.
 2. Define your Machine Learning Model
 -------------------------------------
 
-Rasa NLU has a number of different components, which together make a pipeline. Create a markdown file with the pipeline you want to use. In this case, we're using the pre-defined ``tensorflow_embedding`` pipeline. If you are running this locally instead of here in the docs, copy the text between the (``"""``)
+Rasa NLU has a number of different components, which together make a pipeline. Create a markdown file with the pipeline you want to use. In this case, we're using the pre-defined ``supervised_embeddings`` pipeline. If you are running this locally instead of here in the docs, copy the text between the (``"""``)
 and save it in a file called ``nlu_config.yml``.
 
-.. runnable:: 
+.. runnable::
    :description: nlu-write-nlu-config
 
    nlu_config = """
    language: en
-   pipeline: tensorflow_embedding
+   pipeline: supervised_embeddings
    """
    %store nlu_config > nlu_config.yml
 
@@ -132,7 +133,7 @@ We are also passing the ``--project current`` and ``--fixed_model_name nlu`` par
 --------------
 
 There are two ways you can use your model, directly from python, or by starting a http server.
-Details of running the Rasa NLU HTTP server are in :ref:`config`.
+Details of running the Rasa NLU HTTP server are in :ref:`section_configuration`.
 
 To use your new model in python, create an ``Interpreter`` object and pass a message to its ``parse()`` method:
 
@@ -151,10 +152,10 @@ To use your new model in python, create an ``Interpreter`` object and pass a mes
 Spend some time playing around with this, for example try sending some different test messages to Rasa NLU.
 Also try adding some new words and phrases to your data at the top of the page, then re-train your model
 to teach Rasa NLU.
-Remember that this is just a toy example, with just a little bit of training data. 
+Remember that this is just a toy example, with just a little bit of training data.
 To build a really great NLU system you'll want to collect some real user messages!
 
-.. raw:: html 
+.. raw:: html
    :file: poll.html
 
 
@@ -165,6 +166,4 @@ To build a really great NLU system you'll want to collect some real user message
     ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool``
 
 
-.. include:: feedback.inc	
-	
-
+.. include:: feedback.inc

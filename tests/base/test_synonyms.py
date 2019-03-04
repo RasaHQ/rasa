@@ -30,8 +30,8 @@ def test_entity_synonyms():
 
 def test_loading_no_warning():
     syn = EntitySynonymMapper(synonyms=None)
-    syn.persist("test")
+    syn.persist("test", "test")
     meta = Metadata({"test": 1}, "test")
     with pytest.warns(None) as warn:
-        syn.load("test", meta)
+        syn.load(meta.for_component(0), "test", meta)
     assert len(warn) == 0
