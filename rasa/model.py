@@ -67,7 +67,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     return max(list_of_files, key=os.path.getctime)
 
 
-def unpack_model(model_file: Text, working_directory: Text = None,
+def unpack_model(model_file: Text, working_directory: Optional[Text] = None,
                  subdirectories: bool = False
                  ) -> Union[Text, Tuple[Text, Text, Text]]:
     """Unpacks a zipped Rasa model.
