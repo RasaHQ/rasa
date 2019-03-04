@@ -24,17 +24,6 @@ def extract_value(match):
     return value
 
 
-def filter_irrelevant_matches(matches, requested_dimensions):
-    """Only return dimensions the user configured"""
-
-    if requested_dimensions:
-        return [match
-                for match in matches
-                if match["dim"] in requested_dimensions]
-    else:
-        return matches
-
-
 def convert_duckling_format_to_rasa(matches):
     extracted = []
 
@@ -158,9 +147,10 @@ class DucklingHTTPExtractor(EntityExtractor):
         if self._url() is not None:
             reference_time = self._reference_time_from_message(message)
             matches = self._duckling_parse(message.text, reference_time)
+            all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
-            relevant_matches = filter_irrelevant_matches(matches, dimensions)
-            extracted = convert_duckling_format_to_rasa(relevant_matches)
+            extracted = DucklingHTTPExtractor.filter_irrelevant_entities(
+                all_extracted, dimensions)
         else:
             extracted = []
             logger.warning("Duckling HTTP component in pipeline, but no "

@@ -7,14 +7,14 @@ Entity Extraction
 =================
 
 
-=======================  ================  ========================    ===================================
-Component                Requires          Model           	           notes
-=======================  ================  ========================    ===================================
-``CRFEntityExtractor``              sklearn-crfsuite  conditional random field    good for training custom entities
-``SpacyEntityExtractor``            spaCy             averaged perceptron         provides pre-trained entities
-``DucklingHTTPExtractor``    running duckling  context-free grammar        provides pre-trained entities
-``MitieEntityExtractor``            MITIE             structured SVM              good for training custom entities
-=======================  ================  ========================    ===================================
+=========================  ================  ========================  =================================
+Component                  Requires          Model           	       Notes
+=========================  ================  ========================  =================================
+``CRFEntityExtractor``     sklearn-crfsuite  conditional random field  good for training custom entities
+``SpacyEntityExtractor``   spaCy             averaged perceptron       provides pre-trained entities
+``DucklingHTTPExtractor``  running duckling  context-free grammar      provides pre-trained entities
+``MitieEntityExtractor``   MITIE             structured SVM            good for training custom entities
+=========================  ================  ========================  =================================
 
 
 Custom Entities
