@@ -68,7 +68,6 @@ def validate(args: argparse.Namespace,
         args: The parsd command line arguments.
         params: A list of parameters and their default values which should be
                 validated.
-
     """
     for p in params:
         none_is_valid = False if len(p) == 2 else p[2]
