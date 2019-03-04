@@ -397,7 +397,6 @@ def _request_fork_from_user(
                                              endpoint)
 
     if fork_idx is not None:
-        # TODO: add saving of tracker up to now in stories here?
 
         return tracker.get("events", [])[:int(fork_idx)]
     else:
@@ -597,18 +596,6 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     elif answer == "undo":
         raise UndoLastStep()
     elif answer == "fork":
-        # first the path taken is saved as when the user quits
-        story_path, nlu_path, domain_path = _request_export_info()
-
-        tracker = retrieve_tracker(endpoint, sender_id)
-        evts = tracker.get("events", [])
-
-        _write_stories_to_file(story_path, evts)
-        _write_nlu_to_file(nlu_path, evts)
-        _write_domain_to_file(domain_path, evts, endpoint)
-
-        logger.info("Successfully wrote stories and NLU data")
-
         raise ForkTracker()
     elif answer == "restart":
         raise RestartConversation()
