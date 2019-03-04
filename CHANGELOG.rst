@@ -37,6 +37,7 @@ Removed
 
 Fixed
 -----
+- ``RegexFeaturizer`` detects all regex in user message (not just first)
 
 [0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
