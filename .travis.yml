@@ -5,7 +5,6 @@ sudo: required
 cache:
   directories:
   - "$HOME/.cache/pip"
-  - "$HOME/build/amn41/rasa_stack/data"
 
 python:
 - '3.5'
