@@ -70,7 +70,6 @@ def validate_path(args: argparse.Namespace,
         name: Name of the parameter to validate.
         default: Default value for this parameter.
         is_none_allowed: `True` if `None` is a valid value for this parameter.
-
     """
     validated = check_path_exists(getattr(args, name), name, default,
                                   is_none_allowed)

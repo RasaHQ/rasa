@@ -24,9 +24,9 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
                                        "model for the bot? 💪🏽").ask()
     if should_train:
         args.config = os.path.join(path, "config.yml")
-        args.stories = os.path.join(path, "data/core")
+        args.stories = os.path.join(path, "data", "core")
         args.domain = os.path.join(path, "domain.yml")
-        args.nlu = os.path.join(path, "data/nlu")
+        args.nlu = os.path.join(path, "data", "nlu")
         args.out = os.path.join(path, create_output_path())
 
         args.model = train.train(args)

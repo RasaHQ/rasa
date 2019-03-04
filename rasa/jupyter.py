@@ -1,10 +1,10 @@
 import pprint as pretty_print
 from typing import Any, Dict, Text, TYPE_CHECKING
 from rasa_core.utils import print_success, print_error
+from rasa_core.interpreter import NaturalLanguageInterpreter
 
 if TYPE_CHECKING:
     from rasa_core.agent import Agent
-    from rasa_core.interpreter import NaturalLanguageInterpreter
 
 
 def pprint(object: Any):
@@ -12,13 +12,13 @@ def pprint(object: Any):
 
 
 def chat(model: Text = None, agent: 'Agent' = None,
-         interpreter: 'NaturalLanguageInterpreter' = None):
+         interpreter: NaturalLanguageInterpreter = None):
 
     if model:
         from rasa.run import create_agent
         agent = create_agent(model)
     elif agent and interpreter:
-        agent.set_interpreter(interpreter)
+        agent.interpreter = NaturalLanguageInterpreter.create(interpreter)
     else:
         print_error("You either have to define a model path or an agent and "
                     "an interpreter.")

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser() -> argparse.ArgumentParser:
     """Parse all the command line arguments for the training script."""
+
     parser = argparse.ArgumentParser(
         prog="rasa",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
