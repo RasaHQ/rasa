@@ -532,9 +532,6 @@ def determine_true_token_labels(token, entities):
     if len(entities) == 0:
         return "O"
 
-    if do_entities_overlap(entities):
-        raise ValueError("The possible entities should not overlap")
-
     candidates = find_intersecting_entites(token, entities)
     return pick_best_entity_fit(token, candidates)
 
