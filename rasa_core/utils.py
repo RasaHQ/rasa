@@ -544,7 +544,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
 def file_as_bytes(path: Text) -> bytes:
     """Read in a file as a byte array."""
-    with io.open(path, 'rb', encoding="utf-8") as f:
+    with io.open(path, 'rb') as f:
         return f.read()
 
 
