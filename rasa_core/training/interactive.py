@@ -556,6 +556,21 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strs
 
 
+def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
+    """Write stories and nlu data to file."""
+
+    story_path, nlu_path, domain_path = _request_export_info()
+
+    tracker = retrieve_tracker(endpoint, sender_id)
+    evts = tracker.get("events", [])
+
+    _write_stories_to_file(story_path, evts)
+    _write_nlu_to_file(nlu_path, evts)
+    _write_domain_to_file(domain_path, evts, endpoint)
+
+    logger.info("Successfully wrote stories and NLU data")
+
+
 def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
@@ -571,16 +586,7 @@ def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
 
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        story_path, nlu_path, domain_path = _request_export_info()
-
-        tracker = retrieve_tracker(endpoint, sender_id)
-        evts = tracker.get("events", [])
-
-        _write_stories_to_file(story_path, evts)
-        _write_nlu_to_file(nlu_path, evts)
-        _write_domain_to_file(domain_path, evts, endpoint)
-
-        logger.info("Successfully wrote stories and NLU data")
+        _write_data_to_file(sender_id, endpoint)
         sys.exit()
     elif answer == "continue":
         # in this case we will just return, and the original
@@ -602,13 +608,10 @@ def _request_action_from_user(
 
     _print_history(sender_id, endpoint)
 
-    sorted_actions = sorted(predictions,
-                            key=lambda k: (-k['score'], k['action']))
-
     choices = [{"name": "{:03.2f} {:40}".format(a.get("score"),
                                                 a.get("action")),
                 "value": a.get("action")}
-               for a in sorted_actions]
+               for a in predictions]
 
     choices = ([{"name": "<create new action>", "value": OTHER_ACTION}] +
                choices)
@@ -1238,14 +1241,19 @@ def record_messages(endpoint: EndpointConfig,
             except ForkTracker:
                 _print_history(sender_id, endpoint)
 
-                evts = _request_fork_from_user(sender_id, endpoint)
-                sender_id = uuid.uuid4().hex
+                evts_fork = _request_fork_from_user(sender_id, endpoint)
 
-                if evts is not None:
-                    replace_events(endpoint, sender_id, evts)
-                    sender_ids.append(sender_id)
-                    _print_history(sender_id, endpoint)
-                    _plot_trackers(sender_ids, plot_file, endpoint)
+                send_event(endpoint, sender_id,
+                           Restarted().as_dict())
+
+                if evts_fork:
+                    for evt in evts_fork:
+                        send_event(endpoint, sender_id, evt)
+
+                logger.info("Restarted conversation at fork.")
+
+                _print_history(sender_id, endpoint)
+                _plot_trackers(sender_ids, plot_file, endpoint)
 
     except Exception:
         logger.exception("An exception occurred while recording messages.")

@@ -18,6 +18,7 @@ Added
 - documentation about early deactivation of a form in validation
 - utility functions for colored logging
 - open webbrowser when visualizing stories
+- added ability to use multiple env vars per line in yaml files
 
 Changed
 -------
@@ -27,6 +28,8 @@ Changed
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
 - changed export paths for interactive training to ``data/core/stories.md``,
   ``data/nlu/nlu.md`` and ``data/nlu/nlu_interactive.md``
+- ``scores`` array returned by the ``/conversations/{sender_id}/predict``
+  endpoint is now sorted according to the actions' scores.
 
 Removed
 -------
