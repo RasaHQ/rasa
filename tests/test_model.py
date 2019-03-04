@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 
 import pytest
 import rasa_core
@@ -15,7 +16,8 @@ from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
                         FINGERPRINT_NLU_DATA_KEY, core_fingerprint_changed,
                         FINGERPRINT_DOMAIN_KEY, nlu_fingerprint_changed,
                         model_fingerprint, get_model, create_package_rasa,
-                        FINGERPRINT_FILE_PATH, get_model_subdirectories)
+                        FINGERPRINT_FILE_PATH, get_model_subdirectories,
+                        FINGERPRINT_TRAINED_AT_KEY)
 
 
 def test_get_latest_model(trained_model):
@@ -52,6 +54,7 @@ def _fingerprint(config=["test"], domain=["test"],
         FINGERPRINT_DOMAIN_KEY: domain,
         FINGERPRINT_NLU_VERSION_KEY: nlu_version,
         FINGERPRINT_CORE_VERSION_KEY: core_version,
+        FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
         FINGERPRINT_STORIES_KEY: stories,
         FINGERPRINT_NLU_DATA_KEY: nlu
@@ -134,7 +137,13 @@ def test_create_fingerprint_from_invalid_paths(project, project_files):
                             nlu_version=rasa_nlu.__version__, stories=[],
                             nlu=[])
 
-    assert model_fingerprint(**project_files) == expected
+    actual = model_fingerprint(**project_files)
+    assert actual[FINGERPRINT_TRAINED_AT_KEY] is not None
+
+    del actual[FINGERPRINT_TRAINED_AT_KEY]
+    del expected[FINGERPRINT_TRAINED_AT_KEY]
+
+    assert actual == expected
 
 
 @pytest.mark.parametrize("use_fingerprint", [True, False])

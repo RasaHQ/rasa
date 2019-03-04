@@ -21,6 +21,7 @@ FINGERPRINT_CORE_VERSION_KEY = "core_version"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
+FINGERPRINT_TRAINED_AT_KEY = "trained_at"
 
 
 def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
@@ -138,8 +139,7 @@ def create_package_rasa(training_directory: Text, model_directory: Text,
 
 def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
                       nlu_data: Optional[Text] = None,
-                      stories: Optional[Text] = None
-                      ) -> Fingerprint:
+                      stories: Optional[Text] = None) -> Fingerprint:
     """Creates a model fingerprint from its used configuration and training
     data.
 
@@ -156,12 +156,14 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
     import rasa_core
     import rasa_nlu
     import rasa
+    import time
 
     return {
         FINGERPRINT_CONFIG_KEY: _get_hashes_for_paths(config_file),
         FINGERPRINT_DOMAIN_KEY: _get_hashes_for_paths(domain_file),
         FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
+        FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_NLU_VERSION_KEY: rasa_nlu.__version__,
         FINGERPRINT_CORE_VERSION_KEY: rasa_core.__version__,
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__
@@ -190,7 +192,7 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     Returns:
         The fingerprint or an empty dict if no fingerprint was found.
     """
-    import rasa_core
+    import rasa_core.utils
 
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
