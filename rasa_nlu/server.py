@@ -420,12 +420,12 @@ def parse_project_and_model(
     if is_local_model:
         # the argument is a model
         project, model = parse_model(pre_load_path)
-        result = result + (project, model, absolute_path)
+        result = result + [(project, model, absolute_path)]
 
     elif is_local_project or is_potential_project_path:
         # the argument is a project
         project = parse_project(pre_load_path)
-        result = result + (project, None, absolute_path)
+        result = result + [(project, None, absolute_path)]
 
     if should_fetch_from_cloud(
             is_local_model,
