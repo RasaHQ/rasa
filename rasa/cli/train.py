@@ -109,6 +109,8 @@ def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
 
     _train_path = train_path or tempfile.mkdtemp()
 
+    # Policies might be a list for the compare training. Do normal training
+    # if only list item was passed.
     if not isinstance(args.config, list) or len(args.config) == 1:
         if isinstance(args.config, list):
             args.config = args.config[0]
