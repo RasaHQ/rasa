@@ -20,7 +20,7 @@ class MappingPolicy(Policy):
     executed whenever the intent is detected. This policy takes precedence over
     any other policy."""
 
-    def __init__(self, priority: Optional[int] = 5) -> None:
+    def __init__(self, priority: int = 5) -> None:
         """Create a new Mapping policy."""
 
         super(MappingPolicy, self).__init__(priority=priority)
@@ -39,9 +39,9 @@ class MappingPolicy(Policy):
         the policy will predict zero for every action."""
 
         prediction = [0.0] * domain.num_actions
+        intent = tracker.latest_message.intent.get('name')
+        action = domain.intent_properties.get(intent, {}).get('triggers')
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
-            intent = tracker.latest_message.intent.get('name')
-            action = domain.intent_properties.get(intent, {}).get('triggers')
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
@@ -55,7 +55,7 @@ class MappingPolicy(Policy):
             elif tracker.latest_message.intent.get('name') == 'back':
                 idx = domain.index_for_action(ACTION_BACK_NAME)
                 prediction[idx] = 1
-        elif tracker.latest_action_name == ACTION_RESTART_NAME:
+        elif tracker.latest_action_name == action:
             idx = domain.index_for_action(ACTION_BACK_NAME)
             prediction[idx] = 1
         return prediction
