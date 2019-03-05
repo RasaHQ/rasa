@@ -195,7 +195,7 @@ Mapping Policy
 ^^^^^^^^^^^^^^^^^^
 
 The ``MappingPolicy`` can be used to directly map intents to actions such that
-the mapped action will always be executed. The mappins are assigned by giving
+the mapped action will always be executed. The mappings are assigned by giving
 and intent the property `'triggers'`, e.g.:
 
 .. code-block:: yaml
