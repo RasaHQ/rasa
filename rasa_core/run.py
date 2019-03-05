@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 
 import rasa_core.cli.arguments
 from gevent.pywsgi import WSGIServer
@@ -155,7 +156,6 @@ def serve_application(initial_agent,
 def load_agent(core_model, interpreter, endpoints,
                tracker_store=None):
     from rasa_core import agent
-
     if endpoints.model:
         return agent.load_from_server(
             interpreter=interpreter,

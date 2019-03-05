@@ -11,10 +11,10 @@ from flask_jwt_simple import JWTManager, view_decorators
 
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.test import test
-from rasa_core.events import Event
 from rasa_core.domain import Domain
+from rasa_core.events import Event
 from rasa_core.policies import PolicyEnsemble
+from rasa_core.test import test
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.version import __version__
 
@@ -486,8 +486,7 @@ def create_app(agent,
         logger.debug("Finished loading new agent.")
         return '', 204
 
-    @app.route("/evaluate",
-               methods=['POST', 'OPTIONS'])
+    @app.route("/evaluate", methods=['POST', 'OPTIONS'])
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def evaluate_stories():
@@ -505,8 +504,25 @@ def create_app(agent,
                          "Evaluation could not be created. Error: {}"
                          "".format(e))
 
-    @app.route("/domain",
-               methods=['GET', 'OPTIONS'])
+    @app.route("/jobs", methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
+    @cross_origin(origins=cors_origins)
+    def train_stack():
+        from rasa.cli.train import train
+        from argparse import Namespace
+
+        # TODO LOCAL: validate namespace json in request
+        args = Namespace(**request.get_json())
+        print('have args', args)
+        try:
+            model_name = train(args)
+            return jsonify({'info': 'new model trained', 'model': model_name})
+        except Exception as e:
+            # TODO local: except specific training exception that can occur
+            return error(400, "TrainingError",
+                         "Rasa stack model could not be trained.", e)
+
+    @app.route("/domain", methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
