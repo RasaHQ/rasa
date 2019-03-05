@@ -269,7 +269,7 @@ def test_run_cv_evaluation():
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
     assert len(entity_results.train[
-                   'CRFEntityExtractor']["Accuracy"]) == n_folds
+        'CRFEntityExtractor']["Accuracy"]) == n_folds
     assert len(entity_results.train[
         'CRFEntityExtractor']["Precision"]) == n_folds
     assert len(entity_results.train[
