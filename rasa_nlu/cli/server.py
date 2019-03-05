@@ -10,12 +10,10 @@ def add_server_arguments(parser):
     parser.add_argument('--pre_load',
                         nargs='+',
                         default=[],
-                        help='Preload models into memory before starting the '
-                             'server. \nIf given `all` as input all the models '
-                             'will be loaded.\nElse you can specify a list of '
-                             'specific project names.\nEg: python -m '
-                             'rasa_nlu.server --pre_load project1 '
-                             '--path projects '
+                        help='Preload specific projects or models into memory '
+                             'before starting the server. \nEg: python -m '
+                             'rasa_nlu.server --pre_load projectX/'
+                             'my_model_1 --pre_load projectY/my_model_2 '
                              '-c config.yaml')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
