@@ -69,8 +69,8 @@ def check_domain_sanity(domain):
         for name, action in mappings:
             if message:
                 message += "\n"
-            message += ("Intent '{}' is set to trigger action '{}', which is not "
-                    "defined in the domain.".format(name, action))
+            message += ("Intent '{}' is set to trigger action '{}', which is "
+                        "not defined in the domain.".format(name, action))
         return message
 
     def get_duplicate_exception_message(
@@ -84,8 +84,8 @@ def check_domain_sanity(domain):
                 if message:
                     message += "\n"
                 message += ("Duplicate {0} in domain. "
-                        "These {0} occur more than once in "
-                        "the domain: {1}".format(name, ", ".join(d)))
+                            "These {0} occur more than once in "
+                            "the domain: {1}".format(name, ", ".join(d)))
         return message
 
     duplicate_actions = get_duplicates(domain.action_names)
