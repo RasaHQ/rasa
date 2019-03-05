@@ -4,6 +4,7 @@ import os
 import shutil
 from typing import List
 
+from rasa import model
 from rasa.cli.default_arguments import add_model_param
 from rasa.cli.utils import validate_path, check_path_exists
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_ACTIONS_PATH,
@@ -104,8 +105,7 @@ def run_nlu(args: argparse.Namespace):
 
     model_archive = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()
-    unpacked_model = model.unpack_model(model_archive,
-                                                working_directory)
+    unpacked_model = model.unpack_model(model_archive, working_directory)
     args.path = os.path.dirname(unpacked_model)
 
     rasa_nlu.server.main(args)

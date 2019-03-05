@@ -1,13 +1,16 @@
 import argparse
 import tempfile
+import typing
 from typing import List, Text, Optional
 
 from rasa.cli.default_arguments import (add_config_param, add_domain_param,
                                         add_stories_param, add_nlu_data_param)
 from rasa.cli.utils import validate_path
 from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
-                            DEFAULT_STORIES_PATH, DEFAULT_NLU_DATA_PATH,
-                            DEFAULT_MODELS_PATH)
+                            DEFAULT_MODELS_PATH, DEFAULT_DATA_PATH)
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.model import Interpreter
 
 
 def add_subparser(subparsers: argparse._SubParsersAction,
@@ -15,15 +18,10 @@ def add_subparser(subparsers: argparse._SubParsersAction,
     import rasa_core.cli.train as core_cli
 
     train_parser = subparsers.add_parser(
-        "train",
+        "train", conflict_handler="resolve",
         help="Train the Rasa bot")
-    train_parser.add_argument("--force",
-                              action="store_true",
-                              help="Force a model training even if the data "
-                                   "has not changed.")
 
     train_subparsers = train_parser.add_subparsers()
-
     train_core_parser = train_subparsers.add_parser(
         "core",
         conflict_handler="resolve",
@@ -42,14 +40,23 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         add_general_arguments(p)
 
     for p in [train_core_parser, train_parser]:
-        add_core_arguments(p)
+        add_domain_param(p)
         core_cli.add_general_args(p)
+    add_stories_param(train_core_parser)
     _add_core_compare_arguments(train_core_parser)
 
-    for p in [train_nlu_parser, train_parser]:
-        add_nlu_data_param(p)
+    add_nlu_data_param(train_nlu_parser)
 
+    add_joint_parser_arguments(train_parser)
     train_parser.set_defaults(func=train)
+
+
+def add_joint_parser_arguments(parser: argparse.ArgumentParser):
+    parser.add_argument("--force", action="store_true",
+                        help="Force a model training even if the data "
+                             "has not changed.")
+    parser.add_argument("--training_files", default=DEFAULT_DATA_PATH, type=str,
+                        help="Path to the Core and NLU training files.")
 
 
 def add_general_arguments(parser: argparse.ArgumentParser):
@@ -59,11 +66,6 @@ def add_general_arguments(parser: argparse.ArgumentParser):
         type=str,
         default=DEFAULT_MODELS_PATH,
         help="Directory where your models are stored")
-
-
-def add_core_arguments(parser: argparse.ArgumentParser):
-    add_domain_param(parser)
-    add_stories_param(parser)
 
 
 def _add_core_compare_arguments(parser: argparse.ArgumentParser):
@@ -91,10 +93,9 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
     validate_path(args, "domain", DEFAULT_DOMAIN_PATH)
     validate_path(args, "config", DEFAULT_CONFIG_PATH)
-    validate_path(args, "nlu", DEFAULT_NLU_DATA_PATH)
-    validate_path(args, "stories", DEFAULT_STORIES_PATH)
+    validate_path(args, "training_files", DEFAULT_DATA_PATH)
 
-    return rasa.train(args.domain, args.config, args.stories, args.nlu,
+    return rasa.train(args.domain, args.config, args.training_files,
                       args.out, args.force)
 
 
@@ -105,7 +106,7 @@ def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
     output = train_path or args.out
 
     validate_path(args, "domain", DEFAULT_DOMAIN_PATH)
-    validate_path(args, "stories", DEFAULT_STORIES_PATH)
+    validate_path(args, "stories", DEFAULT_DATA_PATH)
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -132,6 +133,6 @@ def train_nlu(args: argparse.Namespace, train_path: Optional[Text] = None
     output = train_path or args.out
 
     validate_path(args, "config", DEFAULT_CONFIG_PATH)
-    validate_path(args, "nlu", DEFAULT_NLU_DATA_PATH)
+    validate_path(args, "nlu", DEFAULT_DATA_PATH)
 
     return train_nlu(args.config, args.nlu_data, output, train_path)

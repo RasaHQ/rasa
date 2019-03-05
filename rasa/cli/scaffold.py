@@ -8,8 +8,8 @@ from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path
 from rasa_core.utils import print_success
 
-from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_STORIES_PATH,
-                            DEFAULT_DOMAIN_PATH, DEFAULT_NLU_DATA_PATH)
+from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
+                            DEFAULT_DATA_PATH)
 
 
 def add_subparser(subparsers: argparse._SubParsersAction,
@@ -27,11 +27,10 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
                                        "model for the bot? 💪🏽").ask()
     if should_train:
         args.config = os.path.join(path, DEFAULT_CONFIG_PATH)
-        args.stories = os.path.join(path, DEFAULT_STORIES_PATH)
+        args.training_files = os.path.join(path, DEFAULT_DATA_PATH)
         args.domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
-        args.nlu = os.path.join(path, DEFAULT_NLU_DATA_PATH)
         args.out = os.path.join(path, create_output_path())
-
+        args.force = False
         args.model = train.train(args)
 
         print_run_or_instructions(args, path)

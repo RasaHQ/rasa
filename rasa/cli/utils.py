@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import Text, Optional, List, Tuple, Union, Dict, Callable, Any
+from typing import Text, Optional, Dict, Callable, Any
 
 from rasa.constants import DEFAULT_MODELS_PATH
 

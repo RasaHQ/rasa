@@ -18,8 +18,8 @@ def add_subparser(subparsers: _SubParsersAction,
 
     run.add_run_arguments(interactive_parser)
     train.add_general_arguments(interactive_parser)
-    train.add_core_arguments(interactive_parser)
-    defaults.add_nlu_data_param(interactive_parser)
+    train.add_domain_param(interactive_parser)
+    train.add_joint_parser_arguments(interactive_parser)
     _add_interactive_arguments(interactive_parser)
     interactive_parser.set_defaults(func=interactive)
 

@@ -2,10 +2,11 @@ import argparse
 import logging
 from typing import List, Optional, Text, Union
 
+from rasa import data
 from rasa.cli.default_arguments import add_model_param, add_stories_param
 from rasa.cli.utils import validate_path
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_CONFIG_PATH,
-                            DEFAULT_NLU_DATA_PATH, DEFAULT_MODELS_PATH)
+                            DEFAULT_MODELS_PATH, DEFAULT_DATA_PATH)
 from rasa.model import get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
@@ -125,6 +126,9 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None
     validate_path(args, "model", DEFAULT_MODELS_PATH)
     validate_path(args, "endpoints", DEFAULT_ENDPOINTS_PATH, True)
     validate_path(args, "config", DEFAULT_CONFIG_PATH)
+    validate_path(args, "stories", DEFAULT_DATA_PATH)
+
+    args.stories = data.get_core_directory(args.stories)
 
     test_core(model_path=model_path, **vars(args))
 
@@ -134,8 +138,9 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None
     from rasa.test import test_nlu, test_nlu_with_cross_validation
 
     validate_path(args, "model", DEFAULT_MODELS_PATH)
-    validate_path(args, "nlu", DEFAULT_NLU_DATA_PATH)
+    validate_path(args, "nlu", DEFAULT_DATA_PATH)
 
+    args.nlu = data.get_nlu_directory(args.nlu)
     model_path = model_path or args.model
 
     if model_path:

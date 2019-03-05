@@ -1,7 +1,7 @@
 import argparse
 from typing import Text
 
-from rasa.constants import DEFAULT_NLU_DATA_PATH, DEFAULT_MODELS_PATH
+from rasa.constants import DEFAULT_DATA_PATH, DEFAULT_MODELS_PATH
 
 
 def add_model_param(parser: argparse.ArgumentParser, model_name: Text = "Rasa"
@@ -23,7 +23,7 @@ def add_stories_param(parser: argparse.ArgumentParser,
     parser.add_argument(
         "-s", "--stories",
         type=str,
-        default="data/core",
+        default=DEFAULT_DATA_PATH,
         help="File or folder containing {} stories.".format(stories_name))
 
 
@@ -31,7 +31,7 @@ def add_nlu_data_param(parser: argparse.ArgumentParser):
     parser.add_argument(
         "-u", "--nlu",
         type=str,
-        default=DEFAULT_NLU_DATA_PATH,
+        default=DEFAULT_DATA_PATH,
         help="File or folder containing your NLU training data.")
 
 

@@ -2,10 +2,11 @@ import argparse
 import os
 from typing import List
 
+from rasa import data
 from rasa.cli.default_arguments import (
     add_config_param, add_domain_param,
     add_stories_param)
-from rasa.constants import DEFAULT_NLU_DATA_PATH
+from rasa.constants import DEFAULT_DATA_PATH
 
 
 def add_subparser(subparsers: argparse._SubParsersAction,
@@ -46,8 +47,9 @@ def show_stories(args: argparse.Namespace):
     args.config = args.config
     args.url = None
 
-    if os.path.isdir(DEFAULT_NLU_DATA_PATH):
-        args.nlu = DEFAULT_NLU_DATA_PATH
+    args.stories = data.get_core_directory(args.stories)
+    if os.path.exists(DEFAULT_DATA_PATH):
+        args.nlu_data = data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     rasa_core.visualize(args.config, args.domain, args.stories, args.nlu_data,
                         args.output, args.max_history)
