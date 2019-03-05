@@ -4,6 +4,7 @@ import mock
 import responses
 from rasa_nlu.project import Project, load_from_server
 from rasa_nlu.utils import EndpointConfig
+from rasa_nlu.model import Metadata
 
 def test_dynamic_load_model_with_exists_model():
     MODEL_NAME = 'model_name'
