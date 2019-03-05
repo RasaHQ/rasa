@@ -196,7 +196,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_memorise(self, trained_policy, default_domain):
         trackers = train_trackers(default_domain)
-        trackers = [t for t in trackers if not t.augmented]
+        trackers = [t for t in trackers if not hasattr(t, 'is_augmented')
+                    or not t.is_augmented]
         trained_policy.train(trackers, default_domain)
 
         (all_states, all_actions) = \

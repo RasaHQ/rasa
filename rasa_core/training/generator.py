@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "unique_last_num_states "
                                                 "augmentation_factor "
-                                                "max_number_of_trackers "
+                                                "max_number_of_augmented_trackers "
                                                 "tracker_limit "
                                                 "use_story_concatenation "
                                                 "rand")
@@ -40,7 +40,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self._states = None
         self.domain = domain
         # T/F property to filter augmented stories
-        self.augmented = is_augmented
+        self.is_augmented = is_augmented
 
     def past_states(self, domain: Domain) -> deque:
         """Return the states of the tracker based on the logged events."""
@@ -67,7 +67,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         return type(self)("",
                           self.slots.values(),
                           self._max_event_history,
-                          self.domain, self.augmented)
+                          self.domain, self.is_augmented)
 
     def copy(self, sender_id: Text = "") -> 'TrackerWithCachedStates':
         """Creates a duplicate of this tracker.
@@ -164,7 +164,7 @@ class TrainingDataGenerator(object):
             remove_duplicates=remove_duplicates,
             unique_last_num_states=unique_last_num_states,
             augmentation_factor=augmentation_factor,
-            max_number_of_trackers=max_number_of_augmented_trackers,
+            max_number_of_augmented_trackers=max_number_of_augmented_trackers,
             tracker_limit=tracker_limit,
             use_story_concatenation=use_story_concatenation,
             rand=random.Random(42)
@@ -268,7 +268,7 @@ class TrainingDataGenerator(object):
                 if everything_reachable_is_reached:
                     # augmentation round
                     incoming_trackers = self._subsample_trackers(
-                        incoming_trackers)
+                        incoming_trackers, self.config.max_number_of_augmented_trackers)
 
                 # update progress bar
                 pbar.set_postfix({"# trackers": "{:d}".format(
@@ -368,16 +368,16 @@ class TrainingDataGenerator(object):
                      "".format(len(finished_trackers)))
 
         if self.config.augmentation_factor > 0:
-            augm_finished_trackers, original_trackers = [], []
+            augmented_trackers, original_trackers = [], []
             for t in finished_trackers:
-                if t.augmented:
-                    augm_finished_trackers.append(t)
+                if t.is_augmented:
+                    augmented_trackers.append(t)
                 else:
                     original_trackers.append(t)
-            augm_finished_trackers = self._subsample_trackers(
-                augm_finished_trackers)
+            augmented_trackers = self._subsample_trackers(
+                augmented_trackers, self.config.max_number_of_augmented_trackers)
             logger.debug("Subsampled to {} augmented training trackers."
-                         "".format(len(augm_finished_trackers)))
+                         "".format(len(augmented_trackers)))
             logger.debug("There are {} original trackers."
                          "".format(len(original_trackers)))
             finished_trackers = original_trackers + augmented_trackers
@@ -391,16 +391,16 @@ class TrainingDataGenerator(object):
 
     def _subsample_trackers(
         self,
-        incoming_trackers: List[TrackerWithCachedStates]
+        incoming_trackers: List[TrackerWithCachedStates], max_number_of_trackers
     ) -> List[TrackerWithCachedStates]:
         """Subsample the list of trackers to retrieve a random subset."""
 
         # if flows get very long and have a lot of forks we
         # get into trouble by collecting too many trackers
         # hence the sub sampling
-        if self.config.max_number_of_trackers is not None:
+        if max_number_of_trackers is not None:
             return utils.subsample_array(incoming_trackers,
-                                         self.config.max_number_of_trackers,
+                                         max_number_of_trackers,
                                          rand=self.config.rand)
         else:
             return incoming_trackers
@@ -474,7 +474,7 @@ class TrainingDataGenerator(object):
                 # tracker should be copied,
                 # otherwise original tracker is updated
                 aug_t = t.copy()
-                aug_t.augmented = True
+                aug_t.is_augmented = True
                 aug_t.update(ActionReverted())
                 next_active_trackers[STORY_START].append(aug_t)
 

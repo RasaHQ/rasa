@@ -104,8 +104,6 @@ class DialogueStateTracker(object):
         self.latest_bot_utterance = None
         self._reset()
         self.active_form = {}
-        # Marking if story is original or generated
-        self.augmented = False
 
     ###
     # Public tracker interface
