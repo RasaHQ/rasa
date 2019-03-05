@@ -360,6 +360,7 @@ def get_token(_clitoken: str) -> str:
     token = _clitoken or _envtoken
     return token
 
+
 def get_absolute_path(model_path, current_path):
     model_path = model_path.rstrip("/")
     current_path = current_path.rstrip("/")
@@ -380,6 +381,7 @@ def parse_project(path):
     project = path.split('/')[-1]
     return project
 
+
 def parse_pre_load_path(pre_load_path):
     pre_load_path_split = pre_load_path.lstrip("/").split('/')
     is_potential_model_or_project_path = len(pre_load_path_split) > 1
@@ -388,12 +390,13 @@ def parse_pre_load_path(pre_load_path):
         pre_load_path_split,
         is_potential_model_or_project_path,
         is_potential_project_path
-    )
+        )
+
 
 def should_fetch_from_cloud(
-    is_local_model,
-    is_local_project,
-    is_potential_model_or_project_path):
+        is_local_model,
+        is_local_project,
+        is_potential_model_or_project_path):
     return (
         not is_local_model and
         not is_local_project and
@@ -425,9 +428,9 @@ def parse_project_and_model(
         result = result + (project, None, absolute_path)
 
     if should_fetch_from_cloud(
-        is_local_model,
-        is_local_project,
-        is_potential_model_or_project_path):
+            is_local_model,
+            is_local_project,
+            is_potential_model_or_project_path):
         # if we did not find anything locally,
         # we can assume the project or model is stored on the cloud
         # we do not know yet if it is a project or a model,
@@ -460,7 +463,6 @@ def parse_pre_load(pre_load_args, path):
         parsed_results = parsed_results + parsed_projects_and_models
 
     return parsed_results
-
 
 
 def main(args):
