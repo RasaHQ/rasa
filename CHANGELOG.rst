@@ -26,8 +26,6 @@ Changed
   and only on master and branches ending in ``.x`` (i.e. new version releases)
 - renamed ``train_dialogue_model`` to ``train``
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
-- changed export paths for interactive training to ``data/core/stories.md``,
-  ``data/nlu/nlu.md`` and ``data/nlu/nlu_interactive.md``
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
 
