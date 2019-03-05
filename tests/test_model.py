@@ -149,8 +149,6 @@ def test_create_fingerprint_from_invalid_paths(project, project_files):
 @pytest.mark.parametrize("use_fingerprint", [True, False])
 def test_rasa_packaging(trained_model, project, use_fingerprint):
     unpacked_model_path = get_model(trained_model)
-    unpacked_trained = os.path.abspath(os.path.join(unpacked_model_path,
-                                                    os.pardir))
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
     if use_fingerprint:
@@ -161,8 +159,7 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
     tempdir = tempfile.mkdtemp()
     output_path = os.path.join(tempdir, "test.tar.gz")
 
-    create_package_rasa(unpacked_trained, "rasa_model", output_path,
-                        fingerprint)
+    create_package_rasa(unpacked_model_path, output_path, fingerprint)
 
     unpacked = get_model(output_path)
 
@@ -171,5 +168,5 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
     assert os.path.exists(os.path.join(unpacked, "core"))
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
-    assert not os.path.exists(unpacked_trained)
+    assert not os.path.exists(unpacked_model_path)
 

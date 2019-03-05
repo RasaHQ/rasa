@@ -83,11 +83,13 @@ def unpack_model(model_file: Text, working_directory: Optional[Text] = None
         working_directory = tempfile.mkdtemp()
 
     tar = tarfile.open(model_file)
+    # All files are in a subdirectory.
+    model_subdirectory = tar.next() or ""
     tar.extractall(working_directory)
     tar.close()
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
-    return os.path.join(working_directory, "rasa_model")
+    return os.path.join(working_directory, model_subdirectory.name)
 
 
 def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
@@ -103,16 +105,13 @@ def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
             os.path.join(unpacked_model_path, "nlu"))
 
 
-def create_package_rasa(training_directory: Text, model_directory: Text,
-                        output_filename: Text,
+def create_package_rasa(training_directory: Text, output_filename: Text,
                         fingerprint: Optional[Fingerprint] = None) -> Text:
     """Creates a zipped Rasa model from trained model files.
 
     Args:
         training_directory: Path to the directory which contains the trained
                             model files.
-        model_directory: Name of the subdirectory in the zipped file which
-                         should contain the trained models.
         output_filename: Name of the zipped model file to be created.
         fingerprint: A unique fingerprint to identify the model version.
 
@@ -122,16 +121,16 @@ def create_package_rasa(training_directory: Text, model_directory: Text,
     """
     import tarfile
 
-    full_path = os.path.join(training_directory, model_directory)
-
     if fingerprint:
-        persist_fingerprint(full_path, fingerprint)
+        persist_fingerprint(training_directory, fingerprint)
 
-    if not os.path.exists(os.path.dirname(output_filename)):
-        os.makedirs(os.path.dirname(output_filename))
+    output_directory = os.path.dirname(output_filename)
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
 
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(full_path, arcname=os.path.basename(full_path))
+        archive_name = os.path.basename(training_directory)
+        tar.add(training_directory, arcname=archive_name)
 
     shutil.rmtree(training_directory)
     return output_filename

@@ -38,11 +38,11 @@ def train(domain: Text, config: Text, stories: Text, nlu_data: Text,
 
         if not model.core_fingerprint_changed(last_fingerprint,
                                               new_fingerprint):
-            target_path = os.path.join(train_path, "rasa_model", "core")
+            target_path = os.path.join(train_path, "core")
             retrain_core = not model.merge_model(old_core, target_path)
 
         if not model.nlu_fingerprint_changed(last_fingerprint, new_fingerprint):
-            target_path = os.path.join(train_path, "rasa_model", "nlu")
+            target_path = os.path.join(train_path, "nlu")
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
     if force_training or retrain_core:
@@ -58,8 +58,7 @@ def train(domain: Text, config: Text, stories: Text, nlu_data: Text,
 
     if retrain_core or retrain_nlu:
         output = create_output_path(output)
-        model.create_package_rasa(train_path, "rasa_model", output,
-                                  new_fingerprint)
+        model.create_package_rasa(train_path, output, new_fingerprint)
 
         print("Train path: '{}'.".format(train_path))
 
@@ -95,8 +94,7 @@ def train_core(domain: Text, config: Text, stories: Text, output: Text,
 
     # normal (not compare) training
     core_model = rasa_core.train(domain_file=domain, stories_file=stories,
-                                 output_path=os.path.join(train_path,
-                                                          "rasa_model", "core"),
+                                 output_path=os.path.join(train_path, "core"),
                                  policy_config=config)
 
     if not train_path:
@@ -104,8 +102,7 @@ def train_core(domain: Text, config: Text, stories: Text, output: Text,
         output_path = create_output_path(output, prefix="core-")
         new_fingerprint = model.model_fingerprint(config, domain,
                                                   stories=stories)
-        model.create_package_rasa(train_path, "rasa_model", output_path,
-                                  new_fingerprint)
+        model.create_package_rasa(train_path, output_path, new_fingerprint)
         print_success("Your Rasa Core model is trained and saved at '{}'."
                       "".format(output_path))
 
@@ -133,14 +130,13 @@ def train_nlu(config: Text, nlu_data: Text, output: Text,
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa_nlu.train(config, nlu_data, _train_path,
-                                     project="rasa_model",
+                                     project="",
                                      fixed_model_name="nlu")
 
     if not train_path:
         output_path = create_output_path(output, prefix="nlu-")
         new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data)
-        model.create_package_rasa(_train_path, "rasa_model", output_path,
-                                  new_fingerprint)
+        model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success("Your Rasa NLU model is trained and saved at '{}'."
                       "".format(output_path))
 

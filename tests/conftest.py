@@ -27,6 +27,7 @@ def train_model(project: Text, filename: Text = "test.tar.gz"):
     arguments.config = os.path.join(project, DEFAULT_CONFIG_PATH)
     arguments.nlu = os.path.join(project, DEFAULT_NLU_DATA_PATH)
     arguments.stories = os.path.join(project, DEFAULT_STORIES_PATH)
+    arguments.force = False
 
     train(arguments)
 
