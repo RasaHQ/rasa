@@ -27,7 +27,7 @@ Removed
 
 Fixed
 -----
-- When a ``fork`` is used every forked storyline is saved (not just the last)
+- When a ``fork`` is used in interactive learning, every forked storyline is saved (not just the last)
 
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
