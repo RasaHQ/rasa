@@ -166,7 +166,6 @@ class ActionBack(Action):
         return ACTION_BACK_NAME
 
     def run(self, dispatcher, tracker, domain):
-        from rasa_core.events import UserUtteranceReverted
 
         return [UserUtteranceReverted(), UserUtteranceReverted()]
 
