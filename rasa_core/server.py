@@ -9,7 +9,6 @@ from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic_cors import CORS
 from sanic_jwt import Initialize
-from sanic_jwt import exceptions
 from typing import List, Text, Optional, Union, Callable, Any
 
 import rasa_nlu
@@ -244,10 +243,10 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
         try:
             out = CollectingOutputChannel()
             await app.agent.execute_action(sender_id,
-                                       action_to_execute,
-                                       out,
-                                       policy,
-                                       confidence)
+                                           action_to_execute,
+                                           out,
+                                           policy,
+                                           confidence)
 
             # retrieve tracker and set to requested state
             tracker = app.agent.tracker_store.get_or_create_tracker(sender_id)
@@ -414,8 +413,8 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
             out = CollectingOutputChannel()
             # Fetches the appropriate bot response in a json format
             responses = await app.agent.handle_text(message,
-                                                output_channel=out,
-                                                sender_id=sender_id)
+                                                    output_channel=out,
+                                                    sender_id=sender_id)
             return response.json(responses)
 
         except Exception as e:
@@ -430,6 +429,9 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
         try:
             # Fetches the appropriate bot response in a json format
             responses = app.agent.predict_next(sender_id)
+            responses['scores'] = sorted(responses['scores'],
+                                         key=lambda k: (-k['score'],
+                                                        k['action']))
             return response.json(responses)
 
         except Exception as e:
@@ -570,8 +572,8 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
         try:
             # Fetches the appropriate bot response in a json format
             app.agent.continue_training([tracker],
-                                    epochs=epochs,
-                                    batch_size=batch_size)
+                                        epochs=epochs,
+                                        batch_size=batch_size)
             return '', 204
 
         except Exception as e:

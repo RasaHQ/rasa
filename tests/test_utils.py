@@ -171,6 +171,15 @@ def test_read_yaml_string_with_env_var():
     assert r['user'] == 'user' and r['password'] == 'pass'
 
 
+def test_read_yaml_string_with_multiple_env_vars_per_line():
+    config_with_env_var = """
+    user: ${USER_NAME} ${PASS}
+    password: ${PASS}
+    """
+    r = utils.read_yaml_string(config_with_env_var)
+    assert r['user'] == 'user pass' and r['password'] == 'pass'
+
+
 def test_read_yaml_string_with_env_var_prefix():
     config_with_env_var_prefix = """
     user: db_${USER_NAME}
@@ -203,5 +212,5 @@ def test_read_yaml_string_with_env_var_not_exist():
     user: ${USER_NAME}
     password: ${PASSWORD}
     """
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         utils.read_yaml_string(config_with_env_var_not_exist)

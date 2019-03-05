@@ -1,7 +1,6 @@
 import sys
 
 import asyncio
-import io
 import logging
 import numpy as np
 import os
@@ -16,7 +15,7 @@ from typing import (
 
 import questionary
 from questionary import Choice, Form, Question
-from rasa_core import utils, server, events, constants, run
+from rasa_core import utils, events, constants, run
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
@@ -485,7 +484,8 @@ def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
             bot_column.append(colored(evt['name'], 'autocyan'))
             if evt['confidence'] is not None:
                 bot_column[-1] += (
-                    colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
+                    colored(" {:03.2f}".format(evt['confidence']),
+                            'autowhite'))
 
         elif evt.get("event") == UserUttered.type_name:
             if bot_column:
@@ -529,6 +529,21 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
     return slot_strs
 
 
+async def _write_data_to_file(sender_id: Text, endpoint: EndpointConfig):
+    """Write stories and nlu data to file."""
+
+    story_path, nlu_path, domain_path = _request_export_info()
+
+    tracker = await retrieve_tracker(endpoint, sender_id)
+    evts = tracker.get("events", [])
+
+    await _write_stories_to_file(story_path, evts)
+    await _write_nlu_to_file(nlu_path, evts)
+    await _write_domain_to_file(domain_path, evts, endpoint)
+
+    logger.info("Successfully wrote stories and NLU data")
+
+
 async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     """Display the exit menu.
 
@@ -544,16 +559,7 @@ async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
 
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
-        story_path, nlu_path, domain_path = _request_export_info()
-
-        tracker = await retrieve_tracker(endpoint, sender_id)
-        evts = tracker.get("events", [])
-
-        await _write_stories_to_file(story_path, evts)
-        await _write_nlu_to_file(nlu_path, evts)
-        await _write_domain_to_file(domain_path, evts, endpoint)
-
-        logger.info("Successfully wrote stories and NLU data")
+        await _write_data_to_file(sender_id, endpoint)
         sys.exit()
     elif answer == "continue":
         # in this case we will just return, and the original
@@ -575,15 +581,13 @@ async def _request_action_from_user(
 
     await _print_history(sender_id, endpoint)
 
-    sorted_actions = sorted(predictions,
-                            key=lambda k: (-k['score'], k['action']))
-
     choices = [{"name": "{:03.2f} {:40}".format(a.get("score"),
                                                 a.get("action")),
                 "value": a.get("action")}
-               for a in sorted_actions]
+               for a in predictions]
 
-    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
+    choices = ([{"name": "<create new action>", "value": OTHER_ACTION}] +
+               choices)
     question = questionary.select("What is the next action of the bot?",
                                   choices)
 
@@ -1211,14 +1215,18 @@ async def record_messages(endpoint: EndpointConfig,
             except ForkTracker:
                 await _print_history(sender_id, endpoint)
 
-                evts = await _request_fork_from_user(sender_id, endpoint)
-                sender_id = uuid.uuid4().hex
+                evts_fork = await _request_fork_from_user(sender_id, endpoint)
 
-                if evts is not None:
-                    await replace_events(endpoint, sender_id, evts)
-                    sender_ids.append(sender_id)
-                    await _print_history(sender_id, endpoint)
-                    await _plot_trackers(sender_ids, plot_file, endpoint)
+                await send_event(endpoint, sender_id,
+                                 Restarted().as_dict())
+
+                if evts_fork:
+                    for evt in evts_fork:
+                        await send_event(endpoint, sender_id, evt)
+                logger.info("Restarted conversation at fork.")
+
+                await _print_history(sender_id, endpoint)
+                await _plot_trackers(sender_ids, plot_file, endpoint)
 
     except Abort:
         return
@@ -1293,7 +1301,8 @@ def run_interactive_learning(agent: Agent,
                              ):
     """Start the interactive learning with the model of the agent."""
 
-    app = run.configure_app(initial_agent=agent, enable_api=True)
+    app = run.configure_app(enable_api=True)
+    app.agent = agent
 
     return _serve_application(app, stories, finetune,
                               serve_forever, skip_visualization)

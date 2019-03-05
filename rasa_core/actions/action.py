@@ -11,7 +11,7 @@ from rasa_core import events
 from rasa_core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_OUT_OF_SCOPE)
+    REQUESTED_SLOT, USER_INTENT_OUT_OF_SCOPE)
 from rasa_core.events import (
     UserUtteranceReverted, UserUttered,
     ActionExecuted, Event)
@@ -425,7 +425,8 @@ class ActionRevertFallbackEvents(Action):
 
 
 def has_user_affirmed(tracker: 'DialogueStateTracker') -> bool:
-    return tracker.last_executed_action_has(ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
+    return tracker.last_executed_action_has(
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
 
 
 def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
@@ -433,7 +434,7 @@ def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
 
     last_user_event = tracker.get_last_event_for(UserUttered)
     last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
+    last_user_event.parse_data['intent']['confidence'] = 1.0
 
     # User affirms the rephrased intent
     rephrased_intent = tracker.last_executed_action_has(

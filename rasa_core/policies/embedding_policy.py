@@ -1,6 +1,7 @@
 from collections import namedtuple
 import copy
 import io
+import json
 import logging
 import os
 import warnings
@@ -139,6 +140,7 @@ class EmbeddingPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[FullDialogueTrackerFeaturizer] = None,
+        priority: int = 1,
         encoded_all_actions: Optional[np.ndarray] = None,
         graph: Optional[tf.Graph] = None,
         session: Optional[tf.Session] = None,
@@ -167,7 +169,7 @@ class EmbeddingPolicy(Policy):
                 raise TypeError("Passed tracker featurizer of type {}, "
                                 "should be FullDialogueTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-        super(EmbeddingPolicy, self).__init__(featurizer)
+        super(EmbeddingPolicy, self).__init__(featurizer, priority)
 
         # flag if to use the same embeddings for user and bot
         try:
@@ -351,7 +353,7 @@ class EmbeddingPolicy(Policy):
                                 data_X: np.ndarray,
                                 data_Y: Optional[np.ndarray] = None
                                 ) -> SessionData:
-        """Combine all tf session related data into a namedtuple"""
+        """Combine all tf session related data into a named tuple"""
 
         X, slots, previous_actions = \
             self._create_X_slots_previous_actions(data_X)
@@ -1369,6 +1371,11 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
+        meta = {"priority": self.priority}
+
+        meta_file = os.path.join(path, 'embedding_policy.json')
+        utils.dump_obj_as_json_to_file(meta_file, meta)
+
         file_name = 'tensorflow_embedding.ckpt'
         checkpoint = os.path.join(path, file_name)
         utils.create_dir_for_file(checkpoint)
@@ -1442,6 +1449,9 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(checkpoint + '.meta'):
             return cls(featurizer=featurizer)
 
+        meta_file = os.path.join(path, "embedding_policy.json")
+        meta = json.loads(utils.read_file(meta_file))
+
         tf_config_file = os.path.join(
             path, "{}.tf_config.pkl".format(file_name))
 
@@ -1486,6 +1496,7 @@ class EmbeddingPolicy(Policy):
             encoded_all_actions = pickle.load(f)
 
         return cls(featurizer=featurizer,
+                   priority=meta["priority"],
                    encoded_all_actions=encoded_all_actions,
                    graph=graph,
                    session=sess,

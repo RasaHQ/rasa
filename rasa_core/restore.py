@@ -13,7 +13,7 @@ from rasa_core.channels import UserMessage, CollectingOutputChannel, console
 from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.run import load_agent
+# from rasa_core.run import load_agent
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import AvailableEndpoints
 
@@ -145,7 +145,7 @@ def load_tracker_from_json(tracker_dump: Text,
                                           domain.slots)
 
 
-async def serve_application(model_directory: Text,
+async def serve_application(core_model: Text,
                             nlu_model: Optional[Text] = None,
                             tracker_dump: Optional[Text] = None,
                             port: int = constants.DEFAULT_SERVER_PORT,

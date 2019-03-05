@@ -25,7 +25,7 @@ from rasa_core.utils import (
     AvailableEndpoints, pad_list_to_size,
     set_default_subparser)
 from rasa_nlu import utils as nlu_utils
-from rasa_nlu.evaluate import plot_confusion_matrix, get_evaluation_metrics
+from rasa_nlu.test import plot_confusion_matrix, get_evaluation_metrics
 
 logger = logging.getLogger(__name__)
 

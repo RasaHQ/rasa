@@ -544,7 +544,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             "the tf.contrib.seq2seq.tile_batch function with argument "
             "multiple=beam_width.")
         with tf.control_dependencies(
-            self._batch_size_checks(cell_batch_size, error_message)):
+                self._batch_size_checks(cell_batch_size, error_message)):
             attn_inputs = tf.identity(
                 attn_inputs, name="checked_attn_inputs")
 
@@ -766,7 +766,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # get all previous outputs from appropriate
         # attention mechanism's memory limited by current time
         prev_outputs = tf.stop_gradient(self._attention_mechanisms[
-                                            self._index_of_attn_to_copy].values[
+                                        self._index_of_attn_to_copy].values[
                                         :, :time, :])
 
         # multiply by alignments to get one vector from one time step

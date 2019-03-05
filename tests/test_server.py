@@ -142,6 +142,20 @@ def test_put_tracker(app):
     assert events.deserialise_events(evts) == test_events
 
 
+def test_sorted_predict(app):
+    data = json.dumps([event.as_dict() for event in test_events[:3]])
+    _, response = app.put(
+        "/conversations/sortedpredict/tracker/events",
+        data=data, headers={"Content-Type": "application/json"})
+
+    assert response.status == 200
+
+    response = app.post("/conversations/sortedpredict/predict")
+    scores = response.json["scores"]
+    sorted_scores = sorted(scores, key=lambda k: (-k['score'], k['action']))
+    assert scores == sorted_scores
+
+
 def test_list_conversations(app):
     data = json.dumps({"query": "/greet"})
     _, response = app.post("/conversations/myid/respond",
