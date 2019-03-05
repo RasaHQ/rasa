@@ -4,8 +4,7 @@ from typing import List
 
 import rasa.cli.train as train
 import rasa.cli.run as run
-from rasa.model import unpack_model
-import rasa.cli.default_arguments as defaults
+from rasa import model, data
 
 
 def add_subparser(subparsers: _SubParsersAction,
@@ -39,11 +38,10 @@ def interactive(args: Namespace):
     args.finetune = False  # Don't support finetuning
 
     zipped_model = train.train(args)
-    model_path, core_path, nlu_path = unpack_model(zipped_model,
-                                                   subdirectories=True)
-    args.nlu = nlu_path
-    args.core = core_path
+    model_path = model.unpack_model(zipped_model)
+    args.core, args.nlu = model.get_model_subdirectories(model_path)
+    stories_directory = data.get_core_directory(args.training_files)
 
-    do_interactive_learning(args, args.stories)
+    do_interactive_learning(args, stories_directory)
 
     shutil.rmtree(model_path)
