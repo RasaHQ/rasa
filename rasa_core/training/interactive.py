@@ -56,9 +56,9 @@ logger = logging.getLogger(__name__)
 
 MAX_VISUAL_HISTORY = 3
 
-PATHS = {"stories": "data/core/stories.md",
-         "nlu": "data/nlu/nlu.md",
-         "backup": "data/nlu/nlu_interactive.md",
+PATHS = {"stories": "data/stories.md",
+         "nlu": "data/nlu.md",
+         "backup": "data/nlu_interactive.md",
          "domain": "domain.yml"}
 
 # choose other intent, making sure this doesn't clash with an existing intent
@@ -1328,7 +1328,7 @@ def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
             abort(404)
 
 
-def run_interactive_learning(agent: Agent,
+def run_interactive_learning(agent: "Agent",
                              stories: Text = None,
                              finetune: bool = False,
                              serve_forever: bool = True,
