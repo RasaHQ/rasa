@@ -380,7 +380,7 @@ class TrainingDataGenerator(object):
                          "".format(len(augm_finished_trackers)))
             logger.debug("There are {} original trackers."
                          "".format(len(original_trackers)))
-            finished_trackers = original_trackers
+            finished_trackers = original_trackers + augmented_trackers
 
         return finished_trackers
 
