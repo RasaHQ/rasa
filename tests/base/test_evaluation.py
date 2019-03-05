@@ -4,6 +4,8 @@ import logging
 
 import pytest
 
+from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.test import (
     is_token_within_entity, do_entities_overlap,
     merge_labels, remove_duckling_entities,
@@ -175,19 +177,27 @@ def test_entity_overlap():
 
 def test_determine_token_labels_throws_error():
     with pytest.raises(ValueError):
-        determine_token_labels(CH_correct_segmentation,
+        determine_token_labels(CH_correct_segmentation[0],
                                [CH_correct_entity,
                                 CH_wrong_entity], ["CRFEntityExtractor"])
 
 
 def test_determine_token_labels_no_extractors():
+    with pytest.raises(ValueError):
+        determine_token_labels(CH_correct_segmentation[0],
+                               [CH_correct_entity, CH_wrong_entity], None)
+
+
+def test_determine_token_labels_no_extractors_no_overlap():
     determine_token_labels(CH_correct_segmentation[0],
-                           [CH_correct_entity, CH_wrong_entity], None)
+                           EN_targets, None)
 
 
 def test_determine_token_labels_with_extractors():
     determine_token_labels(CH_correct_segmentation[0],
-                           [CH_correct_entity, CH_wrong_entity], ["A", "B"])
+                           [CH_correct_entity, CH_wrong_entity],
+                           [SpacyEntityExtractor.name,
+                            MitieEntityExtractor.name])
 
 
 def test_label_merging():
@@ -259,17 +269,17 @@ def test_run_cv_evaluation():
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
     assert len(entity_results.train[
-        'CRFEntityExtractor']["Accuracy"]) == n_folds
+                   'CRFEntityExtractor']["Accuracy"]) == n_folds
     assert len(entity_results.train[
-        'CRFEntityExtractor']["Precision"]) == n_folds
+                   'CRFEntityExtractor']["Precision"]) == n_folds
     assert len(entity_results.train[
-        'CRFEntityExtractor']["F1-score"]) == n_folds
+                   'CRFEntityExtractor']["F1-score"]) == n_folds
     assert len(entity_results.test[
-        'CRFEntityExtractor']["Accuracy"]) == n_folds
+                   'CRFEntityExtractor']["Accuracy"]) == n_folds
     assert len(entity_results.test[
-        'CRFEntityExtractor']["Precision"]) == n_folds
+                   'CRFEntityExtractor']["Precision"]) == n_folds
     assert len(entity_results.test[
-        'CRFEntityExtractor']["F1-score"]) == n_folds
+                   'CRFEntityExtractor']["F1-score"]) == n_folds
 
 
 def test_intent_evaluation_report(tmpdir_factory):
