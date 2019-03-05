@@ -343,10 +343,11 @@ paths:
       - Tracker
       summary: Predict the next action
       description: >-
-        Runs the conversations tracker through the models
-        policies to predict the next action. The action is
-        not executed, just returned. The state of the tracker
-        is not modified.
+        Runs the conversations tracker through the model's
+        policies to predict the scores of all actions present
+        in the model's domain. Actions are returned in the
+        'scores' array, sorted on their 'score' values.
+        The state of the tracker is not modified.
       operationId: predictAction
       parameters:
       - $ref: '#/components/parameters/senderId'
