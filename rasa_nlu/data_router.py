@@ -312,8 +312,8 @@ class DataRouter(object):
             model_dir = os.path.basename(os.path.normpath(model_path))
             self.project_store[project].update(model_dir)
 
-            if (self.project_store[project].status == STATUS_TRAINING and
-                    not self.project_store[project].current_training_processes):
+            if (self.project_store[project].current_training_processes == 1 and
+                    self.project_store[project].status == STATUS_TRAINING):
                 self.project_store[project].status = STATUS_READY
             return model_path
         except Exception as e:

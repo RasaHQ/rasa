@@ -19,6 +19,13 @@ how you can migrate from one version to another.
   well as the configuration and metadata). Please make sure to retrain
   a model before trying to use it with this improved version.
 
+script parameters
+~~~~~~~~~~~~~~~~~
+- the ``--num_threads`` parameter got removed from the ``run`` command. The
+  server will always run single threaded, but in an async way. If you want to
+  make use of multiple processes, feel free to check out the sanic server
+  documentation https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn
+
 model configuration
 ~~~~~~~~~~~~~~~~~~~
 - The standard pipelines have been renamed. ``spacy_sklearn`` is now 

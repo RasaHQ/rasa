@@ -36,7 +36,8 @@ Changed
   ``rasa_nlu.test.cross_validate``
 - renamed ``rasa_nlu.train.do_train()`` to ``rasa_nlu.train.train()``
 - train command can now also load config from file
-- removed ``--num_threads`` from run command
+- removed ``--num_threads`` from run command (server will be asyncronous but
+  running in a single thread)
 
 Removed
 -------
