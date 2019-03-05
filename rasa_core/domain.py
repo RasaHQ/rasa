@@ -53,40 +53,40 @@ def check_domain_sanity(domain):
     def get_exception_message(duplicates=None, mappings=None):
         """Return a message given a list of error locations."""
 
-        msg = ""
+        message = ""
         if duplicates:
-            msg += get_duplicate_exception_message(duplicates)
+            message += get_duplicate_exception_message(duplicates)
         if mappings:
-            if msg:
-                msg += "\n"
-            msg += get_mapping_exception_message(mappings)
-        return msg
+            if message:
+                message += "\n"
+            message += get_mapping_exception_message(mappings)
+        return message
 
     def get_mapping_exception_message(mappings):
         """Return a message given a list of duplicates."""
 
-        msg = ""
+        message = ""
         for name, action in mappings:
-            if msg:
-                msg += "\n"
-            msg += ("Intent '{}' is set to trigger action '{}', which is not "
+            if message:
+                message += "\n"
+            message += ("Intent '{}' is set to trigger action '{}', which is not "
                     "defined in the domain.".format(name, action))
-        return msg
+        return message
 
     def get_duplicate_exception_message(
         duplicates: List[Tuple[List[Text], Text]]
     ) -> Text:
         """Return a message given a list of duplicates."""
 
-        msg = ""
+        message = ""
         for d, name in duplicates:
             if d:
-                if msg:
-                    msg += "\n"
-                msg += ("Duplicate {0} in domain. "
+                if message:
+                    message += "\n"
+                message += ("Duplicate {0} in domain. "
                         "These {0} occur more than once in "
                         "the domain: {1}".format(name, ", ".join(d)))
-        return msg
+        return message
 
     duplicate_actions = get_duplicates(domain.action_names)
     duplicate_intents = get_duplicates(domain.intents)
