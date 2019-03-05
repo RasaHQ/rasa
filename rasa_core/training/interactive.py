@@ -999,21 +999,20 @@ def _validate_user_text(latest_message: Dict[Text, Any],
     intent = parse_data.get("intent", {}).get("name")
     entities = parse_data.get("entities", [])
     if entities:
-        entity = []
-        for e in entities:
-            entity.append('[' + e['value'] + '](' + e['entity'] + ')')
+        msg = ("Is the intent '{}' correct for '{}' and are "
+               "all entities labeled correctly?"
+               .format(text, intent))
     else:
-        entity = "'None'"
+        msg = ("Your NLU model classified '{}' with "
+               "intent '{}' and there are no entities, is this correct?"
+               .format(text, intent))
 
     if intent is None:
         print("The NLU classification for '{}' returned '{}'"
               "".format(text, intent))
         return False
     else:
-        question = questionary.confirm(
-            "Is the NLU classification for '{}' with intent '{}' "
-            "and entities: {} correct?"
-            "".format(text, intent, entity))
+        question = questionary.confirm(msg)
 
         return _ask_or_abort(question, sender_id, endpoint)
 
