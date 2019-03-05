@@ -345,7 +345,6 @@ class RasaNLU(object):
             return simplejson.dumps({"error": "{}".format(e)})
 
 
-<<<<<<< HEAD
 def get_token(_clitoken: str) -> str:
     _envtoken = os.environ.get("RASA_NLU_TOKEN")
 
@@ -380,7 +379,6 @@ def parse_model(path):
 def parse_project(path):
     project = path.split('/')[-1]
     return project
-
 
 def parse_pre_load_path(pre_load_path):
     pre_load_path_split = pre_load_path.lstrip("/").split('/')
