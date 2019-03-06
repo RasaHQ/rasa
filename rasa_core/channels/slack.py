@@ -71,7 +71,7 @@ class SlackBot(SlackClient, OutputChannel):
                            "If you add more, all will be ignored.")
             return self.send_text_message(recipient, message)
 
-        if(len(message) > 0):
+        if message:
             callback_string = message.replace(' ', '_')[:20]
         else:
             callback_string = self._get_text_from_slack_buttons(buttons)
