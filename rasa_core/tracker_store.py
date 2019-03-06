@@ -344,11 +344,9 @@ class SQLTrackerStore(TrackerStore):
         if self.event_broker:
             self.stream_events(tracker)
 
-        serialised_tracker = self.serialise_tracker(tracker)
+        events = self._event_buffer(tracker)  # only store recent events
 
-        # events = self._event_buffer(tracker)  # only store recent events
-
-        for event in tracker.events:
+        for event in events:
 
             try:
                 data = event.as_dict()
