@@ -182,11 +182,6 @@ You can pass a list of policies when you create an agent:
                   policies=[MemoizationPolicy(), KerasPolicy()])
 
 
-.. note::
-
-    By default, Rasa Core uses the ``KerasPolicy`` in combination with
-    the ``MemoizationPolicy``.
-
 Memoization Policy
 ^^^^^^^^^^^^^^^^^^
 
@@ -272,19 +267,20 @@ It is recommended to use
 
 **Configuration**:
 
-    Configuration parameters can be passed to ``agent.train(...)`` method.
+    Configuration parameters can be passed as parameters to the
+    ``EmbeddingPolicy`` within the policy configuration file.
 
     .. note::
 
-        Pass an appropriate ``epochs`` number to ``agent.train(...)``
-        method, otherwise the policy will be trained only for ``1`` epoch.
-        Since this is embedding based policy, it requires a large
+        Pass an appropriate number of ``epochs`` to the ``EmbeddingPolicy``,
+        otherwise the policy will be trained only for ``1``
+        epoch. Since this is an embedding based policy, it requires a large
         number of epochs, which depends on the complexity of the
         training data and whether attention is used or not.
 
     The main feature of this policy is an **attention** mechanism over
     previous user input and system actions.
-    **Attention is turned on by default**, in order to turn it off,
+    **Attention is turned on by default**; in order to turn it off,
     configure the following parameters:
 
         - ``attn_before_rnn`` if ``true`` the algorithm will use
@@ -325,7 +321,7 @@ It is recommended to use
               forward/backward pass, the higher the batch size, the more
               memory space you'll need;
             - ``epochs`` sets the number of times the algorithm will see
-              training data, where ``one epoch`` = one forward pass and
+              training data, where one ``epoch`` equals one forward pass and
               one backward pass of all the training examples;
             - ``random_seed`` if set to any int will get reproducible
               training results for the same inputs;
@@ -385,7 +381,7 @@ It is recommended to use
         ``batch_size`` is required, pass an ``int``, e.g.
         ``"batch_size": 8``.
 
-    These parameters can be passed to ``Agent.train(...)`` method.
+    These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
    .. literalinclude:: ../rasa_core/policies/embedding_policy.py

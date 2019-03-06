@@ -14,19 +14,20 @@ be executed if the intent recognition has a confidence below ``nlu_threshold``
 or if none of the dialogue policies predict an action with
 confidence higher than ``core_threshold``.
 
-The ``rasa_core.train`` scripts provides parameters to adjust these
-thresholds:
+The thresholds and fallback action can be adjusted in the policy configuration
+file as parameters of the ``FallbackPolicy``:
 
-+-----------------------+------------------------------------------------------+
-| ``--nlu_threshold``   | min confidence needed                                |
-|                       | to accept an NLU prediction                          |
-+-----------------------+------------------------------------------------------+
-| ``--core_threshold``  | min confidence needed                                |
-|                       | to accept an action prediction from Rasa Core        |
-+-----------------------+------------------------------------------------------+
-| ``--fallback_action`` | name of the action to be called if the confidence    |
-|                       | of intent / action prediction is below the threshold |
-+-----------------------+------------------------------------------------------+
+.. code-block:: yaml
+
+  policies:
+    - name: "FallbackPolicy"
+      # min confidence needed to accept an NLU prediction
+      nlu_threshold: 0.3
+      # min confidence needed to accept an action prediction from Rasa Core
+      core_threshold: 0.3
+      # name of the action to be called if the confidence of intent / action
+      # is below the threshold
+      fallback_action_name: 'action_default_fallback'
 
 If you want to run this from python, use:
 
