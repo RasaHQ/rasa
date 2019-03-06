@@ -708,21 +708,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ParseData'
-              examples:
-                text: "Hello, I am Rasa!"
-                  entities:
-                    - start: 12
-                      end: 16
-                      entity: name
-                      value: Rasa
-                  intent:
-                    confidence: 0.87
-                    name: greet
-                  intent_ranking:
-                    - confidence: 0.87
-                      name: greet
-                    - confidence: 0.13
-                      name: goodbye
         403:
           $ref: '#/components/responses/403Permissions'
 
