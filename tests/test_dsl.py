@@ -169,7 +169,8 @@ def test_generate_training_data_original_and_augmented_trackers(
     # augmentation factor of 3 indicates max of 3*10 augmented stories generated
     # maximum number of stories should be augmented+original = 33
     original_trackers = \
-        [t for t in training_trackers if not
+        t
+        for t in training_trackers if not
          hasattr(t, 'is_augmented') or not t.is_augmented
      ]
     assert len(original_trackers) == 3
