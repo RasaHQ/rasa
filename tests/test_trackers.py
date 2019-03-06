@@ -94,14 +94,9 @@ def test_tracker_store_storage_and_retrieval(store):
 
 @pytest.mark.parametrize("store", stores_to_be_tested(),
                          ids=stores_to_be_tested_ids())
-@pytest.mark.parametrize("pair", zip(sorted(glob.glob('data/test_dialogues/*json')),
-                                     ["examples/formbot/domain.yml",
-                                      "examples/moodbot/domain.yml",
-                                      "examples/restaurantbot/restaurant_domain.yml"]))
-def test_tracker_store(store, pair):
-    filename, domainpath = pair
-    domain = Domain.load(domainpath)
-    tracker = tracker_from_dialogue_file(filename, domain)
+def test_tracker_store(store, moodbot_domain):
+    filename = 'data/test_dialogues/moodbot.json'
+    tracker = tracker_from_dialogue_file(filename, moodbot_domain)
     store.save(tracker)
     restored = store.retrieve(tracker.sender_id)
     assert restored == tracker
