@@ -174,7 +174,7 @@ def test_generate_training_data_original_and_augmented_trackers(
          hasattr(t, 'is_augmented') or not t.is_augmented
      ]
     assert len(original_trackers) == 3
-    assert len(original_trackers) <= 33
+    assert len(training_trackers) <= 33
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):
