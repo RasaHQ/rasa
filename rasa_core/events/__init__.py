@@ -585,7 +585,7 @@ class ReminderCancelled(Event):
         return ("ReminderCancelled(action: {})"
                 .format(self.action_name))
 
-    def as_shitory_string(self):
+    def as_story_string(self):
         props = json.dumps(self._data_obj())
         return "{name}{props}".format(name=self.type_name, props=props)
 
