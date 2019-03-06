@@ -9,10 +9,9 @@ from flask import Flask, request, abort, Response, jsonify, json
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 
-import rasa_nlu
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.evaluate import run_story_evaluation
+from rasa_core.test import test
 from rasa_core.events import Event
 from rasa_core.domain import Domain
 from rasa_core.policies import PolicyEnsemble
@@ -407,6 +406,9 @@ def create_app(agent,
         try:
             # Fetches the appropriate bot response in a json format
             responses = agent.predict_next(sender_id)
+            responses['scores'] = sorted(responses['scores'],
+                                         key = lambda k: (-k['score'],
+                                                          k['action']))
             return jsonify(responses)
 
         except Exception as e:
@@ -492,12 +494,14 @@ def create_app(agent,
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def evaluate_stories():
+        import rasa_nlu
+
         """Evaluate stories against the currently loaded model."""
         tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
                                                         mode='w+b')
         use_e2e = utils.bool_arg('e2e', default=False)
         try:
-            evaluation = run_story_evaluation(tmp_file, agent, use_e2e=use_e2e)
+            evaluation = test(tmp_file, agent, use_e2e=use_e2e)
             return jsonify(evaluation)
         except ValueError as e:
             return error(400, "FailedEvaluation",

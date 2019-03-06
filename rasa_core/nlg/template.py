@@ -1,7 +1,6 @@
 import copy
 import logging
 
-import numpy as np
 from rasa_core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
 
@@ -25,6 +24,7 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
                              output_channel: Text
                              ) -> Optional[Dict[Text, Any]]:
         """Select random template for the utter action from available ones."""
+        import numpy as np
 
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])

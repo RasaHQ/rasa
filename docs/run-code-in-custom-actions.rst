@@ -1,4 +1,5 @@
-:desc: Running actions and custom code with Rasa.
+:desc: Read more about how to run custom actions and code with open source Rasa
+       Stack to integrate your contextual Assistant in your processes and databases. 
 
 .. _customactions:
 
