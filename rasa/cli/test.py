@@ -4,7 +4,7 @@ from typing import List, Optional, Text, Union
 
 from rasa import data
 from rasa.cli.default_arguments import add_model_param, add_stories_param
-from rasa.cli.utils import validate_path
+from rasa.cli.utils import get_validated_path
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_CONFIG_PATH,
                             DEFAULT_MODELS_PATH, DEFAULT_DATA_PATH)
 from rasa.model import get_latest_model, get_model
@@ -123,10 +123,12 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None
               ) -> None:
     from rasa.test import test_core
 
-    validate_path(args, "model", DEFAULT_MODELS_PATH)
-    validate_path(args, "endpoints", DEFAULT_ENDPOINTS_PATH, True)
-    validate_path(args, "config", DEFAULT_CONFIG_PATH)
-    validate_path(args, "stories", DEFAULT_DATA_PATH)
+    args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    args.endpoints = get_validated_path(args.endpoints, "endpoints",
+                                        DEFAULT_ENDPOINTS_PATH, True)
+    args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+    args.stories = get_validated_path(args.stories, "stories", 
+                                      DEFAULT_DATA_PATH)
 
     args.stories = data.get_core_directory(args.stories)
 
@@ -137,25 +139,24 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None
              ) -> None:
     from rasa.test import test_nlu, test_nlu_with_cross_validation
 
-    validate_path(args, "model", DEFAULT_MODELS_PATH)
-    validate_path(args, "nlu", DEFAULT_DATA_PATH)
-
-    args.nlu = data.get_nlu_directory(args.nlu)
+    args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
+    nlu_data = data.get_nlu_directory(nlu_data)
     model_path = model_path or args.model
 
     if model_path:
-        test_nlu(nlu_data=args.nlu, **vars(args))
+        test_nlu(nlu_data=nlu_data, **vars(args))
     else:
         print("No model specified. Model will be trained using cross "
               "validation.")
-        validate_path(args, "config", DEFAULT_CONFIG_PATH)
+        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
-        test_nlu_with_cross_validation(args.config, args.nlu, args.folds)
+        test_nlu_with_cross_validation(config, nlu_data, args.folds)
 
 
 def test(args: argparse.Namespace):
-    validate_path(args, "model", DEFAULT_MODELS_PATH)
-    model_path = get_model(args.model)
+    model_path = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    unpacked_model = get_model(model_path)
 
-    test_core(args, model_path)
-    test_nlu(args, model_path)
+    test_core(args, unpacked_model)
+    test_nlu(args, unpacked_model)

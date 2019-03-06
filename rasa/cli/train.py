@@ -5,7 +5,7 @@ from typing import List, Text, Optional
 
 from rasa.cli.default_arguments import (add_config_param, add_domain_param,
                                         add_stories_param, add_nlu_data_param)
-from rasa.cli.utils import validate_path
+from rasa.cli.utils import get_validated_path
 from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
                             DEFAULT_MODELS_PATH, DEFAULT_DATA_PATH)
 
@@ -90,12 +90,12 @@ def _add_core_compare_arguments(parser: argparse.ArgumentParser):
 
 def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
-    validate_path(args, "domain", DEFAULT_DOMAIN_PATH)
-    validate_path(args, "config", DEFAULT_CONFIG_PATH)
-    validate_path(args, "training_files", DEFAULT_DATA_PATH)
+    domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
+    config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+    training_files = get_validated_path(args.training_files, "training_files",
+                                        DEFAULT_DATA_PATH)
 
-    return rasa.train(args.domain, args.config, args.training_files,
-                      args.out, args.force)
+    return rasa.train(domain, config, training_files, args.out, args.force)
 
 
 def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
@@ -104,8 +104,8 @@ def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
 
     output = train_path or args.out
 
-    validate_path(args, "domain", DEFAULT_DOMAIN_PATH)
-    validate_path(args, "stories", DEFAULT_DATA_PATH)
+    args.domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
+    stories = get_validated_path(args.stories, "stories", DEFAULT_DATA_PATH)
 
     _train_path = train_path or tempfile.mkdtemp()
 
@@ -115,13 +115,12 @@ def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
         if isinstance(args.config, list):
             args.config = args.config[0]
 
-        validate_path(args, "config", DEFAULT_CONFIG_PATH)
+        config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
-        return train_core(args.domain, args.config, args.stories, output,
-                          train_path)
+        return train_core(args.domain, config, stories, output, train_path)
     else:
         from rasa_core.train import do_compare_training
-        do_compare_training(args, args.stories, None)
+        do_compare_training(args, stories, None)
         return None
 
 
@@ -131,7 +130,7 @@ def train_nlu(args: argparse.Namespace, train_path: Optional[Text] = None
 
     output = train_path or args.out
 
-    validate_path(args, "config", DEFAULT_CONFIG_PATH)
-    validate_path(args, "nlu", DEFAULT_DATA_PATH)
+    config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
+    nlu_data = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
 
-    return train_nlu(args.config, args.nlu_data, output, train_path)
+    return train_nlu(config, nlu_data, output, train_path)

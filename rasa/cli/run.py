@@ -6,7 +6,7 @@ from typing import List
 
 from rasa import model
 from rasa.cli.default_arguments import add_model_param
-from rasa.cli.utils import validate_path, get_validated_path
+from rasa.cli.utils import get_validated_path
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_ACTIONS_PATH,
                             DEFAULT_CREDENTIALS_PATH, DEFAULT_MODELS_PATH)
 from rasa.model import get_latest_model
@@ -100,8 +100,7 @@ def run_nlu(args: argparse.Namespace):
     import rasa_nlu.server
     import tempfile
 
-    validate_path(args, "path", DEFAULT_MODELS_PATH)
-    args.model = args.path
+    args.model = get_validated_path(args.path, "path", DEFAULT_MODELS_PATH)
 
     model_archive = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()
@@ -122,7 +121,7 @@ def run_actions(args: argparse.Namespace):
     # insert current path in syspath so module is found
     sys.path.insert(1, os.getcwd())
     path = args.actions.replace('.', os.sep) + ".py"
-    get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
+    _ = get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
 
     sdk.main(args)
 
@@ -130,8 +129,10 @@ def run_actions(args: argparse.Namespace):
 def run(args: argparse.Namespace):
     import rasa.run
 
-    validate_path(args, "model", DEFAULT_MODELS_PATH)
-    validate_path(args, "endpoints", DEFAULT_ENDPOINTS_PATH, True)
-    validate_path(args, "credentials", DEFAULT_CREDENTIALS_PATH, True)
+    args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    args.endpoints = get_validated_path(args.endpoints, "endpoints",
+                                        DEFAULT_ENDPOINTS_PATH, True)
+    args.credentials = get_validated_path(args.credentials, "credentials",
+                                          DEFAULT_CREDENTIALS_PATH, True)
 
     rasa.run(**vars(args))
