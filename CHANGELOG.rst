@@ -19,6 +19,7 @@ Added
 - utility functions for colored logging
 - open webbrowser when visualizing stories
 - added ability to use multiple env vars per line in yaml files
+- added ``priority`` property of policies to influence best policy in the case of equal confidence
 
 Changed
 -------
@@ -28,6 +29,7 @@ Changed
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
+- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 
 Removed
 -------
