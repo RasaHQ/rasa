@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import errno
-import inspect
 import io
 import json
 import logging
@@ -9,58 +8,28 @@ import re
 import sys
 import tempfile
 import argparse
-from hashlib import sha1
-from random import Random
+from hashlib import sha1, md5
 from threading import Thread
-from typing import Text, Any, List, Optional, Tuple, Dict, Set
+from typing import Text, Any, List, Optional, Tuple, Dict, Set, TYPE_CHECKING
 
 import requests
-from numpy import all, array
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import InvalidURL
 from io import StringIO
 from urllib.parse import unquote
 
-from rasa_nlu import utils as nlu_utils
-
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from random import Random
 
 
 def configure_file_logging(loglevel, logfile):
     if logfile:
-        fh = logging.FileHandler(logfile)
+        fh = logging.FileHandler(logfile, encoding='utf-8')
         fh.setLevel(loglevel)
         logging.getLogger('').addHandler(fh)
     logging.captureWarnings(True)
-
-
-def add_logging_option_arguments(parser):
-    """Add options to an argument parser to configure logging levels."""
-
-    # arguments for logging configuration
-    parser.add_argument(
-        '-v', '--verbose',
-        help="Be verbose. Sets logging level to INFO",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
-        default=logging.INFO,
-    )
-    parser.add_argument(
-        '-vv', '--debug',
-        help="Print lots of debugging statements. "
-             "Sets logging level to DEBUG",
-        action="store_const",
-        dest="loglevel",
-        const=logging.DEBUG,
-    )
-    parser.add_argument(
-        '--quiet',
-        help="Be quiet! Sets logging level to WARNING",
-        action="store_const",
-        dest="loglevel",
-        const=logging.WARNING,
-    )
 
 
 # noinspection PyUnresolvedReferences
@@ -122,7 +91,7 @@ def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
 def subsample_array(arr: List[Any],
                     max_values: int,
                     can_modify_incoming_array: bool = True,
-                    rand: Optional[Random] = None) -> List[Any]:
+                    rand: Optional['Random'] = None) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -243,12 +212,24 @@ class bcolors(object):
     UNDERLINE = '\033[4m'
 
 
-def wrap_with_color(text, color):
+def wrap_with_color(text: Text, color: Text):
     return color + text + bcolors.ENDC
 
 
-def print_color(text, color):
+def print_color(text: Text, color: Text):
     print(wrap_with_color(text, color))
+
+
+def print_warning(text: Text):
+    print_color(text, bcolors.WARNING)
+
+
+def print_error(text: Text):
+    print_color(text, bcolors.FAIL)
+
+
+def print_success(text: Text):
+    print_color(text, bcolors.OKGREEN)
 
 
 class HashableNDArray(object):
@@ -275,11 +256,15 @@ class HashableNDArray(object):
             Optional. If True, a copy of the input ndaray is created.
             Defaults to False.
         """
+        from numpy import array
+
         self.__tight = tight
         self.__wrapped = array(wrapped) if tight else wrapped
         self.__hash = int(sha1(wrapped.view()).hexdigest(), 16)
 
     def __eq__(self, other):
+        from numpy import all
+
         return all(self.__wrapped == other.__wrapped)
 
     def __hash__(self):
@@ -290,6 +275,7 @@ class HashableNDArray(object):
 
         If the wrapper is "tight", a copy of the encapsulated ndarray is
         returned. Otherwise, the encapsulated ndarray itself is returned."""
+        from numpy import array
 
         if self.__tight:
             return array(self.__wrapped)
@@ -322,12 +308,12 @@ def replace_environment_variables():
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
-def read_yaml_file(filename):
+def read_yaml_file(filename: Text) -> Dict[Text, Any]:
     """Read contents of `filename` interpreting them as yaml."""
     return read_yaml_string(read_file(filename))
 
 
-def read_yaml_string(string):
+def read_yaml_string(string: Text) -> Dict[Text, Any]:
     replace_environment_variables()
     import ruamel.yaml
 
@@ -335,7 +321,7 @@ def read_yaml_string(string):
     yaml_parser.version = "1.1"
     yaml_parser.unicode_supplementary = True
 
-    return yaml_parser.load(string)
+    return yaml_parser.load(string) or {}
 
 
 def _dump_yaml(obj, output):
@@ -490,6 +476,7 @@ def extract_args(kwargs: Dict[Text, Any],
 
 def arguments_of(func):
     """Return the parameters of the function `func` as a list of names."""
+    import inspect
 
     return list(inspect.signature(func).parameters.keys())
 
@@ -555,11 +542,28 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
                 break
 
 
+def file_as_bytes(path: Text) -> bytes:
+    """Read in a file as a byte array."""
+    with io.open(path, 'rb') as f:
+        return f.read()
+
+
+def get_file_hash(path: Text) -> Text:
+    """Calculate the md5 hash of a file."""
+    return md5(file_as_bytes(path)).hexdigest()
+
+
+def get_text_hash(text: Text, encoding: Text = "utf-8") -> Text:
+    """Calculate the md5 hash of a file."""
+    return md5(text.encode(encoding)).hexdigest()
+
+
 def download_file_from_url(url: Text) -> Text:
     """Download a story file from a url and persists it into a temp file.
 
     Returns the file path of the temp file that contains the
     downloaded content."""
+    from rasa_nlu import utils as nlu_utils
 
     if not nlu_utils.is_url(url):
         raise InvalidURL(url)
