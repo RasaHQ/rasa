@@ -220,9 +220,9 @@ class UserUttered(Event):
             return False
         else:
             return (self.text, self.intent.get("name"),
-                    jsonpickle.encode(self.entities), self.parse_data) == \
+                    [jsonpickle.encode(ent) for ent in self.entities]) == \
                    (other.text, other.intent.get("name"),
-                    jsonpickle.encode(other.entities), other.parse_data)
+                    [jsonpickle.encode(ent) for ent in other.entities])
 
     def __str__(self):
         return ("UserUttered(text: {}, intent: {}, "
