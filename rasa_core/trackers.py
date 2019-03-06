@@ -311,7 +311,8 @@ class DialogueStateTracker(object):
         """Returns all actions that should be applied - w/o reverted events."""
 
         def undo_till_previous(event_type, done_events):
-            """Removes events from `done_events` until `event_type` is found."""
+            """Removes events from `done_events` until `event_type` is
+               found."""
             # list gets modified - hence we need to copy events!
             for e in reversed(done_events[:]):
                 del done_events[-1]

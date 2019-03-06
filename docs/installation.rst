@@ -1,3 +1,7 @@
+:desc: Join our community by installing open source Rasa Core for machine
+       learning based dialogue management to develop on premise contextual
+       assistants and chatbots. 
+
 .. _installation:
 
 Installation
@@ -91,9 +95,9 @@ chatbot. On top of that, the starter-pack includes a training data set ready
 for you to use.
 
 Click the link below to get the Rasa Stack starter-pack:
-	
+
 `Rasa Stack starter-pack <https://github.com/RasaHQ/starter-pack-rasa-stack>`_
-	
+
 Let us know how you are getting on! If you have any questions about the starter-pack or
 using Rasa Stack in general, post your questions on `Rasa Community Forum <https://forum.rasa.com>`_!
 
@@ -169,4 +173,3 @@ Volume Explanation
     But don't forget to reflect this changes in the docker compose file and in your endpoint configuration.
 
 .. include:: feedback.inc
-
