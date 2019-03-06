@@ -171,7 +171,7 @@ def test_generate_training_data_original_and_augmented_trackers(
     original_trackers = \
         [t for t in training_trackers if not
          hasattr(t, 'is_augmented') or not t.is_augmented
-         ]
+     ]
     assert len(original_trackers) == 3
     assert len(original_trackers) <= 33
 
