@@ -83,3 +83,13 @@ def test_file_broker_properly_logs_newlines(tmpdir):
             recovered.append(Event.from_parameters(json.loads(l)))
 
     assert recovered == [event_with_newline]
+
+
+def test_load_custom_broker_name():
+    config = EndpointConfig(**{"type": "rasa_core.broker.FileProducer"})
+    assert broker.from_endpoint_config(config)
+
+
+def test_load_non_existent_custom_broker_name():
+    config = EndpointConfig(**{"type": "rasa_core.broker.MyProducer"})
+    assert broker.from_endpoint_config(config) is None
