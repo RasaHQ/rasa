@@ -1,6 +1,5 @@
 import sys
 
-import io
 import logging
 import numpy as np
 import os
@@ -710,7 +709,7 @@ def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
-    with io.open(export_story_path, 'a', encoding="utf-8") as f:
+    with open(export_story_path, 'a', encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
@@ -747,8 +746,15 @@ def _write_nlu_to_file(
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
-    with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
-        if _guess_format(export_nlu_path) in {"md", "unk"}:
+    # need to guess the format of the file before opening it to avoid a read
+    # in a write
+    if _guess_format(export_nlu_path) in {"md", "unk"}:
+        fformat = "md"
+    else:
+        fformat = "json"
+
+    with open(export_nlu_path, 'w', encoding="utf-8") as f:
+        if fformat == "md":
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
@@ -999,15 +1005,22 @@ def _validate_user_text(latest_message: Dict[Text, Any],
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get("name")
+    entities = parse_data.get("entities", [])
+    if entities:
+        message = ("Is the intent '{}' correct for '{}' and are "
+                   "all entities labeled correctly?"
+                   .format(text, intent))
+    else:
+        message = ("Your NLU model classified '{}' with intent '{}'"
+                   " and there are no entities, is this correct?"
+                   .format(text, intent))
 
     if intent is None:
         print("The NLU classification for '{}' returned '{}'"
               "".format(text, intent))
         return False
     else:
-        question = questionary.confirm(
-            "Is the NLU classification for '{}' with intent '{}' correct?"
-            "".format(text, intent))
+        question = questionary.confirm(message)
 
         return _ask_or_abort(question, sender_id, endpoint)
 

@@ -22,6 +22,8 @@ Added
 - File based event store
 - ability to configure event store using the endpoints file
 - added ability to use multiple env vars per line in yaml files
+- added ``priority`` property of policies to influence best policy in 
+  the case of equal confidence
 
 Changed
 -------
@@ -37,6 +39,8 @@ Changed
 - renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
+- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, 
+  rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 
 Removed
 -------
@@ -46,6 +50,10 @@ Fixed
 -----
 - When a ``fork`` is used in interactive learning, every forked
   storyline is saved (not just the last)
+- Handles slot names which contain characters that are invalid as python 
+  variable name (e.g. dot) in a template
+- When a ``fork`` is used in interactive learning, every forked storyline 
+  is saved (not just the last)
 
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^

@@ -15,6 +15,7 @@
 *pyc
 *~
 .env
+venv
 .cache/
 .pytest_cache/
 .coverage
