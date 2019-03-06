@@ -19,7 +19,7 @@ You can run training from the command line like in the :ref:`quickstart`:
 .. code-block:: bash
 
    python -m rasa_core.train -d domain.yml -s data/stories.md \
-     -o models/dialogue -c config.yml
+     -o models/current/dialogue -c config.yml
 
 Or by creating an agent and running the train method yourself:
 
