@@ -16,6 +16,7 @@ Added
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
 - documentation about early deactivation of a form in validation
+- Added max_event_history in tracker_store to set this value in DialogueStateTracker
 - utility functions for colored logging
 - open webbrowser when visualizing stories
 - added ability to use multiple env vars per line in yaml files
@@ -81,6 +82,8 @@ Added
 - SlackInput wont ignore ``app_mention`` event anymore.
   Will handle messages containing @mentions to bots and will respond to these
   (as long as the event itself is enabled in the application hosting the bot)
+- Added sanitization mechanism for SlackInput that (in its current shape and form)
+  strips bot's self mentions from messages posted using the said @mentions.
 - Added sanitization mechanism for SlackInput that (in its current
   shape and form) strips bot's self mentions from messages posted using
   the said @mentions.

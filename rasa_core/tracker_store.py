@@ -23,6 +23,7 @@ class TrackerStore(object):
                  event_broker: Optional[EventChannel] = None) -> None:
         self.domain = domain
         self.event_broker = event_broker
+        self.max_event_history = None
 
     @staticmethod
     def find_tracker_store(domain, store=None, event_broker=None):
@@ -57,16 +58,19 @@ class TrackerStore(object):
         else:
             return InMemoryTrackerStore(domain)
 
-    def get_or_create_tracker(self, sender_id):
+    def get_or_create_tracker(self, sender_id, max_event_history=None):
         tracker = self.retrieve(sender_id)
+        self.max_event_history = max_event_history
         if tracker is None:
             tracker = self.create_tracker(sender_id)
         return tracker
 
     def init_tracker(self, sender_id):
         if self.domain:
-            return DialogueStateTracker(sender_id,
-                                        self.domain.slots)
+            return DialogueStateTracker(
+                sender_id,
+                self.domain.slots,
+                max_event_history=self.max_event_history)
         else:
             return None
 
