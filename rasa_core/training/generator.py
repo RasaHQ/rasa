@@ -19,13 +19,14 @@ from rasa_core.training.structures import (
 
 logger = logging.getLogger(__name__)
 
-ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
-                                                "unique_last_num_states "
-                                                "augmentation_factor "
-                                                "max_number_of_augmented_trackers "
-                                                "tracker_limit "
-                                                "use_story_concatenation "
-                                                "rand")
+ExtractorConfig = namedtuple("ExtractorConfig",
+                             "remove_duplicates "
+                             "unique_last_num_states "
+                             "augmentation_factor "
+                             "max_number_of_augmented_trackers "
+                             "tracker_limit "
+                             "use_story_concatenation "
+                             "rand")
 
 
 class TrackerWithCachedStates(DialogueStateTracker):
@@ -268,7 +269,8 @@ class TrainingDataGenerator(object):
                 if everything_reachable_is_reached:
                     # augmentation round
                     incoming_trackers = self._subsample_trackers(
-                        incoming_trackers, self.config.max_number_of_augmented_trackers)
+                        incoming_trackers,
+                        self.config.max_number_of_augmented_trackers)
 
                 # update progress bar
                 pbar.set_postfix({"# trackers": "{:d}".format(
@@ -375,7 +377,8 @@ class TrainingDataGenerator(object):
                 else:
                     original_trackers.append(t)
             augmented_trackers = self._subsample_trackers(
-                augmented_trackers, self.config.max_number_of_augmented_trackers)
+                augmented_trackers,
+                self.config.max_number_of_augmented_trackers)
             logger.debug("Subsampled to {} augmented training trackers."
                          "".format(len(augmented_trackers)))
             logger.debug("There are {} original trackers."
