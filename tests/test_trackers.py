@@ -19,7 +19,7 @@ from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import (tracker_from_dialogue_file, read_dialogue_file,
                              user_uttered, get_tracker)
 
-domain = Domain.load("data/test_domains/default.yml")
+domain = Domain.load("data/test_domains/moodbot_domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
@@ -50,7 +50,7 @@ def stores_to_be_tested_ids():
 
 
 def test_tracker_duplicate():
-    filename = "data/test_dialogues/inform_no_change.json"
+    filename = "data/test_dialogues/moodbot.json"
     dialogue = read_dialogue_file(filename)
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
@@ -94,32 +94,32 @@ def test_tracker_store_storage_and_retrieval(store):
 
 @pytest.mark.parametrize("store", stores_to_be_tested(),
                          ids=stores_to_be_tested_ids())
-@pytest.mark.parametrize("filename", glob.glob('data/test_dialogues/*json'))
-def test_tracker_store(filename, store):
+def test_tracker_store(store):
+    filename = "data/test_dialogues/moodbot.json"
     tracker = tracker_from_dialogue_file(filename, domain)
     store.save(tracker)
     restored = store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 
-def test_tracker_write_to_story(tmpdir, default_domain):
+def test_tracker_write_to_story(tmpdir, moodbot_domain):
     tracker = tracker_from_dialogue_file(
-        "data/test_dialogues/enter_name.json", default_domain)
+        "data/test_dialogues/moodbot.json", moodbot_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
     trackers = training.load_data(
         p.strpath,
-        default_domain,
+        moodbot_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False
     )
     assert len(trackers) == 1
     recovered = trackers[0]
-    assert len(recovered.events) == 7
-    assert recovered.events[5].type_name == "slot"
-    assert recovered.events[5].key == "name"
-    assert recovered.events[5].value == "holger"
+    assert len(recovered.events) == 11
+    assert recovered.events[4].type_name == "user"
+    assert recovered.events[4].intent == {'confidence': 1.0,
+                                          'name': 'mood_unhappy'}
 
 
 def test_tracker_state_regression_without_bot_utterance(default_agent):

@@ -17,7 +17,7 @@ coloredlogs==10.0
 flask==1.0.2
 flask_cors==3.0.7
 scikit-learn==0.20.2
-rasa_nlu~=0.14.0
+rasa_nlu~=0.15.0a1
 slackclient==1.3.0
 python-telegram-bot==11.1.0
 twilio==6.23.0
