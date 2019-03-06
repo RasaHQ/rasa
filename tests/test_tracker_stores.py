@@ -48,7 +48,7 @@ def test_restart_after_retrieval_from_tracker_store(default_domain):
 
 def test_tracker_store_remembers_max_history(default_domain):
     store = InMemoryTrackerStore(default_domain)
-    tr = store.get_or_create_tracker("myuser",  max_event_history=42)
+    tr = store.get_or_create_tracker("myuser", max_event_history=42)
     tr.update(Restarted())
 
     store.save(tr)
