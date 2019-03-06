@@ -675,6 +675,57 @@ paths:
         500:
           $ref: '#/components/responses/500Action'
 
+  /parse:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Parse a message and run the NLU model
+      description: >-
+        Predicts the intent and entities of the message
+        posted to this endpoint. No messages will be stored
+        to a conversation and no action will be run. This will
+        just retrieve the NLU parse results.
+      operationId: parseNLU
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                q:
+                  type: string
+                  description: Message to ne parsed
+            example:
+              q: "Hello, I am Rasa!"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParseData'
+              examples:
+                text: "Hello, I am Rasa!"
+                  entities:
+                    - start: 12
+                      end: 16
+                      entity: name
+                      value: Rasa
+                  intent:
+                    confidence: 0.87
+                    name: greet
+                  intent_ranking:
+                    - confidence: 0.87
+                      name: greet
+                    - confidence: 0.13
+                      name: goodbye
+        403:
+          $ref: '#/components/responses/403Permissions'
+
   /domain:
     get:
       security:

@@ -86,18 +86,18 @@ def _init_model_from_server(model_server: EndpointConfig
 def _is_stack_model(model_directory: Text):
     """Decide whether a persisted model is a stack or a core model."""
 
-    # TODO: find a better way to check this
-    return os.path.exists(os.path.join(model_directory, "rasa_model"))
+    return os.path.exists(os.path.join(model_directory, "fingerprint.json"))
 
 
 def _load_and_set_updated_model(agent: 'Agent',
                                 model_directory: Text,
                                 fingerprint: Text):
     """Load the persisted model into memory and set the model on the agent."""
+
     if _is_stack_model(model_directory):
         from rasa_core.interpreter import RasaNLUInterpreter
-        nlu_model = os.path.join(model_directory, "rasa_model", "nlu")
-        core_model = os.path.join(model_directory, "rasa_model", "core")
+        nlu_model = os.path.join(model_directory, "nlu")
+        core_model = os.path.join(model_directory, "core")
         interpreter = RasaNLUInterpreter(model_directory=nlu_model)
     else:
         interpreter = agent.interpreter
