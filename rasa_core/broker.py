@@ -62,7 +62,7 @@ class PikaProducer(EventChannel):
         self.credentials = pika.PlainCredentials(username, password)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config):
+    def from_endpoint_config(cls, broker_config) -> Optional['PikaProducer']:
         if broker_config is None:
             return None
 
@@ -99,6 +99,7 @@ class FileProducer(EventChannel):
     DEFAULT_LOG_FILE_NAME = "rasa_event.log"
 
     def __init__(self, path=None) -> None:
+        self.path = path
         self.event_logger = self._event_logger(path)
 
     @classmethod
