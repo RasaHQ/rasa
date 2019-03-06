@@ -1,0 +1,3 @@
+event_broker:
+  path: "rasa_event.log"
+  type: file
