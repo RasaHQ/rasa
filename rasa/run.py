@@ -47,8 +47,8 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     shutil.rmtree(model_path)
 
 
-def create_agent(model: Union[Text, Tuple[Text, Text, Text]],
-                 endpoints: Text = None) -> "Agent":
+def create_agent(model: Text,
+                 endpoints: Text = None) -> 'Agent':
     from rasa_core.broker import PikaProducer
     from rasa_core.interpreter import RasaNLUInterpreter
     import rasa_core.run

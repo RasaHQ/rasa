@@ -1,4 +1,3 @@
-import io
 import json
 import os
 import tempfile
@@ -45,7 +44,7 @@ def test_is_nlu_file_with_json():
 
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
-    with io.open(file, "w") as f:
+    with open(file, "w") as f:
         f.write(json.dumps(test))
 
     assert data._is_nlu_file(file)
@@ -54,7 +53,7 @@ def test_is_nlu_file_with_json():
 def test_is_not_nlu_file_with_json():
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
-    with io.open(file, "w") as f:
+    with open(file, "w") as f:
         f.write('{"test": "a"}')
 
     assert not data._is_nlu_file(file)

@@ -1,4 +1,3 @@
-import io
 import json
 import os
 import shutil
@@ -31,7 +30,10 @@ def _get_core_nlu_files(directory: Text) -> Tuple[List[Text], List[Text]]:
     nlu_data_files = []
 
     for root, _, files in os.walk(directory):
-        for f in [f for f in files if f.endswith(".json") or f.endswith(".md")]:
+        for f in files:
+            if not f.endswith(".json") and not f.endswith(".md"):
+                continue
+
             full_path = os.path.join(root, f)
             if _is_nlu_file(full_path):
                 nlu_data_files.append(full_path)
@@ -42,7 +44,7 @@ def _get_core_nlu_files(directory: Text) -> Tuple[List[Text], List[Text]]:
 
 
 def _is_nlu_file(file_path: Text) -> bool:
-    with io.open(file_path, encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         if file_path.endswith(".json"):
             content = f.read()
             is_nlu_file = json.loads(content).get("rasa_nlu_data") is not None

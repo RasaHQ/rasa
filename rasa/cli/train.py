@@ -18,8 +18,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
     import rasa_core.cli.train as core_cli
 
     train_parser = subparsers.add_parser(
-        "train", conflict_handler="resolve",
-        help="Train the Rasa bot")
+        "train", help="Train the Rasa bot")
 
     train_subparsers = train_parser.add_subparsers()
     train_core_parser = train_subparsers.add_parser(

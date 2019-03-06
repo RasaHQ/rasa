@@ -6,7 +6,7 @@ from typing import List
 
 from rasa import model
 from rasa.cli.default_arguments import add_model_param
-from rasa.cli.utils import validate_path, check_path_exists
+from rasa.cli.utils import validate_path, get_validated_path
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_ACTIONS_PATH,
                             DEFAULT_CREDENTIALS_PATH, DEFAULT_MODELS_PATH)
 from rasa.model import get_latest_model
@@ -122,7 +122,7 @@ def run_actions(args: argparse.Namespace):
     # insert current path in syspath so module is found
     sys.path.insert(1, os.getcwd())
     path = args.actions.replace('.', os.sep) + ".py"
-    check_path_exists(path, "action", DEFAULT_ACTIONS_PATH)
+    get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
 
     sdk.main(args)
 
