@@ -109,9 +109,20 @@
       },
       "message_id":null,
       "parse_data":{
-        "entities":{
-          "py/id":10
+        "entities":[
+        {
+          "end":18,
+          "entity":"cuisine",
+          "start":16,
+          "value":"an"
         },
+        {
+          "end":48,
+          "entity":"location",
+          "start":42,
+          "value":"Bombay"
+        }
+      ],
         "intent":{
           "confidence":0.8721412706843699,
           "name":"inform"
@@ -194,9 +205,14 @@
       },
       "message_id":null,
       "parse_data":{
-        "entities":{
-          "py/id":19
-        },
+        "entities":[
+        {
+          "end":20,
+          "entity":"people",
+          "start":16,
+          "value":"four"
+        }
+      ],
         "intent":{
           "confidence":0.767022076375302,
           "name":"inform"

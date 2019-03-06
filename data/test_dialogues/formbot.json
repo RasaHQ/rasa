@@ -83,9 +83,20 @@
       },
       "message_id":null,
       "parse_data":{
-        "entities":{
-          "py/id":9
+        "entities":[
+        {
+          "end":18,
+          "entity":"cuisine",
+          "start":16,
+          "value":"an"
         },
+        {
+          "end":48,
+          "entity":"location",
+          "start":42,
+          "value":"Bombay"
+        }
+      ],
         "intent":{
           "confidence":0.9414282441139221,
           "name":"request_restaurant"
