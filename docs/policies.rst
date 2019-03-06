@@ -1,4 +1,5 @@
-:desc: Understanding Rasa Core Policies
+:desc: Define and train custom policies to optimise your contextual assistant
+       for longer context or unseen utterances which require generalisation.
 
 .. _policies:
 

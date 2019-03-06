@@ -24,6 +24,7 @@ def test_load_config(filename):
 def test_ensemble_from_dict():
     def check_memoization(p):
         assert p.max_history == 5
+        assert p.priority == 3
 
     def check_keras(p):
         featurizer = p.featurizer
@@ -35,22 +36,27 @@ def test_ensemble_from_dict():
         assert featurizer.max_history == 5
         # Assert state_featurizer
         assert isinstance(state_featurizer, BinarySingleStateFeaturizer)
+        assert p.priority == 4
 
     def check_fallback(p):
         assert p.fallback_action_name == 'action_default_fallback'
         assert p.nlu_threshold == 0.7
         assert p.core_threshold == 0.7
+        assert p.priority == 2
+
+    def check_form(p):
+        assert p.priority == 1
 
     ensemble_dict = {'policies': [
-        {'epochs': 50, 'name': 'KerasPolicy', 'featurizer': [
+        {'epochs': 50, 'name': 'KerasPolicy', 'priority': 4, 'featurizer': [
             {'max_history': 5, 'name': 'MaxHistoryTrackerFeaturizer',
              'state_featurizer': [
                  {'name': 'BinarySingleStateFeaturizer'}]}]},
-        {'max_history': 5, 'name': 'MemoizationPolicy'},
-        {'core_threshold': 0.7, 'name': 'FallbackPolicy',
+        {'max_history': 5, 'priority': 3, 'name': 'MemoizationPolicy'},
+        {'core_threshold': 0.7, 'priority': 2, 'name': 'FallbackPolicy',
          'nlu_threshold': 0.7,
          'fallback_action_name': 'action_default_fallback'},
-        {'name': 'FormPolicy'}]}
+        {'name': 'FormPolicy', 'priority': 1}]}
     ensemble = PolicyEnsemble.from_dict(ensemble_dict)
 
     # Check if all policies are present
@@ -64,9 +70,11 @@ def test_ensemble_from_dict():
 
     # Verify policy configurations
     for policy in ensemble:
-        if isinstance(policy, MemoizationPolicy) \
-                and not isinstance(policy, FormPolicy):
-            check_memoization(policy)
+        if isinstance(policy, MemoizationPolicy):
+            if isinstance(policy, FormPolicy):
+                check_form(policy)
+            else:
+                check_memoization(policy)
         elif isinstance(policy, KerasPolicy):
             check_keras(policy)
         elif isinstance(policy, FallbackPolicy):

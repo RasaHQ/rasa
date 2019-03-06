@@ -7,11 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 def train_agent():
-    return train.train_dialogue_model(domain_file="domain.yml",
-                                      stories_file="data/stories.md",
-                                      output_path="models/dialogue",
-                                      policy_config='policy_config.yml'
-                                      )
+    return train(domain_file="domain.yml",
+                 stories_file="data/stories.md",
+                 output_path="models/dialogue",
+                 policy_config='policy_config.yml')
 
 
 if __name__ == '__main__':

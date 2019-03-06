@@ -1,6 +1,3 @@
-import numpy as np
-
-
 # noinspection PyPep8Naming
 class DialogueTrainingData(object):
     def __init__(self, X, y, true_length=None):
@@ -24,6 +21,8 @@ class DialogueTrainingData(object):
         return len(self.y)
 
     def shuffled_X_y(self):
+        import numpy as np
+
         idx = np.arange(self.num_examples())
         np.random.shuffle(idx)
         shuffled_X = self.X[idx]
