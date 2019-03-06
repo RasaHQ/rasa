@@ -42,7 +42,7 @@ class DialogflowReader(TrainingDataReader):
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
         elif fformat == DIALOGFLOW_ENTITIES:
-            return self._read_entities(examples_js)
+            return self._read_entities(root_js, examples_js)
 
     def _read_intent(self, intent_js, examples_js):
         """Reads the intent and examples from respective jsons."""
@@ -86,11 +86,33 @@ class DialogflowReader(TrainingDataReader):
         return entity
 
     @staticmethod
-    def _read_entities(examples_js):
+    def _flatten(list_of_lists):
+        return [item for items in list_of_lists for item in items]
+
+    @staticmethod
+    def _extract_lookup_tables(name, examples):
+        """Extract the lookup table from the entity synonyms"""
+        synonyms = [e["synonyms"] for e in examples if "synonyms" in e]
+        synonyms = DialogflowReader._flatten(synonyms)
+        elements = [synonym for synonym in synonyms if "@" not in synonym]
+
+        if len(elements) == 0:
+            return False
+        return [{
+            'name': name,
+            'elements': elements
+        }]
+
+    @staticmethod
+    def _read_entities(entity_js, examples_js):
         from rasa_nlu.training_data import TrainingData
 
         entity_synonyms = transform_entity_synonyms(examples_js)
-        return TrainingData([], entity_synonyms)
+
+        name = entity_js.get("name")
+        lookup_tables = DialogflowReader._extract_lookup_tables(name,
+                                                                examples_js)
+        return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
     def _read_examples_js(fn, language, fformat):
