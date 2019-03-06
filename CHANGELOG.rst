@@ -37,6 +37,7 @@ Removed
 
 Fixed
 -----
+- Handles slot names which contain characters that are invalid as python variable name (e.g. dot) in a template
 - When a ``fork`` is used in interactive learning, every forked storyline is saved (not just the last)
 
 [0.13.2] - 2019-02-06
