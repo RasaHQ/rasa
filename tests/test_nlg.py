@@ -36,6 +36,7 @@ def nlg_app(base_url="/"):
     return app
 
 
+# noinspection PyShadowingNames
 @pytest.fixture(scope="module")
 def http_nlg(request):
     http_server = WSGIServer(application=nlg_app())
@@ -54,7 +55,7 @@ def test_nlg(http_nlg, default_agent_path):
     agent = Agent.load(default_agent_path, None,
                        generator=nlg_endpoint)
 
-    response = agent.handle_message("/greet", sender_id=sender)
+    response = agent.handle_text("/greet", sender_id=sender)
     assert len(response) == 1
     assert response[0] == {"text": "Hey there!", "recipient_id": sender}
 
@@ -91,24 +92,12 @@ def test_nlg_schema_validation_empty_image():
     ("tag-w-@", "one"),
     ("tagCamelCase", "two"),
     ("tag-w-*", "three"),
-])
-def test_nlg_fill_template_text(slot_name, slot_value):
-    template = {'text': "{" + slot_name + "}"}
-    t = TemplatedNaturalLanguageGenerator(templates=dict())
-    result = t._fill_template_text(
-        template=template,
-        filled_slots={slot_name: slot_value}
-    )
-    assert result == {'text': str(slot_value)}
-
-
-@pytest.mark.parametrize("slot_name, slot_value", [
     ("tag_w_underscore", "a"),
     ("tag.with.float.val", 1.3),
     ("tag-w-$", "banana"),
     ("tagCamelCase", "two"),
 ])
-def test_nlg_fill_template_text2(slot_name, slot_value):
+def test_nlg_fill_template_text(slot_name, slot_value):
     template = {'text': "{" + slot_name + "}"}
     t = TemplatedNaturalLanguageGenerator(templates=dict())
     result = t._fill_template_text(

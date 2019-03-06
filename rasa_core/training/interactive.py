@@ -752,7 +752,7 @@ def _write_nlu_to_file(
         fformat = "md"
     else:
         fformat = "json"
-            
+
     with open(export_nlu_path, 'w', encoding="utf-8") as f:
         if fformat == "md":
             f.write(nlu_data.as_markdown())
