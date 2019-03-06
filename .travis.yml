@@ -1,6 +1,26 @@
 language: python
+
+sudo: required
+
+cache:
+  directories:
+  - "$HOME/.cache/pip"
+
 python:
+- '3.5'
 - '3.6'
+
+install:
+- pip install -r dev-requirements.txt
+- pip install -e .
+- pip install coveralls==1.3.0
+- pip list
+
+script:
+- py.test --codestyle -m codestyle
+- travis_wait py.test tests --cov rasa -v
+- timeout 2 time rasa --help
+
 jobs:
   include:
   - stage: deploy

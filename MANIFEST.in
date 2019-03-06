@@ -1,0 +1,3 @@
+include LICENSE.text
+include README.md
+include bin/rasa
