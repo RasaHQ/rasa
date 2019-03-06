@@ -1,10 +1,14 @@
 help:
+	@echo "    run"
+	@echo "        Runs the bot on the command line."
+	@echo "    run-actions"
+	@echo "        Runs the action server."
+	@echo "    run-core"
+	@echo "        Runs the core server."
 	@echo "    train-nlu"
 	@echo "        Train the natural language understanding using Rasa NLU."
 	@echo "    train-core"
 	@echo "        Train a dialogue model using Rasa core."
-	@echo "    run"
-	@echo "        Runs the bot on the command line."
 
 run:
 	make run-actions&

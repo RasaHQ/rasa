@@ -1,3 +1,7 @@
+:desc: All conversations are stored within a tracker store. Read how open source
+       library Rasa Core provides implementations for different store types out
+       of the box.
+
 .. _tracker_store:
 
 
@@ -79,6 +83,9 @@ MongoTrackerStore
                 username: <username used for authentication>
                 password: <password used for authentication>
 
+        You can also add more advanced configurations (like enabling ssl) by appending
+        a parameter to the url field, e.g. mongodb://localhost:27017/?ssl=true
+
     3. To start the Rasa Core server using your configured MongoDB instance,
            add the :code:`--endpoints` flag, e.g.:
 
@@ -115,5 +122,3 @@ Custom Tracker Store
               url: localhost
               a_parameter: a value
               another_parameter: another value
-
-

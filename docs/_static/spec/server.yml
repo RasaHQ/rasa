@@ -1,7 +1,7 @@
 openapi: "3.0.1"
 info:
   title: "Rasa Core - Server Endpoints"
-  version: "0.12.0"
+  version: "0.0.0"
   description: >-
     The Rasa Core server provides endpoints to retrieve trackers of
     conversations as well as endpoints to modify them.
@@ -343,10 +343,11 @@ paths:
       - Tracker
       summary: Predict the next action
       description: >-
-        Runs the conversations tracker through the models
-        policies to predict the next action. The action is
-        not executed, just returned. The state of the tracker
-        is not modified.
+        Runs the conversations tracker through the model's
+        policies to predict the scores of all actions present
+        in the model's domain. Actions are returned in the
+        'scores' array, sorted on their 'score' values.
+        The state of the tracker is not modified.
       operationId: predictAction
       parameters:
       - $ref: '#/components/parameters/senderId'
@@ -1180,6 +1181,33 @@ components:
           text:
             type: string
         required: ["event", "text"]
+    form_validation:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            validate:
+              type: string #TODO
+    form:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            name:
+              type: string
+    action_execution_rejected:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            name:
+              type: string
+            policy:
+              type: string #todo
+              nullable: true
+            confidence:
+              type: float
+              nullable: true
     Event:
       type: object
       properties:
@@ -1194,6 +1222,7 @@ components:
         propertyName: event
     Domain:
       type: object
+      description: The bot's domain.
       properties:
         config:
           type: object
@@ -1206,7 +1235,7 @@ components:
           type: array
           description: All intent names and properties
           items:
-            type: object
+            $ref: '#/components/schemas/IntentDescription'
         entities:
           type: array
           description: All entity names
@@ -1215,9 +1244,13 @@ components:
         slots:
           description: Slot names and configuration
           type: object
+          additionalProperties:
+            $ref: '#/components/schemas/SlotDescription'
         templates:
           description: Bot response templates
           type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TemplateDescription'
         actions:
           description: Available action names
           type: array
@@ -1261,7 +1294,7 @@ components:
                 description: Attachement payload
     Tracker:
       type: object
-      description: A conversations state
+      description: Conversation tracker which stores the conversation state.
       properties:
         sender_id:
           type: string
@@ -1270,7 +1303,7 @@ components:
           type: array
           description: Slot values
           items:
-            type: object
+            $ref: '#/components/schemas/Slot'
         latest_message:
           $ref: '#/components/schemas/ParseData'
         latest_event_time:
@@ -1290,6 +1323,16 @@ components:
         latest_input_channel:
           type: string
           description: Communication channel
+        latest_action_name:
+          type: string
+          description: Name of last bot action
+        active_form:
+          type: object
+          description: Name of the active form
+          properties:
+            name:
+              type: string
+              description: Name of the acive form
 
     Error:
       type: object
@@ -1363,7 +1406,7 @@ components:
             Accuracy of the classification,
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html
         is_end_to_end_evaluation:
-          type: bool
+          type: boolean
           description: True if evaluation is end-to-end, false otherwise
         precision:
           type: number
@@ -1390,3 +1433,44 @@ components:
           description: >-
             Sklearn classifcation report, see
             http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+    Slot:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/SlotValue'
+      example:
+        slot_name: slot_value
+    SlotValue:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            - type: string
+    SlotDescription:
+      type: object
+      properties:
+        auto_fill:
+          type: boolean
+        initial_value:
+          type: string
+          nullable: true
+        type:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
+      required: ['type', 'auto_fill']
+    TemplateDescription:
+      type: object
+      properties:
+        text:
+          type: string
+          description: Template text
+      required: ['text']
+    IntentDescription:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          use_entities:
+            type: boolean

@@ -31,6 +31,8 @@ DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
+E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
+
 MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
@@ -94,7 +96,7 @@ def default_processor(default_domain, default_nlg):
 
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
-    train.train_dialogue_model(
+    train(
         domain_file="examples/moodbot/domain.yml",
         stories_file="examples/moodbot/data/stories.md",
         output_path=MOODBOT_MODEL_PATH,

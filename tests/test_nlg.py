@@ -9,6 +9,7 @@ from rasa_core import utils
 from rasa_core.nlg.callback import (
     nlg_request_format_spec,
     CallbackNaturalLanguageGenerator)
+from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa_core.utils import EndpointConfig
 from rasa_core.agent import Agent
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
@@ -35,6 +36,7 @@ def nlg_app(base_url="/"):
     return app
 
 
+# noinspection PyShadowingNames
 @pytest.fixture(scope="module")
 def http_nlg(request):
     http_server = WSGIServer(application=nlg_app())
@@ -53,7 +55,7 @@ def test_nlg(http_nlg, default_agent_path):
     agent = Agent.load(default_agent_path, None,
                        generator=nlg_endpoint)
 
-    response = agent.handle_message("/greet", sender_id=sender)
+    response = agent.handle_text("/greet", sender_id=sender)
     assert len(response) == 1
     assert response[0] == {"text": "Hey there!", "recipient_id": sender}
 
@@ -79,3 +81,40 @@ def test_nlg_schema_validation_empty_buttons():
 def test_nlg_schema_validation_empty_image():
     content = {"text": "Hey there!", "image": None}
     assert CallbackNaturalLanguageGenerator.validate_response(content)
+
+
+@pytest.mark.parametrize("slot_name, slot_value", [
+    ("tag_w_underscore", "a"),
+    ("tag with space", "bacon"),
+    ("tag.with.dot", "chocolate"),
+    ("tag-w-dash", "apple pie"),
+    ("tag-w-$", "banana"),
+    ("tag-w-@", "one"),
+    ("tagCamelCase", "two"),
+    ("tag-w-*", "three"),
+    ("tag_w_underscore", "a"),
+    ("tag.with.float.val", 1.3),
+    ("tag-w-$", "banana"),
+    ("tagCamelCase", "two"),
+])
+def test_nlg_fill_template_text(slot_name, slot_value):
+    template = {'text': "{" + slot_name + "}"}
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template_text(
+        template=template,
+        filled_slots={slot_name: slot_value}
+    )
+    assert result == {'text': str(slot_value)}
+
+
+@pytest.mark.parametrize("slot_name, slot_value", [
+    ("tag_w_\n", "a"),
+])
+def test_nlg_fill_template_text_w_bad_slot_name2(slot_name, slot_value):
+    template_text = "{" + slot_name + "}"
+    t = TemplatedNaturalLanguageGenerator(templates=dict())
+    result = t._fill_template_text(
+        template={'text': template_text},
+        filled_slots={slot_name: slot_value}
+    )
+    assert result['text'] == template_text

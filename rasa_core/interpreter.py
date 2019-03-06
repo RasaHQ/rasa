@@ -21,36 +21,34 @@ class NaturalLanguageInterpreter(object):
 
     @staticmethod
     def create(obj, endpoint=None):
-        if isinstance(obj, NaturalLanguageInterpreter):
-            return obj
-        if isinstance(obj, str):
-            name_parts = os.path.split(obj)
+        from rasa_nlu.model import Interpreter
 
-            if len(name_parts) == 1:
-                if endpoint:
-                    # using the default project name
-                    return RasaNLUHttpInterpreter(name_parts[0],
-                                                  endpoint)
-                else:
-                    return RasaNLUInterpreter(model_directory=obj)
-            elif len(name_parts) == 2:
-                if endpoint:
-                    return RasaNLUHttpInterpreter(name_parts[1],
-                                                  endpoint,
-                                                  name_parts[0])
-                else:
-                    return RasaNLUInterpreter(model_directory=obj)
-            else:
-                if endpoint:
-                    raise Exception(
-                        "You have configured an endpoint to use for "
-                        "the NLU model. To use it, you need to "
-                        "specify the model to use with "
-                        "`--nlu project/model`.")
-                else:
-                    return RasaNLUInterpreter(model_directory=obj)
-        else:
+        if (isinstance(obj, NaturalLanguageInterpreter) or
+                isinstance(obj, Interpreter)):
+            return obj
+
+        if not isinstance(obj, str):
             return RegexInterpreter()  # default interpreter
+
+        if not endpoint:
+            return RasaNLUInterpreter(model_directory=obj)
+
+        name_parts = os.path.split(obj)
+
+        if len(name_parts) == 1:
+            # using the default project name
+            return RasaNLUHttpInterpreter(name_parts[0],
+                                          endpoint)
+        elif len(name_parts) == 2:
+            return RasaNLUHttpInterpreter(name_parts[1],
+                                          endpoint,
+                                          name_parts[0])
+        else:
+            raise Exception(
+                "You have configured an endpoint to use for "
+                "the NLU model. To use it, you need to "
+                "specify the model to use with "
+                "`--nlu project/model`.")
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):
@@ -179,18 +177,18 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    def parse(self, text):
+    def parse(self, text, message_id=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         default_return = {"intent": {"name": "", "confidence": 0.0},
                           "entities": [], "text": ""}
-        result = self._rasa_http_parse(text)
+        result = self._rasa_http_parse(text, message_id)
 
         return result if result is not None else default_return
 
-    def _rasa_http_parse(self, text):
+    def _rasa_http_parse(self, text, message_id=None):
         """Send a text message to a running rasa NLU http server.
 
         Return `None` on failure."""
@@ -205,8 +203,10 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "token": self.endpoint.token,
             "model": self.model_name,
             "project": self.project_name,
-            "q": text
+            "q": text,
+            "message_id": message_id
         }
+
         url = "{}/parse".format(self.endpoint.url)
         try:
             result = requests.get(url, params=params)

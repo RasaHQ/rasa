@@ -1,8 +1,10 @@
 import copy
+import io
 import json
 import logging
 import os
 import tensorflow as tf
+import numpy as np
 import warnings
 from typing import Any, List, Dict, Text, Optional, Tuple
 
@@ -13,6 +15,11 @@ from rasa_core.featurizers import (
 from rasa_core.featurizers import TrackerFeaturizer
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +32,9 @@ class KerasPolicy(Policy):
         "rnn_size": 32,
         "epochs": 100,
         "batch_size": 32,
-        "validation_split": 0.1
+        "validation_split": 0.1,
+        # set random seed to any int to get reproducible results
+        "random_seed": None
     }
 
     @staticmethod
@@ -35,6 +44,7 @@ class KerasPolicy(Policy):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: int = 1,
                  model: Optional[tf.keras.models.Sequential] = None,
                  graph: Optional[tf.Graph] = None,
                  session: Optional[tf.Session] = None,
@@ -44,7 +54,7 @@ class KerasPolicy(Policy):
                  ) -> None:
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(KerasPolicy, self).__init__(featurizer)
+        super(KerasPolicy, self).__init__(featurizer, priority)
 
         self._load_params(**kwargs)
         self.model = model
@@ -59,10 +69,15 @@ class KerasPolicy(Policy):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
-        self.rnn_size = config['rnn_size']
-        self.epochs = config['epochs']
-        self.batch_size = config['batch_size']
-        self.validation_split = config['validation_split']
+        # filter out kwargs that are used explicitly
+        self._tf_config = self._load_tf_config(config)
+        self.rnn_size = config.pop('rnn_size')
+        self.epochs = config.pop('epochs')
+        self.batch_size = config.pop('batch_size')
+        self.validation_split = config.pop('validation_split')
+        self.random_seed = config.pop('random_seed')
+
+        self._train_params = config
 
     @property
     def max_len(self):
@@ -135,16 +150,21 @@ class KerasPolicy(Policy):
               **kwargs: Any
               ) -> None:
 
+        # set numpy random seed
+        np.random.seed(self.random_seed)
+
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
                                                     **kwargs)
-
         # noinspection PyPep8Naming
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            self.session = tf.Session()
+            # set random seed in tf
+            tf.set_random_seed(self.random_seed)
+            self.session = tf.Session(config=self._tf_config)
+
             with self.session.as_default():
                 if self.model is None:
                     self.model = self.model_architecture(shuffled_X.shape[1:],
@@ -154,13 +174,16 @@ class KerasPolicy(Policy):
                             "validation split of {}"
                             "".format(training_data.num_examples(),
                                       self.validation_split))
+
                 # filter out kwargs that cannot be passed to fit
-                params = self._get_valid_params(self.model.fit, **kwargs)
+                self._train_params = self._get_valid_params(
+                    self.model.fit, **self._train_params)
 
                 self.model.fit(shuffled_X, shuffled_y,
                                epochs=self.epochs,
                                batch_size=self.batch_size,
-                               **params)
+                               shuffle=False,
+                               **self._train_params)
                 # the default parameter for epochs in keras fit is 1
                 self.current_epoch = self.defaults.get("epochs", 1)
                 logger.info("Done fitting keras policy model")
@@ -214,17 +237,23 @@ class KerasPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
-            meta = {"model": "keras_model.h5",
+            meta = {"priority": self.priority,
+                    "model": "keras_model.h5",
                     "epochs": self.current_epoch}
 
-            config_file = os.path.join(path, 'keras_policy.json')
-            utils.dump_obj_as_json_to_file(config_file, meta)
+            meta_file = os.path.join(path, 'keras_policy.json')
+            utils.dump_obj_as_json_to_file(meta_file, meta)
 
             model_file = os.path.join(path, meta['model'])
             # makes sure the model directory exists
             utils.create_dir_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
+
+            tf_config_file = os.path.join(
+                path, "keras_policy.tf_config.pkl")
+            with io.open(tf_config_file, 'wb') as f:
+                pickle.dump(self._tf_config, f)
         else:
             warnings.warn("Persist called without a trained model present. "
                           "Nothing to persist then!")
@@ -235,19 +264,25 @@ class KerasPolicy(Policy):
 
         if os.path.exists(path):
             featurizer = TrackerFeaturizer.load(path)
-            meta_path = os.path.join(path, "keras_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(utils.read_file(meta_path))
+            meta_file = os.path.join(path, "keras_policy.json")
+            if os.path.isfile(meta_file):
+                meta = json.loads(utils.read_file(meta_file))
+
+                tf_config_file = os.path.join(
+                    path, "keras_policy.tf_config.pkl")
+                with io.open(tf_config_file, 'rb') as f:
+                    _tf_config = pickle.load(f)
 
                 model_file = os.path.join(path, meta["model"])
 
                 graph = tf.Graph()
                 with graph.as_default():
-                    session = tf.Session()
+                    session = tf.Session(config=_tf_config)
                     with session.as_default():
                         model = load_model(model_file)
 
                 return cls(featurizer=featurizer,
+                           priority=meta["priority"],
                            model=model,
                            graph=graph,
                            session=session,

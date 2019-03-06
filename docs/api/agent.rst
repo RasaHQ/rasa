@@ -1,3 +1,9 @@
+:desc: Read how to use the agent api to control most functionalities like
+       training, loading and using a model of open source chatbot framework
+       Rasa Stack.
+
+.. _agent:
+
 Agent
 =====
 

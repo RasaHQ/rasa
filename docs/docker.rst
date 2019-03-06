@@ -1,3 +1,6 @@
+:desc: Find out how to setup Rasa Core with Docker in your own infrastructure
+       as a chatbot framework. 
+
 .. _docker:
 
 Using Docker
@@ -34,5 +37,3 @@ You may in addition run any Rasa Core command inside the container with
 
 
 .. include:: feedback.inc
-
-

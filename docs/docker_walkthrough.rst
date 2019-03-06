@@ -1,4 +1,5 @@
-:desc: Building Rasa with Docker
+:desc: Setup open source Rasa Core with Docker in your own infrastructure for on
+       premise contextual AI assistants and chatbots. 
 
 .. _docker_walkthrough:
 
@@ -533,8 +534,8 @@ Start with creating the custom actions in a directory ``actions``:
 
   mkdir actions
   # Rasa Core SDK expects a python module.
-  # Therefore, make sure that you have this file in the direcotry.
-  touch __init__.py
+  # Therefore, make sure that you have this file in the directory.
+  touch actions/__init__.py
   touch actions/actions.py
 
 Then build a custom action using the Rasa Core SDK, e.g.:
@@ -600,7 +601,7 @@ dependencies, e.g.:
 
 .. code-block:: docker
 
-    # Extend the offical Rasa Core SDK image
+    # Extend the official Rasa Core SDK image
     FROM rasa/rasa_core_sdk:latest
 
     # Add a custom system library (e.g. git)

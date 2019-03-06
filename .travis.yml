@@ -21,15 +21,25 @@ after_success:
 - coveralls
 jobs:
   include:
-  - stage: Test API specification
+  - stage: integration
+    name: "Test API specification"
     language: python
     install:
     - npm install -g swagger-cli
     script:
     - swagger-cli validate docs/_static/spec/server.yml
+    - swagger-cli validate docs/_static/spec/action_server.yml
     after_success:
     - coveralls
-  - stage: Test Docs
+  - stage: test
+    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only master and new Core builds test the starter pack
+    name: "Test stack starter pack"
+    script:
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - python -m pytest tests/test_core.py
+  - stage: integration
+    name: "Test Docs"
     install:
     - pip install -r docs-requirements.txt
     - pip install -e .
@@ -82,6 +92,7 @@ jobs:
     - git commit --allow-empty -m "trigger core docs update"
     - git push origin master
   - stage: deploy
+    name: "Deploy to PyPI"
     python: 3.6
     install: skip
     script: skip

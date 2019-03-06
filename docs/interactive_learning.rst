@@ -1,4 +1,6 @@
-:desc: Interactive Learning with Rasa Core
+:desc: Use Interactive learning to continuously validate and improve the
+       performance of your AI Assistant using machine learning based
+       open source dialogue management. 
 
 .. _interactive_learning:
 
@@ -14,8 +16,8 @@ your bot doesn't know how to do something yet, you can just teach it!
 Some people call this `Software 2.0 <https://medium.com/@karpathy/software-2-0-a64152b37c35>`_.
 
 
-Load up an existing bot
-^^^^^^^^^^^^^^^^^^^^^^^
+Running Interactive Learning
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We have created some initial stories, and now want to improve our bot
 by providing feedback on mistakes it makes.
@@ -28,17 +30,27 @@ Run the following command to start interactive learning:
 
    python -m rasa_core.train \
      interactive -o models/dialogue \
-     -d domain.yml -s stories.md \
+     -d domain.yml -c policy_config.yml \
+     -s data/stories.md \
      --nlu models/current/nlu \
      --endpoints endpoints.yml
 
 The first command starts the action server (see :ref:`customactions`).
 
-The second command starts the bot in interactive mode.
+The second command trains the bot from your stories and then starts it
+in interactive mode.  Alternatively, you can load an existing core
+model with the ``--core`` flag like so:
+
+.. code-block:: bash
+
+   python -m rasa_core.train \
+     interactive --core models/dialogue \
+     --nlu models/current/nlu \
+     --endpoints endpoints.yml
+
 In interactive mode, the bot will ask you to confirm every prediction
 made by NLU and Core before proceeding.
 Here's an example:
-
 
 .. code-block:: text
 

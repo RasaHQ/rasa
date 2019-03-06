@@ -30,7 +30,7 @@ class MemoizationPolicy(Policy):
 
         This policy is not supposed to be the only policy in an ensemble,
         it is optimized for precision and not recall.
-        It should get a 100% precision because it emits probabilities of 1.0
+        It should get a 100% precision because it emits probabilities of 1.1
         along it's predictions, which makes every mistake fatal as
         no other policy can overrule it.
 
@@ -55,6 +55,7 @@ class MemoizationPolicy(Policy):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: int = 2,
                  max_history: Optional[int] = None,
                  lookup: Optional[Dict] = None
                  ) -> None:
@@ -62,7 +63,7 @@ class MemoizationPolicy(Policy):
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
 
-        super(MemoizationPolicy, self).__init__(featurizer)
+        super(MemoizationPolicy, self).__init__(featurizer, priority)
 
         self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
@@ -172,7 +173,7 @@ class MemoizationPolicy(Policy):
             after seeing the tracker.
 
             Returns the list of probabilities for the next actions.
-            If memorized action was found returns 1.0 for its index,
+            If memorized action was found returns 1.1 for its index,
             else returns 0.0 for all actions."""
         result = [0.0] * domain.num_actions
 
@@ -207,6 +208,7 @@ class MemoizationPolicy(Policy):
 
         memorized_file = os.path.join(path, 'memorized_turns.json')
         data = {
+            "priority": self.priority,
             "max_history": self.max_history,
             "lookup": self.lookup
         }
@@ -220,7 +222,8 @@ class MemoizationPolicy(Policy):
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
             data = json.loads(utils.read_file(memorized_file))
-            return cls(featurizer=featurizer, lookup=data["lookup"])
+            return cls(featurizer=featurizer, priority=data["priority"],
+                       lookup=data["lookup"])
         else:
             logger.info("Couldn't load memoization for policy. "
                         "File '{}' doesn't exist. Falling back to empty "

@@ -1,5 +1,5 @@
 import typing
-
+import json
 import logging
 import numpy as np
 import os
@@ -13,6 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
 
+from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.featurizers import (
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
@@ -31,12 +32,14 @@ class SklearnPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
+        priority: int = 1,
         model: 'sklearn.base.BaseEstimator' = LogisticRegression(),
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
         scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
+        **kwargs: Any
     ) -> None:
         """Create a new sklearn policy.
 
@@ -61,7 +64,7 @@ class SklearnPolicy(Policy):
                 raise TypeError("Passed featurizer of type {}, should be "
                                 "MaxHistoryTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-        super(SklearnPolicy, self).__init__(featurizer)
+        super(SklearnPolicy, self).__init__(featurizer, priority)
 
         self.model = model
         self.cv = cv
@@ -73,15 +76,17 @@ class SklearnPolicy(Policy):
         # attributes that need to be restored after loading
         self._pickle_params = [
             'model', 'cv', 'param_grid', 'scoring', 'label_encoder']
+        self._train_params = kwargs
 
     @property
     def _state(self):
         return {attr: getattr(self, attr) for attr in self._pickle_params}
 
-    def model_architecture(self, **kwargs):
+    def model_architecture(self):
         # filter out kwargs that cannot be passed to model
-        params = self._get_valid_params(self.model.__init__, **kwargs)
-        return self.model.set_params(**params)
+        self._train_params = self._get_valid_params(self.model.__init__,
+                                                    **self._train_params)
+        return self.model.set_params(**self._train_params)
 
     def _extract_training_data(self, training_data):
         # transform y from one-hot to num_classes
@@ -166,6 +171,11 @@ class SklearnPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
+            meta = {"priority": self.priority}
+
+            meta_file = os.path.join(path, 'sklearn_policy.json')
+            utils.dump_obj_as_json_to_file(meta_file, meta)
+
             filename = os.path.join(path, 'sklearn_model.pkl')
             with open(filename, 'wb') as f:
                 pickle.dump(self._state, f)
@@ -185,7 +195,9 @@ class SklearnPolicy(Policy):
             ("Loaded featurizer of type {}, should be "
              "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
 
-        policy = cls(featurizer=featurizer)
+        meta_file = os.path.join(path, "sklearn_policy.json")
+        meta = json.loads(utils.read_file(meta_file))
+        policy = cls(featurizer=featurizer, priority=meta["priority"])
 
         with open(filename, 'rb') as f:
             state = pickle.load(f)

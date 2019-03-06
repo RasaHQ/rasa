@@ -9,7 +9,6 @@ from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
 from rasa_core import utils
-from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -47,6 +46,8 @@ def deserialise_entities(entities):
 
 
 def md_format_message(text, intent, entities):
+    from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+
     message_from_md = MarkdownReader()._parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter()._generate_message_md(
@@ -182,11 +183,13 @@ class UserUttered(Event):
                  entities=None,
                  parse_data=None,
                  timestamp=None,
-                 input_channel=None):
+                 input_channel=None,
+                 message_id=None):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
         self.input_channel = input_channel
+        self.message_id = message_id
 
         if parse_data:
             self.parse_data = parse_data

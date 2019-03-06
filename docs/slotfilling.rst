@@ -1,3 +1,6 @@
+:desc: Follow a rule-based process of information gathering using FormActions
+       in open source bot framework Rasa Stack. 
+
 .. _slotfilling:
 
 Slot Filling
@@ -10,10 +13,10 @@ information from a user in order to do something (book a restaurant, call an
 API, search a database, etc.). This is also called **slot filling**.
 
 
-If you need to collect multiple pieces of information in a row, we recommended 
-that you create a ``FormAction``. This is a single action which contains the 
+If you need to collect multiple pieces of information in a row, we recommended
+that you create a ``FormAction``. This is a single action which contains the
 logic to loop over the required slots and ask the user for this information.
-There is a full example using forms in the ``examples/formbot`` directory of 
+There is a full example using forms in the ``examples/formbot`` directory of
 Rasa Core.
 
 You can take a look at the FormAction base class by clicking this link:
@@ -37,12 +40,12 @@ under ``forms:`` section:
 Basics
 ------
 
-Using a ``FormAction``, you can describe *all* of the happy paths with a single 
-story. By "happy path", we mean that whenever you ask a user for some information, 
+Using a ``FormAction``, you can describe *all* of the happy paths with a single
+story. By "happy path", we mean that whenever you ask a user for some information,
 they respond with what you asked for.
 
-If we take the example of the restaurant bot, this single story describes all of the 
-happy paths. 
+If we take the example of the restaurant bot, this single story describes all of the
+happy paths.
 
 .. code-block:: story
 
@@ -53,8 +56,8 @@ happy paths.
         - form{"name": null}
 
 The ``FormAction`` will only requests slots which haven't already been set.
-If a user says 
-"I'd like a vegetarian Chinese restaurant for 8 people", they won't be 
+If a user says
+"I'd like a vegetarian Chinese restaurant for 8 people", they won't be
 asked about the ``cuisine`` and ``num_people`` slots.
 
 Note that for this story to work, your slots should be `unfeaturized
@@ -62,7 +65,7 @@ Note that for this story to work, your slots should be `unfeaturized
 If they're not, you should add all the slots that have been set by the form.
 
 The ``restaurant_form`` in the story above is the name of our form action.
-Here is an example of what it looks like. 
+Here is an example of what it looks like.
 You need to define three methods:
 
 - ``name``: the name of this action
@@ -100,56 +103,34 @@ You need to define three methods:
 
 
 Once the form action gets called for the first time,
-the form gets activated and the ``FormPolicy`` jumps in. 
+the form gets activated and the ``FormPolicy`` jumps in.
 The ``FormPolicy`` is extremely simple and just always predicts the form action.
 See :ref:`section_unhappy` for how to work with unexpected user input.
 
 Every time the form action gets called, it will ask the user for the next slot in
-``required_slots`` which is not already set. 
-It does this by looking for a template called ``utter_ask_{slot_name}``, 
-so you need to define these in your domain file for each required slot. 
+``required_slots`` which is not already set.
+It does this by looking for a template called ``utter_ask_{slot_name}``,
+so you need to define these in your domain file for each required slot.
 
 Once all the slots are filled, the ``submit()`` method is called, where you can
-use the information you've collected to do something for the user, for example 
+use the information you've collected to do something for the user, for example
 querying a restaurant API.
 If you don't want your form to do anything at the end, just use ``return []``
 as your submit method.
-After the submit method is called, the form is deactivated, 
+After the submit method is called, the form is deactivated,
 and other policies in your Core model will be used to predict the next action.
 
 Custom slot mappings
 --------------------
 
-Some slots (like ``cuisine``) can be picked up using a single entity, but a 
+Some slots (like ``cuisine``) can be picked up using a single entity, but a
 ``FormAction`` can also support yes/no questions and free-text input.
 The ``slot_mappings`` method defines how to extract slot values from user responses.
 
 Here's an example for the restaurant bot:
 
-.. code-block:: python
-
-    def slot_mappings(self):
-        # type: () -> Dict[Text: Union[Text, Dict, List[Text, Dict]]]
-        """A dictionary to map required slots to
-            - an extracted entity
-            - intent: value pairs
-            - a whole message
-            or a list of them, where the first match will be picked"""
-
-        return {"cuisine": self.from_entity(entity="cuisine",
-                                            intent="inform"),
-                "num_people": self.from_entity(entity="number"),
-                "outdoor_seating": [self.from_entity(entity="seating"),
-                                    self.from_intent(intent='affirm',
-                                                     value=True),
-                                    self.from_intent(intent='deny',
-                                                     value=False)],
-                "preferences": [self.from_text(intent='inform'),
-                                self.from_intent(intent='deny',
-                                                 value="no additional "
-                                                       "preferences")],
-                "feedback": [self.from_entity(entity="feedback"),
-                             self.from_text()]}
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.slot_mappings
 
 The predefined functions work as follows:
 
@@ -171,63 +152,25 @@ The predefined functions work as follows:
 Validating user input
 ---------------------
 
-After extracting a slot value from user input, the form will try to validate the 
+After extracting a slot value from user input, the form will try to validate the
 value of the slot. By default, this only checks if the requested slot was extracted.
-If you want to add custom validation, for example to check a value against a database, 
-you can do this by overwriting the ``validate()`` method. 
-Here is an example which checks if the extracted cuisine slot belongs to a 
+If you want to add custom validation, for example to check a value against a database,
+you can do this by overwriting the ``validate()`` method.
+Here is an example which checks if the extracted cuisine slot belongs to a
 list of supported cuisines.
 
-.. code-block:: python
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.cuisine_db
 
-    @staticmethod
-    def cuisine_db():
-        # type: () -> List[Text]
-        """Database of supported cuisines"""
-        return ["caribbean", "chinese", "french", "greek", "indian",
-                "italian", "mexican"]
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.is_int
 
-    def validate(self, dispatcher, tracker, domain):
-        # type: (CollectingDispatcher, Tracker, Dict[Text, Any]) -> List[Dict]
-        """"Validate extracted requested slot else raise an error"""
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
+.. literalinclude:: ../examples/formbot/actions.py
+   :pyobject: RestaurantForm.validate
 
-        # extract requested slot from a user input by using `slot_mappings`
-        events = self.extract(dispatcher, tracker, domain)
-        if events is None:
-            # raise an error if nothing was extracted
-            raise ActionExecutionRejection(self.name(),
-                                           "Failed to validate slot {0} "
-                                           "with action {1}"
-                                           "".format(slot_to_fill,
-                                                     self.name()))
-
-        extracted_slots = []
-        validated_events = []
-        for e in events:
-            if e['event'] == 'slot':
-                # get values of extracted slots to validate them later
-                extracted_slots.append(e['value'])
-            else:
-                # add other events without validating them
-                validated_events.append(e)
-
-        for slot in extracted_slots:
-            if slot_to_fill == 'cuisine':
-                if slot.lower() not in self.cuisine_db():
-                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                    # validation failed, set this slot to None, meaning the
-                    user will be asked for the slot again
-                    validated_events.append(SlotSet(slot_to_fill, None))
-                else:
-                    # validation succeeded
-                    validated_events.append(SlotSet(slot_to_fill, slot))
-
-            else:
-                # no validation needed
-                validated_events.append(SlotSet(slot_to_fill, slot))
-
-        return validated_events
+You can also deactivate the form directly during this validation step (in case the
+slot is filled with something that you are certain can't be handled) by returning
+``self.deactivate()``
 
 If nothing is extracted from the user's utterance for any of the required slots, an
 ``ActionExecutionRejection`` error will be raised, meaning the action execution
@@ -239,8 +182,8 @@ predict another action.
 Handling unhappy paths
 ----------------------
 
-Of course your users will not always respond with the information you ask of them. 
-Typically, users will ask questions, make chitchat, change their mind, or otherwise 
+Of course your users will not always respond with the information you ask of them.
+Typically, users will ask questions, make chitchat, change their mind, or otherwise
 stray from the happy path. The way this works with forms is that a form will raise
 an ``ActionExecutionRejection`` if the user didn't provide the requested information.
 You need to handle events that might cause ``ActionExecutionRejection`` errors
@@ -257,6 +200,26 @@ you could add a story like this:
         - utter_chitchat
         - restaurant_form
         - form{"name": null}
+
+In some situations, users may change their mind in the middle of form action
+and decide not to go forward with their initial request. In cases like this, the
+assistant should stop asking for the requested slots. You can handle such situations
+gracefully using a default action ``action_deactivate_form`` which will deactivate
+the form and reset the requested slot. An example story of such conversation could
+look as follows:
+
+.. code-block:: story
+
+    ## chitchat
+    * request_restaurant
+        - restaurant_form
+        - form{"name": "restaurant_form"}
+    * stop
+        - utter_ask_continue
+    * deny
+        - action_deactivate_form
+        - form{"name": null}
+
 
 It is **strongly** recommended that you build these stories using interactive learning.
 If you write these stories by hand you will likely miss important things.
@@ -301,7 +264,7 @@ In the restaurant case, your stories would look something like this:
         ( ... all other slots the form set ... )
         - form{"name": null}
 
-Again, is is **strongly** recommended that you use interactive 
+Again, is is **strongly** recommended that you use interactive
 learning to build these stories.
 Please read :ref:`section_interactive_learning_forms`
 on how to use interactive learning with forms.
@@ -330,8 +293,19 @@ for example:
          return ["cuisine", "num_people",
                  "preferences", "feedback"]
 
-This mechanism is quite general and you can use it to build many different 
+This mechanism is quite general and you can use it to build many different
 kinds of logic into your forms.
+
+Configuration
+-------------
+To use forms, make sure to include the ``FormPolicy`` in your policy
+configuration file. For exmple:
+
+.. code-block:: yaml
+
+  policies:
+    - name: "FormPolicy"
+
 
 Debugging
 ---------

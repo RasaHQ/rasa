@@ -3,12 +3,14 @@ import typing
 from typing import List, Text, Optional, Dict, Any
 
 import requests
+import copy
 
+import rasa_core
 from rasa_core import events
 from rasa_core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
-    REQUESTED_SLOT, FALLBACK_SCORE, USER_INTENT_AFFIRM, USER_INTENT_DENY)
+    REQUESTED_SLOT, USER_INTENT_OUT_OF_SCOPE)
 from rasa_core.events import (UserUtteranceReverted, UserUttered,
                               ActionExecuted, Event)
 from rasa_core.utils import EndpointConfig
@@ -141,7 +143,8 @@ class UtterAction(Action):
         self._name = name
 
     def run(self, dispatcher, tracker, domain):
-        """Simple run implementation uttering a (hopefully defined) template."""
+        """Simple run implementation uttering a (hopefully defined)
+           template."""
 
         dispatcher.utter_template(self.name(),
                                   tracker)
@@ -229,7 +232,8 @@ class RemoteAction(Action):
             "next_action": self._name,
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
-            "domain": domain.as_dict()
+            "domain": domain.as_dict(),
+            "version": rasa_core.__version__
         }
 
     @staticmethod
@@ -399,33 +403,30 @@ class ActionRevertFallbackEvents(Action):
 
     def run(self, dispatcher: 'Dispatcher', tracker: 'DialogueStateTracker',
             domain: 'Domain') -> List[Event]:
-        from rasa_core.policies.two_stage_fallback import (has_user_rephrased,
-                                                           has_user_affirmed)
-
-        last_user_event = tracker.latest_message.intent.get('name')
+        from rasa_core.policies.two_stage_fallback import has_user_rephrased
         revert_events = []
 
-        # User affirmed
-        if has_user_affirmed(last_user_event, tracker):
-            revert_events = _revert_affirmation_events(tracker)
         # User rephrased
-        elif has_user_rephrased(tracker):
-            revert_events = _revert_successful_affirmation(tracker)
-        # User rephrased instead of affirming
-        elif tracker.last_executed_action_has(
-                ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
-            revert_events = _revert_early_rephrasing(tracker)
+        if has_user_rephrased(tracker):
+            revert_events = _revert_successful_rephrasing(tracker)
+        # User affirmed
+        elif has_user_affirmed(tracker):
+            revert_events = _revert_affirmation_events(tracker)
 
         return revert_events
 
 
+def has_user_affirmed(tracker: 'DialogueStateTracker') -> bool:
+    return tracker.last_executed_action_has(
+        ACTION_DEFAULT_ASK_AFFIRMATION_NAME)
+
+
 def _revert_affirmation_events(tracker: 'DialogueStateTracker') -> List[Event]:
-    import copy
     revert_events = _revert_single_affirmation_events()
 
-    last_user_event = tracker.get_last_event_for(UserUttered, skip=1)
+    last_user_event = tracker.get_last_event_for(UserUttered)
     last_user_event = copy.deepcopy(last_user_event)
-    last_user_event.parse_data['intent']['confidence'] = FALLBACK_SCORE
+    last_user_event.parse_data['intent']['confidence'] = 1.0
 
     # User affirms the rephrased intent
     rephrased_intent = tracker.last_executed_action_has(
@@ -445,14 +446,10 @@ def _revert_single_affirmation_events() -> List[Event]:
             ActionExecuted(action_name=ACTION_LISTEN_NAME)]
 
 
-def _revert_successful_affirmation(tracker) -> List[Event]:
+def _revert_successful_rephrasing(tracker) -> List[Event]:
     last_user_event = tracker.get_last_event_for(UserUttered)
+    last_user_event = copy.deepcopy(last_user_event)
     return _revert_rephrasing_events() + [last_user_event]
-
-
-def _revert_early_rephrasing(tracker: 'DialogueStateTracker') -> List[Event]:
-    last_user_event = tracker.get_last_event_for(UserUttered)
-    return _revert_single_affirmation_events() + [last_user_event]
 
 
 def _revert_rephrasing_events() -> List[Event]:
@@ -484,10 +481,11 @@ class ActionDefaultAskAffirmation(Action):
         dispatcher.utter_button_message(text=affirmation_message,
                                         buttons=[{'title': 'Yes',
                                                   'payload': '/{}'.format(
-                                                      USER_INTENT_AFFIRM)},
+                                                      intent_to_affirm)},
                                                  {'title': 'No',
                                                   'payload': '/{}'.format(
-                                                      USER_INTENT_DENY)}])
+                                                      USER_INTENT_OUT_OF_SCOPE)}
+                                                 ])
 
         return []
 

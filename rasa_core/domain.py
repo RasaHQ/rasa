@@ -3,20 +3,17 @@ import typing
 import collections
 import json
 import logging
-import numpy as np
 import os
 import pkg_resources
 from pykwalify.errors import SchemaError
+
 from rasa_core import utils
 from rasa_core.actions import Action, action
 from rasa_core.constants import REQUESTED_SLOT
 from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import SlotSet
 from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from typing import Dict, Any, Tuple
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Dict, Any, Tuple, List, Optional, Text
 
 logger = logging.getLogger(__name__)
 
@@ -326,6 +323,8 @@ class Domain(object):
                         "".format(action_name, action_names))
 
     def random_template_for(self, utter_action):
+        import numpy as np
+
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
         else:
@@ -409,8 +408,9 @@ class Domain(object):
             intent_config = self.intent_config(intent_name)
             should_use_entity = intent_config.get('use_entities', True)
             if should_use_entity:
-                key = "entity_{0}".format(entity["entity"])
-                state_dict[key] = 1.0
+                if "entity" in entity:
+                    key = "entity_{0}".format(entity["entity"])
+                    state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():

@@ -4,7 +4,7 @@ DEFAULT_SERVER_FORMAT = "http://localhost:{}"
 
 DEFAULT_SERVER_URL = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT)
 
-MINIMUM_COMPATIBLE_VERSION = "0.13.0a2"
+MINIMUM_COMPATIBLE_VERSION = "0.14.0a1"
 
 DOCS_BASE_URL = "https://rasa.com/docs/core"
 
@@ -16,10 +16,6 @@ DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
-FALLBACK_SCORE = 1.1
-
-FORM_SCORE = 1.2
-
 REQUESTED_SLOT = 'requested_slot'
 
 # start of special user message section
@@ -27,6 +23,4 @@ INTENT_MESSAGE_PREFIX = "/"
 
 USER_INTENT_RESTART = INTENT_MESSAGE_PREFIX + "restart"
 
-USER_INTENT_AFFIRM = 'affirm'
-
-USER_INTENT_DENY = 'deny'
+USER_INTENT_OUT_OF_SCOPE = 'out_of_scope'
