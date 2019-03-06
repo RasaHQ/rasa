@@ -1,3 +1,5 @@
+import logging
+
 import pkg_resources
 
 
@@ -66,3 +68,34 @@ def add_model_and_story_group(parser, allow_pretrained_model=True):
 
     if allow_pretrained_model:
         add_core_model_arg(group)
+
+
+def add_logging_option_arguments(parser):
+    """Add options to an argument parser to configure logging levels."""
+
+    logging_arguments = parser.add_argument_group('Python Logging Options')
+
+    # arguments for logging configuration
+    logging_arguments.add_argument(
+        '-v', '--verbose',
+        help="Be verbose. Sets logging level to INFO",
+        action="store_const",
+        dest="loglevel",
+        const=logging.INFO,
+        default=logging.INFO,
+    )
+    logging_arguments.add_argument(
+        '-vv', '--debug',
+        help="Print lots of debugging statements. "
+             "Sets logging level to DEBUG",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+    )
+    logging_arguments.add_argument(
+        '--quiet',
+        help="Be quiet! Sets logging level to WARNING",
+        action="store_const",
+        dest="loglevel",
+        const=logging.WARNING,
+    )

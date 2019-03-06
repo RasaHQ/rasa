@@ -16,12 +16,16 @@ Added
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
 - documentation about early deactivation of a form in validation
+- utility functions for colored logging
+- open webbrowser when visualizing stories
 - added ability to use multiple env vars per line in yaml files
 
 Changed
 -------
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
+- renamed ``train_dialogue_model`` to ``train``
+- renamed ``rasa_core.evaluate`` to ``rasa_core.test``
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
 
@@ -32,6 +36,7 @@ Removed
 Fixed
 -----
 - Handles slot names which contain characters that are invalid as python variable name (e.g. dot) in a template
+- When a ``fork`` is used in interactive learning, every forked storyline is saved (not just the last)
 
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
