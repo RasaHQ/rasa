@@ -9,21 +9,21 @@ import rasa.data as data
 
 def test_get_core_directory(project):
     data_dir = os.path.join(project, "data")
-    core_directory = data.get_core_directory(data_dir)
+    core_directory = data.get_core_directory([data_dir])
 
     assert os.listdir(core_directory) == ["stories.md"]
 
 
 def test_get_nlu_directory(project):
     data_dir = os.path.join(project, "data")
-    nlu_directory = data.get_nlu_directory(data_dir)
+    nlu_directory = data.get_nlu_directory([data_dir])
 
     assert os.listdir(nlu_directory) == ["nlu.md"]
 
 
 def test_get_core_nlu_directories(project):
     data_dir = os.path.join(project, "data")
-    core_directory, nlu_directory = data.get_core_nlu_directories(data_dir)
+    core_directory, nlu_directory = data.get_core_nlu_directories([data_dir])
 
     assert os.listdir(core_directory) == ["stories.md"]
     assert os.listdir(nlu_directory) == ["nlu.md"]

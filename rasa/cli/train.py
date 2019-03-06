@@ -54,8 +54,9 @@ def add_joint_parser_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("--force", action="store_true",
                         help="Force a model training even if the data "
                              "has not changed.")
-    parser.add_argument("--training_files", default=DEFAULT_DATA_PATH, type=str,
-                        help="Path to the Core and NLU training files.")
+    parser.add_argument("--data", default=[DEFAULT_DATA_PATH],
+                        nargs='+',
+                        help="Paths to the Core and NLU training files.")
 
 
 def add_general_arguments(parser: argparse.ArgumentParser):
@@ -81,7 +82,7 @@ def _add_core_compare_arguments(parser: argparse.ArgumentParser):
         help="Number of runs for experiments")
     parser.add_argument(
         "-c", "--config",
-        nargs='*',
+        nargs='+',
         default=[DEFAULT_CONFIG_PATH],
         help="The policy and NLU pipeline configuration of your bot."
              "If multiple configuration files are provided, multiple dialogue "
@@ -92,8 +93,9 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     import rasa
     domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
     config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
-    training_files = get_validated_path(args.training_files, "training_files",
-                                        DEFAULT_DATA_PATH)
+
+    training_files = [get_validated_path(f, "data", DEFAULT_DATA_PATH)
+                      for f in args.data]
 
     return rasa.train(domain, config, training_files, args.out, args.force)
 

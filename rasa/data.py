@@ -2,22 +2,47 @@ import json
 import os
 import shutil
 import tempfile
-from typing import Tuple, List, Text
+from typing import Tuple, List, Text, Set
 import re
 
 
-def get_core_directory(directory: Text) -> Text:
-    core_files, _ = _get_core_nlu_files(directory)
+def get_core_directory(directories: List[Text]) -> Text:
+    """Recursively collects all Core training files from a list of directories.
+
+    Args:
+        directories: List of paths to directories containing training files.
+
+    Returns:
+        Path to temporary directory containing all found Core training files.
+    """
+    core_files, _ = _get_core_nlu_files(directories)
     return _copy_files_to_new_dir(core_files)
 
 
-def get_nlu_directory(directory: Text) -> Text:
-    _, nlu_files = _get_core_nlu_files(directory)
+def get_nlu_directory(directories: List[Text]) -> Text:
+    """Recursively collects all NLU training files from a list of directories.
+
+    Args:
+        directories: List of paths to directories containing training files.
+
+    Returns:
+        Path to temporary directory containing all found NLU training files.
+    """
+    _, nlu_files = _get_core_nlu_files(directories)
     return _copy_files_to_new_dir(nlu_files)
 
 
-def get_core_nlu_directories(directory: Text) -> Tuple[Text, Text]:
-    story_files, nlu_data_files = _get_core_nlu_files(directory)
+def get_core_nlu_directories(directories: List[Text]) -> Tuple[Text, Text]:
+    """Recursively collects all training files from a list of directories.
+
+    Args:
+        directories: List of paths to directories containing training files.
+
+    Returns:
+        Path to directory containing the Core files and path to directory
+        containing the NLU training files.
+    """
+    story_files, nlu_data_files = _get_core_nlu_files(directories)
 
     story_directory = _copy_files_to_new_dir(story_files)
     nlu_directory = _copy_files_to_new_dir(nlu_data_files)
@@ -25,10 +50,25 @@ def get_core_nlu_directories(directory: Text) -> Tuple[Text, Text]:
     return story_directory, nlu_directory
 
 
-def _get_core_nlu_files(directory: Text) -> Tuple[List[Text], List[Text]]:
-    story_files = []
-    nlu_data_files = []
+def _get_core_nlu_files(directories: List[Text]
+                        ) -> Tuple[Set[Text], Set[Text]]:
+    story_files = set()
+    nlu_data_files = set()
 
+    for directory in set(directories):
+        new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
+            directory)
+
+        story_files.update(new_story_files)
+        nlu_data_files.update(new_nlu_data_files)
+
+    return story_files, nlu_data_files
+
+
+def _find_core_nlu_files_in_directory(directory: Text
+                                      ) -> Tuple[Set[Text], Set[Text]]:
+    story_files = set()
+    nlu_data_files = set()
     for root, _, files in os.walk(directory):
         for f in files:
             if not f.endswith(".json") and not f.endswith(".md"):
@@ -36,9 +76,9 @@ def _get_core_nlu_files(directory: Text) -> Tuple[List[Text], List[Text]]:
 
             full_path = os.path.join(root, f)
             if _is_nlu_file(full_path):
-                nlu_data_files.append(full_path)
+                nlu_data_files.add(full_path)
             else:
-                story_files.append(full_path)
+                story_files.add(full_path)
 
     return story_files, nlu_data_files
 
@@ -59,7 +99,7 @@ def _contains_nlu_pattern(text: Text) -> bool:
     return re.match(nlu_pattern, text) is not None
 
 
-def _copy_files_to_new_dir(files: List[Text]) -> Text:
+def _copy_files_to_new_dir(files: Set[Text]) -> Text:
     directory = tempfile.mkdtemp()
     for f in files:
         shutil.copy2(f, directory)
