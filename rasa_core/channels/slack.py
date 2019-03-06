@@ -140,7 +140,7 @@ class SlackInput(InputChannel):
 
     @staticmethod
     def _is_interactive_message(payload):
-        return (payload['type'] == u"interactive_message")
+        return (payload['type'] == "interactive_message")
 
     @staticmethod
     def _is_button(payload):
