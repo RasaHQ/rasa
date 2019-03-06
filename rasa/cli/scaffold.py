@@ -27,7 +27,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
                                        "model for the bot? 💪🏽").ask()
     if should_train:
         config = os.path.join(path, DEFAULT_CONFIG_PATH)
-        training_files = [os.path.join(path, DEFAULT_DATA_PATH)]
+        training_files = os.path.join(path, DEFAULT_DATA_PATH)
         domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
         output = os.path.join(path, create_output_path())
 
