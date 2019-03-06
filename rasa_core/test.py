@@ -10,6 +10,7 @@ import warnings
 import rasa_core.cli.arguments
 from typing import List, Optional, Any, Text, Dict, Tuple
 
+import rasa_core.cli.train
 from rasa_core import training, cli
 from rasa_core import utils
 from rasa_core.events import ActionExecuted, UserUttered
@@ -615,7 +616,7 @@ def main():
 
         _agent = Agent.load(cmdline_arguments.core, interpreter=_interpreter)
 
-        stories = cli.stories_from_cli_args(cmdline_arguments)
+        stories = rasa_core.cli.train.stories_from_cli_args(cmdline_arguments)
 
         test(stories, _agent, cmdline_arguments.max_stories,
              cmdline_arguments.output,

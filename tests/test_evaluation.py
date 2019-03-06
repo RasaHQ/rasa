@@ -1,11 +1,11 @@
 import os
 
-from rasa_core import test
 from rasa_core.test import (
     test,
+    _generate_trackers,
     collect_story_predictions)
-from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE, \
-    E2E_STORY_FILE_UNKNOWN_ENTITY
+from tests.conftest import (DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE,
+                            E2E_STORY_FILE_UNKNOWN_ENTITY)
 
 
 # from tests.conftest import E2E_STORY_FILE_UNKNOWN_ENTITY
@@ -28,7 +28,7 @@ def test_evaluation_image_creation(tmpdir, default_agent):
 
 
 def test_action_evaluation_script(tmpdir, default_agent):
-    completed_trackers = test._generate_trackers(
+    completed_trackers = _generate_trackers(
         DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
     story_evaluation, num_stories = collect_story_predictions(
         completed_trackers,
@@ -42,7 +42,7 @@ def test_action_evaluation_script(tmpdir, default_agent):
 
 
 def test_end_to_end_evaluation_script(tmpdir, default_agent):
-    completed_trackers = test._generate_trackers(
+    completed_trackers = _generate_trackers(
         END_TO_END_STORY_FILE, default_agent, use_e2e=True)
 
     story_evaluation, num_stories = collect_story_predictions(
@@ -57,7 +57,7 @@ def test_end_to_end_evaluation_script(tmpdir, default_agent):
 
 
 def test_end_to_end_evaluation_script_unknown_entity(tmpdir, default_agent):
-    completed_trackers = test._generate_trackers(
+    completed_trackers = _generate_trackers(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True)
 
     story_evaluation, num_stories = collect_story_predictions(

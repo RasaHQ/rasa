@@ -21,7 +21,10 @@ class NaturalLanguageInterpreter(object):
 
     @staticmethod
     def create(obj, endpoint=None):
-        if isinstance(obj, NaturalLanguageInterpreter):
+        from rasa_nlu.model import Interpreter
+
+        if (isinstance(obj, NaturalLanguageInterpreter) or
+                isinstance(obj, Interpreter)):
             return obj
 
         if not isinstance(obj, str):

@@ -4,6 +4,7 @@ import os
 import tempfile
 from typing import Text, Dict, Optional
 
+import rasa_core.cli.train
 from rasa_core import config, cli
 from rasa_core import utils
 from rasa_core.broker import PikaProducer
@@ -243,7 +244,8 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_arguments.loglevel)
 
-    training_stories = cli.stories_from_cli_args(cmdline_arguments)
+    training_stories = rasa_core.cli.train.stories_from_cli_args(
+        cmdline_arguments)
 
     if cmdline_arguments.mode == 'default':
         do_default_training(cmdline_arguments,

@@ -102,3 +102,12 @@ def add_general_args(parser):
              "file called `story_blocks_connections.html`.")
 
     arguments.add_logging_option_arguments(parser)
+
+
+def stories_from_cli_args(cmdline_arguments):
+    from rasa_core import utils
+
+    if cmdline_arguments.url:
+        return utils.download_file_from_url(cmdline_arguments.url)
+    else:
+        return cmdline_arguments.stories

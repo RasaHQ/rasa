@@ -299,8 +299,14 @@ def replace_environment_variables():
     def env_var_constructor(loader, node):
         """Process environment variables found in the YAML."""
         value = loader.construct_scalar(node)
-        prefix, env_var, remaining_path = env_var_pattern.match(value).groups()
-        return prefix + os.environ[env_var] + remaining_path
+        expanded_vars = os.path.expandvars(value)
+        if '$' in expanded_vars:
+            not_expanded = [w for w in expanded_vars.split() if '$' in w]
+            raise ValueError(
+                "Error when trying to expand the environment variables"
+                " in '{}'. Please make sure to also set these environment"
+                " variables: '{}'.".format(value, not_expanded))
+        return expanded_vars
 
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
