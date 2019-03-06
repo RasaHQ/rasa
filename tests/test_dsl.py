@@ -159,6 +159,23 @@ def test_generate_training_data_with_unused_checkpoints(tmpdir,
     assert len(training_trackers) == 2
 
 
+def test_generate_training_data_original_and_augmented_trackers(
+                                                        default_domain):
+    training_trackers = training.load_data(
+        "data/test_stories/stories_defaultdomain.md", default_domain,
+        augmentation_factor=3
+    )
+    # there are three original stories
+    # augmentation factor of 3 indicates max of 3*10 augmented stories generated
+    # maximum number of stories should be augmented+original = 33
+    original_trackers = \
+        [t for t in training_trackers if not
+         hasattr(t, 'is_augmented') or not t.is_augmented
+         ]
+    assert len(original_trackers) == 3
+    assert len(original_trackers) <= 33
+
+
 def test_visualize_training_data_graph(tmpdir, default_domain):
     graph = training.extract_story_graph(
         "data/test_stories/stories_with_cycle.md", default_domain)

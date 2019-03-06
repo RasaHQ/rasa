@@ -196,13 +196,14 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
     def test_memorise(self, trained_policy, default_domain):
         trackers = train_trackers(default_domain)
-        trackers = [t for t in trackers
-                    if not hasattr(t, 'is_augmented') or not t.is_augmented]
         trained_policy.train(trackers, default_domain)
 
+        test_trackers = \
+            [t for t in trackers if not
+             hasattr(t, 'is_augmented') or not t.is_augmented]
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
-                trackers, default_domain)
+                test_trackers, default_domain)
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
