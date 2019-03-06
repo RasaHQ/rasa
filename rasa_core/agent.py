@@ -173,7 +173,7 @@ def _pull_model_and_fingerprint(model_server: EndpointConfig,
         return None
 
     utils.unarchive(response.content, model_directory)
-    logger.debug("Unzipped model to {}"
+    logger.debug("Unzipped model to '{}'"
                  "".format(os.path.abspath(model_directory)))
 
     # get the new fingerprint
