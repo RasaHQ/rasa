@@ -27,14 +27,14 @@ class TrackerStore(object):
 
     @staticmethod
     def find_tracker_store(domain, store=None, event_broker=None):
-        if store is None or store.store_type is None:
+        if store is None or store.type is None:
             return InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.store_type == 'redis':
+        elif store.type == 'redis':
             return RedisTrackerStore(domain=domain,
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
-        elif store.store_type == 'mongod':
+        elif store.type == 'mongod':
             return MongoTrackerStore(domain=domain,
                                      host=store.url,
                                      event_broker=event_broker,
@@ -46,11 +46,11 @@ class TrackerStore(object):
     def load_tracker_from_module_string(domain, store):
         custom_tracker = None
         try:
-            custom_tracker = class_from_module_path(store.store_type)
+            custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning("Store type {} not found. "
+            logger.warning("Store type '{}' not found. "
                            "Using InMemoryTrackerStore instead"
-                           .format(store.store_type))
+                           .format(store.type))
 
         if custom_tracker:
             return custom_tracker(domain=domain,
@@ -101,7 +101,7 @@ class TrackerStore(object):
                 "sender_id": tracker.sender_id,
             }
             body.update(evt.as_dict())
-            self.event_broker.publish(json.dumps(body))
+            self.event_broker.publish(body)
 
     def keys(self):
         # type: () -> Optional[List[Text]]
