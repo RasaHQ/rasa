@@ -1,22 +1,20 @@
 import json
 
-from rasa_core import utils, broker
-from rasa_core.broker import PikaProducer, EventChannel, FileProducer
-from rasa_core.events import UserUttered, SlotSet, Restarted, Event
+from rasa_core import broker, utils
+from rasa_core.broker import FileProducer, PikaProducer
+from rasa_core.events import Event, Restarted, SlotSet, UserUttered
 from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
-EVENT_BROKER_ENDPOINT_FILE = 'data/test_endpoints/event_brokers/' \
-                             'pika_endpoint.yml'
-
-TEST_EVENTS =  [
+TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
     SlotSet("name", "rasa"),
     Restarted()]
 
 
 def test_pika_broker_from_config():
-    cfg = utils.read_endpoint_config(EVENT_BROKER_ENDPOINT_FILE,
+    cfg = utils.read_endpoint_config('data/test_endpoints/event_brokers/'
+                                     'pika_endpoint.yml',
                                      "event_broker")
     actual = broker.from_endpoint_config(cfg)
 
