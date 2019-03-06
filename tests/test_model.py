@@ -113,8 +113,12 @@ def _project_files(project, config_file=DEFAULT_CONFIG_PATH,
                    domain=DEFAULT_DOMAIN_PATH,
                    training_files=DEFAULT_DATA_PATH):
 
-    core_directory, nlu_directory = data.get_core_nlu_directories(
-        [training_files])
+    if training_files is None:
+        core_directory = None
+        nlu_directory = None
+    else:
+        core_directory, nlu_directory = data.get_core_nlu_directories(
+            training_files)
     paths = {"config_file": config_file,
              "domain_file": domain,
              "nlu_data": core_directory,
@@ -173,4 +177,3 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
     assert not os.path.exists(unpacked_model_path)
-

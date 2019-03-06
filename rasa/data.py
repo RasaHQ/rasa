@@ -2,11 +2,11 @@ import json
 import os
 import shutil
 import tempfile
-from typing import Tuple, List, Text, Set
+from typing import Tuple, List, Text, Set, Union
 import re
 
 
-def get_core_directory(directories: List[Text]) -> Text:
+def get_core_directory(directories: Union[Text, List[Text]]) -> Text:
     """Recursively collects all Core training files from a list of directories.
 
     Args:
@@ -19,7 +19,7 @@ def get_core_directory(directories: List[Text]) -> Text:
     return _copy_files_to_new_dir(core_files)
 
 
-def get_nlu_directory(directories: List[Text]) -> Text:
+def get_nlu_directory(directories: Union[Text, List[Text]]) -> Text:
     """Recursively collects all NLU training files from a list of directories.
 
     Args:
@@ -32,7 +32,8 @@ def get_nlu_directory(directories: List[Text]) -> Text:
     return _copy_files_to_new_dir(nlu_files)
 
 
-def get_core_nlu_directories(directories: List[Text]) -> Tuple[Text, Text]:
+def get_core_nlu_directories(directories: Union[Text, List[Text]]
+                             ) -> Tuple[Text, Text]:
     """Recursively collects all training files from a list of directories.
 
     Args:
@@ -42,6 +43,9 @@ def get_core_nlu_directories(directories: List[Text]) -> Tuple[Text, Text]:
         Path to directory containing the Core files and path to directory
         containing the NLU training files.
     """
+    if isinstance(directories, str):
+        directories = [directories]
+
     story_files, nlu_data_files = _get_core_nlu_files(directories)
 
     story_directory = _copy_files_to_new_dir(story_files)

@@ -127,7 +127,7 @@ def test_core(args: argparse.Namespace, model_path: Optional[Text] = None
     args.endpoints = get_validated_path(args.endpoints, "endpoints",
                                         DEFAULT_ENDPOINTS_PATH, True)
     args.config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
-    args.stories = get_validated_path(args.stories, "stories", 
+    args.stories = get_validated_path(args.stories, "stories",
                                       DEFAULT_DATA_PATH)
 
     args.stories = data.get_core_directory(args.stories)

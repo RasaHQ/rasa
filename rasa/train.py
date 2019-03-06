@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
     from rasa_nlu.model import Interpreter
 
 
-def train(domain: Text, config: Text, training_files: List[Text],
+def train(domain: Text, config: Text, training_files: typing.Union[Text, List[Text]],
           output: Text = DEFAULT_MODELS_PATH, force_training: bool = False
           ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
