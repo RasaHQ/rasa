@@ -22,6 +22,10 @@ def add_server_arguments(parser):
                              "provide this token as a query parameter")
     parser.add_argument('-w', '--write',
                         help='file where logs will be saved')
+    parser.add_argument('--loglevel',
+                        type=int,
+                        default=30,
+                        help='the numeric value of the logging level')
     parser.add_argument('--path',
                         required=True,
                         help="working directory of the server. Models are"

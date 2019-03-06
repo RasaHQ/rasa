@@ -141,6 +141,8 @@ class RasaNLU(object):
 
     @staticmethod
     def _configure_logging(loglevel, logfile):
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
         logging.basicConfig(filename=logfile,
                             level=loglevel)
         logging.captureWarnings(True)
