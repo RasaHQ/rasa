@@ -19,6 +19,7 @@ Added
 - utility functions for colored logging
 - open webbrowser when visualizing stories
 - added ability to use multiple env vars per line in yaml files
+- added ``priority`` property of policies to influence best policy in the case of equal confidence
 
 Changed
 -------
@@ -30,6 +31,7 @@ Changed
   endpoint is now sorted according to the actions' scores.
 - now randomly created augmented stories are subsampled during training and marked,
   so that memo policies can ignore them
+- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 
 Removed
 -------
