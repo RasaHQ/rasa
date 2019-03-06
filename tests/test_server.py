@@ -207,6 +207,20 @@ def test_predict(http_app, app):
     assert response.status_code == 200
 
 
+def test_sorted_predict(http_app, app):
+    client = RasaCoreClient(EndpointConfig(http_app))
+    cid = str(uuid.uuid1())
+    for event in test_events[:3]:
+        client.append_event_to_tracker(cid, event)
+    response = app.post("http://dummy/conversations/{}/predict".format(cid))
+    content = response.get_json()
+    scores = content["scores"]
+    sorted_scores = sorted(scores,
+                           key = lambda k: (-k['score'],
+                                            k['action']))
+    assert scores == sorted_scores
+
+
 def test_evaluate(app):
     with io.open(DEFAULT_STORIES_FILE, 'r') as f:
         stories = f.read()
