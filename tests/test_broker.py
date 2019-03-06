@@ -48,7 +48,6 @@ def test_file_broker_logs_to_file(tmpdir):
     actual = broker.from_endpoint_config(EndpointConfig(**{"type": "file",
                                                            "path": fname}))
 
-
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
 
@@ -66,7 +65,6 @@ def test_file_broker_properly_logs_newlines(tmpdir):
 
     actual = broker.from_endpoint_config(EndpointConfig(**{"type": "file",
                                                            "path": fname}))
-
 
     event_with_newline = UserUttered("hello \n there")
 
