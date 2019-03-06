@@ -23,6 +23,17 @@ class EntityExtractor(Component):
         return entity
 
     @staticmethod
+    def filter_irrelevant_entities(extracted, requested_dimensions):
+        """Only return dimensions the user configured"""
+
+        if requested_dimensions:
+            return [entity
+                    for entity in extracted
+                    if entity["entity"] in requested_dimensions]
+        else:
+            return extracted
+
+    @staticmethod
     def find_entity(ent, text, tokens):
         offsets = [token.offset for token in tokens]
         ends = [token.end for token in tokens]
@@ -49,8 +60,9 @@ class EntityExtractor(Component):
         """Filters out untrainable entity annotations.
 
         Creates a copy of entity_examples in which entities that have
-        `extractor` set to something other than self.name (e.g. 'ner_crf')
-        are removed."""
+        `extractor` set to something other than
+        self.name (e.g. 'CRFEntityExtractor') are removed.
+        """
 
         filtered = []
         for message in entity_examples:

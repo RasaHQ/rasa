@@ -36,15 +36,13 @@ class EmbeddingIntentClassifier(Component):
     The embedding intent classifier needs to be preceded by
     a featurizer in the pipeline.
     This featurizer creates the features used for the embeddings.
-    It is recommended to use ``intent_featurizer_count_vectors`` that
-    can be optionally preceded by ``nlp_spacy`` and ``tokenizer_spacy``.
+    It is recommended to use ``CountVectorsFeaturizer`` that
+    can be optionally preceded by ``SpacyNLP`` and ``SpacyTokenizer``.
 
     Based on the starspace idea from: https://arxiv.org/abs/1709.03856.
     However, in this implementation the `mu` parameter is treated differently
     and additional hidden layers are added together with dropout.
     """
-
-    name = "intent_classifier_tensorflow_embedding"
 
     provides = ["intent", "intent_ranking"]
 
@@ -143,8 +141,7 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
-        # init helpers
-
+    # init helpers
     def _load_nn_architecture_params(self, config: Dict[Text, Any]) -> None:
         self.hidden_layer_sizes = {'a': config['hidden_layers_sizes_a'],
                                    'b': config['hidden_layers_sizes_b']}
@@ -245,7 +242,6 @@ class EmbeddingIntentClassifier(Component):
             return np.eye(len(intent_dict))
 
     # noinspection PyPep8Naming
-
     def _create_all_Y(self, size: int) -> np.ndarray:
         """Stack encoded_all_intents on top of each other
 
@@ -255,8 +251,7 @@ class EmbeddingIntentClassifier(Component):
 
         return np.stack([self.encoded_all_intents] * size)
 
-        # noinspection PyPep8Naming
-
+    # noinspection PyPep8Naming
     def _prepare_data_for_training(
             self,
             training_data: 'TrainingData',
@@ -275,8 +270,7 @@ class EmbeddingIntentClassifier(Component):
 
         return X, Y, intents_for_X
 
-        # tf helpers:
-
+    # tf helpers:
     def _create_tf_embed_nn(self, x_in: 'tf.Tensor', is_training: 'tf.Tensor',
                             layer_sizes: List[int], name: Text) -> 'tf.Tensor':
         """Create nn with hidden layers and name"""
@@ -361,8 +355,7 @@ class EmbeddingIntentClassifier(Component):
         loss = (tf.reduce_mean(loss) + tf.losses.get_regularization_loss())
         return loss
 
-        # training helpers:
-
+    # training helpers:
     def _create_batch_b(self, batch_pos_b: np.ndarray,
                         intent_ids: np.ndarray) -> np.ndarray:
         """Create batch of intents.
@@ -405,7 +398,6 @@ class EmbeddingIntentClassifier(Component):
             return int(self.batch_size[0])
 
     # noinspection PyPep8Naming
-
     def _train_tf(self,
                   X: np.ndarray,
                   Y: np.ndarray,
@@ -473,7 +465,6 @@ class EmbeddingIntentClassifier(Component):
                         "".format(last_loss, train_acc))
 
     # noinspection PyPep8Naming
-
     def _output_training_stat(self,
                               X: np.ndarray,
                               intents_for_X: np.ndarray,
@@ -492,8 +483,6 @@ class EmbeddingIntentClassifier(Component):
         train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X[ids])
         return train_acc
 
-        # noinspection PyPep8Naming
-
     def train(self,
               training_data: 'TrainingData',
               cfg: Optional['RasaNLUModelConfig'] = None,
@@ -511,6 +500,7 @@ class EmbeddingIntentClassifier(Component):
         self.encoded_all_intents = self._create_encoded_intents(
             intent_dict)
 
+        # noinspection PyPep8Naming
         X, Y, intents_for_X = self._prepare_data_for_training(
             training_data, intent_dict)
 
@@ -579,8 +569,6 @@ class EmbeddingIntentClassifier(Component):
         # transform sim to python list for JSON serializing
         return intent_ids, message_sim.tolist()
 
-        # noinspection PyPep8Naming
-
     def process(self, message: 'Message', **kwargs: Any) -> None:
         """Return the most likely intent and its similarity to the input."""
 
@@ -594,10 +582,12 @@ class EmbeddingIntentClassifier(Component):
 
         else:
             # get features (bag of words) for a message
+            # noinspection PyPep8Naming
             X = message.get("text_features").reshape(1, -1)
 
             # stack encoded_all_intents on top of each other
             # to create candidates for test examples
+            # noinspection PyPep8Naming
             all_Y = self._create_all_Y(X.shape[0])
 
             # load tf graph and session
@@ -617,16 +607,18 @@ class EmbeddingIntentClassifier(Component):
         message.set("intent", intent, add_to_output=True)
         message.set("intent_ranking", intent_ranking, add_to_output=True)
 
-    def persist(self, model_dir: Text) -> Dict[Text, Any]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Dict[Text, Any]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again.
         """
 
         if self.session is None:
-            return {"classifier_file": None}
+            return {"file": None}
 
-        checkpoint = os.path.join(model_dir, self.name + ".ckpt")
+        checkpoint = os.path.join(model_dir, file_name + ".ckpt")
 
         try:
             os.makedirs(os.path.dirname(checkpoint))
@@ -660,28 +652,27 @@ class EmbeddingIntentClassifier(Component):
 
         with io.open(os.path.join(
                 model_dir,
-                self.name + "_inv_intent_dict.pkl"), 'wb') as f:
+                file_name + "_inv_intent_dict.pkl"), 'wb') as f:
             pickle.dump(self.inv_intent_dict, f)
         with io.open(os.path.join(
                 model_dir,
-                self.name + "_encoded_all_intents.pkl"), 'wb') as f:
+                file_name + "_encoded_all_intents.pkl"), 'wb') as f:
             pickle.dump(self.encoded_all_intents, f)
 
-        return {"classifier_file": self.name + ".ckpt"}
+        return {"file": file_name}
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Text = None,
              model_metadata: 'Metadata' = None,
              cached_component: Optional['EmbeddingIntentClassifier'] = None,
              **kwargs: Any
              ) -> 'EmbeddingIntentClassifier':
 
-        meta = model_metadata.for_component(cls.name)
-
-        if model_dir and meta.get("classifier_file"):
-            file_name = meta.get("classifier_file")
-            checkpoint = os.path.join(model_dir, file_name)
+        if model_dir and meta.get("file"):
+            file_name = meta.get("file")
+            checkpoint = os.path.join(model_dir, file_name + ".ckpt")
             graph = tf.Graph()
             with graph.as_default():
                 sess = tf.Session()
@@ -699,11 +690,11 @@ class EmbeddingIntentClassifier(Component):
 
             with io.open(os.path.join(
                     model_dir,
-                    cls.name + "_inv_intent_dict.pkl"), 'rb') as f:
+                    file_name + "_inv_intent_dict.pkl"), 'rb') as f:
                 inv_intent_dict = pickle.load(f)
             with io.open(os.path.join(
                     model_dir,
-                    cls.name + "_encoded_all_intents.pkl"), 'rb') as f:
+                    file_name + "_encoded_all_intents.pkl"), 'rb') as f:
                 encoded_all_intents = pickle.load(f)
 
             return cls(

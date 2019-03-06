@@ -4,18 +4,20 @@ import logging
 
 import pytest
 
-from rasa_nlu.evaluate import (
+from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa_nlu.test import (
     is_token_within_entity, do_entities_overlap,
     merge_labels, remove_duckling_entities,
     remove_empty_intent_examples, get_entity_extractors,
     get_duckling_dimensions, known_duckling_dimensions,
     find_component, remove_duckling_extractors, drop_intents_below_freq,
-    run_cv_evaluation, substitute_labels, IntentEvaluationResult,
+    cross_validate, substitute_labels, IntentEvaluationResult,
     evaluate_intents, evaluate_entities)
-from rasa_nlu.evaluate import does_token_cross_borders
-from rasa_nlu.evaluate import align_entity_predictions
-from rasa_nlu.evaluate import determine_intersection
-from rasa_nlu.evaluate import determine_token_labels
+from rasa_nlu.test import does_token_cross_borders
+from rasa_nlu.test import align_entity_predictions
+from rasa_nlu.test import determine_intersection
+from rasa_nlu.test import determine_token_labels
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
 from rasa_nlu import utils
@@ -29,7 +31,9 @@ logging.basicConfig(level="DEBUG")
 
 @pytest.fixture(scope="session")
 def duckling_interpreter(component_builder, tmpdir_factory):
-    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling_http"}]})
+    conf = RasaNLUModelConfig(
+        {"pipeline": [{"name": "DucklingHTTPExtractor"}]}
+    )
     return utilities.interpreter_for(
         component_builder,
         data="./data/examples/rasa/demo-rasa.json",
@@ -39,12 +43,16 @@ def duckling_interpreter(component_builder, tmpdir_factory):
 
 # Chinese Example
 # "对面食过敏" -> To be allergic to wheat-based food
-CH_wrong_segmentation = [Token("对面", 0),
-                         Token("食", 2),
-                         Token("过敏", 3)]  # opposite, food, allergy
-CH_correct_segmentation = [Token("对", 0),
-                           Token("面食", 1),
-                           Token("过敏", 3)]  # towards, wheat-based food, allergy
+CH_wrong_segmentation = [
+    Token("对面", 0),
+    Token("食", 2),
+    Token("过敏", 3)  # opposite, food, allergy
+]
+CH_correct_segmentation = [
+    Token("对", 0),
+    Token("面食", 1),
+    Token("过敏", 3)  # towards, wheat-based food, allergy
+]
 CH_wrong_entity = {
     "start": 0,
     "end": 2,
@@ -158,7 +166,8 @@ def test_token_entity_boundaries():
     # border crossing
     assert not is_token_within_entity(CH_wrong_segmentation[0],
                                       CH_correct_entity)
-    assert does_token_cross_borders(CH_wrong_segmentation[0], CH_correct_entity)
+    assert does_token_cross_borders(CH_wrong_segmentation[0],
+                                    CH_correct_entity)
 
 
 def test_entity_overlap():
@@ -168,19 +177,27 @@ def test_entity_overlap():
 
 def test_determine_token_labels_throws_error():
     with pytest.raises(ValueError):
-        determine_token_labels(CH_correct_segmentation,
+        determine_token_labels(CH_correct_segmentation[0],
                                [CH_correct_entity,
-                                CH_wrong_entity], ["ner_crf"])
+                                CH_wrong_entity], ["CRFEntityExtractor"])
 
 
 def test_determine_token_labels_no_extractors():
+    with pytest.raises(ValueError):
+        determine_token_labels(CH_correct_segmentation[0],
+                               [CH_correct_entity, CH_wrong_entity], None)
+
+
+def test_determine_token_labels_no_extractors_no_overlap():
     determine_token_labels(CH_correct_segmentation[0],
-                           [CH_correct_entity, CH_wrong_entity], None)
+                           EN_targets, None)
 
 
 def test_determine_token_labels_with_extractors():
     determine_token_labels(CH_correct_segmentation[0],
-                           [CH_correct_entity, CH_wrong_entity], ["A", "B"])
+                           [CH_correct_entity, CH_wrong_entity],
+                           [SpacyEntityExtractor.name,
+                            MitieEntityExtractor.name])
 
 
 def test_label_merging():
@@ -204,14 +221,14 @@ def test_duckling_patching():
             "end": 56,
             "value": "near Alexanderplatz",
             "entity": "location",
-            "extractor": "ner_crf"
+            "extractor": "CRFEntityExtractor"
         },
         {
             "start": 57,
             "end": 64,
             "value": "tonight",
             "entity": "Time",
-            "extractor": "ner_duckling_http"
+            "extractor": "DucklingHTTPExtractor"
 
         }
     ]]
@@ -221,7 +238,7 @@ def test_duckling_patching():
             "end": 56,
             "value": "near Alexanderplatz",
             "entity": "location",
-            "extractor": "ner_crf"
+            "extractor": "CRFEntityExtractor"
         }
     ]]
     assert remove_duckling_entities(entities) == patched
@@ -239,10 +256,11 @@ def test_drop_intents_below_freq():
 
 def test_run_cv_evaluation():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    nlu_config = config.load("sample_configs/config_spacy.yml")
+    nlu_config = config.load(
+        "sample_configs/config_pretrained_embeddings_spacy.yml")
 
     n_folds = 2
-    results, entity_results = run_cv_evaluation(td, n_folds, nlu_config)
+    results, entity_results = cross_validate(td, n_folds, nlu_config)
 
     assert len(results.train["Accuracy"]) == n_folds
     assert len(results.train["Precision"]) == n_folds
@@ -250,16 +268,21 @@ def test_run_cv_evaluation():
     assert len(results.test["Accuracy"]) == n_folds
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
-    assert len(entity_results.train['ner_crf']["Accuracy"]) == n_folds
-    assert len(entity_results.train['ner_crf']["Precision"]) == n_folds
-    assert len(entity_results.train['ner_crf']["F1-score"]) == n_folds
-    assert len(entity_results.test['ner_crf']["Accuracy"]) == n_folds
-    assert len(entity_results.test['ner_crf']["Precision"]) == n_folds
-    assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
+    assert len(entity_results.train[
+        'CRFEntityExtractor']["Accuracy"]) == n_folds
+    assert len(entity_results.train[
+        'CRFEntityExtractor']["Precision"]) == n_folds
+    assert len(entity_results.train[
+        'CRFEntityExtractor']["F1-score"]) == n_folds
+    assert len(entity_results.test[
+        'CRFEntityExtractor']["Accuracy"]) == n_folds
+    assert len(entity_results.test[
+        'CRFEntityExtractor']["Precision"]) == n_folds
+    assert len(entity_results.test[
+        'CRFEntityExtractor']["F1-score"]) == n_folds
 
 
 def test_intent_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
     report_filename = os.path.join(report_folder, "intent_report.json")
@@ -297,7 +320,6 @@ def test_intent_evaluation_report(tmpdir_factory):
 
 
 def test_entity_evaluation_report(tmpdir_factory):
-
     path = tmpdir_factory.mktemp("evaluation").strpath
     report_folder = os.path.join(path, "reports")
 
@@ -338,6 +360,20 @@ def test_empty_intent_removal():
     assert intent_results[0].message == "hello"
 
 
+def test_evaluate_entities_cv_empty_tokens():
+    mock_extractors = ["A", "B"]
+    result = align_entity_predictions(EN_targets, EN_predicted,
+                                      [], mock_extractors)
+
+    assert result == {
+        "target_labels": [],
+        "extractor_labels": {
+            "A": [],
+            "B": []
+        }
+    }, "Wrong entity prediction alignment"
+
+
 def test_evaluate_entities_cv():
     mock_extractors = ["A", "B"]
     result = align_entity_predictions(EN_targets, EN_predicted,
@@ -356,27 +392,30 @@ def test_evaluate_entities_cv():
 
 
 def test_get_entity_extractors(duckling_interpreter):
-    assert get_entity_extractors(duckling_interpreter) == {"ner_duckling_http"}
+    assert get_entity_extractors(
+        duckling_interpreter) == {"DucklingHTTPExtractor"}
 
 
 def test_get_duckling_dimensions(duckling_interpreter):
-    dims = get_duckling_dimensions(duckling_interpreter, "ner_duckling_http")
+    dims = get_duckling_dimensions(duckling_interpreter,
+                                   "DucklingHTTPExtractor")
     assert set(dims) == known_duckling_dimensions
 
 
 def test_find_component(duckling_interpreter):
-    name = find_component(duckling_interpreter, "ner_duckling_http").name
-    assert name == "ner_duckling_http"
+    name = find_component(duckling_interpreter, "DucklingHTTPExtractor").name
+    assert name == "DucklingHTTPExtractor"
 
 
 def test_remove_duckling_extractors(duckling_interpreter):
     target = set([])
 
-    patched = remove_duckling_extractors({"ner_duckling_http"})
+    patched = remove_duckling_extractors({"DucklingHTTPExtractor"})
     assert patched == target
 
 
 def test_label_replacement():
     original_labels = ["O", "location"]
     target_labels = ["no_entity", "location"]
-    assert substitute_labels(original_labels, "O", "no_entity") == target_labels
+    assert substitute_labels(original_labels,
+                             "O", "no_entity") == target_labels

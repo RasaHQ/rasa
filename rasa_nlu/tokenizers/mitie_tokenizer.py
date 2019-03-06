@@ -7,7 +7,6 @@ from rasa_nlu.training_data import Message, TrainingData
 
 
 class MitieTokenizer(Tokenizer, Component):
-    name = "tokenizer_mitie"
 
     provides = ["tokens"]
 

@@ -19,11 +19,8 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
 
-NGRAM_MODEL_FILE_NAME = "ngram_featurizer.pkl"
-
 
 class NGramFeaturizer(Featurizer):
-    name = "intent_featurizer_ngrams"
 
     provides = ["text_features"]
 
@@ -90,14 +87,14 @@ class NGramFeaturizer(Featurizer):
 
     @classmethod
     def load(cls,
+             meta: Dict[Text, Any],
              model_dir: Optional[Text] = None,
              model_metadata: Optional['Metadata'] = None,
              cached_component: Optional['NGramFeaturizer'] = None,
              **kwargs: Any
              ) -> 'NGramFeaturizer':
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("featurizer_file", NGRAM_MODEL_FILE_NAME)
+        file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(featurizer_file):
@@ -105,12 +102,15 @@ class NGramFeaturizer(Featurizer):
         else:
             return NGramFeaturizer(meta)
 
-    def persist(self, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
-        featurizer_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
+        file_name = file_name + ".pkl"
+        featurizer_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(featurizer_file, self)
-        return {"featurizer_file": NGRAM_MODEL_FILE_NAME}
+        return {"file": file_name}
 
     def train_on_sentences(self, examples):
         labels = [e.get("intent") for e in examples]

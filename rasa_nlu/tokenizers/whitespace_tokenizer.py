@@ -8,7 +8,6 @@ from rasa_nlu.training_data import Message, TrainingData
 
 
 class WhitespaceTokenizer(Tokenizer, Component):
-    name = "tokenizer_whitespace"
 
     provides = ["tokens"]
 

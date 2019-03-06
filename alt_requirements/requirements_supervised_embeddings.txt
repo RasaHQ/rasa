@@ -4,5 +4,3 @@
 tensorflow==1.13.0rc2
 scipy==1.1.0
 sklearn-crfsuite==0.3.6
-keras-applications==1.0.6
-keras-preprocessing==1.0.5
