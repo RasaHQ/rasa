@@ -160,7 +160,7 @@ def test_generate_training_data_with_unused_checkpoints(tmpdir,
 
 
 def test_generate_training_data_original_and_augmented_trackers(
-                                                        default_domain):
+        default_domain):
     training_trackers = training.load_data(
         "data/test_stories/stories_defaultdomain.md", default_domain,
         augmentation_factor=3
