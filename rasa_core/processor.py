@@ -35,6 +35,7 @@ from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
+from rasa_core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR
 
 logger = logging.getLogger(__name__)
 
@@ -334,14 +335,15 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderScheduled):
-                    scheduler.add_job(self.handle_reminder, "date",
-                                      run_date=e.trigger_date_time,
-                                      args=[e, dispatcher],
-                                      id=e.name,
-                                      replace_existing=True,
-                                      name=str(e.action_name) +\
-                                           ACTION_NAME_SENDER_ID_CONNECTOR_STR +\
-                                           tracker.sender_id)
+                    scheduler.add_job(
+                        self.handle_reminder, "date",
+                        run_date=e.trigger_date_time,
+                        args=[e, dispatcher],
+                        id=e.name,
+                        replace_existing=True,
+                        name=str(e.action_name) +
+                             ACTION_NAME_SENDER_ID_CONNECTOR_STR +
+                             tracker.sender_id)
 
     def _cancel_reminders(self,
                           events: List[Event],

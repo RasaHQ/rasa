@@ -566,27 +566,26 @@ class ReminderCancelled(Event):
 
     type_name = "cancel_reminder"
 
-    def __init__(self, action_name, name=None, timestamp=None):
+    def __init__(self, action_name, timestamp=None):
         """
         Args:
             name: name of the scheduled action to be cancelled
         """
 
         self.action_name = action_name
-        self.name = name
         super(ReminderCancelled, self).__init__(timestamp)
 
     def __hash__(self):
-        return hash((self.name))
+        return hash(self.name)
 
     def __eq__(self, other):
         return isinstance(other, ReminderCancelled)
 
     def __str__(self):
-        return ("ReminderCancelled(action: {}, name: {})"
-                     ".format(self.action_name, self.name))
+        return ("ReminderCancelled(action: {})"
+                .format(self.action_name))
 
-    def as_story_string(self):
+    def as_shitory_string(self):
         props = json.dumps(self._data_obj())
         return "{name}{props}".format(name=self.type_name, props=props)
 
@@ -596,7 +595,6 @@ class ReminderCancelled(Event):
             parameters: Dict[Text, Any]
     ) -> Optional[List[Event]]:
         return [ReminderCancelled(parameters.get("action"),
-                                  parameters.get("name", None),
                                   parameters.get("timestamp"))]
 
 
