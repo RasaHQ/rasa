@@ -10,11 +10,6 @@ from rasa_core.training.visualization import visualize_stories
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
-def test_story_visualization_script():
-    from rasa_core.visualize import create_argument_parser
-    assert create_argument_parser() is not None
-
-
 def test_story_visualization(default_domain, tmpdir):
     story_steps = StoryFileReader.read_from_file(
         "data/test_stories/stories.md", default_domain,
