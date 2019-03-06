@@ -151,7 +151,7 @@ class Event(object):
     @staticmethod
     def resolve_by_type(
         type_name: Text,
-        default: Optional[Text] = None
+        default: Optional[Type['Event']] = None
     ) -> Optional[Type['Event']]:
         """Returns a slots class by its type name."""
 
@@ -229,7 +229,7 @@ class UserUttered(Event):
 
     def as_dict(self):
         d = super(UserUttered, self).as_dict()
-        input_channel = None
+        input_channel = None   # for backwards compatibility (persisted evemts)
         if hasattr(self, "input_channel"):
             input_channel = self.input_channel
         d.update({
@@ -762,7 +762,7 @@ class ActionExecuted(Event):
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
-        policy = None
+        policy = None  # for backwards compatibility (persisted evemts)
         if hasattr(self, "policy"):
             policy = self.policy
         confidence = None
