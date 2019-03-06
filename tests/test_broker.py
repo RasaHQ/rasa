@@ -33,8 +33,8 @@ def test_no_broker_in_config():
 
 
 def test_file_broker_from_config():
-    cfg = utils.read_endpoint_config('data/test_endpoints/event_brokers/'
-                                     'file_endpoint.yml',
+    cfg = utils.read_endpoint_config("data/test_endpoints/event_brokers/"
+                                     "file_endpoint.yml",
                                      "event_broker")
     actual = broker.from_endpoint_config(cfg)
 
@@ -48,7 +48,6 @@ def test_file_broker_logs_to_file(tmpdir):
     actual = broker.from_endpoint_config(EndpointConfig(**{"type": "file",
                                                            "path": fname}))
 
-    assert isinstance(actual, FileProducer)
 
     for e in TEST_EVENTS:
         actual.publish(e.as_dict())
@@ -68,7 +67,6 @@ def test_file_broker_properly_logs_newlines(tmpdir):
     actual = broker.from_endpoint_config(EndpointConfig(**{"type": "file",
                                                            "path": fname}))
 
-    assert isinstance(actual, FileProducer)
 
     event_with_newline = UserUttered("hello \n there")
 

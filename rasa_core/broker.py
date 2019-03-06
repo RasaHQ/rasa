@@ -16,7 +16,7 @@ def load_event_channel_from_module_string(broker_config: EndpointConfig
         event_channel = class_from_module_path(broker_config.type)
         return event_channel.from_endpoint_config(broker_config)
     except (AttributeError, ImportError):
-        logger.warning("EventChannel type {} not found. "
+        logger.warning("EventChannel type '{}' not found. "
                        "Not using any event channel."
                        .format(broker_config.type))
         return None
@@ -98,12 +98,12 @@ class FileProducer(EventChannel):
 
     DEFAULT_LOG_FILE_NAME = "rasa_event.log"
 
-    def __init__(self, path=None) -> None:
-        self.path = path
+    def __init__(self, path: Optional[Text] = None) -> None:
+        self.path = path or self.DEFAULT_LOG_FILE_NAME
         self.event_logger = self._event_logger(path)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional['FileProducer']:
+    def from_endpoint_config(cls, broker_config: Optional['EndpointConfig']) -> Optional['FileProducer']:
         if broker_config is None:
             return None
 
@@ -111,7 +111,7 @@ class FileProducer(EventChannel):
         return cls(**broker_config.kwargs)
 
     def _event_logger(self, file_name):
-        """Instantiate the file logger"""
+        """Instantiate the file logger."""
 
         logger_file = file_name or self.DEFAULT_LOG_FILE_NAME
         # noinspection PyTypeChecker
@@ -126,7 +126,7 @@ class FileProducer(EventChannel):
 
         return query_logger
 
-    def publish(self, event):
+    def publish(self, event: Dict) -> None:
         """Write event to file."""
 
         self.event_logger.info(json.dumps(event))

@@ -47,7 +47,7 @@ class TrackerStore(object):
         try:
             custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning("Store type {} not found. "
+            logger.warning("Store type '{}' not found. "
                            "Using InMemoryTrackerStore instead"
                            .format(store.type))
 

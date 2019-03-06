@@ -105,7 +105,6 @@ def test_parse(app):
                         data=data, content_type='application/json')
     content = response.get_json()
     assert response.status_code == 200
-    print(content)
     assert content == {
         'entities': [
             {'end': 22, 'entity': 'name', 'start': 6, 'value': 'Rasa'}],

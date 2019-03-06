@@ -83,7 +83,7 @@ def _init_model_from_server(model_server: EndpointConfig
     return fingerprint, model_directory
 
 
-def _is_stack_model(model_directory: Text):
+def _is_stack_model(model_directory: Text) -> bool:
     """Decide whether a persisted model is a stack or a core model."""
 
     return os.path.exists(os.path.join(model_directory, "fingerprint.json"))
@@ -244,7 +244,7 @@ class Agent(object):
         self.policy_ensemble = policy_ensemble
 
         if interpreter:
-            self.interpreter = interpreter
+            self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
         self._set_fingerprint(fingerprint)
 
