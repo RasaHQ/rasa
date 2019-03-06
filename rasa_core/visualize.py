@@ -4,6 +4,7 @@ import os
 from typing import Text
 
 import rasa_core.cli.arguments
+import rasa_core.cli.train
 from rasa_core import utils
 import rasa_core.cli
 
@@ -60,9 +61,7 @@ if __name__ == '__main__':
     args = arg_parser.parse_args()
 
     utils.configure_colored_logging(args.loglevel)
-    stories = rasa_core.cli.stories_from_cli_args(args)
+    stories = rasa_core.cli.train.stories_from_cli_args(args)
 
     visualize(args.config[0], args.domain, stories, args.nlu_data,
               args.output, args.max_history)
-
-

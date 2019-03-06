@@ -10,11 +10,6 @@ from rasa_core.training.visualization import visualize_stories
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
-def test_story_visualization_script():
-    from rasa_core.visualize import create_argument_parser
-    assert create_argument_parser() is not None
-
-
 def test_story_visualization(default_domain, tmpdir):
     story_steps = StoryFileReader.read_from_file(
         "data/test_stories/stories.md", default_domain,
@@ -86,7 +81,7 @@ def test_training_script_with_max_history_set(tmpdir):
 
 def test_training_script_with_restart_stories(tmpdir):
     train(DEFAULT_DOMAIN_PATH,
-                         "data/test_stories/stories_restart.md",
+          "data/test_stories/stories_restart.md",
           tmpdir.strpath,
           interpreter=RegexInterpreter(),
           policy_config='data/test_config/max_hist_config.yml',
@@ -96,8 +91,8 @@ def test_training_script_with_restart_stories(tmpdir):
 
 def configs_for_random_seed_test():
     # define the configs for the random_seed tests
-    return [('data/test_config/keras_random_seed.yaml'),
-            ('data/test_config/embedding_random_seed.yaml')]
+    return ['data/test_config/keras_random_seed.yaml',
+            'data/test_config/embedding_random_seed.yaml']
 
 
 @pytest.mark.parametrize("config_file", configs_for_random_seed_test())

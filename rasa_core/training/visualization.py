@@ -31,8 +31,8 @@ class UserMessageGenerator(object):
 
     @staticmethod
     def _create_reverse_mapping(
-        data: 'TrainingData'
-    ) -> Dict[Dict[Text, Any], List['Message']]:
+        data: "TrainingData"
+    ) -> Dict[Dict[Text, Any], List["Message"]]:
         """Create a mapping from intent to messages
 
         This allows a faster intent lookup."""
@@ -363,7 +363,7 @@ def visualize_neighborhood(
     output_file: Optional[Text] = None,
     max_history: int = 2,
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
-    nlu_training_data: Optional['TrainingData'] = None,
+    nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     max_distance: int = 1,
     fontsize: int = 12
@@ -480,7 +480,7 @@ def visualize_stories(
     output_file: Optional[Text],
     max_history: int,
     interpreter: NaturalLanguageInterpreter = RegexInterpreter(),
-    nlu_training_data: Optional['TrainingData'] = None,
+    nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
     silent: bool = False
