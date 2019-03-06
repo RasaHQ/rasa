@@ -60,7 +60,6 @@ class SlackBot(SlackClient, OutputChannel):
     @staticmethod
     def _get_text_from_slack_buttons(buttons):
         return "".join([b.get("title", "") for b in buttons])
-        val = "".join(val)
         return val
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
