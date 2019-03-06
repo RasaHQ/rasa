@@ -144,7 +144,7 @@ class SlackInput(InputChannel):
 
     @staticmethod
     def _is_button(payload):
-        return (payload['actions'][0]['type'] == u"button")
+        return (payload['actions'][0]['type'] == "button")
 
     @staticmethod
     def _is_button_reply(slack_event):
