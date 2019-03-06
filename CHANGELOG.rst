@@ -31,11 +31,9 @@ Changed
   and only on master and branches ending in ``.x`` (i.e. new version releases)
 - renamed ``train_dialogue_model`` to ``train``
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
-- changed export paths for interactive training to ``data/core/stories.md``,
-  ``data/nlu/nlu.md`` and ``data/nlu/nlu_interactive.md``
 - ``event_broker.publish`` receives the event as a dict instead of text
 - configuration key ``store_type`` of the tracker store endpoint configuration
-  has been renamed to ``type`` to allow usage accross endpoints
+  has been renamed to ``type`` to allow usage across endpoints
 - renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
