@@ -136,7 +136,7 @@ class MemoizationPolicy(Policy):
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
-            for t in training_trackers if not
+            for t in training_trackers
              hasattr(t, 'is_augmented') or not t.is_augmented
          ]
         (trackers_as_states,
