@@ -43,9 +43,6 @@ def get_core_nlu_directories(directories: Union[Text, List[Text]]
         Path to directory containing the Core files and path to directory
         containing the NLU training files.
     """
-    if isinstance(directories, str):
-        directories = [directories]
-
     story_files, nlu_data_files = _get_core_nlu_files(directories)
 
     story_directory = _copy_files_to_new_dir(story_files)
@@ -54,10 +51,13 @@ def get_core_nlu_directories(directories: Union[Text, List[Text]]
     return story_directory, nlu_directory
 
 
-def _get_core_nlu_files(directories: List[Text]
+def _get_core_nlu_files(directories: Union[Text, List[Text]]
                         ) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
+
+    if isinstance(directories, str):
+        directories = [directories]
 
     for directory in set(directories):
         if not directory:

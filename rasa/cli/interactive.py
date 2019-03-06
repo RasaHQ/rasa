@@ -40,7 +40,7 @@ def interactive(args: Namespace):
     zipped_model = train.train(args)
     model_path = model.unpack_model(zipped_model)
     args.core, args.nlu = model.get_model_subdirectories(model_path)
-    stories_directory = data.get_core_directory(args.training_files)
+    stories_directory = data.get_core_directory(args.data)
 
     do_interactive_learning(args, stories_directory)
 
