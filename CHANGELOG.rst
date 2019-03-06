@@ -4,6 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+[0.13.3] - 2019-03-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-------
+- Tracker Store Mongo DB's documentation now has ``auth_source`` parameter, which is used for passing database name associated with the user's credentials. 
+
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
 
