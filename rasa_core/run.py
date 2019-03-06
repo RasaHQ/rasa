@@ -1,21 +1,15 @@
 import argparse
 import logging
-from flask import Flask
-from flask_cors import CORS
+
+import rasa_core.cli.arguments
 from gevent.pywsgi import WSGIServer
 from threading import Thread
 from typing import Text, Optional, List
 
-import rasa_core
-from rasa_core import constants, agent
-from rasa_core import utils, server
-from rasa_core.agent import Agent
+from rasa_core import constants, cli
+from rasa_core import utils
 from rasa_core.broker import PikaProducer
-from rasa_core.channels import (
-    console, InputChannel,
-    BUILTIN_CHANNELS)
-from rasa_core.interpreter import (
-    NaturalLanguageInterpreter)
+from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.utils import read_yaml_file, AvailableEndpoints
 
@@ -36,67 +30,16 @@ def create_argument_parser():
         '-u', '--nlu',
         type=str,
         help="nlu model to run")
-    parser.add_argument(
-        '-p', '--port',
-        default=constants.DEFAULT_SERVER_PORT,
-        type=int,
-        help="port to run the server at")
-    parser.add_argument(
-        '--auth_token',
-        type=str,
-        help="Enable token based authentication. Requests need to provide "
-             "the token to be accepted.")
-    parser.add_argument(
-        '--cors',
-        nargs='*',
-        type=str,
-        help="enable CORS for the passed origin. "
-             "Use * to whitelist all origins")
-    parser.add_argument(
-        '-o', '--log_file',
-        type=str,
-        default="rasa_core.log",
-        help="store log file in specified file")
-    parser.add_argument(
-        '--credentials',
-        default=None,
-        help="authentication credentials for the connector as a yml file")
-    parser.add_argument(
-        '--endpoints',
-        default=None,
-        help="Configuration file for the connectors as a yml file")
-    parser.add_argument(
-        '-c', '--connector',
-        type=str,
-        help="service to connect to")
-    parser.add_argument(
-        '--enable_api',
-        action="store_true",
-        help="Start the web server api in addition to the input channel")
 
-    jwt_auth = parser.add_argument_group('JWT Authentication')
-    jwt_auth.add_argument(
-        '--jwt_secret',
-        type=str,
-        help="Public key for asymmetric JWT methods or shared secret"
-             "for symmetric methods. Please also make sure to use "
-             "--jwt_method to select the method of the signature, "
-             "otherwise this argument will be ignored.")
-    jwt_auth.add_argument(
-        '--jwt_method',
-        type=str,
-        default="HS256",
-        help="Method used for the signature of the JWT authentication "
-             "payload.")
-
-    utils.add_logging_option_arguments(parser)
+    cli.arguments.add_logging_option_arguments(parser)
+    cli.run.add_run_arguments(parser)
     return parser
 
 
 def create_http_input_channels(
     channel: Optional[Text],
     credentials_file: Optional[Text]
-) -> List[InputChannel]:
+) -> List['InputChannel']:
     """Instantiate the chosen input channel."""
 
     if credentials_file:
@@ -112,6 +55,8 @@ def create_http_input_channels(
 
 
 def _create_single_channel(channel, credentials):
+    from rasa_core.channels import BUILTIN_CHANNELS
+
     if channel in BUILTIN_CHANNELS:
         return BUILTIN_CHANNELS[channel].from_credentials(credentials)
     else:
@@ -129,6 +74,8 @@ def _create_single_channel(channel, credentials):
 
 
 def start_cmdline_io(server_url, on_finish, **kwargs):
+    from rasa_core.channels import console
+
     kwargs["server_url"] = server_url
     kwargs["on_finish"] = on_finish
 
@@ -147,6 +94,9 @@ def start_server(input_channels,
                  jwt_secret=None,
                  jwt_method=None):
     """Run the agent."""
+    from rasa_core import server
+    from flask import Flask
+    from flask_cors import CORS
 
     if enable_api:
         app = server.create_app(initial_agent,
@@ -205,6 +155,8 @@ def serve_application(initial_agent,
 
 def load_agent(core_model, interpreter, endpoints,
                tracker_store=None):
+    from rasa_core import agent
+
     if endpoints.model:
         return agent.load_from_server(
             interpreter=interpreter,
@@ -214,6 +166,8 @@ def load_agent(core_model, interpreter, endpoints,
             tracker_store=tracker_store
         )
     else:
+        from rasa_core.agent import Agent
+
         return Agent.load(core_model,
                           interpreter=interpreter,
                           generator=endpoints.nlg,
