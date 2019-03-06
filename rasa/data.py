@@ -56,6 +56,9 @@ def _get_core_nlu_files(directories: List[Text]
     nlu_data_files = set()
 
     for directory in set(directories):
+        if not directory:
+            continue
+
         new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
             directory)
 

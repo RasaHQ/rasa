@@ -24,7 +24,7 @@ def train_model(project: Text, filename: Text = "test.tar.gz"):
     arguments.out = os.path.join(project, DEFAULT_MODELS_PATH, filename)
     arguments.domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
     arguments.config = os.path.join(project, DEFAULT_CONFIG_PATH)
-    arguments.training_files = os.path.join(project, DEFAULT_DATA_PATH)
+    arguments.data = [os.path.join(project, DEFAULT_DATA_PATH)]
     arguments.force = False
 
     train(arguments)

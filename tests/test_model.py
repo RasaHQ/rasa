@@ -8,7 +8,7 @@ import rasa_nlu
 
 import rasa
 from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
-                            DEFAULT_NLU_DATA_PATH, DEFAULT_STORIES_PATH)
+                            DEFAULT_DATA_PATH)
 from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
                         FINGERPRINT_NLU_VERSION_KEY,
                         FINGERPRINT_CORE_VERSION_KEY,
@@ -18,6 +18,7 @@ from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
                         model_fingerprint, get_model, create_package_rasa,
                         FINGERPRINT_FILE_PATH, get_model_subdirectories,
                         FINGERPRINT_TRAINED_AT_KEY)
+import rasa.data as data
 
 
 def test_get_latest_model(trained_model):
@@ -109,12 +110,15 @@ def test_nlu_fingerprint_changed(fingerprint2):
 
 
 def _project_files(project, config_file=DEFAULT_CONFIG_PATH,
-                   domain=DEFAULT_DOMAIN_PATH, nlu_data=DEFAULT_NLU_DATA_PATH,
-                   stories=DEFAULT_STORIES_PATH):
+                   domain=DEFAULT_DOMAIN_PATH,
+                   training_files=DEFAULT_DATA_PATH):
+
+    core_directory, nlu_directory = data.get_core_nlu_directories(
+        [training_files])
     paths = {"config_file": config_file,
              "domain_file": domain,
-             "nlu_data": nlu_data,
-             "stories": stories}
+             "nlu_data": core_directory,
+             "stories": nlu_directory}
 
     return {k: v if v is None else os.path.join(project, v)
             for k, v in paths.items()}
@@ -127,8 +131,8 @@ def test_create_fingerprint_from_paths(project):
 
 
 @pytest.mark.parametrize("project_files", [
-    ["invalid", "invalid", "invalid", "invalid"],
-    [None, None, None, None]])
+    ["invalid", "invalid", "invalid"],
+    [None, None, None]])
 def test_create_fingerprint_from_invalid_paths(project, project_files):
     project_files = _project_files(project, *project_files)
 
