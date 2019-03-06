@@ -569,7 +569,7 @@ class ReminderCancelled(Event):
     def __init__(self, action_name, timestamp=None):
         """
         Args:
-            name: name of the scheduled action to be cancelled
+            action_name: name of the scheduled action to be cancelled
         """
 
         self.action_name = action_name
