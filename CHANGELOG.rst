@@ -27,9 +27,11 @@ Changed
 
 Removed
 -------
+- removed ``admin_token`` from ``RasaChatInput`` since it wasn't used
 
 Fixed
 -----
+- When a ``fork`` is used in interactive learning, every forked storyline is saved (not just the last)
 
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
