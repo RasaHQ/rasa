@@ -698,7 +698,7 @@ paths:
               properties:
                 q:
                   type: string
-                  description: Message to ne parsed
+                  description: Message to be parsed
             example:
               q: "Hello, I am Rasa!"
       responses:
