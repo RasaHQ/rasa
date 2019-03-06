@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def configure_file_logging(loglevel, logfile):
     if logfile:
-        fh = logging.FileHandler(logfile)
+        fh = logging.FileHandler(logfile, encoding='utf-8')
         fh.setLevel(loglevel)
         logging.getLogger('').addHandler(fh)
     logging.captureWarnings(True)
