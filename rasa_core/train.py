@@ -244,7 +244,8 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_arguments.loglevel)
 
-    training_stories = rasa_core.cli.train.stories_from_cli_args(cmdline_arguments)
+    training_stories = rasa_core.cli.train.stories_from_cli_args(
+        cmdline_arguments)
 
     if cmdline_arguments.mode == 'default':
         do_default_training(cmdline_arguments,

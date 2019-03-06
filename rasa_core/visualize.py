@@ -65,5 +65,3 @@ if __name__ == '__main__':
 
     visualize(args.config[0], args.domain, stories, args.nlu_data,
               args.output, args.max_history)
-
-
