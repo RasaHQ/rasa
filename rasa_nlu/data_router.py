@@ -1,20 +1,20 @@
-import multiprocessing
-
 import datetime
 import io
 import logging
+import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
+from typing import Any, Dict, List, Optional, Text
+
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import Logger, jsonFileLogObserver
-from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import config, utils
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.emulators import NoEmulator
-from rasa_nlu.evaluate import run_evaluation
+from rasa_nlu.test import run_evaluation
 from rasa_nlu.model import InvalidProjectError
 from rasa_nlu.project import (
     Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server)
@@ -234,7 +234,8 @@ class DataRouter(object):
     def _tf_in_pipeline(model_config: RasaNLUModelConfig) -> bool:
         from rasa_nlu.classifiers.embedding_intent_classifier import \
             EmbeddingIntentClassifier
-        return EmbeddingIntentClassifier.name in model_config.component_names
+        return any(EmbeddingIntentClassifier.name in c.values()
+                   for c in model_config.pipeline)
 
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)
@@ -326,7 +327,7 @@ class DataRouter(object):
                     self.project_store[project].current_training_processes ==
                     0):
                 self.project_store[project].status = STATUS_READY
-            return model_dir
+            return model_path
 
         def training_errback(failure):
             logger.warning(failure)
