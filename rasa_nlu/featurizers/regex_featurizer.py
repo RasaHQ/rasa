@@ -71,23 +71,23 @@ class RegexFeaturizer(Featurizer):
         message is tokenized, the function will mark all tokens with a dict
         relating the name of the regex to whether it was matched."""
 
-        matches = []
+        found_patterns = []
         for exp in self.known_patterns:
-            match = re.finditer(exp["pattern"], message.text)
-            match_item = [mat for mat in match]
-            matches.append(None)
+            matches = re.finditer(exp["pattern"], message.text)
+            matches = list(matches)
+            found_patterns.append(False)
             for token_index, t in enumerate(message.get("tokens", [])):
                 patterns = t.get("pattern", default={})
                 patterns[exp["name"]] = False
 
-                for mat in match_item:
-                    if t.offset < mat.end() and t.end > mat.start():
+                for match in matches:
+                    if t.offset < match.end() and t.end > match.start():
                         patterns[exp["name"]] = True
-                        matches[-1] = True
+                        found_patterns[-1] = True
 
                 t.set("pattern", patterns)
-        found = [1.0 if m is not None else 0.0 for m in matches]
-        return np.array(found)
+
+        return np.array(found_patterns).astype(float)
 
     def _generate_lookup_regex(self, lookup_table):
         """creates a regex out of the contents of a lookup table file"""
