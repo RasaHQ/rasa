@@ -682,7 +682,7 @@ paths:
       - JWT: []
       tags:
       - Model
-      summary: Parse a message and run the NLU model
+      summary: Parse a message using the loaded NLU model
       description: >-
         Predicts the intent and entities of the message
         posted to this endpoint. No messages will be stored
