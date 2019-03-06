@@ -1,7 +1,7 @@
 import os
 import tempfile
 import typing
-from typing import Text, Optional, List
+from typing import Text, Optional, List, Union
 
 from rasa import model, data
 from rasa.cli.utils import create_output_path
@@ -11,7 +11,7 @@ if typing.TYPE_CHECKING:
     from rasa_nlu.model import Interpreter
 
 
-def train(domain: Text, config: Text, training_files: typing.Union[Text, List[Text]],
+def train(domain: Text, config: Text, training_files: Union[Text, List[Text]],
           output: Text = DEFAULT_MODELS_PATH, force_training: bool = False
           ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).

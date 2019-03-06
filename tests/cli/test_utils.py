@@ -36,12 +36,8 @@ def test_parse_no_positional_model_path_argument(argv):
 
 
 def test_validate_invalid_path():
-    arguments = type('', (), {})()
-
-    arguments.out = "test test test"
-
     with pytest.raises(SystemExit):
-        validate_path(arguments, "out", "default")
+        get_validated_path("test test test", "out", "default")
 
 
 def test_validate_valid_path():
