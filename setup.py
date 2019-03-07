@@ -40,6 +40,7 @@ setup(
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
+    include_package_data=True,
     description="Rasa Stack - A package which includes Rasa Core and Rasa NLU",
     long_description=long_description,
     long_description_content_type="text/markdown",
