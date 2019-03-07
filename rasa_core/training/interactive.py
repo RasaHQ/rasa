@@ -688,6 +688,13 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     for evt in evts:
         if evt.get("event") == UserUttered.type_name:
             data = evt.get("parse_data")
+            for entity in data["entities"]:
+                if "extractor" in entity:
+                    # only inlcude entities which are extracted by ner_crf
+                    # or manually annotated (therefore lack entity["extractor"])
+                    if entity["extractor"] is not 'CRFEntityExtractor':
+                        data["entities"].remove(entity)
+
             msg = Message.build(data["text"], data["intent"]["name"],
                                 data["entities"])
             msgs.append(msg)
