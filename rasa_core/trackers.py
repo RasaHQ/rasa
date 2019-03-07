@@ -43,7 +43,10 @@ class EventVerbosity(Enum):
 
 
 class DialogueStateTracker(object):
-    """Maintains the state of a conversation."""
+    """Maintains the state of a conversation.
+
+    The field max_event_history will only give you these last events,
+    it can be set in the tracker_store"""
 
     @classmethod
     def from_dict(cls,

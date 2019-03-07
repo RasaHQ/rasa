@@ -655,7 +655,7 @@ configuration ``config/endpoints.yml``:
 .. code-block:: yaml
 
   tracker_store:
-    store_type: mongod
+    type: mongod
     url: mongodb://mongo:27017
     username: rasa
     password: example
@@ -678,7 +678,7 @@ configuration ``config/endpoints.yml``:
 .. code-block:: yaml
 
   tracker_store:
-    store_type: redis
+    type: redis
     url: redis
 
 5.3 Using a Custom Tracker Store Implementation
