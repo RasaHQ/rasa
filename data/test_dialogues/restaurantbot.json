@@ -111,16 +111,16 @@
       "parse_data":{
         "entities":[
         {
-          "end":18,
+          "end":50,
           "entity":"cuisine",
-          "start":16,
-          "value":"an"
+          "start":43,
+          "value":"italian"
         },
         {
-          "end":48,
+          "end":70,
           "entity":"location",
-          "start":42,
-          "value":"Bombay"
+          "start":65,
+          "value":"paris"
         }
       ],
         "intent":{
@@ -285,9 +285,19 @@
       },
       "message_id":null,
       "parse_data":{
-        "entities":{
-          "py/id":26
-        },
+        "entities":[
+        {
+          "confidence":0.839291340764181,
+          "end":11,
+          "entity":"price",
+          "extractor":"CRFEntityExtractor",
+          "processors":[
+            "EntitySynonymMapper"
+          ],
+          "start":6,
+          "value":"lo"
+        }
+      ],
         "intent":{
           "confidence":0.5050531724307868,
           "name":"affirm"

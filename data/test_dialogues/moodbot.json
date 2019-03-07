@@ -1,6 +1,6 @@
 {
   "py/object":"rasa_core.conversation.Dialogue",
-  "name":"restaurantbot",
+  "name":"moodbot",
   "events":[
     {
       "py/object":"rasa_core.events.ActionExecuted",
