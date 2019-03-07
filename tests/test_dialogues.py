@@ -1,7 +1,6 @@
 import glob
 import json
 
-import io
 import jsonpickle
 import pytest
 
@@ -10,8 +9,13 @@ from rasa_core.domain import Domain
 from rasa_core.tracker_store import InMemoryTrackerStore
 from tests.utilities import tracker_from_dialogue_file
 
+test_dialogues = sorted(glob.glob('data/test_dialogues/*json'))
+example_domains = ["examples/formbot/domain.yml",
+                   "examples/moodbot/domain.yml",
+                   "examples/restaurantbot/restaurant_domain.yml"]
 
-@pytest.mark.parametrize("filename", glob.glob('data/test_dialogues/*json'))
+
+@pytest.mark.parametrize("filename", test_dialogues)
 def test_dialogue_serialisation(filename):
     dialogue_json = utils.read_file(filename)
     restored = json.loads(dialogue_json)
@@ -20,10 +24,7 @@ def test_dialogue_serialisation(filename):
     assert restored == en_de_coded
 
 
-@pytest.mark.parametrize("pair", zip(sorted(glob.glob('data/test_dialogues/*json')),
-                                     ["examples/formbot/domain.yml",
-                                      "examples/moodbot/domain.yml",
-                                      "examples/restaurantbot/restaurant_domain.yml"]))
+@pytest.mark.parametrize("pair", zip(test_dialogues, example_domains))
 def test_inmemory_tracker_store(pair):
     filename, domainpath = pair
     domain = Domain.load(domainpath)
