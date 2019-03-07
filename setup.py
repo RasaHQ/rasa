@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
@@ -23,6 +23,7 @@ install_requires = [
 
 setup(
     name="rasa",
+    packages=find_packages(exclude=["tests"]),
     entry_points={
         'console_scripts': ['rasa=rasa.__main__:main'],
     },
@@ -39,6 +40,7 @@ setup(
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
+    include_package_data=True,
     description="Rasa Stack - A package which includes Rasa Core and Rasa NLU",
     long_description=long_description,
     long_description_content_type="text/markdown",
