@@ -291,7 +291,7 @@ class SQLTrackerStore(TrackerStore):
         engine_url = URL(drivername, username, password, host, database=db)
 
         logger.debug('Attempting to connect to database '
-                     'via "{}"...'.format(engine_url.__to_string__()))
+                     'via "{}"'.format(engine_url.__to_string__()))
 
         self.engine = create_engine(engine_url)
         self.session = sessionmaker(bind=self.engine)()
@@ -324,7 +324,7 @@ class SQLTrackerStore(TrackerStore):
         return self.SQLEvent.__table__.columns.keys()
 
     def retrieve(self, sender_id: Text):
-        """Recreates the tracker from all previously stored events"""
+        """Creates a tracker from all previously stored events"""
 
         subquery = self.session.query(self.SQLEvent)
         query = subquery.filter_by(sender_id=sender_id).all()
