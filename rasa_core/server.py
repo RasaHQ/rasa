@@ -612,6 +612,16 @@ def create_app(agent,
             "tracker": tracker.current_state(verbosity)
         })
 
+    @app.route("/parse",
+               methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
+    @cross_origin(origins=cors_origins)
+    @ensure_loaded_agent(agent)
+    def parse():
+        request_params = request.get_json(force=True)
+        parse_data = agent.interpreter.parse(request_params.get("q"))
+        return jsonify(parse_data)
+
     return app
 
 
