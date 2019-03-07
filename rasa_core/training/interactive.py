@@ -1059,7 +1059,10 @@ def _correct_entities(latest_message: Dict[Text, Any],
     annotation = _ask_or_abort(question, sender_id, endpoint)
     # noinspection PyProtectedMember
     parsed = MarkdownReader()._parse_training_example(annotation)
-    return parsed.get("entities", [])
+    if entity_str == parsed:
+        return latest_message.get("parse_data", {}).get("entities", [])
+    else:
+        return parsed.get("entities", [])
 
 
 def _enter_user_message(sender_id: Text,
