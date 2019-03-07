@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 def configure_file_logging(loglevel, logfile):
     if logfile:
-        fh = logging.FileHandler(logfile)
+        fh = logging.FileHandler(logfile, encoding='utf-8')
         fh.setLevel(loglevel)
         logging.getLogger('').addHandler(fh)
     logging.captureWarnings(True)
@@ -399,7 +399,7 @@ def zip_folder(folder):
     return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 
-def unarchive(byte_array: bytes, directory: Text):
+def unarchive(byte_array: bytes, directory: Text) -> Text:
     """Tries to unpack a byte array interpreting it as an archive.
 
     Tries to use tar first to unpack, if that fails, zip will be used."""

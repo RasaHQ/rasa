@@ -21,7 +21,7 @@ You can use an endpoint configuration file to instruct Rasa Core to stream
 all events to your event broker. To do so, add the following section to your
 endpoint configuration, e.g. ``endpoints.yml``:
 
-.. literalinclude:: ../data/test_endpoints/event_broker_endpoint.yml
+.. literalinclude:: ../data/test_endpoints/event_brokers/pika_endpoint.yml
 
 Then instruct Rasa Core to use the endpoint configuration by adding
 ``--endpoints <path to your endpoint configuration`` when running it.

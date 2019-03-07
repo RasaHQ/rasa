@@ -16,12 +16,15 @@ Added
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
 - documentation about early deactivation of a form in validation
+- Added max_event_history in tracker_store to set this value in DialogueStateTracker
 - utility functions for colored logging
 - open webbrowser when visualizing stories
 - added ``/parse`` endpoint to query for NLU results
 - File based event store
 - ability to configure event store using the endpoints file
 - added ability to use multiple env vars per line in yaml files
+- added ``priority`` property of policies to influence best policy in 
+  the case of equal confidence
 
 Changed
 -------
@@ -29,14 +32,14 @@ Changed
   and only on master and branches ending in ``.x`` (i.e. new version releases)
 - renamed ``train_dialogue_model`` to ``train``
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
-- changed export paths for interactive training to ``data/core/stories.md``,
-  ``data/nlu/nlu.md`` and ``data/nlu/nlu_interactive.md``
 - ``event_broker.publish`` receives the event as a dict instead of text
 - configuration key ``store_type`` of the tracker store endpoint configuration
-  has been renamed to ``type`` to allow usage accross endpoints
+  has been renamed to ``type`` to allow usage across endpoints
 - renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
+- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, 
+  rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 
 Removed
 -------
@@ -46,6 +49,10 @@ Fixed
 -----
 - When a ``fork`` is used in interactive learning, every forked
   storyline is saved (not just the last)
+- Handles slot names which contain characters that are invalid as python 
+  variable name (e.g. dot) in a template
+- When a ``fork`` is used in interactive learning, every forked storyline 
+  is saved (not just the last)
 
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
@@ -88,6 +95,8 @@ Added
 - SlackInput wont ignore ``app_mention`` event anymore.
   Will handle messages containing @mentions to bots and will respond to these
   (as long as the event itself is enabled in the application hosting the bot)
+- Added sanitization mechanism for SlackInput that (in its current shape and form)
+  strips bot's self mentions from messages posted using the said @mentions.
 - Added sanitization mechanism for SlackInput that (in its current
   shape and form) strips bot's self mentions from messages posted using
   the said @mentions.

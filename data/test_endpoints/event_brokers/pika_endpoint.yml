@@ -3,3 +3,4 @@ event_broker:
   username: username
   password: password
   queue: queue
+  type: pika
