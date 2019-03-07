@@ -220,7 +220,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         for tracker, states, actions \
                 in zip(trackers, all_states_augmented, all_actions_augmented):
             recalled = trained_policy.recall(states, tracker, default_domain)
-            assert all([element == 0 for element in recalled])
+            assert recalled == 0
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num
