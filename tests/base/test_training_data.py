@@ -61,6 +61,7 @@ def test_dialogflow_data():
     assert len(td.entity_examples) == 5
     assert len(td.intent_examples) == 24
     assert len(td.training_examples) == 24
+    assert len(td.lookup_tables) == 2
     assert td.intents == {"affirm", "goodbye", "hi", "inform"}
     assert td.entities == {"cuisine", "location"}
     non_trivial_synonyms = {k: v
@@ -68,6 +69,11 @@ def test_dialogflow_data():
     assert non_trivial_synonyms == {"mexico": "mexican",
                                     "china": "chinese",
                                     "india": "indian"}
+    # The order changes based on different computers hence the grouping
+    assert {td.lookup_tables[0]['name'],
+            td.lookup_tables[1]['name']} == {'location', 'cuisine'}
+    assert {len(td.lookup_tables[0]['elements']),
+            len(td.lookup_tables[1]['elements'])} == {4, 6}
 
 
 def test_lookup_table_json():

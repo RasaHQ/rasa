@@ -162,23 +162,6 @@ This will return the current version of the Rasa NLU instance, as well as the mi
       "minimum_compatible_version": "0.13.0"
     }
 
-
-``GET /config``
-^^^^^^^^^^^^^^^
-
-This will return the default model configuration of the Rasa NLU instance.
-
-.. code-block:: bash
-
-    $ curl localhost:5000/config | python -mjson.tool
-    {
-        "config": "/app/rasa_shared/config_mitie.json",
-        "data": "/app/rasa_nlu/data/examples/rasa/demo-rasa.json",
-        "duckling_dimensions": null,
-        "emulate": null,
-        ...
-      }
-
 ``DELETE /models``
 ^^^^^^^^^^^^^^^^^^
 

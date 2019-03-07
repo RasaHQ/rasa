@@ -43,9 +43,14 @@ Removed
 
 Fixed
 -----
+- ``RegexFeaturizer`` detects all regex in user message (not just first)
+- do_extractors_support_overlap now correctly throws an exception only if no extractors are 
+  passed or if extractors that do not support overlapping entities are used.
+
 
 [0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
+-
 
 Changed
 -------
