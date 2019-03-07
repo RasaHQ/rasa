@@ -218,7 +218,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             assert recalled == default_domain.index_for_action(actions[0])
 
         for tracker, states, actions \
-                in zip(trackers, all_states_augmented, all_actions_augmented):
+                in zip(augmented_trackers, all_states_augmented, all_actions_augmented):
             recalled = trained_policy.recall(states, tracker, default_domain)
             assert recalled == 0
 
