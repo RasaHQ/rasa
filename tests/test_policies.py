@@ -198,16 +198,29 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trackers = train_trackers(default_domain)
         trained_policy.train(trackers, default_domain)
 
-        test_trackers = \
-            [t for t in trackers if not
-             hasattr(t, 'is_augmented') or not t.is_augmented]
+        test_trackers, augmented_trackers = [], []
+        for t in trackers:
+            if not hasattr(t, 'is_augmented') or not t.is_augmented:
+                test_trackers.append(t)
+            else:
+                augmented_trackers.append(t)
+
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
                 test_trackers, default_domain)
 
+        (all_states_augmented, all_actions_augmented) = \
+            trained_policy.featurizer.training_states_and_actions(
+                augmented_trackers, default_domain)
+
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
             assert recalled == default_domain.index_for_action(actions[0])
+
+        for tracker, states, actions \
+                in zip(trackers, all_states_augmented, all_actions_augmented):
+            recalled = trained_policy.recall(states, tracker, default_domain)
+            assert all([element == 0 for element in recalled])
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num
