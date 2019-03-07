@@ -15,7 +15,7 @@ from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore, SQL
 from rasa_core.tracker_store import (
     TrackerStore)
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from tests.conftest import DEFAULT_STORIES_FILE
+from tests.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH
 from tests.utilities import (tracker_from_dialogue_file, read_dialogue_file,
                              user_uttered, get_tracker)
 
@@ -94,9 +94,16 @@ def test_tracker_store_storage_and_retrieval(store):
 
 @pytest.mark.parametrize("store", stores_to_be_tested(),
                          ids=stores_to_be_tested_ids())
-def test_tracker_store(store, moodbot_domain):
-    filename = 'data/test_dialogues/moodbot.json'
-    tracker = tracker_from_dialogue_file(filename, moodbot_domain)
+@pytest.mark.parametrize("pair",
+                         zip(sorted(glob.glob('data/test_dialogues/*json')),
+                             [DEFAULT_DOMAIN_PATH,
+                              "examples/formbot/domain.yml",
+                              "examples/moodbot/domain.yml",
+                              "examples/restaurantbot/restaurant_domain.yml"]))
+def test_tracker_store(store, pair):
+    filename, domainpath = pair
+    domain = Domain.load(domainpath)
+    tracker = tracker_from_dialogue_file(filename, domain)
     store.save(tracker)
     restored = store.retrieve(tracker.sender_id)
     assert restored == tracker

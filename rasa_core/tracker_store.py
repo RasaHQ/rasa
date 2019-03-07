@@ -25,22 +25,23 @@ class TrackerStore(object):
                  event_broker: Optional[EventChannel] = None) -> None:
         self.domain = domain
         self.event_broker = event_broker
+        self.max_event_history = None
 
     @staticmethod
     def find_tracker_store(domain, store=None, event_broker=None):
-        if store is None or store.store_type is None:
+        if store is None or store.type is None:
             return InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.store_type == 'redis':
+        elif store.type == 'redis':
             return RedisTrackerStore(domain=domain,
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
-        elif store.store_type == 'mongod':
+        elif store.type == 'mongod':
             return MongoTrackerStore(domain=domain,
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
-        elif store.store_type == 'SQL':
+        elif store.type == 'SQL':
             return SQLTrackerStore(domain=domain,
                                    host=store.url,
                                    event_broker=event_broker,
@@ -52,11 +53,11 @@ class TrackerStore(object):
     def load_tracker_from_module_string(domain, store):
         custom_tracker = None
         try:
-            custom_tracker = class_from_module_path(store.store_type)
+            custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning("Store type {} not found. "
+            logger.warning("Store type '{}' not found. "
                            "Using InMemoryTrackerStore instead"
-                           .format(store.store_type))
+                           .format(store.type))
 
         if custom_tracker:
             return custom_tracker(domain=domain,
@@ -64,16 +65,19 @@ class TrackerStore(object):
         else:
             return InMemoryTrackerStore(domain)
 
-    def get_or_create_tracker(self, sender_id):
+    def get_or_create_tracker(self, sender_id, max_event_history=None):
         tracker = self.retrieve(sender_id)
+        self.max_event_history = max_event_history
         if tracker is None:
             tracker = self.create_tracker(sender_id)
         return tracker
 
     def init_tracker(self, sender_id):
         if self.domain:
-            return DialogueStateTracker(sender_id,
-                                        self.domain.slots)
+            return DialogueStateTracker(
+                sender_id,
+                self.domain.slots,
+                max_event_history=self.max_event_history)
         else:
             return None
 
@@ -104,7 +108,7 @@ class TrackerStore(object):
                 "sender_id": tracker.sender_id,
             }
             body.update(evt.as_dict())
-            self.event_broker.publish(json.dumps(body))
+            self.event_broker.publish(body)
 
     def keys(self):
         # type: () -> Optional[List[Text]]
@@ -262,7 +266,7 @@ class SQLTrackerStore(TrackerStore):
     Base = declarative_base()
 
     class SQLEvent(Base):
-        __tablename__ = 'events'
+        __tablename__ = 'conversations'
 
         id = Column(Integer, primary_key=True)
         sender_id = Column(String, nullable=False)
@@ -292,19 +296,19 @@ class SQLTrackerStore(TrackerStore):
         self.engine = create_engine(engine_url)
         self.session = sessionmaker(bind=self.engine)()
 
-        logger.debug('Connection successful, ensuring events table...')
+        logger.debug('Connection successful, ensuring conversations table...')
 
-        self._ensure_event_table()
+        self._ensure_table()
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
         logger.debug('SQL tracker store successfully initialised')
 
-    def _ensure_event_table(self):
-        """Creates the events table if not already present in the database"""
+    def _ensure_table(self):
+        """Creates the conversations table in the database if not present"""
 
         metadata = MetaData()
 
-        Table("events", metadata,
+        Table("conversations", metadata,
               Column("id", Integer, primary_key=True),
               Column("sender_id", String, nullable=False),
               Column("type_name", String, nullable=False),
@@ -347,7 +351,6 @@ class SQLTrackerStore(TrackerStore):
         events = self._event_buffer(tracker)  # only store recent events
 
         for event in events:
-
             try:
                 data = event.as_dict()
             except AttributeError as e:
@@ -366,6 +369,7 @@ class SQLTrackerStore(TrackerStore):
                                            action_name=action,
                                            data=json.dumps(data)))
         self.session.commit()
+        logger.debug('Tracker stored to database')
 
     def _event_buffer(self, tracker):
         """Returns events from the tracker which aren't currently stored"""

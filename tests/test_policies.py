@@ -212,16 +212,16 @@ class TestMemoizationPolicy(PolicyTestCollection):
                           zip(default_domain.input_states, nums)}]
         assert trained_policy._recall_states(random_states) is None
 
-    def test_memorise_with_nlu(self, trained_policy, moodbot_domain):
-        filename = "data/test_dialogues/moodbot.json"
+    def test_memorise_with_nlu(self, trained_policy, default_domain):
+        filename = "data/test_dialogues/default.json"
         dialogue = read_dialogue_file(filename)
 
-        tracker = DialogueStateTracker(dialogue.name, moodbot_domain.slots)
+        tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
         tracker.recreate_from_dialogue(dialogue)
         states = trained_policy.featurizer.prediction_states([tracker],
-                                                             moodbot_domain)[0]
+                                                             default_domain)[0]
 
-        recalled = trained_policy.recall(states, tracker, moodbot_domain)
+        recalled = trained_policy.recall(states, tracker, default_domain)
         assert recalled is not None
 
 
