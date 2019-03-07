@@ -3,10 +3,13 @@ import argparse
 from typing import List, Text
 
 import questionary
-from rasa.cli import train
+import rasa.train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path
 from rasa_core.utils import print_success
+
+from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
+                            DEFAULT_DATA_PATH)
 
 
 def add_subparser(subparsers: argparse._SubParsersAction,
@@ -23,13 +26,12 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
     should_train = questionary.confirm("Do you want me to train an initial "
                                        "model for the bot? 💪🏽").ask()
     if should_train:
-        args.config = os.path.join(path, "config.yml")
-        args.stories = os.path.join(path, "data/core")
-        args.domain = os.path.join(path, "domain.yml")
-        args.nlu = os.path.join(path, "data/nlu")
-        args.out = os.path.join(path, create_output_path())
+        config = os.path.join(path, DEFAULT_CONFIG_PATH)
+        training_files = os.path.join(path, DEFAULT_DATA_PATH)
+        domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
+        output = os.path.join(path, create_output_path())
 
-        args.model = train.train(args)
+        args.model = rasa.train(domain, config, training_files, output)
 
         print_run_or_instructions(args, path)
 

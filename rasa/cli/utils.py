@@ -1,15 +1,13 @@
-import argparse
 import os
-from typing import Text, Optional, List, Tuple, Union, Dict, Callable, Any
+from typing import Text, Optional, Dict, Callable, Any
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
 
-def check_path_exists(current: Optional[Text], parameter: Text,
-                      default: Optional[Text] = None,
-                      none_is_valid: bool = False) -> Optional[Text]:
-    """Check whether a file path which was given through the command line
-    arguments is valid.
+def get_validated_path(current: Optional[Text], parameter: Text,
+                       default: Optional[Text] = None,
+                       none_is_valid: bool = False) -> Optional[Text]:
+    """Check whether a file path or its default value is valid and returns it.
 
     Args:
         current: The parsed value.
@@ -57,24 +55,6 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
     print_error("The path '{}' does not exist. Please make sure to {}specify it"
                 " with '--{}'.".format(current, default_clause, parameter))
     exit(1)
-
-
-def validate(args: argparse.Namespace,
-             params: List[Union[Tuple[Text, Text], Tuple[Text, Text, bool]]]
-             ) -> None:
-    """Validates the parsed command line arguments.
-
-    Args:
-        args: The parsd command line arguments.
-        params: A list of parameters and their default values which should be
-                validated.
-
-    """
-    for p in params:
-        none_is_valid = False if len(p) == 2 else p[2]
-        validated = check_path_exists(getattr(args, p[0]), p[0], p[1],
-                                      none_is_valid)
-        setattr(args, p[0], validated)
 
 
 def parse_last_positional_argument_as_model_path() -> None:

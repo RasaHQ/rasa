@@ -5,7 +5,6 @@ sudo: required
 cache:
   directories:
   - "$HOME/.cache/pip"
-  - "$HOME/build/amn41/rasa_stack/data"
 
 python:
 - '3.5'
@@ -20,6 +19,7 @@ install:
 script:
 - py.test --codestyle -m codestyle
 - travis_wait py.test tests --cov rasa -v
+- timeout 2 time rasa --help
 
 jobs:
   include:

@@ -3,8 +3,7 @@ import os
 import pytest
 
 from rasa.constants import (DEFAULT_DOMAIN_PATH, DEFAULT_CONFIG_PATH,
-                            DEFAULT_NLU_DATA_PATH, DEFAULT_STORIES_PATH,
-                            DEFAULT_MODELS_PATH)
+                            DEFAULT_MODELS_PATH, DEFAULT_DATA_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -19,21 +18,18 @@ def project() -> Text:
 
 
 def train_model(project: Text, filename: Text = "test.tar.gz"):
-    from rasa.cli.train import train
-    arguments = type('', (), {})()
+    import rasa.train
 
-    arguments.out = os.path.join(project, DEFAULT_MODELS_PATH, filename)
-    arguments.domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
-    arguments.config = os.path.join(project, DEFAULT_CONFIG_PATH)
-    arguments.nlu = os.path.join(project, DEFAULT_NLU_DATA_PATH)
-    arguments.stories = os.path.join(project, DEFAULT_STORIES_PATH)
+    output = os.path.join(project, DEFAULT_MODELS_PATH, filename)
+    domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
+    config = os.path.join(project, DEFAULT_CONFIG_PATH)
+    training_files = os.path.join(project, DEFAULT_DATA_PATH)
 
-    train(arguments)
+    rasa.train(domain, config, training_files, output)
 
-    return arguments.out
+    return output
 
 
 @pytest.fixture(scope="session")
 def trained_model(project) -> Text:
     return train_model(project)
-

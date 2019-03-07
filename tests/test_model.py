@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 
 import pytest
 import rasa_core
@@ -7,7 +8,7 @@ import rasa_nlu
 
 import rasa
 from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
-                            DEFAULT_NLU_DATA_PATH, DEFAULT_STORIES_PATH)
+                            DEFAULT_DATA_PATH)
 from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
                         FINGERPRINT_NLU_VERSION_KEY,
                         FINGERPRINT_CORE_VERSION_KEY,
@@ -15,7 +16,9 @@ from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
                         FINGERPRINT_NLU_DATA_KEY, core_fingerprint_changed,
                         FINGERPRINT_DOMAIN_KEY, nlu_fingerprint_changed,
                         model_fingerprint, get_model, create_package_rasa,
-                        FINGERPRINT_FILE_PATH)
+                        FINGERPRINT_FILE_PATH, get_model_subdirectories,
+                        FINGERPRINT_TRAINED_AT_KEY)
+import rasa.data as data
 
 
 def test_get_latest_model(trained_model):
@@ -37,8 +40,8 @@ def test_get_model_from_directory(trained_model):
 
 
 def test_get_model_from_directory_with_subdirectories(trained_model):
-    unpacked, unpacked_core, unpacked_nlu = get_model(trained_model,
-                                                      subdirectories=True)
+    unpacked = get_model(trained_model)
+    unpacked_core, unpacked_nlu = get_model_subdirectories(unpacked)
 
     assert os.path.exists(unpacked_core)
     assert os.path.exists(unpacked_nlu)
@@ -52,6 +55,7 @@ def _fingerprint(config=["test"], domain=["test"],
         FINGERPRINT_DOMAIN_KEY: domain,
         FINGERPRINT_NLU_VERSION_KEY: nlu_version,
         FINGERPRINT_CORE_VERSION_KEY: core_version,
+        FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
         FINGERPRINT_STORIES_KEY: stories,
         FINGERPRINT_NLU_DATA_KEY: nlu
@@ -106,12 +110,19 @@ def test_nlu_fingerprint_changed(fingerprint2):
 
 
 def _project_files(project, config_file=DEFAULT_CONFIG_PATH,
-                   domain=DEFAULT_DOMAIN_PATH, nlu_data=DEFAULT_NLU_DATA_PATH,
-                   stories=DEFAULT_STORIES_PATH):
+                   domain=DEFAULT_DOMAIN_PATH,
+                   training_files=DEFAULT_DATA_PATH):
+
+    if training_files is None:
+        core_directory = None
+        nlu_directory = None
+    else:
+        core_directory, nlu_directory = data.get_core_nlu_directories(
+            training_files)
     paths = {"config_file": config_file,
              "domain_file": domain,
-             "nlu_data": nlu_data,
-             "stories": stories}
+             "nlu_data": core_directory,
+             "stories": nlu_directory}
 
     return {k: v if v is None else os.path.join(project, v)
             for k, v in paths.items()}
@@ -124,8 +135,8 @@ def test_create_fingerprint_from_paths(project):
 
 
 @pytest.mark.parametrize("project_files", [
-    ["invalid", "invalid", "invalid", "invalid"],
-    [None, None, None, None]])
+    ["invalid", "invalid", "invalid"],
+    [None, None, None]])
 def test_create_fingerprint_from_invalid_paths(project, project_files):
     project_files = _project_files(project, *project_files)
 
@@ -134,14 +145,18 @@ def test_create_fingerprint_from_invalid_paths(project, project_files):
                             nlu_version=rasa_nlu.__version__, stories=[],
                             nlu=[])
 
-    assert model_fingerprint(**project_files) == expected
+    actual = model_fingerprint(**project_files)
+    assert actual[FINGERPRINT_TRAINED_AT_KEY] is not None
+
+    del actual[FINGERPRINT_TRAINED_AT_KEY]
+    del expected[FINGERPRINT_TRAINED_AT_KEY]
+
+    assert actual == expected
 
 
 @pytest.mark.parametrize("use_fingerprint", [True, False])
 def test_rasa_packaging(trained_model, project, use_fingerprint):
     unpacked_model_path = get_model(trained_model)
-    unpacked_trained = os.path.abspath(os.path.join(unpacked_model_path,
-                                                    os.pardir))
 
     os.remove(os.path.join(unpacked_model_path, FINGERPRINT_FILE_PATH))
     if use_fingerprint:
@@ -152,8 +167,7 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
     tempdir = tempfile.mkdtemp()
     output_path = os.path.join(tempdir, "test.tar.gz")
 
-    create_package_rasa(unpacked_trained, "rasa_model", output_path,
-                        fingerprint)
+    create_package_rasa(unpacked_model_path, output_path, fingerprint)
 
     unpacked = get_model(output_path)
 
@@ -162,5 +176,4 @@ def test_rasa_packaging(trained_model, project, use_fingerprint):
     assert os.path.exists(os.path.join(unpacked, "core"))
     assert os.path.exists(os.path.join(unpacked, "nlu"))
 
-    assert not os.path.exists(unpacked_trained)
-
+    assert not os.path.exists(unpacked_model_path)

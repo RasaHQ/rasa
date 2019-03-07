@@ -4,7 +4,7 @@ import tempfile
 import pytest
 
 from rasa.cli.utils import (parse_last_positional_argument_as_model_path,
-                            validate)
+                            get_validated_path)
 
 
 @pytest.mark.parametrize("argv",
@@ -36,38 +36,21 @@ def test_parse_no_positional_model_path_argument(argv):
 
 
 def test_validate_invalid_path():
-    arguments = type('', (), {})()
-
-    arguments.out = "test test test"
-
     with pytest.raises(SystemExit):
-        validate(arguments, [("out", "default")])
+        get_validated_path("test test test", "out", "default")
 
 
 def test_validate_valid_path():
     tempdir = tempfile.mkdtemp()
-    arguments = type('', (), {})()
-    arguments.out = tempdir
 
-    validate(arguments, [("out", "default")])
-
-    assert arguments.out == tempdir
+    assert get_validated_path(tempdir, "out", "default") == tempdir
 
 
 def test_validate_if_none_is_valid():
-    arguments = type('', (), {})()
-    arguments.out = None
-
-    validate(arguments, [("out", "default", True)])
-
-    assert arguments.out is None
+    assert get_validated_path(None, "out", "default", True) is None
 
 
 def test_validate_if_default_is_valid():
     tempdir = tempfile.mkdtemp()
-    arguments = type('', (), {})()
-    arguments.out = None
 
-    validate(arguments, [("out", tempdir)])
-
-    assert arguments.out == tempdir
+    assert get_validated_path(None, "out", tempdir) == tempdir

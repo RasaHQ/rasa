@@ -1,12 +1,16 @@
 import os
 import logging
 import shutil
+import typing
 from typing import Text, Dict, Union, Tuple
 
 from rasa.cli.utils import minimal_kwargs
-from rasa.model import get_model
+from rasa.model import get_model, get_model_subdirectories
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_core.agent import Agent
 
 
 def run(model: Text, endpoints: Text, connector: Text = None,
@@ -25,10 +29,8 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     """
     import rasa_core.run
 
-    model_paths = get_model(model, subdirectories=True)
-    model_path, _, _ = model_paths
-
-    _agent = create_agent(model_paths, endpoints)
+    model_path = get_model(model)
+    _agent = create_agent(model_path, endpoints)
 
     if not connector and not credentials:
         channel = "cmdline"
@@ -45,7 +47,7 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     shutil.rmtree(model_path)
 
 
-def create_agent(model: Union[Text, Tuple[Text, Text, Text]],
+def create_agent(model: Text,
                  endpoints: Text = None) -> 'Agent':
     from rasa_core.broker import PikaProducer
     from rasa_core.interpreter import RasaNLUInterpreter
@@ -53,12 +55,7 @@ def create_agent(model: Union[Text, Tuple[Text, Text, Text]],
     from rasa_core.tracker_store import TrackerStore
     from rasa_core.utils import AvailableEndpoints
 
-    if isinstance(model, str):
-        model_paths = get_model(model, subdirectories=True)
-    else:
-        model_paths = model
-
-    model_path, core_path, nlu_path = model_paths
+    core_path, nlu_path = get_model_subdirectories(model)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     _interpreter = None

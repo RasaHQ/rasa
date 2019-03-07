@@ -4,8 +4,9 @@ import os
 import shutil
 from typing import List
 
+from rasa import model
 from rasa.cli.default_arguments import add_model_param
-from rasa.cli.utils import validate, check_path_exists
+from rasa.cli.utils import get_validated_path
 from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_ACTIONS_PATH,
                             DEFAULT_CREDENTIALS_PATH, DEFAULT_MODELS_PATH)
 from rasa.model import get_latest_model
@@ -99,17 +100,16 @@ def run_nlu(args: argparse.Namespace):
     import rasa_nlu.server
     import tempfile
 
-    validate(args, [("path", DEFAULT_MODELS_PATH)])
-    args.model = args.path
+    args.model = get_validated_path(args.path, "path", DEFAULT_MODELS_PATH)
 
-    model = get_latest_model(args.model)
+    model_archive = get_latest_model(args.model)
     working_directory = tempfile.mkdtemp()
-    model_path = model.unpack_model(model, working_directory)
-    args.path = os.path.dirname(model_path)
+    unpacked_model = model.unpack_model(model_archive, working_directory)
+    args.path = os.path.dirname(unpacked_model)
 
     rasa_nlu.server.main(args)
 
-    shutil.rmtree(model_path)
+    shutil.rmtree(unpacked_model)
 
 
 def run_actions(args: argparse.Namespace):
@@ -120,8 +120,8 @@ def run_actions(args: argparse.Namespace):
 
     # insert current path in syspath so module is found
     sys.path.insert(1, os.getcwd())
-    path = args.actions.replace('.', '/') + ".py"
-    check_path_exists(path, "action", DEFAULT_ACTIONS_PATH)
+    path = args.actions.replace('.', os.sep) + ".py"
+    _ = get_validated_path(path, "action", DEFAULT_ACTIONS_PATH)
 
     sdk.main(args)
 
@@ -129,8 +129,10 @@ def run_actions(args: argparse.Namespace):
 def run(args: argparse.Namespace):
     import rasa.run
 
-    validate(args, [("model", DEFAULT_MODELS_PATH),
-                    ("endpoints", DEFAULT_ENDPOINTS_PATH, True),
-                    ("credentials", DEFAULT_CREDENTIALS_PATH, True)])
+    args.model = get_validated_path(args.model, "model", DEFAULT_MODELS_PATH)
+    args.endpoints = get_validated_path(args.endpoints, "endpoints",
+                                        DEFAULT_ENDPOINTS_PATH, True)
+    args.credentials = get_validated_path(args.credentials, "credentials",
+                                          DEFAULT_CREDENTIALS_PATH, True)
 
     rasa.run(**vars(args))
