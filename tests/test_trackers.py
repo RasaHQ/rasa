@@ -15,7 +15,7 @@ from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.tracker_store import (
     TrackerStore)
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from tests.conftest import DEFAULT_STORIES_FILE
+from tests.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH
 from tests.utilities import (tracker_from_dialogue_file, read_dialogue_file,
                              user_uttered, get_tracker)
 
@@ -86,7 +86,8 @@ def test_tracker_store_storage_and_retrieval(store):
                          ids=stores_to_be_tested_ids())
 @pytest.mark.parametrize("pair",
                          zip(sorted(glob.glob('data/test_dialogues/*json')),
-                             ["examples/formbot/domain.yml",
+                             [DEFAULT_DOMAIN_PATH,
+                              "examples/formbot/domain.yml",
                               "examples/moodbot/domain.yml",
                               "examples/restaurantbot/restaurant_domain.yml"]))
 def test_tracker_store(store, pair):

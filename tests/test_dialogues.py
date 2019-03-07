@@ -8,9 +8,11 @@ from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.tracker_store import InMemoryTrackerStore
 from tests.utilities import tracker_from_dialogue_file
+from tests.conftest import DEFAULT_DOMAIN_PATH
 
 test_dialogues = sorted(glob.glob('data/test_dialogues/*json'))
-example_domains = ["examples/formbot/domain.yml",
+example_domains = [DEFAULT_DOMAIN_PATH,
+                   "examples/formbot/domain.yml",
                    "examples/moodbot/domain.yml",
                    "examples/restaurantbot/restaurant_domain.yml"]
 
