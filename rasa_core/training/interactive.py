@@ -447,7 +447,7 @@ def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
 
     print("------")
     print("Chat History\n")
-    print(table)
+    print(table.encode("utf-8"))
 
     if slot_strs:
         print("\n")
