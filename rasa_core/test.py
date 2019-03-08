@@ -1,3 +1,5 @@
+import asyncio
+import typing
 from collections import defaultdict, namedtuple
 
 import argparse
@@ -22,6 +24,9 @@ from rasa_core.utils import (
     set_default_subparser)
 import rasa_nlu.utils as nlu_utils
 from rasa_nlu.test import plot_confusion_matrix, get_evaluation_metrics
+
+if typing.TYPE_CHECKING:
+    from rasa_core.agent import Agent
 
 logger = logging.getLogger(__name__)
 
@@ -213,9 +218,11 @@ class WronglyClassifiedUserUtterance(UserUttered):
                            predicted_message)
 
 
-def _generate_trackers(resource_name, agent, max_stories=None, use_e2e=False):
-    story_graph = training.extract_story_graph(resource_name, agent.domain,
-                                               agent.interpreter, use_e2e)
+async def _generate_trackers(resource_name, agent,
+                             max_stories=None,
+                             use_e2e=False):
+    story_graph = await training.extract_story_graph(
+        resource_name, agent.domain, agent.interpreter, use_e2e)
     g = TrainingDataGenerator(story_graph, agent.domain,
                               use_story_concatenation=False,
                               augmentation_factor=0,
@@ -308,7 +315,8 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     return action_executed_eval_store, policy, confidence
 
 
-def _predict_tracker_actions(tracker, agent, fail_on_prediction_errors=False,
+def _predict_tracker_actions(tracker, agent: 'Agent',
+                             fail_on_prediction_errors=False,
                              use_e2e=False):
     processor = agent.create_processor()
     tracker_eval_store = EvaluationStore()
@@ -420,8 +428,8 @@ def log_failed_stories(failed, out_directory):
     """Take stories as a list of dicts."""
     if not out_directory:
         return
-    with io.open(os.path.join(out_directory, 'failed_stories.md'), 'w',
-                 encoding="utf-8") as f:
+    with open(os.path.join(out_directory, 'failed_stories.md'), 'w',
+              encoding="utf-8") as f:
         if len(failed) == 0:
             f.write("<!-- All stories passed -->")
         else:
@@ -430,16 +438,16 @@ def log_failed_stories(failed, out_directory):
                 f.write("\n\n")
 
 
-def test(stories: Text,
-         agent: 'Agent',
-         max_stories: Optional[int] = None,
-         out_directory: Optional[Text] = None,
-         fail_on_prediction_errors: bool = False,
-         use_e2e: bool = False):
+async def test(stories: Text,
+               agent: 'Agent',
+               max_stories: Optional[int] = None,
+               out_directory: Optional[Text] = None,
+               fail_on_prediction_errors: bool = False,
+               use_e2e: bool = False):
     """Run the evaluation of the stories, optionally plots the results."""
 
-    completed_trackers = _generate_trackers(stories, agent,
-                                            max_stories, use_e2e)
+    completed_trackers = await _generate_trackers(stories, agent,
+                                                  max_stories, use_e2e)
 
     story_evaluation, _ = collect_story_predictions(completed_trackers, agent,
                                                     fail_on_prediction_errors,
@@ -521,9 +529,9 @@ def plot_story_evaluation(test_y, predictions,
                 bbox_inches='tight')
 
 
-def compare(models: Text,
-            stories_file: Text,
-            output: Text) -> None:
+async def compare(models: Text,
+                  stories_file: Text,
+                  output: Text) -> None:
     """Evaluates multiple trained models on a test set."""
     from rasa_core.agent import Agent
 
@@ -537,7 +545,7 @@ def compare(models: Text,
 
             agent = Agent.load(model)
 
-            completed_trackers = _generate_trackers(stories_file, agent)
+            completed_trackers = await _generate_trackers(stories_file, agent)
 
             story_eval_store, no_of_stories = \
                 collect_story_predictions(completed_trackers,
@@ -595,6 +603,8 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
 def main():
     from rasa_core.agent import Agent
 
+    loop = asyncio.get_event_loop()
+
     # Running as standalone python application
     arg_parser = create_argument_parser()
     set_default_subparser(arg_parser, 'default')
@@ -616,12 +626,14 @@ def main():
 
         _agent = Agent.load(cmdline_arguments.core, interpreter=_interpreter)
 
-        stories = rasa_core.cli.train.stories_from_cli_args(cmdline_arguments)
+        stories = loop.run_until_complete(
+            rasa_core.cli.train.stories_from_cli_args(cmdline_arguments))
 
-        test(stories, _agent, cmdline_arguments.max_stories,
-             cmdline_arguments.output,
-             cmdline_arguments.fail_on_prediction_errors,
-             cmdline_arguments.e2e)
+        loop.run_until_complete(
+            test(stories, _agent, cmdline_arguments.max_stories,
+                 cmdline_arguments.output,
+                 cmdline_arguments.fail_on_prediction_errors,
+                 cmdline_arguments.e2e))
 
     elif cmdline_arguments.mode == 'compare':
         compare(cmdline_arguments.core,

@@ -25,6 +25,8 @@ class NaturalLanguageInterpreter(object):
         from rasa_nlu.model import Interpreter
 
         if (isinstance(obj, NaturalLanguageInterpreter) or
+                # TODO: I doubt we should allow the NLU interpreter here!
+                #  (e.g. message_id param to parse)
                 isinstance(obj, Interpreter)):
             return obj
 
