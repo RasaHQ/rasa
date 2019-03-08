@@ -114,7 +114,7 @@ async def test_endpoint_config():
                         "password": "pass"},
             token="mytoken",
             token_name="letoken",
-            store_type="redis",
+            type="redis",
             port=6379,
             db=0,
             password="password",

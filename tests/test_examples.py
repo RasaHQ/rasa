@@ -7,7 +7,7 @@ import pytest
 from aioresponses import aioresponses
 
 from rasa_core.agent import Agent
-from rasa_core.train import train_dialogue_model
+from rasa_core.train import train
 from rasa_core.utils import (
     EndpointConfig, AvailableEndpoints,
     ClientResponseError)
@@ -54,8 +54,9 @@ async def test_formbot_example():
     stories = os.path.join(p, "data", "stories.md")
     endpoint = EndpointConfig("https://example.com/webhooks/actions")
     endpoints = AvailableEndpoints(action=endpoint)
-    agent = await train_dialogue_model(
-        os.path.join(p, "domain.yml"), stories,
+    agent = await train(
+        os.path.join(p, "domain.yml"),
+        stories,
         os.path.join(p, "models", "dialogue"),
         endpoints=endpoints,
         policy_config="rasa_core/default_config.yml")

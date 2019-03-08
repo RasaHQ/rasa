@@ -3,7 +3,6 @@ import typing
 from typing import Optional, Text, List
 
 from rasa_core import utils
-from rasa_core.policies import PolicyEnsemble
 
 if typing.TYPE_CHECKING:
     from rasa_core.policies import Policy
@@ -11,6 +10,7 @@ if typing.TYPE_CHECKING:
 
 def load(config_file: Optional[Text]) -> List['Policy']:
     """Load policy data stored in the specified file."""
+    from rasa_core.policies import PolicyEnsemble
 
     if config_file and os.path.isfile(config_file):
         config_data = utils.read_yaml_file(config_file)

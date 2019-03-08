@@ -6,13 +6,12 @@ from sanic import Sanic
 from sanic_cors import CORS
 from typing import List, Optional, Text
 
+import rasa_core.cli.arguments
+
 import rasa_core
-from rasa_core import agent, constants, server, utils
-from rasa_core.agent import Agent
-from rasa_core.broker import PikaProducer
+from rasa_core import constants, utils, cli
 from rasa_core.channels import (BUILTIN_CHANNELS, InputChannel, console)
-from rasa_core.interpreter import (
-    NaturalLanguageInterpreter)
+from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.utils import AvailableEndpoints, read_yaml_file
 
@@ -33,67 +32,16 @@ def create_argument_parser():
         '-u', '--nlu',
         type=str,
         help="nlu model to run")
-    parser.add_argument(
-        '-p', '--port',
-        default=constants.DEFAULT_SERVER_PORT,
-        type=int,
-        help="port to run the server at")
-    parser.add_argument(
-        '--auth_token',
-        type=str,
-        help="Enable token based authentication. Requests need to provide "
-             "the token to be accepted.")
-    parser.add_argument(
-        '--cors',
-        nargs='*',
-        type=str,
-        help="enable CORS for the passed origin. "
-             "Use * to whitelist all origins")
-    parser.add_argument(
-        '-o', '--log_file',
-        type=str,
-        default="rasa_core.log",
-        help="store log file in specified file")
-    parser.add_argument(
-        '--credentials',
-        default=None,
-        help="authentication credentials for the connector as a yml file")
-    parser.add_argument(
-        '--endpoints',
-        default=None,
-        help="Configuration file for the connectors as a yml file")
-    parser.add_argument(
-        '-c', '--connector',
-        type=str,
-        help="service to connect to")
-    parser.add_argument(
-        '--enable_api',
-        action="store_true",
-        help="Start the web server api in addition to the input channel")
 
-    jwt_auth = parser.add_argument_group('JWT Authentication')
-    jwt_auth.add_argument(
-        '--jwt_secret',
-        type=str,
-        help="Public key for asymmetric JWT methods or shared secret"
-             "for symmetric methods. Please also make sure to use "
-             "--jwt_method to select the method of the signature, "
-             "otherwise this argument will be ignored.")
-    jwt_auth.add_argument(
-        '--jwt_method',
-        type=str,
-        default="HS256",
-        help="Method used for the signature of the JWT authentication "
-             "payload.")
-
-    utils.add_logging_option_arguments(parser)
+    cli.arguments.add_logging_option_arguments(parser)
+    cli.run.add_run_arguments(parser)
     return parser
 
 
 def create_http_input_channels(
         channel: Optional[Text],
         credentials_file: Optional[Text]
-) -> List[InputChannel]:
+) -> List['InputChannel']:
     """Instantiate the chosen input channel."""
 
     if credentials_file:
@@ -109,6 +57,8 @@ def create_http_input_channels(
 
 
 def _create_single_channel(channel, credentials):
+    from rasa_core.channels import BUILTIN_CHANNELS
+
     if channel in BUILTIN_CHANNELS:
         return BUILTIN_CHANNELS[channel].from_credentials(credentials)
     else:
@@ -133,6 +83,7 @@ def configure_app(input_channels=None,
                   jwt_method=None,
                   route="/webhooks/"):
     """Run the agent."""
+    from rasa_core import server
 
     if enable_api:
         app = server.create_app(cors_origins=cors,
@@ -206,9 +157,13 @@ def serve_application(core_model=None,
 def load_agent_on_start(app, core_model, endpoints, nlu_model):
     # noinspection PyUnusedLocal,PyShadowingNames
     async def _load(app, loop):
+        from rasa_core.agent import Agent
+        from rasa_core import agent, broker
+
         _interpreter = NaturalLanguageInterpreter.create(nlu_model,
                                                          _endpoints.nlu)
-        _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+
+        _broker = broker.from_endpoint_config(_endpoints.event_broker)
 
         _tracker_store = TrackerStore.find_tracker_store(
             None, _endpoints.tracker_store, _broker)

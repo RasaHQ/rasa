@@ -8,11 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 async def train_agent():
-    return await train.train_dialogue_model(domain_file="domain.yml",
-                                            stories_file="data/stories.md",
-                                            output_path="models/dialogue",
-                                            policy_config='policy_config.yml'
-                                            )
+    return await train(domain_file="domain.yml",
+                       stories_file="data/stories.md",
+                       output_path="models/dialogue",
+                       policy_config='policy_config.yml')
 
 
 if __name__ == '__main__':

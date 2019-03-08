@@ -10,14 +10,13 @@ from aiohttp import ClientError
 from colorclass import Color
 from sanic import Sanic, response
 from terminaltables import SingleTable, AsciiTable
-from typing import (
-    Any, Text, Dict, List, Optional, Callable, Union, Tuple)
+from typing import (Any, Text, Dict, List, Optional, Callable, Union, Tuple,
+                    TYPE_CHECKING)
 
 import questionary
 from questionary import Choice, Form, Question
 from rasa_core import utils, events, constants, run
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
-from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
@@ -38,6 +37,9 @@ from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
+
+if TYPE_CHECKING:
+    from rasa_core.agent import Agent
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
@@ -421,7 +423,7 @@ async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
 
     print("------")
     print("Chat History\n")
-    print(table)
+    print(table.encode("utf-8"))
 
     if slot_strs:
         print("\n")
@@ -695,6 +697,7 @@ async def _write_nlu_to_file(
     evts: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
+    from rasa_nlu.training_data import TrainingData
 
     msgs = _collect_messages(evts)
 
@@ -719,8 +722,15 @@ async def _write_nlu_to_file(
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
+    # need to guess the format of the file before opening it to avoid a read
+    # in a write
+    if _guess_format(export_nlu_path) in {"md", "unk"}:
+        fformat = "md"
+    else:
+        fformat = "json"
+
     with open(export_nlu_path, 'w', encoding="utf-8") as f:
-        if _guess_format(export_nlu_path) in {"md", "unk"}:
+        if fformat == "md":
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
@@ -937,6 +947,7 @@ async def _validate_action(action_name: Text,
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
+    from rasa_nlu.training_data.formats import MarkdownWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data.get("text")
@@ -973,15 +984,22 @@ async def _validate_user_text(latest_message: Dict[Text, Any],
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get("name")
+    entities = parse_data.get("entities", [])
+    if entities:
+        message = ("Is the intent '{}' correct for '{}' and are "
+                   "all entities labeled correctly?"
+                   .format(text, intent))
+    else:
+        message = ("Your NLU model classified '{}' with intent '{}'"
+                   " and there are no entities, is this correct?"
+                   .format(text, intent))
 
     if intent is None:
         print("The NLU classification for '{}' returned '{}'"
               "".format(text, intent))
         return False
     else:
-        question = questionary.confirm(
-            "Is the NLU classification for '{}' with intent '{}' correct?"
-            "".format(text, intent))
+        question = questionary.confirm(message)
 
         return await _ask_questions(question, sender_id, endpoint)
 
@@ -1026,6 +1044,7 @@ async def _correct_entities(latest_message: Dict[Text, Any],
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
+    from rasa_nlu.training_data.formats import MarkdownReader
 
     entity_str = _as_md_message(latest_message.get("parse_data", {}))
     question = questionary.text(
@@ -1042,7 +1061,7 @@ async def _enter_user_message(sender_id: Text,
                               endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
-    question = questionary.text("Next user input (Ctr-c to abort):")
+    question = questionary.text("Your input ->")
 
     message = await _ask_questions(question, sender_id, endpoint,
                                    lambda a: not a)
@@ -1293,7 +1312,7 @@ def _add_visualization_routes(app: Sanic, image_path: Text = None) -> None:
             return response.text("", 404)
 
 
-def run_interactive_learning(agent: Agent,
+def run_interactive_learning(agent: "Agent",
                              stories: Text = None,
                              finetune: bool = False,
                              serve_forever: bool = True,

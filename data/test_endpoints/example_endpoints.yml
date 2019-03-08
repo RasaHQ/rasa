@@ -9,7 +9,7 @@ nlg:
   #   password: pass
 # example of redis external tracker store config
 tracker_store:
-  store_type: redis
+  type: redis
   url: localhost
   port: 6379
   db: 0
@@ -17,7 +17,7 @@ tracker_store:
   record_exp: 30000
 # example of mongoDB external tracker store config
 #tracker_store:
-  #store_type: mongod
+  #type: mongod
   #url: mongodb://localhost:27017
   #db: rasa
   #user: username

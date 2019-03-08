@@ -11,16 +11,14 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize
 from typing import List, Text, Optional, Union, Callable, Any
 
-import rasa_nlu
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.evaluate import run_story_evaluation
+from rasa_core.test import test
 from rasa_core.events import Event
 from rasa_core.domain import Domain
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.version import __version__
-import rasa_nlu.utils
 
 logger = logging.getLogger(__name__)
 
@@ -514,12 +512,13 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
     @requires_auth(app, auth_token)
     async def evaluate_stories(request: Request):
         """Evaluate stories against the currently loaded model."""
+        import rasa_nlu.utils
+
         tmp_file = rasa_nlu.utils.create_temporary_file(request.body,
                                                         mode='w+b')
         use_e2e = utils.bool_arg(request, 'e2e', default=False)
         try:
-            evaluation = await run_story_evaluation(tmp_file, app.agent,
-                                                    use_e2e=use_e2e)
+            evaluation = await test(tmp_file, app.agent, use_e2e=use_e2e)
             return response.json(evaluation)
         except ValueError as e:
             raise ErrorResponse(400, "FailedEvaluation",
@@ -622,6 +621,14 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
             "policy": policy,
             "tracker": tracker.current_state(verbosity)
         })
+
+    @app.post("/parse")
+    @requires_auth(app, auth_token)
+    @ensure_loaded_agent(app.agent)
+    def parse(request: Request):
+        request_params = request.json
+        parse_data = app.agent.interpreter.parse(request_params.get("q"))
+        return response.json(parse_data)
 
     return app
 

@@ -1,18 +1,13 @@
 import pytest
 
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.train import train_dialogue_model
+from rasa_core.train import train
 from rasa_core.agent import Agent
 from rasa_core.policies.form_policy import FormPolicy
 
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.training.visualization import visualize_stories
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
-
-
-def test_story_visualization_script():
-    from rasa_core.visualize import create_argument_parser
-    assert create_argument_parser() is not None
 
 
 async def test_story_visualization(default_domain, tmpdir):
@@ -44,22 +39,22 @@ async def test_story_visualization_with_merging(default_domain):
 
 
 async def test_training_script(tmpdir):
-    await train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                               tmpdir.strpath,
-                               policy_config='data/test_config/max_hist_config'
-                                             '.yml',
-                               interpreter=RegexInterpreter(),
-                               kwargs={})
+    await train(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+                tmpdir.strpath,
+                policy_config='data/test_config/max_hist_config.yml',
+                interpreter=RegexInterpreter(),
+                kwargs={})
     assert True
 
 
 async def test_training_script_without_max_history_set(tmpdir):
-    await train_dialogue_model(
+    await train(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath,
         interpreter=RegexInterpreter(),
         policy_config='data/test_config/no_max_hist_config.yml',
         kwargs={})
+
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
@@ -71,12 +66,11 @@ async def test_training_script_without_max_history_set(tmpdir):
 
 
 async def test_training_script_with_max_history_set(tmpdir):
-    await train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                               tmpdir.strpath,
-                               interpreter=RegexInterpreter(),
-                               policy_config='data/test_config/max_hist_config'
-                                             '.yml',
-                               kwargs={})
+    await train(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+                tmpdir.strpath,
+                interpreter=RegexInterpreter(),
+                policy_config='data/test_config/max_hist_config.yml',
+                kwargs={})
     agent = Agent.load(tmpdir.strpath)
     for policy in agent.policy_ensemble.policies:
         if hasattr(policy.featurizer, 'max_history'):
@@ -87,34 +81,33 @@ async def test_training_script_with_max_history_set(tmpdir):
 
 
 async def test_training_script_with_restart_stories(tmpdir):
-    await train_dialogue_model(DEFAULT_DOMAIN_PATH,
-                               "data/test_stories/stories_restart.md",
-                               tmpdir.strpath,
-                               interpreter=RegexInterpreter(),
-                               policy_config='data/test_config/max_hist_config'
-                                             '.yml',
-                               kwargs={})
+    await train(DEFAULT_DOMAIN_PATH,
+                "data/test_stories/stories_restart.md",
+                tmpdir.strpath,
+                interpreter=RegexInterpreter(),
+                policy_config='data/test_config/max_hist_config.yml',
+                kwargs={})
     assert True
 
 
 def configs_for_random_seed_test():
     # define the configs for the random_seed tests
-    return [('data/test_config/keras_random_seed.yaml'),
-            ('data/test_config/embedding_random_seed.yaml')]
+    return ['data/test_config/keras_random_seed.yaml',
+            'data/test_config/embedding_random_seed.yaml']
 
 
 @pytest.mark.parametrize("config_file", configs_for_random_seed_test())
 async def test_random_seed(tmpdir, config_file):
     # set random seed in config file to
     # generate a reproducible training result
-    agent_1 = await train_dialogue_model(
+    agent_1 = await train(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "1",
         interpreter=RegexInterpreter(),
         policy_config=config_file,
         kwargs={})
 
-    agent_2 = await train_dialogue_model(
+    agent_2 = await train(
         DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
         tmpdir.strpath + "2",
         interpreter=RegexInterpreter(),

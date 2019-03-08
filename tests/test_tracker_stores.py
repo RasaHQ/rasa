@@ -6,6 +6,7 @@ from rasa_core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
     RedisTrackerStore)
+from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -45,11 +46,21 @@ def test_restart_after_retrieval_from_tracker_store(default_domain):
     assert latest_restart == latest_restart_after_loading
 
 
+def test_tracker_store_remembers_max_history(default_domain):
+    store = InMemoryTrackerStore(default_domain)
+    tr = store.get_or_create_tracker("myuser", max_event_history=42)
+    tr.update(Restarted())
+
+    store.save(tr)
+    tr2 = store.retrieve("myuser")
+    assert tr._max_event_history == tr2._max_event_history == 42
+
+
 def test_tracker_store_endpoint_config_loading():
     cfg = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
 
     assert cfg == EndpointConfig.from_dict({
-        "store_type": "redis",
+        "type": "redis",
         "url": "localhost",
         "port": 6379,
         "db": 0,
@@ -96,7 +107,7 @@ def test_tracker_store_from_string(default_domain):
 def test_tracker_store_from_invalid_module(default_domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
-    store_config.store_type = "a.module.which.cannot.be.found"
+    store_config.type = "a.module.which.cannot.be.found"
 
     tracker_store = TrackerStore.find_tracker_store(default_domain,
                                                     store_config)
@@ -107,7 +118,7 @@ def test_tracker_store_from_invalid_module(default_domain):
 def test_tracker_store_from_invalid_string(default_domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
     store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
-    store_config.store_type = "any string"
+    store_config.type = "any string"
 
     tracker_store = TrackerStore.find_tracker_store(default_domain,
                                                     store_config)

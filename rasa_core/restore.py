@@ -6,9 +6,9 @@ import warnings
 from difflib import SequenceMatcher
 from typing import Text, Optional, List, Tuple
 
+import rasa_core.cli.arguments
 from rasa_core import utils, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage, CollectingOutputChannel, console
 from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
@@ -43,7 +43,7 @@ def create_argument_parser():
         action="store_true",
         help="Start the web server api in addition to the input channel")
 
-    utils.add_logging_option_arguments(parser)
+    rasa_core.cli.arguments.add_logging_option_arguments(parser)
 
     return parser
 
@@ -96,7 +96,7 @@ def actions_since_last_utterance(tracker: DialogueStateTracker) -> List[Text]:
     return actions
 
 
-async def replay_events(tracker: DialogueStateTracker, agent: Agent) -> None:
+async def replay_events(tracker: DialogueStateTracker, agent: 'Agent') -> None:
     """Take a tracker and replay the logged user utterances against an agent.
 
     During replaying of the user utterances, the executed actions and events
@@ -160,7 +160,7 @@ async def serve_application(core_model: Text,
 
     input_channels = run.create_http_input_channels("cmdline", None)
 
-    agent = await load_agent(model_directory,
+    agent = await load_agent(core_model,
                              interpreter=nlu,
                              endpoints=_endpoints)
 

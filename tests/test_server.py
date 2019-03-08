@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import io
 import json
 import pytest
 import uuid
@@ -94,6 +93,22 @@ def test_respond(app):
     content = response.json
     assert response.status == 200
     assert content == [{'text': 'hey there!', 'recipient_id': 'myid'}]
+
+
+def test_parse(app):
+    data = json.dumps({"q": """/greet{"name": "Rasa"}"""})
+    _, response = app.post("http://dummy/parse",
+                           data=data,
+                           headers={"Content-Type": "application/json"})
+    content = response.json
+    assert response.status == 200
+    assert content == {
+        'entities': [
+            {'end': 22, 'entity': 'name', 'start': 6, 'value': 'Rasa'}],
+        'intent': {'confidence': 1.0, 'name': 'greet'},
+        'intent_ranking': [{'confidence': 1.0, 'name': 'greet'}],
+        'text': '/greet{"name": "Rasa"}'
+    }
 
 
 @pytest.mark.parametrize("event", test_events)

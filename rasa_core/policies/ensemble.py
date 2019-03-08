@@ -134,7 +134,7 @@ class PolicyEnsemble(object):
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist exists
-        domain_spec_path = os.path.join(path, 'policy_metadata.json')
+        domain_spec_path = os.path.join(path, 'metadata.json')
         training_data_path = os.path.join(path, 'stories.md')
         utils.create_dir_for_file(domain_spec_path)
 
@@ -177,7 +177,7 @@ class PolicyEnsemble(object):
 
     @classmethod
     def load_metadata(cls, path):
-        metadata_path = os.path.join(path, 'policy_metadata.json')
+        metadata_path = os.path.join(path, 'metadata.json')
         metadata = json.loads(utils.read_file(os.path.abspath(metadata_path)))
         return metadata
 

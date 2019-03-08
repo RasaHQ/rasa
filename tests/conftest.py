@@ -102,7 +102,7 @@ async def default_processor(default_domain, default_nlg):
 
 @pytest.fixture(scope="session")
 async def trained_moodbot_path():
-    await train.train_dialogue_model(
+    await train(
         domain_file="examples/moodbot/domain.yml",
         stories_file="examples/moodbot/data/stories.md",
         output_path=MOODBOT_MODEL_PATH,
@@ -117,7 +117,7 @@ async def trained_moodbot_path():
 @pytest.fixture(scope="session")
 async def zipped_moodbot_model():
     # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'policy_metadata.json')
+    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'metadata.json')
     if not os.path.isfile(policy_file):
         await trained_moodbot_path()
 

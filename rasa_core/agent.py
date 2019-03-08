@@ -1,5 +1,5 @@
 import asyncio
-from asyncio import Future, AbstractEventLoop
+from asyncio import AbstractEventLoop
 
 import aiohttp
 import logging
@@ -9,10 +9,8 @@ import shutil
 import tempfile
 import typing
 import uuid
-import zipfile
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from io import BytesIO as IOReader
 from pytz import UnknownTimeZoneError
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 
@@ -84,6 +82,42 @@ async def _init_model_from_server(model_server: EndpointConfig
     return fingerprint, model_directory
 
 
+def _is_stack_model(model_directory: Text) -> bool:
+    """Decide whether a persisted model is a stack or a core model."""
+
+    return os.path.exists(os.path.join(model_directory, "fingerprint.json"))
+
+
+def _load_and_set_updated_model(agent: 'Agent',
+                                model_directory: Text,
+                                fingerprint: Text):
+    """Load the persisted model into memory and set the model on the agent."""
+
+    logger.debug("Found new model with fingerprint {}. Loading..."
+                 "".format(fingerprint))
+
+    if _is_stack_model(model_directory):
+        from rasa_core.interpreter import RasaNLUInterpreter
+        nlu_model = os.path.join(model_directory, "nlu")
+        core_model = os.path.join(model_directory, "core")
+        interpreter = RasaNLUInterpreter(model_directory=nlu_model)
+    else:
+        interpreter = agent.interpreter
+        core_model = model_directory
+
+    domain_path = os.path.join(os.path.abspath(core_model), "domain.yml")
+    domain = Domain.load(domain_path)
+
+    # noinspection PyBroadException
+    try:
+        policy_ensemble = PolicyEnsemble.load(core_model)
+        agent.update_model(domain, policy_ensemble, fingerprint, interpreter)
+        logger.debug("Finished updating agent to new model.")
+    except Exception:
+        logger.exception("Failed to load policy and update agent. "
+                         "The previous model will stay loaded instead.")
+
+
 async def _update_model_from_server(model_server: EndpointConfig,
                                     agent: 'Agent'
                                     ) -> None:
@@ -97,14 +131,8 @@ async def _update_model_from_server(model_server: EndpointConfig,
     new_model_fingerprint = await _pull_model_and_fingerprint(
         model_server, model_directory, agent.fingerprint)
     if new_model_fingerprint:
-        logger.debug("Found new model with fingerprint {}. Loading..."
-                     "".format(new_model_fingerprint))
-        domain_path = os.path.join(os.path.abspath(model_directory),
-                                   "domain.yml")
-        domain = Domain.load(domain_path)
-        policy_ensemble = PolicyEnsemble.load(model_directory)
-        agent.update_model(domain, policy_ensemble, new_model_fingerprint)
-        logger.debug("Finished updating agent to new model.")
+        _load_and_set_updated_model(agent, model_directory,
+                                    new_model_fingerprint)
     else:
         logger.debug("No new model found at "
                      "URL {}".format(model_server.url))
@@ -150,9 +178,8 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
                     "".format(resp.status))
                 return None
 
-            zip_ref = zipfile.ZipFile(IOReader(await resp.read()))
-            zip_ref.extractall(model_directory)
-            logger.debug("Unzipped model to {}"
+            utils.unarchive(await resp.read(), model_directory)
+            logger.debug("Unzipped model to '{}'"
                          "".format(os.path.abspath(model_directory)))
 
             # get the new fingerprint
@@ -218,18 +245,7 @@ class Agent(object):
                 "FormPolicy to your policy ensemble."
             )
 
-        if not isinstance(interpreter, NaturalLanguageInterpreter):
-            if interpreter is not None:
-                logger.warning(
-                    "Passing a value for interpreter to an agent "
-                    "where the value is not an interpreter "
-                    "is deprecated. Construct the interpreter, before"
-                    "passing it to the agent, e.g. "
-                    "`interpreter = NaturalLanguageInterpreter.create("
-                    "nlu)`.")
-            interpreter = NaturalLanguageInterpreter.create(interpreter, None)
-
-        self.interpreter = interpreter
+        self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
         self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(
@@ -260,9 +276,14 @@ class Agent(object):
     def update_model(self,
                      domain: Union[Text, Domain],
                      policy_ensemble: PolicyEnsemble,
-                     fingerprint: Optional[Text]) -> None:
+                     fingerprint: Optional[Text],
+                     interpreter: Optional[NaturalLanguageInterpreter] = None
+                     ) -> None:
         self.domain = domain
         self.policy_ensemble = policy_ensemble
+
+        if interpreter:
+            self.interpreter = NaturalLanguageInterpreter.create(interpreter)
 
         self._set_fingerprint(fingerprint)
 
@@ -415,7 +436,7 @@ class Agent(object):
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
         output_channel: Optional[OutputChannel] = None,
         sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
-    ) -> Optional[List[Text]]:
+    ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
         If a message preprocessor is passed, the message will be passed to that
@@ -633,7 +654,7 @@ class Agent(object):
         if not os.path.exists(model_path):
             return
 
-        domain_spec_path = os.path.join(model_path, 'policy_metadata.json')
+        domain_spec_path = os.path.join(model_path, 'metadata.json')
         # check if there were a model before
         if os.path.exists(domain_spec_path):
             logger.info("Model directory {} exists and contains old "

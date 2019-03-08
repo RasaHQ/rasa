@@ -54,7 +54,12 @@ class SlackBot(SlackClient, OutputChannel):
     def _convert_to_slack_buttons(buttons):
         return [{"text": b['title'],
                  "name": b['payload'],
+                 "value": b['payload'],
                  "type": "button"} for b in buttons]
+
+    @staticmethod
+    def _get_text_from_slack_buttons(buttons):
+        return "".join([b.get("title", "") for b in buttons])
 
     async def send_text_with_buttons(self, recipient_id, message, buttons,
                                      **kwargs):
@@ -65,10 +70,16 @@ class SlackBot(SlackClient, OutputChannel):
                            "If you add more, all will be ignored.")
             return await self.send_text_message(recipient, message)
 
+        if message:
+            callback_string = message.replace(' ', '_')[:20]
+        else:
+            callback_string = self._get_text_from_slack_buttons(buttons)
+            callback_string = callback_string.replace(' ', '_')[:20]
+
         button_attachment = [{"fallback": message,
-                              "callback_id": message.replace(' ', '_')[:20],
-                              "actions": self._convert_to_slack_buttons(
-                                  buttons)}]
+                              "callback_id": callback_string,
+                              "actions":
+                              self._convert_to_slack_buttons(buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
@@ -129,21 +140,29 @@ class SlackInput(InputChannel):
                 slack_event.get('event').get('bot_id'))
 
     @staticmethod
+    def _is_interactive_message(payload):
+        return payload['type'] == "interactive_message"
+
+    @staticmethod
+    def _is_button(payload):
+        return payload['actions'][0]['type'] == "button"
+
+    @staticmethod
     def _is_button_reply(slack_event):
-        return (slack_event.get('payload') and
-                slack_event['payload'][0] and
-                'name' in slack_event['payload'][0])
+        payload = json.loads(slack_event['payload'])
+        return (SlackInput._is_interactive_message(payload) and
+                SlackInput._is_button(payload))
 
     @staticmethod
     def _get_button_reply(slack_event):
-        return json.loads(slack_event['payload'][0])['actions'][0]['name']
+        return json.loads(slack_event['payload'])['actions'][0]['name']
 
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
         """Remove superfluous/wrong/problematic tokens from a message.
 
-        Probably a good starting point for pre-formatting of user-provided text,
-        to make NLU's life easier in case they go funky to the power of extreme.
+        Probably a good starting point for pre-formatting of user-provided text
+        to make NLU's life easier in case they go funky to the power of extreme
 
         In the current state will just drop self-mentions of bot itself
 
@@ -186,6 +205,7 @@ class SlackInput(InputChannel):
             out_channel = SlackBot(self.slack_token, self.slack_channel)
             user_msg = UserMessage(text, out_channel, sender_id,
                                    input_channel=self.name())
+
             await on_new_message(user_msg)
         except Exception as e:
             logger.error("Exception when trying to handle "
@@ -206,7 +226,7 @@ class SlackInput(InputChannel):
             if request.form:
                 output = dict(request.form)
                 if self._is_button_reply(output):
-                    sender_id = json.loads(output['payload'][0])['user']['id']
+                    sender_id = json.loads(output['payload'])['user']['id']
                     return await self.process_message(
                         request,
                         on_new_message,

@@ -12,8 +12,16 @@ how you can migrate from one version to another.
 
 0.13.x to 0.14.0
 ----------------
+
 - lots of async function in agent -> clarify API changes
 - channels now need to provide Sanic blueprint & await on_new_message
+
+Function Naming
+~~~~~~~~~~~~~~~
+- renamed ``train_dialogue_model`` to ``train``. Please use ``train`` from
+  now on.
+- renamed ``rasa_core.evaluate`` to ``rasa_core.test``. Please use ``test``
+  from now on.
 
 
 .. _migration-to-0-13-0:
