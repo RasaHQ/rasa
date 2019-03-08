@@ -624,6 +624,39 @@ paths:
         400:
           $ref: '#/components/responses/400Evaluation'
 
+  /jobs:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Train Rasa Stack model
+      description: >-
+        Trains a Rasa Stack model
+      operationId: trainStack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StackTrainingNamespace'
+            examples:
+              StackTrainingNamespace:
+                $ref: '#/components/examples/StackTrainingNamespace'
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StackTrainingResult'
+              examples:
+                StackTrainingResult:
+                  $ref: '#/components/examples/StackTrainingResult'
+        400:
+          $ref: '#/components/responses/400Training'
+
   /predict:
     post:
       security:
@@ -970,6 +1003,17 @@ components:
                     utter_on_it       1.00      0.50      0.67         2
 
                     avg / total       1.00      0.90      0.93        10
+    StackTrainingNamespace:
+      value:
+        domain: domain.yml
+        config: config.yml
+        data: [nlu.md, stories.md]
+        out: models
+        force: false
+    StackTrainingResult:
+      value:
+        info: new model trained
+        model: 20190307-212421.tar.gz
 
   responses:
     200Tracker:
@@ -1036,6 +1080,20 @@ components:
             message: >-
               Evaluation could not be created.
             reason: "FailedEvaluation"
+            code: 400
+
+    400Training:
+      description: Failed Training
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Rasa Stack model could not be trained.
+            reason: "TrainingError"
             code: 400
 
     403Permissions:
@@ -1418,6 +1476,38 @@ components:
         tracker:
           $ref: '#/components/schemas/Tracker'
 
+    StackTrainingNamespace:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Path to Rasa Core domain
+        config:
+          type: string
+          description: Path to Rasa Stack config
+        data:
+          type: array
+          items:
+            type: string
+          description: Paths to Core and NLU training files
+        out:
+          type: string
+          description: Output directory
+        force:
+          type: boolean
+          description: >-
+            Force a model training even if the data has not changed
+
+    StackTrainingResult:
+      type: object
+      properties:
+        info:
+          type: string
+          description: Message indicating successful training
+        model:
+          type: string
+          description: Name of the trained Rasa Stack model
+
     EvaluationResult:
       type: object
       properties:
@@ -1480,7 +1570,7 @@ components:
         - type: string
         - type: array
           items:
-            - type: string
+            type: string
     SlotDescription:
       type: object
       properties:

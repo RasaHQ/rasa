@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import io
 import json
+import os
 import uuid
 
 import pytest
@@ -247,6 +248,26 @@ def test_evaluate(app):
                                                              "predicted",
                                                              "confidence",
                                                              "policy"}
+
+
+def test_stack_training(app,
+                        default_domain_path,
+                        default_stories_file,
+                        default_stack_config,
+                        default_nlu_data
+                        ):
+    training_namespace = dict(
+        domain=default_domain_path,
+        config=default_stack_config,
+        data=[default_nlu_data, default_stories_file],
+        out=".",
+        force=False
+    )
+    response = app.post('/jobs', json=training_namespace)
+    assert response.status_code == 200
+    assert response.get_json()["info"] == "new model trained"
+
+    assert os.path.exists(response.get_json()["model"])
 
 
 def test_end_to_end_evaluation(app):

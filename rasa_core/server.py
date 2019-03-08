@@ -407,8 +407,8 @@ def create_app(agent,
             # Fetches the appropriate bot response in a json format
             responses = agent.predict_next(sender_id)
             responses['scores'] = sorted(responses['scores'],
-                                         key = lambda k: (-k['score'],
-                                                          k['action']))
+                                         key=lambda k: (-k['score'],
+                                                        k['action']))
             return jsonify(responses)
 
         except Exception as e:
@@ -514,16 +514,15 @@ def create_app(agent,
         from rasa.cli.train import train
         from argparse import Namespace
 
-        # TODO LOCAL: validate namespace json in request
+        """Train a Rasa Stack model."""
         args = Namespace(**request.get_json())
-        print('have args', args)
+        print("got args", args, request.get_json())
         try:
             model_name = train(args)
             return jsonify({'info': 'new model trained', 'model': model_name})
         except Exception as e:
-            # TODO local: except specific training exception that can occur
             return error(400, "TrainingError",
-                         "Rasa stack model could not be trained.", e)
+                         "Rasa Stack model could not be trained.", e)
 
     @app.route("/domain", methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
