@@ -5,7 +5,7 @@ from typing import Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pytz import UnknownTimeZoneError
 
-__scheduler: Optional[AsyncIOScheduler] = None
+__scheduler = None
 
 logger = logging.getLogger(__name__)
 
