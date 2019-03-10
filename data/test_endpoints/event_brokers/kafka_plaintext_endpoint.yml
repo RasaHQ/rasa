@@ -4,3 +4,4 @@ event_broker:
   sasl_plain_password: password
   topic: topic
   security_protocol: SASL_PLAINTEXT
+  type: kafka

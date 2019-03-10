@@ -128,11 +128,11 @@ when running Rasa, and select Kafka producer with ``--kafka_broker kafka_produce
 
 Using SASL_PLAINTEXT protocol the endpoints file must have the following entries:
 
-.. literalinclude:: ../data/test_endpoints/event_brokers/kafka_event_broker_plaintext_endpoint.yml
+.. literalinclude:: ../data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml
 
 In the case of using SSL protocol the endpoints file must looks like:
 
-.. literalinclude:: ../data/test_endpoints/event_brokers/kafka_event_broker_ssl_endpoint.yml
+.. literalinclude:: ../data/test_endpoints/event_brokers/kafka_ssl_endpoint.yml
 
 Adding a Kafka Broker in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

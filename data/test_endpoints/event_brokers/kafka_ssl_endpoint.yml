@@ -6,3 +6,4 @@ event_broker:
   ssl_certfile: certificate.pem
   ssl_keyfile: key.pem
   ssl_check_hostname: True
+  type: kafka

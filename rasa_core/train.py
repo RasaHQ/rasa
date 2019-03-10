@@ -5,12 +5,11 @@ import tempfile
 from typing import Text, Dict, Optional
 
 import rasa_core.cli.train
-from rasa_core import config, cli
+from rasa_core import config, cli, broker
 from rasa_core import utils
-from rasa_core.broker import PikaProducer
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.run import AvailableEndpoints, create_event_broker
+from rasa_core.run import AvailableEndpoints
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.utils import set_default_subparser
@@ -201,8 +200,7 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
         logger.info("Loading a pre-trained model. This means that "
                     "all training-related parameters will be ignored.")
 
-        _broker = create_event_broker(cmdline_args.event_broker,
-                                      _endpoints.event_broker)
+        _broker = broker.from_endpoint_config(_endpoints.event_broker)
         _tracker_store = TrackerStore.find_tracker_store(
             None,
             _endpoints.tracker_store,
