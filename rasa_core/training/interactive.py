@@ -1,45 +1,45 @@
-import sys
-
 import asyncio
 import logging
-import numpy as np
 import os
+import tempfile
 import textwrap
 import uuid
+from functools import partial
+from multiprocessing import Process
+from typing import (
+    Any, Callable, Dict, List, Optional, Text, Tuple, Union)
+
+import numpy as np
 from aiohttp import ClientError
 from colorclass import Color
 from sanic import Sanic, response
-from terminaltables import SingleTable, AsciiTable
-from typing import (Any, Text, Dict, List, Optional, Callable, Union, Tuple,
-                    TYPE_CHECKING)
+from sanic.exceptions import NotFound
+from terminaltables import AsciiTable, SingleTable
 
 import questionary
 from questionary import Choice, Form, Question
-from rasa_core import utils, events, constants, run
+from rasa_core import constants, events, run, train, utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
-    DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL, REQUESTED_SLOT)
+    DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL,
+    REQUESTED_SLOT)
 from rasa_core.domain import Domain
 from rasa_core.events import (
-    Event, ActionExecuted, UserUttered, Restarted,
-    BotUttered)
-from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
+    ActionExecuted, BotUttered, Event, Restarted, UserUttered)
+from rasa_core.interpreter import (
+    INTENT_MESSAGE_PREFIX,
+    NaturalLanguageInterpreter)
 from rasa_core.trackers import EventVerbosity
 from rasa_core.training import visualization
 from rasa_core.training.structures import Story
 from rasa_core.training.visualization import (
-    visualize_neighborhood, VISUALIZATION_TEMPLATE_PATH)
-from rasa_core.utils import EndpointConfig
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+    VISUALIZATION_TEMPLATE_PATH, visualize_neighborhood)
+from rasa_core.utils import AvailableEndpoints, EndpointConfig
 # noinspection PyProtectedMember
-from rasa_nlu.training_data.loading import load_data, _guess_format
+from rasa_nlu.training_data.loading import _guess_format, load_data
 from rasa_nlu.training_data.message import Message
-
-if TYPE_CHECKING:
-    from rasa_core.agent import Agent
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
@@ -124,6 +124,12 @@ async def retrieve_domain(endpoint: EndpointConfig) -> Dict[Text, Any]:
     return await endpoint.request(method="get",
                                   subpath="/domain",
                                   headers={"Accept": "application/json"})
+
+
+async def retrieve_status(endpoint: EndpointConfig) -> Dict[Text, Any]:
+    """Retrieve the status from core."""
+
+    return await endpoint.request(method="get", subpath="/status")
 
 
 async def retrieve_tracker(
@@ -423,7 +429,7 @@ async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
 
     print("------")
     print("Chat History\n")
-    print(table.encode("utf-8"))
+    print(table)
 
     if slot_strs:
         print("\n")
@@ -562,7 +568,7 @@ async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
         await _write_data_to_file(sender_id, endpoint)
-        sys.exit()
+        raise Abort()
     elif answer == "continue":
         # in this case we will just return, and the original
         # question will get asked again
@@ -1163,8 +1169,10 @@ def _print_help(skip_visualization: bool) -> None:
     """Print some initial help message for the user."""
 
     if not skip_visualization:
-        visualization_help = "Visualisation at {}/visualization.html." \
-                             "".format(DEFAULT_SERVER_URL)
+        visualization_url = DEFAULT_SERVER_FORMAT.format(
+            DEFAULT_SERVER_PORT + 1)
+        visualization_help = ("Visualisation at {}/visualization.html."
+                              "".format(visualization_url))
     else:
         visualization_help = ""
 
@@ -1254,25 +1262,14 @@ async def record_messages(endpoint: EndpointConfig,
         raise
 
 
-def _serve_application(app: Sanic, stories: Text,
-                       finetune: bool = False,
-                       serve_forever: bool = True,
-                       skip_visualization: bool = False
-                       ):
+def _serve_application(app, stories, finetune, skip_visualization):
     """Start a core server and attach the interactive learning IO."""
-
-    if not skip_visualization:
-        _add_visualization_routes(app, "story_graph.dot")
-
-    logger.info("Rasa Core server is up and running on "
-                "{}".format(DEFAULT_SERVER_URL))
 
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
 
     async def run_interactive_io(running_app: Sanic):
         """Small wrapper to shutdown the server once cmd io is done."""
 
-        await asyncio.sleep(1)  # allow server to start
         await record_messages(
             endpoint=endpoint,
             stories=stories,
@@ -1282,20 +1279,23 @@ def _serve_application(app: Sanic, stories: Text,
 
         logger.info("Killing Sanic server now.")
 
-        running_app.stop()      # kill the sanic server
+        running_app.stop()  # kill the sanic server
 
     app.add_task(run_interactive_io)
-
-    if serve_forever:
-        logger.info("Rasa Core server is up and running on "
-                    "{}".format(DEFAULT_SERVER_URL))
-        app.run(host='0.0.0.0', port=DEFAULT_SERVER_PORT)
+    app.run(host='0.0.0.0', port=DEFAULT_SERVER_PORT, access_log=True)
 
     return app
 
 
-def _add_visualization_routes(app: Sanic, image_path: Text = None) -> None:
+def start_visualization(image_path: Text = None) -> None:
     """Add routes to serve the conversation visualization files."""
+
+    app = Sanic(__name__)
+
+    # noinspection PyUnusedLocal
+    @app.exception(NotFound)
+    async def ignore_404s(request, exception):
+        return response.text("Not found", status=404)
 
     # noinspection PyUnusedLocal
     @app.route(VISUALIZATION_TEMPLATE_PATH, methods=["GET"])
@@ -1311,17 +1311,92 @@ def _add_visualization_routes(app: Sanic, image_path: Text = None) -> None:
         except FileNotFoundError:
             return response.text("", 404)
 
+    app.run(host='0.0.0.0', port=DEFAULT_SERVER_PORT + 1, access_log=False)
 
-def run_interactive_learning(agent: "Agent",
-                             stories: Text = None,
+
+# noinspection PyUnusedLocal
+async def train_agent_on_start(args, endpoints, additional_arguments, app,
+                               loop):
+
+    _interpreter = NaturalLanguageInterpreter.create(args["nlu"],
+                                                     endpoints.nlu)
+
+    if args["out"]:
+        model_directory = args["out"]
+    else:
+        model_directory = tempfile.mkdtemp(suffix="_core_model")
+
+    _agent = await train(args["domain"],
+                         args["stories"],
+                         model_directory,
+                         _interpreter,
+                         endpoints,
+                         args["dump_stories"],
+                         args["config"][0],
+                         None,
+                         additional_arguments)
+    app.agent = _agent
+
+
+async def wait_til_server_is_running(endpoint,
+                                     max_retries=30,
+                                     sleep_between_retries=1):
+    """Try to reach the server, retry a couple times and sleep in between."""
+
+    while max_retries:
+        try:
+            r = await retrieve_status(endpoint)
+            logger.info("Reached core: {}".format(r))
+            if not r.get("is_ready"):
+                # server did not finish loading the agent yet
+                # in this case, we need to wait till the model trained
+                # so we might be sleeping for a while...
+                await asyncio.sleep(sleep_between_retries)
+                continue
+            else:
+                # server is ready to go
+                return True
+        except ClientError:
+            max_retries -= 1
+            if max_retries:
+                await asyncio.sleep(sleep_between_retries)
+
+    return False
+
+
+def run_interactive_learning(stories: Text = None,
                              finetune: bool = False,
-                             serve_forever: bool = True,
-                             skip_visualization: bool = False
+                             skip_visualization: bool = False,
+                             server_args: Dict[Text, Any] = None,
+                             additional_arguments: Dict[Text, Any] = None
                              ):
     """Start the interactive learning with the model of the agent."""
 
-    app = run.configure_app(enable_api=True)
-    app.agent = agent
+    if not skip_visualization:
+        p = Process(target=start_visualization, args=("story_graph.dot",))
+        p.deamon = True
+        p.start()
+    else:
+        p = None
 
-    return _serve_application(app, stories, finetune,
-                              serve_forever, skip_visualization)
+    app = run.configure_app(enable_api=True)
+    endpoints = AvailableEndpoints.read_endpoints(server_args["endpoints"])
+
+    # before_server_start handlers make sure the agent is loaded before the
+    # interactive learning IO starts
+    if server_args["core"]:
+        app.register_listener(
+            partial(run.load_agent_on_start, server_args["core"],
+                    endpoints, server_args["nlu"]),
+            'before_server_start')
+    else:
+        app.register_listener(
+            partial(train_agent_on_start, server_args, endpoints,
+                    additional_arguments),
+            'before_server_start')
+
+    _serve_application(app, stories, finetune, skip_visualization)
+
+    if not skip_visualization:
+        p.terminate()
+        p.join()

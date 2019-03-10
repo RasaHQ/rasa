@@ -17,6 +17,9 @@ train-nlu:
 train-core:
 	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue
 
+train-interactive:
+	python -m rasa_core.train interactive -s data/stories.md -d domain.yml -o models/dialogue --debug
+
 run-fb:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials credentials.yml
 
@@ -39,7 +42,7 @@ run-webexteams:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c webexteams --credentials credentials.yml
 
 run-cmdline:
-	python -m rasa_core.run -d models/dialogue -u models/nlu/current
+	python -m rasa_core.run -d models/dialogue -u models/nlu/current --debug
 
 evaluate-nlu:
 	python -m rasa_nlu.evaluate  --model models/nlu/current --data ./data/nlu.md

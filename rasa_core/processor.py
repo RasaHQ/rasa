@@ -238,9 +238,11 @@ class MessageProcessor(object):
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
-            parse_data = await RegexInterpreter().parse(message.text)
+            parse_data = await RegexInterpreter().parse(message.text,
+                                                        message.message_id)
         else:
-            parse_data = await self.interpreter.parse(message.text)
+            parse_data = await self.interpreter.parse(message.text,
+                                                      message.message_id)
 
         logger.debug("Received user message '{}' with intent '{}' "
                      "and entities '{}'".format(message.text,

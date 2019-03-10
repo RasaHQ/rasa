@@ -189,56 +189,19 @@ async def do_compare_training(cmdline_args, stories, additional_arguments):
 
 
 def do_interactive_learning(cmdline_args, stories,
-                            additional_arguments=None,
-                            loop=None):
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
-    from rasa_core.agent import Agent
+                                  additional_arguments=None):
     from rasa_core.training import interactive
 
-    if cmdline_args.core:
-        if cmdline_args.finetune:
-            raise ValueError("--core can only be used without "
-                             "--finetune flag.")
-
-        logger.info("Loading a pre-trained model. This means that "
-                    "all training-related parameters will be ignored.")
-
-        _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
-        _tracker_store = TrackerStore.find_tracker_store(
-            None,
-            _endpoints.tracker_store,
-            _broker)
-
-        _agent = Agent.load(cmdline_args.core,
-                            interpreter=_interpreter,
-                            generator=_endpoints.nlg,
-                            tracker_store=_tracker_store,
-                            action_endpoint=_endpoints.action)
-    else:
-        if cmdline_args.out:
-            model_directory = cmdline_args.out
-        else:
-            model_directory = tempfile.mkdtemp(suffix="_core_model")
-
-        if not loop:
-            loop = asyncio.get_event_loop()
-        _agent = loop.run_until_complete(
-            train(cmdline_args.domain,
-                  stories,
-                  model_directory,
-                  _interpreter,
-                  _endpoints,
-                  cmdline_args.dump_stories,
-                  cmdline_args.config[0],
-                  None,
-                  additional_arguments))
+    if cmdline_args.finetune:
+        raise ValueError("--core can only be used without "
+                         "--finetune flag.")
 
     interactive.run_interactive_learning(
-        _agent, stories,
+        stories,
         finetune=cmdline_args.finetune,
-        skip_visualization=cmdline_args.skip_visualization)
+        skip_visualization=cmdline_args.skip_visualization,
+        server_args=cmdline_args.__dict__,
+        additional_arguments=additional_arguments)
 
 
 if __name__ == '__main__':
@@ -264,8 +227,7 @@ if __name__ == '__main__':
     elif cmdline_arguments.mode == 'interactive':
         do_interactive_learning(cmdline_arguments,
                                 training_stories,
-                                additional_args,
-                                loop)
+                                additional_args)
 
     elif cmdline_arguments.mode == 'compare':
         loop.run_until_complete(do_compare_training(cmdline_arguments,

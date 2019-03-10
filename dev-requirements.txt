@@ -1,5 +1,5 @@
 # install requirements
--r requirements.txt
+#-r requirements.txt
 
 # test
 pytest==3.5.1
@@ -12,6 +12,7 @@ freezegun==0.3.10
 responses==0.9.0
 httpretty==0.9.5
 aioresponses==0.5.2
+mock==2.0.0
 
 # other
 matplotlib==2.2.2

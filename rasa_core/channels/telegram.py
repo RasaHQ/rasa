@@ -170,7 +170,5 @@ class TelegramInput(InputChannel):
 
                 return response.text("success")
 
-        task = asyncio.ensure_future(set_webhook(None))
-        task.add_done_callback(utils.create_task_error_logger(
-            error_message="Error while trying to set telegram webhook."))
+        out_channel.setWebhook(self.webhook_url)
         return telegram_webhook

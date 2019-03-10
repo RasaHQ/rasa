@@ -2,7 +2,6 @@ import os
 import pytest
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
-from sklearn.exceptions import UndefinedMetricWarning
 
 from rasa_core.test import (test, collect_story_predictions, _generate_trackers)
 from tests.conftest import (
@@ -57,7 +56,6 @@ async def test_end_to_end_evaluation_script(tmpdir, default_agent):
     assert num_stories == 2
 
 
-@pytest.mark.filterwarnings("ignore::UndefinedMetricWarning")
 async def test_end_to_end_evaluation_script_unknown_entity(tmpdir,
                                                            default_agent):
     completed_trackers = await _generate_trackers(

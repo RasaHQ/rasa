@@ -59,7 +59,7 @@ def session_config():
 
 
 async def train_trackers(domain):
-    trackers = await training.load_data(
+    return await training.load_data(
         DEFAULT_STORIES_FILE,
         domain
     )

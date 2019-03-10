@@ -4,7 +4,7 @@ from aioresponses import aioresponses
 from rasa_core.interpreter import (
     INTENT_MESSAGE_PREFIX, RasaNLUHttpInterpreter, RegexInterpreter)
 from rasa_core.utils import EndpointConfig
-from tests.utilities import latest_request
+from tests.utilities import latest_request, json_of_latest_request
 
 
 @pytest.fixture
@@ -80,24 +80,20 @@ async def test_regex_interpreter_adds_intent_prefix(regex_interpreter):
 
 async def test_http_interpreter():
     with aioresponses() as mocked:
-        mocked.get("https://example.com/parse"
-                   "?message_id=1134"
-                   "&project=default"
-                   "&q=message_text")
+        mocked.post("https://example.com/parse")
 
         endpoint = EndpointConfig('https://example.com')
         interpreter = RasaNLUHttpInterpreter(endpoint=endpoint)
         await interpreter.parse(text='message_text', message_id='1134')
 
         r = latest_request(
-            mocked, "GET", "https://example.com/parse"
-                           "?message_id=1134"
-                           "&project=default"
-                           "&q=message_text")
+            mocked, "POST", "https://example.com/parse")
 
-        query = r[-1].kwargs["params"]
+        query = json_of_latest_request(r)
         response = {'project': 'default',
                     'q': 'message_text',
-                    'message_id': '1134'}
+                    'message_id': '1134',
+                    'model': None,
+                    'token': None}
 
         assert query == response

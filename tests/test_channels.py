@@ -240,37 +240,39 @@ def test_rocketchat_channel():
 def test_telegram_channel():
     # telegram channel will try to set a webhook, so we need to mock the api
     with mock.patch.object(sanic.Sanic, 'run', fake_sanic_run):
+        httpretty.register_uri(
+            httpretty.POST,
+            'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
+            body='{"ok": true, "result": {}}')
+
+        httpretty.enable()
         # START DOC INCLUDE
-        with aioresponses() as mocked:
-            mocked.post(
-                'https://api.telegram.org/bot123:YOUR_ACCESS_TOKEN/setWebhook',
-                payload={"ok": True, "result": {}})
+        from rasa_core.channels.telegram import TelegramInput
+        from rasa_core.agent import Agent
+        from rasa_core.interpreter import RegexInterpreter
 
-            from rasa_core.channels.telegram import TelegramInput
-            from rasa_core.agent import Agent
-            from rasa_core.interpreter import RegexInterpreter
+        # load your trained agent
+        agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
 
-            # load your trained agent
-            agent = Agent.load(MODEL_PATH, interpreter=RegexInterpreter())
+        input_channel = TelegramInput(
+            # you get this when setting up a bot
+            access_token="123:YOUR_ACCESS_TOKEN",
+            # this is your bots username
+            verify="YOUR_TELEGRAM_BOT",
+            # the url your bot should listen for messages
+            webhook_url="YOUR_WEBHOOK_URL"
+        )
 
-            input_channel = TelegramInput(
-                # you get this when setting up a bot
-                access_token="123:YOUR_ACCESS_TOKEN",
-                # this is your bots username
-                verify="YOUR_TELEGRAM_BOT",
-                # the url your bot should listen for messages
-                webhook_url="YOUR_WEBHOOK_URL"
-            )
-
-            s = agent.handle_channels([input_channel], 5004)
-            # END DOC INCLUDE
-            # the above marker marks the end of the code snipped included
-            # in the docs
-            routes_list = utils.list_routes(s)
-            assert routes_list.get("telegram_webhook.health").startswith(
-                "/webhooks/telegram")
-            assert routes_list.get("telegram_webhook.message").startswith(
-                "/webhooks/telegram/webhook")
+        s = agent.handle_channels([input_channel], 5004)
+        # END DOC INCLUDE
+        # the above marker marks the end of the code snipped included
+        # in the docs
+        routes_list = utils.list_routes(s)
+        assert routes_list.get("telegram_webhook.health").startswith(
+            "/webhooks/telegram")
+        assert routes_list.get("telegram_webhook.message").startswith(
+            "/webhooks/telegram/webhook")
+        httpretty.disable()
 
 
 def test_handling_of_telegram_user_id():
@@ -314,9 +316,9 @@ def test_handling_of_telegram_user_id():
 
     import rasa_core
     app = Sanic(__name__)
+    app.agent = agent
     rasa_core.channels.channel.register([input_channel],
                                         app,
-                                        agent.handle_message,
                                         route="/webhooks/")
 
     data = {"message": {"chat": {"id": 1234, "type": "private"},
@@ -758,7 +760,6 @@ def test_register_channel_without_route():
     app = Sanic(__name__)
     rasa_core.channels.channel.register([input_channel],
                                         app,
-                                        agent.handle_message,
                                         route=None)
 
     routes_list = utils.list_routes(app)

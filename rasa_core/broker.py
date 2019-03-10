@@ -62,7 +62,8 @@ class PikaProducer(EventChannel):
         self.credentials = pika.PlainCredentials(username, password)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional['PikaProducer']:
+    def from_endpoint_config(cls, broker_config: Optional['EndpointConfig']
+                             ) -> Optional['PikaProducer']:
         if broker_config is None:
             return None
 

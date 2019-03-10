@@ -265,7 +265,6 @@ def visualization_html_path():
 def persist_graph(graph, output_file):
     """Plots the graph and persists it into a html file."""
     import networkx as nx
-    import io
 
     expg = nx.nx_pydot.to_pydot(graph)
 
@@ -332,7 +331,7 @@ def _create_graph(fontsize: int = 12) -> 'networkx.MultiDiGraph':
 
 def sanitize(s):
     if s:
-        return re.sub(r"[^a-zA-Z0-9\s_-]", "", s)
+        return re.sub(r"""^[a-zA-Z0-9\s_-]""", "", s)
     else:
         return s
 

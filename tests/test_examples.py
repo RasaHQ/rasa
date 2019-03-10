@@ -88,8 +88,7 @@ async def test_formbot_example():
         # noinspection PyTypeChecker
         mocked.post('https://example.com/webhooks/actions',
                     exception=ClientResponseError(
-                        aiohttp.ClientResponseError(None, None, code=400),
-                        json.dumps(response)))
+                        400, "", json.dumps(response)))
 
         responses = await agent.handle_text("/chitchat")
 

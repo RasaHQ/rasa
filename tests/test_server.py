@@ -97,7 +97,7 @@ def test_respond(app):
 
 def test_parse(app):
     data = json.dumps({"q": """/greet{"name": "Rasa"}"""})
-    _, response = app.post("http://dummy/parse",
+    _, response = app.post("/parse",
                            data=data,
                            headers={"Content-Type": "application/json"})
     content = response.json
@@ -165,7 +165,7 @@ def test_sorted_predict(app):
 
     assert response.status == 200
 
-    response = app.post("/conversations/sortedpredict/predict")
+    _, response = app.post("/conversations/sortedpredict/predict")
     scores = response.json["scores"]
     sorted_scores = sorted(scores, key=lambda k: (-k['score'], k['action']))
     assert scores == sorted_scores

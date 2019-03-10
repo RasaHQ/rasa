@@ -1,20 +1,16 @@
 import asyncio
-from asyncio import AbstractEventLoop
-
-import aiohttp
 import logging
 import os
-
 import shutil
 import tempfile
 import typing
 import uuid
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pytz import UnknownTimeZoneError
+from asyncio import CancelledError
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 
-from rasa_core import constants, training, utils
+import aiohttp
+
+from rasa_core import constants, jobs, training, utils
 from rasa_core.channels import InputChannel, OutputChannel, UserMessage
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
@@ -42,7 +38,7 @@ if typing.TYPE_CHECKING:
 
 async def load_from_server(
     agent,
-    model_server: Optional[EndpointConfig] = None,
+    model_server: Optional[EndpointConfig] = None
 ) -> 'Agent':
     """Load a persisted model from a server."""
 
@@ -59,27 +55,11 @@ async def load_from_server(
 
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
-        schedule_model_pulling(model_server,
-                               int(wait_time_between_pulls),
-                               agent)
+        await schedule_model_pulling(model_server,
+                                     int(wait_time_between_pulls),
+                                     agent)
 
     return agent
-
-
-async def _init_model_from_server(model_server: EndpointConfig
-                                  ) -> Optional[typing.Tuple[Text, Text]]:
-    """Initialise a Rasa Core model from a URL."""
-
-    if not is_url(model_server.url):
-        raise aiohttp.InvalidURL(model_server.url)
-
-    model_directory = tempfile.mkdtemp()
-
-    fingerprint = await _pull_model_and_fingerprint(model_server,
-                                                    model_directory,
-                                                    fingerprint=None)
-
-    return fingerprint, model_directory
 
 
 def _is_stack_model(model_directory: Text) -> bool:
@@ -119,8 +99,7 @@ def _load_and_set_updated_model(agent: 'Agent',
 
 
 async def _update_model_from_server(model_server: EndpointConfig,
-                                    agent: 'Agent'
-                                    ) -> None:
+                                    agent: 'Agent') -> None:
     """Load a zipped Rasa Core model from a URL and update the passed agent."""
 
     if not is_url(model_server.url):
@@ -150,46 +129,46 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
     logger.debug("Requesting model from server {}..."
                  "".format(model_server.url))
 
-    try:
-        session = await model_server.session()
-        params = model_server.combine_parameters()
-        async with session.request("GET",
-                                   model_server.url,
-                                   timeout=DEFAULT_REQUEST_TIMEOUT,
-                                   headers=headers,
-                                   params=params) as resp:
+    async with model_server.session() as session:
+        try:
+            params = model_server.combine_parameters()
+            async with session.request("GET",
+                                       model_server.url,
+                                       timeout=DEFAULT_REQUEST_TIMEOUT,
+                                       headers=headers,
+                                       params=params) as resp:
 
-            if resp.status in [204, 304]:
-                logger.debug("Model server returned {} status code, indicating "
-                             "that no new model is available. "
-                             "Current fingerprint: {}"
-                             "".format(resp.status, fingerprint))
+                if resp.status in [204, 304]:
+                    logger.debug("Model server returned {} status code, "
+                                 "indicating that no new model is available. "
+                                 "Current fingerprint: {}"
+                                 "".format(resp.status, fingerprint))
+                    return resp.headers.get("ETag")
+                elif resp.status == 404:
+                    logger.debug(
+                        "Model server didn't find a model for our request. "
+                        "Probably no one did train a model for the project "
+                        "and tag combination yet.")
+                    return None
+                elif resp.status != 200:
+                    logger.warning(
+                        "Tried to fetch model from server, but server response "
+                        "status code is {}. We'll retry later..."
+                        "".format(resp.status))
+                    return None
+
+                utils.unarchive(await resp.read(), model_directory)
+                logger.debug("Unzipped model to '{}'"
+                             "".format(os.path.abspath(model_directory)))
+
+                # get the new fingerprint
                 return resp.headers.get("ETag")
-            elif resp.status == 404:
-                logger.debug(
-                    "Model server didn't find a model for our request. "
-                    "Probably no one did train a model for the project "
-                    "and tag combination yet.")
-                return None
-            elif resp.status != 200:
-                logger.warning(
-                    "Tried to fetch model from server, but server response "
-                    "status code is {}. We'll retry later..."
-                    "".format(resp.status))
-                return None
 
-            utils.unarchive(await resp.read(), model_directory)
-            logger.debug("Unzipped model to '{}'"
-                         "".format(os.path.abspath(model_directory)))
-
-            # get the new fingerprint
-            return resp.headers.get("ETag")
-
-    except aiohttp.ClientResponseError as e:
-        logger.warning("Tried to fetch model from server, but "
-                       "couldn't reach server. We'll retry later... "
-                       "Error: {}.".format(e))
-        return None
+        except aiohttp.ClientResponseError as e:
+            logger.warning("Tried to fetch model from server, but "
+                           "couldn't reach server. We'll retry later... "
+                           "Error: {}.".format(e))
+            return None
 
 
 async def _run_model_pulling_worker(model_server: EndpointConfig,
@@ -200,15 +179,17 @@ async def _run_model_pulling_worker(model_server: EndpointConfig,
         try:
             await asyncio.sleep(wait_time_between_pulls)
             await _update_model_from_server(model_server, agent)
+        except CancelledError:
+            logger.warning("Stopping model pulling (cancelled).")
         except Exception:
             logger.exception("An exception was raised, while fetching "
                              "a model. Continuing anyways...")
 
 
-def schedule_model_pulling(model_server: EndpointConfig,
-                           wait_time_between_pulls: int,
-                           agent: 'Agent'):
-    agent.scheduler.add_job(
+async def schedule_model_pulling(model_server: EndpointConfig,
+                                 wait_time_between_pulls: int,
+                                 agent: 'Agent'):
+    (await jobs.scheduler()).add_job(
         _run_model_pulling_worker, "interval",
         seconds=wait_time_between_pulls,
         args=[model_server, wait_time_between_pulls, agent],
@@ -231,8 +212,7 @@ class Agent(object):
         generator: Union[EndpointConfig, 'NLG', None] = None,
         tracker_store: Optional['TrackerStore'] = None,
         action_endpoint: Optional[EndpointConfig] = None,
-        fingerprint: Optional[Text] = None,
-        loop: [AbstractEventLoop] = None
+        fingerprint: Optional[Text] = None
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -252,26 +232,8 @@ class Agent(object):
             tracker_store, self.domain)
         self.action_endpoint = action_endpoint
         self.conversations_in_processing = {}
-        self.scheduler = self._init_scheduler(loop)
 
         self._set_fingerprint(fingerprint)
-
-    @staticmethod
-    def _init_scheduler(loop=None):
-        """Create a (thread) global shared task scheduler.
-
-        Used to schedule model pulling as well as running reminders."""
-
-        try:
-            scheduler = AsyncIOScheduler(event_loop=loop)
-            scheduler.start()
-            return scheduler
-        except UnknownTimeZoneError:
-            logger.warning("apscheduler failed to start. This is probably "
-                           "because your system timezone is not set"
-                           "Set it with e.g. echo \"Europe/Berlin\" > "
-                           "/etc/timezone")
-        return None
 
     def update_model(self,
                      domain: Union[Text, Domain],
@@ -298,8 +260,7 @@ class Agent(object):
              interpreter: Optional[NaturalLanguageInterpreter] = None,
              generator: Union[EndpointConfig, 'NLG'] = None,
              tracker_store: Optional['TrackerStore'] = None,
-             action_endpoint: Optional[EndpointConfig] = None,
-             loop: AbstractEventLoop = None
+             action_endpoint: Optional[EndpointConfig] = None
              ) -> 'Agent':
         """Load a persisted model from the passed path."""
 
@@ -328,8 +289,7 @@ class Agent(object):
                    interpreter=interpreter,
                    generator=generator,
                    tracker_store=tracker_store,
-                   action_endpoint=action_endpoint,
-                   loop=loop)
+                   action_endpoint=action_endpoint)
 
     def is_ready(self):
         """Check if all necessary components are instantiated to use agent."""
@@ -624,8 +584,10 @@ class Agent(object):
         from rasa_core import run
 
         app = run.configure_app(channels, cors, None,
-                                self, enable_api=False,
+                                enable_api=False,
                                 route=route)
+
+        app.agent = self
 
         app.run(host='0.0.0.0', port=http_port,
                 access_log=logger.isEnabledFor(logging.DEBUG))

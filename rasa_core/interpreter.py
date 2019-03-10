@@ -210,14 +210,11 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "message_id": message_id
         }
 
-        # aiohttp can't handle None param values -> we need to remove them
-        params = utils.remove_none_values(params)
-
         url = "{}/parse".format(self.endpoint.url)
         # noinspection PyBroadException
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, params=params) as resp:
+                async with session.post(url, json=params) as resp:
                     if resp.status == 200:
                         return await resp.json()
                     else:
@@ -225,7 +222,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                             "Failed to parse text '{}' using rasa NLU over "
                             "http. Error: {}".format(text, await resp.text()))
                         return None
-        except Exception as e:
+        except Exception:
             logger.exception(
                 "Failed to parse text '{}' using rasa NLU over http. "
                 "".format(text))

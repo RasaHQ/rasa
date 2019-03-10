@@ -67,6 +67,7 @@ def test_list_routes(default_agent):
                                   'retrieve_story',
                                   'respond',
                                   'predict',
+                                  'parse',
                                   'log_message',
                                   'load_model',
                                   'evaluate_stories',
@@ -143,10 +144,10 @@ async def test_endpoint_config():
 
         # unfortunately, the mock library won't report any headers stored on
         # the session object, so we need to verify them separately
-        s = await endpoint.session()
-        assert s._default_headers.get("X-Powered-By") == "Rasa"
-        assert s._default_auth.login == "user"
-        assert s._default_auth.password == "pass"
+        async with endpoint.session() as s:
+            assert s._default_headers.get("X-Powered-By") == "Rasa"
+            assert s._default_auth.login == "user"
+            assert s._default_auth.password == "pass"
 
 
 os.environ['USER_NAME'] = 'user'

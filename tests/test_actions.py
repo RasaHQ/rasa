@@ -248,8 +248,7 @@ async def test_remote_action_endpoint_responds_400(
         mocked.post(
             'https://example.com/webhooks/actions',
             exception=ClientResponseError(
-                aiohttp.ClientResponseError(None, None, code=400),
-                '{"action_name": "my_action"}'))
+                400, None, '{"action_name": "my_action"}'))
 
         with pytest.raises(Exception) as execinfo:
             await remote_action.run(default_dispatcher_collecting,

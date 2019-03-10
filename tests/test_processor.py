@@ -1,17 +1,19 @@
 import datetime
 import pytest
 import uuid
+from aioresponses import aioresponses
 
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.dispatcher import Button, Dispatcher
 from rasa_core.events import (
     ReminderScheduled, UserUttered, ActionExecuted,
     BotUttered, Restarted)
-from rasa_nlu.training_data import Message
 from rasa_core.processor import MessageProcessor
 from rasa_core.interpreter import RasaNLUHttpInterpreter
 from rasa_core.utils import EndpointConfig
 from httpretty import httpretty
+
+from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.fixture(scope="module")
@@ -41,7 +43,7 @@ async def test_message_id_logging(default_processor):
 
 
 async def test_parsing(default_processor):
-    message = Message('/greet{"name": "boy"}')
+    message = UserMessage('/greet{"name": "boy"}')
     parsed = await default_processor._parse_message(message)
     assert parsed["intent"]["name"] == 'greet'
     assert parsed["entities"][0]["entity"] == 'name'
@@ -49,22 +51,26 @@ async def test_parsing(default_processor):
 
 async def test_http_parsing():
     message = UserMessage('lunch?')
-    httpretty.register_uri(httpretty.GET,
-                           'https://interpreter.com/parse')
 
     endpoint = EndpointConfig('https://interpreter.com')
-    httpretty.enable()
-    inter = RasaNLUHttpInterpreter(endpoint=endpoint)
-    try:
-        await MessageProcessor(inter,
-                               None, None, None, None)._parse_message(message)
-    except KeyError:
-        pass  # logger looks for intent and entities, so we except
+    with aioresponses() as mocked:
+        mocked.post('https://interpreter.com/parse',
+                    repeat=True,
+                    status=200)
 
-    query = httpretty.last_request.querystring
-    httpretty.disable()
+        inter = RasaNLUHttpInterpreter(endpoint=endpoint)
+        try:
+            await MessageProcessor(
+                inter, None, None, None, None)._parse_message(message)
+        except KeyError:
+            pass  # logger looks for intent and entities, so we except
 
-    assert query['message_id'][0] == message.message_id
+        r = latest_request(
+            mocked, 'POST',
+            "https://interpreter.com/parse")
+
+        assert r
+        assert json_of_latest_request(r)['message_id'] == message.message_id
 
 
 async def test_reminder_scheduled(default_processor):
@@ -112,7 +118,7 @@ async def test_reminder_aborted(default_processor):
     assert len(t.events) == 3  # nothing should have been executed
 
 
-async def test_reminder_restart(default_processor):
+async def test_reminder_restart(default_processor: MessageProcessor):
     out = CollectingOutputChannel()
     sender_id = uuid.uuid4().hex
 

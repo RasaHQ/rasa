@@ -656,12 +656,12 @@ class AvailableEndpoints(object):
         self.event_broker = event_broker
 
 
-class ClientResponseError(aiohttp.ClientResponseError):
-    def __init__(self, error, text):
-        super(ClientResponseError, self).__init__(
-            error.request_info, error.history,
-            status=error.status, message=error.message, headers=error.headers)
+class ClientResponseError(aiohttp.ClientError):
+    def __init__(self, status, message, text):
+        self.status = status
+        self.message = message
         self.text = text
+        super().__init__("{}, {}, body='{}'".format(status, message, text))
 
 
 class EndpointConfig(object):
@@ -677,14 +677,8 @@ class EndpointConfig(object):
         self.token_name = token_name
         self.type = kwargs.pop('store_type', kwargs.pop('type', None))
         self.kwargs = kwargs
-        self._session = None
 
-    async def session(self):
-        if not self._session:
-            self._session = await self._create_session()
-        return self._session
-
-    async def _create_session(self):
+    def session(self):
         # create authentication parameters
         if self.basic_auth:
             auth = aiohttp.BasicAuth(self.basic_auth["username"],
@@ -697,10 +691,6 @@ class EndpointConfig(object):
             auth=auth,
             timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT),
         )
-
-    def __del__(self):
-        if self._session and not self._session.closed:
-            asyncio.ensure_future(self._session.close())
 
     def combine_parameters(self, kwargs=None):
         # construct GET parameters
@@ -736,18 +726,19 @@ class EndpointConfig(object):
             del kwargs["headers"]
 
         url = concat_url(self.url, subpath)
-        session = await self.session()
-        async with session.request(
-                method,
-                url,
-                headers=headers,
-                params=self.combine_parameters(kwargs),
-                **kwargs) as resp:
-            try:
-                resp.raise_for_status()
+        async with self.session() as session:
+            async with session.request(
+                    method,
+                    url,
+                    headers=headers,
+                    params=self.combine_parameters(kwargs),
+                    **kwargs) as resp:
+
+                if 400 <= resp.status:
+                    raise ClientResponseError(resp.status,
+                                              resp.reason,
+                                              await resp.content.read())
                 return await resp.json()
-            except aiohttp.ClientResponseError as e:
-                raise ClientResponseError(e, await resp.text())
 
     @classmethod
     def from_dict(cls, data):

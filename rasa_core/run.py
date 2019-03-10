@@ -1,4 +1,5 @@
 import asyncio
+from functools import partial
 
 import argparse
 import logging
@@ -81,7 +82,8 @@ def configure_app(input_channels=None,
                   enable_api=True,
                   jwt_secret=None,
                   jwt_method=None,
-                  route="/webhooks/"):
+                  route="/webhooks/",
+                  port=None):
     """Run the agent."""
     from rasa_core import server
 
@@ -100,6 +102,8 @@ def configure_app(input_channels=None,
         rasa_core.channels.channel.register(input_channels,
                                             app,
                                             route=route)
+    else:
+        input_channels = []
 
     if logger.isEnabledFor(logging.DEBUG):
         utils.list_routes(app)
@@ -110,6 +114,18 @@ def configure_app(input_channels=None,
             utils.enable_async_loop_debugging(asyncio.get_event_loop())
 
     app.add_task(configure_logging)
+
+    if "cmdline" in {c.name() for c in input_channels}:
+        async def run_cmdline_io(running_app: Sanic):
+            """Small wrapper to shutdown the server once cmd io is done."""
+            await asyncio.sleep(1)  # allow server to start
+            await console.record_messages(
+                server_url=constants.DEFAULT_SERVER_FORMAT.format(port))
+
+            logger.info("Killing Sanic server now.")
+            running_app.stop()  # kill the sanic serverx
+
+        app.add_task(run_cmdline_io)
 
     return app
 
@@ -132,61 +148,52 @@ def serve_application(core_model=None,
     input_channels = create_http_input_channels(channel, credentials_file)
 
     app = configure_app(input_channels, cors, auth_token, enable_api,
-                        jwt_secret, jwt_method)
+                        jwt_secret, jwt_method, port=port)
 
-    if channel == "cmdline":
-        async def run_cmdline_io(running_app: Sanic):
-            """Small wrapper to shutdown the server once cmd io is done."""
-            await asyncio.sleep(1)  # allow server to start
-            await console.record_messages(
-                server_url=constants.DEFAULT_SERVER_FORMAT.format(port))
-
-            logger.info("Killing Sanic server now.")
-            running_app.stop()  # kill the sanic serverx
-
-        app.add_task(run_cmdline_io)
-
-    logger.info("Rasa Core server is up and running on "
+    logger.info("Starting Rasa Core server on "
                 "{}".format(constants.DEFAULT_SERVER_FORMAT.format(port)))
 
-    load_agent_on_start(app, core_model, endpoints, nlu_model)
+    app.register_listener(
+        partial(load_agent_on_start, core_model, endpoints, nlu_model),
+        'before_server_start')
     app.run(host='0.0.0.0', port=port,
             access_log=logger.isEnabledFor(logging.DEBUG))
 
 
-def load_agent_on_start(app, core_model, endpoints, nlu_model):
-    # noinspection PyUnusedLocal,PyShadowingNames
-    async def _load(app, loop):
-        from rasa_core.agent import Agent
-        from rasa_core import agent, broker
+# noinspection PyUnusedLocal
+async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
+    """Load an agent.
 
-        _interpreter = NaturalLanguageInterpreter.create(nlu_model,
-                                                         _endpoints.nlu)
+    Used to be scheduled on server start
+    (hence the `app` and `loop` arguments)."""
+    from rasa_core import broker
+    from rasa_core.agent import Agent
 
-        _broker = broker.from_endpoint_config(_endpoints.event_broker)
+    _interpreter = NaturalLanguageInterpreter.create(nlu_model,
+                                                     _endpoints.nlu)
+    _broker = broker.from_endpoint_config(_endpoints.event_broker)
 
-        _tracker_store = TrackerStore.find_tracker_store(
-            None, _endpoints.tracker_store, _broker)
+    _tracker_store = TrackerStore.find_tracker_store(
+        None, _endpoints.tracker_store, _broker)
 
-        if endpoints.model:
-            app.agent = Agent(interpreter=_interpreter,
-                              generator=endpoints.nlg,
-                              tracker_store=_tracker_store,
-                              action_endpoint=endpoints.action,
-                              loop=loop)
-        else:
-            app.agent = Agent.load(core_model,
-                                   interpreter=_interpreter,
-                                   generator=endpoints.nlg,
-                                   tracker_store=_tracker_store,
-                                   action_endpoint=endpoints.action,
-                                   loop=loop)
+    if endpoints and endpoints.model:
+        from rasa_core import agent
 
-        if endpoints and endpoints.model:
-            await agent.load_from_server(app.agent,
-                                         model_server=endpoints.model)
+        app.agent = Agent(interpreter=_interpreter,
+                          generator=endpoints.nlg,
+                          tracker_store=_tracker_store,
+                          action_endpoint=endpoints.action)
 
-    app.register_listener(_load, 'before_server_start')
+        await agent.load_from_server(app.agent,
+                                     model_server=endpoints.model)
+    else:
+        app.agent = Agent.load(core_model,
+                               interpreter=_interpreter,
+                               generator=endpoints.nlg,
+                               tracker_store=_tracker_store,
+                               action_endpoint=endpoints.action)
+
+    return app.agent
 
 
 if __name__ == '__main__':

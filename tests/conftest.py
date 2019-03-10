@@ -155,7 +155,6 @@ async def core_server(prepared_agent):
     app = server.create_app(prepared_agent)
     channel.register([RestInput()],
                      app,
-                     prepared_agent.handle_message,
                      "/webhooks/")
     return app
 
@@ -167,7 +166,6 @@ async def core_server_secured(prepared_agent):
                             jwt_secret="core")
     channel.register([RestInput()],
                      app,
-                     prepared_agent.handle_message,
                      "/webhooks/")
     return app
 

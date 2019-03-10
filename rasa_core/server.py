@@ -42,13 +42,13 @@ def _docs(sub_url: Text) -> Text:
     return constants.DOCS_BASE_URL + sub_url
 
 
-def ensure_loaded_agent(agent):
+def ensure_loaded_agent(app):
     """Wraps a request handler ensuring there is a loaded and usable model."""
 
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not agent or not agent.is_ready():
+            if not app.agent or not app.agent.is_ready():
                 raise ErrorResponse(
                     503,
                     "NoAgent",
@@ -164,11 +164,16 @@ def event_verbosity_parameter(request, default_verbosity):
                             {"parameter": "include_events", "in": "query"})
 
 
+# noinspection PyUnusedLocal
 async def authenticate(request):
-    return dict(user_id='some_id')
+    raise exceptions.AuthenticationFailed(
+        "Direct JWT authentication not supported. You should already have "
+        "a valid JWT from an authentication provider, Rasa will just make "
+        "sure that the token is valid, but not issue new tokens.")
 
 
-def create_app(cors_origins: Union[Text, List[Text]] = "*",
+def create_app(agent=None,
+               cors_origins: Union[Text, List[Text]] = "*",
                auth_token: Optional[Text] = None,
                jwt_secret: Optional[Text] = None,
                jwt_method: Optional[Text] = "HS256",
@@ -192,18 +197,19 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
                    algorithm=jwt_method,
                    user_id="username")
 
-    app.agent = None
+    app.agent = agent
 
     @app.listener('after_server_start')
     async def warn_if_agent_is_unavailable(app, loop):
         if not app.agent or not app.agent.is_ready():
-            logger.info("The loaded agent is not ready to be used yet "
-                        "(e.g. only the NLU interpreter is configured, "
-                        "but no Core model is loaded). This is NOT AN ISSUE "
-                        "some endpoints are not available until the agent "
-                        "is ready though.")
+            logger.warning("The loaded agent is not ready to be used yet "
+                           "(e.g. only the NLU interpreter is configured, "
+                           "but no Core model is loaded). This is NOT AN ISSUE "
+                           "some endpoints are not available until the agent "
+                           "is ready though.")
 
     @app.exception(NotFound)
+    @app.exception(ErrorResponse)
     async def ignore_404s(request: Request, exception: ErrorResponse):
         return response.json(exception.error_info,
                              status=exception.status)
@@ -225,7 +231,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
     # <sender_id> can be be 'default' if there's only 1 client
     @app.post("/conversations/<sender_id>/execute")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def execute_action(request: Request, sender_id: Text):
         request_params = request.json
 
@@ -265,7 +271,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.post("/conversations/<sender_id>/tracker/events")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def append_event(request: Request, sender_id: Text):
         """Append a list of events to the state of a conversation"""
 
@@ -291,7 +297,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.put("/conversations/<sender_id>/tracker/events")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def replace_events(request: Request, sender_id: Text):
         """Use a list of events to set a conversations tracker to a state."""
 
@@ -392,7 +398,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.route("/conversations/<sender_id>/respond", methods=['GET', 'POST'])
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def respond(request: Request, sender_id: Text):
         request_params = request_parameters(request)
 
@@ -422,7 +428,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.post("/conversations/<sender_id>/predict")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def predict(request: Request, sender_id: Text):
         try:
             # Fetches the appropriate bot response in a json format
@@ -439,7 +445,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.post("/conversations/<sender_id>/messages")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def log_message(request: Request, sender_id: Text):
         request_params = request.json
         try:
@@ -527,7 +533,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.get("/domain")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def get_domain(request: Request):
         """Get current domain in yaml or json format."""
 
@@ -552,7 +558,7 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.post("/finetune")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def continue_training(request: Request):
         epochs = request.raw_args.get("epochs", 30)
         batch_size = request.raw_args.get("batch_size", 5)
@@ -584,13 +590,13 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
     @requires_auth(app, auth_token)
     async def status(request: Request):
         return response.json({
-            "model_fingerprint": app.agent.fingerprint,
-            "is_ready": app.agent.is_ready()
+            "model_fingerprint": app.agent.fingerprint if app.agent else None,
+            "is_ready": app.agent.is_ready() if app.agent else False
         })
 
     @app.post("/predict")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
+    @ensure_loaded_agent(app)
     async def tracker_predict(request: Request):
         """ Given a list of events, predicts the next action"""
 
@@ -624,10 +630,10 @@ def create_app(cors_origins: Union[Text, List[Text]] = "*",
 
     @app.post("/parse")
     @requires_auth(app, auth_token)
-    @ensure_loaded_agent(app.agent)
-    def parse(request: Request):
+    @ensure_loaded_agent(app)
+    async def parse(request: Request):
         request_params = request.json
-        parse_data = app.agent.interpreter.parse(request_params.get("q"))
+        parse_data = await app.agent.interpreter.parse(request_params.get("q"))
         return response.json(parse_data)
 
     return app

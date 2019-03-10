@@ -352,7 +352,7 @@ class RemoteAction(Action):
                 logger.debug(exception.message)
                 raise exception
             else:
-                raise
+                raise Exception("Failed to execute custom action.") from e
 
         except aiohttp.ClientConnectionError as e:
             logger.error("Failed to run custom action '{}'. Couldn't connect "

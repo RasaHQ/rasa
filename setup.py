@@ -25,7 +25,8 @@ tests_requires = [
     "matplotlib~=2.0",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
-    "aioresponses~=0.5.2"
+    "aioresponses~=0.5.2",
+    "mock~=2.0",
 ]
 
 install_requires = [
@@ -72,7 +73,7 @@ install_requires = [
     "pydot~=1.4",
     "async_generator~=1.10",
     "keras-applications==1.0.6",
-    "keras-preprocessing==1.0.5"
+    "keras-preprocessing==1.0.5",
 ]
 
 extras_requires = {
