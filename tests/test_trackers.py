@@ -1,4 +1,3 @@
-import glob
 import json
 
 import fakeredis
@@ -12,14 +11,14 @@ from rasa_core.events import (
     UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
-from rasa_core.tracker_store import (
-    TrackerStore)
+from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from tests.conftest import DEFAULT_STORIES_FILE, DEFAULT_DOMAIN_PATH
+from tests.conftest import (DEFAULT_STORIES_FILE,
+                            EXAMPLE_DOMAINS, TEST_DIALOGUES)
 from tests.utilities import (tracker_from_dialogue_file, read_dialogue_file,
                              user_uttered, get_tracker)
 
-domain = Domain.load("data/test_domains/moodbot_domain.yml")
+domain = Domain.load("examples/moodbot/domain.yml")
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
@@ -84,12 +83,7 @@ def test_tracker_store_storage_and_retrieval(store):
 
 @pytest.mark.parametrize("store", stores_to_be_tested(),
                          ids=stores_to_be_tested_ids())
-@pytest.mark.parametrize("pair",
-                         zip(sorted(glob.glob('data/test_dialogues/*json')),
-                             [DEFAULT_DOMAIN_PATH,
-                              "examples/formbot/domain.yml",
-                              "examples/moodbot/domain.yml",
-                              "examples/restaurantbot/restaurant_domain.yml"]))
+@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
 def test_tracker_store(store, pair):
     filename, domainpath = pair
     domain = Domain.load(domainpath)
