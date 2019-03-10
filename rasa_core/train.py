@@ -189,7 +189,7 @@ async def do_compare_training(cmdline_args, stories, additional_arguments):
 
 
 def do_interactive_learning(cmdline_args, stories,
-                                  additional_arguments=None):
+                            additional_arguments=None):
     from rasa_core.training import interactive
 
     if cmdline_args.finetune:
