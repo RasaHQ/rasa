@@ -1,15 +1,12 @@
 import asyncio
-import time
-
-import io
-
-import pytest
-from aioresponses import aioresponses
-from sanic import Sanic, response
 from typing import Text
 
+import pytest
+from async_generator import async_generator, yield_
+from sanic import Sanic, response
+
 import rasa_core
-from rasa_core import utils, jobs
+from rasa_core import jobs, utils
 from rasa_core.agent import Agent
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.policies.memoization import AugmentedMemoizationPolicy
@@ -45,10 +42,11 @@ def model_server_app(model_path: Text, model_hash: Text = "somehash"):
 
 
 @pytest.fixture
+@async_generator
 async def model_server(test_server, zipped_moodbot_model):
     server = await test_server(model_server_app(zipped_moodbot_model,
                                model_hash="somehash"))
-    yield server
+    await yield_(server)  # python 3.5 compatibility
     await server.close()
 
 
