@@ -56,10 +56,11 @@ def session_config():
     return tf.ConfigProto(**tf_defaults()["tf_config"])
 
 
-def train_trackers(domain):
+def train_trackers(domain, augmentation_factor):
     trackers = training.load_data(
         DEFAULT_STORIES_FILE,
-        domain
+        domain,
+        augmentation_factor
     )
     return trackers
 
@@ -94,14 +95,15 @@ class PolicyTestCollection(object):
     def trained_policy(self, featurizer, priority):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer, priority)
-        training_trackers = train_trackers(default_domain)
+        training_trackers = train_trackers(default_domain,
+                                           augmentation_factor=20)
         policy.train(training_trackers, default_domain)
         return policy
 
     def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        trackers = train_trackers(default_domain)
+        trackers = train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
@@ -195,38 +197,44 @@ class TestMemoizationPolicy(PolicyTestCollection):
         return p
 
     def test_memorise(self, trained_policy, default_domain):
-        trackers = train_trackers(default_domain)
+        trackers = train_trackers(default_domain, augmentation_factor=20)
         trained_policy.train(trackers, default_domain)
 
-        test_trackers, augmented_trackers = [], []
+        original_trackers, augmented_trackers = [], []
         for t in trackers:
             if not hasattr(t, 'is_augmented') or not t.is_augmented:
-                test_trackers.append(t)
-            else:
-                augmented_trackers.append(t)
+                original_trackers.append(t)
 
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
-                test_trackers, default_domain)
+                original_trackers, default_domain)
 
-        (all_states_augmented, all_actions_augmented) = \
-            trained_policy.featurizer.training_states_and_actions(
-                augmented_trackers, default_domain)
-
-        for tracker, states, actions in zip(trackers, all_states, all_actions):
+        for tracker, states, actions in zip(original_trackers,
+                                            all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
             assert recalled == default_domain.index_for_action(actions[0])
-
-        for tracker, states, actions \
-                in zip(augmented_trackers, all_states_augmented, all_actions_augmented):
-            recalled = trained_policy.recall(states, tracker, default_domain)
-            assert recalled == 0
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num
                           for f, num in
                           zip(default_domain.input_states, nums)}]
         assert trained_policy._recall_states(random_states) is None
+
+        # compare augmentation for augmentation_factor of 0 and 20:
+        trackers_no_augmentation = train_trackers(default_domain,
+                                                  augmentation_factor=0)
+        trained_policy.train(trackers_no_augmentation)
+        (all_states_no_aug, all_actions_no_aug) = \
+            trained_policy.featurizer.training_states_and_actions(
+                trackers_no_augmentation, default_domain)
+
+        for tracker, states, actions in zip(trackers_no_augmentation,
+                                            all_states_no_aug,
+                                            all_actions_no_aug):
+            recalled_no_aug = trained_policy.recall(
+                states, tracker, default_domain)
+        # compares for last tracker
+        assert recalled_no_aug == recalled
 
     def test_memorise_with_nlu(self, trained_policy, default_domain):
         filename = "data/test_dialogues/nlu_dialogue.json"
@@ -278,7 +286,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     @pytest.fixture(scope='module')
     def trackers(self, default_domain):
-        return train_trackers(default_domain)
+        return train_trackers(default_domain, augmentation_factor=20)
 
     def test_cv_none_does_not_trigger_search(self,
                                              mock_search,
