@@ -686,11 +686,13 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     for evt in evts:
         if evt.get("event") == UserUttered.type_name:
             data = evt.get("parse_data")
+            logger.info("Those are the collected entities:"
+                        + str(data["entities"]))
             for entity in data["entities"]:
                 if "extractor" in entity:
                     # only inlcude entities which are extracted by ner_crf
                     # or manually annotated (therefore lack entity["extractor"])
-                    if entity["extractor"] is not 'CRFEntityExtractor':
+                    if entity["extractor"] != 'CRFEntityExtractor':
                         data["entities"].remove(entity)
 
             msg = Message.build(data["text"], data["intent"]["name"],
@@ -1067,13 +1069,14 @@ def _validate_nlu(intents: List[Text],
 
 def _correct_entities(latest_message: Dict[Text, Any],
                       endpoint: EndpointConfig,
-                      sender_id: Text) -> Dict[Text, Any]:
+                      sender_id: Text) -> [Dict[Text, Any]]:
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
     from rasa_nlu.training_data.formats import MarkdownReader
 
-    entity_str = _as_md_message(latest_message.get("parse_data", {}))
+    parse_data = latest_message.get("parse_data", {})
+    entity_str = _as_md_message(parse_data)
     question = questionary.text(
         "Please mark the entities using [value](type) notation",
         default=entity_str)
@@ -1081,10 +1084,31 @@ def _correct_entities(latest_message: Dict[Text, Any],
     annotation = _ask_or_abort(question, sender_id, endpoint)
     # noinspection PyProtectedMember
     parsed = MarkdownReader()._parse_training_example(annotation)
-    if entity_str == parsed:
-        return latest_message.get("parse_data", {}).get("entities", [])
-    else:
-        return parsed.get("entities", [])
+    if entity_str == parsed:  # user did not change annotation
+        return parse_data.get("entities", [])
+
+    else:  # update annotated entities
+        entities = []
+        original = {}
+        updated = {}
+        for ent in parse_data.get("entities", []):
+            original[(ent['entity'], ent['value'])] = ent
+
+        for ent in parsed.get("entities", []):
+            updated[(ent['entity'], ent['value'])] = ent
+
+        # if annotation not changed original entity else update
+        original_entities = set(original.keys()).intersection(
+            set(updated.keys()))
+        for key in original_entities:
+            entities.append(original[key])
+
+        updated_entities = set(updated.keys()).difference(original.keys())
+        for key in updated_entities:
+            entities.append(updated[key])
+
+        logger.info('Entities for this message: ' + str(entities))
+        return entities
 
 
 def _enter_user_message(sender_id: Text,
