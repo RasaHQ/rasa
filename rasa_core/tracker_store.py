@@ -4,7 +4,7 @@ import json
 import logging
 import pickle
 # noinspection PyPep8Naming
-from typing import Text, Optional, List, KeysView
+from typing import Text, Optional, List, KeysView, Iterator
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
@@ -302,7 +302,7 @@ class SQLTrackerStore(TrackerStore):
 
         logger.debug('SQL tracker store successfully initialised')
 
-    def _ensure_table(self):
+    def _ensure_table(self) -> None:
         """Creates the conversations table in the database if not present"""
 
         metadata = MetaData()
@@ -318,11 +318,11 @@ class SQLTrackerStore(TrackerStore):
 
         metadata.create_all(self.engine)
 
-    def keys(self):
+    def keys(self) -> List:
         """Returns the keys of the items stored in the database"""
         return self.SQLEvent.__table__.columns.keys()
 
-    def retrieve(self, sender_id: Text):
+    def retrieve(self, sender_id: Text) -> DialogueStateTracker:
         """Creates a tracker from all previously stored events"""
 
         subquery = self.session.query(self.SQLEvent)
@@ -341,7 +341,7 @@ class SQLTrackerStore(TrackerStore):
             tracker = None
         return tracker
 
-    def save(self, tracker):
+    def save(self, tracker: DialogueStateTracker) -> None:
         """Updates database with events from the current conversation"""
 
         if self.event_broker:
@@ -370,7 +370,7 @@ class SQLTrackerStore(TrackerStore):
         self.session.commit()
         logger.debug('Tracker stored to database')
 
-    def _event_buffer(self, tracker):
+    def _event_buffer(self, tracker: DialogueStateTracker) -> Iterator:
         """Returns events from the tracker which aren't currently stored"""
 
         from sqlalchemy import func

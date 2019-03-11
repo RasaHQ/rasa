@@ -7,7 +7,6 @@ from rasa_core.tracker_store import (
     InMemoryTrackerStore,
     RedisTrackerStore,
     SQLTrackerStore)
-from rasa_core.trackers import DialogueStateTracker
 from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
@@ -125,16 +124,3 @@ def test_tracker_store_from_invalid_string(default_domain):
                                                     store_config)
 
     assert isinstance(tracker_store, InMemoryTrackerStore)
-
-
-def test_sql_tracker_store_keys(default_domain):
-    store = SQLTrackerStore(default_domain)
-    keys = store.keys()
-
-    assert keys == ['id',
-                    'sender_id',
-                    'type_name',
-                    'timestamp',
-                    'intent_name',
-                    'action_name',
-                    'data']
