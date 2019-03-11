@@ -2,6 +2,7 @@ import json
 
 import fakeredis
 import pytest
+import tempfile
 
 from rasa_core import training, restore
 from rasa_core import utils
@@ -28,18 +29,12 @@ class MockRedisTrackerStore(RedisTrackerStore):
         TrackerStore.__init__(self, domain)
 
 
-class MockSQL(SQLTrackerStore):
-    def __init__(self, domain):
-        # self.db_file = tmpdir.strpath
-        SQLTrackerStore.__init__(self,
-                                 domain,
-                                 drivername='sqlite')
-
-
 def stores_to_be_tested():
-    return [MockRedisTrackerStore(domain),
-            InMemoryTrackerStore(domain),
-            MockSQL(domain)]
+    with tempfile.TemporaryDirectory() as temp:
+        return [MockRedisTrackerStore(domain),
+                InMemoryTrackerStore(domain),
+                SQLTrackerStore(domain,
+                                db='{}rasa.db'.format(temp))]
 
 
 def stores_to_be_tested_ids():

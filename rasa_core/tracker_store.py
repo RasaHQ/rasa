@@ -1,7 +1,6 @@
 import itertools
 
 import json
-import time
 import logging
 import pickle
 # noinspection PyPep8Naming
@@ -278,17 +277,17 @@ class SQLTrackerStore(TrackerStore):
 
     def __init__(self,
                  domain: Optional[Domain] = None,
-                 drivername: Text = 'sqlite',
+                 dialect: Text = 'sqlite',
                  host: Text = None,
                  event_broker: Optional[EventChannel] = None,
-                 db: Text = '',
+                 db: Text = 'rasa.db',
                  username: Text = None,
                  password: Text = None) -> None:
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
-        engine_url = URL(drivername, username, password, host, database=db)
+        engine_url = URL(dialect, username, password, host, database=db)
 
         logger.debug('Attempting to connect to database '
                      'via "{}"'.format(engine_url.__to_string__()))
