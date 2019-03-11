@@ -223,7 +223,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         # compare augmentation for augmentation_factor of 0 and 20:
         trackers_no_augmentation = train_trackers(default_domain,
                                                   augmentation_factor=0)
-        trained_policy.train(trackers_no_augmentation)
+        trained_policy.train(trackers_no_augmentation, default_domain)
         (all_states_no_aug, all_actions_no_aug) = \
             trained_policy.featurizer.training_states_and_actions(
                 trackers_no_augmentation, default_domain)
