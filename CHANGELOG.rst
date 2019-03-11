@@ -21,6 +21,7 @@ Changed
 -------
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
+- for IL only include manually annotated and ner_crf entities in nlu export
 
 Removed
 -------
