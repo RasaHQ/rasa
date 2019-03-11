@@ -43,6 +43,8 @@ Changed
   endpoint is now sorted according to the actions' scores.
 - changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, 
   rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
+- dialogue files in ``/data/test_dialogues`` were updated with conversations
+  from the bots in ``/examples``
 
 Removed
 -------
@@ -57,6 +59,15 @@ Fixed
 - When a ``fork`` is used in interactive learning, every forked storyline 
   is saved (not just the last)
 
+[0.13.3] - 2019-03-04
+^^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- Tracker Store Mongo DB's documentation now has ``auth_source`` parameter,
+  which is used for passing database name associated with the user's
+  credentials.
+
 [0.13.2] - 2019-02-06
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -70,7 +81,8 @@ Changed
 
 Added
 -----
-- ``message_id`` can now be passed in the payload to the ``RasaNLUHttpInterpreter``
+- ``message_id`` can now be passed in the payload to the
+  ``RasaNLUHttpInterpreter``
 
 Fixed
 -----

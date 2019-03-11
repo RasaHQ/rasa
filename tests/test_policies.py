@@ -222,7 +222,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert trained_policy._recall_states(random_states) is None
 
     def test_memorise_with_nlu(self, trained_policy, default_domain):
-        filename = "data/test_dialogues/nlu_dialogue.json"
+        filename = "data/test_dialogues/default.json"
         dialogue = read_dialogue_file(filename)
 
         tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
