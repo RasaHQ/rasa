@@ -343,10 +343,11 @@ paths:
       - Tracker
       summary: Predict the next action
       description: >-
-        Runs the conversations tracker through the models
-        policies to predict the next action. The action is
-        not executed, just returned. The state of the tracker
-        is not modified.
+        Runs the conversations tracker through the model's
+        policies to predict the scores of all actions present
+        in the model's domain. Actions are returned in the
+        'scores' array, sorted on their 'score' values.
+        The state of the tracker is not modified.
       operationId: predictAction
       parameters:
       - $ref: '#/components/parameters/senderId'
@@ -673,6 +674,42 @@ paths:
           $ref: '#/components/responses/403Permissions'
         500:
           $ref: '#/components/responses/500Action'
+
+  /parse:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Parse a message using the loaded NLU model
+      description: >-
+        Predicts the intent and entities of the message
+        posted to this endpoint. No messages will be stored
+        to a conversation and no action will be run. This will
+        just retrieve the NLU parse results.
+      operationId: parseNLU
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                q:
+                  type: string
+                  description: Message to be parsed
+            example:
+              q: "Hello, I am Rasa!"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParseData'
+        403:
+          $ref: '#/components/responses/403Permissions'
 
   /domain:
     get:

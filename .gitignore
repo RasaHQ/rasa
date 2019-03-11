@@ -15,6 +15,7 @@
 *pyc
 *~
 .env
+venv
 .cache/
 .pytest_cache/
 .coverage
@@ -56,3 +57,4 @@ docs/key
 docs/key.pub
 secrets.tar
 failed_stories.md
+.python-version

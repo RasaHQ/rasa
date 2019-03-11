@@ -1,6 +1,5 @@
 import sys
 
-import io
 import logging
 import numpy as np
 import os
@@ -12,11 +11,11 @@ from flask import Flask, send_file, abort
 from gevent.pywsgi import WSGIServer
 from terminaltables import SingleTable, AsciiTable
 from threading import Thread
-from typing import Any, Text, Dict, List, Optional, Callable, Union, Tuple
+from typing import (Any, Text, Dict, List, Optional, Callable, Union, Tuple,
+                    TYPE_CHECKING)
 
 from rasa_core import utils, server, events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
-from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import button_to_string, element_to_string
 from rasa_core.constants import (
@@ -35,12 +34,12 @@ from rasa_core.utils import EndpointConfig
 
 import questionary
 from questionary import Choice, Form, Question
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
 # noinspection PyProtectedMember
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 
+if TYPE_CHECKING:
+    from rasa_core.agent import Agent
 try:
     FileNotFoundError
 except NameError:
@@ -448,7 +447,7 @@ def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
 
     print("------")
     print("Chat History\n")
-    print(table)
+    print(table.encode("utf-8"))
 
     if slot_strs:
         print("\n")
@@ -511,7 +510,8 @@ def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
             bot_column.append(colored(evt['name'], 'autocyan'))
             if evt['confidence'] is not None:
                 bot_column[-1] += (
-                    colored(" {:03.2f}".format(evt['confidence']), 'autowhite'))
+                    colored(" {:03.2f}".format(evt['confidence']),
+                            'autowhite'))
 
         elif evt.get("event") == UserUttered.type_name:
             if bot_column:
@@ -607,15 +607,13 @@ def _request_action_from_user(
 
     _print_history(sender_id, endpoint)
 
-    sorted_actions = sorted(predictions,
-                            key=lambda k: (-k['score'], k['action']))
-
     choices = [{"name": "{:03.2f} {:40}".format(a.get("score"),
                                                 a.get("action")),
                 "value": a.get("action")}
-               for a in sorted_actions]
+               for a in predictions]
 
-    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
+    choices = ([{"name": "<create new action>", "value": OTHER_ACTION}] +
+               choices)
     question = questionary.select("What is the next action of the bot?",
                                   choices)
 
@@ -718,7 +716,7 @@ def _write_stories_to_file(
 
     sub_conversations = _split_conversation_at_restarts(evts)
 
-    with io.open(export_story_path, 'a', encoding="utf-8") as f:
+    with open(export_story_path, 'a', encoding="utf-8") as f:
         for conversation in sub_conversations:
             parsed_events = events.deserialise_events(conversation)
             s = Story.from_events(parsed_events)
@@ -730,6 +728,7 @@ def _write_nlu_to_file(
     evts: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
+    from rasa_nlu.training_data import TrainingData
 
     msgs = _collect_messages(evts)
 
@@ -754,8 +753,15 @@ def _write_nlu_to_file(
 
     nlu_data = previous_examples.merge(TrainingData(msgs))
 
-    with io.open(export_nlu_path, 'w', encoding="utf-8") as f:
-        if _guess_format(export_nlu_path) in {"md", "unk"}:
+    # need to guess the format of the file before opening it to avoid a read
+    # in a write
+    if _guess_format(export_nlu_path) in {"md", "unk"}:
+        fformat = "md"
+    else:
+        fformat = "json"
+
+    with open(export_nlu_path, 'w', encoding="utf-8") as f:
+        if fformat == "md":
             f.write(nlu_data.as_markdown())
         else:
             f.write(nlu_data.as_json())
@@ -970,6 +976,7 @@ def _validate_action(action_name: Text,
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
+    from rasa_nlu.training_data.formats import MarkdownWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data.get("text")
@@ -1005,15 +1012,22 @@ def _validate_user_text(latest_message: Dict[Text, Any],
     parse_data = latest_message.get("parse_data", {})
     text = _as_md_message(parse_data)
     intent = parse_data.get("intent", {}).get("name")
+    entities = parse_data.get("entities", [])
+    if entities:
+        message = ("Is the intent '{}' correct for '{}' and are "
+                   "all entities labeled correctly?"
+                   .format(text, intent))
+    else:
+        message = ("Your NLU model classified '{}' with intent '{}'"
+                   " and there are no entities, is this correct?"
+                   .format(text, intent))
 
     if intent is None:
         print("The NLU classification for '{}' returned '{}'"
               "".format(text, intent))
         return False
     else:
-        question = questionary.confirm(
-            "Is the NLU classification for '{}' with intent '{}' correct?"
-            "".format(text, intent))
+        question = questionary.confirm(message)
 
         return _ask_or_abort(question, sender_id, endpoint)
 
@@ -1057,6 +1071,7 @@ def _correct_entities(latest_message: Dict[Text, Any],
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
+    from rasa_nlu.training_data.formats import MarkdownReader
 
     entity_str = _as_md_message(latest_message.get("parse_data", {}))
     question = questionary.text(
@@ -1076,7 +1091,7 @@ def _enter_user_message(sender_id: Text,
                         endpoint: EndpointConfig) -> None:
     """Request a new message from the user."""
 
-    question = questionary.text("Next user input (Ctr-c to abort):")
+    question = questionary.text("Your input ->")
 
     message = _ask_or_abort(question, sender_id, endpoint,
                             lambda a: not a)
@@ -1336,7 +1351,7 @@ def _add_visualization_routes(app: Flask, image_path: Text = None) -> None:
             abort(404)
 
 
-def run_interactive_learning(agent: Agent,
+def run_interactive_learning(agent: "Agent",
                              stories: Text = None,
                              finetune: bool = False,
                              serve_forever: bool = True,

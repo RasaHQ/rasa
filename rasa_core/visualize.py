@@ -1,72 +1,67 @@
 import argparse
 import logging
 import os
+from typing import Text
 
-from rasa_core import utils, config, cli
-from rasa_core.agent import Agent
+import rasa_core.cli.arguments
+import rasa_core.cli.train
+from rasa_core import utils
+import rasa_core.cli
 
 logger = logging.getLogger(__name__)
 
 
-def create_argument_parser():
+def add_arguments(parser: argparse.ArgumentParser):
     """Parse all the command line arguments for the visualisation script."""
-
-    parser = argparse.ArgumentParser(
-        description='Visualize the stories in a dialogue training file')
-
-    parser.add_argument(
-        '-o', '--output',
-        required=True,
-        type=str,
-        help="filename of the output path, e.g. 'graph.html")
-    parser.add_argument(
-        '-m', '--max_history',
-        default=2,
-        type=int,
-        help="max history to consider when merging "
-             "paths in the output graph")
-    parser.add_argument(
-        '-nlu', '--nlu_data',
-        default=None,
-        type=str,
-        help="path of the Rasa NLU training data, "
-             "used to insert example messages into the graph")
-
-    utils.add_logging_option_arguments(parser)
-
-    cli.arguments.add_config_arg(parser, nargs=1)
-    cli.arguments.add_domain_arg(parser)
-    cli.arguments.add_model_and_story_group(parser,
-                                            allow_pretrained_model=False)
+    rasa_core.cli.arguments.add_logging_option_arguments(parser)
+    rasa_core.cli.visualization.add_visualization_arguments(parser)
+    rasa_core.cli.arguments.add_config_arg(parser, nargs=1)
+    rasa_core.cli.arguments.add_domain_arg(parser)
+    rasa_core.cli.arguments.add_model_and_story_group(
+        parser, allow_pretrained_model=False)
     return parser
 
 
-if __name__ == '__main__':
-    arg_parser = create_argument_parser()
-    cmdline_arguments = arg_parser.parse_args()
+def visualize(config_path: Text, domain_path: Text, stories_path: Text,
+              nlu_data_path: Text, output_path: Text, max_history: int):
+    from rasa_core.agent import Agent
+    from rasa_core import config
 
-    utils.configure_colored_logging(cmdline_arguments.loglevel)
+    policies = config.load(config_path)
 
-    policies = config.load(cmdline_arguments.config[0])
-
-    agent = Agent(cmdline_arguments.domain, policies=policies)
+    agent = Agent(domain_path, policies=policies)
 
     # this is optional, only needed if the `/greet` type of
     # messages in the stories should be replaced with actual
     # messages (e.g. `hello`)
-    if cmdline_arguments.nlu_data is not None:
+    if nlu_data_path is not None:
         from rasa_nlu.training_data import load_data
 
-        nlu_data = load_data(cmdline_arguments.nlu_data)
+        nlu_data_path = load_data(nlu_data_path)
     else:
-        nlu_data = None
-
-    stories = cli.stories_from_cli_args(cmdline_arguments)
+        nlu_data_path = None
 
     logger.info("Starting to visualize stories...")
-    agent.visualize(stories, cmdline_arguments.output,
-                    cmdline_arguments.max_history,
-                    nlu_training_data=nlu_data)
+    agent.visualize(stories_path, output_path,
+                    max_history,
+                    nlu_training_data=nlu_data_path)
 
-    logger.info("Finished graph creation. Saved into file://{}".format(
-        os.path.abspath(cmdline_arguments.output)))
+    full_output_path = "file://{}".format(os.path.abspath(output_path))
+    logger.info("Finished graph creation. Saved into {}".format(
+        full_output_path))
+
+    import webbrowser
+    webbrowser.open(full_output_path)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Visualize the stories in a dialogue training file')
+    arg_parser = add_arguments(parser)
+    args = arg_parser.parse_args()
+
+    utils.configure_colored_logging(args.loglevel)
+    stories = rasa_core.cli.train.stories_from_cli_args(args)
+
+    visualize(args.config[0], args.domain, stories, args.nlu_data,
+              args.output, args.max_history)
