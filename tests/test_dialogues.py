@@ -9,6 +9,7 @@ from rasa_core.tracker_store import InMemoryTrackerStore
 from tests.utilities import tracker_from_dialogue_file
 from tests.conftest import TEST_DIALOGUES, EXAMPLE_DOMAINS
 
+
 @pytest.mark.parametrize("filename", TEST_DIALOGUES)
 def test_dialogue_serialisation(filename):
     dialogue_json = utils.read_file(filename)
