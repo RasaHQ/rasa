@@ -11,7 +11,9 @@ from rasa_core.domain import Domain
 from rasa_core.events import (
     UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
-from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore, SQLTrackerStore
+from rasa_core.tracker_store import (InMemoryTrackerStore,
+                                     RedisTrackerStore,
+                                     SQLTrackerStore)
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from tests.conftest import (DEFAULT_STORIES_FILE,
