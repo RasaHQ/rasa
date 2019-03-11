@@ -1,4 +1,3 @@
-import glob
 import json
 
 import jsonpickle
@@ -8,16 +7,9 @@ from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.tracker_store import InMemoryTrackerStore
 from tests.utilities import tracker_from_dialogue_file
-from tests.conftest import DEFAULT_DOMAIN_PATH
+from tests.conftest import TEST_DIALOGUES, EXAMPLE_DOMAINS
 
-test_dialogues = sorted(glob.glob('data/test_dialogues/*json'))
-example_domains = [DEFAULT_DOMAIN_PATH,
-                   "examples/formbot/domain.yml",
-                   "examples/moodbot/domain.yml",
-                   "examples/restaurantbot/restaurant_domain.yml"]
-
-
-@pytest.mark.parametrize("filename", test_dialogues)
+@pytest.mark.parametrize("filename", TEST_DIALOGUES)
 def test_dialogue_serialisation(filename):
     dialogue_json = utils.read_file(filename)
     restored = json.loads(dialogue_json)
@@ -26,7 +18,7 @@ def test_dialogue_serialisation(filename):
     assert restored == en_de_coded
 
 
-@pytest.mark.parametrize("pair", zip(test_dialogues, example_domains))
+@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
 def test_inmemory_tracker_store(pair):
     filename, domainpath = pair
     domain = Domain.load(domainpath)
