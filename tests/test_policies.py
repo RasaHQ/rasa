@@ -56,11 +56,11 @@ def session_config():
     return tf.ConfigProto(**tf_defaults()["tf_config"])
 
 
-def train_trackers(domain, augmentation_factor):
+def train_trackers(domain, augmentation_factor=20):
     trackers = training.load_data(
         DEFAULT_STORIES_FILE,
         domain,
-        augmentation_factor
+        augmentation_factor=augmentation_factor
     )
     return trackers
 
@@ -199,18 +199,17 @@ class TestMemoizationPolicy(PolicyTestCollection):
     def test_memorise(self, trained_policy, default_domain):
         trackers = train_trackers(default_domain, augmentation_factor=20)
         trained_policy.train(trackers, default_domain)
+        lookup_with_augmentation = trained_policy.lookup
 
-        original_trackers, augmented_trackers = [], []
-        for t in trackers:
-            if not hasattr(t, 'is_augmented') or not t.is_augmented:
-                original_trackers.append(t)
+        trackers = [t
+                    for t in trackers
+                    if not hasattr(t, 'is_augmented') or not t.is_augmented]
 
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
-                original_trackers, default_domain)
+                trackers, default_domain)
 
-        for tracker, states, actions in zip(original_trackers,
-                                            all_states, all_actions):
+        for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
             assert recalled == default_domain.index_for_action(actions[0])
 
@@ -224,17 +223,9 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trackers_no_augmentation = train_trackers(default_domain,
                                                   augmentation_factor=0)
         trained_policy.train(trackers_no_augmentation, default_domain)
-        (all_states_no_aug, all_actions_no_aug) = \
-            trained_policy.featurizer.training_states_and_actions(
-                trackers_no_augmentation, default_domain)
+        lookup_no_augmentation = trained_policy.lookup
 
-        for tracker, states, actions in zip(trackers_no_augmentation,
-                                            all_states_no_aug,
-                                            all_actions_no_aug):
-            recalled_no_aug = trained_policy.recall(
-                states, tracker, default_domain)
-        # compares for last tracker
-        assert recalled_no_aug == recalled
+        assert lookup_no_augmentation == lookup_with_augmentation
 
     def test_memorise_with_nlu(self, trained_policy, default_domain):
         filename = "data/test_dialogues/nlu_dialogue.json"
