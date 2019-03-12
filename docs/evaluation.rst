@@ -74,7 +74,7 @@ Here's an example of what an end-to-end story file may look like:
   ...
 
 
-If you've saved these stories under ``e2e_storied.md``,
+If you've saved these stories under ``e2e_stories.md``,
 the full end-to-end evaluation command is this:
 
 .. code-block:: bash
