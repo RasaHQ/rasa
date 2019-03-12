@@ -37,6 +37,7 @@ Custom Input / Output Channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you wrote your own input output channels, there are a couple of changes
 necessary to make the channels work properly with the asyncio server operation:
+
 - **Need to provide Sanic blueprints.** To make the server fully asynchronous
   the input channels need to provide Sanic blueprints instead of flask
   blueprints. Imports should change from
