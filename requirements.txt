@@ -8,10 +8,8 @@ scipy==1.2.0
 typing==3.6.6
 ruamel.yaml==0.15.85
 tensorflow==1.12.0
-h5py==2.8.0
 apscheduler==3.5.3
 tqdm==4.29.1
-ConfigArgParse==0.13.0
 networkx==2.2
 fbmessenger==5.3.2
 pykwalify==1.7.0

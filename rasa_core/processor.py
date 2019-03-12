@@ -3,11 +3,11 @@ import time
 import json
 import logging
 import numpy as np
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from types import LambdaType
 from typing import Optional, List, Dict, Any, Tuple
 from typing import Text
 
+from rasa_core import jobs
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -26,7 +26,6 @@ from rasa_core.events import (
     ActionExecutionRejected)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
-    RasaNLUHttpInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
@@ -49,7 +48,6 @@ class MessageProcessor(object):
                  max_number_of_predictions: int = 10,
                  message_preprocessor: Optional[LambdaType] = None,
                  on_circuit_break: Optional[LambdaType] = None,
-                 scheduler: [AsyncIOScheduler] = None
                  ):
         self.interpreter = interpreter
         self.nlg = generator
@@ -60,7 +58,6 @@ class MessageProcessor(object):
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
-        self.scheduler = scheduler
 
     async def handle_message(self,
                              message: UserMessage) -> Optional[List[Text]]:
@@ -323,8 +320,8 @@ class MessageProcessor(object):
         is_listen_action = action_name == ACTION_LISTEN_NAME
         return not is_listen_action
 
-    def _schedule_reminders(self, events: List[Event],
-                            dispatcher: Dispatcher) -> None:
+    async def _schedule_reminders(self, events: List[Event],
+                                  dispatcher: Dispatcher) -> None:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
         Reminders with the same `id` property will overwrite one another
@@ -333,12 +330,13 @@ class MessageProcessor(object):
         if events is not None:
             for e in events:
                 if isinstance(e, ReminderScheduled):
-                    self.scheduler.add_job(self.handle_reminder, "date",
-                                           run_date=e.trigger_date_time,
-                                           args=[e, dispatcher],
-                                           id=e.name,
-                                           replace_existing=True,
-                                           name = str(e.action_name))
+                    (await jobs.scheduler()).add_job(
+                        self.handle_reminder, "date",
+                        run_date=e.trigger_date_time,
+                        args=[e, dispatcher],
+                        id=e.name,
+                        replace_existing=True,
+                        name=str(e.action_name))
 
     async def _run_action(self, action, tracker, dispatcher, policy=None,
                           confidence=None):
@@ -362,7 +360,7 @@ class MessageProcessor(object):
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
-        self._schedule_reminders(events, dispatcher)
+        await self._schedule_reminders(events, dispatcher)
 
         return self.should_predict_another_action(action.name(), events)
 

@@ -1,5 +1,5 @@
 # install requirements
-#-r requirements.txt
+-r requirements.txt
 
 # test
 pytest==3.5.1

@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pytz import UnknownTimeZoneError
@@ -11,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 async def scheduler() -> AsyncIOScheduler:
+    """Thread global scheduler to handle all recurring tasks.
+
+    If no scheduler exists yet, this will instantiate one."""
+
     global __scheduler
 
     if not __scheduler:
@@ -38,6 +41,10 @@ async def scheduler() -> AsyncIOScheduler:
 
 
 def kill_scheduler():
+    """Terminate the scheduler if started.
+
+    Another call to `scheduler` will create a new scheduler."""
+
     global __scheduler
 
     if __scheduler:

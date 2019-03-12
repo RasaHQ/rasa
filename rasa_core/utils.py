@@ -12,10 +12,12 @@ import tarfile
 import tempfile
 import warnings
 import zipfile
-from asyncio import AbstractEventLoop
+from asyncio import AbstractEventLoop, Future
 from hashlib import md5, sha1
 from io import BytesIO as IOReader, StringIO
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple
+from typing import (
+    Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple,
+    Callable)
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -797,8 +799,13 @@ def enable_async_loop_debugging(event_loop: AbstractEventLoop):
     warnings.simplefilter('always', ResourceWarning)
 
 
-def create_task_error_logger(error_message=""):
-    def handler(fut):
+def create_task_error_logger(error_message: Text = ""
+                             ) -> Callable[[Future], None]:
+    """Error logger to be attached to a task.
+
+    This will ensure exceptions are properly logged and won't get lost."""
+
+    def handler(fut: Future) -> None:
         # noinspection PyBroadException
         try:
             fut.result()
@@ -810,17 +817,26 @@ def create_task_error_logger(error_message=""):
 
 
 class LockCounter(asyncio.Lock):
+    """Decorated asyncio lock that counts how many coroutines are waiting.
 
-    def __init__(self):
+    The counter can be used to discard the lock when there is no coroutine
+    waiting for it. For this to work, there should not be any execution yield
+    between retrieving the lock and acquiring it, otherwise there might be
+    race conditions."""
+
+    def __init__(self) -> None:
         super().__init__()
         self.wait_counter = 0
 
-    async def acquire(self):
+    async def acquire(self) -> Any:
+        """Acquire the lock, makes sure only one coroutine can retrieve it."""
+
         self.wait_counter += 1
         try:
             return await super(LockCounter, self).acquire()
         finally:
             self.wait_counter -= 1
 
-    def is_someone_waiting(self):
+    def is_someone_waiting(self) -> bool:
+        """Check if a coroutine is waiting for this lock to be freed."""
         return self.wait_counter != 0
