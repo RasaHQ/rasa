@@ -26,10 +26,9 @@ def json_of_latest_request(r):
 def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
     dialogue = read_dialogue_file(filename)
 
-    if domain is not None:
-        domain = domain
-    else:
+    if not domain:
         domain = Domain.load(DEFAULT_DOMAIN_PATH)
+
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
     return tracker
