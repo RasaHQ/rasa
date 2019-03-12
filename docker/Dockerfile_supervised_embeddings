@@ -20,7 +20,7 @@ RUN pip install -r alt_requirements/requirements_supervised_embeddings.txt
 
 RUN pip install -e .
 
-COPY sample_configs/config_supervised_embedding.yml ${RASA_NLU_HOME}/config.yml
+COPY sample_configs/config_supervised_embeddings.yml ${RASA_NLU_HOME}/config.yml
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 

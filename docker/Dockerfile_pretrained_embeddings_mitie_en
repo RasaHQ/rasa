@@ -30,7 +30,7 @@ RUN apt-get update -qq \
     && apt-get remove -y wget \
     && apt-get autoremove -y
 
-COPY sample_configs/config_mitie.yml ${RASA_NLU_HOME}/config.yml
+COPY sample_configs/config_pretrained_embeddings_mitie.yml ${RASA_NLU_HOME}/config.yml
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
