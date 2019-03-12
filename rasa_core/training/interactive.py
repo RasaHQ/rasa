@@ -686,8 +686,8 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     for evt in evts:
         if evt.get("event") == UserUttered.type_name:
             data = evt.get("parse_data")
-            logger.info("Those are the collected entities:" + 
-                        str(data["entities"]))
+            logger.info("Those are the collected entities:" + str(
+                data["entities"]))
             for entity in data["entities"]:
                 if "extractor" in entity:
                     # only inlcude entities which are extracted by ner_crf
