@@ -228,7 +228,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert lookup_no_augmentation == lookup_with_augmentation
 
     def test_memorise_with_nlu(self, trained_policy, default_domain):
-        filename = "data/test_dialogues/nlu_dialogue.json"
+        filename = "data/test_dialogues/default.json"
         dialogue = read_dialogue_file(filename)
 
         tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
