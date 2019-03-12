@@ -398,8 +398,8 @@ def should_fetch_from_cloud(
         is_local_project,
         is_potential_model_or_project_path):
     return (
-        not is_local_model and
-        not is_local_project and
+        (not is_local_model or
+        not is_local_project) and
         is_potential_model_or_project_path
     )
 
@@ -435,7 +435,8 @@ def parse_project_and_model(
         # we can assume the project or model is stored on the cloud
         # we do not know yet if it is a project or a model,
         # so we try to load both
-        result = result + [
+        project, model = parse_model(pre_load_path)
+        result = [
             (project, model, absolute_path),
             (model, None, absolute_path)
         ]
@@ -459,7 +460,7 @@ def parse_pre_load(pre_load_args, path):
             absolute_path
         )
         if len(parsed_projects_and_models) == 0:
-            logger.error('invalid input')
+            logger.error('invalid input for parse_pre_load: at least one element expected')
         parsed_results = parsed_results + parsed_projects_and_models
 
     return parsed_results
