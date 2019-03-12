@@ -361,33 +361,54 @@ class DataRouter(object):
     def evaluate(self,
                  data: Text,
                  project: Optional[Text] = None,
-                 model: Optional[Text] = None) -> Dict[Text, Any]:
+                 model: Optional[Text] = None) -> Deferred:
         """Perform a model evaluation."""
+
+        logger.debug("Evaluation request received")
+
+        if self._training_processes <= self._current_training_processes:
+            raise MaxTrainingError
 
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
         model = model or None
-        file_name = utils.create_temporary_file(data, "_training_data")
+        data_path = utils.create_temporary_file(data, "_training_data")
 
         if project not in self.project_store:
             raise InvalidProjectError("Project {} could not "
                                       "be found".format(project))
 
-        model_name = self.project_store[project]._dynamic_load_model(model)
+        model_path = os.path.join(self.project_store[project]._path, model)
 
-        self.project_store[project]._loader_lock.acquire()
-        try:
-            if not self.project_store[project]._models.get(model_name):
-                interpreter = self.project_store[project]. \
-                    _interpreter_for_model(model_name)
-                self.project_store[project]._models[model_name] = interpreter
-        finally:
-            self.project_store[project]._loader_lock.release()
+        def training_callback(result):
+            logger.debug("Evaluation was successful")
 
-        return run_evaluation(
-            data_path=file_name,
-            model=self.project_store[project]._models[model_name],
-            errors_filename=None
-        )
+            self._current_training_processes -= 1
+            self.project_store[project].current_training_processes -= 1
+
+            return result
+
+        def training_errback(failure):
+            logger.warning(failure)
+
+            self._current_training_processes -= 1
+            self.project_store[project].current_training_processes -= 1
+
+            return failure
+
+        logger.debug("New evaluation queued")
+
+        self._current_training_processes += 1
+        self.project_store[project].current_training_processes += 1
+
+        result = self.pool.submit(run_evaluation,
+                                  data_path,
+                                  model_path)
+
+        result = deferred_from_future(result)
+        result.addCallback(training_callback)
+        result.addErrback(training_errback)
+
+        return result
 
     def unload_model(self,
                      project: Optional[Text],
