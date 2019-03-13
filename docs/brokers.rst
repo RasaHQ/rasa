@@ -126,7 +126,7 @@ when running Rasa, and select Kafka producer with ``--kafka_broker kafka_produce
 
     python3 -m rasa_core.run -d models/dialogue -u models/nlu/current --event_broker kafka_producer --endpoints endpoints.yml
 
-Using SASL_PLAINTEXT protocol the endpoints file must have the following entries:
+Using ``SASL_PLAINTEXT`` protocol the endpoints file must have the following entries:
 
 .. literalinclude:: ../data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml
 
