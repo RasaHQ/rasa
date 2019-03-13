@@ -416,7 +416,7 @@ class Agent(object):
             ... "examples/restaurantbot/models/nlu/current")
             >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
             ... interpreter=interpreter)
-            >>> agent.handle_text("hello")
+            >>> await agent.handle_text("hello")
             [u'how can I help you?']
 
         """

@@ -69,7 +69,7 @@ def run_server(domain, port, workers):
 
     app.run(host='0.0.0.0',
             port=port,
-            workers=sanic_workers)
+            workers=workers)
 
 
 if __name__ == '__main__':
@@ -78,6 +78,6 @@ if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
-    domain = Domain.load(cmdline_args.domain)
+    _domain = Domain.load(cmdline_args.domain)
 
-    run_server(domain, cmdline_args.port, cmdline_args.workers)
+    run_server(_domain, cmdline_args.port, cmdline_args.workers)

@@ -1318,21 +1318,18 @@ def start_visualization(image_path: Text = None) -> None:
 async def train_agent_on_start(args, endpoints, additional_arguments, app,
                                loop):
 
-    _interpreter = NaturalLanguageInterpreter.create(args["nlu"],
+    _interpreter = NaturalLanguageInterpreter.create(args.get("nlu"),
                                                      endpoints.nlu)
 
-    if args["out"]:
-        model_directory = args["out"]
-    else:
-        model_directory = tempfile.mkdtemp(suffix="_core_model")
+    model_directory = args.get("out", tempfile.mkdtemp(suffix="_core_model"))
 
-    _agent = await train(args["domain"],
-                         args["stories"],
+    _agent = await train(args.get("domain"),
+                         args.get("stories"),
                          model_directory,
                          _interpreter,
                          endpoints,
-                         args["dump_stories"],
-                         args["config"][0],
+                         args.get("dump_stories"),
+                         args.get("config")[0],
                          None,
                          additional_arguments)
     app.agent = _agent
@@ -1372,6 +1369,8 @@ def run_interactive_learning(stories: Text = None,
                              ):
     """Start the interactive learning with the model of the agent."""
 
+    server_args = server_args or {}
+
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
         p.deamon = True
@@ -1380,14 +1379,14 @@ def run_interactive_learning(stories: Text = None,
         p = None
 
     app = run.configure_app(enable_api=True)
-    endpoints = AvailableEndpoints.read_endpoints(server_args["endpoints"])
+    endpoints = AvailableEndpoints.read_endpoints(server_args.get("endpoints"))
 
     # before_server_start handlers make sure the agent is loaded before the
     # interactive learning IO starts
-    if server_args["core"]:
+    if server_args.get("core"):
         app.register_listener(
-            partial(run.load_agent_on_start, server_args["core"],
-                    endpoints, server_args["nlu"]),
+            partial(run.load_agent_on_start, server_args.get("core"),
+                    endpoints, server_args.get("nlu")),
             'before_server_start')
     else:
         app.register_listener(

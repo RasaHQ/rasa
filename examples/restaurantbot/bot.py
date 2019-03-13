@@ -15,9 +15,9 @@ class RestaurantAPI(object):
         return "papi's pizza place"
 
 
-async def train_dialogue(domain_file="restaurant_domain.yml",
+async def train_dialogue(domain_file="domain.yml",
                          model_path="models/dialogue",
-                         training_data_file="data/babi_stories.md"):
+                         training_data_file="data/stories.md"):
     agent = Agent(domain_file,
                   policies=[MemoizationPolicy(max_history=3),
                             RestaurantPolicy(batch_size=100, epochs=400,
@@ -37,8 +37,8 @@ def train_nlu():
     from rasa_nlu import config
     from rasa_nlu.model import Trainer
 
-    training_data = load_data('data/nlu_data.md')
-    trainer = Trainer(config.load("nlu_model_config.yml"))
+    training_data = load_data('data/nlu.md')
+    trainer = Trainer(config.load("config.yml"))
     trainer.train(training_data)
     model_directory = trainer.persist('models/nlu/',
                                       fixed_model_name="current")

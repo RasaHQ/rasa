@@ -129,7 +129,7 @@ def test_utter_templates():
 def test_restaurant_domain_is_valid():
     # should raise no exception
     Domain.validate_domain_yaml(
-        read_file('examples/restaurantbot/restaurant_domain.yml'))
+        read_file('examples/restaurantbot/domain.yml'))
 
 
 def test_custom_slot_type(tmpdir):

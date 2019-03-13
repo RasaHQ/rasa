@@ -43,7 +43,7 @@ TEST_DIALOGUES = ['data/test_dialogues/default.json',
 EXAMPLE_DOMAINS = [DEFAULT_DOMAIN_PATH,
                    "examples/formbot/domain.yml",
                    "examples/moodbot/domain.yml",
-                   "examples/restaurantbot/restaurant_domain.yml"]
+                   "examples/restaurantbot/domain.yml"]
 
 
 class CustomSlot(Slot):

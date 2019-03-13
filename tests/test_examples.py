@@ -39,7 +39,7 @@ async def test_restaurantbot_example():
 
     p = "examples/restaurantbot/"
     stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    agent = await train_dialogue(os.path.join(p, "restaurant_domain.yml"),
+    agent = await train_dialogue(os.path.join(p, "domain.yml"),
                                  os.path.join(p, "models", "dialogue"),
                                  stories)
 
@@ -102,5 +102,5 @@ async def test_concertbot_training():
                              stories_file='examples/concertbot/data/stories.md',
                              model_path='examples/concertbot/models/dialogue',
                              policy_config='examples/concertbot/'
-                                           'policy_config.yml')
+                                           'config.yml')
     assert r is not None
