@@ -28,6 +28,7 @@ def chat(model_path: Text = None, agent: 'Agent' = None,
         unpacked = model.get_model(model_path)
         agent = create_agent(unpacked)
     elif agent and interpreter:
+        # HACK: this skips loading the interpreter and directly sets it afterwards
         nlu_interpreter = RasaNLUInterpreter("skip this and use given "
                                              "interpreter", lazy_init=True)
         nlu_interpreter.interpreter = interpreter
