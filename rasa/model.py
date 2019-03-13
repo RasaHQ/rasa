@@ -65,13 +65,13 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 
 def unpack_model(model_file: Text, working_directory: Optional[Text] = None
-                 ) -> Union[Text, Tuple[Text, Text, Text]]:
+                 ) -> Text:
     """Unpacks a zipped Rasa model.
 
     Args:
         model_file: Path to zipped model.
         working_directory: Location where the model should be unpacked to.
-                           If `None` a tempory directory will be created.
+                           If `None` a temporary directory will be created.
 
     Returns:
         Path to unpacked Rasa model.
@@ -84,12 +84,11 @@ def unpack_model(model_file: Text, working_directory: Optional[Text] = None
 
     tar = tarfile.open(model_file)
     # All files are in a subdirectory.
-    model_subdirectory = tar.next() or ""
     tar.extractall(working_directory)
     tar.close()
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
-    return os.path.join(working_directory, model_subdirectory.name)
+    return working_directory
 
 
 def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
@@ -129,8 +128,8 @@ def create_package_rasa(training_directory: Text, output_filename: Text,
         os.makedirs(output_directory)
 
     with tarfile.open(output_filename, "w:gz") as tar:
-        archive_name = os.path.basename(training_directory)
-        tar.add(training_directory, arcname=archive_name)
+        for elem in os.scandir(training_directory):
+            tar.add(elem.path, arcname=elem.name)
 
     shutil.rmtree(training_directory)
     return output_filename
