@@ -176,7 +176,7 @@ into the same machine, you can use simple authentication with ``SASL_PLAINTEXT``
 By using this protocol, the credentials and messages exchanged between the clients and servers
 will be sent in plaintext. Thus, this is not the most secure approach, but since it's simple
 to configure, it is useful for simple cluster configurations.
-SASL_PLAINTEXT protocol requires the setup of the 'username' and 'password'
+``SASL_PLAINTEXT`` protocol requires the setup of the ``username`` and ``password``
 previously configured in the broker server.
 
 .. code-block:: python
