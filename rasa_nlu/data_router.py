@@ -17,7 +17,8 @@ from rasa_nlu.emulators import NoEmulator
 from rasa_nlu.test import run_evaluation
 from rasa_nlu.model import InvalidProjectError
 from rasa_nlu.project import (
-    Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server)
+    Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server,
+    FALLBACK_MODEL_NAME)
 from rasa_nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
@@ -370,12 +371,17 @@ class DataRouter(object):
             raise MaxTrainingError
 
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-        model = model or None
         data_path = utils.create_temporary_file(data, "_training_data")
 
         if project not in self.project_store:
-            raise InvalidProjectError("Project {} could not "
+            raise InvalidProjectError("Project '{}' could not "
                                       "be found".format(project))
+
+        model = model or self.project_store[project]._dynamic_load_model(model)
+
+        if model == FALLBACK_MODEL_NAME:
+            raise InvalidProjectError("No model in project '{}' to "
+                                      "evaluate".format(project))
 
         model_path = os.path.join(self.project_store[project]._path, model)
 

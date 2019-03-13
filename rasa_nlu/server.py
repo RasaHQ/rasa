@@ -318,7 +318,10 @@ class RasaNLU(object):
             returnValue(json_to_string(response))
         except MaxTrainingError:
             request.setResponseCode(403)
-            returnValue("You require an idle training process in order to evaluate")
+            returnValue("An idle training process is required to evaluate")
+        except InvalidProjectError as e:
+            request.setResponseCode(404)
+            returnValue(json_to_string({"error": "{}".format(e)}))
         except Exception as e:
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))

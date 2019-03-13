@@ -217,34 +217,14 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
 
 
 @pytest.inlineCallbacks
-def test_evaluate_internal_error(app, rasa_default_train_data):
-    response = app.post("http://dummy-uri/evaluate",
-                        json={"data": "dummy_data_for_triggering_an_error"})
-    time.sleep(3)
+def test_evaluate_no_model(app, rasa_default_train_data):
+    response = app.post("http://dummy-uri/evaluate")
+    time.sleep(2)
     app.flush()
     response = yield response
     rjs = yield response.json()
-    assert response.code == 500, "The training data format is not valid"
+    assert response.code == 404, "No model in project 'default' to evaluate"
     assert "error" in rjs
-    assert "Unknown data format for file" in rjs["error"]
-
-
-@pytest.inlineCallbacks
-def test_evaluate(app, rasa_default_train_data):
-    response = app.post("http://dummy-uri/evaluate",
-                        json=rasa_default_train_data)
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    rjs = yield response.json()
-    assert response.code == 200, "Evaluation should start"
-    assert "intent_evaluation" in rjs
-    assert "entity_evaluation" in rjs
-    assert all(prop in rjs["intent_evaluation"] for prop in ["report",
-                                                             "predictions",
-                                                             "precision",
-                                                             "f1_score",
-                                                             "accuracy"])
 
 
 @pytest.inlineCallbacks
