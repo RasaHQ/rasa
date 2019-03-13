@@ -8,9 +8,10 @@ from sanic import Sanic, response
 from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic_cors import CORS
-from sanic_jwt import Initialize
+from sanic_jwt import Initialize, exceptions
 from typing import List, Text, Optional, Union, Callable, Any
 
+import rasa
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.test import test
@@ -18,7 +19,6 @@ from rasa_core.events import Event
 from rasa_core.domain import Domain
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class ErrorResponse(Exception):
     def __init__(self, status, reason, message, details=None, help_url=None):
         self.error_info = {
-            "version": __version__,
+            "version": rasa.__version__,
             "status": "failure",
             "message": message,
             "reason": reason,
@@ -217,14 +217,14 @@ def create_app(agent=None,
     @app.get("/")
     async def hello(request: Request):
         """Check if the server is running and responds with the version."""
-        return response.text("hello from Rasa Core: " + __version__)
+        return response.text("hello from Rasa: " + rasa.__version__)
 
     @app.get("/version")
     async def version(request: Request):
         """respond with the version number of the installed rasa core."""
 
         return response.json({
-            "version": __version__,
+            "version": rasa.__version__,
             "minimum_compatible_version": constants.MINIMUM_COMPATIBLE_VERSION
         })
 
