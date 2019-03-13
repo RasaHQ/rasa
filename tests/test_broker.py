@@ -101,6 +101,6 @@ def test_kafka_broker_from_config():
                              topic="topic", security_protocol="SASL_PLAINTEXT")
 
     assert actual.host == expected.host
-    assert actual.sasl_plain_username == expected.sasl_plain_username
-    assert actual.sasl_plain_password == expected.sasl_plain_password
+    assert actual.sasl_username == expected.sasl_username
+    assert actual.sasl_password == expected.sasl_password
     assert actual.topic == expected.topic

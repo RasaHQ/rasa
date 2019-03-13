@@ -139,11 +139,11 @@ class FileProducer(EventChannel):
 
 
 class KafkaProducer(EventChannel):
-    def __init__(self, host, 
-                 sasl_plain_username=None,
-                 sasl_plain_password=None, 
+    def __init__(self, host,
+                 sasl_username=None,
+                 sasl_password=None,
                  ssl_cafile=None,
-                 ssl_certfile=None, 
+                 ssl_certfile=None,
                  ssl_keyfile=None,
                  ssl_check_hostname=False,
                  topic='rasa_core_events',
@@ -153,8 +153,8 @@ class KafkaProducer(EventChannel):
         self.host = host
         self.topic = topic
         self.security_protocol = security_protocol
-        self.sasl_plain_username = sasl_plain_username
-        self.sasl_plain_password = sasl_plain_password
+        self.sasl_username = sasl_username
+        self.sasl_password = sasl_password
         self.ssl_cafile = ssl_cafile
         self.ssl_certfile = ssl_certfile
         self.ssl_keyfile = ssl_keyfile
@@ -179,8 +179,8 @@ class KafkaProducer(EventChannel):
             self.producer = ProducerKafka(
                 bootstrap_servers=[self.host],
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                sasl_plain_username=self.sasl_plain_username,
-                sasl_plain_password=self.sasl_plain_password,
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
                 sasl_mechanism='PLAIN',
                 security_protocol=self.security_protocol)
         elif self.security_protocol == 'SSL':
