@@ -1,8 +1,9 @@
 import argparse
+import sys
 from multiprocessing import Process
 from typing import List
 
-from rasa_core.utils import EndpointConfig, print_success
+from rasa_core.utils import EndpointConfig, print_success, print_error
 
 import rasa.cli.run
 
@@ -22,7 +23,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 def start_core(platform_token):
     from rasa_core.utils import AvailableEndpoints
     _endpoints = AvailableEndpoints(
-        # TODO: LOCAL make endpoints more configurable, esp ports
+        # TODO: make endpoints more configurable, esp ports
         model=EndpointConfig("http://localhost:5002"
                              "/api/projects/default/models/tags/production",
                              token=platform_token,
@@ -52,7 +53,7 @@ def start_core(platform_token):
                       5005,
                       "credentials.yml",
                       "*",
-                      None,  # TODO: LOCAL configure auth token
+                      None,  # TODO: configure auth token
                       True)
 
 
@@ -62,9 +63,16 @@ def start_event_service():
 
 
 def up(args: argparse.Namespace):
-    from rasa_core.utils import print_success
+    try:
+        from rasa_platform import config
+        from rasa_platform.api.server import main_local
+    except ImportError:
+        print_error("Rasa Platform is not installed. The `rasa up` command "
+                    "requires an installation of Rasa Platform.")
+        sys.exit()
+
     print_success("Starting Rasa Core")
-    from rasa_platform import config
+
     p = Process(target=start_core, args=(config.platform_token,))
     p.start()
 
@@ -73,5 +81,4 @@ def up(args: argparse.Namespace):
 
     print_success("Starting Rasa Interface...")
 
-    from rasa_platform.api.server import main_local
     main_local(".")
