@@ -38,6 +38,10 @@ jobs:
     - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
     - python -m pytest tests/test_core.py
+ - stage: test
+    name: "Test CLI"
+    script:
+    - timeout 2 time rasa --help
   - stage: integration
     name: "Test Docs"
     install:

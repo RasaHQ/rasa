@@ -183,7 +183,7 @@ def create_app(agent,
     @cross_origin(origins=cors_origins)
     def hello():
         """Check if the server is running and responds with the version."""
-        return "hello from Rasa Core: " + rasa.__version__
+        return "hello from Rasa: " + rasa.__version__
 
     @app.route("/version",
                methods=['GET', 'OPTIONS'])
