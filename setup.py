@@ -68,6 +68,7 @@ install_requires = [
     "pydot~=1.4",
     "keras-applications==1.0.6",
     "keras-preprocessing==1.0.5",
+    "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
 ]
 
