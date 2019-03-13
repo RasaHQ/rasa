@@ -172,7 +172,7 @@ Authentication and authorization
 Rasa Core's Kafka producer accepts two types of security protocols - ``SASL_PLAINTEXT`` and ``SSL``.
 
 For development environment, or if the brokers servers and clients are located
-into the same machine, you can use simple authentication with SASL_PLAINTEXT.
+into the same machine, you can use simple authentication with ``SASL_PLAINTEXT``.
 By using this protocol, the credentials and messages exchanged between the clients and servers
 will be sent in plaintext. Thus, this is not the most secure approach, but since it's simple
 to configure, it is useful for simple cluster configurations.
