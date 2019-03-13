@@ -1,11 +1,8 @@
 import json
 import logging
-from typing import Any, Dict, Text, Optional
+from typing import Any, Dict, Optional, Text
 
-import pika
-from kafka import KafkaProducer as ProducerKafka
-from rasa_core.utils import class_from_module_path, EndpointConfig
-
+from rasa_core.utils import EndpointConfig, class_from_module_path
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +55,7 @@ class PikaProducer(EventChannel):
     def __init__(self, host, username, password,
                  queue='rasa_core_events',
                  loglevel=logging.INFO):
+        import pika
 
         logging.getLogger('pika').setLevel(loglevel)
 
@@ -78,6 +76,8 @@ class PikaProducer(EventChannel):
         self._close()
 
     def _open_connection(self):
+        import pika
+
         parameters = pika.ConnectionParameters(self.host,
                                                credentials=self.credentials,
                                                connection_attempts=20,
@@ -175,8 +175,10 @@ class KafkaProducer(EventChannel):
         self._close()
 
     def _create_producer(self):
+        import kafka
+
         if self.security_protocol == 'SASL_PLAINTEXT':
-            self.producer = ProducerKafka(
+            self.producer = kafka.KafkaProducer(
                 bootstrap_servers=[self.host],
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 sasl_plain_username=self.sasl_username,
@@ -184,7 +186,7 @@ class KafkaProducer(EventChannel):
                 sasl_mechanism='PLAIN',
                 security_protocol=self.security_protocol)
         elif self.security_protocol == 'SSL':
-            self.producer = ProducerKafka(
+            self.producer = kafka.KafkaProducer(
                 bootstrap_servers=[self.host],
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 ssl_cafile=self.ssl_cafile,
