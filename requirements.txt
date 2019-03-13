@@ -41,3 +41,4 @@ python-socketio==3.1.1
 pydot==1.4.1
 keras-applications==1.0.6
 keras-preprocessing==1.0.5
+sklearn-crfsuite==0.3.6
