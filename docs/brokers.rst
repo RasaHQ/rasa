@@ -169,7 +169,7 @@ list of strings. e.g.:
 Authentication and authorization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Rasa Core's Kafka producer accepts two types of security protocols - SASL_PLAINTEXT and SSL.
+Rasa Core's Kafka producer accepts two types of security protocols - ``SASL_PLAINTEXT`` and ``SSL``.
 
 For development environment, or if the brokers servers and clients are located
 into the same machine, you can use simple authentication with SASL_PLAINTEXT.
