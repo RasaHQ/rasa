@@ -493,9 +493,10 @@ def create_app(agent,
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def evaluate_stories():
+        """Evaluate stories against the currently loaded model."""
+
         import rasa_nlu
 
-        """Evaluate stories against the currently loaded model."""
         tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
                                                         mode='w+b')
         use_e2e = utils.bool_arg('e2e', default=False)
@@ -511,10 +512,11 @@ def create_app(agent,
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def train_stack():
+        """Train a Rasa Stack model."""
+
         from rasa.cli.train import train
         from argparse import Namespace
 
-        """Train a Rasa Stack model."""
         args = Namespace(**request.get_json())
         try:
             model_name = train(args)

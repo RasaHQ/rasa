@@ -31,7 +31,7 @@ DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
 
-DEFAULT_NLU_DATA = "data/test_nlu_data/nlu.md"
+DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.md"
 
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
