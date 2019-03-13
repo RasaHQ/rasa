@@ -10,8 +10,11 @@ from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.server import RasaNLU
+from rasa_nlu.project import Project
+from rasa_nlu.train import train
 from tests import utilities
 from tests.utilities import ResponseTest
+from tests.conftest import DEFAULT_DATA_PATH, CONFIG_DEFAULTS_PATH
 
 
 @pytest.fixture(scope="module")
@@ -24,7 +27,12 @@ def app(tmpdir_factory):
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
+    project_dir = tmpdir_factory.mktemp("projects").strpath
+    _config = utilities.base_test_conf('keyword')
+
+    _, _, _ = train(_config, DEFAULT_DATA_PATH, project_dir)
+
+    router = DataRouter(project_dir)
     rasa = RasaNLU(router,
                    logfile=nlu_log_file,
                    testing=True)
@@ -213,7 +221,7 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
     rjs = yield response.json()
     assert response.code == 500, "The project cannot be found"
     assert "error" in rjs
-    assert rjs["error"] == "Project project123 could not be found"
+    assert rjs["error"] == "Project 'project123' could not be found"
 
 
 @pytest.inlineCallbacks
@@ -250,3 +258,21 @@ def test_unload_fallback(app):
     rjs = yield response.json()
     assert response.code == 200, "Fallback model unloaded"
     assert rjs == "fallback"
+
+
+@pytest.inlineCallbacks
+def test_evaluate(app, rasa_default_train_data):
+    response = app.post("http://dummy-uri/evaluate",
+                        json=rasa_default_train_data)
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 200, "Evaluation should start"
+    assert "intent_evaluation" in rjs
+    assert "entity_evaluation" in rjs
+    assert all(prop in rjs["intent_evaluation"] for prop in ["report",
+                                                             "predictions",
+                                                             "precision",
+                                                             "f1_score",
+                                                             "accuracy"])

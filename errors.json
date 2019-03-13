@@ -1,0 +1,274 @@
+[
+    {
+        "text": "howdy",
+        "intent": "greet",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "good morning",
+        "intent": "greet",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "good evening",
+        "intent": "greet",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "dear sir",
+        "intent": "greet",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "yes",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "yep",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "yeah",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "indeed",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "that's right",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "ok",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "great",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "right, thank you",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "correct",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "great choice",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "sounds really good",
+        "intent": "affirm",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "i'm looking for a place to eat",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "I want to grab lunch",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "I am searching for a dinner spot",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "greet",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "i'm looking for a place in the north of town",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "show me chinese restaurants",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "greet",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "show me chines restaurants in the north",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "greet",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "show me a mexican place in the centre",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "i am looking for an indian spot called olaolaolaolaolaola",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "search for restaurants",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "anywhere in the west",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "anywhere near 18328",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "I am looking for asian fusion food",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "I am looking a restaurant in 29432",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "I am looking for mexican indian fusion",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "central indian restaurant",
+        "intent": "restaurant_search",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "stop",
+        "intent": "goodbye",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "end",
+        "intent": "goodbye",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "farewell",
+        "intent": "goodbye",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    },
+    {
+        "text": "have a good one",
+        "intent": "goodbye",
+        "intent_prediction": {
+            "name": "",
+            "confidence": 1.0
+        }
+    }
+]
