@@ -1,12 +1,12 @@
 import argparse
 import logging
 
-from rasa import version
-from rasa.cli import (scaffold, run, train, interactive, shell, test,
-                      show, data)
 from rasa_core.cli.arguments import add_logging_option_arguments
 from rasa_core.utils import configure_colored_logging
 
+from rasa import version
+from rasa.cli import (scaffold, run, train, interactive,
+                      shell, test, show, data, up)
 from rasa.cli.utils import parse_last_positional_argument_as_model_path
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     test.add_subparser(subparsers, parents=parent_parsers)
     show.add_subparser(subparsers, parents=parent_parsers)
     data.add_subparser(subparsers, parents=parent_parsers)
+    up.add_subparser(subparsers, parents=parent_parsers)
 
     return parser
 
