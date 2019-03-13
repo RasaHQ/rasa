@@ -56,7 +56,7 @@ class CustomKeywordIntentClassifier(Component):
         keyword_file = os.path.join(model_dir, "keys.p")
         pickle.dump(self.intent_keyword_map,  open(keyword_file, "wb"))
 
-        return {"keyword_file": keyword_file}
+        return {"file": keyword_file}
 
     @classmethod
     def load(self,
