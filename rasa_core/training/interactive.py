@@ -1069,7 +1069,7 @@ def _validate_nlu(intents: List[Text],
 
 def _correct_entities(latest_message: Dict[Text, Any],
                       endpoint: EndpointConfig,
-                      sender_id: Text) -> [Dict[Text, Any]]:
+                      sender_id: Text) -> List[Dict[Text, Any]]:
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
