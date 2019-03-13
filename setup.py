@@ -68,7 +68,7 @@ install_requires = [
     "pydot~=1.4",
     "keras-applications==1.0.6",
     "keras-preprocessing==1.0.5",
-    "sqlalchemy~=1.2.17"
+    "sqlalchemy~=1.2"
 ]
 
 extras_requires = {

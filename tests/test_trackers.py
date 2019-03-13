@@ -36,7 +36,7 @@ def stores_to_be_tested():
         return [MockRedisTrackerStore(domain),
                 InMemoryTrackerStore(domain),
                 SQLTrackerStore(domain,
-                                db='{}rasa.db'.format(temp))]
+                                db=os.path.join(temp, 'rasa.db'))]
 
 
 def stores_to_be_tested_ids():

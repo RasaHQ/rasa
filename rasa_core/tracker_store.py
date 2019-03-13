@@ -40,7 +40,7 @@ class TrackerStore(object):
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
-        elif store.type == 'SQL':
+        elif store.type.lower() == 'sql':
             return SQLTrackerStore(domain=domain,
                                    host=store.url,
                                    event_broker=event_broker,
@@ -259,7 +259,7 @@ class MongoTrackerStore(TrackerStore):
 
 
 class SQLTrackerStore(TrackerStore):
-    """Store which can save and retrieve trackers from an SQL database"""
+    """Store which can save and retrieve trackers from an SQL database."""
 
     from sqlalchemy.ext.declarative import declarative_base
     Base = declarative_base()
@@ -300,10 +300,9 @@ class SQLTrackerStore(TrackerStore):
         self._ensure_table()
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
-        logger.debug('SQL tracker store successfully initialised')
 
     def _ensure_table(self) -> None:
-        """Creates the conversations table in the database if not present"""
+        """Create the conversations table in the database if not present."""
 
         metadata = MetaData()
 
@@ -318,12 +317,12 @@ class SQLTrackerStore(TrackerStore):
 
         metadata.create_all(self.engine)
 
-    def keys(self) -> List:
-        """Returns the keys of the items stored in the database"""
+    def keys(self) -> List[Text]:
+        """Collect all keys of the items stored in the database."""
         return self.SQLEvent.__table__.columns.keys()
 
     def retrieve(self, sender_id: Text) -> DialogueStateTracker:
-        """Creates a tracker from all previously stored events"""
+        """Create a tracker from all previously stored events."""
 
         subquery = self.session.query(self.SQLEvent)
         query = subquery.filter_by(sender_id=sender_id).all()
@@ -342,7 +341,7 @@ class SQLTrackerStore(TrackerStore):
         return tracker
 
     def save(self, tracker: DialogueStateTracker) -> None:
-        """Updates database with events from the current conversation"""
+        """Update database with events from the current conversation."""
 
         if self.event_broker:
             self.stream_events(tracker)
