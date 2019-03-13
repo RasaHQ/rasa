@@ -631,9 +631,9 @@ paths:
       - JWT: []
       tags:
       - Model
-      summary: Train Rasa Stack model
+      summary: Train a Rasa Stack model
       description: >-
-        Trains a Rasa Stack model
+        Trains a Rasa Stack model. A stack model is a model combining a trained dialogue model with an NLU model.
       operationId: trainStack
       requestBody:
         required: true

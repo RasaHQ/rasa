@@ -1,6 +1,5 @@
 import argparse
 import logging
-import sys
 
 import rasa_core.cli.arguments
 from gevent.pywsgi import WSGIServer

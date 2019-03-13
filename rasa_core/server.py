@@ -516,7 +516,6 @@ def create_app(agent,
 
         """Train a Rasa Stack model."""
         args = Namespace(**request.get_json())
-        print("got args", args, request.get_json())
         try:
             model_name = train(args)
             return jsonify({'info': 'new model trained', 'model': model_name})

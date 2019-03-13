@@ -25,7 +25,8 @@ Added
 - added ability to use multiple env vars per line in yaml files
 - added ``priority`` property of policies to influence best policy in 
   the case of equal confidence
-- Rasa Stack HTTP training endpoint at ``POST /jobs``
+- Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint 
+  will train a combined Rasa Core and NLU model.
 
 Changed
 -------
