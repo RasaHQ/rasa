@@ -50,7 +50,7 @@ SQLTrackerStore
                 password: <password used for authentication>
 
     3. To start the Rasa Core server using your SQL backend,
-       add the :code:`--endpoints` flag, e.g.:
+       add the ``--endpoints`` flag, e.g.:
 
         .. code-block:: bash
 
