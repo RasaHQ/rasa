@@ -1,7 +1,7 @@
 import pprint as pretty_print
 from typing import Any, Dict, Text, TYPE_CHECKING
 from rasa_core.utils import print_success, print_error
-from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.interpreter import NaturalLanguageInterpreter, RasaNLUInterpreter
 import rasa.model as model
 
 if TYPE_CHECKING:
@@ -13,14 +13,26 @@ def pprint(object: Any):
 
 
 def chat(model_path: Text = None, agent: 'Agent' = None,
-         interpreter: NaturalLanguageInterpreter = None):
+         interpreter: NaturalLanguageInterpreter = None) -> None:
+    """Chat to the bot within a Jupyter notebook.
+
+    Args:
+        model_path: Path to a Rasa Stack model.
+        agent: Rasa Core agent (used if no Rasa Stack model given).
+        interpreter: Rasa NLU interpreter (used with Rasa Core agent if no
+                     Rasa Stack model is given).
+    """
 
     if model_path:
         from rasa.run import create_agent
         unpacked = model.get_model(model_path)
         agent = create_agent(unpacked)
     elif agent and interpreter:
-        agent.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        # HACK: this skips loading the interpreter and directly sets it afterwards
+        nlu_interpreter = RasaNLUInterpreter("skip this and use given "
+                                             "interpreter", lazy_init=True)
+        nlu_interpreter.interpreter = interpreter
+        agent.interpreter = interpreter
     else:
         print_error("You either have to define a model path or an agent and "
                     "an interpreter.")
