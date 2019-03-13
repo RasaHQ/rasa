@@ -9,6 +9,7 @@ from flask import Flask, request, abort, Response, jsonify, json
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 
+import rasa
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.test import test
@@ -16,7 +17,6 @@ from rasa_core.events import Event
 from rasa_core.domain import Domain
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ def requires_auth(app: Flask,
 def error(status, reason, message, details=None, help_url=None):
     return Response(
         json.dumps({
-            "version": __version__,
+            "version": rasa.__version__,
             "status": "failure",
             "message": message,
             "reason": reason,
@@ -183,7 +183,7 @@ def create_app(agent,
     @cross_origin(origins=cors_origins)
     def hello():
         """Check if the server is running and responds with the version."""
-        return "hello from Rasa Core: " + __version__
+        return "hello from Rasa Core: " + rasa.__version__
 
     @app.route("/version",
                methods=['GET', 'OPTIONS'])
@@ -192,7 +192,7 @@ def create_app(agent,
         """respond with the version number of the installed rasa core."""
 
         return jsonify({
-            "version": __version__,
+            "version": rasa.__version__,
             "minimum_compatible_version": constants.MINIMUM_COMPATIBLE_VERSION
         })
 
