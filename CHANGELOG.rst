@@ -30,7 +30,7 @@ Changed
 -------
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
-- for IL only include manually annotated and ner_crf entities in nlu export
+- for interactive learning only include manually annotated and ner_crf entities in nlu export
 - renamed ``train_dialogue_model`` to ``train``
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
 - ``event_broker.publish`` receives the event as a dict instead of text
