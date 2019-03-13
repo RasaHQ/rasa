@@ -6,7 +6,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
-exec(open("rasa_core/version.py").read())
+exec(open("rasa/version.py").read())
 
 # Get the long description from the README file
 with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
@@ -75,7 +75,7 @@ extras_requires = {
 }
 
 setup(
-    name="rasa-core",
+    name="rasa",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -87,6 +87,9 @@ setup(
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools"]),
+    entry_points={
+        'console_scripts': ['rasa=rasa.__main__:main'],
+    },
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
@@ -113,7 +116,7 @@ setup(
     },
 )
 
-print("\nWelcome to Rasa Core!")
+print("\nWelcome to Rasa!")
 print("If any questions please visit documentation "
       "page https://rasa.com/docs/core")
 print("or join the community discussions on https://forum.rasa.com")
