@@ -139,7 +139,8 @@ class FileProducer(EventChannel):
 
 
 class KafkaProducer(EventChannel):
-    def __init__(self, host, sasl_plain_username=None,
+    def __init__(self, host, 
+                 sasl_plain_username=None,
                  sasl_plain_password=None, 
                  ssl_cafile=None,
                  ssl_certfile=None, ssl_keyfile=None,
