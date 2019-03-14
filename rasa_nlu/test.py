@@ -13,11 +13,13 @@ from rasa_nlu import config, training_data, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.model import Interpreter, Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
 duckling_extractors = {"DucklingHTTPExtractor"}
+pretrained_extractors = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
 known_duckling_dimensions = {"amount-of-money", "distance", "duration",
                              "email", "number",
@@ -624,10 +626,7 @@ def get_predictions(interpreter, test_data):  # pragma: no cover
 
     intent_results, entity_targets, entity_predictions, tokens = [], [], [], []
 
-    interpreter.pipeline = [c for c in interpreter.pipeline if not
-                            isinstance(c, DucklingHTTPExtractor)]
-
-    eval_results = is_intent_classifier_present(interpreter)
+    interpreter = remove_pretrained_extractors(interpreter)
     extractors = get_entity_extractors(interpreter)
 
     for e in tqdm(test_data.training_examples):
@@ -698,14 +697,13 @@ def find_component(interpreter, component_name):
     return None
 
 
-def remove_duckling_extractors(extractors):
-    """Removes duckling exctractors"""
-    used_duckling_extractors = duckling_extractors.intersection(extractors)
-    for duckling_extractor in used_duckling_extractors:
-        logger.info("Skipping evaluation of {}".format(duckling_extractor))
-        extractors.remove(duckling_extractor)
+def remove_pretrained_extractors(interpreter):
+    """Removes pretrained extractors from interpreter so that entities
+       from pre-trained extractors are not predicted upon parsing"""
 
-    return extractors
+    interpreter.pipeline = [c for c in interpreter.pipeline if c.name not in
+                            pretrained_extractors]
+    return interpreter
 
 
 def remove_duckling_entities(entity_predictions):
