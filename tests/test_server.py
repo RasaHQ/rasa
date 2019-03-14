@@ -2,12 +2,14 @@
 import io
 import json
 import os
+import tempfile
 import uuid
 
 import pytest
 from freezegun import freeze_time
 
 import rasa_core
+from rasa.model import unpack_model
 from rasa_core import events, constants
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.domain import Domain
@@ -256,18 +258,25 @@ def test_stack_training(app,
                         default_stack_config,
                         default_nlu_data
                         ):
-    training_namespace = dict(
-        domain=default_domain_path,
-        config=default_stack_config,
-        data=[default_nlu_data, default_stories_file],
-        out=".",
-        force=False
+    payload = dict(
+        domain=open(default_domain_path).read(),
+        config=open(default_stack_config).read(),
+        stories=open(default_stories_file).read(),
+        nlu=open(default_nlu_data).read()
     )
-    response = app.post('/jobs', json=training_namespace)
-    assert response.status_code == 200
-    assert response.get_json()["info"] == "new model trained"
 
-    assert os.path.exists(response.get_json()["model"])
+    response = app.post('/jobs', json=payload)
+    assert response.status_code == 200
+
+    # save model to temporary file
+    tempdir = tempfile.mkdtemp()
+    model_path = os.path.join(tempdir, 'model.tar.gz')
+    with open(model_path, 'wb') as f:
+        f.write(response.get_data())
+
+    # unpack model and ensure fingerprint is present
+    model_path = unpack_model(model_path)
+    assert os.path.exists(os.path.join(model_path, 'fingerprint.json'))
 
 
 def test_end_to_end_evaluation(app):
