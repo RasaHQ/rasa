@@ -1,7 +1,7 @@
 import json
 
 from rasa_core import broker, utils
-from rasa_core.broker import FileProducer, PikaProducer
+from rasa_core.broker import FileProducer, PikaProducer, KafkaProducer
 from rasa_core.events import Event, Restarted, SlotSet, UserUttered
 from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
@@ -87,3 +87,20 @@ def test_load_custom_broker_name():
 def test_load_non_existent_custom_broker_name():
     config = EndpointConfig(**{"type": "rasa_core.broker.MyProducer"})
     assert broker.from_endpoint_config(config) is None
+
+
+def test_kafka_broker_from_config():
+    endpoints_path = 'data/test_endpoints/event_brokers/' \
+                     'kafka_plaintext_endpoint.yml'
+    cfg = utils.read_endpoint_config(endpoints_path,
+                                     "event_broker")
+
+    actual = KafkaProducer.from_endpoint_config(cfg)
+
+    expected = KafkaProducer("localhost", "username", "password",
+                             topic="topic", security_protocol="SASL_PLAINTEXT")
+
+    assert actual.host == expected.host
+    assert actual.sasl_username == expected.sasl_username
+    assert actual.sasl_password == expected.sasl_password
+    assert actual.topic == expected.topic
