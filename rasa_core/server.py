@@ -520,25 +520,35 @@ def create_app(agent,
 
         rjs = request.get_json()
 
-        tdir = tempfile.mkdtemp()
+        # create a temporary directory to store config, domain and
+        # training data
+        temp_dir = tempfile.mkdtemp()
 
-        config_path = os.path.join(tdir, 'config.yml')
-        dump_obj_as_str_to_file(config_path, rjs["config"])
+        try:
+            config_path = os.path.join(temp_dir, 'config.yml')
+            dump_obj_as_str_to_file(config_path, rjs["config"])
 
-        domain_path = os.path.join(tdir, 'domain.yml')
-        dump_obj_as_str_to_file(domain_path, rjs["domain"])
+            domain_path = os.path.join(temp_dir, 'domain.yml')
+            dump_obj_as_str_to_file(domain_path, rjs["domain"])
 
-        nlu_path = os.path.join(tdir, 'nlu.md')
-        dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+            nlu_path = os.path.join(temp_dir, 'nlu.md')
+            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
 
-        stories_path = os.path.join(tdir, 'stories.md')
-        dump_obj_as_str_to_file(stories_path, rjs["stories"])
+            stories_path = os.path.join(temp_dir, 'stories.md')
+            dump_obj_as_str_to_file(stories_path, rjs["stories"])
+        except KeyError as e:
+            return error(400, "TrainingError",
+                         "The Rasa Stack training request is "
+                         "missing a key. The required keys are "
+                         "`config`, `domain`, `nlu` and `stories`.", e)
 
+        # the model will be saved to the same temporary dir
+        # unless `out` was specified in the request
         args = Namespace(domain=domain_path,
                          config=config_path,
                          data=[nlu_path, stories_path],
                          force=rjs.get("force", False),
-                         out=rjs.get("out", tdir))
+                         out=rjs.get("out", temp_dir))
         try:
             model_path = train(args)
             return send_file(model_path)

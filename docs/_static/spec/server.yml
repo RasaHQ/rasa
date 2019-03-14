@@ -633,27 +633,25 @@ paths:
       - Model
       summary: Train a Rasa Stack model
       description: >-
-        Trains a Rasa Stack model. A stack model is a model combining a trained dialogue model with an NLU model.
+        Trains a Rasa Stack model. A stack model is a model combining a
+        trained dialogue model with an NLU model.
       operationId: trainStack
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StackTrainingNamespace'
+              $ref: '#/components/schemas/StackTrainingRequest'
             examples:
-              StackTrainingNamespace:
-                $ref: '#/components/examples/StackTrainingNamespace'
+              StackTrainingRequest:
+                $ref: '#/components/examples/StackTrainingRequest'
       responses:
         200:
-          description: Success
+          description: Zipped Rasa Stack model
           content:
-            application/json:
+            application/octet-stream:
               schema:
                 $ref: '#/components/schemas/StackTrainingResult'
-              examples:
-                StackTrainingResult:
-                  $ref: '#/components/examples/StackTrainingResult'
         400:
           $ref: '#/components/responses/400Training'
 
@@ -1003,17 +1001,72 @@ components:
                     utter_on_it       1.00      0.50      0.67         2
 
                     avg / total       1.00      0.90      0.93        10
-    StackTrainingNamespace:
+    StackTrainingRequest:
       value:
-        domain: domain.yml
-        config: config.yml
-        data: [nlu.md, stories.md]
+        config: >-
+          # Configuration for Rasa NLU.
+          # https://rasa.com/docs/nlu/components/
+          language: en
+          pipeline: tensorflow_embedding
+
+          # Configuration for Rasa Core.
+          # https://rasa.com/docs/core/policies
+          policies:
+            - name: MemoizationPolicy
+            - name: KerasPolicy
+        domain: >-
+          intents:
+            - greet
+            - goodbye
+            - mood_affirm
+            - mood_deny
+            - mood_great
+            - mood_unhappy
+
+          actions:
+          - utter_greet
+          - utter_cheer_up
+          - utter_did_that_help
+          - utter_happy
+          - utter_goodbye
+
+          templates:
+            utter_greet:
+            - text: "Hey! How are you?"
+
+            utter_cheer_up:
+            - text: "Here is something to cheer you up:"
+              image: "https://i.imgur.com/nGF1K8f.jpg"
+
+            utter_did_that_help:
+            - text: "Did that help you?"
+
+            utter_happy:
+            - text: "Great carry on!"
+
+            utter_goodbye:
+            - text: "Bye"
+        nlu: >-
+          ## intent:greet
+          - hey
+          - hello
+
+          ## intent:goodbye
+          - cu
+          - good by
+        stories: >-
+          ## happy path
+          * greet
+            - utter_greet
+          * mood_great
+            - utter_happy
+
+          ## sad path 1
+          * greet
+            - utter_greet
+          * mood_unhappy
         out: models
         force: false
-    StackTrainingResult:
-      value:
-        info: new model trained
-        model: 20190307-212421.tar.gz
 
   responses:
     200Tracker:
@@ -1476,20 +1529,21 @@ components:
         tracker:
           $ref: '#/components/schemas/Tracker'
 
-    StackTrainingNamespace:
+    StackTrainingRequest:
       type: object
       properties:
         domain:
           type: string
-          description: Path to Rasa Core domain
+          description: Rasa Core domain in plain text
         config:
           type: string
-          description: Path to Rasa Stack config
-        data:
-          type: array
-          items:
-            type: string
-          description: Paths to Core and NLU training files
+          description: Rasa Stack config in plain text
+        nlu:
+          type: string
+          description: Rasa NLU training data in markdown format
+        stories:
+          type: string
+          description: Rasa Core stories in markdown format
         out:
           type: string
           description: Output directory
@@ -1497,16 +1551,11 @@ components:
           type: boolean
           description: >-
             Force a model training even if the data has not changed
+        required: ["domain", "config", "nlu", "stories"]
 
     StackTrainingResult:
-      type: object
-      properties:
-        info:
-          type: string
-          description: Message indicating successful training
-        model:
-          type: string
-          description: Name of the trained Rasa Stack model
+      type: string
+      format: binary
 
     EvaluationResult:
       type: object
