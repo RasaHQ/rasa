@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import io
 import json
-import tempfile
+import tempfile, shutil
 import time
 
 import pytest
@@ -10,29 +10,28 @@ from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.server import RasaNLU
-from rasa_nlu.project import Project
-from rasa_nlu.train import train
 from tests import utilities
 from tests.utilities import ResponseTest
-from tests.conftest import DEFAULT_DATA_PATH, CONFIG_DEFAULTS_PATH
 
 
 @pytest.fixture(scope="module")
-def app(tmpdir_factory):
+def app(tmpdir_factory, trained_nlu_model):
     """Use IResource interface of Klein to mock Rasa HTTP server.
-
     :param component_builder:
     :return:
     """
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    project_dir = tmpdir_factory.mktemp("projects").strpath
-    _config = utilities.base_test_conf('keyword')
+    temp_path = tmpdir_factory.mktemp("projects")
+    try:
+        shutil.copytree(trained_nlu_model, temp_path.join("keywordproject").join("keywordmodel"))
+    except FileExistsError:
+        pass
 
-    _, _, _ = train(_config, DEFAULT_DATA_PATH, project_dir)
+    print(temp_path.strpath)
 
-    router = DataRouter(project_dir)
+    router = DataRouter(temp_path.strpath)
     rasa = RasaNLU(router,
                    logfile=nlu_log_file,
                    testing=True)
@@ -60,7 +59,7 @@ def test_status(app):
     assert response.code == 200 and "available_projects" in rjs
     assert "current_training_processes" in rjs
     assert "max_training_processes" in rjs
-    assert "default" in rjs["available_projects"]
+    assert 'keywordproject' in rjs["available_projects"]
 
 
 @pytest.inlineCallbacks
@@ -225,14 +224,24 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
 
 
 @pytest.inlineCallbacks
-def test_evaluate_no_model(app, rasa_default_train_data):
+def test_evaluate_no_model(app):
     response = app.post("http://dummy-uri/evaluate")
     time.sleep(2)
     app.flush()
     response = yield response
     rjs = yield response.json()
-    assert response.code == 404, "No model in project 'default' to evaluate"
+    assert response.code == 500, "No model in project 'default' to evaluate"
     assert "error" in rjs
+
+@pytest.inlineCallbacks
+def test_evaluate_internal_error(app, rasa_default_train_data):
+    response = app.post("http://dummy-uri/evaluate",
+                        json={"data":"dummy_data_for_triggering_an_error"})
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 500, "The training data format is not valid"
 
 
 @pytest.inlineCallbacks
@@ -262,7 +271,9 @@ def test_unload_fallback(app):
 
 @pytest.inlineCallbacks
 def test_evaluate(app, rasa_default_train_data):
-    response = app.post("http://dummy-uri/evaluate",
+    response = app.post("http://dummy-uri/evaluate"
+                        "?project=keywordproject"
+                        "?model=keywordmodel",
                         json=rasa_default_train_data)
     time.sleep(3)
     app.flush()

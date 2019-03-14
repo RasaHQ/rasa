@@ -7,6 +7,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.model import Trainer
 from rasa_nlu.utils import zip_folder
 from rasa_nlu import training_data
+from rasa_nlu.config import RasaNLUModelConfig
 
 logging.basicConfig(level="DEBUG")
 
@@ -15,6 +16,8 @@ CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 TEST_MODEL_PATH = "test_models/test_model_pretrained_embeddings"
+
+TEST_PROJECTS_PATH = "test_projects"
 
 # see `rasa_nlu.data_router` for details. avoids deadlock in
 # `deferred_from_future` function during tests
@@ -57,25 +60,13 @@ def default_config():
 
 
 @pytest.fixture(scope="session")
-def zipped_nlu_model():
-    spacy_config_path = "sample_configs/config_pretrained_embeddings_spacy.yml"
-
-    cfg = config.load(spacy_config_path)
+def trained_nlu_model():
+    cfg = RasaNLUModelConfig({"pipeline": "keyword"})
     trainer = Trainer(cfg)
     td = training_data.load_data(DEFAULT_DATA_PATH)
 
     trainer.train(td)
-    trainer.persist("test_models",
-                    project_name="test_model_pretrained_embeddings")
+    model_path = trainer.persist("test_models",
+                                 project_name="test_keyword_model")
 
-    model_dir_list = os.listdir(TEST_MODEL_PATH)
-
-    # directory name of latest model
-    model_dir = sorted(model_dir_list)[-1]
-
-    # path of that directory
-    model_path = os.path.join(TEST_MODEL_PATH, model_dir)
-
-    zip_path = zip_folder(model_path)
-
-    return zip_path
+    return model_path

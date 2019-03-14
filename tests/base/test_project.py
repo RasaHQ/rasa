@@ -108,6 +108,16 @@ def test_project_with_model_server(zipped_nlu_model):
     fingerprint = 'somehash'
     model_endpoint = EndpointConfig('http://server.com/models/nlu/tags/latest')
 
+    model_dir_list = os.listdir(TEST_MODEL_PATH)
+
+    # directory name of latest model
+    model_dir = sorted(model_dir_list)[-1]
+
+    # path of that directory
+    model_path = os.path.join(TEST_MODEL_PATH, model_dir)
+
+    zip_path = zip_folder(model_path)
+
     # mock a response that returns a zipped model
     with io.open(zipped_nlu_model, 'rb') as f:
         responses.add(responses.GET,
