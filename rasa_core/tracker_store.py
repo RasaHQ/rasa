@@ -297,7 +297,8 @@ class SQLTrackerStore(TrackerStore):
 
         self.Base.metadata.create_all(self.engine)
 
-        logger.debug('Connection to SQL db successful')
+        logger.debug("Connection to SQL database '{}' "
+                     "successful".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
@@ -346,7 +347,9 @@ class SQLTrackerStore(TrackerStore):
                                            action_name=action,
                                            data=json.dumps(data)))
         self.session.commit()
-        logger.debug('Tracker stored to database')
+
+        logger.debug("Tracker with sender_id '{}' "
+                     "stored to database".format(tracker.sender_id))
 
     def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
@@ -366,5 +369,4 @@ class SQLTrackerStore(TrackerStore):
             else:
                 break
 
-        logger.debug('Storing {} recent events'.format(len(latest_events)))
         return reversed(latest_events)
