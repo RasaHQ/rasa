@@ -12,7 +12,7 @@ from rasa.nlu.test import (
     merge_labels, remove_duckling_entities,
     remove_empty_intent_examples, get_entity_extractors,
     get_duckling_dimensions, known_duckling_dimensions,
-    find_component, remove_duckling_extractors, drop_intents_below_freq,
+    find_component, remove_pretrained_extractors, drop_intents_below_freq,
     cross_validate, substitute_labels, IntentEvaluationResult,
     evaluate_intents, evaluate_entities)
 from rasa.nlu.test import does_token_cross_borders
@@ -34,6 +34,20 @@ logging.basicConfig(level="DEBUG")
 def duckling_interpreter(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig(
         {"pipeline": [{"name": "DucklingHTTPExtractor"}]}
+    )
+    return utilities.interpreter_for(
+        component_builder,
+        data="./data/examples/rasa/demo-rasa.json",
+        path=tmpdir_factory.mktemp("projects").strpath,
+        config=conf)
+
+
+@pytest.fixture(scope="session")
+def pretrained_interpreter(component_builder, tmpdir_factory):
+    conf = RasaNLUModelConfig(
+        {"pipeline": [{"name": "SpacyNLP"},
+                      {"name": "SpacyEntityExtractor"},
+                      {"name": "DucklingHTTPExtractor"}]}
     )
     return utilities.interpreter_for(
         component_builder,
@@ -408,11 +422,11 @@ def test_find_component(duckling_interpreter):
     assert name == "DucklingHTTPExtractor"
 
 
-def test_remove_duckling_extractors(duckling_interpreter):
-    target = set([])
-
-    patched = remove_duckling_extractors({"DucklingHTTPExtractor"})
-    assert patched == target
+def test_remove_pretrained_extractors(pretrained_interpreter):
+    target_components_names = set(['SpacyNLP'])
+    filtered = remove_pretrained_extractors(pretrained_interpreter)
+    filtered_components_names = set([c.name for c in filtered.pipeline])
+    assert filtered_components_names == target_components_names
 
 
 def test_label_replacement():
