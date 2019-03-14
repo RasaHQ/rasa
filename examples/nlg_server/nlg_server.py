@@ -1,8 +1,7 @@
 import argparse
 import logging
 
-from sanic import Sanic
-from sanic import response
+from sanic import Sanic, response
 
 from rasa_core.domain import Domain
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
@@ -41,8 +40,9 @@ def create_argument_parser():
 
 
 async def generate_response(nlg_call, domain):
-    """Mock response generator which generates the responses from the
-    bot's domain file.
+    """Mock response generator. 
+    
+    Generates the responses from the bot's domain file.
     """
     kwargs = nlg_call.get("arguments", {})
     template = nlg_call.get("template")
@@ -61,7 +61,7 @@ def run_server(domain, port, workers):
 
     @app.route("/nlg", methods=['POST', 'OPTIONS'])
     async def nlg(request):
-        """Endpoints which processes the Core request for a bot response."""
+        """Endpoint which processes the Core request for a bot response."""
         nlg_call = request.json
         bot_response = await generate_response(nlg_call, domain)
 

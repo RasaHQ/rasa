@@ -364,7 +364,7 @@ class RemoteAction(Action):
 
         except aiohttp.ClientError as e:
             # not all errors have a status attribute, but
-            # helpfull to log if they got it
+            # helpful to log if they got it
 
             # noinspection PyUnresolvedReferences
             status = getattr(e, 'status', None)
