@@ -38,7 +38,6 @@ from questionary import Choice, Form, Question
 from rasa_nlu.training_data.loading import load_data, _guess_format
 from rasa_nlu.training_data.message import Message
 
-from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -1096,11 +1095,17 @@ def _correct_entities(latest_message: Dict[Text, Any],
     # noinspection PyProtectedMember
     parse_annotated = MarkdownReader()._parse_training_example(annotation)
 
-    entities = parse_annotated.get("entities", [])[:]
+    corrected_entities = _merge_annotated_and_original_entities(
+        parse_annotated, parse_original)
 
+    return corrected_entities
+
+
+def _merge_annotated_and_original_entities(parse_annotated, parse_original):
     # overwrite entities which have already been
     # annotated in the original annotation to preserve
     # additional entity parser information
+    entities = parse_annotated.get("entities", [])[:]
     for i, entity in enumerate(entities):
         for original_entity in parse_original.get("entities", []):
             if _is_same_entity_annotation(entity, original_entity):

@@ -178,6 +178,53 @@ def test_as_md_message():
     assert md == "Hello there [rasa](name)."
 
 
+def test_entity_annotation_merge_with_original():
+    parse_original = {
+        "text": "Hello there rasa, it's me, paula.",
+        "entities": [{"start": 12,
+                      "end": 16,
+                      "entity": "name1",
+                      "value": "rasa",
+                      "extractor": "batman"}],
+        "intent": {"name": "greeting", "confidence": 0.9}
+    }
+    parse_annotated = {
+        "text": "Hello there rasa, it's me, paula.",
+        "entities": [{"start": 12,
+                      "end": 16,
+                      "entity": "name1",
+                      "value": "rasa"},
+                     {"start": 26,
+                      "end": 31,
+                      "entity": "name2",
+                      "value": "paula"}],
+        "intent": {"name": "greeting", "confidence": 0.9}
+    }
+
+    entities = interactive._merge_annotated_and_original_entities(
+        parse_annotated, parse_original)
+    assert entities == [{"start": 12,
+                         "end": 16,
+                         "entity": "name1",
+                         "value": "rasa",
+                         "extractor": "batman"},
+                        {"start": 26,
+                         "end": 31,
+                         "entity": "name2",
+                         "value": "paula"}]
+
+
+def test_extractor_filtering():
+    parse_original = {
+        "text": "Hello there rasa, it's wednesday already.",
+        "entities": [{"start": 12,
+                      "end": 16,
+                      "entity": "day",
+                      "value": "wednesday",
+                      "extractor": ""
+                      }],
+        "intent": {"name": "greeting", "confidence": 0.9}
+
 def test_validate_user_message():
     parse_data = {
         "text": "Hello there rasa.",
