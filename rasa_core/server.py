@@ -5,7 +5,7 @@ import zipfile
 from functools import wraps
 from typing import List, Text, Optional, Union, Callable, Any
 
-from flask import Flask, request, abort, Response, jsonify, json
+from flask import Flask, request, abort, Response, jsonify, json, send_file
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 
@@ -17,6 +17,7 @@ from rasa_core.events import Event
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.test import test
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
+from rasa_core.utils import dump_obj_as_str_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -517,10 +518,30 @@ def create_app(agent,
         from rasa.cli.train import train
         from argparse import Namespace
 
-        args = Namespace(**request.get_json())
+        rjs = request.get_json()
+
+        tdir = tempfile.mkdtemp()
+
+        config_path = os.path.join(tdir, 'config.yml')
+        dump_obj_as_str_to_file(config_path, rjs["config"])
+
+        domain_path = os.path.join(tdir, 'domain.yml')
+        dump_obj_as_str_to_file(domain_path, rjs["domain"])
+
+        nlu_path = os.path.join(tdir, 'nlu.md')
+        dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+
+        stories_path = os.path.join(tdir, 'stories.md')
+        dump_obj_as_str_to_file(stories_path, rjs["stories"])
+
+        args = Namespace(domain=domain_path,
+                         config=config_path,
+                         data=[nlu_path, stories_path],
+                         force=rjs.get("force", False),
+                         out=rjs.get("out", tdir))
         try:
-            model_name = train(args)
-            return jsonify({'info': 'new model trained', 'model': model_name})
+            model_path = train(args)
+            return send_file(model_path)
         except Exception as e:
             return error(400, "TrainingError",
                          "Rasa Stack model could not be trained.", e)
