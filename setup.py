@@ -6,7 +6,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
-exec(open("rasa_core/version.py").read())
+exec(open("rasa/version.py").read())
 
 # Get the long description from the README file
 with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
@@ -58,7 +58,7 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2018.9",
     "python-dateutil~=2.7",
-    "rasa_nlu~=0.15.0a1",
+    "rasa_nlu~=0.15.0a2",
     "rasa_core_sdk~=0.13.0a1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
@@ -68,7 +68,9 @@ install_requires = [
     "pydot~=1.4",
     "keras-applications==1.0.6",
     "keras-preprocessing==1.0.5",
-    "sqlalchemy~=1.2"
+    "sqlalchemy~=1.2",
+    "kafka-python~=1.4",
+    "sklearn-crfsuite~=0.3.6"
 ]
 
 extras_requires = {
@@ -76,7 +78,7 @@ extras_requires = {
 }
 
 setup(
-    name="rasa-core",
+    name="rasa",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -88,6 +90,9 @@ setup(
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools"]),
+    entry_points={
+        'console_scripts': ['rasa=rasa.__main__:main'],
+    },
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
@@ -114,7 +119,7 @@ setup(
     },
 )
 
-print("\nWelcome to Rasa Core!")
+print("\nWelcome to Rasa!")
 print("If any questions please visit documentation "
       "page https://rasa.com/docs/core")
 print("or join the community discussions on https://forum.rasa.com")
