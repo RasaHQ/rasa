@@ -40,7 +40,7 @@ class TrackerStore(object):
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
-        elif store.type == 'SQL':
+        elif store.type.lower() == 'sql':
             return SQLTrackerStore(domain=domain,
                                    host=store.url,
                                    event_broker=event_broker,
@@ -259,13 +259,13 @@ class MongoTrackerStore(TrackerStore):
 
 
 class SQLTrackerStore(TrackerStore):
-    """Store which can save and retrieve trackers from an SQL database"""
+    """Store which can save and retrieve trackers from an SQL database."""
 
     from sqlalchemy.ext.declarative import declarative_base
     Base = declarative_base()
 
     class SQLEvent(Base):
-        __tablename__ = 'conversations'
+        __tablename__ = 'events'
 
         id = Column(Integer, primary_key=True)
         sender_id = Column(String, nullable=False)
@@ -279,10 +279,10 @@ class SQLTrackerStore(TrackerStore):
                  domain: Optional[Domain] = None,
                  dialect: Text = 'sqlite',
                  host: Text = None,
-                 event_broker: Optional[EventChannel] = None,
                  db: Text = 'rasa.db',
                  username: Text = None,
-                 password: Text = None) -> None:
+                 password: Text = None,
+                 event_broker: Optional[EventChannel] = None) -> None:
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
@@ -295,67 +295,45 @@ class SQLTrackerStore(TrackerStore):
         self.engine = create_engine(engine_url)
         self.session = sessionmaker(bind=self.engine)()
 
-        logger.debug('Connection successful, ensuring conversations table...')
+        self.Base.metadata.create_all(self.engine)
 
-        self._ensure_table()
+        logger.debug('Connection to SQL db successful')
+
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
-        logger.debug('SQL tracker store successfully initialised')
-
-    def _ensure_table(self) -> None:
-        """Creates the conversations table in the database if not present"""
-
-        metadata = MetaData()
-
-        Table("conversations", metadata,
-              Column("id", Integer, primary_key=True),
-              Column("sender_id", String, nullable=False),
-              Column("type_name", String, nullable=False),
-              Column("timestamp", Float),
-              Column("intent_name", String),
-              Column("action_name", String),
-              Column("data", String))
-
-        metadata.create_all(self.engine)
-
-    def keys(self) -> List:
-        """Returns the keys of the items stored in the database"""
+    def keys(self) -> List[Text]:
+        """Collect all keys of the items stored in the database."""
         return self.SQLEvent.__table__.columns.keys()
 
     def retrieve(self, sender_id: Text) -> DialogueStateTracker:
-        """Creates a tracker from all previously stored events"""
+        """Create a tracker from all previously stored events."""
 
-        subquery = self.session.query(self.SQLEvent)
-        query = subquery.filter_by(sender_id=sender_id).all()
-        events = [json.loads(event.data) for event in query]
+        query = self.session.query(self.SQLEvent)
+        result = query.filter_by(sender_id=sender_id).all()
+        events = [json.loads(event.data) for event in result]
 
         if self.domain and len(events) > 0:
-            logger.debug('Recreating tracker '
-                         'from {} stored events'.format(len(events)))
+            logger.debug("Recreating tracker "
+                         "from sender id '{}'".format(sender_id))
 
-            tracker = DialogueStateTracker.from_dict(sender_id, events,
-                                                     self.domain.slots)
+            return DialogueStateTracker.from_dict(sender_id, events,
+                                                  self.domain.slots)
         else:
-            logger.warning("Can't retrieve tracker from SQL storage.  "
-                           "Returning `None` instead.")
-            tracker = None
-        return tracker
+            logger.warning("Can't retrieve tracker matching"
+                           "sender id '{}' from SQL storage.  "
+                           "Returning `None` instead.".format(sender_id))
 
     def save(self, tracker: DialogueStateTracker) -> None:
-        """Updates database with events from the current conversation"""
+        """Update database with events from the current conversation."""
 
         if self.event_broker:
             self.stream_events(tracker)
 
-        events = self._event_buffer(tracker)  # only store recent events
+        events = self._additional_events(tracker)  # only store recent events
 
         for event in events:
-            try:
-                data = event.as_dict()
-            except AttributeError as e:
-                logger.warning("Unable to serialise event: {}.  Using "
-                               "__dict__ method instead".format(e))
-                data = event.__dict__
+
+            data = event.as_dict()
 
             intent = data.get("parse_data", {}).get("intent", {}).get("name")
             action = data.get("name")
@@ -370,8 +348,8 @@ class SQLTrackerStore(TrackerStore):
         self.session.commit()
         logger.debug('Tracker stored to database')
 
-    def _event_buffer(self, tracker: DialogueStateTracker) -> Iterator:
-        """Returns events from the tracker which aren't currently stored"""
+    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+        """Return events from the tracker which aren't currently stored."""
 
         from sqlalchemy import func
         query = self.session.query(func.max(self.SQLEvent.timestamp))
