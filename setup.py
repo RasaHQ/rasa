@@ -70,8 +70,7 @@ install_requires = [
     "keras-applications==1.0.6",
     "keras-preprocessing==1.0.5",
     "kafka-python~=1.4",
-    "sklearn-crfsuite~=0.3.6",
-    "rasa~=0.2.0a3"
+    "sklearn-crfsuite~=0.3.6"
 ]
 
 extras_requires = {
