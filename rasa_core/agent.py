@@ -712,6 +712,6 @@ class Agent(object):
         """Check whether form policy is not present
             if there is a form action in the domain
         """
-        return (self.domain and self.domain.form_names and not
-        any(isinstance(p, FormPolicy)
-            for p in self.policy_ensemble.policies))
+        return (self.domain and self.domain.form_names and
+                not any(isinstance(p, FormPolicy)
+                        for p in self.policy_ensemble.policies))
