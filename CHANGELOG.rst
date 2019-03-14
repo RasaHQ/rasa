@@ -39,6 +39,9 @@ Changed
 - renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
+- now randomly created augmented stories are subsampled during training and marked,
+  so that memo policies can ignore them
+- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 - changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, 
   rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 - dialogue files in ``/data/test_dialogues`` were updated with conversations
