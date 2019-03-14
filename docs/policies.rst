@@ -1,5 +1,5 @@
-:desc: Define and train custom policies to optimise your contextual assistant
-       for longer context or unseen utterances which require generalisation.
+:desc: Define and train custom policies to optimize your contextual assistant
+       for longer context or unseen utterances which require generalization.
 
 .. _policies:
 
@@ -7,6 +7,7 @@ Training and Policies
 =====================
 
 .. contents::
+
 
 Training
 --------
@@ -33,16 +34,10 @@ Or by creating an agent and running the train method yourself:
    agent.train(data)
 
 
-.. _default_config:
+Training Script Options
+^^^^^^^^^^^^^^^^^^^^^^^
 
-Default configuration
----------------------
-
-By default, we try to provide you with a good set of configuration values
-and policies that suit most people. But you are encouraged to modify
-these to your needs:
-
-.. literalinclude:: ../rasa_core/default_config.yml
+.. program-output:: python -m rasa_core.train default -h
 
 
 Data Augmentation
@@ -72,8 +67,69 @@ You can alter this behaviour with the ``--augmentation`` flag.
 In python, you can pass the ``augmentation_factor`` argument to the
 ``Agent.load_data`` method.
 
+Policies
+--------
+
+The :class:`rasa_core.policies.Policy` class decides which action to take
+at every step in the conversation.
+
+There are different policies to choose from, and you can include
+multiple policies in a single :class:`rasa_core.agent.Agent`. At
+every turn, the policy which predicts the next action with the
+highest confidence will be used. If two policies predict with equal
+confidence, the policy with the higher priority will be used.
+
+Configuration of Policies
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _policy_file:
+
+Configuring policies using a configuration file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are using the training script, you must set the policies you would like
+the Core model to use in a YAML file.
+
+For example:
+
+.. code-block:: yaml
+
+  policies:
+    - name: "KerasPolicy"
+      featurizer:
+      - name: MaxHistoryTrackerFeaturizer
+        max_history: 5
+        state_featurizer:
+          - name: BinarySingleStateFeaturizer
+    - name: "MemoizationPolicy"
+      max_history: 5
+    - name: "FallbackPolicy"
+      nlu_threshold: 0.4
+      core_threshold: 0.3
+      fallback_action_name: "my_fallback_action"
+    - name: "path.to.your.policy.class"
+      arg1: "..."
+
+Pass the YAML file's name to the train script using the ``--config``
+argument (or just ``-c``). There is a default config file you can use to
+get started in ``default_config.yml``, which is already implemented
+as the provided ``policies.yml`` file in the starter pack.
+
+
+.. _default_config:
+
+Default configuration
+~~~~~~~~~~~~~~~~~~~~~
+
+By default, we try to provide you with a good set of configuration values
+and policies that suit most people. But you are encouraged to modify
+these to your needs:
+
+.. literalinclude:: ../rasa_core/default_config.yml
+
+
 Max History
-^^^^^^^^^^^
+~~~~~~~~~~~
 
 One important hyperparameter for Rasa Core policies is the ``max_history``.
 This controls how much dialogue history the model looks at to decide which
@@ -111,67 +167,23 @@ affect the dialogue very far into the future, you should store it as a
 slot. Slot information is always available for every featurizer.
 
 
+Configuring policies in code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Training Script Options
-^^^^^^^^^^^^^^^^^^^^^^^
+You can load a policy configuration file named ``"policies.yml"`` from your
+code like so:
 
-.. program-output:: python -m rasa_core.train default -h
+.. code-block:: python
+
+    from rasa_core import config as policy_config
+    from rasa_core.agent import Agent
+
+    policies = policy_config.load("policies.yml")
+    agent = Agent("domain.yml", policies=policies)
 
 
-
-Policies
---------
-
-The :class:`rasa_core.policies.Policy` class decides which action to take
-at every step in the conversation.
-
-There are different policies to choose from, and you can include
-multiple policies in a single :class:`rasa_core.agent.Agent`. At
-every turn, the policy which predicts the next action with the
-highest confidence will be used.
-
-.. _policy_file:
-
-Configuring polices using a configuration file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you are using the training script, you must set the policies you would like
-the Core model to use in a YAML file.
-
-For example:
-
-.. code-block:: yaml
-
-  policies:
-    - name: "KerasPolicy"
-      featurizer:
-      - name: MaxHistoryTrackerFeaturizer
-        max_history: 5
-        state_featurizer:
-          - name: BinarySingleStateFeaturizer
-    - name: "MemoizationPolicy"
-      max_history: 5
-    - name: "FallbackPolicy"
-      nlu_threshold: 0.4
-      core_threshold: 0.3
-      fallback_action_name: "my_fallback_action"
-    - name: "path.to.your.policy.class"
-      arg1: "..."
-
-Pass the YAML file's name to the train script using the ``--config``
-argument (or just ``-c``). There is a default config file you can use to
-get started: :ref:`default_config`.
-
-.. note::
-
-    Policies specified higher in the ``config.yaml`` will take
-    precedence over a policy specified lower if the confidences
-    are equal.
-
-Configuring polices in code
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-You can pass a list of policies when you create an agent:
+Alternatively, you can pass a list of policies directly
+when you create an agent:
 
 .. code-block:: python
 
@@ -180,16 +192,8 @@ You can pass a list of policies when you create an agent:
    from rasa_core.agent import Agent
 
    agent = Agent("domain.yml",
-                  policies=[MemoizationPolicy(), KerasPolicy()])
+                 policies=[MemoizationPolicy(), KerasPolicy()])
 
-
-Memoization Policy
-^^^^^^^^^^^^^^^^^^
-
-The ``MemoizationPolicy`` just memorizes the conversations in your
-training data. It predicts the next action with confidence ``1.0``
-if this exact conversation exists in the training data, otherwise it
-predicts ``None`` with confidence ``0.0``.
 
 
 Keras Policy
@@ -396,10 +400,90 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-Two-stage Fallback Policy
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Memoization Policy
+^^^^^^^^^^^^^^^^^^
 
-This policy handles low NLU confidence in multiple stages.
+The ``MemoizationPolicy`` just memorizes the conversations in your
+training data. It predicts the next action with confidence ``1.0``
+if this exact conversation exists in the training data, otherwise it
+predicts ``None`` with confidence ``0.0``.
+
+
+Form Policy
+^^^^^^^^^^^
+
+The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
+handles the filling of forms. Once a ``FormAction`` is called, the
+``FormPolicy`` will continually predict the ``FormAction`` until all slots
+in the form are filled. For more information, see `Slot Filling
+<https://rasa.com/docs/core/slotfilling/>`_.
+
+
+Fallback Policies
+^^^^^^^^^^^^^^^^^
+
+Fallback Policies invoke `fallback actions
+<https://rasa.com/docs/core/fallbacks//>`_ when either NLU or Core is not
+confident enough in its predicitons. There are two fallback policies: the
+``FallbackPolicy`` and the ``TwoStageFallbackPolicy``, which cannot be used
+together.
+
+
+.. _fallback_policy:
+
+Fallback Policy
+~~~~~~~~~~~~~~~
+
+The ``FallbackPolicy`` invokes a fallback action if the intent recognition
+has a confidence below ``nlu_threshold`` or if none of the dialogue
+policies predict an action with confidence higher than ``core_threshold``.
+
+**Configuration**
+
+The thresholds and fallback action can be adjusted in the policy configuration
+file as parameters of the ``FallbackPolicy``:
+
+.. code-block:: yaml
+
+  policies:
+    - name: "FallbackPolicy"
+      nlu_threshold: 0.3
+      core_threshold: 0.3
+      fallback_action_name: 'action_default_fallback'
+
++--------------------------------+---------------------------------------------+
+| ``nlu_threshold``              | Min confidence needed to accept an NLU      |
+|                                | prediction                                  |
++--------------------------------+---------------------------------------------+
+| ``core_threshold``             | Min confidence needed to accept an action   |
+|                                | prediction from Rasa Core                   |
++--------------------------------+---------------------------------------------+
+| ``fallback_action_name``       | Name of the `fallback action                |
+|                                | <https://rasa.com/docs/core/fallbacks/>`_   |
+|                                | to be called if the confidence of intent    |
+|                                | or action is below the respective threshold |
++--------------------------------+---------------------------------------------+
+
+You can also configure the ``FallbackPolicy`` in your python code:
+
+.. code-block:: python
+
+   from rasa_core.policies.fallback import FallbackPolicy
+   from rasa_core.policies.keras_policy import KerasPolicy
+   from rasa_core.agent import Agent
+
+   fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
+                             core_threshold=0.3,
+                             nlu_threshold=0.3)
+
+   agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
+
+
+Two-stage Fallback Policy
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``TwoStageFallbackPolicy`` handles low NLU confidence in multiple stages
+by trying to disambiguate the user input.
 
 - If a NLU prediction has a low confidence score, the user is asked to affirm
   the classification of the intent.
@@ -419,14 +503,13 @@ This policy handles low NLU confidence in multiple stages.
 
     - If the user affirms the intent, the story continues as if the user had
       this intent from the beginning.
-    - If the user denies, an ultimate fallback action is triggered
-      (e.g. a handoff to a human).
+    - If the user denies, the original intent is classified as the specified
+      ``deny_suggestion_intent_name``, and an ultimate fallback action
+      is triggered (e.g. a handoff to a human).
 
-Configuration
-"""""""""""""
+**Configuration**
 
 To use this policy, include the following in your policy configuration.
-Note that you cannot use this together with the default fallback policy.
 
 .. code-block:: yaml
 
@@ -445,34 +528,21 @@ Note that you cannot use this together with the default fallback policy.
 | ``core_threshold``             | Min confidence needed to accept an action   |
 |                                | prediction from Rasa Core                   |
 +--------------------------------+---------------------------------------------+
-| ``fallback_core_action_name``  | Name of the action to be called if the      |
-|                                | confidence of the Rasa Core action          |
-|                                | classification is below the threshold       |
+| ``fallback_core_action_name``  | Name of the `fallback action                |
+|                                | <https://rasa.com/docs/core/fallbacks/>`_   |
+|                                | to be called if the confidence of Rasa Core |
+|                                | action prediction is below the              |
+|                                | ``core_threshold``                          |
 +--------------------------------+---------------------------------------------+
-| ``fallback_nlu_action_name``   | Name of the action to be called if the      |
-|                                | confidence of Rasa NLU intent               |
-|                                | classification is below the threshold       |
+| ``fallback_nlu_action_name``   | Name of the `fallback action                |
+|                                | <https://rasa.com/docs/core/fallbacks/>`_   |
+|                                | to be called if the confidence of Rasa NLU  |
+|                                | intent classification is below the          |
+|                                | ``nlu_threshold``                           |
 +--------------------------------+---------------------------------------------+
 | ``deny_suggestion_intent_name``| The name of the intent which is used to     |
 |                                | detect that the user denies the suggested   |
 |                                | intents                                     |
 +--------------------------------+---------------------------------------------+
-
-.. note::
-
-    It is required to have the two intents ``affirm`` and ``deny`` in the
-    domain of the bot, to determine whether the user affirms or
-    denies a suggestion.
-
-Default Actions for Affirmation and Rephrasing
-""""""""""""""""""""""""""""""""""""""""""""""
-
-Rasa Core provides the default implementations
-``action_default_ask_affirmation`` and ``action_default_ask_rephrase``
-which are triggered when the bot asks the user to affirm
-or rephrase their intent.
-The default implementation of ``action_default_ask_rephrase`` action utters
-the response template ``utter_ask_rephrase``.
-The implementation of both actions can be overwritten with :ref:`customactions`.
 
 .. include:: feedback.inc
