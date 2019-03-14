@@ -85,7 +85,7 @@ Configuration of Policies
 .. _policy_file:
 
 Configuring policies using a configuration file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you are using the training script, you must set the policies you would like
 the Core model to use in a YAML file.
@@ -168,7 +168,7 @@ slot. Slot information is always available for every featurizer.
 
 
 Configuring policies in code
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can load a policy configuration file named ``"policies.yml"`` from your
 code like so:
