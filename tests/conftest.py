@@ -1,20 +1,21 @@
 import logging
 import os
+from typing import Text
 
 import matplotlib
 import pytest
 from pytest_localserver.http import WSGIServer
 
-from rasa_core import train, server
+from rasa_core import server, train
 from rasa_core.agent import Agent
 from rasa_core.channels import CollectingOutputChannel, RestInput, channel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
-from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
+from rasa_core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa_core.policies.memoization import (
-    Policy, MemoizationPolicy, AugmentedMemoizationPolicy)
+    AugmentedMemoizationPolicy, MemoizationPolicy, Policy)
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
@@ -57,6 +58,7 @@ class CustomSlot(Slot):
         return [0.5]
 
 
+# noinspection PyAbstractClass,PyUnusedLocal,PyMissingConstructor
 class ExamplePolicy(Policy):
 
     def __init__(self, example_arg):
@@ -218,3 +220,35 @@ def default_tracker(default_domain):
     import uuid
     uid = str(uuid.uuid1())
     return DialogueStateTracker(uid, default_domain.slots)
+
+
+@pytest.fixture(scope="session")
+def project() -> Text:
+    import tempfile
+    from rasa.cli.scaffold import _create_initial_project
+
+    directory = tempfile.mkdtemp()
+    _create_initial_project(directory)
+
+    return directory
+
+
+def train_model(project: Text, filename: Text = "test.tar.gz"):
+    from rasa.constants import (
+        DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH,
+        DEFAULT_MODELS_PATH)
+    import rasa.train
+
+    output = os.path.join(project, DEFAULT_MODELS_PATH, filename)
+    domain = os.path.join(project, DEFAULT_DOMAIN_PATH)
+    config = os.path.join(project, DEFAULT_CONFIG_PATH)
+    training_files = os.path.join(project, DEFAULT_DATA_PATH)
+
+    rasa.train(domain, config, training_files, output)
+
+    return output
+
+
+@pytest.fixture(scope="session")
+def trained_model(project) -> Text:
+    return train_model(project)
