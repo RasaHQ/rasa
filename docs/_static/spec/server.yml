@@ -1551,7 +1551,7 @@ components:
           type: boolean
           description: >-
             Force a model training even if the data has not changed
-        required: ["domain", "config", "nlu", "stories"]
+      required: ["domain", "config", "nlu", "stories"]
 
     StackTrainingResult:
       type: string
