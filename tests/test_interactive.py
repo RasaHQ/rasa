@@ -214,17 +214,6 @@ def test_entity_annotation_merge_with_original():
                          "value": "paula"}]
 
 
-def test_extractor_filtering():
-    parse_original = {
-        "text": "Hello there rasa, it's wednesday already.",
-        "entities": [{"start": 12,
-                      "end": 16,
-                      "entity": "day",
-                      "value": "wednesday",
-                      "extractor": ""
-                      }],
-        "intent": {"name": "greeting", "confidence": 0.9}
-
 def test_validate_user_message():
     parse_data = {
         "text": "Hello there rasa.",
