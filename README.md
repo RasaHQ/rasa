@@ -94,7 +94,7 @@ To build & edit the docs, first install all necessary dependencies:
 
 ```
 brew install sphinx
-pip install -r dev-requirements.txt
+pip3 install -r dev-requirements.txt
 ```
 
 After the installation has finished, you can run and view the documentation
