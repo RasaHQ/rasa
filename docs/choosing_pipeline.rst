@@ -195,8 +195,8 @@ a full list of components. For example, these two configurations are equivalent:
     pipeline:
     - name: "SpacyNLP"
     - name: "SpacyTokenizer"
-    - name: "RegexFeaturizer"
     - name: "SpacyFeaturizer"
+    - name: "RegexFeaturizer"
     - name: "CRFEntityExtractor"
     - name: "EntitySynonymMapper"
     - name: "SklearnIntentClassifier"
@@ -223,8 +223,8 @@ the components and configure them separately:
     pipeline:
     - name: "SpacyNLP"
     - name: "SpacyTokenizer"
-    - name: "RegexFeaturizer"
     - name: "SpacyFeaturizer"
+    - name: "RegexFeaturizer"
     - name: "CRFEntityExtractor"
     - name: "EntitySynonymMapper"
     - name: "SklearnIntentClassifier"

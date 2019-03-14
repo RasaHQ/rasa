@@ -46,6 +46,8 @@ Fixed
 - ``RegexFeaturizer`` detects all regex in user message (not just first)
 - do_extractors_support_overlap now correctly throws an exception only if no extractors are 
   passed or if extractors that do not support overlapping entities are used.
+- Docs entry for pretrained embeddings pipeline is now consistent with the
+  code in ``registry.py``
 
 
 [0.14.3] - 2019-02-01
