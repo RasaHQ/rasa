@@ -2,12 +2,12 @@ import logging
 import os
 import shutil
 import tempfile
-import time
 import typing
 import uuid
 from threading import Thread
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
+import time
 from gevent.pywsgi import WSGIServer
 from requests.exceptions import InvalidURL, RequestException
 
@@ -460,8 +460,8 @@ class Agent(object):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         for policy in self.policy_ensemble.policies:
-            if (policy.featurizer and not
-            hasattr(policy.featurizer, 'max_history')):
+            if (policy.featurizer and
+                    not hasattr(policy.featurizer, 'max_history')):
                 return False
         return True
 
@@ -713,5 +713,5 @@ class Agent(object):
             if there is a form action in the domain
         """
         return (self.domain and self.domain.form_names and not
-                any(isinstance(p, FormPolicy)
-                    for p in self.policy_ensemble.policies))
+        any(isinstance(p, FormPolicy)
+            for p in self.policy_ensemble.policies))
