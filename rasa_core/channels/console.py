@@ -1,41 +1,43 @@
 # this builtin is needed so we can overwrite in test
-import aiohttp
 import json
 import logging
+
+import aiohttp
 from async_generator import async_generator, yield_
 from prompt_toolkit.styles import Style
 
 import questionary
+import rasa.cli.utils
+from rasa.cli import utils as cliutils
 from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.channels.channel import (
-    button_to_string, element_to_string,
-    RestInput)
+    RestInput, button_to_string, element_to_string)
 from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
 
 
-def print_bot_output(message, color=utils.bcolors.OKBLUE):
+def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
     if "text" in message:
-        utils.print_color(message.get("text"), color)
+        rasa.cli.utils.print_color(message.get("text"), color)
 
     if "image" in message:
-        utils.print_color("Image: " + message.get("image"), color)
+        rasa.cli.utils.print_color("Image: " + message.get("image"), color)
 
     if "attachment" in message:
-        utils.print_color("Attachment: " + message.get("attachment"), color)
+        rasa.cli.utils.print_color("Attachment: " + message.get("attachment"), color)
 
     if "buttons" in message:
-        utils.print_color("Buttons:", color)
+        rasa.cli.utils.print_color("Buttons:", color)
         for idx, button in enumerate(message.get("buttons")):
-            utils.print_color(button_to_string(button, idx), color)
+            rasa.cli.utils.print_color(button_to_string(button, idx), color)
 
     if "elements" in message:
         for idx, element in enumerate(message.get("elements")):
             element_str = "Elements:\n" + element_to_string(element, idx)
-            utils.print_color(element_str, color)
+            rasa.cli.utils.print_color(element_str, color)
 
 
 def get_cmd_input():
@@ -101,9 +103,8 @@ async def record_messages(server_url=DEFAULT_SERVER_URL,
 
     exit_text = INTENT_MESSAGE_PREFIX + 'stop'
 
-    utils.print_color("Bot loaded. Type a message and press enter "
-                      "(use '{}' to exit): ".format(exit_text),
-                      utils.bcolors.OKGREEN)
+    cliutils.print_success("Bot loaded. Type a message and press enter "
+                           "(use '{}' to exit): ".format(exit_text))
 
     num_messages = 0
     while not utils.is_limit_reached(num_messages, max_message_limit):

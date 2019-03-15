@@ -17,7 +17,9 @@ from sanic.exceptions import NotFound
 from terminaltables import AsciiTable, SingleTable
 
 import questionary
+import rasa.cli.utils
 from questionary import Choice, Form, Question
+from rasa.cli import utils as cliutils
 from rasa_core import constants, events, run, train, utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
 from rasa_core.channels import UserMessage
@@ -531,8 +533,8 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strs = []
     for k, s in tracker_dump.get("slots").items():
-        colored_value = utils.wrap_with_color(str(s),
-                                              utils.bcolors.WARNING)
+        colored_value = cliutils.wrap_with_color(str(s),
+                                                 rasa.cli.utils.bcolors.WARNING)
         slot_strs.append("{}: {}".format(k, colored_value))
     return slot_strs
 
@@ -1176,10 +1178,10 @@ def _print_help(skip_visualization: bool) -> None:
     else:
         visualization_help = ""
 
-    utils.print_color("Bot loaded. {}\n"
-                      "Type a message and press enter "
-                      "(press 'Ctr-c' to exit). "
-                      "".format(visualization_help), utils.bcolors.OKGREEN)
+    rasa.cli.utils.print_success("Bot loaded. {}\n"
+                                 "Type a message and press enter "
+                                 "(press 'Ctr-c' to exit). "
+                                 "".format(visualization_help))
 
 
 async def record_messages(endpoint: EndpointConfig,

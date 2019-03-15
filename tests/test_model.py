@@ -3,22 +3,20 @@ import tempfile
 import time
 
 import pytest
-import rasa_core
-import rasa_nlu
 
 import rasa
-from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
-                            DEFAULT_DATA_PATH)
-from rasa.model import (get_latest_model, FINGERPRINT_CONFIG_KEY,
-                        FINGERPRINT_NLU_VERSION_KEY,
-                        FINGERPRINT_CORE_VERSION_KEY,
-                        FINGERPRINT_RASA_VERSION_KEY, FINGERPRINT_STORIES_KEY,
-                        FINGERPRINT_NLU_DATA_KEY, core_fingerprint_changed,
-                        FINGERPRINT_DOMAIN_KEY, nlu_fingerprint_changed,
-                        model_fingerprint, get_model, create_package_rasa,
-                        FINGERPRINT_FILE_PATH, get_model_subdirectories,
-                        FINGERPRINT_TRAINED_AT_KEY)
 import rasa.data as data
+import rasa_core
+import rasa_nlu
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH)
+from rasa.model import (
+    FINGERPRINT_CONFIG_KEY, FINGERPRINT_CORE_VERSION_KEY,
+    FINGERPRINT_DOMAIN_KEY, FINGERPRINT_FILE_PATH, FINGERPRINT_NLU_DATA_KEY,
+    FINGERPRINT_NLU_VERSION_KEY, FINGERPRINT_RASA_VERSION_KEY,
+    FINGERPRINT_STORIES_KEY, FINGERPRINT_TRAINED_AT_KEY,
+    core_fingerprint_changed, create_package_rasa, get_latest_model, get_model,
+    get_model_subdirectories, model_fingerprint, nlu_fingerprint_changed)
 
 
 def test_get_latest_model(trained_model):

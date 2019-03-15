@@ -4,6 +4,7 @@ from typing import List
 import rasa.cli.run
 
 
+# noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     shell_parser = subparsers.add_parser(

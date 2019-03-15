@@ -4,7 +4,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from rasa_core import training
+from rasa_core import training, utils
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
     ActionRevertFallbackEvents,
@@ -69,7 +69,7 @@ async def train_trackers(domain, augmentation_factor=20):
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return next(sanic_loop())
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
 
 
 # We are going to use class style testing here since unfortunately pytest
@@ -231,8 +231,8 @@ class TestMemoizationPolicy(PolicyTestCollection):
         assert trained_policy._recall_states(random_states) is None
 
         # compare augmentation for augmentation_factor of 0 and 20:
-        trackers_no_augmentation = train_trackers(default_domain,
-                                                  augmentation_factor=0)
+        trackers_no_augmentation = await train_trackers(default_domain,
+                                                        augmentation_factor=0)
         trained_policy.train(trackers_no_augmentation, default_domain)
         lookup_no_augmentation = trained_policy.lookup
 

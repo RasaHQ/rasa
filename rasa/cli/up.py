@@ -3,11 +3,12 @@ import sys
 from multiprocessing import Process
 from typing import List
 
-from rasa_core.utils import EndpointConfig, print_success, print_error
-
 import rasa.cli.run
+from rasa.cli.utils import print_error, print_success
+from rasa_core.utils import EndpointConfig
 
 
+# noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     shell_parser = subparsers.add_parser(
@@ -22,6 +23,8 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
 def start_core(platform_token):
     from rasa_core.utils import AvailableEndpoints
+    from rasa_core.run import serve_application
+
     _endpoints = AvailableEndpoints(
         # TODO: make endpoints more configurable, esp ports
         model=EndpointConfig("http://localhost:5002"
@@ -33,28 +36,14 @@ def start_core(platform_token):
                            "/api/nlg",
                            token=platform_token))
 
-    from rasa_core import broker
-    _broker = broker.from_endpoint_config(_endpoints.event_broker)
-
-    from rasa_core.tracker_store import TrackerStore
-    _tracker_store = TrackerStore.find_tracker_store(
-        None, _endpoints.tracker_store, _broker)
-
-    from rasa_core.run import load_agent
-    _agent = load_agent("models",
-                        interpreter=None,
-                        tracker_store=_tracker_store,
-                        endpoints=_endpoints)
-    from rasa_core.run import serve_application
-    print_success("About to start core")
-
-    serve_application(_agent,
-                      "rasa",
-                      5005,
-                      "credentials.yml",
-                      "*",
-                      None,  # TODO: configure auth token
-                      True)
+    serve_application("models",
+                      nlu_model=None,
+                      channel="rasa",
+                      credentials_file="credentials.yml",
+                      cors="*",
+                      auth_token=None,  # TODO: configure auth token
+                      enable_api=True,
+                      endpoints=_endpoints)
 
 
 def start_event_service():

@@ -5,13 +5,15 @@ from typing import List, Optional, Text, Union
 from rasa import data
 from rasa.cli.default_arguments import add_model_param, add_stories_param
 from rasa.cli.utils import get_validated_path
-from rasa.constants import (DEFAULT_ENDPOINTS_PATH, DEFAULT_CONFIG_PATH,
-                            DEFAULT_MODELS_PATH, DEFAULT_DATA_PATH)
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_ENDPOINTS_PATH,
+    DEFAULT_MODELS_PATH)
 from rasa.model import get_latest_model, get_model
 
 logger = logging.getLogger(__name__)
 
 
+# noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     test_parser = subparsers.add_parser(
@@ -50,6 +52,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
     test_parser.set_defaults(func=test)
 
 
+# noinspection PyProtectedMember
 def _add_core_arguments(parser: Union[argparse.ArgumentParser,
                                       argparse._ActionsContainer]):
     from rasa_core.cli.test import add_evaluation_arguments
@@ -76,6 +79,7 @@ def _add_core_subparser_arguments(parser: argparse.ArgumentParser):
              "in this directory will be compared.")
 
 
+# noinspection PyProtectedMember
 def _add_nlu_arguments(parser: Union[argparse.ArgumentParser,
                                      argparse._ActionsContainer]):
     parser.add_argument('-u', '--nlu',

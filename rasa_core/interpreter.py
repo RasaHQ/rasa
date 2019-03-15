@@ -7,7 +7,7 @@ import re
 import os
 from typing import Text, List, Dict, Any
 
-from rasa_core import constants, utils
+from rasa_core import constants
 from rasa_core.utils import EndpointConfig
 from rasa_core.constants import INTENT_MESSAGE_PREFIX
 
@@ -22,15 +22,15 @@ class NaturalLanguageInterpreter(object):
 
     @staticmethod
     def create(obj, endpoint=None):
-        from rasa_nlu.model import Interpreter
-
-        if (isinstance(obj, NaturalLanguageInterpreter) or
-                # TODO: I doubt we should allow the NLU interpreter here!
-                #  (e.g. message_id param to parse)
-                isinstance(obj, Interpreter)):
+        if isinstance(obj, NaturalLanguageInterpreter):
             return obj
 
         if not isinstance(obj, str):
+            if obj is not None:
+                logger.warning("Tried to create NLU interpreter "
+                               "from '{}', which is not possible."
+                               "Using RegexInterpreter instead."
+                               "".format(obj))
             return RegexInterpreter()  # default interpreter
 
         if not endpoint:

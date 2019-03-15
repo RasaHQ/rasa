@@ -1,17 +1,16 @@
-import os
 import argparse
+import os
 from typing import List, Text
 
 import questionary
 import rasa.train
 from rasa.cli.shell import shell
-from rasa.cli.utils import create_output_path
-from rasa_core.utils import print_success
-
-from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
-                            DEFAULT_DATA_PATH)
+from rasa.cli.utils import create_output_path, print_success
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH)
 
 
+# noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     scaffold_parser = subparsers.add_parser(
@@ -21,7 +20,8 @@ def add_subparser(subparsers: argparse._SubParsersAction,
     scaffold_parser.set_defaults(func=run)
 
 
-def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
+def print_train_or_instructions(args: argparse.Namespace,
+                                path: Text) -> None:
     print_success("Your bot is ready to go!")
     should_train = questionary.confirm("Do you want me to train an initial "
                                        "model for the bot? 💪🏽").ask()
@@ -106,7 +106,6 @@ def _ask_overwrite(path: Text) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
-    from rasa_core.utils import print_success
 
     print_success("Welcome to Rasa! 🤖\n")
     print("To get started quickly, I can assist you to create an "

@@ -5,9 +5,11 @@ import logging
 import warnings
 from difflib import SequenceMatcher
 
+import rasa.cli.utils
 import rasa_core.cli.arguments
 from typing import List, Optional, Text, Tuple
 
+from rasa.cli import utils as cliutils
 from rasa_core import constants, run, utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage, CollectingOutputChannel, console
@@ -115,7 +117,7 @@ async def replay_events(tracker: DialogueStateTracker, agent: 'Agent') -> None:
                                                 actions_between_utterances)
 
             actions_between_utterances = []
-            print(utils.wrap_with_color(event.text, utils.bcolors.OKGREEN))
+            cliutils.print_success(event.text)
             out = CollectingOutputChannel()
             await agent.handle_text(event.text,
                                     sender_id=tracker.sender_id,
@@ -180,10 +182,10 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
-    print(utils.wrap_with_color(
+    print(cliutils.wrap_with_color(
         "We'll recreate the dialogue state. After that you can chat "
         "with the bot, continuing the input conversation.",
-        utils.bcolors.OKGREEN + utils.bcolors.UNDERLINE))
+        rasa.cli.utils.bcolors.OKGREEN + rasa.cli.utils.bcolors.UNDERLINE))
 
     _loop = asyncio.get_event_loop()
     _loop.run_until_complete(serve_application(cmdline_args.core,

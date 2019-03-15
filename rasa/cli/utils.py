@@ -1,5 +1,5 @@
 import os
-from typing import Text, Optional, Dict, Callable, Any
+from typing import Any, Callable, Dict, Optional, Text
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -20,7 +20,6 @@ def get_validated_path(current: Optional[Text], parameter: Text,
         The current value if it was valid, else the default value of the
         argument if it is valid, else `None`.
     """
-    from rasa_core.utils import print_warning
 
     if (current is None or
             current is not None and not os.path.exists(current)):
@@ -46,7 +45,6 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
         default: The default value of the parameter.
 
     """
-    from rasa_core.utils import print_error
 
     default_clause = ""
     if default:
@@ -106,3 +104,34 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
     possible_arguments = arguments_of(func)
 
     return {k: v for k, v in kwargs.items() if k in possible_arguments}
+
+
+def print_success(text: Text):
+    print_color(text, bcolors.OKGREEN)
+
+
+class bcolors(object):
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def wrap_with_color(text: Text, color: Text):
+    return color + text + bcolors.ENDC
+
+
+def print_color(text: Text, color: Text):
+    print(wrap_with_color(text, color))
+
+
+def print_warning(text: Text):
+    print_color(text, bcolors.WARNING)
+
+
+def print_error(text: Text):
+    print_color(text, bcolors.FAIL)

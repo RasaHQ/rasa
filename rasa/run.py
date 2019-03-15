@@ -28,9 +28,11 @@ def run(model: Text, endpoints: Text, connector: Text = None,
 
     """
     import rasa_core.run
+    from rasa_core.utils import AvailableEndpoints
 
     model_path = get_model(model)
-    _agent = create_agent(model_path, endpoints)
+    core_path, nlu_path = get_model_subdirectories(model)
+    _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:
         channel = "cmdline"
@@ -41,8 +43,11 @@ def run(model: Text, endpoints: Text, connector: Text = None,
         channel = connector
 
     kwargs = minimal_kwargs(kwargs, rasa_core.run.serve_application)
-    rasa_core.run.serve_application(_agent, channel=channel,
+    rasa_core.run.serve_application(core_path,
+                                    nlu_path,
+                                    channel=channel,
                                     credentials_file=credentials,
+                                    endpoints=_endpoints,
                                     **kwargs)
     shutil.rmtree(model_path)
 
@@ -50,7 +55,6 @@ def run(model: Text, endpoints: Text, connector: Text = None,
 def create_agent(model: Text,
                  endpoints: Text = None) -> 'Agent':
     from rasa_core.interpreter import RasaNLUInterpreter
-    import rasa_core.run
     from rasa_core.tracker_store import TrackerStore
     from rasa_core import broker
     from rasa_core.utils import AvailableEndpoints
@@ -70,6 +74,8 @@ def create_agent(model: Text,
     _tracker_store = TrackerStore.find_tracker_store(None,
                                                      _endpoints.tracker_store,
                                                      _broker)
-    return rasa_core.run.load_agent(core_path, interpreter=_interpreter,
-                                    tracker_store=_tracker_store,
-                                    endpoints=_endpoints)
+
+    return Agent.load(core_path,
+                      generator=_endpoints.nlg,
+                      tracker_store=_tracker_store,
+                      action_endpoint=_endpoints.action)

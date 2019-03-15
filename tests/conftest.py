@@ -63,9 +63,7 @@ class ExamplePolicy(Policy):
 @pytest.fixture
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    active_loop = next(sanic_loop())
-    utils.enable_async_loop_debugging(active_loop)
-    return active_loop
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
 
 
 @pytest.fixture(scope="session")

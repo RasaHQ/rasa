@@ -30,7 +30,7 @@ domain = Domain.load("examples/moodbot/domain.yml")
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return next(sanic_loop())
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
 
 
 class MockRedisTrackerStore(RedisTrackerStore):

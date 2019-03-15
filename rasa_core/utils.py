@@ -211,35 +211,6 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
 
 
 # noinspection PyPep8Naming
-class bcolors(object):
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-
-def wrap_with_color(text: Text, color: Text):
-    return color + text + bcolors.ENDC
-
-
-def print_color(text: Text, color: Text):
-    print(wrap_with_color(text, color))
-
-
-def print_warning(text: Text):
-    print_color(text, bcolors.WARNING)
-
-
-def print_error(text: Text):
-    print_color(text, bcolors.FAIL)
-
-
-def print_success(text: Text):
-    print_color(text, bcolors.OKGREEN)
 
 
 class HashableNDArray(object):
@@ -784,7 +755,8 @@ def set_default_subparser(parser,
             sys.argv.insert(1, default_subparser)
 
 
-def enable_async_loop_debugging(event_loop: AbstractEventLoop):
+def enable_async_loop_debugging(event_loop: AbstractEventLoop
+                                ) -> AbstractEventLoop:
     logging.info("Enabling coroutine debugging. "
                  "Loop id {}".format(id(asyncio.get_event_loop())))
 
@@ -797,6 +769,7 @@ def enable_async_loop_debugging(event_loop: AbstractEventLoop):
 
     # Report all mistakes managing asynchronous resources.
     warnings.simplefilter('always', ResourceWarning)
+    return event_loop
 
 
 def create_task_error_logger(error_message: Text = ""

@@ -6,6 +6,7 @@ import os
 import pytest
 from aioresponses import aioresponses
 
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.train import train
 from rasa_core.utils import (
@@ -16,7 +17,7 @@ from rasa_core.utils import (
 @pytest.fixture(scope="session")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return next(sanic_loop())
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
 
 
 async def test_moodbot_example(trained_moodbot_path):
@@ -72,7 +73,9 @@ async def test_formbot_example():
     }
 
     with aioresponses() as mocked:
-        mocked.post('https://example.com/webhooks/actions', payload=response)
+        mocked.post('https://example.com/webhooks/actions',
+                    payload=response,
+                    repeat=True)
 
         responses = await agent.handle_text("/request_restaurant")
 
@@ -87,6 +90,7 @@ async def test_formbot_example():
     with aioresponses() as mocked:
         # noinspection PyTypeChecker
         mocked.post('https://example.com/webhooks/actions',
+                    repeat=True,
                     exception=ClientResponseError(
                         400, "", json.dumps(response)))
 
