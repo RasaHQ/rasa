@@ -15,6 +15,7 @@ Added
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
+- added tracker store persisting trackers into a SQL database (``SQLTrackerStore``)
 - documentation about early deactivation of a form in validation
 - Added max_event_history in tracker_store to set this value in DialogueStateTracker
 - utility functions for colored logging

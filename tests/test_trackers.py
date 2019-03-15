@@ -2,6 +2,8 @@ import json
 
 import fakeredis
 import pytest
+import tempfile
+import os
 
 from rasa_core import training, restore
 from rasa_core import utils
@@ -10,7 +12,9 @@ from rasa_core.domain import Domain
 from rasa_core.events import (
     UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
-from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
+from rasa_core.tracker_store import (InMemoryTrackerStore,
+                                     RedisTrackerStore,
+                                     SQLTrackerStore)
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from tests.conftest import (DEFAULT_STORIES_FILE,
@@ -29,13 +33,17 @@ class MockRedisTrackerStore(RedisTrackerStore):
 
 
 def stores_to_be_tested():
+    temp = tempfile.mkdtemp()
     return [MockRedisTrackerStore(domain),
-            InMemoryTrackerStore(domain)]
+            InMemoryTrackerStore(domain),
+            SQLTrackerStore(domain,
+                            db=os.path.join(temp, 'rasa.db'))]
 
 
 def stores_to_be_tested_ids():
     return ["redis-tracker",
-            "in-memory-tracker"]
+            "in-memory-tracker",
+            "SQL-tracker"]
 
 
 def test_tracker_duplicate():
