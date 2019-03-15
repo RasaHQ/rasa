@@ -29,6 +29,10 @@ DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
+DEFAULT_STACK_CONFIG = "data/test_config/stack_config.yml"
+
+DEFAULT_NLU_DATA = "examples/moodbot/data/nlu.md"
+
 END_TO_END_STORY_FILE = "data/test_evaluations/end_to_end_story.md"
 
 E2E_STORY_FILE_UNKNOWN_ENTITY = "data/test_evaluations/story_unknown_entity.md"
@@ -64,6 +68,26 @@ class ExamplePolicy(Policy):
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
     return utils.enable_async_loop_debugging(next(sanic_loop()))
+
+
+@pytest.fixture(scope="session")
+def default_domain_path():
+    return DEFAULT_DOMAIN_PATH
+
+
+@pytest.fixture(scope="session")
+def default_stories_file():
+    return DEFAULT_STORIES_FILE
+
+
+@pytest.fixture(scope="session")
+def default_stack_config():
+    return DEFAULT_STACK_CONFIG
+
+
+@pytest.fixture(scope="session")
+def default_nlu_data():
+    return DEFAULT_NLU_DATA
 
 
 @pytest.fixture(scope="session")

@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import typing
 import uuid
+from asyncio import CancelledError
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp
@@ -61,10 +62,15 @@ async def load_from_server(
     return agent
 
 
-def _is_stack_model(model_directory: Text) -> bool:
-    """Decide whether a persisted model is a stack or a core model."""
+def _get_stack_model_directory(model_directory: Text) -> Optional[Text]:
+    """Decide whether a persisted model is a stack or a core model.
 
-    return os.path.exists(os.path.join(model_directory, "fingerprint.json"))
+    Return the root stack model directory if it's a stack model.
+    """
+
+    for root, _, files in os.walk(model_directory):
+        if "fingerprint.json" in files:
+            return root
 
 
 def _load_and_set_updated_model(agent: 'Agent',
@@ -75,10 +81,11 @@ def _load_and_set_updated_model(agent: 'Agent',
     logger.debug("Found new model with fingerprint {}. Loading..."
                  "".format(fingerprint))
 
-    if _is_stack_model(model_directory):
+    stack_model_directory = _get_stack_model_directory(model_directory)
+    if stack_model_directory:
         from rasa_core.interpreter import RasaNLUInterpreter
-        nlu_model = os.path.join(model_directory, "nlu")
-        core_model = os.path.join(model_directory, "core")
+        nlu_model = os.path.join(stack_model_directory, "nlu")
+        core_model = os.path.join(stack_model_directory, "core")
         interpreter = RasaNLUInterpreter(model_directory=nlu_model)
     else:
         interpreter = agent.interpreter
@@ -180,7 +187,7 @@ async def _run_model_pulling_worker(model_server: EndpointConfig,
         try:
             await asyncio.sleep(wait_time_between_pulls)
             await _update_model_from_server(model_server, agent)
-        except aiohttp.CancelledError:
+        except CancelledError:
             logger.warning("Stopping model pulling (cancelled).")
         except Exception:
             logger.exception("An exception was raised while fetching "
@@ -206,14 +213,14 @@ class Agent(object):
      getting the next action, and handling a channel."""
 
     def __init__(
-        self,
-        domain: Union[Text, Domain] = None,
-        policies: Union[PolicyEnsemble, List[Policy], None] = None,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, 'NLG', None] = None,
-        tracker_store: Optional['TrackerStore'] = None,
-        action_endpoint: Optional[EndpointConfig] = None,
-        fingerprint: Optional[Text] = None
+            self,
+            domain: Union[Text, Domain] = None,
+            policies: Union[PolicyEnsemble, List[Policy], None] = None,
+            interpreter: Optional[NaturalLanguageInterpreter] = None,
+            generator: Union[EndpointConfig, 'NLG', None] = None,
+            tracker_store: Optional['TrackerStore'] = None,
+            action_endpoint: Optional[EndpointConfig] = None,
+            fingerprint: Optional[Text] = None
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -352,9 +359,9 @@ class Agent(object):
 
     # noinspection PyUnusedLocal
     def predict_next(
-        self,
-        sender_id: Text,
-        **kwargs: Any
+            self,
+            sender_id: Text,
+            **kwargs: Any
     ) -> Dict[Text, Any]:
         """Handle a single message."""
 
@@ -432,8 +439,8 @@ class Agent(object):
         return await self.handle_message(msg, message_preprocessor)
 
     def toggle_memoization(
-        self,
-        activate: bool
+            self,
+            activate: bool
     ) -> None:
         """Toggles the memoization on and off.
 

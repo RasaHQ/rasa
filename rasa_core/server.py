@@ -4,21 +4,24 @@ import tempfile
 import zipfile
 from functools import wraps
 from inspect import isawaitable
+from typing import Any, Callable, List, Optional, Text, Union
+
 from sanic import Sanic, response
+from sanic.config import Config
 from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
-from typing import List, Text, Optional, Union, Callable, Any
 
 import rasa
-from rasa_core import utils, constants
+from rasa_core import constants, utils
 from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.test import test
-from rasa_core.events import Event
 from rasa_core.domain import Domain
+from rasa_core.events import Event
 from rasa_core.policies import PolicyEnsemble
+from rasa_core.test import test
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
+from rasa_core.utils import dump_obj_as_str_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -176,11 +179,13 @@ def create_app(agent=None,
                cors_origins: Union[Text, List[Text]] = "*",
                auth_token: Optional[Text] = None,
                jwt_secret: Optional[Text] = None,
-                jwt_method: Text = "HS256",
+               jwt_method: Text = "HS256",
                ):
     """Class representing a Rasa Core HTTP server."""
 
     app = Sanic(__name__)
+    app.config.RESPONSE_TIMEOUT = 60*60
+
     CORS(app,
          resources={r"/*": {"origins": cors_origins or ""}},
          automatic_options=True)
@@ -530,6 +535,54 @@ def create_app(agent=None,
                                 "Evaluation could not be created. Error: {}"
                                 "".format(e))
 
+    @app.post("/jobs")
+    @requires_auth(app, auth_token)
+    async def train_stack(request: Request):
+        """Train a Rasa Stack model."""
+
+        from rasa.train import train_async
+
+        rjs = request.json
+
+        # create a temporary directory to store config, domain and
+        # training data
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            config_path = os.path.join(temp_dir, 'config.yml')
+            dump_obj_as_str_to_file(config_path, rjs["config"])
+
+            domain_path = os.path.join(temp_dir, 'domain.yml')
+            dump_obj_as_str_to_file(domain_path, rjs["domain"])
+
+            nlu_path = os.path.join(temp_dir, 'nlu.md')
+            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+
+            stories_path = os.path.join(temp_dir, 'stories.md')
+            dump_obj_as_str_to_file(stories_path, rjs["stories"])
+        except KeyError:
+            raise ErrorResponse(400,
+                                "TrainingError",
+                                "The Rasa Stack training request is "
+                                "missing a key. The required keys are "
+                                "`config`, `domain`, `nlu` and `stories`.")
+
+        # the model will be saved to the same temporary dir
+        # unless `out` was specified in the request
+        try:
+            model_path = await train_async(
+                domain=domain_path,
+                config=config_path,
+                training_files=[nlu_path, stories_path],
+                output=rjs.get("out", temp_dir),
+                force_training=rjs.get("force", False))
+
+            return await response.file(model_path)
+        except Exception as e:
+            raise ErrorResponse(400, "TrainingError",
+                                "Rasa Stack model could not be trained. "
+                                "Error: {}".format(e))
+
     @app.get("/domain")
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(app)
@@ -540,7 +593,7 @@ def create_app(agent=None,
         if accepts.endswith("json"):
             domain = app.agent.domain.as_dict()
             return response.json(domain)
-        elif accepts.endswith("yml") or accepts.endswith("yaml") :
+        elif accepts.endswith("yml") or accepts.endswith("yaml"):
             domain_yaml = app.agent.domain.as_yaml()
             return response.text(domain_yaml,
                                  status=200,

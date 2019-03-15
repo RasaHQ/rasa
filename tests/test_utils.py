@@ -68,6 +68,7 @@ def test_list_routes(default_agent):
                                   'respond',
                                   'predict',
                                   'parse',
+                                  'train_stack',
                                   'log_message',
                                   'load_model',
                                   'evaluate_stories',

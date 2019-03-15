@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
+import os
+import tempfile
 import pytest
 import uuid
 from freezegun import freeze_time
 
 import rasa_core
+from rasa.model import unpack_model
 from rasa_core import events, constants
 from rasa_core.events import (
     UserUttered, BotUttered, SlotSet, Event)
@@ -207,6 +210,42 @@ def test_evaluate(app):
         "predicted",
         "confidence",
         "policy"}
+
+
+def test_stack_training(app,
+                        default_domain_path,
+                        default_stories_file,
+                        default_stack_config,
+                        default_nlu_data):
+    domain_file = open(default_domain_path)
+    config_file = open(default_stack_config)
+    stories_file = open(default_stories_file)
+    nlu_file = open(default_nlu_data)
+
+    payload = dict(
+        domain=domain_file.read(),
+        config=config_file.read(),
+        stories=stories_file.read(),
+        nlu=nlu_file.read()
+    )
+
+    domain_file.close()
+    config_file.close()
+    stories_file.close()
+    nlu_file.close()
+
+    _, response = app.post('/jobs', json=payload)
+    assert response.status == 200
+
+    # save model to temporary file
+    tempdir = tempfile.mkdtemp()
+    model_path = os.path.join(tempdir, 'model.tar.gz')
+    with open(model_path, 'wb') as f:
+        f.write(response.body)
+
+    # unpack model and ensure fingerprint is present
+    model_path = unpack_model(model_path)
+    assert os.path.exists(os.path.join(model_path, 'fingerprint.json'))
 
 
 def test_end_to_end_evaluation(app):

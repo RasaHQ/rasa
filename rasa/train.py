@@ -12,10 +12,21 @@ if typing.TYPE_CHECKING:
     from rasa_nlu.model import Interpreter
 
 
-def train(domain: Text, config: Text,
+def train(domain: Text,
+          config: Text,
           training_files: Union[Text, List[Text]],
           output: Text = DEFAULT_MODELS_PATH,
           force_training: bool = False) -> Optional[Text]:
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(train_async(domain, config, training_files,
+                                               output, force_training))
+
+
+async def train_async(domain: Text,
+                      config: Text,
+                      training_files: Union[Text, List[Text]],
+                      output: Text = DEFAULT_MODELS_PATH,
+                      force_training: bool = False) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
     Args:
@@ -54,7 +65,8 @@ def train(domain: Text, config: Text,
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
     if force_training or retrain_core:
-        train_core(domain, config, story_directory, output, train_path)
+        await train_core_async(domain, config, story_directory,
+                               output, train_path)
     else:
         print("Core configuration did not change. No need to retrain "
               "Core model.")
@@ -80,8 +92,21 @@ def train(domain: Text, config: Text,
         return old_model
 
 
-def train_core(domain: Text, config: Text, stories: Text, output: Text,
+def train_core(domain: Text,
+               config: Text,
+               stories: Text,
+               output: Text,
                train_path: Optional[Text]) -> Optional[Text]:
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(train_core_async(domain, config, stories,
+                                                    output, train_path))
+
+
+async def train_core_async(domain: Text,
+                           config: Text,
+                           stories: Text,
+                           output: Text,
+                           train_path: Optional[Text]) -> Optional[Text]:
     """Trains a Core model.
 
     Args:
@@ -99,12 +124,11 @@ def train_core(domain: Text, config: Text, stories: Text, output: Text,
     """
     import rasa_core.train
 
-    loop = asyncio.get_event_loop()
     # normal (not compare) training
-    core_model = loop.run_until_complete(rasa_core.train(
+    core_model = await rasa_core.train(
         domain_file=domain, stories_file=stories,
         output_path=os.path.join(train_path, "core"),
-        policy_config=config))
+        policy_config=config)
 
     if not train_path:
         # Only Core was trained.

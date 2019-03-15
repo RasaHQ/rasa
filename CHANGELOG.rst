@@ -29,6 +29,8 @@ Added
 - added ``priority`` property of policies to influence best policy in 
   the case of equal confidence
 - added rasa command line interface and API
+- Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint
+  will train a combined Rasa Core and NLU model.
 
 Changed
 -------
