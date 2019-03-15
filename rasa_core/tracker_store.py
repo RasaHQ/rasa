@@ -13,7 +13,6 @@ from rasa_core.trackers import (
     DialogueStateTracker, ActionExecuted,
     EventVerbosity)
 from rasa_core.utils import class_from_module_path
-from sqlalchemy import Table, Column, Integer, String, Float, MetaData
 
 logger = logging.getLogger(__name__)
 
@@ -262,6 +261,8 @@ class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
     from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy import Table, Column, Integer, String, Float, MetaData
+
     Base = declarative_base()
 
     class SQLEvent(Base):
@@ -321,8 +322,8 @@ class SQLTrackerStore(TrackerStore):
                                                   self.domain.slots)
         else:
             logger.debug("Can't retrieve tracker matching"
-                           "sender id '{}' from SQL storage.  "
-                           "Returning `None` instead.".format(sender_id))
+                         "sender id '{}' from SQL storage.  "
+                         "Returning `None` instead.".format(sender_id))
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
