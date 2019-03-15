@@ -176,7 +176,7 @@ def create_app(agent=None,
                cors_origins: Union[Text, List[Text]] = "*",
                auth_token: Optional[Text] = None,
                jwt_secret: Optional[Text] = None,
-               jwt_method: Optional[Text] = "HS256",
+                jwt_method: Text = "HS256",
                ):
     """Class representing a Rasa Core HTTP server."""
 
@@ -464,7 +464,7 @@ def create_app(agent=None,
                                 "NotSupported",
                                 "Currently, only user messages can be passed "
                                 "to this endpoint. Messages of sender '{}' "
-                                "can not be handled. ".format(sender),
+                                "cannot be handled.".format(sender),
                                 {"parameter": "sender", "in": "body"})
 
         try:
@@ -549,7 +549,7 @@ def create_app(agent=None,
         else:
             raise ErrorResponse(406,
                                 "InvalidHeader",
-                                "Invalid accept header. Domain can be "
+                                "Invalid Accept header. Domain can be "
                                 "provided as "
                                 "json (\"Accept: application/json\") or"
                                 "yml (\"Accept: application/x-yml\"). "

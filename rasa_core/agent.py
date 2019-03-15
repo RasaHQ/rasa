@@ -44,7 +44,7 @@ async def load_from_server(
     # We are going to pull the model once first, and then schedule a recurring
     # job. the benefit of this approach is that we can be sure that there
     # is a model after this function completes -> allows to do proper
-    # "is alive" check on a startup servers `/status` endpoint. If the server
+    # "is alive" check on a startup server's `/status` endpoint. If the server
     # is started, we can be sure that it also already loaded (or tried to)
     # a model.
     await _update_model_from_server(model_server, agent)
@@ -122,7 +122,9 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
                                       ) -> Optional[Text]:
     """Queries the model server and returns the value of the response's
 
-    <ETag> header which contains the model hash."""
+     <ETag> header which contains the model hash.
+     """
+
     headers = {"If-None-Match": fingerprint}
 
     logger.debug("Requesting model from server {}..."
@@ -178,10 +180,10 @@ async def _run_model_pulling_worker(model_server: EndpointConfig,
         try:
             await asyncio.sleep(wait_time_between_pulls)
             await _update_model_from_server(model_server, agent)
-        except CancelledError:
+        except aiohttp.CancelledError:
             logger.warning("Stopping model pulling (cancelled).")
         except Exception:
-            logger.exception("An exception was raised, while fetching "
+            logger.exception("An exception was raised while fetching "
                              "a model. Continuing anyways...")
 
 
@@ -342,7 +344,7 @@ class Agent(object):
                 return await processor.handle_message(message)
         finally:
             if not lock.is_someone_waiting():
-                # dispose the lock if no one needs it to avoid
+                # dispose of the lock if no one needs it to avoid
                 # accumulating locks
                 del self.conversations_in_processing[message.sender_id]
                 logger.debug("deleted lock for conversation '{}' (unused)"
@@ -591,7 +593,7 @@ class Agent(object):
         app.run(host='0.0.0.0', port=http_port,
                 access_log=logger.isEnabledFor(logging.DEBUG))
 
-        # this might seem unecassary (as run does not return until the server
+        # this might seem unnecessary (as run does not return until the server
         # is killed) - but we use it for tests where we mock `.run` to directly
         # return and need the app to inspect if we created a properly
         # configured server

@@ -132,7 +132,7 @@ class InputChannel(object):
                   ) -> None:
         """Defines a Sanic blueprint.
 
-        The blueprint will be attached to a running sanic server and handel
+        The blueprint will be attached to a running sanic server and handle
         incoming routes it registered for."""
         raise NotImplementedError(
             "Component listener needs to provide blueprint.")

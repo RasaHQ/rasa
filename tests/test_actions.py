@@ -185,7 +185,7 @@ async def test_remote_action_logs_events(default_dispatcher_collecting,
         {"text": "hey there None!", "recipient_id": "my-sender"}]
 
 
-async def test_remote_action_wo_endpoint(default_dispatcher_collecting,
+async def test_remote_action_without_endpoint(default_dispatcher_collecting,
                                          default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)

@@ -23,7 +23,7 @@ async def scheduler() -> AsyncIOScheduler:
             return __scheduler
         except UnknownTimeZoneError as e:
             raise Exception("apscheduler failed to start. This is probably "
-                            "because your system timezone is not set"
+                            "because your system timezone is not set. "
                             "Set it with e.g. echo \"Europe/Berlin\" > "
                             "/etc/timezone") from e
     else:
@@ -31,11 +31,11 @@ async def scheduler() -> AsyncIOScheduler:
         # the correct loop
         # noinspection PyProtectedMember
         if not __scheduler._eventloop == asyncio.get_event_loop():
-            raise RuntimeError("Detected inconsistend loop usage."
+            raise RuntimeError("Detected inconsistend loop usage. "
                                "Trying to schedule a task on a new event "
                                "loop, but scheduler was created with a "
-                               "different event loop. Make sure, there "
-                               "is only one event loop in use and that the"
+                               "different event loop. Make sure there "
+                               "is only one event loop in use and that the "
                                "scheduler is running on that one.")
         return __scheduler
 

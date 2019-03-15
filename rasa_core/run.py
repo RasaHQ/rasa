@@ -117,7 +117,7 @@ def configure_app(input_channels=None,
 
     if "cmdline" in {c.name() for c in input_channels}:
         async def run_cmdline_io(running_app: Sanic):
-            """Small wrapper to shutdown the server once cmd io is done."""
+            """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
             await console.record_messages(
                 server_url=constants.DEFAULT_SERVER_FORMAT.format(port))

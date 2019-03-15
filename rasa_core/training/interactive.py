@@ -1340,7 +1340,7 @@ async def train_agent_on_start(args, endpoints, additional_arguments, app,
 async def wait_til_server_is_running(endpoint,
                                      max_retries=30,
                                      sleep_between_retries=1):
-    """Try to reach the server, retry a couple times and sleep in between."""
+    """Try to reach the server, retry a couple of times and sleep in between."""
 
     while max_retries:
         try:

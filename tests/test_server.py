@@ -283,7 +283,6 @@ def test_get_tracker_with_jwt(secured_app):
                          "2xlIjoidXNlciJ9fQ.JnMTLYd56qut2w9h7hRQlDm1n3l"
                          "HJHOxxC_w7TtwCrs"
     }
-    print(json.dumps(jwt_header))
     _, response = secured_app.get("/conversations/testadmin/tracker",
                                   headers=jwt_header)
     assert response.status == 403
