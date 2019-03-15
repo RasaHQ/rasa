@@ -43,7 +43,7 @@ def duckling_interpreter(component_builder, tmpdir_factory):
 
 
 @pytest.fixture(scope="session")
-def pretrained_interpreter(component_builder, tmpdir_factory):
+def pretrained_pipeline(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig(
         {"pipeline": [{"name": "SpacyNLP"},
                       {"name": "SpacyEntityExtractor"},
@@ -53,7 +53,7 @@ def pretrained_interpreter(component_builder, tmpdir_factory):
         component_builder,
         data="./data/examples/rasa/demo-rasa.json",
         path=tmpdir_factory.mktemp("projects").strpath,
-        config=conf)
+        config=conf).pipeline
 
 
 # Chinese Example
@@ -422,10 +422,10 @@ def test_find_component(duckling_interpreter):
     assert name == "DucklingHTTPExtractor"
 
 
-def test_remove_pretrained_extractors(pretrained_interpreter):
+def test_remove_pretrained_extractors(pretrained_pipeline):
     target_components_names = set(['SpacyNLP'])
-    filtered = remove_pretrained_extractors(pretrained_interpreter)
-    filtered_components_names = set([c.name for c in filtered.pipeline])
+    filtered_pipeline = remove_pretrained_extractors(pretrained_pipeline)
+    filtered_components_names = set([c.name for c in filtered_pipeline])
     assert filtered_components_names == target_components_names
 
 
