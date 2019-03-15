@@ -270,7 +270,7 @@ It is recommended to use
 ``state_featurizer=LabelTokenizerSingleStateFeaturizer(...)``
 (see :ref:`featurization` for details).
 
-**Configuration**:
+**Configuration:**
 
     Configuration parameters can be passed as parameters to the
     ``EmbeddingPolicy`` within the policy configuration file.
@@ -429,7 +429,7 @@ The ``FallbackPolicy`` invokes a `fallback action
 has a confidence below ``nlu_threshold`` or if none of the dialogue
 policies predict an action with confidence higher than ``core_threshold``.
 
-**Configuration**
+**Configuration:**
 
     The thresholds and fallback action can be adjusted in the policy configuration
     file as parameters of the ``FallbackPolicy``:
