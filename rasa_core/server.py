@@ -291,8 +291,7 @@ def create_app(agent=None,
                 "valid event. Request JSON: {}".format(request_params))
             raise ErrorResponse(400, "InvalidParameter",
                                 "Couldn't extract a proper event from the "
-                                "request "
-                                "body.",
+                                "request body.",
                                 {"parameter": "", "in": "body"})
 
     @app.put("/conversations/<sender_id>/tracker/events")
@@ -325,7 +324,7 @@ def create_app(agent=None,
     @app.get("/conversations/<sender_id>/tracker")
     @requires_auth(app, auth_token)
     async def retrieve_tracker(request: Request, sender_id: Text):
-        """Get a dump of a conversations tracker including its events."""
+        """Get a dump of a conversation's tracker including its events."""
 
         if not app.agent.tracker_store:
             raise ErrorResponse(503, "NoTrackerStore",
@@ -512,7 +511,7 @@ def create_app(agent=None,
         ensemble = PolicyEnsemble.load(model_directory)
         app.agent.update_model(domain, ensemble, None)
         logger.debug("Finished loading new agent.")
-        return '', 204
+        return response.text('', 204)
 
     @app.post("/evaluate")
     @requires_auth(app, auth_token)
@@ -541,7 +540,7 @@ def create_app(agent=None,
         if accepts.endswith("json"):
             domain = app.agent.domain.as_dict()
             return response.json(domain)
-        elif accepts.endswith("yml"):
+        elif accepts.endswith("yml") or accepts.endswith("yaml") :
             domain_yaml = app.agent.domain.as_yaml()
             return response.text(domain_yaml,
                                  status=200,
@@ -579,7 +578,7 @@ def create_app(agent=None,
             app.agent.continue_training([tracker],
                                         epochs=epochs,
                                         batch_size=batch_size)
-            return '', 204
+            return response.text('', 204)
 
         except Exception as e:
             logger.exception("Caught an exception during prediction.")

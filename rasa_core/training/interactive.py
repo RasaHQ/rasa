@@ -1201,7 +1201,7 @@ async def record_messages(endpoint: EndpointConfig,
         try:
             domain = await retrieve_domain(endpoint)
         except ClientError:
-            logger.exception("Failed to connect to rasa core server at '{}'. "
+            logger.exception("Failed to connect to Rasa Core server at '{}'. "
                              "Is the server running?".format(endpoint.url))
             return
 
@@ -1270,7 +1270,7 @@ def _serve_application(app, stories, finetune, skip_visualization):
     endpoint = EndpointConfig(url=DEFAULT_SERVER_URL)
 
     async def run_interactive_io(running_app: Sanic):
-        """Small wrapper to shutdown the server once cmd io is done."""
+        """Small wrapper to shut down the server once cmd io is done."""
 
         await record_messages(
             endpoint=endpoint,

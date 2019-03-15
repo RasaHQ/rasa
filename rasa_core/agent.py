@@ -479,11 +479,11 @@ class Agent(object):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         def has_max_history_featurizer(policy):
-            return (not policy.featurizer or
+            return (policy.featurizer and
                     hasattr(policy.featurizer, 'max_history'))
 
         for p in self.policy_ensemble.policies:
-            if not has_max_history_featurizer(p):
+            if p.featurizer and not has_max_history_featurizer(p):
                 return False
         return True
 

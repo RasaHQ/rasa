@@ -38,6 +38,7 @@ class SocketIOOutput(OutputChannel):
     async def _send_message(self, socket_id, response):
         # type: (Text, Any) -> None
         """Sends a message to the recipient using the bot event."""
+
         await self.sio.emit(self.bot_message_evt, response, room=socket_id)
 
     async def send_text_message(self, recipient_id: Text,
@@ -48,6 +49,7 @@ class SocketIOOutput(OutputChannel):
 
     async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:
         """Sends an image. Default will just post the url as a string."""
+
         message = {
             "attachment": {
                 "type": "image",
@@ -120,7 +122,7 @@ class SocketIOInput(InputChannel):
         self.socketio_path = socketio_path
 
     def blueprint(self, on_new_message):
-        sio = socketio.AsyncServer(async_mode='sanic')
+        sio = AsyncServer(async_mode='sanic')
         socketio_webhook = SocketBlueprint(sio, self.socketio_path,
                                            'socketio_webhook', __name__)
 

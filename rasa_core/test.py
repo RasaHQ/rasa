@@ -444,7 +444,7 @@ async def test(stories: Text,
                out_directory: Optional[Text] = None,
                fail_on_prediction_errors: bool = False,
                use_e2e: bool = False):
-    """Run the evaluation of the stories, optionally plots the results."""
+    """Run the evaluation of the stories, optionally plot the results."""
 
     completed_trackers = await _generate_trackers(stories, agent,
                                                   max_stories, use_e2e)
