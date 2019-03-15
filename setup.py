@@ -70,7 +70,7 @@ install_requires = [
     "keras-preprocessing==1.0.5",
     "sqlalchemy~=1.2",
     "kafka-python~=1.4",
-    "sklearn-crfsuite~=0.3.6"
+    "sklearn-crfsuite~=0.3.6",
 ]
 
 extras_requires = {

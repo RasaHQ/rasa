@@ -42,7 +42,7 @@ class TrackerStore(object):
                                      **store.kwargs)
         elif store.type.lower() == 'sql':
             return SQLTrackerStore(domain=domain,
-                                   host=store.url,
+                                   url=store.url,
                                    event_broker=event_broker,
                                    **store.kwargs)
         else:
@@ -278,7 +278,7 @@ class SQLTrackerStore(TrackerStore):
     def __init__(self,
                  domain: Optional[Domain] = None,
                  dialect: Text = 'sqlite',
-                 host: Text = None,
+                 url: Text = None,
                  db: Text = 'rasa.db',
                  username: Text = None,
                  password: Text = None,
@@ -287,7 +287,7 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
-        engine_url = URL(dialect, username, password, host, database=db)
+        engine_url = URL(dialect, username, password, url, database=db)
 
         logger.debug('Attempting to connect to database '
                      'via "{}"'.format(engine_url.__to_string__()))
@@ -320,7 +320,7 @@ class SQLTrackerStore(TrackerStore):
             return DialogueStateTracker.from_dict(sender_id, events,
                                                   self.domain.slots)
         else:
-            logger.warning("Can't retrieve tracker matching"
+            logger.debug("Can't retrieve tracker matching"
                            "sender id '{}' from SQL storage.  "
                            "Returning `None` instead.".format(sender_id))
 

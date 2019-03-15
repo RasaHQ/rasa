@@ -43,11 +43,11 @@ SQLTrackerStore
 
             tracker_store:
                 type: SQL
-                dialect: <the dialect used to interact with the db, e.g. `sqlite`
-                host: <(optional) host of the sql db, e.g. `localhost`>
-                db: <path to your db, e.g. `/Users/rasa/Documents/rasa.db`>
-                username: <username used for authentication>
-                password: <password used for authentication>
+                dialect: "sqlite"  # the dialect used to interact with the db
+                url: "localhost"  # (optional) host of the sql db
+                db: "rasa.db"  # path to your db
+                username:  # username used for authentication
+                password:  # password used for authentication
 
     3. To start the Rasa Core server using your SQL backend,
        add the ``--endpoints`` flag, e.g.:
@@ -81,7 +81,7 @@ RedisTrackerStore
 
             tracker_store:
                 type: redis
-                host: <host of the redis instance, e.g. localhost>
+                url: <url of the redis instance, e.g. localhost>
                 port: <port of your redis instance, usually 6379>
                 db: <number of your database within redis, e.g. 0>
                 password: <password used for authentication>
@@ -115,7 +115,7 @@ MongoTrackerStore
 
             tracker_store:
                 type: mongod
-                host: <url to your mongo instance, e.g. mongodb://localhost:27017>
+                url: <url to your mongo instance, e.g. mongodb://localhost:27017>
                 db: <name of the db within your mongo instance, e.g. rasa>
                 username: <username used for authentication>
                 password: <password used for authentication>
