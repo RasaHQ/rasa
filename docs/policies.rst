@@ -389,11 +389,11 @@ It is recommended to use
     These parameters can be specified in the policy configuration file.
     The default values are defined in ``EmbeddingPolicy.defaults``:
 
-   .. literalinclude:: ../rasa_core/policies/embedding_policy.py
-      :start-after: # default properties (DOC MARKER - don't remove)
-      :end-before: # end default properties (DOC MARKER - don't remove)
+    .. literalinclude:: ../rasa_core/policies/embedding_policy.py
+       :start-after: # default properties (DOC MARKER - don't remove)
+       :end-before: # end default properties (DOC MARKER - don't remove)
 
-   .. note::
+    .. note::
 
           Parameter ``mu_neg`` is set to a negative value to mimic
           the original starspace algorithm in the case
@@ -419,68 +419,64 @@ in the form are filled. For more information, see `Slot Filling
 <https://rasa.com/docs/core/slotfilling/>`_.
 
 
-Fallback Policies
-^^^^^^^^^^^^^^^^^
-
-Fallback Policies invoke `fallback actions
-<https://rasa.com/docs/core/fallbacks//>`_ when either NLU or Core is not
-confident enough in its predicitons. There are two fallback policies: the
-``FallbackPolicy`` and the ``TwoStageFallbackPolicy``, which cannot be used
-together.
-
-
 .. _fallback_policy:
 
 Fallback Policy
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
-The ``FallbackPolicy`` invokes a fallback action if the intent recognition
+The ``FallbackPolicy`` invokes a `fallback action
+<https://rasa.com/docs/core/fallbacks/>`_ if the intent recognition
 has a confidence below ``nlu_threshold`` or if none of the dialogue
 policies predict an action with confidence higher than ``core_threshold``.
 
 **Configuration**
 
-The thresholds and fallback action can be adjusted in the policy configuration
-file as parameters of the ``FallbackPolicy``:
+    The thresholds and fallback action can be adjusted in the policy configuration
+    file as parameters of the ``FallbackPolicy``:
 
-.. code-block:: yaml
+    .. code-block:: yaml
 
-  policies:
-    - name: "FallbackPolicy"
-      nlu_threshold: 0.3
-      core_threshold: 0.3
-      fallback_action_name: 'action_default_fallback'
+      policies:
+        - name: "FallbackPolicy"
+          nlu_threshold: 0.3
+          core_threshold: 0.3
+          fallback_action_name: 'action_default_fallback'
 
-+--------------------------------+---------------------------------------------+
-| ``nlu_threshold``              | Min confidence needed to accept an NLU      |
-|                                | prediction                                  |
-+--------------------------------+---------------------------------------------+
-| ``core_threshold``             | Min confidence needed to accept an action   |
-|                                | prediction from Rasa Core                   |
-+--------------------------------+---------------------------------------------+
-| ``fallback_action_name``       | Name of the `fallback action                |
-|                                | <https://rasa.com/docs/core/fallbacks/>`_   |
-|                                | to be called if the confidence of intent    |
-|                                | or action is below the respective threshold |
-+--------------------------------+---------------------------------------------+
+    +----------------------------+---------------------------------------------+
+    | ``nlu_threshold``          | Min confidence needed to accept an NLU      |
+    |                            | prediction                                  |
+    +----------------------------+---------------------------------------------+
+    | ``core_threshold``         | Min confidence needed to accept an action   |
+    |                            | prediction from Rasa Core                   |
+    +----------------------------+---------------------------------------------+
+    | ``fallback_action_name``   | Name of the `fallback action                |
+    |                            | <https://rasa.com/docs/core/fallbacks/>`_   |
+    |                            | to be called if the confidence of intent    |
+    |                            | or action is below the respective threshold |
+    +----------------------------+---------------------------------------------+
 
-You can also configure the ``FallbackPolicy`` in your python code:
+    You can also configure the ``FallbackPolicy`` in your python code:
 
-.. code-block:: python
+    .. code-block:: python
 
-   from rasa_core.policies.fallback import FallbackPolicy
-   from rasa_core.policies.keras_policy import KerasPolicy
-   from rasa_core.agent import Agent
+       from rasa_core.policies.fallback import FallbackPolicy
+       from rasa_core.policies.keras_policy import KerasPolicy
+       from rasa_core.agent import Agent
 
-   fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
-                             core_threshold=0.3,
-                             nlu_threshold=0.3)
+       fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
+                                 core_threshold=0.3,
+                                 nlu_threshold=0.3)
 
-   agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
+       agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
+
+    .. note::
+
+       You can include either the ``FallbackPolicy`` or the
+       ``TwoStageFallbackPolicy`` in your configuration, but not both.
 
 
-Two-stage Fallback Policy
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Two-Stage Fallback Policy
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``TwoStageFallbackPolicy`` handles low NLU confidence in multiple stages
 by trying to disambiguate the user input.
@@ -507,42 +503,48 @@ by trying to disambiguate the user input.
       ``deny_suggestion_intent_name``, and an ultimate fallback action
       is triggered (e.g. a handoff to a human).
 
-**Configuration**
+**Configuration:**
 
-To use this policy, include the following in your policy configuration.
+    To use the ``TwoStageFallbackPolicy``, include the following in your
+    policy configuration.
 
-.. code-block:: yaml
+    .. code-block:: yaml
 
-    policies:
-      - name: TwoStageFallbackPolicy
-        nlu_threshold: 0.3
-        core_threshold: 0.3
-        fallback_core_action_name: "action_default_fallback"
-        fallback_nlu_action_name: "action_default_fallback"
-        deny_suggestion_intent_name: "out_of_scope"
+        policies:
+          - name: TwoStageFallbackPolicy
+            nlu_threshold: 0.3
+            core_threshold: 0.3
+            fallback_core_action_name: "action_default_fallback"
+            fallback_nlu_action_name: "action_default_fallback"
+            deny_suggestion_intent_name: "out_of_scope"
 
-+--------------------------------+---------------------------------------------+
-| ``nlu_threshold``              | Min confidence needed to accept an NLU      |
-|                                | prediction                                  |
-+--------------------------------+---------------------------------------------+
-| ``core_threshold``             | Min confidence needed to accept an action   |
-|                                | prediction from Rasa Core                   |
-+--------------------------------+---------------------------------------------+
-| ``fallback_core_action_name``  | Name of the `fallback action                |
-|                                | <https://rasa.com/docs/core/fallbacks/>`_   |
-|                                | to be called if the confidence of Rasa Core |
-|                                | action prediction is below the              |
-|                                | ``core_threshold``                          |
-+--------------------------------+---------------------------------------------+
-| ``fallback_nlu_action_name``   | Name of the `fallback action                |
-|                                | <https://rasa.com/docs/core/fallbacks/>`_   |
-|                                | to be called if the confidence of Rasa NLU  |
-|                                | intent classification is below the          |
-|                                | ``nlu_threshold``                           |
-+--------------------------------+---------------------------------------------+
-| ``deny_suggestion_intent_name``| The name of the intent which is used to     |
-|                                | detect that the user denies the suggested   |
-|                                | intents                                     |
-+--------------------------------+---------------------------------------------+
+    +-------------------------------+------------------------------------------+
+    | ``nlu_threshold``             | Min confidence needed to accept an NLU   |
+    |                               | prediction                               |
+    +-------------------------------+------------------------------------------+
+    | ``core_threshold``            | Min confidence needed to accept an action|
+    |                               | prediction from Rasa Core                |
+    +-------------------------------+------------------------------------------+
+    | ``fallback_core_action_name`` | Name of the `fallback action             |
+    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
+    |                               | to be called if the confidence of Rasa   |
+    |                               | Core action prediction is below the      |
+    |                               | ``core_threshold``                       |
+    +-------------------------------+------------------------------------------+
+    | ``fallback_nlu_action_name``  | Name of the `fallback action             |
+    |                               | <https://rasa.com/docs/core/fallbacks/>`_|
+    |                               | to be called if the confidence of Rasa   |
+    |                               | NLU intent classification is below the   |
+    |                               | ``nlu_threshold``                        |
+    +-------------------------------+------------------------------------------+
+    |``deny_suggestion_intent_name``| The name of the intent which is used to  |
+    |                               | detect that the user denies the suggested|
+    |                               | intents                                  |
+    +-------------------------------+------------------------------------------+
+
+    .. note::
+
+      You can include either the ``FallbackPolicy`` or the
+      ``TwoStageFallbackPolicy`` in your configuration, but not both.
 
 .. include:: feedback.inc
