@@ -626,7 +626,6 @@ def get_predictions(interpreter, test_data):  # pragma: no cover
 
     intent_results, entity_targets, entity_predictions, tokens = [], [], [], []
 
-    interpreter = remove_pretrained_extractors(interpreter)
     extractors = get_entity_extractors(interpreter)
 
     for e in tqdm(test_data.training_examples):
@@ -647,8 +646,7 @@ def get_predictions(interpreter, test_data):  # pragma: no cover
             try:
                 tokens.append(res["tokens"])
             except KeyError:
-                logger.debug("No tokens present, which is fine if you don't "
-                             "have a tokenizer in your pipeline")
+                pass
 
     return intent_results, entity_targets, entity_predictions, tokens
 
@@ -697,13 +695,12 @@ def find_component(interpreter, component_name):
     return None
 
 
-def remove_pretrained_extractors(interpreter):
-    """Removes pretrained extractors from interpreter so that entities
+def remove_pretrained_extractors(pipeline):
+    """Removes pretrained extractors from the pipeline so that entities
        from pre-trained extractors are not predicted upon parsing"""
-
-    interpreter.pipeline = [c for c in interpreter.pipeline if c.name not in
-                            pretrained_extractors]
-    return interpreter
+    pipeline = [c for c in pipeline if c.name not in
+                pretrained_extractors]
+    return pipeline
 
 
 def remove_duckling_entities(entity_predictions):
@@ -735,6 +732,7 @@ def run_evaluation(data_path, model,
     else:
         interpreter = Interpreter.load(model, component_builder)
 
+    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data = training_data.load_data(data_path,
                                         interpreter.model_metadata.language)
 
@@ -829,6 +827,8 @@ def cross_validate(data: TrainingData, n_folds: int,
         nlu_config = config.load(nlu_config)
 
     trainer = Trainer(nlu_config)
+    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
+
     intent_train_results = defaultdict(list)
     intent_test_results = defaultdict(list)
     entity_train_results = defaultdict(lambda: defaultdict(list))
@@ -959,14 +959,15 @@ def main():
         nlu_config = config.load(cmdline_args.config)
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
-        results, entity_results = cross_validate(
+
+        intent_results, entity_results = cross_validate(
             data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
-        if any(results):
+        if any(intent_results):
             logger.info("Intent evaluation results")
-            return_results(results.train, "train")
-            return_results(results.test, "test")
+            return_results(intent_results.train, "train")
+            return_results(intent_results.test, "test")
         if any(entity_results):
             logger.info("Entity evaluation results")
             return_entity_results(entity_results.train, "train")
