@@ -26,6 +26,43 @@ InMemoryTrackerStore (default)
 :Configuration:
     To use the `InMemoryTrackerStore` no configuration is needed.
 
+SQLTrackerStore
+~~~~~~~~~~~~~~~
+
+:Description:
+    ``SQLTrackerStore`` can be used to store the conversation history in an SQL database.
+    Storing your trackers this way allows you to query the event database by sender_id, timestamp, action name,
+    intent name and typename
+
+:Configuration:
+    To set up Rasa Core with SQL the following steps are required:
+
+    1. Add required configuration to your `endpoints.yml`
+
+        .. code-block:: yaml
+
+            tracker_store:
+                type: SQL
+                dialect: "sqlite"  # the dialect used to interact with the db
+                url: "localhost"  # (optional) host of the sql db
+                db: "rasa.db"  # path to your db
+                username:  # username used for authentication
+                password:  # password used for authentication
+
+    3. To start the Rasa Core server using your SQL backend,
+       add the ``--endpoints`` flag, e.g.:
+
+        .. code-block:: bash
+
+            python -m rasa_core.run --core models/dialogue --endpoints endpoints.yml
+:Parameters:
+    - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  `Consult the SQLAlchemy docs for available dialects <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_
+    - ``url`` (default: ``None``): URL of your SQL database
+    - ``db`` (default: ``rasa.db``): The path to the database to be used
+    - ``username`` (default: ``None``): The username which is used for authentication
+    - ``password`` (default: ``None``): The password which is used for authentication
+    - ``collection`` (default: ``conversations``): The collection name which is
+      used to store the conversations
 
 RedisTrackerStore
 ~~~~~~~~~~~~~~~~~~
@@ -44,7 +81,7 @@ RedisTrackerStore
 
             tracker_store:
                 type: redis
-                url: <host of the redis instance, e.g. localhost>
+                url: <url of the redis instance, e.g. localhost>
                 port: <port of your redis instance, usually 6379>
                 db: <number of your database within redis, e.g. 0>
                 password: <password used for authentication>
