@@ -1,17 +1,15 @@
 import itertools
-
 import json
 import logging
 import pickle
 # noinspection PyPep8Naming
-from typing import Text, Optional, List, KeysView, Iterator
+from typing import Iterator, KeysView, List, Optional, Text
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
 from rasa_core.domain import Domain
 from rasa_core.trackers import (
-    DialogueStateTracker, ActionExecuted,
-    EventVerbosity)
+    ActionExecuted, DialogueStateTracker, EventVerbosity)
 from rasa_core.utils import class_from_module_path
 
 logger = logging.getLogger(__name__)
@@ -261,11 +259,12 @@ class SQLTrackerStore(TrackerStore):
     """Store which can save and retrieve trackers from an SQL database."""
 
     from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy import Table, Column, Integer, String, Float, MetaData
 
     Base = declarative_base()
 
     class SQLEvent(Base):
+        from sqlalchemy import Column, Integer, String, Float
+
         __tablename__ = 'events'
 
         id = Column(Integer, primary_key=True)
@@ -305,6 +304,7 @@ class SQLTrackerStore(TrackerStore):
 
     def keys(self) -> List[Text]:
         """Collect all keys of the items stored in the database."""
+        # noinspection PyUnresolvedReferences
         return self.SQLEvent.__table__.columns.keys()
 
     def retrieve(self, sender_id: Text) -> DialogueStateTracker:
@@ -341,6 +341,7 @@ class SQLTrackerStore(TrackerStore):
             action = data.get("name")
             timestamp = data.get("timestamp")
 
+            # noinspection PyArgumentList
             self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
                                            type_name=event.type_name,
                                            timestamp=timestamp,
