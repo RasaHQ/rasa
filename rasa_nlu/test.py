@@ -18,13 +18,7 @@ from rasa_nlu.model import Interpreter, Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
-duckling_extractors = {"DucklingHTTPExtractor"}
 pretrained_extractors = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
-
-known_duckling_dimensions = {"amount-of-money", "distance", "duration",
-                             "email", "number",
-                             "ordinal", "phone-number", "timezone",
-                             "temperature", "time", "url", "volume"}
 
 entity_processors = {"EntitySynonymMapper"}
 
@@ -586,16 +580,6 @@ def align_all_entity_predictions(targets, predictions, tokens, extractors):
     return aligned_predictions
 
 
-def get_intent_targets(test_data):  # pragma: no cover
-    """Extracts intent targets from the test data."""
-    return [e.get("intent", "") for e in test_data.training_examples]
-
-
-def get_entity_targets(test_data):
-    """Extracts entity targets from the test data."""
-    return [e.get("entities", []) for e in test_data.training_examples]
-
-
 def extract_intent(result):  # pragma: no cover
     """Extracts the intent from a parsing result."""
     return result.get('intent', {}).get('name')
@@ -616,22 +600,25 @@ def extract_confidence(result):  # pragma: no cover
     return result.get('intent', {}).get('confidence')
 
 
-def get_predictions(interpreter, test_data):  # pragma: no cover
-    """Run the model for the test set and extracts intents and entities.
+def get_eval_data(interpreter, test_data):  # pragma: no cover
+    """Runs the model for the test set and extracts targets and predictions
+    for both entities and intents.
 
-    Return intent and entity predictions, the original messages and the
-    confidences of the predictions."""
+    Returns intent results (intent targets and predictions, the original
+    messages and the confidences of the predictions), as well as entity
+    targets, predictions, and tokens."""
 
     logger.info("Running model for predictions:")
 
     intent_results, entity_targets, entity_predictions, tokens = [], [], [], []
 
-    extractors = get_entity_extractors(interpreter)
+    should_eval_intents = is_intent_classifier_present(interpreter)
+    should_eval_entities = is_entity_extractor_present(interpreter)
 
     for e in tqdm(test_data.training_examples):
         res = interpreter.parse(e.text, only_output_properties=False)
 
-        if is_intent_classifier_present(interpreter):
+        if should_eval_intents:
             intent_target = e.get("intent", "")
             intent_results.append(IntentEvaluationResult(
                                   intent_target,
@@ -639,7 +626,7 @@ def get_predictions(interpreter, test_data):  # pragma: no cover
                                   extract_message(res),
                                   extract_confidence(res)))
 
-        if extractors:
+        if should_eval_entities:
             entity_targets.append(e.get("entities", []))
             entity_predictions.append(extract_entities(res))
 
@@ -661,6 +648,13 @@ def get_entity_extractors(interpreter):
     return extractors - entity_processors
 
 
+def is_entity_extractor_present(interpreter):
+    """Checks whether entity extractor is present"""
+
+    extractors = get_entity_extractors(interpreter)
+    return extractors != []
+
+
 def is_intent_classifier_present(interpreter):
     """Checks whether intent classifier is present"""
 
@@ -669,52 +663,12 @@ def is_intent_classifier_present(interpreter):
     return intent_classifier != []
 
 
-def combine_extractor_and_dimension_name(extractor, dim):
-    """Joins the duckling extractor name with a dimension's name."""
-    return "{} ({})".format(extractor, dim)
-
-
-def get_duckling_dimensions(interpreter, duckling_extractor_name):
-    """Gets the activated dimensions of a duckling extractor.
-    If there are no activated dimensions, it uses all known
-    dimensions as a fallback."""
-
-    component = find_component(interpreter, duckling_extractor_name)
-    if component.component_config["dimensions"]:
-        return component.component_config["dimensions"]
-    else:
-        return known_duckling_dimensions
-
-
-def find_component(interpreter, component_name):
-    """Finds a component in a pipeline."""
-
-    for c in interpreter.pipeline:
-        if c.name == component_name:
-            return c
-    return None
-
-
 def remove_pretrained_extractors(pipeline):
     """Removes pretrained extractors from the pipeline so that entities
        from pre-trained extractors are not predicted upon parsing"""
     pipeline = [c for c in pipeline if c.name not in
                 pretrained_extractors]
     return pipeline
-
-
-def remove_duckling_entities(entity_predictions):
-    """Removes duckling entity predictions"""
-
-    patched_entity_predictions = []
-    for entities in entity_predictions:
-        patched_entities = []
-        for e in entities:
-            if e["extractor"] not in duckling_extractors:
-                patched_entities.append(e)
-        patched_entity_predictions.append(patched_entities)
-
-    return patched_entity_predictions
 
 
 def run_evaluation(data_path, model,
@@ -746,7 +700,7 @@ def run_evaluation(data_path, model,
 
     # EvaluationStore might be a better place to store all of this
     (intent_results, entity_targets, entity_predictions,
-     tokens) = get_predictions(interpreter, test_data)
+     tokens) = get_eval_data(interpreter, test_data)
 
     if is_intent_classifier_present(interpreter):
 
@@ -861,7 +815,7 @@ def compute_metrics(interpreter, corpus):
     """Computes metrics for intent classification and entity extraction."""
 
     intent_results, entity_targets, entity_predictions, tokens = (
-        get_predictions(interpreter, corpus))
+        get_eval_data(interpreter, corpus))
 
     intent_results = remove_empty_intent_examples(intent_results)
 
