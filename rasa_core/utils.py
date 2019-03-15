@@ -707,7 +707,7 @@ class EndpointConfig(object):
                     params=self.combine_parameters(kwargs),
                     **kwargs) as resp:
 
-                if 400 <= resp.status:
+                if resp.status >= 400:
                     raise ClientResponseError(resp.status,
                                               resp.reason,
                                               await resp.content.read())
@@ -764,7 +764,7 @@ def enable_async_loop_debugging(event_loop: AbstractEventLoop
     event_loop.set_debug(True)
 
     # Make the threshold for "slow" tasks very very small for
-    # illustration. The default is 0.1, or 100 milliseconds.
+    # illustration. The default is 0.1 (= 100 milliseconds).
     event_loop.slow_callback_duration = 0.001
 
     # Report all mistakes managing asynchronous resources.
@@ -783,7 +783,7 @@ def create_task_error_logger(error_message: Text = ""
         try:
             fut.result()
         except Exception:
-            logger.exception("An exception was raised, while running task. "
+            logger.exception("An exception was raised while running task. "
                              "{}".format(error_message))
 
     return handler

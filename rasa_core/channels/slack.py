@@ -187,7 +187,7 @@ class SlackInput(InputChannel):
 
     async def process_message(self, request: Request, on_new_message, text,
                               sender_id):
-        """Slack retry to post messages up to 3 times based on
+        """Slack retries to post messages up to 3 times based on
         failure conditions defined here:
         https://api.slack.com/events-api#failure_conditions
         """
