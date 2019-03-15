@@ -2,17 +2,13 @@ import argparse
 import asyncio
 import logging
 import os
-import tempfile
-from typing import Text, Dict, Optional
+from typing import Dict, Optional, Text
 
 import rasa_core.cli.train
-from rasa_core import config, cli
-from rasa_core import utils
-from rasa_core.broker import PikaProducer
+from rasa_core import cli, config, utils
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.run import AvailableEndpoints
-from rasa_core.tracker_store import TrackerStore
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.utils import set_default_subparser
 

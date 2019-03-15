@@ -133,7 +133,12 @@ class MemoizationPolicy(Policy):
               ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
-
+        # only considers original trackers (no augmented ones)
+        training_trackers = [
+            t
+            for t in training_trackers
+            if not hasattr(t, 'is_augmented') or not t.is_augmented
+        ]
         (trackers_as_states,
          trackers_as_actions) = self.featurizer.training_states_and_actions(
             training_trackers, domain)

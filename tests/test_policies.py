@@ -58,10 +58,11 @@ def session_config():
     return tf.ConfigProto(**tf_defaults()["tf_config"])
 
 
-async def train_trackers(domain):
+async def train_trackers(domain, augmentation_factor=20):
     return await training.load_data(
         DEFAULT_STORIES_FILE,
-        domain
+        domain,
+        augmentation_factor=augmentation_factor
     )
 
 
@@ -102,7 +103,8 @@ class PolicyTestCollection(object):
     async def trained_policy(self, featurizer, priority):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer, priority)
-        training_trackers = await train_trackers(default_domain)
+        training_trackers = await train_trackers(default_domain,
+                                           augmentation_factor=20)
         policy.train(training_trackers, default_domain)
         return policy
 
@@ -110,7 +112,7 @@ class PolicyTestCollection(object):
                                     tmpdir):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        trackers = await train_trackers(default_domain)
+        trackers = await train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
@@ -206,8 +208,13 @@ class TestMemoizationPolicy(PolicyTestCollection):
         return p
 
     async def test_memorise(self, trained_policy, default_domain):
-        trackers = await train_trackers(default_domain)
+        trackers = await train_trackers(default_domain, augmentation_factor=20)
         trained_policy.train(trackers, default_domain)
+        lookup_with_augmentation = trained_policy.lookup
+
+        trackers = [t
+                    for t in trackers
+                    if not hasattr(t, 'is_augmented') or not t.is_augmented]
 
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
@@ -222,6 +229,14 @@ class TestMemoizationPolicy(PolicyTestCollection):
                           for f, num in
                           zip(default_domain.input_states, nums)}]
         assert trained_policy._recall_states(random_states) is None
+
+        # compare augmentation for augmentation_factor of 0 and 20:
+        trackers_no_augmentation = train_trackers(default_domain,
+                                                  augmentation_factor=0)
+        trained_policy.train(trackers_no_augmentation, default_domain)
+        lookup_no_augmentation = trained_policy.lookup
+
+        assert lookup_no_augmentation == lookup_with_augmentation
 
     def test_memorise_with_nlu(self, trained_policy, default_domain):
         filename = "data/test_dialogues/default.json"
@@ -271,9 +286,9 @@ class TestSklearnPolicy(PolicyTestCollection):
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                     default_domain.slots)
 
-    @pytest.fixture
+    @pytest.fixture(scope='module')
     async def trackers(self, default_domain):
-        return await train_trackers(default_domain)
+        return await train_trackers(default_domain, augmentation_factor=20)
 
     def test_cv_none_does_not_trigger_search(self,
                                              mock_search,

@@ -205,7 +205,6 @@ if __name__ == '__main__':
     logging.getLogger('engineio').setLevel(logging.WARN)
     logging.getLogger('matplotlib').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
-    logging.getLogger('pika').setLevel(logging.ERROR)
 
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,

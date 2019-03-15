@@ -1,8 +1,8 @@
-import os
 import logging
+import os
 import shutil
 import typing
-from typing import Text, Dict, Union, Tuple
+from typing import Dict, Text
 
 from rasa.cli.utils import minimal_kwargs
 from rasa.model import get_model, get_model_subdirectories
@@ -49,10 +49,10 @@ def run(model: Text, endpoints: Text, connector: Text = None,
 
 def create_agent(model: Text,
                  endpoints: Text = None) -> 'Agent':
-    from rasa_core.broker import PikaProducer
     from rasa_core.interpreter import RasaNLUInterpreter
     import rasa_core.run
     from rasa_core.tracker_store import TrackerStore
+    from rasa_core import broker
     from rasa_core.utils import AvailableEndpoints
 
     core_path, nlu_path = get_model_subdirectories(model)
@@ -65,7 +65,7 @@ def create_agent(model: Text,
         _interpreter = None
         logging.info("No NLU model found. Running without NLU.")
 
-    _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
+    _broker = broker.from_endpoint_config(_endpoints.event_broker)
 
     _tracker_store = TrackerStore.find_tracker_store(None,
                                                      _endpoints.tracker_store,
