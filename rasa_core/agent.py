@@ -5,7 +5,6 @@ import shutil
 import tempfile
 import typing
 import uuid
-from asyncio import CancelledError
 from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp
@@ -42,8 +41,8 @@ async def load_from_server(
 ) -> 'Agent':
     """Load a persisted model from a server."""
 
-    # we are going to pull the model once first, and then schedule a recurring
-    # job. the benefit of this approach is, that we can be sure that there
+    # We are going to pull the model once first, and then schedule a recurring
+    # job. the benefit of this approach is that we can be sure that there
     # is a model after this function completes -> allows to do proper
     # "is alive" check on a startup servers `/status` endpoint. If the server
     # is started, we can be sure that it also already loaded (or tried to)
