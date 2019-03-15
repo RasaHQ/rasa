@@ -1,14 +1,15 @@
-import time
 import logging
 import os
 import shutil
 import tempfile
 import typing
 import uuid
-from gevent.pywsgi import WSGIServer
-from requests.exceptions import InvalidURL, RequestException
 from threading import Thread
 from typing import Text, List, Optional, Callable, Any, Dict, Union
+
+import time
+from gevent.pywsgi import WSGIServer
+from requests.exceptions import InvalidURL, RequestException
 
 from rasa_core import training, constants, utils
 from rasa_core.channels import UserMessage, OutputChannel, InputChannel
@@ -83,10 +84,17 @@ def _init_model_from_server(model_server: EndpointConfig
     return fingerprint, model_directory
 
 
-def _is_stack_model(model_directory: Text) -> bool:
-    """Decide whether a persisted model is a stack or a core model."""
+def _get_stack_model_directory(model_directory: Text) -> Optional[Text]:
+    """Decide whether a persisted model is a stack or a core model.
 
-    return os.path.exists(os.path.join(model_directory, "fingerprint.json"))
+    Return the root stack model directory if it's a stack model.
+    """
+
+    for root, _, files in os.walk(model_directory):
+        if "fingerprint.json" in files:
+            return root
+
+    return None
 
 
 def _load_and_set_updated_model(agent: 'Agent',
@@ -94,10 +102,11 @@ def _load_and_set_updated_model(agent: 'Agent',
                                 fingerprint: Text):
     """Load the persisted model into memory and set the model on the agent."""
 
-    if _is_stack_model(model_directory):
+    stack_model_directory = _get_stack_model_directory(model_directory)
+    if stack_model_directory:
         from rasa_core.interpreter import RasaNLUInterpreter
-        nlu_model = os.path.join(model_directory, "nlu")
-        core_model = os.path.join(model_directory, "core")
+        nlu_model = os.path.join(stack_model_directory, "nlu")
+        core_model = os.path.join(stack_model_directory, "core")
         interpreter = RasaNLUInterpreter(model_directory=nlu_model)
     else:
         interpreter = agent.interpreter
@@ -205,14 +214,14 @@ class Agent(object):
      getting the next action, and handling a channel."""
 
     def __init__(
-        self,
-        domain: Union[Text, Domain] = None,
-        policies: Union[PolicyEnsemble, List[Policy], None] = None,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, 'NLG', None] = None,
-        tracker_store: Optional['TrackerStore'] = None,
-        action_endpoint: Optional[EndpointConfig] = None,
-        fingerprint: Optional[Text] = None
+            self,
+            domain: Union[Text, Domain] = None,
+            policies: Union[PolicyEnsemble, List[Policy], None] = None,
+            interpreter: Optional[NaturalLanguageInterpreter] = None,
+            generator: Union[EndpointConfig, 'NLG', None] = None,
+            tracker_store: Optional['TrackerStore'] = None,
+            action_endpoint: Optional[EndpointConfig] = None,
+            fingerprint: Optional[Text] = None
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -297,10 +306,10 @@ class Agent(object):
                 self.policy_ensemble is not None)
 
     def handle_message(
-        self,
-        message: UserMessage,
-        message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs
+            self,
+            message: UserMessage,
+            message_preprocessor: Optional[Callable[[Text], Text]] = None,
+            **kwargs
     ) -> Optional[List[Text]]:
         """Handle a single message."""
 
@@ -323,9 +332,9 @@ class Agent(object):
 
     # noinspection PyUnusedLocal
     def predict_next(
-        self,
-        sender_id: Text,
-        **kwargs: Any
+            self,
+            sender_id: Text,
+            **kwargs: Any
     ) -> Dict[Text, Any]:
         """Handle a single message."""
 
@@ -334,10 +343,10 @@ class Agent(object):
 
     # noinspection PyUnusedLocal
     def log_message(
-        self,
-        message: UserMessage,
-        message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs: Any
+            self,
+            message: UserMessage,
+            message_preprocessor: Optional[Callable[[Text], Text]] = None,
+            **kwargs: Any
     ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
 
@@ -345,12 +354,12 @@ class Agent(object):
         return processor.log_message(message)
 
     def execute_action(
-        self,
-        sender_id: Text,
-        action: Text,
-        output_channel: OutputChannel,
-        policy: Text,
-        confidence: float
+            self,
+            sender_id: Text,
+            action: Text,
+            output_channel: OutputChannel,
+            policy: Text,
+            confidence: float
     ) -> DialogueStateTracker:
         """Handle a single message."""
 
@@ -362,11 +371,11 @@ class Agent(object):
                                         confidence)
 
     def handle_text(
-        self,
-        text_message: Union[Text, Dict[Text, Any]],
-        message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        output_channel: Optional[OutputChannel] = None,
-        sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
+            self,
+            text_message: Union[Text, Dict[Text, Any]],
+            message_preprocessor: Optional[Callable[[Text], Text]] = None,
+            output_channel: Optional[OutputChannel] = None,
+            sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
@@ -402,8 +411,8 @@ class Agent(object):
         return self.handle_message(msg, message_preprocessor)
 
     def toggle_memoization(
-        self,
-        activate: bool
+            self,
+            activate: bool
     ) -> None:
         """Toggles the memoization on and off.
 
@@ -451,8 +460,8 @@ class Agent(object):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
         for policy in self.policy_ensemble.policies:
-            if (policy.featurizer and not
-                    hasattr(policy.featurizer, 'max_history')):
+            if (policy.featurizer and
+                    not hasattr(policy.featurizer, 'max_history')):
                 return False
         return True
 
@@ -684,7 +693,7 @@ class Agent(object):
 
     @staticmethod
     def _create_ensemble(
-        policies: Union[List[Policy], PolicyEnsemble, None]
+            policies: Union[List[Policy], PolicyEnsemble, None]
     ) -> Optional[PolicyEnsemble]:
         if policies is None:
             return None
@@ -703,6 +712,6 @@ class Agent(object):
         """Check whether form policy is not present
             if there is a form action in the domain
         """
-        return (self.domain and self.domain.form_names and not
-                any(isinstance(p, FormPolicy)
-                    for p in self.policy_ensemble.policies))
+        return (self.domain and self.domain.form_names and
+                not any(isinstance(p, FormPolicy)
+                        for p in self.policy_ensemble.policies))

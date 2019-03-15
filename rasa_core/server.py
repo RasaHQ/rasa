@@ -5,18 +5,19 @@ import zipfile
 from functools import wraps
 from typing import List, Text, Optional, Union, Callable, Any
 
-from flask import Flask, request, abort, Response, jsonify, json
+from flask import Flask, request, abort, Response, jsonify, json, send_file
 from flask_cors import CORS, cross_origin
 from flask_jwt_simple import JWTManager, view_decorators
 
 import rasa
 from rasa_core import utils, constants
 from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.test import test
-from rasa_core.events import Event
 from rasa_core.domain import Domain
+from rasa_core.events import Event
 from rasa_core.policies import PolicyEnsemble
+from rasa_core.test import test
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
+from rasa_core.utils import dump_obj_as_str_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -407,8 +408,8 @@ def create_app(agent,
             # Fetches the appropriate bot response in a json format
             responses = agent.predict_next(sender_id)
             responses['scores'] = sorted(responses['scores'],
-                                         key = lambda k: (-k['score'],
-                                                          k['action']))
+                                         key=lambda k: (-k['score'],
+                                                        k['action']))
             return jsonify(responses)
 
         except Exception as e:
@@ -489,14 +490,14 @@ def create_app(agent,
         logger.debug("Finished loading new agent.")
         return '', 204
 
-    @app.route("/evaluate",
-               methods=['POST', 'OPTIONS'])
+    @app.route("/evaluate", methods=['POST', 'OPTIONS'])
     @requires_auth(app, auth_token)
     @cross_origin(origins=cors_origins)
     def evaluate_stories():
+        """Evaluate stories against the currently loaded model."""
+
         import rasa_nlu
 
-        """Evaluate stories against the currently loaded model."""
         tmp_file = rasa_nlu.utils.create_temporary_file(request.get_data(),
                                                         mode='w+b')
         use_e2e = utils.bool_arg('e2e', default=False)
@@ -508,8 +509,54 @@ def create_app(agent,
                          "Evaluation could not be created. Error: {}"
                          "".format(e))
 
-    @app.route("/domain",
-               methods=['GET', 'OPTIONS'])
+    @app.route("/jobs", methods=['POST', 'OPTIONS'])
+    @requires_auth(app, auth_token)
+    @cross_origin(origins=cors_origins)
+    def train_stack():
+        """Train a Rasa Stack model."""
+
+        from rasa.cli.train import train
+        from argparse import Namespace
+
+        rjs = request.get_json()
+
+        # create a temporary directory to store config, domain and
+        # training data
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            config_path = os.path.join(temp_dir, 'config.yml')
+            dump_obj_as_str_to_file(config_path, rjs["config"])
+
+            domain_path = os.path.join(temp_dir, 'domain.yml')
+            dump_obj_as_str_to_file(domain_path, rjs["domain"])
+
+            nlu_path = os.path.join(temp_dir, 'nlu.md')
+            dump_obj_as_str_to_file(nlu_path, rjs["nlu"])
+
+            stories_path = os.path.join(temp_dir, 'stories.md')
+            dump_obj_as_str_to_file(stories_path, rjs["stories"])
+        except KeyError as e:
+            return error(400, "TrainingError",
+                         "The Rasa Stack training request is "
+                         "missing a key. The required keys are "
+                         "`config`, `domain`, `nlu` and `stories`.", e)
+
+        # the model will be saved to the same temporary dir
+        # unless `out` was specified in the request
+        args = Namespace(domain=domain_path,
+                         config=config_path,
+                         data=[nlu_path, stories_path],
+                         force=rjs.get("force", False),
+                         out=rjs.get("out", temp_dir))
+        try:
+            model_path = train(args)
+            return send_file(model_path)
+        except Exception as e:
+            return error(400, "TrainingError",
+                         "Rasa Stack model could not be trained.", e)
+
+    @app.route("/domain", methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(app, auth_token)
     @ensure_loaded_agent(agent)
