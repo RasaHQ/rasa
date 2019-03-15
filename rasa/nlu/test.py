@@ -9,24 +9,15 @@ import shutil
 from typing import List, Optional, Text, Union
 from tqdm import tqdm
 
-<<<<<<< HEAD:rasa/nlu/test.py
-from rasa.nlu import config, training_data, utils
-from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.model import Interpreter, Trainer, TrainingData
-=======
 from rasa_nlu import config, training_data, utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
-from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.model import Interpreter, Trainer, TrainingData
->>>>>>> remove duckling, get targets/predictions together, remove cycle:rasa_nlu/test.py
 
 logger = logging.getLogger(__name__)
 
 duckling_extractors = {"DucklingHTTPExtractor"}
-pretrained_extractors = {"DucklingHTTPExtractor", "SpacyEntityExtractor"}
 
 known_duckling_dimensions = {"amount-of-money", "distance", "duration",
                              "email", "number",
@@ -633,6 +624,10 @@ def get_predictions(interpreter, test_data):  # pragma: no cover
 
     intent_results, entity_targets, entity_predictions, tokens = [], [], [], []
 
+    interpreter.pipeline = [c for c in interpreter.pipeline if not
+                            isinstance(c, DucklingHTTPExtractor)]
+
+    eval_results = is_intent_classifier_present(interpreter)
     extractors = get_entity_extractors(interpreter)
 
     for e in tqdm(test_data.training_examples):
@@ -653,7 +648,8 @@ def get_predictions(interpreter, test_data):  # pragma: no cover
             try:
                 tokens.append(res["tokens"])
             except KeyError:
-                pass
+                logger.debug("No tokens present, which is fine if you don't "
+                             "have a tokenizer in your pipeline")
 
     return intent_results, entity_targets, entity_predictions, tokens
 
@@ -702,12 +698,14 @@ def find_component(interpreter, component_name):
     return None
 
 
-def remove_pretrained_extractors(pipeline):
-    """Removes pretrained extractors from the pipeline so that entities
-       from pre-trained extractors are not predicted upon parsing"""
-    pipeline = [c for c in pipeline if c.name not in
-                pretrained_extractors]
-    return pipeline
+def remove_duckling_extractors(extractors):
+    """Removes duckling exctractors"""
+    used_duckling_extractors = duckling_extractors.intersection(extractors)
+    for duckling_extractor in used_duckling_extractors:
+        logger.info("Skipping evaluation of {}".format(duckling_extractor))
+        extractors.remove(duckling_extractor)
+
+    return extractors
 
 
 def remove_duckling_entities(entity_predictions):
@@ -739,7 +737,6 @@ def run_evaluation(data_path, model,
     else:
         interpreter = Interpreter.load(model, component_builder)
 
-    interpreter.pipeline = remove_pretrained_extractors(interpreter.pipeline)
     test_data = training_data.load_data(data_path,
                                         interpreter.model_metadata.language)
 
@@ -834,8 +831,6 @@ def cross_validate(data: TrainingData, n_folds: int,
         nlu_config = config.load(nlu_config)
 
     trainer = Trainer(nlu_config)
-    trainer.pipeline = remove_pretrained_extractors(trainer.pipeline)
-
     intent_train_results = defaultdict(list)
     intent_test_results = defaultdict(list)
     entity_train_results = defaultdict(lambda: defaultdict(list))
@@ -966,15 +961,14 @@ def main():
         nlu_config = config.load(cmdline_args.config)
         data = training_data.load_data(cmdline_args.data)
         data = drop_intents_below_freq(data, cutoff=5)
-
-        intent_results, entity_results = cross_validate(
+        results, entity_results = cross_validate(
             data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
-        if any(intent_results):
+        if any(results):
             logger.info("Intent evaluation results")
-            return_results(intent_results.train, "train")
-            return_results(intent_results.test, "test")
+            return_results(results.train, "train")
+            return_results(results.test, "test")
         if any(entity_results):
             logger.info("Entity evaluation results")
             return_entity_results(entity_results.train, "train")
