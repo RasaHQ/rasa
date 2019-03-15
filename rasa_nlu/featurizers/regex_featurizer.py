@@ -102,7 +102,7 @@ class RegexFeaturizer(Featurizer):
         else:
 
             try:
-                f = io.open(lookup_elements, 'r')
+                f = io.open(lookup_elements, 'r', encoding='utf-8')
             except IOError:
                 raise ValueError("Could not load lookup table {}"
                                  "Make sure you've provided the correct path"
