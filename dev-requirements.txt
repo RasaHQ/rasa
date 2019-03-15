@@ -10,7 +10,6 @@ treq==17.8.0
 freezegun==0.3.10
 responses==0.9.0
 httpretty==0.9.5
-sklearn-crfsuite==0.3.6
 
 # other
 matplotlib==2.2.2

@@ -256,14 +256,23 @@ def test_stack_training(app,
                         default_domain_path,
                         default_stories_file,
                         default_stack_config,
-                        default_nlu_data
-                        ):
+                        default_nlu_data):
+    domain_file = open(default_domain_path)
+    config_file = open(default_stack_config)
+    stories_file = open(default_stories_file)
+    nlu_file = open(default_nlu_data)
+
     payload = dict(
-        domain=open(default_domain_path).read(),
-        config=open(default_stack_config).read(),
-        stories=open(default_stories_file).read(),
-        nlu=open(default_nlu_data).read()
+        domain=domain_file.read(),
+        config=config_file.read(),
+        stories=stories_file.read(),
+        nlu=nlu_file.read()
     )
+
+    domain_file.close()
+    config_file.close()
+    stories_file.close()
+    nlu_file.close()
 
     response = app.post('/jobs', json=payload)
     assert response.status_code == 200
