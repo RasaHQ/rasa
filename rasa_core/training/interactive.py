@@ -699,8 +699,8 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
                     MitieEntityExtractor.__name__
                 ]
                 logger.debug("Exclude entity marking of following extractors {} "
-                            "when writing nlu data "
-                            "to file.".format(excluded_extractors))
+                             "when writing nlu data "
+                             "to file.".format(excluded_extractors))
 
                 if entity.get("extractor") in excluded_extractors:
                     data["entities"].remove(entity)
