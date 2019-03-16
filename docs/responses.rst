@@ -1,5 +1,5 @@
 :desc: Read more how to define bot utterances or use a service to generate the
-       responses using Rasa Stack as an open source chatbot platform. 
+       responses using Rasa Stack as an open source chatbot platform.
 
 .. _responses:
 
@@ -20,7 +20,7 @@ There are two ways to manage these utterances:
 Including the utterances in the domain
 --------------------------------------
 
-The default format is, to include the utterances into your domain file.
+The default format is to include the utterances in your domain file.
 This file then contains references to all your custom actions,
 available entities, slots and intents.
 

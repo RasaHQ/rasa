@@ -281,5 +281,6 @@ def test_default_action(default_dispatcher_collecting,
 
     channel = default_dispatcher_collecting.output_channel
     assert channel.messages == [
-        {u'text': u'default message', u'recipient_id': u'my-sender'}]
+        {u'text': u'sorry, I didn\'t get that, can you rephrase it?',
+         u'recipient_id': u'my-sender'}]
     assert events == [UserUtteranceReverted()]

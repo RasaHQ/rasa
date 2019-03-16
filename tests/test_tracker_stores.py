@@ -5,8 +5,8 @@ from rasa_core.events import SlotSet, ActionExecuted, Restarted
 from rasa_core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
-    RedisTrackerStore)
-from rasa_core.trackers import DialogueStateTracker
+    RedisTrackerStore,
+    SQLTrackerStore)
 from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
