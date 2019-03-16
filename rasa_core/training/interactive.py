@@ -664,12 +664,31 @@ def _split_conversation_at_restarts(
 def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
+    from rasa_nlu.extractors.duckling_http_extractor import \
+        DucklingHTTPExtractor
+    from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+    from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 
     msgs = []
 
     for evt in evts:
         if evt.get("event") == UserUttered.type_name:
             data = evt.get("parse_data")
+
+            for entity in data.get("entities", []):
+
+                excluded_extractors = [
+                    DucklingHTTPExtractor.__name__,
+                    SpacyEntityExtractor.__name__,
+                    MitieEntityExtractor.__name__
+                ]
+                logger.debug("Exclude entity marking of following extractors"
+                             " {} when writing nlu data "
+                             "to file.".format(excluded_extractors))
+
+                if entity.get("extractor") in excluded_extractors:
+                    data["entities"].remove(entity)
+
             msg = Message.build(data["text"], data["intent"]["name"],
                                 data["entities"])
             msgs.append(msg)
@@ -1048,21 +1067,44 @@ async def _validate_nlu(intents: List[Text],
 
 async def _correct_entities(latest_message: Dict[Text, Any],
                             endpoint: EndpointConfig,
-                            sender_id: Text) -> Dict[Text, Any]:
+                            sender_id: Text) -> List[Dict[Text, Any]]:
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
     from rasa_nlu.training_data.formats import MarkdownReader
 
-    entity_str = _as_md_message(latest_message.get("parse_data", {}))
+    parse_original = latest_message.get("parse_data", {})
+    entity_str = _as_md_message(parse_original)
     question = questionary.text(
         "Please mark the entities using [value](type) notation",
         default=entity_str)
 
     annotation = await _ask_questions(question, sender_id, endpoint)
     # noinspection PyProtectedMember
-    parsed = MarkdownReader()._parse_training_example(annotation)
-    return parsed.get("entities", [])
+    parse_annotated = MarkdownReader()._parse_training_example(annotation)
+
+    corrected_entities = _merge_annotated_and_original_entities(
+        parse_annotated, parse_original)
+
+    return corrected_entities
+
+
+def _merge_annotated_and_original_entities(parse_annotated, parse_original):
+    # overwrite entities which have already been
+    # annotated in the original annotation to preserve
+    # additional entity parser information
+    entities = parse_annotated.get("entities", [])[:]
+    for i, entity in enumerate(entities):
+        for original_entity in parse_original.get("entities", []):
+            if _is_same_entity_annotation(entity, original_entity):
+                entities[i] = original_entity
+                break
+    return entities
+
+
+def _is_same_entity_annotation(entity, other):
+    return (entity['value'] == other['value'] and
+            entity['entity'] == other['entity'])
 
 
 async def _enter_user_message(sender_id: Text,

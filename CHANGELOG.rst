@@ -36,6 +36,7 @@ Changed
 -------
 - starter packs are now tested in parallel with the unittests,
   and only on master and branches ending in ``.x`` (i.e. new version releases)
+- for interactive learning only include manually annotated and ner_crf entities in nlu export
 - renamed ``train_dialogue_model`` to ``train``
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``
 - ``event_broker.publish`` receives the event as a dict instead of text
@@ -61,8 +62,7 @@ Fixed
   storyline is saved (not just the last)
 - Handles slot names which contain characters that are invalid as python 
   variable name (e.g. dot) in a template
-- When a ``fork`` is used in interactive learning, every forked storyline 
-  is saved (not just the last)
+- in interactive learning: only updates entity values if user changes annotation
 
 [0.13.3] - 2019-03-04
 ^^^^^^^^^^^^^^^^^^^^^
