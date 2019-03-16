@@ -287,7 +287,7 @@ class PolicyEnsemble(object):
                 "policy can have only 1 featurizer")
         featurizer_config = policy['featurizer'][0]
         featurizer_name = featurizer_config.pop('name')
-        featurizer_func = registry.policy_from_module_path(featurizer_name)
+        featurizer_func = registry.featurizer_from_module_path(featurizer_name)
 
         return featurizer_func, featurizer_config
 
@@ -301,7 +301,7 @@ class PolicyEnsemble(object):
             featurizer_config['state_featurizer'][0]
         )
         state_featurizer_name = state_featurizer_config.pop('name')
-        state_featurizer_func = registry.policy_from_module_path(
+        state_featurizer_func = registry.featurizer_from_module_path(
             state_featurizer_name)
 
         return state_featurizer_func, state_featurizer_config
