@@ -2,7 +2,6 @@
 import argparse
 import asyncio
 import errno
-import io
 import json
 import logging
 import os
@@ -538,7 +537,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
 def file_as_bytes(path: Text) -> bytes:
     """Read in a file as a byte array."""
-    with io.open(path, 'rb') as f:
+    with open(path, 'rb') as f:
         return f.read()
 
 

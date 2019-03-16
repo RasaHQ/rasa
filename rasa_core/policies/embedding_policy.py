@@ -1,6 +1,5 @@
 from collections import namedtuple
 import copy
-import io
 import json
 import logging
 import os
@@ -1455,7 +1454,7 @@ class EmbeddingPolicy(Policy):
         tf_config_file = os.path.join(
             path, "{}.tf_config.pkl".format(file_name))
 
-        with io.open(tf_config_file, 'rb') as f:
+        with open(tf_config_file, 'rb') as f:
             _tf_config = pickle.load(f)
 
         graph = tf.Graph()

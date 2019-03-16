@@ -171,11 +171,11 @@ async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
     from rasa_core.agent import Agent
 
     _interpreter = NaturalLanguageInterpreter.create(nlu_model,
-                                                     _endpoints.nlu)
-    _broker = broker.from_endpoint_config(_endpoints.event_broker)
+                                                     endpoints.nlu)
+    _broker = broker.from_endpoint_config(endpoints.event_broker)
 
     _tracker_store = TrackerStore.find_tracker_store(
-        None, _endpoints.tracker_store, _broker)
+        None, endpoints.tracker_store, _broker)
 
     if endpoints and endpoints.model:
         from rasa_core import agent

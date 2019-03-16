@@ -31,7 +31,7 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     from rasa_core.utils import AvailableEndpoints
 
     model_path = get_model(model)
-    core_path, nlu_path = get_model_subdirectories(model)
+    core_path, nlu_path = get_model_subdirectories(model_path)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
     if not connector and not credentials:

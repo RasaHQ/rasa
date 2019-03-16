@@ -60,6 +60,7 @@ async def train(domain_file: Text, stories_file: Text, output_path: Text,
                 kwargs: Optional[Dict] = None):
     from rasa_core.agent import Agent
     from rasa_core import config, utils
+    from rasa_core.run import AvailableEndpoints
 
     if not endpoints:
         endpoints = AvailableEndpoints()

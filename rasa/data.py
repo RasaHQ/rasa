@@ -1,9 +1,13 @@
 import json
+import logging
 import os
 import shutil
 import tempfile
+import uuid
 from typing import Tuple, List, Text, Set, Union
 import re
+
+logger = logging.getLogger(__name__)
 
 
 def get_core_directory(directories: Union[Text, List[Text]]) -> Text:
@@ -109,6 +113,9 @@ def _contains_nlu_pattern(text: Text) -> bool:
 def _copy_files_to_new_dir(files: Set[Text]) -> Text:
     directory = tempfile.mkdtemp()
     for f in files:
-        shutil.copy2(f, directory)
+        # makes sure files do not overwrite each other, hence the prefix
+        unique_prefix = uuid.uuid4().hex
+        unique_file_name = unique_prefix + "_" + os.path.basename(f)
+        shutil.copy2(f, os.path.join(directory, unique_file_name))
 
     return directory

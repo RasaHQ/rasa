@@ -68,13 +68,14 @@ async def train_async(domain: Text,
         await train_core_async(domain, config, story_directory,
                                output, train_path)
     else:
-        print("Core configuration did not change. No need to retrain "
-              "Core model.")
+        print("Dialogue data / configuration did not change. "
+              "No need to retrain dialogue model.")
 
     if force_training or retrain_nlu:
         train_nlu(config, nlu_data_directory, output, train_path)
     else:
-        print("NLU configuration did not change. No need to retrain NLU model.")
+        print("NLU data / configuration did not change. "
+              "No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
         output = create_output_path(output)
@@ -86,8 +87,8 @@ async def train_async(domain: Text,
 
         return output
     else:
-        print("Nothing changed. You can use the old model: '{}'."
-              "".format(old_model))
+        print("Nothing changed. You can use the old model stored at {}"
+              "".format(os.path.abspath(old_model)))
 
         return old_model
 

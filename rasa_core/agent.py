@@ -671,9 +671,10 @@ class Agent(object):
 
         story_steps = await StoryFileReader.read_from_folder(resource_name,
                                                              self.domain)
-        visualize_stories(story_steps, self.domain, output_file,
-                          max_history, self.interpreter,
-                          nlu_training_data, should_merge_nodes, fontsize)
+        await visualize_stories(story_steps, self.domain, output_file,
+                                max_history, self.interpreter,
+                                nlu_training_data, should_merge_nodes,
+                                fontsize)
 
     def _ensure_agent_is_ready(self) -> None:
         """Checks that an interpreter and a tracker store are set.

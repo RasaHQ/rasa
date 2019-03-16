@@ -15,10 +15,10 @@ async def test_story_visualization(default_domain, tmpdir):
         "data/test_stories/stories.md", default_domain,
         interpreter=RegexInterpreter())
     out_file = tmpdir.join("graph.html").strpath
-    generated_graph = visualize_stories(story_steps, default_domain,
-                                        output_file=out_file,
-                                        max_history=3,
-                                        should_merge_nodes=False)
+    generated_graph = await visualize_stories(story_steps, default_domain,
+                                              output_file=out_file,
+                                              max_history=3,
+                                              should_merge_nodes=False)
 
     assert len(generated_graph.nodes()) == 51
 
@@ -29,10 +29,10 @@ async def test_story_visualization_with_merging(default_domain):
     story_steps = await StoryFileReader.read_from_file(
         "data/test_stories/stories.md", default_domain,
         interpreter=RegexInterpreter())
-    generated_graph = visualize_stories(story_steps, default_domain,
-                                        output_file=None,
-                                        max_history=3,
-                                        should_merge_nodes=True)
+    generated_graph = await visualize_stories(story_steps, default_domain,
+                                              output_file=None,
+                                              max_history=3,
+                                              should_merge_nodes=True)
     assert 15 < len(generated_graph.nodes()) < 33
 
     assert 20 < len(generated_graph.edges()) < 33

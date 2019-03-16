@@ -1158,10 +1158,10 @@ async def _plot_trackers(sender_ids: List[Union[Text, List[Event]]],
     if unconfirmed:
         event_sequences[-1].extend(unconfirmed)
 
-    graph = visualize_neighborhood(event_sequences[-1],
-                                   event_sequences,
-                                   output_file=None,
-                                   max_history=2)
+    graph = await visualize_neighborhood(event_sequences[-1],
+                                         event_sequences,
+                                         output_file=None,
+                                         max_history=2)
 
     from networkx.drawing.nx_pydot import write_dot
     write_dot(graph, output_file)
