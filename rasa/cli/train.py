@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import tempfile
 import typing
 from typing import List, Optional, Text
@@ -106,6 +105,7 @@ def train(args: argparse.Namespace) -> Optional[Text]:
 def train_core(args: argparse.Namespace,
                train_path: Optional[Text] = None) -> Optional[Text]:
     from rasa.train import train_core
+    import asyncio
 
     loop = asyncio.get_event_loop()
     output = train_path or args.out
@@ -123,8 +123,7 @@ def train_core(args: argparse.Namespace,
 
         config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
-        return loop.run_until_complete(
-            train_core(args.domain, config, stories, output, train_path))
+        return train_core(args.domain, config, stories, output, train_path)
     else:
         from rasa_core.train import do_compare_training
         loop.run_until_complete(do_compare_training(args, stories, None))

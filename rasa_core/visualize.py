@@ -5,6 +5,7 @@ import os
 from typing import Text
 
 import rasa_core.cli.arguments
+import rasa.utils
 import rasa_core.cli.train
 from rasa_core import utils
 import rasa_core.cli
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     arg_parser = add_arguments(parser)
     args = arg_parser.parse_args()
 
-    utils.configure_colored_logging(args.loglevel)
+    rasa.utils.configure_colored_logging(args.loglevel)
 
     loop = asyncio.get_event_loop()
     stories = loop.run_until_complete(

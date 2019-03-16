@@ -2,7 +2,6 @@ import argparse
 import os
 from typing import List, Text
 
-import questionary
 import rasa.train
 from rasa.cli.shell import shell
 from rasa.cli.utils import create_output_path, print_success
@@ -22,6 +21,8 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
 def print_train_or_instructions(args: argparse.Namespace,
                                 path: Text) -> None:
+    import questionary
+
     print_success("Your bot is ready to go!")
     should_train = questionary.confirm("Do you want me to train an initial "
                                        "model for the bot? 💪🏽").ask()
@@ -43,6 +44,7 @@ def print_train_or_instructions(args: argparse.Namespace,
 
 def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa_core import constants
+    import questionary
 
     should_run = questionary.confirm("Do you want to speak to the trained bot "
                                      "on the command line? 🤖").ask()
@@ -87,6 +89,8 @@ def print_cancel() -> None:
 
 
 def _ask_create_path(path: Text) -> None:
+    import questionary
+
     should_create = questionary.confirm("Path '{}' does not exist 🧐. "
                                         "Should I create it?"
                                         "".format(path)).ask()
@@ -99,6 +103,8 @@ def _ask_create_path(path: Text) -> None:
 
 
 def _ask_overwrite(path: Text) -> None:
+    import questionary
+
     overwrite = questionary.confirm("Directory '{}' is not empty. Continue?"
                                     "".format(os.path.abspath(path))).ask()
     if not overwrite:
@@ -106,6 +112,7 @@ def _ask_overwrite(path: Text) -> None:
 
 
 def run(args: argparse.Namespace) -> None:
+    import questionary
 
     print_success("Welcome to Rasa! 🤖\n")
     print("To get started quickly, I can assist you to create an "

@@ -5,7 +5,6 @@ from typing import List
 
 import rasa.cli.run
 from rasa.cli.utils import print_error, print_success
-from rasa_core.utils import EndpointConfig
 
 
 # noinspection PyProtectedMember
@@ -24,6 +23,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 def start_core(platform_token):
     from rasa_core.utils import AvailableEndpoints
     from rasa_core.run import serve_application
+    from rasa_core.utils import EndpointConfig
 
     _endpoints = AvailableEndpoints(
         # TODO: make endpoints more configurable, esp ports

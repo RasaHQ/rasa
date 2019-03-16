@@ -7,6 +7,7 @@ from difflib import SequenceMatcher
 
 import rasa.cli.utils
 import rasa_core.cli.arguments
+import rasa.utils
 from typing import List, Optional, Text, Tuple
 
 from rasa.cli import utils as cliutils
@@ -179,7 +180,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    utils.configure_colored_logging(cmdline_args.loglevel)
+    rasa.utils.configure_colored_logging(cmdline_args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
     print(cliutils.wrap_with_color(

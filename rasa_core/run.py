@@ -8,6 +8,7 @@ from sanic_cors import CORS
 from typing import List, Optional, Text
 
 import rasa_core.cli.arguments
+import rasa.utils
 
 import rasa_core
 from rasa_core import constants, utils, cli
@@ -206,7 +207,7 @@ if __name__ == '__main__':
     logging.getLogger('matplotlib').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
 
-    utils.configure_colored_logging(cmdline_args.loglevel)
+    rasa.utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
                                  cmdline_args.log_file)
 

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 
+import rasa.utils
 from policy import RestaurantPolicy
 from rasa_core import utils
 from rasa_core.agent import Agent
@@ -47,7 +48,7 @@ def train_nlu():
 
 
 if __name__ == '__main__':
-    utils.configure_colored_logging(loglevel="INFO")
+    rasa.utils.configure_colored_logging(loglevel="INFO")
 
     parser = argparse.ArgumentParser(
         description='starts the bot')

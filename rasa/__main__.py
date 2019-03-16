@@ -2,7 +2,7 @@ import argparse
 import logging
 
 from rasa_core.cli.arguments import add_logging_option_arguments
-from rasa_core.utils import configure_colored_logging
+from rasa.utils import configure_colored_logging
 
 from rasa import version
 from rasa.cli import (scaffold, run, train, interactive,
