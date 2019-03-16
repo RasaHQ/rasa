@@ -36,7 +36,7 @@ jobs:
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only master and new Core builds test the starter pack
     name: "Test stack starter pack"
     script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git@latest
     - cd starter-pack-rasa-stack
     - python -m pytest tests/test_core.py
   - stage: test
