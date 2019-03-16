@@ -8,8 +8,6 @@ import uuid
 from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
-from rasa_core import utils
-
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
 
@@ -155,6 +153,7 @@ class Event(object):
         default: Optional[Type['Event']] = None
     ) -> Optional[Type['Event']]:
         """Returns a slots class by its type name."""
+        from rasa_core import utils
 
         for cls in utils.all_subclasses(Event):
             if cls.type_name == type_name:

@@ -4,11 +4,10 @@ import logging
 import os
 from typing import Text
 
-import rasa_core.cli.arguments
 import rasa.utils
-import rasa_core.cli.train
-from rasa_core import utils
 import rasa_core.cli
+import rasa_core.cli.arguments
+import rasa_core.cli.train
 
 logger = logging.getLogger(__name__)
 
