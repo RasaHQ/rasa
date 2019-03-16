@@ -1,6 +1,8 @@
 import argparse
+import asyncio
 import logging
 
+import rasa.utils
 from policy import RestaurantPolicy
 from rasa_core import utils
 from rasa_core.agent import Agent
@@ -14,15 +16,15 @@ class RestaurantAPI(object):
         return "papi's pizza place"
 
 
-def train_dialogue(domain_file="restaurant_domain.yml",
-                   model_path="models/dialogue",
-                   training_data_file="data/babi_stories.md"):
+async def train_dialogue(domain_file="domain.yml",
+                         model_path="models/dialogue",
+                         training_data_file="data/stories.md"):
     agent = Agent(domain_file,
                   policies=[MemoizationPolicy(max_history=3),
                             RestaurantPolicy(batch_size=100, epochs=400,
                                              validation_split=0.2)])
 
-    training_data = agent.load_data(training_data_file)
+    training_data = await agent.load_data(training_data_file)
     agent.train(
         training_data
     )
@@ -36,8 +38,8 @@ def train_nlu():
     from rasa_nlu import config
     from rasa_nlu.model import Trainer
 
-    training_data = load_data('data/nlu_data.md')
-    trainer = Trainer(config.load("nlu_model_config.yml"))
+    training_data = load_data('data/nlu.md')
+    trainer = Trainer(config.load("config.yml"))
     trainer.train(training_data)
     model_directory = trainer.persist('models/nlu/',
                                       fixed_model_name="current")
@@ -46,7 +48,7 @@ def train_nlu():
 
 
 if __name__ == '__main__':
-    utils.configure_colored_logging(loglevel="INFO")
+    rasa.utils.configure_colored_logging(loglevel="INFO")
 
     parser = argparse.ArgumentParser(
         description='starts the bot')
@@ -57,8 +59,10 @@ if __name__ == '__main__':
         help="what the bot should do - e.g. run or train?")
     task = parser.parse_args().task
 
+    loop = asyncio.get_event_loop()
+
     # decide what to do based on first parameter of the script
     if task == "train-nlu":
         train_nlu()
     elif task == "train-dialogue":
-        train_dialogue()
+        loop.run_until_complete(train_dialogue())

@@ -15,9 +15,11 @@ Added
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
-- added tracker store persisting trackers into a SQL database (``SQLTrackerStore``)
+- added tracker store persisting trackers into a SQL database
+  (``SQLTrackerStore``)
 - documentation about early deactivation of a form in validation
-- Added max_event_history in tracker_store to set this value in DialogueStateTracker
+- Added max_event_history in tracker_store to set this value in
+  ``DialogueStateTracker``
 - utility functions for colored logging
 - open webbrowser when visualizing stories
 - added ``/parse`` endpoint to query for NLU results
@@ -43,11 +45,10 @@ Changed
 - renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
-- now randomly created augmented stories are subsampled during training and marked,
-  so that memo policies can ignore them
-- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
-- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, 
-  rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
+- made ``message_id`` an additional argument to ``interpreter.parse``
+- now randomly created augmented stories are subsampled during training
+  and marked, so that memo policies can ignore them
+- changed payloads from "text" to "message" in documentation files
 - dialogue files in ``/data/test_dialogues`` were updated with conversations
   from the bots in ``/examples``
 
@@ -127,7 +128,7 @@ Added
 
 Removed
 -------
-- support for deprecated intents/entities format
+- removed support for deprecated intents/entities format
 
 Changed
 -------
@@ -141,6 +142,7 @@ Changed
 - updated docs for interactive learning to inform users of the
   ``--core`` flag
 - Change memoization policies confidence score to 1.1 to override ML policies
+- replaced flask server with async sanic
 
 Fixed
 -----

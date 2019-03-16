@@ -1,18 +1,20 @@
 import argparse
 import tempfile
 import typing
-from typing import List, Text, Optional
+from typing import List, Optional, Text
 
-from rasa.cli.default_arguments import (add_config_param, add_domain_param,
-                                        add_stories_param, add_nlu_data_param)
+from rasa.cli.default_arguments import (
+    add_config_param, add_domain_param, add_nlu_data_param, add_stories_param)
 from rasa.cli.utils import get_validated_path
-from rasa.constants import (DEFAULT_CONFIG_PATH, DEFAULT_DOMAIN_PATH,
-                            DEFAULT_MODELS_PATH, DEFAULT_DATA_PATH)
+from rasa.constants import (
+    DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH,
+    DEFAULT_MODELS_PATH)
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Interpreter
 
 
+# noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     import rasa_core.cli.train as core_cli
@@ -100,10 +102,12 @@ def train(args: argparse.Namespace) -> Optional[Text]:
     return rasa.train(domain, config, training_files, args.out, args.force)
 
 
-def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
-               ) -> Optional[Text]:
+def train_core(args: argparse.Namespace,
+               train_path: Optional[Text] = None) -> Optional[Text]:
     from rasa.train import train_core
+    import asyncio
 
+    loop = asyncio.get_event_loop()
     output = train_path or args.out
 
     args.domain = get_validated_path(args.domain, "domain", DEFAULT_DOMAIN_PATH)
@@ -122,7 +126,7 @@ def train_core(args: argparse.Namespace, train_path: Optional[Text] = None
         return train_core(args.domain, config, stories, output, train_path)
     else:
         from rasa_core.train import do_compare_training
-        do_compare_training(args, stories, None)
+        loop.run_until_complete(do_compare_training(args, stories, None))
         return None
 
 

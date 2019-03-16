@@ -15,6 +15,12 @@ from rasa_core.agent import Agent
 from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
 
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
+
+
 def nlg_app(base_url="/"):
     app = Flask(__name__)
 
@@ -46,7 +52,7 @@ def http_nlg(request):
     return http_server.url
 
 
-def test_nlg(http_nlg, default_agent_path):
+async def test_nlg(http_nlg, default_agent_path):
     sender = str(uuid.uuid1())
 
     nlg_endpoint = EndpointConfig.from_dict({
@@ -55,7 +61,7 @@ def test_nlg(http_nlg, default_agent_path):
     agent = Agent.load(default_agent_path, None,
                        generator=nlg_endpoint)
 
-    response = agent.handle_text("/greet", sender_id=sender)
+    response = await agent.handle_text("/greet", sender_id=sender)
     assert len(response) == 1
     assert response[0] == {"text": "Hey there!", "recipient_id": sender}
 

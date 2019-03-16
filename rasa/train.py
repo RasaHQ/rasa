@@ -1,19 +1,32 @@
+import asyncio
 import os
 import tempfile
 import typing
 from typing import Text, Optional, List, Union
 
 from rasa import model, data
-from rasa.cli.utils import create_output_path
+from rasa.cli.utils import create_output_path, print_success
 from rasa.constants import DEFAULT_MODELS_PATH
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Interpreter
 
 
-def train(domain: Text, config: Text, training_files: Union[Text, List[Text]],
-          output: Text = DEFAULT_MODELS_PATH, force_training: bool = False
-          ) -> Optional[Text]:
+def train(domain: Text,
+          config: Text,
+          training_files: Union[Text, List[Text]],
+          output: Text = DEFAULT_MODELS_PATH,
+          force_training: bool = False) -> Optional[Text]:
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(train_async(domain, config, training_files,
+                                               output, force_training))
+
+
+async def train_async(domain: Text,
+                      config: Text,
+                      training_files: Union[Text, List[Text]],
+                      output: Text = DEFAULT_MODELS_PATH,
+                      force_training: bool = False) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
     Args:
@@ -26,7 +39,6 @@ def train(domain: Text, config: Text, training_files: Union[Text, List[Text]],
     Returns:
         Path of the trained model archive.
     """
-    from rasa_core.utils import print_success
 
     train_path = tempfile.mkdtemp()
     old_model = model.get_latest_model(output)
@@ -53,15 +65,17 @@ def train(domain: Text, config: Text, training_files: Union[Text, List[Text]],
             retrain_nlu = not model.merge_model(old_nlu, target_path)
 
     if force_training or retrain_core:
-        train_core(domain, config, story_directory, output, train_path)
+        await train_core_async(domain, config, story_directory,
+                               output, train_path)
     else:
-        print("Core configuration did not change. No need to retrain "
-              "Core model.")
+        print("Dialogue data / configuration did not change. "
+              "No need to retrain dialogue model.")
 
     if force_training or retrain_nlu:
         train_nlu(config, nlu_data_directory, output, train_path)
     else:
-        print("NLU configuration did not change. No need to retrain NLU model.")
+        print("NLU data / configuration did not change. "
+              "No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
         output = create_output_path(output)
@@ -73,14 +87,27 @@ def train(domain: Text, config: Text, training_files: Union[Text, List[Text]],
 
         return output
     else:
-        print("Nothing changed. You can use the old model: '{}'."
-              "".format(old_model))
+        print("Nothing changed. You can use the old model stored at {}"
+              "".format(os.path.abspath(old_model)))
 
         return old_model
 
 
-def train_core(domain: Text, config: Text, stories: Text, output: Text,
+def train_core(domain: Text,
+               config: Text,
+               stories: Text,
+               output: Text,
                train_path: Optional[Text]) -> Optional[Text]:
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(train_core_async(domain, config, stories,
+                                                    output, train_path))
+
+
+async def train_core_async(domain: Text,
+                           config: Text,
+                           stories: Text,
+                           output: Text,
+                           train_path: Optional[Text]) -> Optional[Text]:
     """Trains a Core model.
 
     Args:
@@ -97,12 +124,12 @@ def train_core(domain: Text, config: Text, stories: Text, output: Text,
 
     """
     import rasa_core.train
-    from rasa_core.utils import print_success
 
     # normal (not compare) training
-    core_model = rasa_core.train(domain_file=domain, stories_file=stories,
-                                 output_path=os.path.join(train_path, "core"),
-                                 policy_config=config)
+    core_model = await rasa_core.train(
+        domain_file=domain, stories_file=stories,
+        output_path=os.path.join(train_path, "core"),
+        policy_config=config)
 
     if not train_path:
         # Only Core was trained.
@@ -134,7 +161,6 @@ def train_nlu(config: Text, nlu_data: Text, output: Text,
 
     """
     import rasa_nlu
-    from rasa_core.utils import print_success
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa_nlu.train(config, nlu_data, _train_path,

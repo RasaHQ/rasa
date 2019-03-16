@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import os
 from typing import List
 
@@ -9,6 +10,7 @@ from rasa.cli.default_arguments import (
 from rasa.constants import DEFAULT_DATA_PATH
 
 
+# noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     show_parser = subparsers.add_parser(
@@ -44,6 +46,7 @@ def add_core_visualization_params(parser: argparse.ArgumentParser):
 def show_stories(args: argparse.Namespace):
     import rasa_core.visualize
 
+    loop = asyncio.get_event_loop()
     args.config = args.config
     args.url = None
 
@@ -51,5 +54,7 @@ def show_stories(args: argparse.Namespace):
     if os.path.exists(DEFAULT_DATA_PATH):
         args.nlu_data = data.get_nlu_directory(DEFAULT_DATA_PATH)
 
-    rasa_core.visualize(args.config, args.domain, args.stories, args.nlu_data,
-                        args.output, args.max_history)
+    loop.run_until_complete(
+        rasa_core.visualize(args.config, args.domain,
+                            args.stories, args.nlu_data,
+                            args.output, args.max_history))

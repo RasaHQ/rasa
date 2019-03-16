@@ -1,9 +1,10 @@
+import asyncio
 import logging
 from typing import Text, Dict
 import os
 
 from rasa.constants import DEFAULT_RESULTS_PATH
-from rasa.model import get_model
+from rasa.model import get_model, get_model_subdirectories
 from rasa.cli.utils import minimal_kwargs
 
 logger = logging.getLogger(__name__)
@@ -35,9 +36,9 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
 
     if model_path:
         # Single model: Normal evaluation
+        loop = asyncio.get_event_loop()
         model_path = get_model(model)
-        core_path = os.path.join(model_path, "core")
-        nlu_path = os.path.join(model_path, "nlu")
+        core_path, nlu_path = get_model_subdirectories(model_path)
 
         _interpreter = NaturalLanguageInterpreter.create(nlu_path,
                                                          _endpoints.nlu)
@@ -45,7 +46,8 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
         _agent = Agent.load(core_path, interpreter=_interpreter)
 
         kwargs = minimal_kwargs(kwargs, rasa_core.test)
-        rasa_core.test(stories, _agent, out_directory=output, **kwargs)
+        loop.run_until_complete(
+            rasa_core.test(stories, _agent, out_directory=output, **kwargs))
 
     else:
         from rasa_core.test import compare, plot_curve

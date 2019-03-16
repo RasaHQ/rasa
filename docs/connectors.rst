@@ -108,7 +108,7 @@ you should add in the configuration of the webhook.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``FacebookInput`` instance provides a flask blueprint for creating
+A ``FacebookInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -117,7 +117,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_facebook_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 
@@ -181,7 +182,7 @@ you should add in the OAuth & Permissions section.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``WebexTeamsInput`` instance provides a flask blueprint for creating
+A ``WebexTeamsInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -190,7 +191,8 @@ Code to create a WebexTeams-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_webexteams_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 .. _slack_connector:
@@ -255,7 +257,7 @@ you should add in the OAuth & Permissions section.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``SlackInput`` instance provides a flask blueprint for creating
+A ``SlackInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -264,7 +266,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_slack_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 .. _mattermost_connector:
@@ -322,7 +325,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``MattermostInput`` instance provides a flask blueprint for creating
+A ``MattermostInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -330,7 +333,8 @@ Code to create a Mattermost-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_mattermost_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -387,7 +391,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``TelegramInput`` instance provides a flask blueprint for creating
+A ``TelegramInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -395,7 +399,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_telegram_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -455,7 +460,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``TwilioInput`` instance provides a flask blueprint for creating
+A ``TwilioInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -463,7 +468,8 @@ Code to create a Twilio-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_twilio_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -524,7 +530,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``RocketChatInput`` instance provides a flask blueprint for creating
+A ``RocketChatInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -532,7 +538,8 @@ Code to create a RocketChat-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_rocketchat_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -566,7 +573,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``BotFrameworkInput`` instance provides a flask blueprint for creating
+A ``BotFrameworkInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you seperate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -574,7 +581,8 @@ Code to create a Microsoft Bot Framework-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_botframework_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -631,7 +639,8 @@ Code to create a Socket.IO-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_socketio_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -769,7 +778,7 @@ Creating a new Channel
 You can also implement your own, custom channel. You can
 use the ``rasa_core.channels.channel.RestInput`` class as a template.
 The methods you need to implement are ``blueprint`` and ``name``. The method
-needs to create a Flask blueprint that can be attached to a flask server.
+needs to create a sanic blueprint that can be attached to a sanic server.
 
 This allows you to add `REST` endpoints to the server, which the external
 messaging service can call to deliver messages.

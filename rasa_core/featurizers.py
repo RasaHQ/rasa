@@ -403,7 +403,7 @@ class TrackerFeaturizer(object):
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
         utils.create_dir_for_file(featurizer_file)
-        with io.open(featurizer_file, 'w', encoding="utf-8") as f:
+        with open(featurizer_file, 'w', encoding="utf-8") as f:
             # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
 

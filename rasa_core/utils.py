@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+import argparse
+import asyncio
 import errno
-import io
 import json
 import logging
 import os
@@ -8,18 +9,23 @@ import re
 import sys
 import tarfile
 import tempfile
-import argparse
+import warnings
 import zipfile
-from hashlib import sha1, md5
-from threading import Thread
-from typing import Text, Any, List, Optional, Tuple, Dict, Set, TYPE_CHECKING
-from io import BytesIO as IOReader
+from asyncio import AbstractEventLoop, Future
+from hashlib import md5, sha1
+from io import BytesIO as IOReader, StringIO
+from typing import (
+    Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple,
+    Callable)
 
-import requests
-from requests.auth import HTTPBasicAuth
+import aiohttp
+from aiohttp import InvalidURL
 from requests.exceptions import InvalidURL
-from io import StringIO
-from urllib.parse import unquote
+from sanic import Sanic
+from sanic.request import Request
+from sanic.views import CompositionView
+
+from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +92,7 @@ def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
 def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
     """Dump a text to a file."""
 
-    with io.open(filename, 'w', encoding="utf-8") as f:
+    with open(filename, 'w', encoding="utf-8") as f:
         # noinspection PyTypeChecker
         f.write(str(text))
 
@@ -171,20 +177,6 @@ def generate_id(prefix="", max_chars=None):
     return "{}{}".format(prefix, gid)
 
 
-def configure_colored_logging(loglevel):
-    import coloredlogs
-    field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
-    field_styles['asctime'] = {}
-    level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
-    level_styles['debug'] = {}
-    coloredlogs.install(
-        level=loglevel,
-        use_chroot=False,
-        fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
-        level_styles=level_styles,
-        field_styles=field_styles)
-
-
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
         print("Invalid answer, only {}{} allowed\n".format(
@@ -204,35 +196,6 @@ def request_input(valid_values=None, prompt=None, max_suggested=3):
 
 
 # noinspection PyPep8Naming
-class bcolors(object):
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-
-def wrap_with_color(text: Text, color: Text):
-    return color + text + bcolors.ENDC
-
-
-def print_color(text: Text, color: Text):
-    print(wrap_with_color(text, color))
-
-
-def print_warning(text: Text):
-    print_color(text, bcolors.WARNING)
-
-
-def print_error(text: Text):
-    print_color(text, bcolors.FAIL)
-
-
-def print_success(text: Text):
-    print_color(text, bcolors.OKGREEN)
 
 
 class HashableNDArray(object):
@@ -340,7 +303,7 @@ def _dump_yaml(obj, output):
 
 def dump_obj_as_yaml_to_file(filename, obj):
     """Writes data (python dict) to the filename in yaml repr."""
-    with io.open(filename, 'w', encoding="utf-8") as output:
+    with open(filename, 'w', encoding="utf-8") as output:
         _dump_yaml(obj, output)
 
 
@@ -353,37 +316,50 @@ def dump_obj_as_yaml_to_string(obj):
 
 def read_file(filename, encoding="utf-8"):
     """Read text from a file."""
-    with io.open(filename, encoding=encoding) as f:
+    with open(filename, encoding=encoding) as f:
         return f.read()
 
 
 def read_json_file(filename):
     """Read json from a file"""
-    with io.open(filename) as f:
+    with open(filename) as f:
         return json.load(f)
 
 
-def list_routes(app):
-    """List all available routes of a flask web server."""
-    from flask import url_for
+def list_routes(app: Sanic):
+    """List all the routes of a sanic application.
 
+    Mainly used for debugging."""
+    from urllib.parse import unquote
     output = {}
-    with app.test_request_context():
-        for rule in app.url_map.iter_rules():
 
-            options = {}
-            for arg in rule.arguments:
-                options[arg] = "[{0}]".format(arg)
+    def find_route(suffix, path):
+        for name, (uri, _) in app.router.routes_names.items():
+            if name.endswith(suffix) and uri == path:
+                return name
+        return None
 
-            methods = ', '.join(rule.methods)
+    for endpoint, route in app.router.routes_all.items():
+        if endpoint[:-1] in app.router.routes_all and endpoint[-1] == "/":
+            continue
 
-            url = url_for(rule.endpoint, **options)
+        options = {}
+        for arg in route.parameters:
+            options[arg] = "[{0}]".format(arg)
+
+        if not isinstance(route.handler, CompositionView):
+            handlers = [(list(route.methods)[0], route.name)]
+        else:
+            handlers = [(method, find_route(v.__name__, endpoint) or v.__name__)
+                        for method, v in route.handler.handlers.items()]
+
+        for method, name in handlers:
             line = unquote(
-                "{:50s} {:30s} {}".format(rule.endpoint, methods, url))
-            output[url] = line
+                "{:50s} {:30s} {}".format(endpoint, method, name))
+            output[name] = line
 
-        url_table = "\n".join(output[url] for url in sorted(output))
-        logger.debug("Available web server routes: \n{}".format(url_table))
+    url_table = "\n".join(output[url] for url in sorted(output))
+    logger.debug("Available web server routes: \n{}".format(url_table))
 
     return output
 
@@ -430,50 +406,47 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
         return s
 
 
-def wait_for_threads(threads: List[Thread]) -> None:
-    """Block until all child threads have been terminated."""
-
-    while len(threads) > 0:
-        try:
-            # Join all threads using a timeout so it doesn't block
-            # Filter out threads which have been joined or are None
-            [t.join(1000) for t in threads]
-            threads = [t for t in threads if t.isAlive()]
-        except KeyboardInterrupt:
-            logger.info("Ctrl-c received! Sending kill to threads...")
-            # It would be better at this point to properly shutdown every
-            # thread (e.g. by setting a flag on it) Unfortunately, there
-            # are IO operations that are blocking without a timeout
-            # (e.g. sys.read) so threads that are waiting for one of
-            # these calls can't check the set flag. Hence, we go the easy
-            # route for now
-            sys.exit(0)
-    logger.info("Finished waiting for input threads to terminate. "
-                "Stopping to serve forever.")
-
-
-def bool_arg(name: Text, default: bool = True) -> bool:
+def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     """Return a passed boolean argument of the request or a default.
 
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
-    from flask import request
 
-    return request.args.get(name, str(default)).lower() == 'true'
+    return default_arg(request, name, str(default)).lower() == 'true'
 
 
-def float_arg(name: Text) -> Optional[float]:
+def float_arg(request: Request,
+              key: Text,
+              default: Optional[float] = None) -> Optional[float]:
     """Return a passed argument cast as a float or None.
 
     Checks the `name` parameter of the request if it contains a valid
     float value. If not, `None` is returned."""
-    from flask import request
 
-    arg = request.args.get(name)
+    arg = default_arg(request, key, default)
+
+    if arg is default:
+        return arg
+
     try:
         return float(arg)
-    except TypeError:
-        return None
+    except (ValueError, TypeError):
+        logger.warning("Failed to convert '{}' to float.".format(arg))
+        return default
+
+
+def default_arg(request: Request,
+                key: Text,
+                default: Any = None) -> Optional[Any]:
+    """Return an argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a value.
+    If not, `default` is returned."""
+    found = request.raw_args.get(key)
+    if found is not None:
+        return found
+    else:
+        return default
 
 
 def extract_args(kwargs: Dict[Text, Any],
@@ -550,7 +523,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
     line_filter = re.compile(line_pattern)
 
-    with io.open(filename, 'r', encoding="utf-8") as f:
+    with open(filename, 'r', encoding="utf-8") as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)
@@ -564,7 +537,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
 def file_as_bytes(path: Text) -> bytes:
     """Read in a file as a byte array."""
-    with io.open(path, 'rb') as f:
+    with open(path, 'rb') as f:
         return f.read()
 
 
@@ -578,7 +551,7 @@ def get_text_hash(text: Text, encoding: Text = "utf-8") -> Text:
     return md5(text.encode(encoding)).hexdigest()
 
 
-def download_file_from_url(url: Text) -> Text:
+async def download_file_from_url(url: Text) -> Text:
     """Download a story file from a url and persists it into a temp file.
 
     Returns the file path of the temp file that contains the
@@ -588,15 +561,15 @@ def download_file_from_url(url: Text) -> Text:
     if not nlu_utils.is_url(url):
         raise InvalidURL(url)
 
-    response = requests.get(url)
-    response.raise_for_status()
-    filename = nlu_utils.create_temporary_file(response.content,
-                                               mode="w+b")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, raise_for_status=True) as resp:
+            filename = nlu_utils.create_temporary_file(await resp.read(),
+                                                       mode="w+b")
 
     return filename
 
 
-def remove_none_values(obj):
+def remove_none_values(obj: Dict[Text, Any]) -> Dict[Text, Any]:
     """Remove all keys that store a `None` value."""
     return {k: v for k, v in obj.items() if v is not None}
 
@@ -641,6 +614,14 @@ class AvailableEndpoints(object):
         self.event_broker = event_broker
 
 
+class ClientResponseError(aiohttp.ClientError):
+    def __init__(self, status, message, text):
+        self.status = status
+        self.message = message
+        self.text = text
+        super().__init__("{}, {}, body='{}'".format(status, message, text))
+
+
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
@@ -655,34 +636,21 @@ class EndpointConfig(object):
         self.type = kwargs.pop('store_type', kwargs.pop('type', None))
         self.kwargs = kwargs
 
-    def request(self,
-                method: Text = "post",
-                subpath: Optional[Text] = None,
-                content_type: Optional[Text] = "application/json",
-                **kwargs: Any
-                ) -> requests.Response:
-        """Send a HTTP request to the endpoint.
-
-        All additional arguments will get passed through
-        to `requests.request`."""
-
-        # create the appropriate headers
-        headers = self.headers.copy()
-        if content_type:
-            headers["Content-Type"] = content_type
-        if "headers" in kwargs:
-            headers.update(kwargs["headers"])
-            del kwargs["headers"]
-
+    def session(self):
         # create authentication parameters
         if self.basic_auth:
-            auth = HTTPBasicAuth(self.basic_auth["username"],
-                                 self.basic_auth["password"])
+            auth = aiohttp.BasicAuth(self.basic_auth["username"],
+                                     self.basic_auth["password"])
         else:
             auth = None
 
-        url = concat_url(self.url, subpath)
+        return aiohttp.ClientSession(
+            headers=self.headers,
+            auth=auth,
+            timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT),
+        )
 
+    def combine_parameters(self, kwargs=None):
         # construct GET parameters
         params = self.params.copy()
 
@@ -690,16 +658,45 @@ class EndpointConfig(object):
         if self.token:
             params[self.token_name] = self.token
 
-        if "params" in kwargs:
+        if kwargs and "params" in kwargs:
             params.update(kwargs["params"])
             del kwargs["params"]
+        return params
 
-        return requests.request(method,
-                                url,
-                                headers=headers,
-                                params=params,
-                                auth=auth,
-                                **kwargs)
+    async def request(self,
+                      method: Text = "post",
+                      subpath: Optional[Text] = None,
+                      content_type: Optional[Text] = "application/json",
+                      **kwargs: Any
+                      ):
+        """Send a HTTP request to the endpoint.
+
+        All additional arguments will get passed through
+        to aiohttp's `session.request`."""
+
+        # create the appropriate headers
+        headers = {}
+        if content_type:
+            headers["Content-Type"] = content_type
+
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
+
+        url = concat_url(self.url, subpath)
+        async with self.session() as session:
+            async with session.request(
+                    method,
+                    url,
+                    headers=headers,
+                    params=self.combine_parameters(kwargs),
+                    **kwargs) as resp:
+
+                if resp.status >= 400:
+                    raise ClientResponseError(resp.status,
+                                              resp.reason,
+                                              await resp.content.read())
+                return await resp.json()
 
     @classmethod
     def from_dict(cls, data):
@@ -741,3 +738,63 @@ def set_default_subparser(parser,
         if not subparser_found:
             # insert default in first position before all other arguments
             sys.argv.insert(1, default_subparser)
+
+
+def enable_async_loop_debugging(event_loop: AbstractEventLoop
+                                ) -> AbstractEventLoop:
+    logging.info("Enabling coroutine debugging. "
+                 "Loop id {}".format(id(asyncio.get_event_loop())))
+
+    # Enable debugging
+    event_loop.set_debug(True)
+
+    # Make the threshold for "slow" tasks very very small for
+    # illustration. The default is 0.1 (= 100 milliseconds).
+    event_loop.slow_callback_duration = 0.001
+
+    # Report all mistakes managing asynchronous resources.
+    warnings.simplefilter('always', ResourceWarning)
+    return event_loop
+
+
+def create_task_error_logger(error_message: Text = ""
+                             ) -> Callable[[Future], None]:
+    """Error logger to be attached to a task.
+
+    This will ensure exceptions are properly logged and won't get lost."""
+
+    def handler(fut: Future) -> None:
+        # noinspection PyBroadException
+        try:
+            fut.result()
+        except Exception:
+            logger.exception("An exception was raised while running task. "
+                             "{}".format(error_message))
+
+    return handler
+
+
+class LockCounter(asyncio.Lock):
+    """Decorated asyncio lock that counts how many coroutines are waiting.
+
+    The counter can be used to discard the lock when there is no coroutine
+    waiting for it. For this to work, there should not be any execution yield
+    between retrieving the lock and acquiring it, otherwise there might be
+    race conditions."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.wait_counter = 0
+
+    async def acquire(self) -> Any:
+        """Acquire the lock, makes sure only one coroutine can retrieve it."""
+
+        self.wait_counter += 1
+        try:
+            return await super(LockCounter, self).acquire()
+        finally:
+            self.wait_counter -= 1
+
+    def is_someone_waiting(self) -> bool:
+        """Check if a coroutine is waiting for this lock to be freed."""
+        return self.wait_counter != 0

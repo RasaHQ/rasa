@@ -1,21 +1,21 @@
 import os
+import pytest
+# we need this import to ignore the warning...
+# noinspection PyUnresolvedReferences
 
-from rasa_core.test import (
-    test,
-    _generate_trackers,
-    collect_story_predictions)
-from tests.conftest import (DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE,
-                            E2E_STORY_FILE_UNKNOWN_ENTITY)
+from rasa_core.test import (test, collect_story_predictions, _generate_trackers)
+from tests.conftest import (
+    DEFAULT_STORIES_FILE, E2E_STORY_FILE_UNKNOWN_ENTITY, END_TO_END_STORY_FILE)
 
 
 # from tests.conftest import E2E_STORY_FILE_UNKNOWN_ENTITY
 
 
-def test_evaluation_image_creation(tmpdir, default_agent):
+async def test_evaluation_image_creation(tmpdir, default_agent):
     stories_path = os.path.join(tmpdir.strpath, "failed_stories.md")
     img_path = os.path.join(tmpdir.strpath, "story_confmat.pdf")
 
-    test(
+    await test(
         stories=DEFAULT_STORIES_FILE,
         agent=default_agent,
         out_directory=tmpdir.strpath,
@@ -27,8 +27,8 @@ def test_evaluation_image_creation(tmpdir, default_agent):
     assert os.path.isfile(stories_path)
 
 
-def test_action_evaluation_script(tmpdir, default_agent):
-    completed_trackers = _generate_trackers(
+async def test_action_evaluation_script(tmpdir, default_agent):
+    completed_trackers = await _generate_trackers(
         DEFAULT_STORIES_FILE, default_agent, use_e2e=False)
     story_evaluation, num_stories = collect_story_predictions(
         completed_trackers,
@@ -41,8 +41,8 @@ def test_action_evaluation_script(tmpdir, default_agent):
     assert num_stories == 3
 
 
-def test_end_to_end_evaluation_script(tmpdir, default_agent):
-    completed_trackers = _generate_trackers(
+async def test_end_to_end_evaluation_script(tmpdir, default_agent):
+    completed_trackers = await _generate_trackers(
         END_TO_END_STORY_FILE, default_agent, use_e2e=True)
 
     story_evaluation, num_stories = collect_story_predictions(
@@ -56,8 +56,9 @@ def test_end_to_end_evaluation_script(tmpdir, default_agent):
     assert num_stories == 2
 
 
-def test_end_to_end_evaluation_script_unknown_entity(tmpdir, default_agent):
-    completed_trackers = _generate_trackers(
+async def test_end_to_end_evaluation_script_unknown_entity(tmpdir,
+                                                           default_agent):
+    completed_trackers = await _generate_trackers(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True)
 
     story_evaluation, num_stories = collect_story_predictions(

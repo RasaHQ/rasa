@@ -219,10 +219,10 @@ def _merge_equivalent_nodes(graph, max_history):
                         graph.remove_node(j)
 
 
-def _replace_edge_labels_with_nodes(graph,
-                                    next_id,
-                                    interpreter,
-                                    nlu_training_data):
+async def _replace_edge_labels_with_nodes(graph,
+                                          next_id,
+                                          interpreter,
+                                          nlu_training_data):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
 
@@ -240,7 +240,7 @@ def _replace_edge_labels_with_nodes(graph,
     for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
-                parsed_info = interpreter.parse(d.get("label", k))
+                parsed_info = await interpreter.parse(d.get("label", k))
                 label = message_generator.message_for_data(parsed_info)
             else:
                 label = d.get("label", k)
@@ -265,11 +265,10 @@ def visualization_html_path():
 def persist_graph(graph, output_file):
     """Plots the graph and persists it into a html file."""
     import networkx as nx
-    import io
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    with io.open(visualization_html_path(), 'r') as file:
+    with open(visualization_html_path(), 'r') as file:
         template = file.read()
 
     # customize content of template by replacing tags
@@ -277,7 +276,7 @@ def persist_graph(graph, output_file):
     template = template.replace('// { graph-content }', "graph = `{}`"
                                 .format(expg.to_string()), 1)
 
-    with io.open(output_file, 'w') as file:
+    with open(output_file, 'w') as file:
         file.write(template)
 
 
@@ -332,7 +331,7 @@ def _create_graph(fontsize: int = 12) -> 'networkx.MultiDiGraph':
 
 def sanitize(s):
     if s:
-        return re.sub(r"[^a-zA-Z0-9\s_-]", "", s)
+        return re.sub(r"""^[a-zA-Z0-9\s_-]""", "", s)
     else:
         return s
 
@@ -357,7 +356,7 @@ def _add_message_edge(graph: 'networkx.MultiDiGraph',
               **{"class": "active" if is_current else ""})
 
 
-def visualize_neighborhood(
+async def visualize_neighborhood(
     current: Optional[List[Event]],
     event_sequences: List[List[Event]],
     output_file: Optional[Text] = None,
@@ -394,7 +393,7 @@ def visualize_neighborhood(
                 break
             if isinstance(el, UserUttered):
                 if not el.intent:
-                    message = interpreter.parse(el.text)
+                    message = await interpreter.parse(el.text)
                 else:
                     message = el.parse_data
             elif (isinstance(el, ActionExecuted) and
@@ -445,8 +444,8 @@ def visualize_neighborhood(
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
-    _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
-                                    nlu_training_data)
+    await _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
+                                          nlu_training_data)
 
     _remove_auxiliary_nodes(graph, special_node_idx)
 
@@ -474,7 +473,7 @@ def _remove_auxiliary_nodes(graph: 'networkx.MultiDiGraph',
                 ps.add(pred)
 
 
-def visualize_stories(
+async def visualize_stories(
     story_steps: List[StoryStep],
     domain: Domain,
     output_file: Optional[Text],
@@ -522,13 +521,13 @@ def visualize_stories(
     completed_trackers = g.generate(silent)
     event_sequences = [t.events for t in completed_trackers]
 
-    graph = visualize_neighborhood(None,
-                                   event_sequences,
-                                   output_file,
-                                   max_history,
-                                   interpreter,
-                                   nlu_training_data,
-                                   should_merge_nodes,
-                                   max_distance=1,
-                                   fontsize=fontsize)
+    graph = await visualize_neighborhood(None,
+                                         event_sequences,
+                                         output_file,
+                                         max_history,
+                                         interpreter,
+                                         nlu_training_data,
+                                         should_merge_nodes,
+                                         max_distance=1,
+                                         fontsize=fontsize)
     return graph

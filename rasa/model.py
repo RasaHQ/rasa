@@ -230,8 +230,12 @@ def core_fingerprint_changed(fingerprint1: Fingerprint,
                      FINGERPRINT_DOMAIN_KEY, FINGERPRINT_STORIES_KEY,
                      FINGERPRINT_RASA_VERSION_KEY]
 
-    return any(
-        [fingerprint1.get(k) != fingerprint2.get(k) for k in relevant_keys])
+    for k in relevant_keys:
+        if fingerprint1.get(k) != fingerprint2.get(k):
+            logger.info("Data ({}) for dialogue model changed."
+                        "".format(k))
+            return True
+    return False
 
 
 def nlu_fingerprint_changed(fingerprint1: Fingerprint,
@@ -246,11 +250,16 @@ def nlu_fingerprint_changed(fingerprint1: Fingerprint,
         `True` if the fingerprint for the NLU model changed, else `False`.
 
     """
+
     relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_VERSION_KEY,
                      FINGERPRINT_NLU_DATA_KEY, FINGERPRINT_RASA_VERSION_KEY]
 
-    return any(
-        [fingerprint1.get(k) != fingerprint2.get(k) for k in relevant_keys])
+    for k in relevant_keys:
+        if fingerprint1.get(k) != fingerprint2.get(k):
+            logger.info("Data ({}) for NLU model changed."
+                        "".format(k))
+            return True
+    return False
 
 
 def merge_model(source: Text, target: Text) -> bool:

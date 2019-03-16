@@ -33,7 +33,7 @@ class SklearnPolicy(Policy):
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
         priority: int = 1,
-        model: 'sklearn.base.BaseEstimator' = LogisticRegression(),
+        model: Optional['sklearn.base.BaseEstimator'] = None,
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
         scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
@@ -66,7 +66,7 @@ class SklearnPolicy(Policy):
                                 "".format(type(featurizer).__name__))
         super(SklearnPolicy, self).__init__(featurizer, priority)
 
-        self.model = model
+        self.model = model or self._default_model()
         self.cv = cv
         self.param_grid = param_grid
         self.scoring = scoring
@@ -77,6 +77,11 @@ class SklearnPolicy(Policy):
         self._pickle_params = [
             'model', 'cv', 'param_grid', 'scoring', 'label_encoder']
         self._train_params = kwargs
+
+    @staticmethod
+    def _default_model():
+        return LogisticRegression(solver="liblinear",
+                                  multi_class="auto")
 
     @property
     def _state(self):

@@ -7,7 +7,7 @@ from rasa_core.utils import EndpointConfig
 class NaturalLanguageGenerator(object):
     """Generate bot utterances based on a dialogue state."""
 
-    def generate(self, template_name, tracker, output_channel, **kwargs):
+    async def generate(self, template_name, tracker, output_channel, **kwargs):
         """Generate a response for the requested template.
 
         There are a lot of different methods to implement this, e.g. the

@@ -1,14 +1,15 @@
+import argparse
 import shutil
-from argparse import _SubParsersAction, ArgumentParser, Namespace
 from typing import List
 
-import rasa.cli.train as train
 import rasa.cli.run as run
-from rasa import model, data
+import rasa.cli.train as train
+from rasa import data, model
 
 
-def add_subparser(subparsers: _SubParsersAction,
-                  parents: List[ArgumentParser]):
+# noinspection PyProtectedMember
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     interactive_parser = subparsers.add_parser(
         "interactive",
         conflict_handler="resolve",
@@ -23,7 +24,7 @@ def add_subparser(subparsers: _SubParsersAction,
     interactive_parser.set_defaults(func=interactive)
 
 
-def _add_interactive_arguments(parser: ArgumentParser):
+def _add_interactive_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--skip_visualization",
         default=False,
@@ -32,7 +33,7 @@ def _add_interactive_arguments(parser: ArgumentParser):
              "interactive learning")
 
 
-def interactive(args: Namespace):
+def interactive(args: argparse.Namespace):
     from rasa_core.train import do_interactive_learning
 
     args.finetune = False  # Don't support finetuning

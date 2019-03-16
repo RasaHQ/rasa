@@ -1,15 +1,15 @@
 import argparse
-from argparse import ArgumentParser, _SubParsersAction
 from typing import List
 
 from rasa import data
-from rasa.constants import DEFAULT_DATA_PATH
 from rasa.cli.default_arguments import add_nlu_data_param
 from rasa.cli.utils import get_validated_path
+from rasa.constants import DEFAULT_DATA_PATH
 
 
-def add_subparser(subparsers: _SubParsersAction,
-                  parents: List[ArgumentParser]):
+# noinspection PyProtectedMember
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     import rasa_nlu.convert as convert
 
     data_parser = subparsers.add_parser(

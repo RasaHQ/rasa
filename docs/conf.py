@@ -44,6 +44,7 @@ extensions = [
     'rasabaster.runnable',
     'rasabaster.copyable',
     'rasabaster.apidoc',
+    'sphinxcontrib_trio',   # needed to properly handle async functions in docs
 #    'numpydoc',
 ]
 
