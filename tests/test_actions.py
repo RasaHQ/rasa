@@ -1,21 +1,19 @@
-import aiohttp
 import pytest
 from aioresponses import aioresponses
 
 import rasa_core
 from rasa_core.actions import action
 from rasa_core.actions.action import (
-    ActionRestart, UtterAction,
-    ActionListen, RemoteAction,
-    ActionExecutionRejection, ACTION_LISTEN_NAME, ACTION_RESTART_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME, ACTION_DEACTIVATE_FORM_NAME,
-    ACTION_REVERT_FALLBACK_EVENTS_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME)
+    ACTION_DEACTIVATE_FORM_NAME, ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
+    ACTION_DEFAULT_ASK_REPHRASE_NAME, ACTION_DEFAULT_FALLBACK_NAME,
+    ACTION_LISTEN_NAME, ACTION_RESTART_NAME, ACTION_REVERT_FALLBACK_EVENTS_NAME,
+    ActionExecutionRejection, ActionListen, ActionRestart, RemoteAction,
+    UtterAction)
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.utils import EndpointConfig, ClientResponseError
-from tests.utilities import latest_request, json_of_latest_request
+from rasa_core.utils import ClientResponseError, EndpointConfig
+from tests.utilities import json_of_latest_request, latest_request
 
 
 async def test_restart(default_dispatcher_collecting, default_domain):
@@ -186,7 +184,7 @@ async def test_remote_action_logs_events(default_dispatcher_collecting,
 
 
 async def test_remote_action_without_endpoint(default_dispatcher_collecting,
-                                         default_domain):
+                                              default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots)
 

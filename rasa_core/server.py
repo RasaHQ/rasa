@@ -7,7 +7,6 @@ from inspect import isawaitable
 from typing import Any, Callable, List, Optional, Text, Union
 
 from sanic import Sanic, response
-from sanic.config import Config
 from sanic.exceptions import NotFound
 from sanic.request import Request
 from sanic_cors import CORS
@@ -184,7 +183,7 @@ def create_app(agent=None,
     """Class representing a Rasa Core HTTP server."""
 
     app = Sanic(__name__)
-    app.config.RESPONSE_TIMEOUT = 60*60
+    app.config.RESPONSE_TIMEOUT = 60 * 60
 
     CORS(app,
          resources={r"/*": {"origins": cors_origins or ""}},

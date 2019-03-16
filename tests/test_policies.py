@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import patch
 
 import numpy as np
@@ -6,28 +5,25 @@ import pytest
 
 from rasa_core import training, utils
 from rasa_core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionRevertFallbackEvents,
-    ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-    ACTION_DEFAULT_ASK_REPHRASE_NAME,
-    ACTION_DEFAULT_FALLBACK_NAME)
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME, ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME, ACTION_LISTEN_NAME,
+    ActionRevertFallbackEvents)
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain, InvalidDomain
 from rasa_core.events import ActionExecuted
 from rasa_core.featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer)
+    BinarySingleStateFeaturizer, MaxHistoryTrackerFeaturizer)
 from rasa_core.policies import TwoStageFallbackPolicy
 from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import (
-    MemoizationPolicy, AugmentedMemoizationPolicy)
+    AugmentedMemoizationPolicy, MemoizationPolicy)
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
-from tests.utilities import read_dialogue_file, user_uttered, get_tracker
+from tests.utilities import get_tracker, read_dialogue_file, user_uttered
 
 
 def tf_defaults():
@@ -104,7 +100,7 @@ class PolicyTestCollection(object):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer, priority)
         training_trackers = await train_trackers(default_domain,
-                                           augmentation_factor=20)
+                                                 augmentation_factor=20)
         policy.train(training_trackers, default_domain)
         return policy
 

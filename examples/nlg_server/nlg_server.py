@@ -40,8 +40,8 @@ def create_argument_parser():
 
 
 async def generate_response(nlg_call, domain):
-    """Mock response generator. 
-    
+    """Mock response generator.
+
     Generates the responses from the bot's domain file.
     """
     kwargs = nlg_call.get("arguments", {})

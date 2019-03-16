@@ -635,7 +635,6 @@ def main():
 
         _agent = Agent.load(cmdline_arguments.core, interpreter=_interpreter)
 
-
         stories = loop.run_until_complete(
             rasa_core.cli.train.stories_from_cli_args(cmdline_arguments))
 
