@@ -691,7 +691,7 @@ def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
         if evt.get("event") == UserUttered.type_name:
             data = evt.get("parse_data")
 
-            for entity in data["entities"]:
+            for entity in data.get("entities", []):
 
                 excluded_extractors = [
                     DucklingHTTPExtractor.__name__,
