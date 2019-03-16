@@ -1,4 +1,4 @@
-"""This module imports all of the components. To avoid cycles, no component 
+"""This module imports all of the components. To avoid cycles, no component
 should import this in module scope."""
 
 import logging
