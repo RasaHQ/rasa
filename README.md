@@ -94,7 +94,7 @@ To build & edit the docs, first install all necessary dependencies:
 
 ```
 brew install sphinx
-pip install -r dev-requirements.txt
+pip3 install -r dev-requirements.txt
 ```
 
 After the installation has finished, you can run and view the documentation
@@ -109,7 +109,7 @@ and apply your changes.
 
 ## License
 Licensed under the Apache License, Version 2.0.
-Copyright 2018 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Copyright 2019 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the

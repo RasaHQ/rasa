@@ -1,4 +1,4 @@
-from rasa_core.events import ActionExecuted, UserUttered, SlotSet
+from rasa_core.events import ActionExecuted, SlotSet, UserUttered
 from rasa_core.training import visualization
 
 
@@ -74,28 +74,28 @@ def test_common_action_prefix_unequal():
     assert num_common == 0
 
 
-def test_graph_persistence(default_domain, tmpdir):
+async def test_graph_persistence(default_domain, tmpdir):
     from os.path import isfile
     from networkx.drawing import nx_pydot
-    import io
-
     from rasa_core.training.dsl import StoryFileReader
     from rasa_core.interpreter import RegexInterpreter
-    story_steps = StoryFileReader.read_from_file(
+
+    story_steps = await StoryFileReader.read_from_file(
         "data/test_stories/stories.md", default_domain,
         interpreter=RegexInterpreter())
     out_file = tmpdir.join("graph.html").strpath
-    generated_graph = visualization.visualize_stories(story_steps,
-                                                      default_domain,
-                                                      output_file=out_file,
-                                                      max_history=3,
-                                                      should_merge_nodes=False)
+    generated_graph = await visualization.visualize_stories(
+        story_steps,
+        default_domain,
+        output_file=out_file,
+        max_history=3,
+        should_merge_nodes=False)
 
     generated_graph = nx_pydot.to_pydot(generated_graph)
 
     assert isfile(out_file)
 
-    with io.open(out_file, 'r') as graph_file:
+    with open(out_file, 'r') as graph_file:
         content = graph_file.read()
 
     assert 'isClient = true' in content

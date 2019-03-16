@@ -624,6 +624,37 @@ paths:
         400:
           $ref: '#/components/responses/400Evaluation'
 
+  /jobs:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Train a Rasa Stack model
+      description: >-
+        Trains a Rasa Stack model. A stack model is a model combining a
+        trained dialogue model with an NLU model.
+      operationId: trainStack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StackTrainingRequest'
+            examples:
+              StackTrainingRequest:
+                $ref: '#/components/examples/StackTrainingRequest'
+      responses:
+        200:
+          description: Zipped Rasa Stack model
+          content:
+            application/octet-stream:
+              schema:
+                $ref: '#/components/schemas/StackTrainingResult'
+        400:
+          $ref: '#/components/responses/400Training'
+
   /predict:
     post:
       security:
@@ -674,6 +705,42 @@ paths:
           $ref: '#/components/responses/403Permissions'
         500:
           $ref: '#/components/responses/500Action'
+
+  /parse:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Parse a message using the loaded NLU model
+      description: >-
+        Predicts the intent and entities of the message
+        posted to this endpoint. No messages will be stored
+        to a conversation and no action will be run. This will
+        just retrieve the NLU parse results.
+      operationId: parseNLU
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                q:
+                  type: string
+                  description: Message to be parsed
+            example:
+              q: "Hello, I am Rasa!"
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParseData'
+        403:
+          $ref: '#/components/responses/403Permissions'
 
   /domain:
     get:
@@ -934,6 +1001,72 @@ components:
                     utter_on_it       1.00      0.50      0.67         2
 
                     avg / total       1.00      0.90      0.93        10
+    StackTrainingRequest:
+      value:
+        config: >-
+          # Configuration for Rasa NLU.
+          # https://rasa.com/docs/nlu/components/
+          language: en
+          pipeline: tensorflow_embedding
+
+          # Configuration for Rasa Core.
+          # https://rasa.com/docs/core/policies
+          policies:
+            - name: MemoizationPolicy
+            - name: KerasPolicy
+        domain: >-
+          intents:
+            - greet
+            - goodbye
+            - mood_affirm
+            - mood_deny
+            - mood_great
+            - mood_unhappy
+
+          actions:
+          - utter_greet
+          - utter_cheer_up
+          - utter_did_that_help
+          - utter_happy
+          - utter_goodbye
+
+          templates:
+            utter_greet:
+            - text: "Hey! How are you?"
+
+            utter_cheer_up:
+            - text: "Here is something to cheer you up:"
+              image: "https://i.imgur.com/nGF1K8f.jpg"
+
+            utter_did_that_help:
+            - text: "Did that help you?"
+
+            utter_happy:
+            - text: "Great carry on!"
+
+            utter_goodbye:
+            - text: "Bye"
+        nlu: >-
+          ## intent:greet
+          - hey
+          - hello
+
+          ## intent:goodbye
+          - cu
+          - good by
+        stories: >-
+          ## happy path
+          * greet
+            - utter_greet
+          * mood_great
+            - utter_happy
+
+          ## sad path 1
+          * greet
+            - utter_greet
+          * mood_unhappy
+        out: models
+        force: false
 
   responses:
     200Tracker:
@@ -1000,6 +1133,20 @@ components:
             message: >-
               Evaluation could not be created.
             reason: "FailedEvaluation"
+            code: 400
+
+    400Training:
+      description: Failed Training
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Rasa Stack model could not be trained.
+            reason: "TrainingError"
             code: 400
 
     403Permissions:
@@ -1382,6 +1529,34 @@ components:
         tracker:
           $ref: '#/components/schemas/Tracker'
 
+    StackTrainingRequest:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Rasa Core domain in plain text
+        config:
+          type: string
+          description: Rasa Stack config in plain text
+        nlu:
+          type: string
+          description: Rasa NLU training data in markdown format
+        stories:
+          type: string
+          description: Rasa Core stories in markdown format
+        out:
+          type: string
+          description: Output directory
+        force:
+          type: boolean
+          description: >-
+            Force a model training even if the data has not changed
+      required: ["domain", "config", "nlu", "stories"]
+
+    StackTrainingResult:
+      type: string
+      format: binary
+
     EvaluationResult:
       type: object
       properties:
@@ -1444,7 +1619,7 @@ components:
         - type: string
         - type: array
           items:
-            - type: string
+            type: string
     SlotDescription:
       type: object
       properties:

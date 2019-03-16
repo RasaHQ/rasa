@@ -43,7 +43,10 @@ class EventVerbosity(Enum):
 
 
 class DialogueStateTracker(object):
-    """Maintains the state of a conversation."""
+    """Maintains the state of a conversation.
+
+    The field max_event_history will only give you these last events,
+    it can be set in the tracker_store"""
 
     @classmethod
     def from_dict(cls,
@@ -411,7 +414,7 @@ class DialogueStateTracker(object):
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""
 
-        with io.open(export_path, 'a', encoding="utf-8") as f:
+        with open(export_path, 'a', encoding="utf-8") as f:
             f.write(self.export_stories() + "\n")
 
     def get_last_event_for(self,

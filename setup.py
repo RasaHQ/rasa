@@ -1,15 +1,17 @@
-from setuptools import setup, find_packages
 import io
 import os
+
+from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
-exec(open("rasa_core/version.py").read())
+with open("rasa/version.py") as f:
+    exec(f.read())
 
 # Get the long description from the README file
-with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
+with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 tests_requires = [
@@ -17,15 +19,19 @@ tests_requires = [
     "pytest-pycodestyle~=1.3",
     "pytest-cov~=2.0",
     "pytest_localserver~=0.4.0",
+    "pytest_sanic~=0.1.0",
     "treq~=17.0",
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
     "matplotlib~=2.0",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
+    "aioresponses~=0.5.2",
+    "mock~=2.0",
 ]
 
 install_requires = [
+    "attrs>=18",
     "jsonpickle~=1.0",
     "redis~=2.0",
     "fakeredis~=0.10.0",
@@ -33,7 +39,6 @@ install_requires = [
     "numpy~=1.16",
     "scipy~=1.2",
     "typing~=3.0",
-    "requests~=2.20",
     "tensorflow~=1.12.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
@@ -42,8 +47,6 @@ install_requires = [
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
     "ruamel.yaml~=0.15.0",
-    "flask~=1.0",
-    "flask_cors~=3.0",
     "scikit-learn~=0.20.0",
     "slackclient~=1.0",
     "python-telegram-bot~=11.0",
@@ -58,16 +61,23 @@ install_requires = [
     "gevent~=1.4",
     "pytz~=2018.9",
     "python-dateutil~=2.7",
-    "rasa_nlu~=0.14.0",
-    "rasa_core_sdk~=0.12.1",
+    "rasa_nlu~=0.15.0a2",
+    "rasa_core_sdk~=0.13.0a1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
+    "sanic~=18.12.0",
+    "sanic-cors~=0.9.0",
+    "sanic-jwt~=1.2",
+    "aiohttp~=3.5",
     "questionary>=1.0.1",
-    "flask-jwt-simple~=0.0.3",
     "python-socketio~=3.0",
     "pydot~=1.4",
+    "async_generator~=1.10",
     "keras-applications==1.0.6",
-    "keras-preprocessing==1.0.5"
+    "keras-preprocessing==1.0.5",
+    "sqlalchemy~=1.2",
+    "kafka-python~=1.4",
+    "sklearn-crfsuite~=0.3.6"
 ]
 
 extras_requires = {
@@ -75,7 +85,7 @@ extras_requires = {
 }
 
 setup(
-    name="rasa-core",
+    name="rasa",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -87,6 +97,9 @@ setup(
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools"]),
+    entry_points={
+        'console_scripts': ['rasa=rasa.__main__:main'],
+    },
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
@@ -113,7 +126,7 @@ setup(
     },
 )
 
-print("\nWelcome to Rasa Core!")
+print("\nWelcome to Rasa!")
 print("If any questions please visit documentation "
       "page https://rasa.com/docs/core")
 print("or join the community discussions on https://forum.rasa.com")

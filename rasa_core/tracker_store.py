@@ -1,17 +1,15 @@
 import itertools
-
 import json
 import logging
 import pickle
 # noinspection PyPep8Naming
-from typing import Text, Optional, List, KeysView
+from typing import Iterator, KeysView, List, Optional, Text
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.broker import EventChannel
 from rasa_core.domain import Domain
 from rasa_core.trackers import (
-    DialogueStateTracker, ActionExecuted,
-    EventVerbosity)
+    ActionExecuted, DialogueStateTracker, EventVerbosity)
 from rasa_core.utils import class_from_module_path
 
 logger = logging.getLogger(__name__)
@@ -23,21 +21,27 @@ class TrackerStore(object):
                  event_broker: Optional[EventChannel] = None) -> None:
         self.domain = domain
         self.event_broker = event_broker
+        self.max_event_history = None
 
     @staticmethod
     def find_tracker_store(domain, store=None, event_broker=None):
-        if store is None or store.store_type is None:
+        if store is None or store.type is None:
             return InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.store_type == 'redis':
+        elif store.type == 'redis':
             return RedisTrackerStore(domain=domain,
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
-        elif store.store_type == 'mongod':
+        elif store.type == 'mongod':
             return MongoTrackerStore(domain=domain,
                                      host=store.url,
                                      event_broker=event_broker,
                                      **store.kwargs)
+        elif store.type.lower() == 'sql':
+            return SQLTrackerStore(domain=domain,
+                                   url=store.url,
+                                   event_broker=event_broker,
+                                   **store.kwargs)
         else:
             return TrackerStore.load_tracker_from_module_string(domain, store)
 
@@ -45,11 +49,11 @@ class TrackerStore(object):
     def load_tracker_from_module_string(domain, store):
         custom_tracker = None
         try:
-            custom_tracker = class_from_module_path(store.store_type)
+            custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning("Store type {} not found. "
+            logger.warning("Store type '{}' not found. "
                            "Using InMemoryTrackerStore instead"
-                           .format(store.store_type))
+                           .format(store.type))
 
         if custom_tracker:
             return custom_tracker(domain=domain,
@@ -57,16 +61,19 @@ class TrackerStore(object):
         else:
             return InMemoryTrackerStore(domain)
 
-    def get_or_create_tracker(self, sender_id):
+    def get_or_create_tracker(self, sender_id, max_event_history=None):
         tracker = self.retrieve(sender_id)
+        self.max_event_history = max_event_history
         if tracker is None:
             tracker = self.create_tracker(sender_id)
         return tracker
 
     def init_tracker(self, sender_id):
         if self.domain:
-            return DialogueStateTracker(sender_id,
-                                        self.domain.slots)
+            return DialogueStateTracker(
+                sender_id,
+                self.domain.slots,
+                max_event_history=self.max_event_history)
         else:
             return None
 
@@ -97,7 +104,7 @@ class TrackerStore(object):
                 "sender_id": tracker.sender_id,
             }
             body.update(evt.as_dict())
-            self.event_broker.publish(json.dumps(body))
+            self.event_broker.publish(body)
 
     def keys(self):
         # type: () -> Optional[List[Text]]
@@ -246,3 +253,122 @@ class MongoTrackerStore(TrackerStore):
 
     def keys(self):
         return [c["sender_id"] for c in self.conversations.find()]
+
+
+class SQLTrackerStore(TrackerStore):
+    """Store which can save and retrieve trackers from an SQL database."""
+
+    from sqlalchemy.ext.declarative import declarative_base
+
+    Base = declarative_base()
+
+    class SQLEvent(Base):
+        from sqlalchemy import Column, Integer, String, Float
+
+        __tablename__ = 'events'
+
+        id = Column(Integer, primary_key=True)
+        sender_id = Column(String, nullable=False)
+        type_name = Column(String, nullable=False)
+        timestamp = Column(Float)
+        intent_name = Column(String)
+        action_name = Column(String)
+        data = Column(String)
+
+    def __init__(self,
+                 domain: Optional[Domain] = None,
+                 dialect: Text = 'sqlite',
+                 url: Text = None,
+                 db: Text = 'rasa.db',
+                 username: Text = None,
+                 password: Text = None,
+                 event_broker: Optional[EventChannel] = None) -> None:
+        from sqlalchemy.orm import sessionmaker
+        from sqlalchemy.engine.url import URL
+        from sqlalchemy import create_engine
+
+        engine_url = URL(dialect, username, password, url, database=db)
+
+        logger.debug('Attempting to connect to database '
+                     'via "{}"'.format(engine_url.__to_string__()))
+
+        self.engine = create_engine(engine_url)
+        self.session = sessionmaker(bind=self.engine)()
+
+        self.Base.metadata.create_all(self.engine)
+
+        logger.debug("Connection to SQL database '{}' "
+                     "successful".format(db))
+
+        super(SQLTrackerStore, self).__init__(domain, event_broker)
+
+    def keys(self) -> List[Text]:
+        """Collect all keys of the items stored in the database."""
+        # noinspection PyUnresolvedReferences
+        return self.SQLEvent.__table__.columns.keys()
+
+    def retrieve(self, sender_id: Text) -> DialogueStateTracker:
+        """Create a tracker from all previously stored events."""
+
+        query = self.session.query(self.SQLEvent)
+        result = query.filter_by(sender_id=sender_id).all()
+        events = [json.loads(event.data) for event in result]
+
+        if self.domain and len(events) > 0:
+            logger.debug("Recreating tracker "
+                         "from sender id '{}'".format(sender_id))
+
+            return DialogueStateTracker.from_dict(sender_id, events,
+                                                  self.domain.slots)
+        else:
+            logger.debug("Can't retrieve tracker matching"
+                         "sender id '{}' from SQL storage.  "
+                         "Returning `None` instead.".format(sender_id))
+
+    def save(self, tracker: DialogueStateTracker) -> None:
+        """Update database with events from the current conversation."""
+
+        if self.event_broker:
+            self.stream_events(tracker)
+
+        events = self._additional_events(tracker)  # only store recent events
+
+        for event in events:
+
+            data = event.as_dict()
+
+            intent = data.get("parse_data", {}).get("intent", {}).get("name")
+            action = data.get("name")
+            timestamp = data.get("timestamp")
+
+            # noinspection PyArgumentList
+            self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
+                                           type_name=event.type_name,
+                                           timestamp=timestamp,
+                                           intent_name=intent,
+                                           action_name=action,
+                                           data=json.dumps(data)))
+        self.session.commit()
+
+        logger.debug("Tracker with sender_id '{}' "
+                     "stored to database".format(tracker.sender_id))
+
+    def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
+        """Return events from the tracker which aren't currently stored."""
+
+        from sqlalchemy import func
+        query = self.session.query(func.max(self.SQLEvent.timestamp))
+        max_timestamp = query.filter_by(sender_id=tracker.sender_id).scalar()
+
+        if max_timestamp is None:
+            max_timestamp = 0
+
+        latest_events = []
+
+        for event in reversed(tracker.events):
+            if event.timestamp > max_timestamp:
+                latest_events.append(event)
+            else:
+                break
+
+        return reversed(latest_events)

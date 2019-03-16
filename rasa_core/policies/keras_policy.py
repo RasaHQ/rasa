@@ -1,5 +1,4 @@
 import copy
-import io
 import json
 import logging
 import os
@@ -252,7 +251,7 @@ class KerasPolicy(Policy):
 
             tf_config_file = os.path.join(
                 path, "keras_policy.tf_config.pkl")
-            with io.open(tf_config_file, 'wb') as f:
+            with open(tf_config_file, 'wb') as f:
                 pickle.dump(self._tf_config, f)
         else:
             warnings.warn("Persist called without a trained model present. "
@@ -270,7 +269,7 @@ class KerasPolicy(Policy):
 
                 tf_config_file = os.path.join(
                     path, "keras_policy.tf_config.pkl")
-                with io.open(tf_config_file, 'rb') as f:
+                with open(tf_config_file, 'rb') as f:
                     _tf_config = pickle.load(f)
 
                 model_file = os.path.join(path, meta["model"])
@@ -279,7 +278,9 @@ class KerasPolicy(Policy):
                 with graph.as_default():
                     session = tf.Session(config=_tf_config)
                     with session.as_default():
-                        model = load_model(model_file)
+                        with warnings.catch_warnings():
+                            warnings.simplefilter("ignore")
+                            model = load_model(model_file)
 
                 return cls(featurizer=featurizer,
                            priority=meta["priority"],

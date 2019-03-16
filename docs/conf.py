@@ -44,6 +44,7 @@ extensions = [
     'rasabaster.runnable',
     'rasabaster.copyable',
     'rasabaster.apidoc',
+    'sphinxcontrib_trio',   # needed to properly handle async functions in docs
 #    'numpydoc',
 ]
 
@@ -76,7 +77,7 @@ nitpick_ignore = [
 
 # General information about the project.
 project = u'Rasa Core'
-copyright = u'2018, Rasa Technologies GmbH'
+copyright = u'2019, Rasa Technologies GmbH'
 author = u'Rasa Technologies GmbH'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -85,7 +86,7 @@ author = u'Rasa Technologies GmbH'
 #
 # The short X.Y version.
 __version__ = None
-exec(open('../rasa_core/version.py').read())
+exec(open('../rasa/version.py').read())
 version = ".".join(__version__.split(".")[:2])
 # The full version, including alpha/beta/rc tags.
 release = __version__

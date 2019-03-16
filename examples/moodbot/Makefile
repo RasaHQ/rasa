@@ -11,11 +11,14 @@ help:
 	@echo "        Show your stories as a graph."
 
 train-nlu:
-	python -m rasa_nlu.train -c nlu_model_config.yml --fixed_model_name current \
+	python -m rasa_nlu.train -c config.yml --fixed_model_name current \
 	       --data ./data/nlu.md --path models/ --project nlu
 
 train-core:
 	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue
+
+train-interactive:
+	python -m rasa_core.train interactive -s data/stories.md -d domain.yml -o models/dialogue
 
 run-fb:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials credentials.yml
@@ -27,7 +30,7 @@ run-telegram:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c telegram --credentials credentials.yml
 
 run-rocketchat:
-	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c rocketchat --credentials rocketchat_credentials.yml
+	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c rocketchat --credentials credentials.yml
 
 run-mattermost:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c mattermost --credentials credentials.yml

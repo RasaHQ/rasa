@@ -1,25 +1,20 @@
 import argparse
+import asyncio
 import logging
 import os
-import tempfile
+import typing
+from typing import Dict, Optional, Text
 
-from rasa_core import config, cli
-from rasa_core import utils
-from rasa_core.agent import Agent
-from rasa_core.broker import PikaProducer
-from rasa_core.domain import TemplateDomain
-from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.run import AvailableEndpoints
-from rasa_core.tracker_store import TrackerStore
-from rasa_core.training import interactive
-from rasa_core.training.dsl import StoryFileReader
-from rasa_core.utils import set_default_subparser
+if typing.TYPE_CHECKING:
+    from rasa_core.interpreter import NaturalLanguageInterpreter
+    from rasa_core.run import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
     """Parse all the command line arguments for the training script."""
+    from rasa_core import cli
 
     parser = argparse.ArgumentParser(
         description='Train a dialogue model for Rasa Core. '
@@ -28,7 +23,7 @@ def create_argument_parser():
                     'your domain definition to train a dialogue '
                     'model to predict a bots actions.')
     parent_parser = argparse.ArgumentParser(add_help=False)
-    add_general_args(parent_parser)
+    cli.train.add_general_args(parent_parser)
 
     subparsers = parser.add_subparsers(
         help='Training mode of core.',
@@ -49,123 +44,27 @@ def create_argument_parser():
         help='teach the bot with interactive learning',
         parents=[parent_parser])
 
-    add_compare_args(compare_parser)
-    add_interactive_args(interactive_parser)
-    add_train_args(train_parser)
+    cli.train.add_compare_args(compare_parser)
+    cli.train.add_interactive_args(interactive_parser)
+    cli.train.add_train_args(train_parser)
 
     return parser
 
 
-def add_compare_args(parser):
-    parser.add_argument(
-        '--percentages',
-        nargs="*",
-        type=int,
-        default=[0, 5, 25, 50, 70, 90, 95],
-        help="Range of exclusion percentages")
-    parser.add_argument(
-        '--runs',
-        type=int,
-        default=3,
-        help="Number of runs for experiments")
+async def train(domain_file: Text, stories_file: Text, output_path: Text,
+                interpreter: Optional['NaturalLanguageInterpreter'] = None,
+                endpoints: 'AvailableEndpoints' = None,
+                dump_stories: bool = False,
+                policy_config: Text = None,
+                exclusion_percentage: int = None,
+                kwargs: Optional[Dict] = None):
+    from rasa_core.agent import Agent
+    from rasa_core import config, utils
+    from rasa_core.run import AvailableEndpoints
 
-    cli.arguments.add_output_arg(
-        parser,
-        help_text="directory to persist the trained model in",
-        required=True)
-    cli.arguments.add_config_arg(
-        parser,
-        nargs="*")
-    cli.arguments.add_model_and_story_group(
-        parser,
-        allow_pretrained_model=False)
-    cli.arguments.add_domain_arg(
-        parser,
-        required=True)
+    if not endpoints:
+        endpoints = AvailableEndpoints()
 
-
-def add_interactive_args(parser):
-    parser.add_argument(
-        '-u', '--nlu',
-        type=str,
-        default=None,
-        help="trained nlu model")
-    parser.add_argument(
-        '--endpoints',
-        default=None,
-        help="Configuration file for the connectors as a yml file")
-    parser.add_argument(
-        '--skip_visualization',
-        default=False,
-        action='store_true',
-        help="disables plotting the visualization during "
-             "interactive learning")
-    parser.add_argument(
-        '--finetune',
-        default=False,
-        action='store_true',
-        help="retrain the model immediately based on feedback.")
-
-    cli.arguments.add_output_arg(
-        parser,
-        help_text="directory to persist the trained model in",
-        required=False)
-    cli.arguments.add_config_arg(
-        parser,
-        nargs=1)
-    cli.arguments.add_model_and_story_group(
-        parser,
-        allow_pretrained_model=True)
-    cli.arguments.add_domain_arg(
-        parser,
-        required=False)
-
-
-def add_train_args(parser):
-    cli.arguments.add_config_arg(
-        parser,
-        nargs=1)
-    cli.arguments.add_output_arg(
-        parser,
-        help_text="directory to persist the trained model in",
-        required=True)
-    cli.arguments.add_model_and_story_group(
-        parser,
-        allow_pretrained_model=False)
-    cli.arguments.add_domain_arg(
-        parser,
-        required=True)
-
-
-def add_general_args(parser):
-    parser.add_argument(
-        '--augmentation',
-        type=int,
-        default=50,
-        help="how much data augmentation to use during training")
-    parser.add_argument(
-        '--dump_stories',
-        default=False,
-        action='store_true',
-        help="If enabled, save flattened stories to a file")
-    parser.add_argument(
-        '--debug_plots',
-        default=False,
-        action='store_true',
-        help="If enabled, will create plots showing checkpoints "
-             "and their connections between story blocks in a  "
-             "file called `story_blocks_connections.html`.")
-
-    utils.add_logging_option_arguments(parser)
-
-
-def train_dialogue_model(domain_file, stories_file, output_path,
-                         interpreter=None,
-                         endpoints=AvailableEndpoints(),
-                         dump_stories=False,
-                         policy_config=None,
-                         exclusion_percentage=None,
-                         kwargs=None):
     if not kwargs:
         kwargs = {}
 
@@ -184,9 +83,10 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "remove_duplicates",
                                                  "debug_plots"})
 
-    training_data = agent.load_data(stories_file,
-                                    exclusion_percentage=exclusion_percentage,
-                                    **data_load_args)
+    training_data = await agent.load_data(
+        stories_file,
+        exclusion_percentage=exclusion_percentage,
+        **data_load_args)
     agent.train(training_data, **kwargs)
     agent.persist(output_path, dump_stories)
 
@@ -202,15 +102,16 @@ def _additional_arguments(args):
     return {k: v for k, v in additional.items() if v is not None}
 
 
-def train_comparison_models(stories,
-                            domain,
-                            output_path="",
-                            exclusion_percentages=None,
-                            policy_configs=None,
-                            runs=1,
-                            dump_stories=False,
-                            kwargs=None):
+async def train_comparison_models(stories,
+                                  domain,
+                                  output_path="",
+                                  exclusion_percentages=None,
+                                  policy_configs=None,
+                                  runs=1,
+                                  dump_stories=False,
+                                  kwargs=None):
     """Train multiple models for comparison of policies"""
+    from rasa_core import config
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
@@ -238,7 +139,7 @@ def train_comparison_models(stories,
                              "".format(policy_name, current_round,
                                        len(exclusion_percentages), i))
 
-                train_dialogue_model(
+                await train(
                     domain, stories, output,
                     policy_config=policy_config,
                     exclusion_percentage=i,
@@ -246,37 +147,41 @@ def train_comparison_models(stories,
                     dump_stories=dump_stories)
 
 
-def get_no_of_stories(story_file, domain):
+async def get_no_of_stories(story_file, domain):
     """Get number of stories in a file."""
+    from rasa_core.domain import TemplateDomain
+    from rasa_core.training.dsl import StoryFileReader
 
-    stories = StoryFileReader.read_from_folder(story_file,
-                                               TemplateDomain.load(domain))
+    stories = await StoryFileReader.read_from_folder(
+        story_file, TemplateDomain.load(domain))
     return len(stories)
 
 
-def do_default_training(cmdline_args, stories, additional_arguments):
+async def do_default_training(cmdline_args, stories, additional_arguments):
     """Train a model."""
 
-    train_dialogue_model(domain_file=cmdline_args.domain,
-                         stories_file=stories,
-                         output_path=cmdline_args.out,
-                         dump_stories=cmdline_args.dump_stories,
-                         policy_config=cmdline_args.config[0],
-                         kwargs=additional_arguments)
+    await train(domain_file=cmdline_args.domain,
+                stories_file=stories,
+                output_path=cmdline_args.out,
+                dump_stories=cmdline_args.dump_stories,
+                policy_config=cmdline_args.config[0],
+                kwargs=additional_arguments)
 
 
-def do_compare_training(cmdline_args, stories, additional_arguments):
-    train_comparison_models(stories,
-                            cmdline_args.domain,
-                            cmdline_args.out,
-                            cmdline_args.percentages,
-                            cmdline_args.config,
-                            cmdline_args.runs,
-                            cmdline_args.dump_stories,
-                            additional_arguments)
+async def do_compare_training(cmdline_args, stories, additional_arguments):
+    from rasa_core import utils
 
-    no_stories = get_no_of_stories(cmdline_args.stories,
-                                   cmdline_args.domain)
+    await train_comparison_models(stories,
+                                  cmdline_args.domain,
+                                  cmdline_args.out,
+                                  cmdline_args.percentages,
+                                  cmdline_args.config,
+                                  cmdline_args.runs,
+                                  cmdline_args.dump_stories,
+                                  additional_arguments)
+
+    no_stories = await get_no_of_stories(cmdline_args.stories,
+                                         cmdline_args.domain)
 
     # store the list of the number of stories present at each exclusion
     # percentage
@@ -287,53 +192,26 @@ def do_compare_training(cmdline_args, stories, additional_arguments):
     utils.dump_obj_as_json_to_file(story_n_path, story_range)
 
 
-def do_interactive_learning(cmdline_args, stories, additional_arguments):
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-    _interpreter = NaturalLanguageInterpreter.create(cmdline_args.nlu,
-                                                     _endpoints.nlu)
+def do_interactive_learning(cmdline_args, stories,
+                            additional_arguments=None):
+    from rasa_core.training import interactive
 
-    if cmdline_args.core:
-        if cmdline_args.finetune:
-            raise ValueError("--core can only be used without "
-                             "--finetune flag.")
-
-        logger.info("Loading a pre-trained model. This means that "
-                    "all training-related parameters will be ignored.")
-
-        _broker = PikaProducer.from_endpoint_config(_endpoints.event_broker)
-        _tracker_store = TrackerStore.find_tracker_store(
-            None,
-            _endpoints.tracker_store,
-            _broker)
-
-        _agent = Agent.load(cmdline_args.core,
-                            interpreter=_interpreter,
-                            generator=_endpoints.nlg,
-                            tracker_store=_tracker_store,
-                            action_endpoint=_endpoints.action)
-    else:
-        if cmdline_args.out:
-            model_directory = cmdline_args.out
-        else:
-            model_directory = tempfile.mkdtemp(suffix="_core_model")
-
-        _agent = train_dialogue_model(cmdline_args.domain,
-                                      stories,
-                                      model_directory,
-                                      _interpreter,
-                                      _endpoints,
-                                      cmdline_args.dump_stories,
-                                      cmdline_args.config[0],
-                                      None,
-                                      additional_arguments)
+    if cmdline_args.cors and cmdline_args.finetune:
+        raise ValueError("--core can only be used without "
+                         "--finetune flag.")
 
     interactive.run_interactive_learning(
-        _agent, stories,
+        stories,
         finetune=cmdline_args.finetune,
-        skip_visualization=cmdline_args.skip_visualization)
+        skip_visualization=cmdline_args.skip_visualization,
+        server_args=cmdline_args.__dict__,
+        additional_arguments=additional_arguments)
 
 
-if __name__ == '__main__':
+def main():
+    import rasa.utils
+    import rasa_core.cli.train
+    from rasa_core.utils import set_default_subparser
 
     # Running as standalone python application
     arg_parser = create_argument_parser()
@@ -341,14 +219,17 @@ if __name__ == '__main__':
     cmdline_arguments = arg_parser.parse_args()
     additional_args = _additional_arguments(cmdline_arguments)
 
-    utils.configure_colored_logging(cmdline_arguments.loglevel)
+    rasa.utils.configure_colored_logging(cmdline_arguments.loglevel)
 
-    training_stories = cli.stories_from_cli_args(cmdline_arguments)
+    loop = asyncio.get_event_loop()
+
+    training_stories = loop.run_until_complete(
+        rasa_core.cli.train.stories_from_cli_args(cmdline_arguments))
 
     if cmdline_arguments.mode == 'default':
-        do_default_training(cmdline_arguments,
-                            training_stories,
-                            additional_args)
+        loop.run_until_complete(do_default_training(cmdline_arguments,
+                                                    training_stories,
+                                                    additional_args))
 
     elif cmdline_arguments.mode == 'interactive':
         do_interactive_learning(cmdline_arguments,
@@ -356,6 +237,10 @@ if __name__ == '__main__':
                                 additional_args)
 
     elif cmdline_arguments.mode == 'compare':
-        do_compare_training(cmdline_arguments,
-                            training_stories,
-                            additional_args)
+        loop.run_until_complete(do_compare_training(cmdline_arguments,
+                                                    training_stories,
+                                                    additional_args))
+
+
+if __name__ == '__main__':
+    main()
