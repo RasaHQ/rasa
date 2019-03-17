@@ -31,6 +31,8 @@ Added
 - added rasa command line interface and API
 - Rasa Stack HTTP training endpoint at ``POST /jobs``. This endpoint
   will train a combined Rasa Core and NLU model.
+- ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
+  access to message triggering the form
 
 Changed
 -------
