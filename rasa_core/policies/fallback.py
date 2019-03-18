@@ -96,7 +96,6 @@ class FallbackPolicy(Policy):
         if nlu_data["intent"]:
             nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
         else:
-            logger.debug("NLU intend is None.")
             nlu_confidence = 1.0
 
         if tracker.latest_action_name == self.fallback_action_name:
