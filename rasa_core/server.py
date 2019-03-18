@@ -553,7 +553,7 @@ def create_app(agent=None,
 
     @app.post("/intentEvaluation")
     @requires_auth(app, auth_token)
-    async def intent_evaluation(request: Request):
+    async def evaluate_intents(request: Request):
         """Evaluate intents against a Rasa NLU model."""
 
         tmpdir = tempfile.mkdtemp()
