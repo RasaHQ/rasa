@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 import tempfile
@@ -13,7 +14,7 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
-from rasa.model import unpack_model
+from rasa.model import unpack_model, FINGERPRINT_FILE_PATH
 from rasa_core import constants, utils
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.domain import Domain
@@ -166,6 +167,20 @@ def event_verbosity_parameter(request, default_verbosity):
                             "Invalid parameter value for 'include_events'. "
                             "Should be one of {}".format(enum_values),
                             {"parameter": "include_events", "in": "query"})
+
+
+async def find_nlu_files_in_path(path: Text):
+    """Return list of NLU data paths in `path`.
+
+    Exclude `fingerprint.json` files.
+    """
+
+    out = []
+    for t in ["*.md", "*.json"]:
+        match = glob.glob(os.path.join(path, t))
+        match = [m for m in match if not m.endswith(FINGERPRINT_FILE_PATH)]
+        out.extend(match)
+    return out
 
 
 # noinspection PyUnusedLocal
@@ -551,15 +566,22 @@ def create_app(agent=None,
 
         model_path = os.path.join(unzipped_path, 'nlu')
 
-        data_path = os.path.join(tmpdir, 'data.json')
+        nlu_files = await find_nlu_files_in_path(unzipped_path)
 
-        try:
-            evaluation = run_evaluation(data_path, model_path)
-            return response.json(evaluation)
-        except ValueError as e:
+        if len(nlu_files) == 1:
+            data_path = os.path.abspath(nlu_files[0])
+            try:
+                evaluation = run_evaluation(data_path, model_path)
+                return response.json(evaluation)
+            except ValueError as e:
+                return ErrorResponse(400, "FailedIntentEvaluation",
+                                     "Evaluation could not be created. Error: {}"
+                                     "".format(e))
+        else:
             return ErrorResponse(400, "FailedIntentEvaluation",
-                                 "Evaluation could not be created. Error: {}"
-                                 "".format(e))
+                                 "NLU evaluation file could not be found. "
+                                 "This endpoint requires a single file ending "
+                                 "on `.md` or `.json`.")
 
     @app.post("/jobs")
     @requires_auth(app, auth_token)
