@@ -7,12 +7,11 @@ from rasa_core import utils
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.dispatcher import Button, Dispatcher
 from rasa_core.events import (
-    ReminderScheduled, UserUttered, ActionExecuted,
+    ReminderScheduled, ReminderCancelled, UserUttered, ActionExecuted,
     BotUttered, Restarted)
 from rasa_core.processor import MessageProcessor
 from rasa_core.interpreter import RasaNLUHttpInterpreter
 from rasa_core.utils import EndpointConfig
-from httpretty import httpretty
 
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -117,6 +116,29 @@ async def test_reminder_aborted(default_processor):
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 3  # nothing should have been executed
+
+
+async def test_reminder_cancelled(default_processor):
+    out = CollectingOutputChannel()
+    sender_id = uuid.uuid4().hex
+
+    d = Dispatcher(sender_id, out, default_processor.nlg)
+    r = ReminderScheduled("utter_greet", datetime.datetime.now(),
+                          kill_on_user_message=True)
+    t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+    t.update(UserUttered("test"))
+    t.update(ActionExecuted("action_reminder_reminder"))
+    t.update(r)
+    t.update(ReminderCancelled("utter_greet"))
+
+    default_processor.tracker_store.save(t)
+    await default_processor.handle_reminder(r, d)
+
+    # retrieve the updated tracker
+    t = default_processor.tracker_store.retrieve(sender_id)
+    # there should be no utter_greet action
+    assert ActionExecuted("utter_greet") not in t.events
 
 
 async def test_reminder_restart(default_processor: MessageProcessor):
