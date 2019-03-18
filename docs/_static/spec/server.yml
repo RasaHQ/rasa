@@ -655,6 +655,68 @@ paths:
         400:
           $ref: '#/components/responses/400Training'
 
+  /intentEvaluation:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Perform an intent evaluation on a Rasa Stack model
+      description: >-
+        Evaluates NLU intents on a Rasa Stack model. A .tar.gz file has to be
+        provided which must contain the NLU evaluation data and a Rasa Stack
+        model. Example contents of the zipped directory (the NLU evaluation
+        data is contained in data.json):
+
+        evaluation.tar.gz
+        ├── 20190318-115053
+        │   ├── core
+        │   │   ├── domain.json
+        │   │   ├── domain.yml
+        │   │   ├── metadata.json
+        │   │   ├── policy_0_MemoizationPolicy
+        │   │   │   ├── featurizer.json
+        │   │   │   └── memorized_turns.json
+        │   │   └── policy_1_KerasPolicy
+        │   │       ├── featurizer.json
+        │   │       ├── keras_model.h5
+        │   │       ├── keras_policy.json
+        │   │       └── keras_policy.tf_config.pkl
+        │   ├── fingerprint.json
+        │   └── nlu
+        │       ├── checkpoint
+        │       ├── component_1_RegexFeaturizer.pkl
+        │       ├── component_4_CountVectorsFeaturizer.pkl
+        │       ├── component_5_EmbeddingIntentClassifier.ckpt.data-00000-of-00001
+        │       ├── component_5_EmbeddingIntentClassifier.ckpt.index
+        │       ├── component_5_EmbeddingIntentClassifier.ckpt.meta
+        │       ├── component_5_EmbeddingIntentClassifier_encoded_all_intents.pkl
+        │       ├── component_5_EmbeddingIntentClassifier_inv_intent_dict.pkl
+        │       ├── metadata.json
+        │       └── training_data.json
+        └── data.json
+
+      operationId: evaluateIntents
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              $ref: '#/components/schemas/IntentEvaluationRequest'
+            examples:
+              StackTrainingRequest:
+                $ref: '#/components/examples/IntentEvaluationRequest'
+      responses:
+        200:
+          description: Zipped Rasa Stack model
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentEvaluationResult'
+        400:
+          $ref: '#/components/responses/400IntentEvaluation'
+
   /predict:
     post:
       security:
@@ -1556,6 +1618,33 @@ components:
     StackTrainingResult:
       type: string
       format: binary
+
+    IntentEvaluationRequest:
+      type: string
+      format: binary
+
+    IntentEvaluationResult:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Rasa Core domain in plain text
+        config:
+          type: string
+          description: Rasa Stack config in plain text
+        nlu:
+          type: string
+          description: Rasa NLU training data in markdown format
+        stories:
+          type: string
+          description: Rasa Core stories in markdown format
+        out:
+          type: string
+          description: Output directory
+        force:
+          type: boolean
+          description: >-
+            Force a model training even if the data has not changed
 
     EvaluationResult:
       type: object
