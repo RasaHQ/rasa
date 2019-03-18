@@ -151,9 +151,12 @@ class DialogueStateTracker(object):
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
         if form_name is not None:
-            self.active_form = {'name': form_name,
-                                'validate': True,
-                                'rejected': False}
+            self.active_form = {
+                'name': form_name,
+                'validate': True,
+                'rejected': False,
+                'trigger_message': self.latest_message.parse_data
+            }
         else:
             self.active_form = {}
 
