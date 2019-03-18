@@ -15,6 +15,7 @@
 *pyc
 *~
 .env
+venv
 .cache/
 .pytest_cache/
 .coverage
@@ -36,6 +37,8 @@ node_modules/
 npm-debug.log
 profile.*
 scala/
+examples/moodbot/py3/
+.python-version
 server/
 tmp/
 tokens.dat
@@ -56,3 +59,4 @@ docs/key
 docs/key.pub
 secrets.tar
 failed_stories.md
+.python-version

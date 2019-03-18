@@ -1,6 +1,5 @@
 from collections import namedtuple
 import copy
-import io
 import json
 import logging
 import os
@@ -615,7 +614,7 @@ class EmbeddingPolicy(Policy):
                           embed_for_no_intent: tf.Tensor,
                           embed_for_no_action: tf.Tensor,
                           embed_for_action_listen: tf.Tensor
-                          ) -> tf.contrib.rnn.RNNCell:  # type:
+                          ) -> tf.contrib.rnn.RNNCell:
         """Wrap cell in attention wrapper with given memory."""
 
         if self.attn_before_rnn:
@@ -1419,11 +1418,11 @@ class EmbeddingPolicy(Policy):
 
         encoded_actions_file = os.path.join(
             path, file_name + ".encoded_all_actions.pkl")
-        with io.open(encoded_actions_file, 'wb') as f:
+        with open(encoded_actions_file, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
 
         tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
-        with io.open(tf_config_file, 'wb') as f:
+        with open(tf_config_file, 'wb') as f:
             pickle.dump(self._tf_config, f)
 
     @staticmethod
@@ -1455,7 +1454,7 @@ class EmbeddingPolicy(Policy):
         tf_config_file = os.path.join(
             path, "{}.tf_config.pkl".format(file_name))
 
-        with io.open(tf_config_file, 'rb') as f:
+        with open(tf_config_file, 'rb') as f:
             _tf_config = pickle.load(f)
 
         graph = tf.Graph()
@@ -1492,7 +1491,7 @@ class EmbeddingPolicy(Policy):
         encoded_actions_file = os.path.join(
             path, "{}.encoded_all_actions.pkl".format(file_name))
 
-        with io.open(encoded_actions_file, 'rb') as f:
+        with open(encoded_actions_file, 'rb') as f:
             encoded_all_actions = pickle.load(f)
 
         return cls(featurizer=featurizer,

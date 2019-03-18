@@ -1,12 +1,13 @@
 import argparse
+import asyncio
 import logging
 import os
 from typing import Text
 
+import rasa.utils
+import rasa_core.cli
 import rasa_core.cli.arguments
 import rasa_core.cli.train
-from rasa_core import utils
-import rasa_core.cli
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,8 @@ def add_arguments(parser: argparse.ArgumentParser):
     return parser
 
 
-def visualize(config_path: Text, domain_path: Text, stories_path: Text,
-              nlu_data_path: Text, output_path: Text, max_history: int):
+async def visualize(config_path: Text, domain_path: Text, stories_path: Text,
+                    nlu_data_path: Text, output_path: Text, max_history: int):
     from rasa_core.agent import Agent
     from rasa_core import config
 
@@ -42,9 +43,9 @@ def visualize(config_path: Text, domain_path: Text, stories_path: Text,
         nlu_data_path = None
 
     logger.info("Starting to visualize stories...")
-    agent.visualize(stories_path, output_path,
-                    max_history,
-                    nlu_training_data=nlu_data_path)
+    await agent.visualize(stories_path, output_path,
+                          max_history,
+                          nlu_training_data=nlu_data_path)
 
     full_output_path = "file://{}".format(os.path.abspath(output_path))
     logger.info("Finished graph creation. Saved into {}".format(
@@ -60,8 +61,12 @@ if __name__ == '__main__':
     arg_parser = add_arguments(parser)
     args = arg_parser.parse_args()
 
-    utils.configure_colored_logging(args.loglevel)
-    stories = rasa_core.cli.train.stories_from_cli_args(args)
+    rasa.utils.configure_colored_logging(args.loglevel)
 
-    visualize(args.config[0], args.domain, stories, args.nlu_data,
-              args.output, args.max_history)
+    loop = asyncio.get_event_loop()
+    stories = loop.run_until_complete(
+        rasa_core.cli.train.stories_from_cli_args(args))
+
+    loop.run_until_complete(
+        visualize(args.config[0], args.domain, stories, args.nlu_data,
+                  args.output, args.max_history))

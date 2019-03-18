@@ -1,6 +1,6 @@
 import logging
 
-from flask import Blueprint, request, jsonify, make_response
+from sanic import Blueprint, request, response
 from mattermostwrapper import MattermostAPI
 from typing import Text
 
@@ -26,7 +26,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         super(MattermostBot, self).__init__(url, team)
         super(MattermostBot, self).login(user, pw)
 
-    def send_text_message(self, recipient_id, message):
+    async def send_text_message(self, recipient_id, message):
         for message_part in message.split("\n\n"):
             super(MattermostBot, self).post_channel(self.bot_channel,
                                                     message_part)
@@ -70,14 +70,13 @@ class MattermostInput(InputChannel):
         mattermost_webhook = Blueprint('mattermost_webhook', __name__)
 
         @mattermost_webhook.route("/", methods=['GET'])
-        def health():
-            return jsonify({"status": "ok"})
+        async def health(request):
+            return response.json({"status": "ok"})
 
         @mattermost_webhook.route("/webhook", methods=['POST'])
-        def webhook():
-            request.get_data()
-            if request.json:
-                output = request.json
+        async def webhook(request):
+            output = request.json
+            if output:
                 # splitting to get rid of the @botmention
                 # trigger we are using for this
                 text = output['text'].split(" ", 1)
@@ -92,12 +91,12 @@ class MattermostInput(InputChannel):
                                                 self.bot_channel)
                     user_msg = UserMessage(text, out_channel, sender_id,
                                            input_channel=self.name())
-                    on_new_message(user_msg)
+                    await on_new_message(user_msg)
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))
                     logger.debug(e, exc_info=True)
                     pass
-            return make_response()
+            return response.text("")
 
         return mattermost_webhook

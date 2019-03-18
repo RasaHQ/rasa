@@ -9,6 +9,7 @@ python:
 - '3.6'
 install:
 - sudo apt-get install graphviz graphviz-dev
+- python -m pip install -U pip
 - pip install -r dev-requirements.txt
 - pip install -e .
 - pip install coveralls==1.3.0
@@ -35,9 +36,13 @@ jobs:
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only master and new Core builds test the starter pack
     name: "Test stack starter pack"
     script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
     - python -m pytest tests/test_core.py
+  - stage: test
+    name: "Test CLI"
+    script:
+    - timeout 2 time rasa --help
   - stage: integration
     name: "Test Docs"
     install:

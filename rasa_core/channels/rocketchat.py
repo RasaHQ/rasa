@@ -1,7 +1,6 @@
 import logging
+from sanic import Blueprint, response
 from typing import Text
-
-from flask import Blueprint, request, jsonify, make_response
 
 from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 
@@ -18,14 +17,14 @@ class RocketChatBot(OutputChannel):
 
         self.rocket = RocketChat(user, password, server_url=server_url)
 
-    def send_text_message(self, recipient_id, message):
+    async def send_text_message(self, recipient_id, message):
         """Messages handler."""
 
         for message_part in message.split("\n\n"):
             self.rocket.chat_post_message(message_part,
                                           room_id=recipient_id)
 
-    def send_image_url(self, recipient_id, image_url):
+    async def send_image_url(self, recipient_id, image_url):
         image_attachment = [{
             "image_url": image_url,
             "collapsed": False,
@@ -35,7 +34,7 @@ class RocketChatBot(OutputChannel):
                                              room_id=recipient_id,
                                              attachments=image_attachment)
 
-    def send_attachment(self, recipient_id, attachment, message=""):
+    async def send_attachment(self, recipient_id, attachment, message=""):
         return self.rocket.chat_post_message(None,
                                              room_id=recipient_id,
                                              attachments=[attachment])
@@ -48,7 +47,8 @@ class RocketChatBot(OutputChannel):
                  "msg_in_chat_window": True}
                 for b in buttons]
 
-    def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
+    async def send_text_with_buttons(self, recipient_id, message, buttons,
+                                     **kwargs):
         # implementation is based on
         # https://github.com/RocketChat/Rocket.Chat/pull/11473
         # should work in rocket chat >= 0.69.0
@@ -59,7 +59,7 @@ class RocketChatBot(OutputChannel):
                                              room_id=recipient_id,
                                              attachments=button_attachment)
 
-    def send_custom_message(self, recipient_id, elements):
+    async def send_custom_message(self, recipient_id, elements):
         return self.rocket.chat_post_message(None,
                                              room_id=recipient_id,
                                              attachments=elements)
@@ -87,28 +87,27 @@ class RocketChatInput(InputChannel):
         self.password = password
         self.server_url = server_url
 
-    def send_message(self, text, sender_name, recipient_id, on_new_message):
+    async def send_message(self, text, sender_name, recipient_id,
+                           on_new_message):
         if sender_name != self.user:
             output_channel = RocketChatBot(
                 self.user, self.password, self.server_url)
 
             user_msg = UserMessage(text, output_channel, recipient_id,
                                    input_channel=self.name())
-            on_new_message(user_msg)
+            await on_new_message(user_msg)
 
     def blueprint(self, on_new_message):
         rocketchat_webhook = Blueprint('rocketchat_webhook', __name__)
 
         @rocketchat_webhook.route("/", methods=['GET'])
-        def health():
-            return jsonify({"status": "ok"})
+        async def health(request):
+            return response.json({"status": "ok"})
 
         @rocketchat_webhook.route("/webhook", methods=['GET', 'POST'])
-        def webhook():
-            request.get_data()
-            if request.json:
-                output = request.json
-
+        async def webhook(request):
+            output = request.json
+            if output:
                 if "visitor" not in output:
                     sender_name = output.get("user_name", None)
                     text = output.get("text", None)
@@ -119,9 +118,9 @@ class RocketChatInput(InputChannel):
                     sender_name = messages_list[0].get("username", None)
                     recipient_id = output.get("_id")
 
-                self.send_message(text, sender_name, recipient_id,
-                                  on_new_message)
+                await self.send_message(text, sender_name, recipient_id,
+                                        on_new_message)
 
-            return make_response()
+            return response.text("")
 
         return rocketchat_webhook

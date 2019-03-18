@@ -1,5 +1,6 @@
 import copy
 import logging
+import re
 
 from rasa_core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
@@ -31,12 +32,12 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         else:
             return None
 
-    def generate(self,
-                 template_name: Text,
-                 tracker: DialogueStateTracker,
-                 output_channel: Text,
-                 **kwargs: Any
-                 ) -> Optional[Dict[Text, Any]]:
+    async def generate(self,
+                       template_name: Text,
+                       tracker: DialogueStateTracker,
+                       output_channel: Text,
+                       **kwargs: Any
+                       ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested template."""
 
         filled_slots = tracker.current_slot_values()
@@ -76,7 +77,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         # Filling the template variables in the template
         if template_vars:
             try:
-                template["text"] = template["text"].format(**template_vars)
+                # transforming template tags from
+                # "{tag_name}" to "{0[tag_name]}"
+                # as described here:
+                # https://stackoverflow.com/questions/7934620/python-dots-in-the-name-of-variable-in-a-format-string#comment9695339_7934969
+                # assuming that slot_name do not contain newline character here
+                text = re.sub(r'{([^\n]+?)}', r'{0[\1]}', template["text"])
+                template["text"] = text.format(template_vars)
             except KeyError as e:
                 logger.exception(
                     "Failed to fill utterance template '{}'. "

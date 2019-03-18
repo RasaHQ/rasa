@@ -394,7 +394,8 @@ class TrainingDataGenerator(object):
 
     def _subsample_trackers(
         self,
-        incoming_trackers: List[TrackerWithCachedStates], max_number_of_trackers
+        incoming_trackers: List[TrackerWithCachedStates],
+        max_number_of_trackers: int
     ) -> List[TrackerWithCachedStates]:
         """Subsample the list of trackers to retrieve a random subset."""
 

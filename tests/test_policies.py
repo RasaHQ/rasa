@@ -3,29 +3,27 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from rasa_core import training
-from rasa_core.actions.action import (ACTION_LISTEN_NAME,
-                                      ActionRevertFallbackEvents,
-                                      ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
-                                      ACTION_DEFAULT_ASK_REPHRASE_NAME,
-                                      ACTION_DEFAULT_FALLBACK_NAME)
+from rasa_core import training, utils
+from rasa_core.actions.action import (
+    ACTION_DEFAULT_ASK_AFFIRMATION_NAME, ACTION_DEFAULT_ASK_REPHRASE_NAME,
+    ACTION_DEFAULT_FALLBACK_NAME, ACTION_LISTEN_NAME,
+    ActionRevertFallbackEvents)
 from rasa_core.channels import UserMessage
 from rasa_core.domain import Domain, InvalidDomain
 from rasa_core.events import ActionExecuted
 from rasa_core.featurizers import (
-    MaxHistoryTrackerFeaturizer,
-    BinarySingleStateFeaturizer)
+    BinarySingleStateFeaturizer, MaxHistoryTrackerFeaturizer)
 from rasa_core.policies import TwoStageFallbackPolicy
 from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import (
-    MemoizationPolicy, AugmentedMemoizationPolicy)
+    AugmentedMemoizationPolicy, MemoizationPolicy)
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
-from tests.utilities import read_dialogue_file, user_uttered, get_tracker
+from tests.utilities import get_tracker, read_dialogue_file, user_uttered
 
 
 def tf_defaults():
@@ -56,12 +54,18 @@ def session_config():
     return tf.ConfigProto(**tf_defaults()["tf_config"])
 
 
-def train_trackers(domain):
-    trackers = training.load_data(
+async def train_trackers(domain, augmentation_factor=20):
+    return await training.load_data(
         DEFAULT_STORIES_FILE,
-        domain
+        domain,
+        augmentation_factor=augmentation_factor
     )
-    return trackers
+
+
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
 
 
 # We are going to use class style testing here since unfortunately pytest
@@ -70,6 +74,7 @@ def train_trackers(domain):
 # different fixtures of the different policies for the functional tests).
 # Therefore, we are going to reverse this and train the policy within a class
 # and collect the tests in a base class.
+# noinspection PyMethodMayBeStatic
 class PolicyTestCollection(object):
     """Tests every policy needs to fulfill.
 
@@ -91,17 +96,19 @@ class PolicyTestCollection(object):
         return 1
 
     @pytest.fixture(scope="module")
-    def trained_policy(self, featurizer, priority):
+    async def trained_policy(self, featurizer, priority):
         default_domain = Domain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy(featurizer, priority)
-        training_trackers = train_trackers(default_domain)
+        training_trackers = await train_trackers(default_domain,
+                                                 augmentation_factor=20)
         policy.train(training_trackers, default_domain)
         return policy
 
-    def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
+    async def test_persist_and_load(self, trained_policy, default_domain,
+                                    tmpdir):
         trained_policy.persist(tmpdir.strpath)
         loaded = trained_policy.__class__.load(tmpdir.strpath)
-        trackers = train_trackers(default_domain)
+        trackers = await train_trackers(default_domain, augmentation_factor=20)
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
@@ -119,6 +126,9 @@ class PolicyTestCollection(object):
         assert max(probabilities) <= 1.0
         assert min(probabilities) >= 0.0
 
+    @pytest.mark.filterwarnings("ignore:"
+                                ".*without a trained model present:"
+                                "UserWarning")
     def test_persist_and_load_empty_policy(self, tmpdir):
         empty_policy = self.create_policy(None, None)
         empty_policy.persist(tmpdir.strpath)
@@ -179,7 +189,6 @@ class TestFallbackPolicy(PolicyTestCollection):
                                  nlu_confidence,
                                  last_action_name,
                                  should_nlu_fallback):
-
         assert trained_policy.should_nlu_fallback(
             nlu_confidence, last_action_name) is should_nlu_fallback
 
@@ -194,16 +203,18 @@ class TestMemoizationPolicy(PolicyTestCollection):
         p = MemoizationPolicy(priority=priority, max_history=max_history)
         return p
 
-    def test_memorise(self, trained_policy, default_domain):
-        trackers = train_trackers(default_domain)
+    async def test_memorise(self, trained_policy, default_domain):
+        trackers = await train_trackers(default_domain, augmentation_factor=20)
         trained_policy.train(trackers, default_domain)
+        lookup_with_augmentation = trained_policy.lookup
 
-        test_trackers = \
-            [t for t in trackers if not
-             hasattr(t, 'is_augmented') or not t.is_augmented]
+        trackers = [t
+                    for t in trackers
+                    if not hasattr(t, 'is_augmented') or not t.is_augmented]
+
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
-                test_trackers, default_domain)
+                trackers, default_domain)
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
@@ -215,8 +226,16 @@ class TestMemoizationPolicy(PolicyTestCollection):
                           zip(default_domain.input_states, nums)}]
         assert trained_policy._recall_states(random_states) is None
 
+        # compare augmentation for augmentation_factor of 0 and 20:
+        trackers_no_augmentation = await train_trackers(default_domain,
+                                                        augmentation_factor=0)
+        trained_policy.train(trackers_no_augmentation, default_domain)
+        lookup_no_augmentation = trained_policy.lookup
+
+        assert lookup_no_augmentation == lookup_with_augmentation
+
     def test_memorise_with_nlu(self, trained_policy, default_domain):
-        filename = "data/test_dialogues/nlu_dialogue.json"
+        filename = "data/test_dialogues/default.json"
         dialogue = read_dialogue_file(filename)
 
         tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
@@ -264,8 +283,8 @@ class TestSklearnPolicy(PolicyTestCollection):
                                     default_domain.slots)
 
     @pytest.fixture(scope='module')
-    def trackers(self, default_domain):
-        return train_trackers(default_domain)
+    async def trackers(self, default_domain):
+        return await train_trackers(default_domain, augmentation_factor=20)
 
     def test_cv_none_does_not_trigger_search(self,
                                              mock_search,
@@ -428,10 +447,10 @@ class TestFormPolicy(PolicyTestCollection):
         p = FormPolicy(priority=priority)
         return p
 
-    def test_memorise(self, trained_policy, default_domain):
+    async def test_memorise(self, trained_policy, default_domain):
         domain = Domain.load('data/test_domains/form.yml')
-        trackers = training.load_data('data/test_stories/stories_form.md',
-                                      domain)
+        trackers = await training.load_data('data/test_stories/stories_form.md',
+                                            domain)
         trained_policy.train(trackers, domain)
 
         (all_states, all_actions) = \
@@ -450,6 +469,7 @@ class TestFormPolicy(PolicyTestCollection):
                 # explicitly set intents and actions before listen after
                 # which FormPolicy should not predict a form action and
                 # should add FormValidation(False) event
+                # @formatter:off
                 is_no_validation = (
                     ('prev_some_form' in states[0].keys() and
                      'intent_default' in states[-1].keys()) or
@@ -460,6 +480,7 @@ class TestFormPolicy(PolicyTestCollection):
                     ('prev_utter_ask_continue' in states[0].keys() and
                      'intent_deny' in states[-1].keys())
                 )
+                # @formatter:on
             else:
                 is_no_validation = False
 
@@ -501,17 +522,19 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
         """
         return Domain.from_yaml(content)
 
-    def _get_next_action(self, policy, events, domain):
+    @staticmethod
+    def _get_next_action(policy, events, domain):
         tracker = get_tracker(events)
 
         scores = policy.predict_action_probabilities(tracker, domain)
         index = scores.index(max(scores))
         return domain.action_names[index]
 
-    def _get_tracker_after_reverts(self, events, dispatcher, domain):
+    @staticmethod
+    async def _get_tracker_after_reverts(events, dispatcher, domain):
         tracker = get_tracker(events)
         action = ActionRevertFallbackEvents()
-        events += action.run(dispatcher, tracker, domain)
+        events += await action.run(dispatcher, tracker, domain)
 
         return get_tracker(events)
 
@@ -524,7 +547,8 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    def test_affirmation(self, default_dispatcher_collecting, default_domain):
+    async def test_affirmation(self, default_dispatcher_collecting,
+                               default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered('greet', 1),
                   ActionExecuted('utter_hello'),
@@ -534,7 +558,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered('greet', 1)]
 
-        tracker = self._get_tracker_after_reverts(
+        tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
             default_domain
@@ -558,9 +582,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_ASK_REPHRASE_NAME
 
-    def test_successful_rephrasing(self, trained_policy,
-                                   default_dispatcher_collecting,
-                                   default_domain):
+    async def test_successful_rephrasing(self,
+                                         trained_policy,
+                                         default_dispatcher_collecting,
+                                         default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
@@ -571,7 +596,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered("bye", 1),
                   ]
 
-        tracker = self._get_tracker_after_reverts(
+        tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
             default_domain
@@ -596,9 +621,10 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_ASK_AFFIRMATION_NAME
 
-    def test_affirmed_rephrasing(self, trained_policy,
-                                 default_dispatcher_collecting,
-                                 default_domain):
+    async def test_affirmed_rephrasing(self,
+                                       trained_policy,
+                                       default_dispatcher_collecting,
+                                       default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 0.2),
                   ActionExecuted(ACTION_DEFAULT_ASK_AFFIRMATION_NAME),
@@ -612,7 +638,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered('bye', 1)
                   ]
 
-        tracker = self._get_tracker_after_reverts(
+        tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
             default_domain
@@ -641,9 +667,9 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert next_action == ACTION_DEFAULT_FALLBACK_NAME
 
-    def test_rephrasing_instead_affirmation(self, trained_policy,
-                                            default_dispatcher_collecting,
-                                            default_domain):
+    async def test_rephrasing_instead_affirmation(self, trained_policy,
+                                                  default_dispatcher_collecting,
+                                                  default_domain):
         events = [ActionExecuted(ACTION_LISTEN_NAME),
                   user_uttered("greet", 1),
                   ActionExecuted("utter_hello"),
@@ -654,7 +680,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
                   user_uttered("bye", 1),
                   ]
 
-        tracker = self._get_tracker_after_reverts(
+        tracker = await self._get_tracker_after_reverts(
             events,
             default_dispatcher_collecting,
             default_domain

@@ -1,8 +1,7 @@
 import argparse
 import logging
 
-from flask import Flask, request, jsonify
-from gevent.pywsgi import WSGIServer
+from sanic import Sanic, response
 
 from rasa_core.domain import Domain
 from rasa_core.nlg import TemplatedNaturalLanguageGenerator
@@ -11,6 +10,8 @@ from rasa_core.trackers import DialogueStateTracker
 logger = logging.getLogger(__name__)
 
 DEFAULT_SERVER_PORT = 5056
+
+DEFAULT_SANIC_WORKERS = 1
 
 
 def create_argument_parser():
@@ -24,6 +25,11 @@ def create_argument_parser():
         type=int,
         help="port to run the server at")
     parser.add_argument(
+        '--workers',
+        default=DEFAULT_SANIC_WORKERS,
+        type=int,
+        help="Number of processes to spin up")
+    parser.add_argument(
         '-d', '--domain',
         type=str,
         default=None,
@@ -33,7 +39,11 @@ def create_argument_parser():
     return parser
 
 
-def generate_response(nlg_call, domain):
+async def generate_response(nlg_call, domain):
+    """Mock response generator.
+
+    Generates the responses from the bot's domain file.
+    """
     kwargs = nlg_call.get("arguments", {})
     template = nlg_call.get("template")
     sender_id = nlg_call.get("tracker", {}).get("sender_id")
@@ -42,24 +52,24 @@ def generate_response(nlg_call, domain):
         sender_id, events, domain.slots)
     channel_name = nlg_call.get("channel")
 
-    return TemplatedNaturalLanguageGenerator(domain.templates).generate(
+    return await TemplatedNaturalLanguageGenerator(domain.templates).generate(
         template, tracker, channel_name, **kwargs)
 
 
-def create_app(domain):
-    app = Flask(__name__)
-
-    logging.basicConfig(level=logging.DEBUG)
+def run_server(domain, port, workers):
+    app = Sanic(__name__)
 
     @app.route("/nlg", methods=['POST', 'OPTIONS'])
-    def nlg():
-        """Check if the server is running and responds with the version."""
+    async def nlg(request):
+        """Endpoint which processes the Core request for a bot response."""
         nlg_call = request.json
+        bot_response = await generate_response(nlg_call, domain)
 
-        response = generate_response(nlg_call, domain)
-        return jsonify(response)
+        return response.json(bot_response)
 
-    return app
+    app.run(host='0.0.0.0',
+            port=port,
+            workers=workers)
 
 
 if __name__ == '__main__':
@@ -68,13 +78,6 @@ if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
+    _domain = Domain.load(cmdline_args.domain)
 
-    domain = Domain.load(cmdline_args.domain)
-    app = create_app(domain)
-    http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
-
-    http_server.start()
-    logger.info("NLG endpoint is up and running. on {}"
-                "".format(http_server.address))
-
-    http_server.serve_forever()
+    run_server(_domain, cmdline_args.port, cmdline_args.workers)
