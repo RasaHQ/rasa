@@ -575,8 +575,8 @@ def create_app(agent=None,
                 return response.json(evaluation)
             except ValueError as e:
                 return ErrorResponse(400, "FailedIntentEvaluation",
-                                     "Evaluation could not be created. Error: {}"
-                                     "".format(e))
+                                     "Evaluation could not be created. "
+                                     "Error: {}".format(e))
         else:
             return ErrorResponse(400, "FailedIntentEvaluation",
                                  "NLU evaluation file could not be found. "
@@ -719,9 +719,10 @@ def create_app(agent=None,
             policy_ensemble.probabilities_using_best_policy(tracker,
                                                             app.agent.domain)
 
-        scores = [{"action": a, "score": p}
-                  for a, p in
-                  zip(app.agent.domain.action_names, probabilities)]
+        scores = [
+            {"action": a, "score": p}
+            for a, p in zip(app.agent.domain.action_names, probabilities)
+        ]
 
         return response.json({
             "scores": scores,
