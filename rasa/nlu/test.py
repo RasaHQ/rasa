@@ -529,8 +529,7 @@ def determine_token_labels(token, entities, extractors):
 
 
 def do_extractors_support_overlap(extractors):
-    """Checks if extractors support overlapping entities
-    """
+    """Checks if extractors support overlapping entities"""
     if extractors is None:
         return False
     return CRFEntityExtractor.name not in extractors
