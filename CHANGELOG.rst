@@ -33,6 +33,8 @@ Added
   will train a combined Rasa Core and NLU model.
 - ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
   access to message triggering the form
+- ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
+  for current user
 
 Changed
 -------
