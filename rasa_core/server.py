@@ -13,6 +13,7 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
+from rasa.model import unpack_model
 from rasa_core import constants, utils
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.domain import Domain
@@ -21,6 +22,7 @@ from rasa_core.policies import PolicyEnsemble
 from rasa_core.test import test
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import dump_obj_as_str_to_file
+from rasa_nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
 
@@ -533,6 +535,31 @@ def create_app(agent=None,
             raise ErrorResponse(400, "FailedEvaluation",
                                 "Evaluation could not be created. Error: {}"
                                 "".format(e))
+
+    @app.post("/intentEvaluation")
+    @requires_auth(app, auth_token)
+    async def intent_evaluation(request: Request):
+        """Evaluate intents against a Rasa NLU model."""
+
+        tmpdir = tempfile.mkdtemp()
+
+        zipped_model_path = os.path.join(tmpdir, 'model.tar.gz')
+        with open(zipped_model_path, 'w+b') as f:
+            f.write(request.body)
+
+        unzipped_path = unpack_model(zipped_model_path, tmpdir)
+
+        model_path = os.path.join(unzipped_path, 'nlu')
+
+        data_path = os.path.join(tmpdir, 'data.json')
+
+        try:
+            evaluation = run_evaluation(data_path, model_path)
+            return response.json(evaluation)
+        except ValueError as e:
+            return ErrorResponse(400, "FailedEvaluation",
+                                 "Evaluation could not be created. Error: {}"
+                                 "".format(e))
 
     @app.post("/jobs")
     @requires_auth(app, auth_token)
