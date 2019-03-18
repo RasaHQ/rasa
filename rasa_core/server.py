@@ -557,7 +557,7 @@ def create_app(agent=None,
             evaluation = run_evaluation(data_path, model_path)
             return response.json(evaluation)
         except ValueError as e:
-            return ErrorResponse(400, "FailedEvaluation",
+            return ErrorResponse(400, "FailedIntentEvaluation",
                                  "Evaluation could not be created. Error: {}"
                                  "".format(e))
 
@@ -698,7 +698,8 @@ def create_app(agent=None,
                                                             app.agent.domain)
 
         scores = [{"action": a, "score": p}
-                  for a, p in zip(app.agent.domain.action_names, probabilities)]
+                  for a, p in
+                  zip(app.agent.domain.action_names, probabilities)]
 
         return response.json({
             "scores": scores,
