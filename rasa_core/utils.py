@@ -42,28 +42,14 @@ def configure_file_logging(loglevel, logfile):
 
 
 # noinspection PyUnresolvedReferences
-def class_from_module_path(module_path: Text) -> Any:
+def class_from_module_path(module_path: Text,
+                           lookup_path: Optional[Text] = None) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects. """
     import importlib
 
     # load the module, will raise ImportError if module cannot be loaded
-    from rasa_core.policies.keras_policy import KerasPolicy
-    from rasa_core.policies.fallback import FallbackPolicy
-    from rasa_core.policies.two_stage_fallback import TwoStageFallbackPolicy
-    from rasa_core.policies.memoization import (
-        MemoizationPolicy,
-        AugmentedMemoizationPolicy)
-    from rasa_core.policies.embedding_policy import EmbeddingPolicy
-    from rasa_core.policies.form_policy import FormPolicy
-    from rasa_core.policies.sklearn_policy import SklearnPolicy
-
-    from rasa_core.featurizers import (
-        FullDialogueTrackerFeaturizer,
-        MaxHistoryTrackerFeaturizer,
-        BinarySingleStateFeaturizer,
-        LabelTokenizerSingleStateFeaturizer)
     if "." in module_path:
         module_name, _, class_name = module_path.rpartition('.')
         m = importlib.import_module(module_name)
@@ -73,6 +59,11 @@ def class_from_module_path(module_path: Text) -> Any:
         module = globals().get(module_path, locals().get(module_path))
         if module is not None:
             return module
+
+        if lookup_path:
+            # last resort: try to import the class from the lookup path
+            m = importlib.import_module(lookup_path)
+            return getattr(m, module_path)
         else:
             raise ImportError("Cannot retrieve class from path {}."
                               "".format(module_path))
