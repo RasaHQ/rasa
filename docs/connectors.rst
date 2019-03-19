@@ -88,7 +88,7 @@ If you want to connect to facebook using the run script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -156,7 +156,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -231,7 +231,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -308,7 +308,7 @@ run script, e.g. using:
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -375,7 +375,7 @@ If you want to connect to telegram using the run script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -445,7 +445,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -515,7 +515,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -559,7 +559,7 @@ run script, e.g. using:
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -607,7 +607,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -696,7 +696,7 @@ using the run script:
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -739,7 +739,7 @@ Here is an example on how to connect the
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
