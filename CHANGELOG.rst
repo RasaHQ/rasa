@@ -68,6 +68,13 @@ Fixed
   variable name (e.g. dot) in a template
 - in interactive learning: only updates entity values if user changes annotation
 
+[0.13.4] - 2019-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- properly tag docker image as ``stable`` (instead of tagging alpha tags)
+
 [0.13.3] - 2019-03-04
 ^^^^^^^^^^^^^^^^^^^^^
 
