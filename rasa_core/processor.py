@@ -329,32 +329,33 @@ class MessageProcessor(object):
         Reminders with the same `id` property will overwrite one another
         (i.e. only one of them will eventually run)."""
 
-        if events is not None:
-            for e in events:
-                if isinstance(e, ReminderScheduled):
-                    (await jobs.scheduler()).add_job(
-                        self.handle_reminder, "date",
-                        run_date=e.trigger_date_time,
-                        args=[e, dispatcher],
-                        id=e.name,
-                        replace_existing=True,
-                        name=str(e.action_name) +
-                             ACTION_NAME_SENDER_ID_CONNECTOR_STR +
-                             tracker.sender_id)
+        for e in events:
+            if isinstance(e, ReminderScheduled):
+                (await jobs.scheduler()).add_job(
+                    self.handle_reminder, "date",
+                    run_date=e.trigger_date_time,
+                    args=[e, dispatcher],
+                    id=e.name,
+                    replace_existing=True,
+                    name=(str(e.action_name) +
+                          ACTION_NAME_SENDER_ID_CONNECTOR_STR +
+                          tracker.sender_id))
 
     @staticmethod
     async def _cancel_reminders(events: List[Event],
                                 tracker: DialogueStateTracker) -> None:
-        # All Reminders with the same name will be cancelled
-        if events is not None:
-            for e in events:
-                if isinstance(e, ReminderCancelled):
-                    name_to_check = e.action_name +\
-                                    ACTION_NAME_SENDER_ID_CONNECTOR_STR +\
-                                    tracker.sender_id
-                    for j in (await jobs.scheduler()).get_jobs():
-                        if j.name == name_to_check:
-                            (await jobs.scheduler()).remove_job(j.id)
+        """Cancel reminders by action_name"""
+
+        # All Reminders with the same action name will be cancelled
+        for e in events:
+            if isinstance(e, ReminderCancelled):
+                name_to_check = (str(e.action_name) +
+                                 ACTION_NAME_SENDER_ID_CONNECTOR_STR +
+                                 tracker.sender_id)
+                scheduler = await jobs.scheduler()
+                for j in scheduler.get_jobs():
+                    if j.name == name_to_check:
+                        scheduler.remove_job(j.id)
 
     async def _run_action(self, action, tracker, dispatcher, policy=None,
                           confidence=None):

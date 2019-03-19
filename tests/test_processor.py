@@ -3,6 +3,7 @@ import pytest
 import uuid
 from aioresponses import aioresponses
 
+from rasa_core import jobs
 from rasa_core import utils
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.dispatcher import Button, Dispatcher
@@ -139,6 +140,7 @@ async def test_reminder_cancelled(default_processor):
     t = default_processor.tracker_store.retrieve(sender_id)
     # there should be no utter_greet action
     assert ActionExecuted("utter_greet") not in t.events
+    scheduled_jobs = (await jobs.scheduler()).get_jobs()
 
 
 async def test_reminder_restart(default_processor: MessageProcessor):
