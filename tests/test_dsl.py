@@ -14,8 +14,8 @@ from rasa_core.featurizers import (
     BinarySingleStateFeaturizer)
 
 
-def test_can_read_test_story(default_domain):
-    trackers = training.load_data(
+async def test_can_read_test_story(default_domain):
+    trackers = await training.load_data(
         "data/test_stories/stories.md",
         default_domain,
         use_story_concatenation=False,
@@ -41,8 +41,8 @@ def test_can_read_test_story(default_domain):
     assert tracker.events[4] == ActionExecuted("action_listen")
 
 
-def test_can_read_test_story_with_checkpoint_after_or(default_domain):
-    trackers = training.load_data(
+async def test_can_read_test_story_with_checkpoint_after_or(default_domain):
+    trackers = await training.load_data(
         "data/test_stories/stories_checkpoint_after_or.md",
         default_domain,
         use_story_concatenation=False,
@@ -53,21 +53,21 @@ def test_can_read_test_story_with_checkpoint_after_or(default_domain):
     assert len(trackers) == 2
 
 
-def test_persist_and_read_test_story_graph(tmpdir, default_domain):
-    graph = training.extract_story_graph("data/test_stories/stories.md",
-                                         default_domain)
+async def test_persist_and_read_test_story_graph(tmpdir, default_domain):
+    graph = await training.extract_story_graph("data/test_stories/stories.md",
+                                               default_domain)
     out_path = tmpdir.join("persisted_story.md")
-    with io.open(out_path.strpath, "w", encoding="utf-8") as f:
+    with open(out_path.strpath, "w", encoding="utf-8") as f:
         f.write(graph.as_story_string())
 
-    recovered_trackers = training.load_data(
+    recovered_trackers = await training.load_data(
         out_path.strpath,
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False
     )
-    existing_trackers = training.load_data(
+    existing_trackers = await training.load_data(
         "data/test_stories/stories.md",
         default_domain,
         use_story_concatenation=False,
@@ -82,20 +82,20 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
         existing_stories.discard(story_str)
 
 
-def test_persist_and_read_test_story(tmpdir, default_domain):
-    graph = training.extract_story_graph("data/test_stories/stories.md",
-                                         default_domain)
+async def test_persist_and_read_test_story(tmpdir, default_domain):
+    graph = await training.extract_story_graph("data/test_stories/stories.md",
+                                               default_domain)
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)
 
-    recovered_trackers = training.load_data(
+    recovered_trackers = await training.load_data(
         out_path.strpath,
         default_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False
     )
-    existing_trackers = training.load_data(
+    existing_trackers = await training.load_data(
         "data/test_stories/stories.md",
         default_domain,
         use_story_concatenation=False,
@@ -109,8 +109,8 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
         existing_stories.discard(story_str)
 
 
-def test_read_story_file_with_cycles(tmpdir, default_domain):
-    graph = training.extract_story_graph(
+async def test_read_story_file_with_cycles(tmpdir, default_domain):
+    graph = await training.extract_story_graph(
         "data/test_stories/stories_with_cycle.md", default_domain)
 
     assert len(graph.story_steps) == 5
@@ -125,10 +125,10 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
-def test_generate_training_data_with_cycles(tmpdir, default_domain):
+async def test_generate_training_data_with_cycles(tmpdir, default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                              max_history=4)
-    training_trackers = training.load_data(
+    training_trackers = await training.load_data(
         "data/test_stories/stories_with_cycle.md",
         default_domain,
         augmentation_factor=0
@@ -147,9 +147,9 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     assert Counter(y) == {0: 6, 1: 2, 7: num_threes, 8: 1, 9: 3}
 
 
-def test_generate_training_data_with_unused_checkpoints(tmpdir,
-                                                        default_domain):
-    training_trackers = training.load_data(
+async def test_generate_training_data_with_unused_checkpoints(tmpdir,
+                                                              default_domain):
+    training_trackers = await training.load_data(
         "data/test_stories/stories_unused_checkpoints.md",
         default_domain,
     )
@@ -159,8 +159,26 @@ def test_generate_training_data_with_unused_checkpoints(tmpdir,
     assert len(training_trackers) == 2
 
 
-def test_visualize_training_data_graph(tmpdir, default_domain):
-    graph = training.extract_story_graph(
+async def test_generate_training_data_original_and_augmented_trackers(
+        default_domain):
+    training_trackers = await training.load_data(
+        "data/test_stories/stories_defaultdomain.md", default_domain,
+        augmentation_factor=3
+    )
+    # there are three original stories
+    # augmentation factor of 3 indicates max of 3*10 augmented stories generated
+    # maximum number of stories should be augmented+original = 33
+    original_trackers = [
+        t
+        for t in training_trackers if not
+        hasattr(t, 'is_augmented') or not t.is_augmented
+    ]
+    assert len(original_trackers) == 3
+    assert len(training_trackers) <= 33
+
+
+async def test_visualize_training_data_graph(tmpdir, default_domain):
+    graph = await training.extract_story_graph(
         "data/test_stories/stories_with_cycle.md", default_domain)
 
     graph = graph.with_cycles_removed()
@@ -182,12 +200,12 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
         assert len(G.edges()) == 16
 
 
-def test_load_multi_file_training_data(default_domain):
+async def test_load_multi_file_training_data(default_domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=2)
-    trackers = training.load_data(
+    trackers = await training.load_data(
         "data/test_stories/stories.md",
         default_domain,
         augmentation_factor=0
@@ -204,7 +222,7 @@ def test_load_multi_file_training_data(default_domain):
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=2)
-    trackers_mul = training.load_data(
+    trackers_mul = await training.load_data(
         "data/test_multifile_stories",
         default_domain,
         augmentation_factor=0
@@ -225,17 +243,19 @@ def test_load_multi_file_training_data(default_domain):
     assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
 
 
-def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
+async def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
     # create a hidden file
 
-    open(os.path.join(tmpdir.strpath, ".hidden"), 'a').close()
+    with open(os.path.join(tmpdir.strpath, ".hidden"), 'a') as f:
+        f.close()
     # create a normal file
     normal_file = os.path.join(tmpdir.strpath, "normal_file")
-    open(normal_file, 'a').close()
+    with open(normal_file, 'a') as f:
+        f.close()
 
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                              max_history=2)
-    trackers = training.load_data(
+    trackers = await training.load_data(
         tmpdir.strpath,
         default_domain
     )

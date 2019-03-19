@@ -1,3 +1,6 @@
+:desc: Read more how to define bot utterances or use a service to generate the
+       responses using Rasa Stack as an open source chatbot platform.
+
 .. _responses:
 
 Bot Responses
@@ -17,7 +20,7 @@ There are two ways to manage these utterances:
 Including the utterances in the domain
 --------------------------------------
 
-The default format is, to include the utterances into your domain file.
+The default format is to include the utterances in your domain file.
 This file then contains references to all your custom actions,
 available entities, slots and intents.
 
@@ -57,7 +60,7 @@ and you can use this file like this:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.run \
+    $ python3 -m rasa_core.run \
        --enable_api \
        -d examples/babi/models/policy/current \
        -u examples/babi/models/nlu/current_py2 \
@@ -141,5 +144,3 @@ The bot will then use this response and sent it back to the user.
 
 
 .. include:: feedback.inc
-
-

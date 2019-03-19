@@ -8,9 +8,6 @@ import uuid
 from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
-from rasa_core import utils
-from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
-
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
 
@@ -47,6 +44,8 @@ def deserialise_entities(entities):
 
 
 def md_format_message(text, intent, entities):
+    from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+
     message_from_md = MarkdownReader()._parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)
     return MarkdownWriter()._generate_message_md(
@@ -151,9 +150,10 @@ class Event(object):
     @staticmethod
     def resolve_by_type(
         type_name: Text,
-        default: Optional[Text] = None
+        default: Optional[Type['Event']] = None
     ) -> Optional[Type['Event']]:
         """Returns a slots class by its type name."""
+        from rasa_core import utils
 
         for cls in utils.all_subclasses(Event):
             if cls.type_name == type_name:
@@ -182,11 +182,13 @@ class UserUttered(Event):
                  entities=None,
                  parse_data=None,
                  timestamp=None,
-                 input_channel=None):
+                 input_channel=None,
+                 message_id=None):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
         self.input_channel = input_channel
+        self.message_id = message_id
 
         if parse_data:
             self.parse_data = parse_data
@@ -201,8 +203,12 @@ class UserUttered(Event):
 
     @staticmethod
     def _from_parse_data(text, parse_data, timestamp=None, input_channel=None):
-        return UserUttered(text, parse_data["intent"], parse_data["entities"],
-                           parse_data, timestamp, input_channel)
+        return UserUttered(text,
+                           parse_data.get("intent"),
+                           parse_data.get("entities", []),
+                           parse_data,
+                           timestamp,
+                           input_channel)
 
     def __hash__(self):
         return hash((self.text, self.intent.get("name"),
@@ -213,9 +219,9 @@ class UserUttered(Event):
             return False
         else:
             return (self.text, self.intent.get("name"),
-                    jsonpickle.encode(self.entities), self.parse_data) == \
+                    [jsonpickle.encode(ent) for ent in self.entities]) == \
                    (other.text, other.intent.get("name"),
-                    jsonpickle.encode(other.entities), other.parse_data)
+                    [jsonpickle.encode(ent) for ent in other.entities])
 
     def __str__(self):
         return ("UserUttered(text: {}, intent: {}, "
@@ -227,10 +233,13 @@ class UserUttered(Event):
 
     def as_dict(self):
         d = super(UserUttered, self).as_dict()
+        input_channel = None   # for backwards compatibility (persisted evemts)
+        if hasattr(self, "input_channel"):
+            input_channel = self.input_channel
         d.update({
             "text": self.text,
             "parse_data": self.parse_data,
-            "input_channel": self.input_channel
+            "input_channel": input_channel
         })
         return d
 
@@ -559,6 +568,44 @@ class ReminderScheduled(Event):
 
 
 # noinspection PyProtectedMember
+class ReminderCancelled(Event):
+    """Cancel all jobs with a specific name."""
+
+    type_name = "cancel_reminder"
+
+    def __init__(self, action_name, timestamp=None):
+        """
+        Args:
+            action_name: name of the scheduled action to be cancelled
+        """
+
+        self.action_name = action_name
+        super(ReminderCancelled, self).__init__(timestamp)
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return isinstance(other, ReminderCancelled)
+
+    def __str__(self):
+        return ("ReminderCancelled(action: {})"
+                .format(self.action_name))
+
+    def as_story_string(self):
+        props = json.dumps(self._data_obj())
+        return "{name}{props}".format(name=self.type_name, props=props)
+
+    @classmethod
+    def _from_story_string(
+            cls,
+            parameters: Dict[Text, Any]
+    ) -> Optional[List[Event]]:
+        return [ReminderCancelled(parameters.get("action"),
+                                  parameters.get("timestamp"))]
+
+
+# noinspection PyProtectedMember
 class ActionReverted(Event):
     """Bot undoes its last action.
 
@@ -757,10 +804,17 @@ class ActionExecuted(Event):
 
     def as_dict(self):
         d = super(ActionExecuted, self).as_dict()
+        policy = None  # for backwards compatibility (persisted evemts)
+        if hasattr(self, "policy"):
+            policy = self.policy
+        confidence = None
+        if hasattr(self, "confidence"):
+            confidence = self.confidence
+
         d.update({
             "name": self.action_name,
-            "policy": self.policy,
-            "confidence": self.confidence
+            "policy": policy,
+            "confidence": confidence
         })
         return d
 

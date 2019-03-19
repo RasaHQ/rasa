@@ -1,22 +1,61 @@
-import io
+import asyncio
+from typing import Text
 
 import pytest
-import responses
+from async_generator import async_generator, yield_
+from sanic import Sanic, response
 
 import rasa_core
-from rasa_core import utils
+from rasa_core import jobs, utils
 from rasa_core.agent import Agent
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.utils import EndpointConfig
 
 
-def test_agent_train(tmpdir, default_domain):
+@pytest.fixture(scope="session")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
+
+
+def model_server_app(model_path: Text, model_hash: Text = "somehash"):
+    app = Sanic(__name__)
+    app.number_of_model_requests = 0
+
+    @app.route("/model", methods=['GET'])
+    async def model(request):
+        """Simple HTTP model server responding with a trained model."""
+
+        if model_hash == request.headers.get("If-None-Match"):
+            return response.text("", 204)
+
+        app.number_of_model_requests += 1
+
+        return await response.file_stream(
+            location=model_path,
+            headers={'ETag': model_hash,
+                     'filename': model_path},
+            mime_type='application/zip')
+
+    return app
+
+
+@pytest.fixture
+@async_generator
+async def model_server(test_server, zipped_moodbot_model):
+    server = await test_server(model_server_app(zipped_moodbot_model,
+                               model_hash="somehash"))
+    await yield_(server)  # python 3.5 compatibility
+    await server.close()
+
+
+async def test_agent_train(tmpdir, default_domain):
     training_data_file = 'examples/moodbot/data/stories.md'
     agent = Agent("examples/moodbot/domain.yml",
                   policies=[AugmentedMemoizationPolicy()])
 
-    training_data = agent.load_data(training_data_file)
+    training_data = await agent.load_data(training_data_file)
     agent.train(training_data)
     agent.persist(tmpdir.strpath)
 
@@ -37,10 +76,11 @@ def test_agent_train(tmpdir, default_domain):
            [type(p) for p in agent.policy_ensemble.policies]
 
 
-def test_agent_handle_message(default_agent):
+async def test_agent_handle_message(default_agent):
     message = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
-    result = default_agent.handle_message(message,
-                                          sender_id="test_agent_handle_message")
+    result = await default_agent.handle_message(
+        message,
+        sender_id="test_agent_handle_message")
     assert result == [{'recipient_id': 'test_agent_handle_message',
                        'text': 'hey there Rasa!'}]
 
@@ -56,26 +96,22 @@ def test_agent_wrong_use_of_load(tmpdir, default_domain):
         agent.load(training_data_file)
 
 
-@responses.activate
-def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
-                                 moodbot_domain, moodbot_metadata):
-    fingerprint = 'somehash'
-    model_endpoint_config = EndpointConfig.from_dict(
-        {"url": 'http://server.com/model/default_core@latest',
-         "wait_time_between_pulls": None}
-    )
+async def test_agent_with_model_server_in_thread(model_server, tmpdir,
+                                                 zipped_moodbot_model,
+                                                 moodbot_domain,
+                                                 moodbot_metadata):
+    model_endpoint_config = EndpointConfig.from_dict({
+        "url": model_server.make_url('/model'),
+        "wait_time_between_pulls": 2
+    })
 
-    # mock a response that returns a zipped model
-    with io.open(zipped_moodbot_model, 'rb') as f:
-        responses.add(responses.GET,
-                      model_endpoint_config.url,
-                      headers={"ETag": fingerprint},
-                      body=f.read(),
-                      content_type='application/zip',
-                      stream=True)
-    agent = rasa_core.agent.load_from_server(
-        model_server=model_endpoint_config)
-    assert agent.fingerprint == fingerprint
+    agent = Agent()
+    agent = await rasa_core.agent.load_from_server(
+        agent, model_server=model_endpoint_config)
+
+    await asyncio.sleep(3)
+
+    assert agent.fingerprint == "somehash"
 
     assert agent.domain.as_dict() == moodbot_domain.as_dict()
 
@@ -83,52 +119,23 @@ def test_agent_with_model_server(tmpdir, zipped_moodbot_model,
                       for p in agent.policy_ensemble.policies}
     moodbot_policies = set(moodbot_metadata["policy_names"])
     assert agent_policies == moodbot_policies
+    assert model_server.app.number_of_model_requests == 1
+    jobs.kill_scheduler()
 
 
-def test_wait_time_between_pulls_from_file(monkeypatch):
-    from future.utils import raise_
+async def test_wait_time_between_pulls_without_interval(model_server,
+                                                        monkeypatch):
 
-    monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
-                        lambda *args: True)
-    monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: raise_(Exception()))
+    monkeypatch.setattr("rasa_core.agent.schedule_model_pulling",
+                        lambda *args: 1 / 0)   # will raise an exception
 
-    model_endpoint_config = utils. \
-        read_endpoint_config("data/test_endpoints/model_endpoint.yml", "model")
+    model_endpoint_config = EndpointConfig.from_dict({
+        "url": model_server.make_url('/model'),
+        "wait_time_between_pulls": None
+    })
 
-    rasa_core.agent. \
-        load_from_server(model_server=model_endpoint_config)
-
-
-def test_wait_time_between_pulls_str(monkeypatch):
-    from future.utils import raise_
-
-    monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
-                        lambda *args: True)
-    monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: raise_(Exception()))
-
-    model_endpoint_config = EndpointConfig.from_dict(
-        {"url": 'http://server.com/model/default_core@latest',
-         "wait_time_between_pulls": "10"}
-    )
-
-    rasa_core.agent. \
-        load_from_server(model_server=model_endpoint_config)
-
-
-def test_wait_time_between_pulls_with_not_number(monkeypatch):
-    from future.utils import raise_
-
-    monkeypatch.setattr("rasa_core.agent.start_model_pulling_in_worker",
-                        lambda *args: raise_(Exception()))
-    monkeypatch.setattr("rasa_core.agent._update_model_from_server",
-                        lambda *args: True)
-
-    model_endpoint_config = EndpointConfig.from_dict(
-        {"url": 'http://server.com/model/default_core@latest',
-         "wait_time_between_pulls": "None"}
-    )
-
-    rasa_core.agent. \
-        load_from_server(model_server=model_endpoint_config)
+    agent = Agent()
+    # schould not call schedule_model_pulling, if it does, this will raise
+    await rasa_core.agent.load_from_server(agent,
+                                           model_server=model_endpoint_config)
+    jobs.kill_scheduler()

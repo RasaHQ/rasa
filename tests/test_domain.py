@@ -10,9 +10,9 @@ from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
-def test_create_train_data_no_history(default_domain):
+async def test_create_train_data_no_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
-    training_trackers = training.load_data(
+    training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0)
 
     assert len(training_trackers) == 3
@@ -44,9 +44,9 @@ def test_create_train_data_no_history(default_domain):
     ]
 
 
-def test_create_train_data_with_history(default_domain):
+async def test_create_train_data_with_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
-    training_trackers = training.load_data(
+    training_trackers = await training.load_data(
         DEFAULT_STORIES_FILE,
         default_domain,
         augmentation_factor=0
@@ -129,7 +129,7 @@ def test_utter_templates():
 def test_restaurant_domain_is_valid():
     # should raise no exception
     Domain.validate_domain_yaml(
-        read_file('examples/restaurantbot/restaurant_domain.yml'))
+        read_file('examples/restaurantbot/domain.yml'))
 
 
 def test_custom_slot_type(tmpdir):
@@ -147,18 +147,33 @@ def test_custom_slot_type(tmpdir):
     Domain.load(domain_path)
 
 
-def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
-    domain_path = utilities.write_text_to_file(tmpdir, "domain.yml", """
-        slots:
-            custom:
-             type: tests.conftest.Unknown
+@pytest.mark.parametrize("domain_unkown_slot_type", [
+    """
+    slots:
+        custom:
+         type: tests.conftest.Unknown
 
-        templates:
-            utter_greet:
-             - hey there!
+    templates:
+        utter_greet:
+         - hey there!
 
-        actions:
-            - utter_greet""")
+    actions:
+        - utter_greet""",
+    """
+    slots:
+        custom:
+         type: blubblubblub
+
+    templates:
+        utter_greet:
+         - hey there!
+
+    actions:
+        - utter_greet"""])
+def test_domain_fails_on_unknown_custom_slot_type(tmpdir,
+                                                  domain_unkown_slot_type):
+    domain_path = utilities.write_text_to_file(tmpdir, "domain.yml",
+                                               domain_unkown_slot_type)
     with pytest.raises(ValueError):
         Domain.load(domain_path)
 
@@ -180,7 +195,7 @@ templates:
     # python 3 and 2 are different here, python 3 will have a leading set
     # of --- at the beginning of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
-    domain = Domain.from_yaml(domain.as_yaml())
+    assert Domain.from_yaml(domain.as_yaml()) is not None
 
 
 def test_merge_yaml_domains():

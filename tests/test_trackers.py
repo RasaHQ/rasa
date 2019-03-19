@@ -3,6 +3,8 @@ import json
 
 import fakeredis
 import pytest
+import tempfile
+import os
 
 from rasa_core import training, restore
 from rasa_core import utils
@@ -11,15 +13,24 @@ from rasa_core.domain import Domain
 from rasa_core.events import (
     UserUttered, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
-from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
-from rasa_core.tracker_store import (
-    TrackerStore)
+from rasa_core.tracker_store import (InMemoryTrackerStore,
+                                     RedisTrackerStore,
+                                     SQLTrackerStore)
+from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from tests.conftest import DEFAULT_STORIES_FILE
-from tests.utilities import (tracker_from_dialogue_file, read_dialogue_file,
-                             user_uttered, get_tracker)
+from tests.conftest import (DEFAULT_STORIES_FILE,
+                            EXAMPLE_DOMAINS, TEST_DIALOGUES)
+from tests.utilities import (
+    tracker_from_dialogue_file, read_dialogue_file,
+    user_uttered, get_tracker)
 
-domain = Domain.load("data/test_domains/default.yml")
+domain = Domain.load("examples/moodbot/domain.yml")
+
+
+@pytest.fixture(scope="module")
+def loop():
+    from pytest_sanic.plugin import loop as sanic_loop
+    return utils.enable_async_loop_debugging(next(sanic_loop()))
 
 
 class MockRedisTrackerStore(RedisTrackerStore):
@@ -30,17 +41,21 @@ class MockRedisTrackerStore(RedisTrackerStore):
 
 
 def stores_to_be_tested():
+    temp = tempfile.mkdtemp()
     return [MockRedisTrackerStore(domain),
-            InMemoryTrackerStore(domain)]
+            InMemoryTrackerStore(domain),
+            SQLTrackerStore(domain,
+                            db=os.path.join(temp, 'rasa.db'))]
 
 
 def stores_to_be_tested_ids():
     return ["redis-tracker",
-            "in-memory-tracker"]
+            "in-memory-tracker",
+            "SQL-tracker"]
 
 
 def test_tracker_duplicate():
-    filename = "data/test_dialogues/inform_no_change.json"
+    filename = "data/test_dialogues/moodbot.json"
     dialogue = read_dialogue_file(filename)
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
@@ -84,38 +99,40 @@ def test_tracker_store_storage_and_retrieval(store):
 
 @pytest.mark.parametrize("store", stores_to_be_tested(),
                          ids=stores_to_be_tested_ids())
-@pytest.mark.parametrize("filename", glob.glob('data/test_dialogues/*json'))
-def test_tracker_store(filename, store):
+@pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
+def test_tracker_store(store, pair):
+    filename, domainpath = pair
+    domain = Domain.load(domainpath)
     tracker = tracker_from_dialogue_file(filename, domain)
     store.save(tracker)
     restored = store.retrieve(tracker.sender_id)
     assert restored == tracker
 
 
-def test_tracker_write_to_story(tmpdir, default_domain):
+async def test_tracker_write_to_story(tmpdir, moodbot_domain):
     tracker = tracker_from_dialogue_file(
-        "data/test_dialogues/enter_name.json", default_domain)
+        "data/test_dialogues/moodbot.json", moodbot_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers = training.load_data(
+    trackers = await training.load_data(
         p.strpath,
-        default_domain,
+        moodbot_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
         remove_duplicates=False
     )
     assert len(trackers) == 1
     recovered = trackers[0]
-    assert len(recovered.events) == 7
-    assert recovered.events[5].type_name == "slot"
-    assert recovered.events[5].key == "name"
-    assert recovered.events[5].value == "holger"
+    assert len(recovered.events) == 11
+    assert recovered.events[4].type_name == "user"
+    assert recovered.events[4].intent == {'confidence': 1.0,
+                                          'name': 'mood_unhappy'}
 
 
-def test_tracker_state_regression_without_bot_utterance(default_agent):
+async def test_tracker_state_regression_without_bot_utterance(default_agent):
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
-        default_agent.handle_message("/greet", sender_id=sender_id)
+        await default_agent.handle_message("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
@@ -127,10 +144,10 @@ def test_tracker_state_regression_without_bot_utterance(default_agent):
                      tracker.events if e.as_story_string()]) == expected
 
 
-def test_tracker_state_regression_with_bot_utterance(default_agent):
+async def test_tracker_state_regression_with_bot_utterance(default_agent):
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
-        default_agent.handle_message("/greet", sender_id=sender_id)
+        await default_agent.handle_message("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     expected = ["action_listen", "greet", "utter_greet", None,
@@ -139,10 +156,10 @@ def test_tracker_state_regression_with_bot_utterance(default_agent):
     assert [e.as_story_string() for e in tracker.events] == expected
 
 
-def test_bot_utterance_comes_after_action_event(default_agent):
+async def test_bot_utterance_comes_after_action_event(default_agent):
     sender_id = "test_bot_utterance_comes_after_action_event"
 
-    default_agent.handle_message("/greet", sender_id=sender_id)
+    await default_agent.handle_message("/greet", sender_id=sender_id)
 
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
@@ -317,8 +334,8 @@ def test_traveling_back_in_time(default_domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
-def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
-    trackers = default_agent.load_data(DEFAULT_STORIES_FILE)
+async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
+    trackers = await default_agent.load_data(DEFAULT_STORIES_FILE)
 
     for tracker in trackers:
         out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
@@ -414,11 +431,11 @@ def test_current_state_applied_events(default_agent):
     assert state.get("events") == applied_events
 
 
-def test_tracker_dump_e2e_story(default_agent):
+async def test_tracker_dump_e2e_story(default_agent):
     sender_id = "test_tracker_dump_e2e_story"
 
-    default_agent.handle_message("/greet", sender_id=sender_id)
-    default_agent.handle_message("/goodbye", sender_id=sender_id)
+    await default_agent.handle_message("/greet", sender_id=sender_id)
+    await default_agent.handle_message("/goodbye", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     story = tracker.export_stories(e2e=True)

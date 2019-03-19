@@ -1,10 +1,10 @@
 import re
 import json
 import logging
-from typing import Text, Optional, List
-
-from flask import Blueprint, request, jsonify, make_response, Response
+from sanic import Blueprint, response
+from sanic.request import Request
 from slackclient import SlackClient
+from typing import Text, Optional, List
 
 from rasa_core.channels import InputChannel
 from rasa_core.channels.channel import UserMessage, OutputChannel
@@ -26,14 +26,14 @@ class SlackBot(SlackClient, OutputChannel):
         self.slack_channel = slack_channel
         super(SlackBot, self).__init__(token)
 
-    def send_text_message(self, recipient_id, message):
+    async def send_text_message(self, recipient_id, message):
         recipient = self.slack_channel or recipient_id
         for message_part in message.split("\n\n"):
             super(SlackBot, self).api_call("chat.postMessage",
                                            channel=recipient,
                                            as_user=True, text=message_part)
 
-    def send_image_url(self, recipient_id, image_url, message=""):
+    async def send_image_url(self, recipient_id, image_url, message=""):
         image_attachment = [{"image_url": image_url,
                              "text": message}]
         recipient = self.slack_channel or recipient_id
@@ -42,7 +42,7 @@ class SlackBot(SlackClient, OutputChannel):
                                               as_user=True,
                                               attachments=image_attachment)
 
-    def send_attachment(self, recipient_id, attachment, message=""):
+    async def send_attachment(self, recipient_id, attachment, message=""):
         recipient = self.slack_channel or recipient_id
         return super(SlackBot, self).api_call("chat.postMessage",
                                               channel=recipient,
@@ -54,20 +54,32 @@ class SlackBot(SlackClient, OutputChannel):
     def _convert_to_slack_buttons(buttons):
         return [{"text": b['title'],
                  "name": b['payload'],
+                 "value": b['payload'],
                  "type": "button"} for b in buttons]
 
-    def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
+    @staticmethod
+    def _get_text_from_slack_buttons(buttons):
+        return "".join([b.get("title", "") for b in buttons])
+
+    async def send_text_with_buttons(self, recipient_id, message, buttons,
+                                     **kwargs):
         recipient = self.slack_channel or recipient_id
 
         if len(buttons) > 5:
             logger.warning("Slack API currently allows only up to 5 buttons. "
                            "If you add more, all will be ignored.")
-            return self.send_text_message(recipient, message)
+            return await self.send_text_message(recipient, message)
+
+        if message:
+            callback_string = message.replace(' ', '_')[:20]
+        else:
+            callback_string = self._get_text_from_slack_buttons(buttons)
+            callback_string = callback_string.replace(' ', '_')[:20]
 
         button_attachment = [{"fallback": message,
-                              "callback_id": message.replace(' ', '_')[:20],
-                              "actions": self._convert_to_slack_buttons(
-                                  buttons)}]
+                              "callback_id": callback_string,
+                              "actions":
+                              self._convert_to_slack_buttons(buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient,
@@ -128,21 +140,29 @@ class SlackInput(InputChannel):
                 slack_event.get('event').get('bot_id'))
 
     @staticmethod
+    def _is_interactive_message(payload):
+        return payload['type'] == "interactive_message"
+
+    @staticmethod
+    def _is_button(payload):
+        return payload['actions'][0]['type'] == "button"
+
+    @staticmethod
     def _is_button_reply(slack_event):
-        return (slack_event.get('payload') and
-                slack_event['payload'][0] and
-                'name' in slack_event['payload'][0])
+        payload = json.loads(slack_event['payload'])
+        return (SlackInput._is_interactive_message(payload) and
+                SlackInput._is_button(payload))
 
     @staticmethod
     def _get_button_reply(slack_event):
-        return json.loads(slack_event['payload'][0])['actions'][0]['name']
+        return json.loads(slack_event['payload'])['actions'][0]['name']
 
     @staticmethod
     def _sanitize_user_message(text, uids_to_remove):
         """Remove superfluous/wrong/problematic tokens from a message.
 
-        Probably a good starting point for pre-formatting of user-provided text,
-        to make NLU's life easier in case they go funky to the power of extreme.
+        Probably a good starting point for pre-formatting of user-provided text
+        to make NLU's life easier in case they go funky to the power of extreme
 
         In the current state will just drop self-mentions of bot itself
 
@@ -165,62 +185,67 @@ class SlackInput(InputChannel):
 
         return text.rstrip().lstrip()  # drop extra spaces at beginning and end
 
-    def process_message(self, on_new_message, text, sender_id):
-        """Slack retry to post messages up to 3 times based on
+    async def process_message(self, request: Request, on_new_message, text,
+                              sender_id):
+        """Slack retries to post messages up to 3 times based on
         failure conditions defined here:
         https://api.slack.com/events-api#failure_conditions
         """
-        retry_reason = request.headers.environ.get('HTTP_X_SLACK_RETRY_REASON')
-        retry_count = request.headers.environ.get('HTTP_X_SLACK_RETRY_NUM')
+        retry_reason = request.headers.get('HTTP_X_SLACK_RETRY_REASON')
+        retry_count = request.headers.get('HTTP_X_SLACK_RETRY_NUM')
         if retry_count and retry_reason in self.errors_ignore_retry:
             logger.warning("Received retry #{} request from slack"
                            " due to {}".format(retry_count, retry_reason))
 
-            return Response(status=201, headers={'X-Slack-No-Retry': 1})
+            return response.text(None,
+                                 status=201,
+                                 headers={'X-Slack-No-Retry': 1})
 
         try:
             out_channel = SlackBot(self.slack_token, self.slack_channel)
             user_msg = UserMessage(text, out_channel, sender_id,
                                    input_channel=self.name())
-            on_new_message(user_msg)
+
+            await on_new_message(user_msg)
         except Exception as e:
             logger.error("Exception when trying to handle "
                          "message.{0}".format(e))
             logger.error(str(e), exc_info=True)
 
-        return make_response()
+        return response.text("")
 
     def blueprint(self, on_new_message):
         slack_webhook = Blueprint('slack_webhook', __name__)
 
         @slack_webhook.route("/", methods=['GET'])
-        def health():
-            return jsonify({"status": "ok"})
+        async def health(request):
+            return response.json({"status": "ok"})
 
         @slack_webhook.route("/webhook", methods=['GET', 'POST'])
-        def webhook():
-            request.get_data()
-            if request.json:
+        async def webhook(request: Request):
+            if request.form:
+                output = dict(request.form)
+                if self._is_button_reply(output):
+                    sender_id = json.loads(output['payload'])['user']['id']
+                    return await self.process_message(
+                        request,
+                        on_new_message,
+                        text=self._get_button_reply(output),
+                        sender_id=sender_id)
+            elif request.json:
                 output = request.json
                 if "challenge" in output:
-                    return make_response(output.get("challenge"), 200,
-                                         {"content_type": "application/json"})
+                    return response.json(output.get("challenge"))
+
                 elif self._is_user_message(output):
-                    return self.process_message(
+                    return await self.process_message(
+                        request,
                         on_new_message,
                         text=self._sanitize_user_message(
                             output['event']['text'],
                             output['authed_users']),
                         sender_id=output.get('event').get('user'))
-            elif request.form:
-                output = dict(request.form)
-                if self._is_button_reply(output):
-                    sender_id = json.loads(output['payload'][0])['user']['id']
-                    return self.process_message(
-                        on_new_message,
-                        text=self._get_button_reply(output),
-                        sender_id=sender_id)
 
-            return make_response()
+            return response.text("")
 
         return slack_webhook

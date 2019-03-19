@@ -1,4 +1,5 @@
-:desc: Building Rasa with Docker
+:desc: Setup open source Rasa Core with Docker in your own infrastructure for on
+       premise contextual AI assistants and chatbots. 
 
 .. _docker_walkthrough:
 
@@ -252,7 +253,7 @@ the trained Rasa NLU model:
     -v $(pwd)/models/rasa_nlu:/app/models \
     rasa/rasa_nlu:latest-spacy \
     run \
-      python -m rasa_nlu.train \
+      python3 -m rasa_nlu.train \
       -c config.yml \
       -d project/data/nlu.md \
       -o models \
@@ -268,7 +269,7 @@ Command Description:
   - ``rasa/rasa_nlu:latest-spacy``: Using the latest Rasa NLU which uses
     the `spaCy` `pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_ .
   - ``run``: Entrypoint parameter to run any command within the NLU container
-  - ``python -m rasa_nlu.train``: Starts the NLU training with
+  - ``python3 -m rasa_nlu.train``: Starts the NLU training with
 
     - ``-c config.yml``: Uses the default NLU pipeline configuration which is
       provided by the Docker image
@@ -478,7 +479,7 @@ and specify it in the run command:
     -v $(pwd)/config:/app/config \
     rasa/rasa_nlu:latest-spacy \
     run \
-      python -m rasa_nlu.train \
+      python3 -m rasa_nlu.train \
       -c config/nlu_config.yml \
       -d project/data/nlu.md \
       -o models \
@@ -533,8 +534,8 @@ Start with creating the custom actions in a directory ``actions``:
 
   mkdir actions
   # Rasa Core SDK expects a python module.
-  # Therefore, make sure that you have this file in the direcotry.
-  touch __init__.py
+  # Therefore, make sure that you have this file in the directory.
+  touch actions/__init__.py
   touch actions/actions.py
 
 Then build a custom action using the Rasa Core SDK, e.g.:
@@ -600,7 +601,7 @@ dependencies, e.g.:
 
 .. code-block:: docker
 
-    # Extend the offical Rasa Core SDK image
+    # Extend the official Rasa Core SDK image
     FROM rasa/rasa_core_sdk:latest
 
     # Add a custom system library (e.g. git)
@@ -654,7 +655,7 @@ configuration ``config/endpoints.yml``:
 .. code-block:: yaml
 
   tracker_store:
-    store_type: mongod
+    type: mongod
     url: mongodb://mongo:27017
     username: rasa
     password: example
@@ -677,7 +678,7 @@ configuration ``config/endpoints.yml``:
 .. code-block:: yaml
 
   tracker_store:
-    store_type: redis
+    type: redis
     url: redis
 
 5.3 Using a Custom Tracker Store Implementation

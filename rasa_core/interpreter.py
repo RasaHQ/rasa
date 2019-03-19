@@ -1,9 +1,10 @@
+import aiohttp
+
 import json
 import logging
 import re
 
 import os
-import requests
 from typing import Text, List, Dict, Any
 
 from rasa_core import constants
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class NaturalLanguageInterpreter(object):
-    def parse(self, text):
+    async def parse(self, text, message_id=None):
         raise NotImplementedError(
             "Interpreter needs to be able to parse "
             "messages into structured output.")
@@ -25,6 +26,11 @@ class NaturalLanguageInterpreter(object):
             return obj
 
         if not isinstance(obj, str):
+            if obj is not None:
+                logger.warning("Tried to create NLU interpreter "
+                               "from '{}', which is not possible."
+                               "Using RegexInterpreter instead."
+                               "".format(obj))
             return RegexInterpreter()  # default interpreter
 
         if not endpoint:
@@ -136,7 +142,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
                            "'{}'. ".format(user_input))
             return None, 0.0, []
 
-    def parse(self, text):
+    async def parse(self, text, message_id=None):
         """Parse a text message."""
 
         intent, confidence, entities = self.extract_intent_and_entities(text)
@@ -174,18 +180,18 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         else:
             self.endpoint = EndpointConfig(constants.DEFAULT_SERVER_URL)
 
-    def parse(self, text):
+    async def parse(self, text, message_id=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         default_return = {"intent": {"name": "", "confidence": 0.0},
                           "entities": [], "text": ""}
-        result = self._rasa_http_parse(text)
+        result = await self._rasa_http_parse(text, message_id)
 
         return result if result is not None else default_return
 
-    def _rasa_http_parse(self, text):
+    async def _rasa_http_parse(self, text, message_id=None):
         """Send a text message to a running rasa NLU http server.
 
         Return `None` on failure."""
@@ -200,22 +206,26 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
             "token": self.endpoint.token,
             "model": self.model_name,
             "project": self.project_name,
-            "q": text
+            "q": text,
+            "message_id": message_id
         }
+
         url = "{}/parse".format(self.endpoint.url)
+        # noinspection PyBroadException
         try:
-            result = requests.get(url, params=params)
-            if result.status_code == 200:
-                return result.json()
-            else:
-                logger.error(
-                    "Failed to parse text '{}' using rasa NLU over http. "
-                    "Error: {}".format(text, result.text))
-                return None
-        except Exception as e:
-            logger.error(
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=params) as resp:
+                    if resp.status == 200:
+                        return await resp.json()
+                    else:
+                        logger.error(
+                            "Failed to parse text '{}' using rasa NLU over "
+                            "http. Error: {}".format(text, await resp.text()))
+                        return None
+        except Exception:
+            logger.exception(
                 "Failed to parse text '{}' using rasa NLU over http. "
-                "Error: {}".format(text, e))
+                "".format(text))
             return None
 
 
@@ -230,14 +240,21 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
         else:
             self.interpreter = None
 
-    def parse(self, text):
+    async def parse(self, text, message_id=None):
         """Parse a text message.
 
         Return a default value if the parsing of the text failed."""
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
-        return self.interpreter.parse(text)
+        result = self.interpreter.parse(text)
+
+        # TODO: hotfix to append attributes that NLU is adding as a server
+        #   but where the interpreter does not add them
+        if result:
+            result["model"] = "current"
+            result["project"] = "default"
+        return result
 
     def _load_interpreter(self):
         from rasa_nlu.model import Interpreter

@@ -1,3 +1,7 @@
+:desc: Choose Facebook, Slack or Telegram as your channel for contextual
+       Assistants and chatbots or build new ones for your own app or website
+       using open source Rasa Stack. 
+
 .. _connectors:
 
 Chat & Voice platforms
@@ -84,7 +88,7 @@ If you want to connect to facebook using the run script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -104,7 +108,7 @@ you should add in the configuration of the webhook.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``FacebookInput`` instance provides a flask blueprint for creating
+A ``FacebookInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -113,7 +117,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_facebook_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 
@@ -151,7 +156,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -177,7 +182,7 @@ you should add in the OAuth & Permissions section.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``WebexTeamsInput`` instance provides a flask blueprint for creating
+A ``WebexTeamsInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -186,7 +191,8 @@ Code to create a WebexTeams-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_webexteams_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 .. _slack_connector:
@@ -225,7 +231,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -234,7 +240,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
    slack:
      slack_token: "xoxb-286425452756-safjasdf7sl38KLls"
-     slack_channel: "@my_channel"
+     slack_channel: "#my_channel" <!-- or "@my_app" -->
 
 
 The endpoint for receiving slack messages is
@@ -251,7 +257,7 @@ you should add in the OAuth & Permissions section.
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``SlackInput`` instance provides a flask blueprint for creating
+A ``SlackInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -260,7 +266,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_slack_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 .. _mattermost_connector:
@@ -301,7 +308,7 @@ run script, e.g. using:
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -318,7 +325,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``MattermostInput`` instance provides a flask blueprint for creating
+A ``MattermostInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -326,7 +333,8 @@ Code to create a Mattermost-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_mattermost_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -367,7 +375,7 @@ If you want to connect to telegram using the run script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -383,7 +391,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``TelegramInput`` instance provides a flask blueprint for creating
+A ``TelegramInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -391,7 +399,8 @@ Code to create a Messenger-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_telegram_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -436,7 +445,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -451,7 +460,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``TwilioInput`` instance provides a flask blueprint for creating
+A ``TwilioInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -459,7 +468,8 @@ Code to create a Twilio-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_twilio_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -505,7 +515,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -520,7 +530,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``RocketChatInput`` instance provides a flask blueprint for creating
+A ``RocketChatInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -528,7 +538,8 @@ Code to create a RocketChat-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_rocketchat_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -548,7 +559,7 @@ run script, e.g. using:
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -562,7 +573,7 @@ you need to supply a ``credentials.yml`` with the following content:
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``BotFrameworkInput`` instance provides a flask blueprint for creating
+A ``BotFrameworkInput`` instance provides a sanic blueprint for creating
 a webserver. This lets you seperate the exact endpoints and implementation
 from your webserver creation logic.
 
@@ -570,7 +581,8 @@ Code to create a Microsoft Bot Framework-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_botframework_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -595,7 +607,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python -m rasa_core.run -d models/dialogue -u models/nlu/current
+  python3 -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -627,7 +639,8 @@ Code to create a Socket.IO-compatible webserver looks like this:
 
 .. literalinclude:: ../tests/test_channels.py
    :pyobject: test_socketio_channel
-   :lines: 2-
+   :start-after: START DOC INCLUDE
+   :dedent: 8
    :end-before: END DOC INCLUDE
 
 The arguments for the ``handle_channels`` are the input channels and
@@ -683,7 +696,7 @@ using the run script:
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -726,7 +739,7 @@ Here is an example on how to connect the
 
 .. code-block:: bash
 
- python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+ python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
      --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
@@ -765,9 +778,9 @@ Creating a new Channel
 You can also implement your own, custom channel. You can
 use the ``rasa_core.channels.channel.RestInput`` class as a template.
 The methods you need to implement are ``blueprint`` and ``name``. The method
-needs to create a Flask blueprint that can be attached to a flask server.
+needs to create a sanic blueprint that can be attached to a sanic server.
 
-This allows you to add `REST` endpoints to the server, the external
+This allows you to add `REST` endpoints to the server, which the external
 messaging service can call to deliver messages.
 
 Your blueprint should have at least the two routes ``health`` on ``/``
@@ -797,14 +810,20 @@ are methods to send text and images) or you can use the
 ``CollectingOutputChannel`` to collect the bot responses Core
 creates while the bot is processing your messages and return
 them as part of your endpoint response. This is the way the ``RestInput``
-is implemented. For examples on how to create and use your own output
+channel is implemented. For examples on how to create and use your own output
 channel, please take a look at the implementations of the other
 output channels, e.g. the ``SlackBot`` in ``rasa_core.channels.slack``.
 
-To use a custom channel, you can use the ``rasa_core.run`` script,
-passing in the classpath of your custom channel using
-``--channel mypackage.MyIO`` or you can write your own code
-hooking up the agent with the channel.
+To use a custom channel, you need to supply a credentials configuration file
+``credentials.yml`` with the command line argument ``--credentials``.
+This credentials file has to contain the module path of your custom channel and
+any required configuration parameters. This could e.g. look like:
+
+.. code-block:: yaml
+
+    mypackage.MyIO:
+      username: "user_name"
+      another_parameter: "some value"
 
 Example implementation for an input channel that receives the messages,
 hands them over to Rasa Core, collects the bot utterances and returns

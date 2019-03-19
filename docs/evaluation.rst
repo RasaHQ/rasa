@@ -1,4 +1,6 @@
-:desc: How to evaluate a Rasa Core model
+:desc: Evaluate and validate your machine learning models for open source
+       library Rasa Core to improve the dialogue management of your contextual
+       AI Assistant. 
 
 .. _evaluation:
 
@@ -19,7 +21,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.evaluate --core models/dialogue \
+    $ python3 -m rasa_core.evaluate --core models/dialogue \
       --stories test_stories.md -o results
 
 
@@ -28,13 +30,13 @@ We count any story as `failed` if at least one of the actions
 was predicted incorrectly.
 
 In addition, this will save a confusion matrix to a file called
-``results/story_confmat.pdf``. The confusion matrix shows, for each action in 
+``results/story_confmat.pdf``. The confusion matrix shows, for each action in
 your domain, how often that action was predicted, and how often an
 incorrect action was predicted instead.
 
 The full list of options for the script is:
 
-.. program-output:: python -m rasa_core.evaluate default --help
+.. program-output:: python3 -m rasa_core.evaluate default --help
 
 .. _end_to_end_evaluation:
 
@@ -72,12 +74,12 @@ Here's an example of what an end-to-end story file may look like:
   ...
 
 
-If you've saved these stories under ``e2e_storied.md``,
+If you've saved these stories under ``e2e_stories.md``,
 the full end-to-end evaluation command is this:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.evaluate default --core models/dialogue \
+  $ python3 -m rasa_core.evaluate default --core models/dialogue \
     --nlu models/nlu/current \
     --stories e2e_stories.md --e2e
 
@@ -106,7 +108,7 @@ the train script to train your models:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.train compare -c policy_config1.yml policy_config2.yml \
+  $ python3 -m rasa_core.train compare -c policy_config1.yml policy_config2.yml \
     -d domain.yml -s stories_folder -o comparison_models --runs 3 --percentages \
     0 5 25 50 70 90 95
 
@@ -119,7 +121,7 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.evaluate compare --stories stories_folder \
+  $ python3 -m rasa_core.evaluate compare --stories stories_folder \
     --core comparison_models \
     -o comparison_results
 

@@ -22,6 +22,7 @@ from rasa_core.policies.memoization import (
     MemoizationPolicy,
     AugmentedMemoizationPolicy)
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core import registry
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,8 @@ class PolicyEnsemble(object):
         else:
             self.action_fingerprints = {}
 
+        self._check_priorities()
+
     @staticmethod
     def _training_events_from_trackers(training_trackers):
         events_metadata = defaultdict(set)
@@ -54,6 +57,22 @@ class PolicyEnsemble(object):
                     events_metadata[action_name].add(event)
 
         return events_metadata
+
+    def _check_priorities(self) -> None:
+        """Checks for duplicate policy priorities within PolicyEnsemble."""
+
+        priority_dict = defaultdict(list)
+        for p in self.policies:
+            priority_dict[p.priority].append(type(p).__name__)
+
+        for k, v in priority_dict.items():
+            if len(v) > 1:
+                logger.warning(("Found policies {} with same priority {} "
+                                "in PolicyEnsemble. When personalizing "
+                                "priorities, be sure to give all policies "
+                                "different priorities. More information: "
+                                "https://rasa.com/docs/core/"
+                                "policies/").format(v, k))
 
     def train(self,
               training_trackers: List[DialogueStateTracker],
@@ -116,7 +135,7 @@ class PolicyEnsemble(object):
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist exists
-        domain_spec_path = os.path.join(path, 'policy_metadata.json')
+        domain_spec_path = os.path.join(path, 'metadata.json')
         training_data_path = os.path.join(path, 'stories.md')
         utils.create_dir_for_file(domain_spec_path)
 
@@ -159,7 +178,7 @@ class PolicyEnsemble(object):
 
     @classmethod
     def load_metadata(cls, path):
-        metadata_path = os.path.join(path, 'policy_metadata.json')
+        metadata_path = os.path.join(path, 'metadata.json')
         metadata = json.loads(utils.read_file(os.path.abspath(metadata_path)))
         return metadata
 
@@ -203,24 +222,31 @@ class PolicyEnsemble(object):
         cls.ensure_model_compatibility(metadata)
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
-            policy_cls = utils.class_from_module_path(policy_name)
+            policy_cls = registry.policy_from_module_path(policy_name)
             dir_name = 'policy_{}_{}'.format(i, policy_cls.__name__)
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = utils.class_from_module_path(
-            metadata["ensemble_name"])
+        ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
 
     @classmethod
     def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
+        policies = dictionary.get('policies') or dictionary.get('policy')
+        if policies is None:
+            raise InvalidPolicyConfig("You didn't define any policies. "
+                                      "Please define them under 'policies:' "
+                                      "in your policy configuration file.")
+        if len(policies) == 0:
+            raise InvalidPolicyConfig("The policy configuration file has to "
+                                      "include at least one policy.")
 
-        policies = []
+        parsed_policies = []
 
-        for policy in dictionary.get('policies', []):
+        for policy in policies:
 
             policy_name = policy.pop('name')
             if policy.get('featurizer'):
@@ -241,12 +267,17 @@ class PolicyEnsemble(object):
                 # override policy's featurizer with real featurizer class
                 policy['featurizer'] = featurizer_func(**featurizer_config)
 
-            constr_func = utils.class_from_module_path(policy_name)
-            policy_object = constr_func(**policy)
+            try:
+                constr_func = registry.policy_from_module_path(policy_name)
+                policy_object = constr_func(**policy)
+                parsed_policies.append(policy_object)
+            except(ImportError, AttributeError):
+                raise InvalidPolicyConfig("Module for policy '{}' could not "
+                                          "be loaded. Please make sure the "
+                                          "name is a valid policy."
+                                          "".format(policy_name))
 
-            policies.append(policy_object)
-
-        return policies
+        return parsed_policies
 
     @classmethod
     def get_featurizer_from_dict(cls, policy):
@@ -256,7 +287,7 @@ class PolicyEnsemble(object):
                 "policy can have only 1 featurizer")
         featurizer_config = policy['featurizer'][0]
         featurizer_name = featurizer_config.pop('name')
-        featurizer_func = utils.class_from_module_path(featurizer_name)
+        featurizer_func = registry.featurizer_from_module_path(featurizer_name)
 
         return featurizer_func, featurizer_config
 
@@ -270,7 +301,7 @@ class PolicyEnsemble(object):
             featurizer_config['state_featurizer'][0]
         )
         state_featurizer_name = state_featurizer_config.pop('name')
-        state_featurizer_func = utils.class_from_module_path(
+        state_featurizer_func = registry.featurizer_from_module_path(
             state_featurizer_name)
 
         return state_featurizer_func, state_featurizer_config
@@ -302,17 +333,22 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         result = None
         max_confidence = -1
         best_policy_name = None
+        best_policy_priority = -1
 
         for i, p in enumerate(self.policies):
             probabilities = p.predict_action_probabilities(tracker, domain)
+
             if isinstance(tracker.events[-1], ActionExecutionRejected):
                 probabilities[domain.index_for_action(
                     tracker.events[-1].action_name)] = 0.0
             confidence = np.max(probabilities)
-            if confidence > max_confidence:
+
+            if (confidence, p.priority) > (max_confidence,
+                                           best_policy_priority):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
+                best_policy_priority = p.priority
 
         if (result.index(max_confidence) ==
                 domain.index_for_action(ACTION_LISTEN_NAME) and
@@ -342,7 +378,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                     fallback_idx,
                     type(fallback_policy).__name__)
 
-        # normalize probablilities
+        # normalize probabilities
         if np.sum(result) != 0:
             result = result / np.nansum(result)
 

@@ -1,51 +1,53 @@
 import json
 import pytest
 import uuid
-from httpretty import httpretty
+from aioresponses import aioresponses
 
 from rasa_core import utils
 from rasa_core.training import interactive
 from rasa_core.utils import EndpointConfig
 from rasa_core.actions.action import default_actions
+from tests.utilities import latest_request, json_of_latest_request
 
 
 @pytest.fixture
 def mock_endpoint():
-    return EndpointConfig("https://abc.defg")
+    return EndpointConfig("https://example.com")
 
 
-def test_send_message(mock_endpoint):
+async def test_send_message(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/messages'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.POST, url, body='{}')
+    with aioresponses() as mocked:
+        mocked.post(url, payload={})
 
-    httpretty.enable()
-    interactive.send_message(mock_endpoint, sender_id, "Hello")
-    httpretty.disable()
+        await interactive.send_message(mock_endpoint, sender_id, "Hello")
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
-    assert json.loads(b) == {
-        "sender": "user",
-        "message": "Hello",
-        "parse_data": None
-    }
+        r = latest_request(mocked, 'post', url)
+
+        assert r
+
+        assert json_of_latest_request(r) == {
+            "sender": "user",
+            "message": "Hello",
+            "parse_data": None
+        }
 
 
-def test_request_prediction(mock_endpoint):
+async def test_request_prediction(mock_endpoint):
     sender_id = uuid.uuid4().hex
 
     url = '{}/conversations/{}/predict'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.POST, url, body='{}')
 
-    httpretty.enable()
-    interactive.request_prediction(mock_endpoint, sender_id)
-    httpretty.disable()
+    with aioresponses() as mocked:
+        mocked.post(url, payload={})
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
-    assert b == ""
+        await interactive.request_prediction(mock_endpoint, sender_id)
+
+        assert latest_request(mocked, 'post', url) is not None
 
 
 def test_bot_output_format():
@@ -121,43 +123,40 @@ def test_all_events_before_user_msg_on_no_events():
     assert interactive.all_events_before_latest_user_msg([]) == []
 
 
-def test_print_history(mock_endpoint):
+async def test_print_history(mock_endpoint):
     tracker_dump = utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
-    url = '{}/conversations/{}/tracker'.format(
+    url = '{}/conversations/{}/tracker?include_events=AFTER_RESTART'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
+    with aioresponses() as mocked:
+        mocked.get(url,
+                   body=tracker_dump,
+                   headers={"Accept": "application/json"})
 
-    httpretty.enable()
-    interactive._print_history(sender_id, mock_endpoint)
-    httpretty.disable()
+        await interactive._print_history(sender_id, mock_endpoint)
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
-    assert b == ""
-    assert (httpretty.latest_requests[-1].path ==
-            "/conversations/{}/tracker?include_events=AFTER_RESTART"
-            "".format(sender_id))
+        assert latest_request(mocked, 'get', url) is not None
 
 
-def test_is_listening_for_messages(mock_endpoint):
+async def test_is_listening_for_messages(mock_endpoint):
     tracker_dump = utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
 
-    url = '{}/conversations/{}/tracker'.format(
+    url = '{}/conversations/{}/tracker?include_events=APPLIED'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
+    with aioresponses() as mocked:
+        mocked.get(url, body=tracker_dump,
+                   headers={"Content-Type": "application/json"})
 
-    httpretty.enable()
-    is_listening = interactive.is_listening_for_message(sender_id,
-                                                        mock_endpoint)
-    httpretty.disable()
+        is_listening = await interactive.is_listening_for_message(
+            sender_id, mock_endpoint)
 
-    assert is_listening
+        assert is_listening
 
 
 def test_splitting_conversation_at_restarts():
@@ -187,6 +186,42 @@ def test_as_md_message():
     assert md == "Hello there [rasa](name)."
 
 
+def test_entity_annotation_merge_with_original():
+    parse_original = {
+        "text": "Hello there rasa, it's me, paula.",
+        "entities": [{"start": 12,
+                      "end": 16,
+                      "entity": "name1",
+                      "value": "rasa",
+                      "extractor": "batman"}],
+        "intent": {"name": "greeting", "confidence": 0.9}
+    }
+    parse_annotated = {
+        "text": "Hello there rasa, it's me, paula.",
+        "entities": [{"start": 12,
+                      "end": 16,
+                      "entity": "name1",
+                      "value": "rasa"},
+                     {"start": 26,
+                      "end": 31,
+                      "entity": "name2",
+                      "value": "paula"}],
+        "intent": {"name": "greeting", "confidence": 0.9}
+    }
+
+    entities = interactive._merge_annotated_and_original_entities(
+        parse_annotated, parse_original)
+    assert entities == [{"start": 12,
+                         "end": 16,
+                         "entity": "name1",
+                         "value": "rasa",
+                         "extractor": "batman"},
+                        {"start": 26,
+                         "end": 31,
+                         "entity": "name2",
+                         "value": "paula"}]
+
+
 def test_validate_user_message():
     parse_data = {
         "text": "Hello there rasa.",
@@ -202,7 +237,7 @@ def test_validate_user_message():
     assert not interactive._validate_user_regex(parse_data, ["goodbye"])
 
 
-def test_undo_latest_msg(mock_endpoint):
+async def test_undo_latest_msg(mock_endpoint):
     tracker_dump = utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
     tracker_json = json.loads(tracker_dump)
@@ -210,24 +245,25 @@ def test_undo_latest_msg(mock_endpoint):
 
     sender_id = uuid.uuid4().hex
 
-    url = '{}/conversations/{}/tracker'.format(
+    url = '{}/conversations/{}/tracker?include_events=ALL'.format(
         mock_endpoint.url, sender_id)
     replace_url = '{}/conversations/{}/tracker/events'.format(
         mock_endpoint.url, sender_id)
-    httpretty.register_uri(httpretty.GET, url, body=tracker_dump)
-    httpretty.register_uri(httpretty.PUT, replace_url)
+    with aioresponses() as mocked:
+        mocked.get(url, body=tracker_dump)
+        mocked.put(replace_url)
 
-    httpretty.enable()
-    interactive._undo_latest(sender_id, mock_endpoint)
-    httpretty.disable()
+        await interactive._undo_latest(sender_id, mock_endpoint)
 
-    b = httpretty.latest_requests[-1].body.decode("utf-8")
+        r = latest_request(mocked, 'put', replace_url)
 
-    # this should be the events the interactive call send to the endpoint
-    # these events should have the last utterance omitted
-    replaced_evts = json.loads(b)
-    assert len(replaced_evts) == 6
-    assert replaced_evts == evts[:6]
+        assert r
+
+        # this should be the events the interactive call send to the endpoint
+        # these events should have the last utterance omitted
+        replaced_evts = json_of_latest_request(r)
+        assert len(replaced_evts) == 6
+        assert replaced_evts == evts[:6]
 
 
 def test_utter_custom_message():
@@ -252,7 +288,7 @@ def test_utter_custom_message():
     assert json.dumps({'a': 'b'}) in actual
 
 
-def test_interactive_domain_persistence(mock_endpoint, tmpdir):
+async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     # Test method interactive._write_domain_to_file
 
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
@@ -263,11 +299,11 @@ def test_interactive_domain_persistence(mock_endpoint, tmpdir):
     domain_path = tmpdir.join("interactive_domain_save.yml").strpath
 
     url = '{}/domain'.format(mock_endpoint.url)
-    httpretty.register_uri(httpretty.GET, url, body='{}')
+    with aioresponses() as mocked:
+        mocked.get(url, payload={})
 
-    httpretty.enable()
-    interactive._write_domain_to_file(domain_path, events, mock_endpoint)
-    httpretty.disable()
+        await interactive._write_domain_to_file(domain_path, events,
+                                                mock_endpoint)
 
     saved_domain = utils.read_yaml_file(domain_path)
 

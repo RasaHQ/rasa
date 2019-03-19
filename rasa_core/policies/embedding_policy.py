@@ -1,6 +1,6 @@
 from collections import namedtuple
 import copy
-import io
+import json
 import logging
 import os
 import warnings
@@ -74,6 +74,8 @@ class EmbeddingPolicy(Policy):
         "batch_size": [8, 32],
         # number of epochs
         "epochs": 1,
+        # set random seed to any int to get reproducible results
+        "random_seed": None,
 
         # embedding parameters
         # dimension size of embedding vectors
@@ -137,6 +139,7 @@ class EmbeddingPolicy(Policy):
     def __init__(
         self,
         featurizer: Optional[FullDialogueTrackerFeaturizer] = None,
+        priority: int = 1,
         encoded_all_actions: Optional[np.ndarray] = None,
         graph: Optional[tf.Graph] = None,
         session: Optional[tf.Session] = None,
@@ -165,7 +168,7 @@ class EmbeddingPolicy(Policy):
                 raise TypeError("Passed tracker featurizer of type {}, "
                                 "should be FullDialogueTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-        super(EmbeddingPolicy, self).__init__(featurizer)
+        super(EmbeddingPolicy, self).__init__(featurizer, priority)
 
         # flag if to use the same embeddings for user and bot
         try:
@@ -239,6 +242,8 @@ class EmbeddingPolicy(Policy):
 
         self.epochs = config['epochs']
 
+        self.random_seed = config['random_seed']
+
     def _load_embedding_params(self, config: Dict[Text, Any]) -> None:
         self.embed_dim = config['embed_dim']
         self.mu_pos = config['mu_pos']
@@ -269,13 +274,13 @@ class EmbeddingPolicy(Policy):
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
         if self.evaluate_every_num_epochs < 1:
             self.evaluate_every_num_epochs = self.epochs
-
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
     def _load_params(self, **kwargs: Dict[Text, Any]) -> None:
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
 
+        self._tf_config = self._load_tf_config(config)
         self._load_nn_architecture_params(config)
         self._load_embedding_params(config)
         self._load_regularization_params(config)
@@ -347,7 +352,7 @@ class EmbeddingPolicy(Policy):
                                 data_X: np.ndarray,
                                 data_Y: Optional[np.ndarray] = None
                                 ) -> SessionData:
-        """Combine all tf session related data into a namedtuple"""
+        """Combine all tf session related data into a named tuple"""
 
         X, slots, previous_actions = \
             self._create_X_slots_previous_actions(data_X)
@@ -609,7 +614,7 @@ class EmbeddingPolicy(Policy):
                           embed_for_no_intent: tf.Tensor,
                           embed_for_no_action: tf.Tensor,
                           embed_for_action_listen: tf.Tensor
-                          ) -> tf.contrib.rnn.RNNCell:  # type:
+                          ) -> tf.contrib.rnn.RNNCell:
         """Wrap cell in attention wrapper with given memory."""
 
         if self.attn_before_rnn:
@@ -894,7 +899,7 @@ class EmbeddingPolicy(Policy):
 
         # maximize similarity returned by time attention wrapper
         for sim_to_add in sims_rnn_to_max:
-            loss += tf.maximum(0., - sim_to_add + 1.)
+            loss += tf.maximum(0., 1. - sim_to_add)
 
         # mask loss for different length sequences
         loss *= mask
@@ -918,6 +923,9 @@ class EmbeddingPolicy(Policy):
         """Train the policy on given training trackers."""
 
         logger.debug('Started training embedding policy.')
+
+        # set numpy random seed
+        np.random.seed(self.random_seed)
 
         # dealing with training data
         training_data = self.featurize_for_training(training_trackers,
@@ -948,6 +956,9 @@ class EmbeddingPolicy(Policy):
         self.graph = tf.Graph()
 
         with self.graph.as_default():
+            # set random seed in tf
+            tf.set_random_seed(self.random_seed)
+
             dialogue_len = None  # use dynamic time for rnn
             # create placeholders
             self.a_in = tf.placeholder(
@@ -1043,7 +1054,7 @@ class EmbeddingPolicy(Policy):
             self._train_op = tf.train.AdamOptimizer(
                 learning_rate=0.001, epsilon=1e-16).minimize(loss)
             # train tensorflow graph
-            self.session = tf.Session()
+            self.session = tf.Session(config=self._tf_config)
 
             self._train_tf(session_data, loss, mask)
 
@@ -1359,6 +1370,11 @@ class EmbeddingPolicy(Policy):
 
         self.featurizer.persist(path)
 
+        meta = {"priority": self.priority}
+
+        meta_file = os.path.join(path, 'embedding_policy.json')
+        utils.dump_obj_as_json_to_file(meta_file, meta)
+
         file_name = 'tensorflow_embedding.ckpt'
         checkpoint = os.path.join(path, file_name)
         utils.create_dir_for_file(checkpoint)
@@ -1400,9 +1416,14 @@ class EmbeddingPolicy(Policy):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-        dump_path = os.path.join(path, file_name + ".encoded_all_actions.pkl")
-        with io.open(dump_path, 'wb') as f:
+        encoded_actions_file = os.path.join(
+            path, file_name + ".encoded_all_actions.pkl")
+        with open(encoded_actions_file, 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
+
+        tf_config_file = os.path.join(path, file_name + ".tf_config.pkl")
+        with open(tf_config_file, 'wb') as f:
+            pickle.dump(self._tf_config, f)
 
     @staticmethod
     def load_tensor(name: Text) -> Optional[tf.Tensor]:
@@ -1427,9 +1448,18 @@ class EmbeddingPolicy(Policy):
         if not os.path.exists(checkpoint + '.meta'):
             return cls(featurizer=featurizer)
 
+        meta_file = os.path.join(path, "embedding_policy.json")
+        meta = json.loads(utils.read_file(meta_file))
+
+        tf_config_file = os.path.join(
+            path, "{}.tf_config.pkl".format(file_name))
+
+        with open(tf_config_file, 'rb') as f:
+            _tf_config = pickle.load(f)
+
         graph = tf.Graph()
         with graph.as_default():
-            sess = tf.Session()
+            sess = tf.Session(config=_tf_config)
             saver = tf.train.import_meta_graph(checkpoint + '.meta')
 
             saver.restore(sess, checkpoint)
@@ -1461,10 +1491,11 @@ class EmbeddingPolicy(Policy):
         encoded_actions_file = os.path.join(
             path, "{}.encoded_all_actions.pkl".format(file_name))
 
-        with io.open(encoded_actions_file, 'rb') as f:
+        with open(encoded_actions_file, 'rb') as f:
             encoded_all_actions = pickle.load(f)
 
         return cls(featurizer=featurizer,
+                   priority=meta["priority"],
                    encoded_all_actions=encoded_all_actions,
                    graph=graph,
                    session=sess,
