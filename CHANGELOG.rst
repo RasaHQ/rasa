@@ -50,7 +50,14 @@ Fixed
   code in ``registry.py``
 
 
-[0.14.3] - 2019-02-01
+[0.14.5] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- properly tag ``stable`` docker image (instead of alpha)
+  
+[0.14.3] - 2018-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 -
 
