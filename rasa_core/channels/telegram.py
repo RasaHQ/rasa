@@ -8,6 +8,7 @@ from telegram import (
 from rasa_core import constants
 from rasa_core.channels import InputChannel
 from rasa_core.channels.channel import UserMessage, OutputChannel
+from rasa_core.constants import INTENT_MESSAGE_PREFIX, USER_INTENT_RESTART
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +151,7 @@ class TelegramInput(InputChannel):
                         return "success"
                 sender_id = msg.chat.id
                 try:
-                    if (text == '_restart' or
+                    if (text == (INTENT_MESSAGE_PREFIX+USER_INTENT_RESTART) or
                             text == constants.USER_INTENT_RESTART):
 
                         on_new_message(UserMessage(

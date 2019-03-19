@@ -166,7 +166,9 @@ class ActionBack(Action):
         return ACTION_BACK_NAME
 
     def run(self, dispatcher, tracker, domain):
-
+        # only utter the template if it is available
+        dispatcher.utter_template("utter_back", tracker,
+                                  silent_fail=True)
         return [UserUtteranceReverted(), UserUtteranceReverted()]
 
 

@@ -1,9 +1,10 @@
-import typing
-
 import collections
 import json
 import logging
 import os
+import typing
+from typing import Any, Dict, List, Optional, Text, Tuple
+
 import pkg_resources
 from pykwalify.errors import SchemaError
 
@@ -12,8 +13,7 @@ from rasa_core.actions import Action, action
 from rasa_core.constants import REQUESTED_SLOT
 from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import SlotSet
-from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from typing import Dict, Any, Tuple, List, Optional, Text
+from rasa_core.utils import EndpointConfig, read_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
 
@@ -37,20 +37,24 @@ def check_domain_sanity(domain):
 
     def get_duplicates(my_items):
         """Returns a list of duplicate items in my_items."""
+
         return [item
                 for item, count in collections.Counter(my_items).items()
                 if count > 1]
 
     def check_mappings(intent_properties):
         """Check whether intent-action mappings use proper action names."""
-        incorrect_mappings = list()
+
+        incorrect = list()
         for intent, properties in intent_properties.items():
             if 'triggers' in properties:
                 if properties.get('triggers') not in domain.action_names:
-                    incorrect_mappings.append((intent, properties['triggers']))
-        return incorrect_mappings
+                    incorrect.append((intent, properties['triggers']))
+        return incorrect
 
-    def get_exception_message(duplicates=None, mappings=None):
+    def get_exception_message(
+            duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
+            mappings: List[Tuple[Text, Text]] = None):
         """Return a message given a list of error locations."""
 
         message = ""
@@ -62,15 +66,15 @@ def check_domain_sanity(domain):
             message += get_mapping_exception_message(mappings)
         return message
 
-    def get_mapping_exception_message(mappings):
+    def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
         """Return a message given a list of duplicates."""
 
         message = ""
-        for name, action in mappings:
+        for name, action_name in mappings:
             if message:
                 message += "\n"
             message += ("Intent '{}' is set to trigger action '{}', which is "
-                        "not defined in the domain.".format(name, action))
+                        "not defined in the domain.".format(name, action_name))
         return message
 
     def get_duplicate_exception_message(
