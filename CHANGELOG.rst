@@ -4,6 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
+[0.14.5] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- properly tag ``stable`` docker image (instead of alpha)
+  
 [0.14.3] - 2018-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 
