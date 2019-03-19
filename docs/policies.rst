@@ -194,21 +194,6 @@ when you create an agent:
    agent = Agent("domain.yml",
                  policies=[MemoizationPolicy(), KerasPolicy()])
 
-
-Mapping Policy
-^^^^^^^^^^^^^^^^^^
-
-The ``MappingPolicy`` can be used to directly map intents to actions such that
-the mapped action will always be executed. The mappings are assigned by giving
-and intent the property `'triggers'`, e.g.:
-
-.. code-block:: yaml
-
-  intents:
-   - greet: {triggers: utter_goodbye}
-
-An intent can only be mapped to at most one action.
-
 Keras Policy
 ^^^^^^^^^^^^
 
@@ -430,6 +415,21 @@ handles the filling of forms. Once a ``FormAction`` is called, the
 ``FormPolicy`` will continually predict the ``FormAction`` until all slots
 in the form are filled. For more information, see `Slot Filling
 <https://rasa.com/docs/core/slotfilling/>`_.
+
+
+Mapping Policy
+^^^^^^^^^^^^^^
+
+The ``MappingPolicy`` can be used to directly map intents to actions such that
+the mapped action will always be executed. The mappings are assigned by giving
+and intent the property `'triggers'`, e.g.:
+
+.. code-block:: yaml
+
+  intents:
+   - greet: {triggers: utter_goodbye}
+
+An intent can only be mapped to at most one action.
 
 
 .. _fallback_policy:
