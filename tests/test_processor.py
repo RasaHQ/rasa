@@ -3,6 +3,7 @@ import pytest
 import uuid
 from aioresponses import aioresponses
 
+import asyncio
 from rasa_core import jobs
 from rasa_core import utils
 from rasa_core.channels import CollectingOutputChannel, UserMessage
@@ -123,29 +124,22 @@ async def test_reminder_cancelled(default_processor):
     out = CollectingOutputChannel()
     sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
     trackers = []
-    reminders = []
-    dispatchers = []
     for sender_id in sender_ids:
         t = default_processor.tracker_store.get_or_create_tracker(sender_id)
-        d = Dispatcher(sender_id, out, default_processor.nlg)
-        r = ReminderScheduled("utter_greet", datetime.datetime.now(),
-                              kill_on_user_message=True)
 
         t.update(UserUttered("test"))
         t.update(ActionExecuted("action_reminder_reminder"))
-        t.update(r)
-
+        t.update(ReminderScheduled("utter_greet", datetime.datetime.now(),
+                                   kill_on_user_message=True))
         trackers.append(t)
-        reminders.append(r)
-        dispatchers.append(d)
 
     # cancel reminder for the first user
     trackers[0].update(ReminderCancelled("utter_greet"))
 
     for i, t in enumerate(trackers):
         default_processor.tracker_store.save(t)
-        await default_processor._schedule_reminders(t.events,
-                                                    t, dispatchers[i])
+        d = Dispatcher(sender_id, out, default_processor.nlg)
+        await default_processor._schedule_reminders(t.events, t, d)
     # check that the jobs were added
     assert len((await jobs.scheduler()).get_jobs()) == 2
 
@@ -154,8 +148,8 @@ async def test_reminder_cancelled(default_processor):
     # check that only one job was removed
     assert len((await jobs.scheduler()).get_jobs()) == 1
 
-    # # execute the second reminder
-    await default_processor.handle_reminder(reminders[1], dispatchers[1])
+    # execute the jobs
+    await asyncio.sleep(3)
 
     t = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
