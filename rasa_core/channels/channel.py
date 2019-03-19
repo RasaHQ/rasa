@@ -169,9 +169,9 @@ class OutputChannel(object):
                                            message.get("elements"))
 
         if message.get("quick_replies"):
-            self.send_quick_replies(recipient_id,
-                                    message.get("text"),
-                                    message.get("quick_replies"))
+            await self.send_quick_replies(recipient_id,
+                                          message.get("text"),
+                                          message.get("quick_replies"))
 
         elif message.get("buttons"):
             await self.send_text_with_buttons(recipient_id,

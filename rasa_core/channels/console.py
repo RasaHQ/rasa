@@ -45,7 +45,7 @@ def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
     if "quick_replies" in message:
         for idx, element in enumerate(message.get("quick_replies")):
             element_str = "Quick Replies:\n" + button_to_string(element, idx)
-            utils.print_color(element_str, color)
+            rasa.cli.utils.print_color(element_str, color)
 
 
 def get_cmd_input():
