@@ -26,9 +26,9 @@ Run the following command to start interactive learning:
 
 .. code-block:: bash
 
-   python -m rasa_core_sdk.endpoint --actions actions&
+   python3 -m rasa_core_sdk.endpoint --actions actions&
 
-   python -m rasa_core.train \
+   python3 -m rasa_core.train \
      interactive -o models/dialogue \
      -d domain.yml -c policy_config.yml \
      -s data/stories.md \
@@ -43,7 +43,7 @@ model with the ``--core`` flag like so:
 
 .. code-block:: bash
 
-   python -m rasa_core.train \
+   python3 -m rasa_core.train \
      interactive --core models/dialogue \
      --nlu models/current/nlu \
      --endpoints endpoints.yml

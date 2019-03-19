@@ -168,6 +168,11 @@ class OutputChannel(object):
             await self.send_custom_message(recipient_id,
                                            message.get("elements"))
 
+        if message.get("quick_replies"):
+            await self.send_quick_replies(recipient_id,
+                                          message.get("text"),
+                                          message.get("quick_replies"))
+
         elif message.get("buttons"):
             await self.send_text_with_buttons(recipient_id,
                                               message.get("text"),
@@ -216,6 +221,18 @@ class OutputChannel(object):
         for idx, button in enumerate(buttons):
             button_msg = button_to_string(button, idx)
             await self.send_text_message(recipient_id, button_msg)
+
+    async def send_quick_replies(self,
+                                 recipient_id: Text,
+                                 message: Text,
+                                 buttons: List[Dict[Text, Any]],
+                                 **kwargs: Any) -> None:
+        """Sends quick replies to the output.
+
+        Default implementation will just send as buttons."""
+
+        await self.send_text_with_buttons(recipient_id, message, buttons,
+                                          **kwargs)
 
     async def send_custom_message(self,
                                   recipient_id: Text,

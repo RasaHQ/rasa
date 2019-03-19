@@ -204,7 +204,7 @@ into ``models/dialogue``.
 .. runnable::
    :description: core-train-core
 
-   !python -m rasa_core.train -d domain.yml -s stories.md -o models/dialogue
+   !python3 -m rasa_core.train -d domain.yml -s stories.md -o models/dialogue
 
    print("Finished training!")
 
@@ -225,7 +225,7 @@ If you are running these commands locally, run:
 
 .. code-block:: bash
 
-   python -m rasa_core.run -d models/dialogue
+   python3 -m rasa_core.run -d models/dialogue
 
 If you are running the cells here in the docs, run this cell:
 
@@ -358,7 +358,7 @@ Let's run
 .. runnable::
    :description: core-train-nlu
 
-   !python -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
+   !python3 -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
 
 
 to train our NLU model. A new directory ``models/current/nlu`` should have been
@@ -381,7 +381,7 @@ If you are running these commands locally, run:
 
 .. code-block:: bash
 
-   python -m rasa_core.run -d models/dialogue -u models/current/nlu
+   python3 -m rasa_core.run -d models/dialogue -u models/current/nlu
 
 If you are running the cells here in the docs, run this cell:
 
@@ -461,7 +461,7 @@ After setting that up, we can now run the bot using:
 
 .. code-block:: bash
 
-   python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+   python3 -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002--credentials credentials.yml
 
 and it will now handle messages users send to the Facebook page.

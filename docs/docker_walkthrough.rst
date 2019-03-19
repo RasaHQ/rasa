@@ -253,7 +253,7 @@ the trained Rasa NLU model:
     -v $(pwd)/models/rasa_nlu:/app/models \
     rasa/rasa_nlu:latest-spacy \
     run \
-      python -m rasa_nlu.train \
+      python3 -m rasa_nlu.train \
       -c config.yml \
       -d project/data/nlu.md \
       -o models \
@@ -269,7 +269,7 @@ Command Description:
   - ``rasa/rasa_nlu:latest-spacy``: Using the latest Rasa NLU which uses
     the `spaCy` `pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_ .
   - ``run``: Entrypoint parameter to run any command within the NLU container
-  - ``python -m rasa_nlu.train``: Starts the NLU training with
+  - ``python3 -m rasa_nlu.train``: Starts the NLU training with
 
     - ``-c config.yml``: Uses the default NLU pipeline configuration which is
       provided by the Docker image
@@ -479,7 +479,7 @@ and specify it in the run command:
     -v $(pwd)/config:/app/config \
     rasa/rasa_nlu:latest-spacy \
     run \
-      python -m rasa_nlu.train \
+      python3 -m rasa_nlu.train \
       -c config/nlu_config.yml \
       -d project/data/nlu.md \
       -o models \
