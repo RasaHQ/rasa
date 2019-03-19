@@ -158,6 +158,16 @@ class MessengerBot(OutputChannel):
                                        {"sender": {"id": recipient_id}},
                                        'RESPONSE')
 
+    async def send_quick_replies(self,
+                                 recipient_id: Text,
+                                 text: Text,
+                                 quick_replies: List[Dict[Text, Any]],
+                                 **kwargs: Any) -> None:
+        """Sends quick replies to the output."""
+
+        self._add_text_info(quick_replies)
+        self.send(recipient_id, FBText(text=text, quick_replies=quick_replies))
+
     async def send_custom_message(self, recipient_id: Text,
                                   elements: List[Dict[Text, Any]]) -> None:
         """Sends elements to the output."""
@@ -177,6 +187,16 @@ class MessengerBot(OutputChannel):
         self.messenger_client.send(payload,
                                    self._recipient_json(recipient_id),
                                    'RESPONSE')
+
+    @staticmethod
+    def _add_text_info(quick_replies: List[Dict[Text, Any]]) -> None:
+        """Set quick reply type to text for all buttons without content type.
+
+        Happens in place."""
+
+        for quick_reply in quick_replies:
+            if not quick_reply.get('type'):
+                quick_reply['content_type'] = "text"
 
     @staticmethod
     def _add_postback_info(buttons: List[Dict[Text, Any]]) -> None:
