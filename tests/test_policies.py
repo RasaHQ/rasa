@@ -128,8 +128,8 @@ class PolicyTestCollection(object):
         assert min(probabilities) >= 0.0
 
     @pytest.mark.filterwarnings("ignore:"
-                                ".*without a trained model present:"
-                                "UserWarning")
+                                ".*without a trained model present.*:"
+                                "UserWarning ")
     def test_persist_and_load_empty_policy(self, tmpdir):
         empty_policy = self.create_policy(None, None)
         empty_policy.persist(tmpdir.strpath)
