@@ -427,8 +427,27 @@ and intent the property `'triggers'`, e.g.:
   intents:
    - greet: {triggers: utter_goodbye}
 
-An intent can only be mapped to at most one action.
+An intent can only be mapped to at most one action. The bot will run
+the action once it receives a message of the mapped intent. Afterwards,
+it will listen for the next message.
 
+.. note::
+
+  The mapping policy will predict the mapped action after the intent (e.g.
+  ``utter_goodbye`` in the above example) and afterwards it will wait for
+  the next user message (predicting ``action_listen``). With the next
+  user message normal prediction will resume.
+
+  You should have an example like
+
+  .. code-block:: story
+
+    * greet
+      - utter_goodbye
+
+  in your stories. Otherwise any machine learning policy might be confused
+  by the sudden appearance of the predicted ``action_greet`` in
+  the dialouge history.
 
 .. _fallback_policy:
 
