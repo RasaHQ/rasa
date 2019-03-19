@@ -1,11 +1,9 @@
 import logging
-import os
-from typing import Any, List, Text, Optional
+from typing import Any, List, Text
 
-from rasa_core.actions.action import (ACTION_LISTEN_NAME, ACTION_RESTART_NAME,
-                                      ACTION_BACK_NAME)
-
-from rasa_core import utils
+from rasa_core.actions.action import (
+    ACTION_BACK_NAME, ACTION_LISTEN_NAME, ACTION_RESTART_NAME)
+from rasa_core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
 from rasa_core.domain import Domain
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
@@ -25,12 +23,17 @@ class MappingPolicy(Policy):
 
         super(MappingPolicy, self).__init__(priority=priority)
 
-    def train(self, *args, **kwargs) -> None:
+    def train(self,
+              training_trackers: List[DialogueStateTracker],
+              domain: Domain,
+              **kwargs: Any
+              ) -> None:
         """Does nothing. This policy is deterministic."""
 
         pass
 
-    def predict_action_probabilities(self, tracker: DialogueStateTracker,
+    def predict_action_probabilities(self,
+                                     tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
         """Predicts the assigned action.
 
@@ -49,10 +52,10 @@ class MappingPolicy(Policy):
                                    "action '{}'.".format(action))
                 else:
                     prediction[idx] = 1
-            elif tracker.latest_message.intent.get('name') == 'restart':
+            elif intent == USER_INTENT_RESTART:
                 idx = domain.index_for_action(ACTION_RESTART_NAME)
                 prediction[idx] = 1
-            elif tracker.latest_message.intent.get('name') == 'back':
+            elif intent == USER_INTENT_BACK:
                 idx = domain.index_for_action(ACTION_BACK_NAME)
                 prediction[idx] = 1
         elif tracker.latest_action_name == action:
@@ -60,13 +63,13 @@ class MappingPolicy(Policy):
             prediction[idx] = 1
         return prediction
 
-    def persist(self, *args) -> None:
+    def persist(self, path: Text) -> None:
         """Does nothing since there is no data to be saved."""
 
         pass
 
     @classmethod
-    def load(cls, *args) -> 'MappingPolicy':
+    def load(cls, path: Text) -> 'MappingPolicy':
         """Just returns the class since there is no data to be loaded."""
 
         return cls()
