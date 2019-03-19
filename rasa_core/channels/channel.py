@@ -200,16 +200,16 @@ class OutputChannel(object):
             button_msg = button_to_string(button, idx)
             self.send_text_message(recipient_id, button_msg)
 
-    def send_quick_replies(self, recipient_id, message, buttons, **kwargs):
-        # type: (Text, Text, List[Dict[Text, Any]], Any) -> None
+    def send_quick_replies(self,
+                           recipient_id: Text,
+                           message: Text,
+                           buttons: List[Dict[Text, Any]],
+                           **kwargs: Any) -> None:
         """Sends quick replies to the output.
 
-        Default implementation will just post the buttons as a string."""
+        Default implementation will just send as buttons."""
 
-        self.send_text_message(recipient_id, message)
-        for idx, button in enumerate(buttons):
-            button_msg = button_to_string(button, idx)
-            self.send_text_message(recipient_id, button_msg)
+        self.send_text_with_buttons(recipient_id, message, buttons, **kwargs)
 
     def send_custom_message(self,
                             recipient_id: Text,
