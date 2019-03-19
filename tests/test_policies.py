@@ -129,7 +129,7 @@ class PolicyTestCollection(object):
 
     @pytest.mark.filterwarnings("ignore:"
                                 ".*without a trained model present.*:"
-                                "UserWarning ")
+                                "UserWarning")
     def test_persist_and_load_empty_policy(self, tmpdir):
         empty_policy = self.create_policy(None, None)
         empty_policy.persist(tmpdir.strpath)
