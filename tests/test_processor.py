@@ -121,26 +121,49 @@ async def test_reminder_aborted(default_processor):
 
 async def test_reminder_cancelled(default_processor):
     out = CollectingOutputChannel()
-    sender_id = uuid.uuid4().hex
+    sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
+    trackers = []
+    reminders = []
+    dispatchers = []
+    for sender_id in sender_ids:
+        t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        d = Dispatcher(sender_id, out, default_processor.nlg)
+        r = ReminderScheduled("utter_greet", datetime.datetime.now(),
+                              kill_on_user_message=True)
 
-    d = Dispatcher(sender_id, out, default_processor.nlg)
-    r = ReminderScheduled("utter_greet", datetime.datetime.now(),
-                          kill_on_user_message=True)
-    t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+        t.update(UserUttered("test"))
+        t.update(ActionExecuted("action_reminder_reminder"))
+        t.update(r)
 
-    t.update(UserUttered("test"))
-    t.update(ActionExecuted("action_reminder_reminder"))
-    t.update(r)
-    t.update(ReminderCancelled("utter_greet"))
+        trackers.append(t)
+        reminders.append(r)
+        dispatchers.append(d)
 
-    default_processor.tracker_store.save(t)
-    await default_processor.handle_reminder(r, d)
+    # cancel reminder for the first user
+    trackers[0].update(ReminderCancelled("utter_greet"))
 
-    # retrieve the updated tracker
-    t = default_processor.tracker_store.retrieve(sender_id)
+    for i, t in enumerate(trackers):
+        default_processor.tracker_store.save(t)
+        await default_processor._schedule_reminders(t.events,
+                                                    t, dispatchers[i])
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == 2
+
+    for t in trackers:
+        await default_processor._cancel_reminders(t.events, t)
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == 1
+
+    # # execute the second reminder
+    await default_processor.handle_reminder(reminders[1], dispatchers[1])
+
+    t = default_processor.tracker_store.retrieve(sender_ids[0])
     # there should be no utter_greet action
     assert ActionExecuted("utter_greet") not in t.events
-    scheduled_jobs = (await jobs.scheduler()).get_jobs()
+
+    t = default_processor.tracker_store.retrieve(sender_ids[1])
+    # there should be utter_greet action
+    assert ActionExecuted("utter_greet") in t.events
 
 
 async def test_reminder_restart(default_processor: MessageProcessor):
