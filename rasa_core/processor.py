@@ -17,7 +17,7 @@ from rasa_core.channels import CollectingOutputChannel
 from rasa_core.channels import UserMessage
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
-from rasa_core.events import ReminderScheduled, Event
+from rasa_core.events import ReminderScheduled, ReminderCancelled, Event
 from rasa_core.events import SlotSet
 from rasa_core.events import (
     UserUttered,
@@ -33,6 +33,7 @@ from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
+from rasa_core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR
 
 logger = logging.getLogger(__name__)
 
@@ -321,22 +322,40 @@ class MessageProcessor(object):
         return not is_listen_action
 
     async def _schedule_reminders(self, events: List[Event],
+                                  tracker: DialogueStateTracker,
                                   dispatcher: Dispatcher) -> None:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
         Reminders with the same `id` property will overwrite one another
         (i.e. only one of them will eventually run)."""
 
-        if events is not None:
-            for e in events:
-                if isinstance(e, ReminderScheduled):
-                    (await jobs.scheduler()).add_job(
-                        self.handle_reminder, "date",
-                        run_date=e.trigger_date_time,
-                        args=[e, dispatcher],
-                        id=e.name,
-                        replace_existing=True,
-                        name=str(e.action_name))
+        for e in events:
+            if isinstance(e, ReminderScheduled):
+                (await jobs.scheduler()).add_job(
+                    self.handle_reminder, "date",
+                    run_date=e.trigger_date_time,
+                    args=[e, dispatcher],
+                    id=e.name,
+                    replace_existing=True,
+                    name=(str(e.action_name) +
+                          ACTION_NAME_SENDER_ID_CONNECTOR_STR +
+                          tracker.sender_id))
+
+    @staticmethod
+    async def _cancel_reminders(events: List[Event],
+                                tracker: DialogueStateTracker) -> None:
+        """Cancel reminders by action_name"""
+
+        # All Reminders with the same action name will be cancelled
+        for e in events:
+            if isinstance(e, ReminderCancelled):
+                name_to_check = (str(e.action_name) +
+                                 ACTION_NAME_SENDER_ID_CONNECTOR_STR +
+                                 tracker.sender_id)
+                scheduler = await jobs.scheduler()
+                for j in scheduler.get_jobs():
+                    if j.name == name_to_check:
+                        scheduler.remove_job(j.id)
 
     async def _run_action(self, action, tracker, dispatcher, policy=None,
                           confidence=None):
@@ -360,7 +379,9 @@ class MessageProcessor(object):
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
-        await self._schedule_reminders(events, dispatcher)
+
+        await self._schedule_reminders(events, tracker, dispatcher)
+        await self._cancel_reminders(events, tracker)
 
         return self.should_predict_another_action(action.name(), events)
 
