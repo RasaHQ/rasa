@@ -56,6 +56,9 @@ def test_end_to_end_evaluation_script(tmpdir, default_agent):
     assert num_stories == 2
 
 
+@pytest.mark.filterwarnings("ignore:"
+                            ".*:"
+                            "UndefinedMetricWarning")
 def test_end_to_end_evaluation_script_unknown_entity(tmpdir, default_agent):
     completed_trackers = _generate_trackers(
         E2E_STORY_FILE_UNKNOWN_ENTITY, default_agent, use_e2e=True)
