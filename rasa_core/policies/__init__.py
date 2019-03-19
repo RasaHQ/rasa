@@ -12,3 +12,4 @@ from rasa_core.policies.memoization import (
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.policies.two_stage_fallback import TwoStageFallbackPolicy
+from rasa_core.policies.mapping_policy import MappingPolicy

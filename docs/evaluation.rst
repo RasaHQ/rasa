@@ -36,7 +36,7 @@ incorrect action was predicted instead.
 
 The full list of options for the script is:
 
-.. program-output:: python3 -m rasa_core.evaluate default --help
+.. program-output:: python3 -m rasa_core.test default --help
 
 .. _end_to_end_evaluation:
 

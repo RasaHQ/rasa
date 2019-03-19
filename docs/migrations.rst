@@ -11,7 +11,12 @@ how you can migrate from one version to another.
 .. _migration-to-0-14-0:
 
 0.13.x to 0.14.0
-----------------
+
+General
+~~~~~~~
+
+-The `MappingPolicy` is now included in `default_config.yml`. If you are using
+  a custom policy configuration make sure to update it appropriately.
 
 - deprecated ``remote.py`` got removed - the API should be consumed directly
   instead or with the help of the ``rasa_core_sdk``.
@@ -62,7 +67,6 @@ Function Naming
   now on.
 - renamed ``rasa_core.evaluate`` to ``rasa_core.test``. Please use ``test``
   from now on.
-
 
 .. _migration-to-0-13-0:
 

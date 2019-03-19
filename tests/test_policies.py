@@ -18,6 +18,7 @@ from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
+from rasa_core.policies.mapping_policy import MappingPolicy
 from rasa_core.policies.memoization import (
     AugmentedMemoizationPolicy, MemoizationPolicy)
 from rasa_core.policies.sklearn_policy import SklearnPolicy
@@ -127,7 +128,7 @@ class PolicyTestCollection(object):
         assert min(probabilities) >= 0.0
 
     @pytest.mark.filterwarnings("ignore:"
-                                ".*without a trained model present:"
+                                ".*without a trained model present.*:"
                                 "UserWarning")
     def test_persist_and_load_empty_policy(self, tmpdir):
         empty_policy = self.create_policy(None, None)
@@ -191,6 +192,14 @@ class TestFallbackPolicy(PolicyTestCollection):
                                  should_nlu_fallback):
         assert trained_policy.should_nlu_fallback(
             nlu_confidence, last_action_name) is should_nlu_fallback
+
+
+class TestMappingPolicy(PolicyTestCollection):
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer, priority):
+        p = MappingPolicy()
+        return p
 
 
 class TestMemoizationPolicy(PolicyTestCollection):

@@ -1,9 +1,11 @@
 import os
+
 import pytest
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
+from sklearn.exceptions import UndefinedMetricWarning
 
-from rasa_core.test import (test, collect_story_predictions, _generate_trackers)
+from rasa_core.test import (_generate_trackers, collect_story_predictions, test)
 from tests.conftest import (
     DEFAULT_STORIES_FILE, E2E_STORY_FILE_UNKNOWN_ENTITY, END_TO_END_STORY_FILE)
 

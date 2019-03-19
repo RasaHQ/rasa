@@ -1,39 +1,34 @@
-import time
-
 import json
 import logging
-import numpy as np
 from types import LambdaType
-from typing import Optional, List, Dict, Any, Tuple
-from typing import Text
+from typing import Any, Dict, List, Optional, Text, Tuple
+
+import numpy as np
+import time
 
 from rasa_core import jobs
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
     ActionExecutionRejection)
-from rasa_core.channels import CollectingOutputChannel
-from rasa_core.channels import UserMessage
+from rasa_core.channels import CollectingOutputChannel, UserMessage
+from rasa_core.constants import (
+    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
+    USER_INTENT_RESTART)
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
-from rasa_core.events import ReminderScheduled, ReminderCancelled, Event
-from rasa_core.events import SlotSet
 from rasa_core.events import (
-    UserUttered,
-    ActionExecuted,
-    BotUttered,
-    ActionExecutionRejected)
+    ActionExecuted, ActionExecutionRejected,
+    BotUttered, Event, ReminderCancelled, ReminderScheduled, SlotSet,
+    UserUttered)
 from rasa_core.interpreter import (
-    NaturalLanguageInterpreter,
-    INTENT_MESSAGE_PREFIX)
-from rasa_core.interpreter import RegexInterpreter
+    INTENT_MESSAGE_PREFIX,
+    NaturalLanguageInterpreter, RegexInterpreter)
 from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
-from rasa_core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR
 
 logger = logging.getLogger(__name__)
 
@@ -271,10 +266,11 @@ class MessageProcessor(object):
         logger.debug("Logged UserUtterance - "
                      "tracker now has {} events".format(len(tracker.events)))
 
-    def _should_handle_message(self, tracker):
+    @staticmethod
+    def _should_handle_message(tracker):
         return (not tracker.is_paused() or
                 tracker.latest_message.intent.get("name") ==
-                self.domain.restart_intent)
+                USER_INTENT_RESTART)
 
     async def _predict_and_execute_next_action(self, message, tracker):
         # keep taking actions decided by the policy until it chooses to 'listen'
@@ -470,10 +466,12 @@ class MessageProcessor(object):
         else:
             return None, None
 
-    def _get_next_action_probabilities(
-        self,
-        tracker: DialogueStateTracker
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    def _get_next_action_probabilities(self,
+                                       tracker: DialogueStateTracker
+                                       ) -> Tuple[Optional[List[float]],
+                                                  Optional[Text]]:
+        """Collect predictions from ensemble and return action and predictions.
+        """
 
         followup_action = tracker.followup_action
         if followup_action:
@@ -487,9 +485,5 @@ class MessageProcessor(object):
                     "Instead of running that, we will ignore the action "
                     "and predict the next action.".format(followup_action))
 
-        latest_intent = tracker.latest_message.intent.get("name")
-        if latest_intent == self.domain.restart_intent:
-            return self._prob_array_for_action(ACTION_RESTART_NAME)
-        else:
-            return self.policy_ensemble.probabilities_using_best_policy(
-                tracker, self.domain)
+        return self.policy_ensemble.probabilities_using_best_policy(
+            tracker, self.domain)

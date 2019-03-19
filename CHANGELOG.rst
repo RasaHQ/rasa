@@ -17,6 +17,8 @@ Added
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
+- `MappingPolicy` which can be used to directly map an intent to an action
+  by adding the `triggers` keyword to an intent in the domain.
 - added tracker store persisting trackers into a SQL database
   (``SQLTrackerStore``)
 - documentation about early deactivation of a form in validation
@@ -37,6 +39,7 @@ Added
   access to message triggering the form
 - ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
   for current user
+
 
 Changed
 -------
