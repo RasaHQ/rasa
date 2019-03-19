@@ -150,7 +150,7 @@ class TelegramInput(InputChannel):
                         return response.text("success")
                 sender_id = msg.chat.id
                 try:
-                    if text == (INTENT_MESSAGE_PREFIX+USER_INTENT_RESTART):
+                    if text == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
                         await on_new_message(UserMessage(
                             text, out_channel, sender_id,
                             input_channel=self.name()))

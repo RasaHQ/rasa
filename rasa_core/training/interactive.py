@@ -1116,7 +1116,7 @@ async def _enter_user_message(sender_id: Text,
     message = await _ask_questions(question, sender_id, endpoint,
                                    lambda a: not a)
 
-    if message == (INTENT_MESSAGE_PREFIX+constants.USER_INTENT_RESTART):
+    if message == (INTENT_MESSAGE_PREFIX + constants.USER_INTENT_RESTART):
         raise RestartConversation()
 
     await send_message(endpoint, sender_id, message)
