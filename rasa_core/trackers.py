@@ -151,9 +151,12 @@ class DialogueStateTracker(object):
     def change_form_to(self, form_name: Text) -> None:
         """Activate or deactivate a form"""
         if form_name is not None:
-            self.active_form = {'name': form_name,
-                                'validate': True,
-                                'rejected': False}
+            self.active_form = {
+                'name': form_name,
+                'validate': True,
+                'rejected': False,
+                'trigger_message': self.latest_message.parse_data
+            }
         else:
             self.active_form = {}
 
@@ -414,7 +417,7 @@ class DialogueStateTracker(object):
     def export_stories_to_file(self, export_path: Text = "debug.md") -> None:
         """Dump the tracker as a story to a file."""
 
-        with io.open(export_path, 'a', encoding="utf-8") as f:
+        with open(export_path, 'a', encoding="utf-8") as f:
             f.write(self.export_stories() + "\n")
 
     def get_last_event_for(self,

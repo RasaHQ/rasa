@@ -18,6 +18,49 @@ General
 -The `MappingPolicy` is now included in `default_config.yml`. If you are using
   a custom policy configuration make sure to update it appropriately.
 
+- deprecated ``remote.py`` got removed - the API should be consumed directly
+  instead or with the help of the ``rasa_core_sdk``.
+
+Asynchronous First
+~~~~~~~~~~~~~~~~~~
+- **No more flask.** The flask webserver has been replaced with an asyncronous
+  webserver called Sanic. If you run the server in production using a wsgi
+  runner, there are instructions here on how to recreate that with the
+  sanic webserver:
+  https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn
+- **Agent**: some of the method signatures changed from normal functions to
+  async coroutines. These functions need to be awaited when called, e.g.
+  ``await agent.handle_message(...)``. Changed functions include
+  - ``handle_message``
+  - ``handle_text``
+  - ``log_message``
+  - ``execute_action``
+  - ``load_data``
+  - ``visualize``
+
+Custom Input / Output Channels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you wrote your own input output channels, there are a couple of changes
+necessary to make the channels work properly with the asyncio server operation:
+
+- **Need to provide Sanic blueprints.** To make the server fully asynchronous
+  the input channels need to provide Sanic blueprints instead of flask
+  blueprints. Imports should change from
+  ``from flask import Blueprint, request`` to
+  ``from sanic import Blueprint, response``. All route functions, e.g.
+  ``def webhook(...)`` need to be async and accept a request parameter as
+  their first argument, e.g. ``async def webhook(request, ...)``.
+
+  Calls to ``on_new_message(...)`` need to be awaited:
+  ``await on_new_message(...)``.
+
+  All output channel functions need to be async:
+  ``send_text_message``, ``send_image_url``, ``send_attachment``,
+  ``send_response``, ``send_text_with_buttons`` and ``send_custom_message``.
+  And all internal calls to these methods need to be awaited.
+
+  For inspiration, feel free to check the code of the existing channels.
+
 Function Naming
 ~~~~~~~~~~~~~~~
 - renamed ``train_dialogue_model`` to ``train``. Please use ``train`` from

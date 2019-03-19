@@ -32,12 +32,12 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         else:
             return None
 
-    def generate(self,
-                 template_name: Text,
-                 tracker: DialogueStateTracker,
-                 output_channel: Text,
-                 **kwargs: Any
-                 ) -> Optional[Dict[Text, Any]]:
+    async def generate(self,
+                       template_name: Text,
+                       tracker: DialogueStateTracker,
+                       output_channel: Text,
+                       **kwargs: Any
+                       ) -> Optional[Dict[Text, Any]]:
         """Generate a response for the requested template."""
 
         filled_slots = tracker.current_slot_values()

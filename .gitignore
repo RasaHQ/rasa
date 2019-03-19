@@ -37,6 +37,8 @@ node_modules/
 npm-debug.log
 profile.*
 scala/
+examples/moodbot/py3/
+.python-version
 server/
 tmp/
 tokens.dat

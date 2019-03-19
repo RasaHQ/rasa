@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import io
 import json
 import logging
@@ -158,9 +159,10 @@ class StoryFileReader(object):
         self.use_e2e = use_e2e
 
     @staticmethod
-    def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
-                         template_variables=None, use_e2e=False,
-                         exclusion_percentage=None):
+    async def read_from_folder(resource_name, domain,
+                               interpreter=RegexInterpreter(),
+                               template_variables=None, use_e2e=False,
+                               exclusion_percentage=None):
         """Given a path reads all contained story files."""
         import rasa_nlu.utils as nlu_utils
 
@@ -171,8 +173,10 @@ class StoryFileReader(object):
 
         story_steps = []
         for f in nlu_utils.list_files(resource_name):
-            steps = StoryFileReader.read_from_file(f, domain, interpreter,
-                                                   template_variables, use_e2e)
+            steps = await StoryFileReader.read_from_file(f, domain,
+                                                         interpreter,
+                                                         template_variables,
+                                                         use_e2e)
             story_steps.extend(steps)
 
         # if exclusion percentage is not 100
@@ -185,16 +189,16 @@ class StoryFileReader(object):
         return story_steps
 
     @staticmethod
-    def read_from_file(filename, domain, interpreter=RegexInterpreter(),
-                       template_variables=None, use_e2e=False):
+    async def read_from_file(filename, domain, interpreter=RegexInterpreter(),
+                             template_variables=None, use_e2e=False):
         """Given a md file reads the contained stories."""
 
         try:
-            with io.open(filename, "r", encoding="utf-8") as f:
+            with open(filename, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter,
                                      template_variables, use_e2e)
-            return reader.process_lines(lines)
+            return await reader.process_lines(lines)
         except ValueError as err:
             file_info = ("Invalid story file format. Failed to parse "
                          "'{}'".format(os.path.abspath(filename)))
@@ -244,7 +248,7 @@ class StoryFileReader(object):
                           "Ignoring this line.".format(line))
             return "", {}
 
-    def process_lines(self, lines: List[AnyStr]) -> List[StoryStep]:
+    async def process_lines(self, lines: List[AnyStr]) -> List[StoryStep]:
 
         for idx, line in enumerate(lines):
             line_num = idx + 1
@@ -274,9 +278,9 @@ class StoryFileReader(object):
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
                     if self.use_e2e:
-                        self.add_e2e_messages(user_messages, line_num)
+                        await self.add_e2e_messages(user_messages, line_num)
                     else:
-                        self.add_user_messages(user_messages, line_num)
+                        await self.add_user_messages(user_messages, line_num)
                 else:
                     # reached an unknown type of line
                     logger.warning("Skipping line {}. "
@@ -329,8 +333,8 @@ class StoryFileReader(object):
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
-    def _parse_message(self, message, line_num):
-        parse_data = self.interpreter.parse(message)
+    async def _parse_message(self, message, line_num):
+        parse_data = await self.interpreter.parse(message)
         utterance = UserUttered(message,
                                 parse_data.get("intent"),
                                 parse_data.get("entities"),
@@ -343,14 +347,15 @@ class StoryFileReader(object):
                            "".format(intent_name, line_num))
         return utterance
 
-    def add_user_messages(self, messages, line_num):
+    async def add_user_messages(self, messages, line_num):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
-        parsed_messages = [self._parse_message(m, line_num) for m in messages]
+        parsed_messages = await asyncio.gather(
+            *[self._parse_message(m, line_num) for m in messages])
         self.current_step_builder.add_user_messages(parsed_messages)
 
-    def add_e2e_messages(self, e2e_messages, line_num):
+    async def add_e2e_messages(self, e2e_messages, line_num):
         if not self.current_step_builder:
             raise StoryParseError("End-to-end message '{}' at invalid "
                                   "location. Expected story start."
@@ -359,7 +364,7 @@ class StoryFileReader(object):
         parsed_messages = []
         for m in e2e_messages:
             message = e2e_reader._parse_item(m)
-            parsed = self._parse_message(message.text, line_num)
+            parsed = await self._parse_message(message.text, line_num)
 
             parsed.parse_data["true_intent"] = message.data["true_intent"]
             parsed.parse_data["true_entities"] = \

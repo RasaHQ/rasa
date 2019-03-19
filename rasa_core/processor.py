@@ -3,12 +3,11 @@ import time
 import json
 import logging
 import numpy as np
-from apscheduler.schedulers.background import BackgroundScheduler
-from pytz import UnknownTimeZoneError
 from types import LambdaType
 from typing import Optional, List, Dict, Any, Tuple
 from typing import Text
 
+from rasa_core import jobs
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
@@ -18,7 +17,7 @@ from rasa_core.channels import CollectingOutputChannel
 from rasa_core.channels import UserMessage
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
-from rasa_core.events import ReminderScheduled, Event
+from rasa_core.events import ReminderScheduled, ReminderCancelled, Event
 from rasa_core.events import SlotSet
 from rasa_core.events import (
     UserUttered,
@@ -27,7 +26,6 @@ from rasa_core.events import (
     ActionExecutionRejected)
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
-    RasaNLUHttpInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
@@ -35,16 +33,9 @@ from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
 from rasa_core.utils import EndpointConfig
+from rasa_core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR
 
 logger = logging.getLogger(__name__)
-
-try:
-    scheduler = BackgroundScheduler()
-    scheduler.start()
-except UnknownTimeZoneError:
-    logger.warning("apscheduler failed to start. "
-                   "This is probably because your system timezone is not set"
-                   "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
 
 
 class MessageProcessor(object):
@@ -57,7 +48,7 @@ class MessageProcessor(object):
                  action_endpoint: Optional[EndpointConfig] = None,
                  max_number_of_predictions: int = 10,
                  message_preprocessor: Optional[LambdaType] = None,
-                 on_circuit_break: Optional[LambdaType] = None
+                 on_circuit_break: Optional[LambdaType] = None,
                  ):
         self.interpreter = interpreter
         self.nlg = generator
@@ -69,15 +60,16 @@ class MessageProcessor(object):
         self.on_circuit_break = on_circuit_break
         self.action_endpoint = action_endpoint
 
-    def handle_message(self, message: UserMessage) -> Optional[List[Text]]:
+    async def handle_message(self,
+                             message: UserMessage) -> Optional[List[Text]]:
         """Handle a single message with this processor."""
 
         # preprocess message if necessary
-        tracker = self.log_message(message)
+        tracker = await self.log_message(message)
         if not tracker:
             return None
 
-        self._predict_and_execute_next_action(message, tracker)
+        await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
 
@@ -109,8 +101,9 @@ class MessageProcessor(object):
             "tracker": tracker.current_state(EventVerbosity.AFTER_RESTART)
         }
 
-    def log_message(self,
-                    message: UserMessage) -> Optional[DialogueStateTracker]:
+    async def log_message(self,
+                          message: UserMessage
+                          ) -> Optional[DialogueStateTracker]:
 
         # preprocess message if necessary
         if self.message_preprocessor is not None:
@@ -119,7 +112,7 @@ class MessageProcessor(object):
         # which maintains conversation state
         tracker = self._get_tracker(message.sender_id)
         if tracker:
-            self._handle_message_with_tracker(message, tracker)
+            await self._handle_message_with_tracker(message, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
         else:
@@ -127,21 +120,21 @@ class MessageProcessor(object):
                            "'{}'.".format(message.sender_id))
         return tracker
 
-    def execute_action(self,
-                       sender_id: Text,
-                       action_name: Text,
-                       dispatcher: Dispatcher,
-                       policy: Text,
-                       confidence: float
-                       ) -> Optional[DialogueStateTracker]:
+    async def execute_action(self,
+                             sender_id: Text,
+                             action_name: Text,
+                             dispatcher: Dispatcher,
+                             policy: Text,
+                             confidence: float
+                             ) -> Optional[DialogueStateTracker]:
 
         # we have a Tracker instance for each user
         # which maintains conversation state
         tracker = self._get_tracker(sender_id)
         if tracker:
             action = self._get_action(action_name)
-            self._run_action(action, tracker, dispatcher, policy,
-                             confidence)
+            await self._run_action(action, tracker, dispatcher, policy,
+                                   confidence)
 
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -167,14 +160,17 @@ class MessageProcessor(object):
         return action, policy, probabilities[max_index]
 
     @staticmethod
+    def _is_reminder(e: Event, name: Text) -> bool:
+        return isinstance(e, ReminderScheduled) and e.name == name
+
+    @staticmethod
     def _is_reminder_still_valid(tracker: DialogueStateTracker,
                                  reminder_event: ReminderScheduled
                                  ) -> bool:
         """Check if the conversation has been restarted after reminder."""
 
         for e in reversed(tracker.applied_events()):
-            if (isinstance(e, ReminderScheduled) and
-                    e.name == reminder_event.name):
+            if MessageProcessor._is_reminder(e, reminder_event.name):
                 return True
         return False  # not found in applied events --> has been restarted
 
@@ -185,17 +181,16 @@ class MessageProcessor(object):
         """Check if the user sent a message after the reminder."""
 
         for e in reversed(tracker.events):
-            if (isinstance(e, ReminderScheduled) and
-                    e.name == reminder_event.name):
+            if MessageProcessor._is_reminder(e, reminder_event.name):
                 return False
             elif isinstance(e, UserUttered) and e.text:
                 return True
         return True  # tracker has probably been restarted
 
-    def handle_reminder(self,
-                        reminder_event: ReminderScheduled,
-                        dispatcher: Dispatcher
-                        ) -> None:
+    async def handle_reminder(self,
+                              reminder_event: ReminderScheduled,
+                              dispatcher: Dispatcher
+                              ) -> None:
         """Handle a reminder that is triggered asynchronously."""
 
         tracker = self._get_tracker(dispatcher.sender_id)
@@ -206,8 +201,8 @@ class MessageProcessor(object):
             return None
 
         if (reminder_event.kill_on_user_message and
-                self._has_message_after_reminder(tracker, reminder_event) or not
-                self._is_reminder_still_valid(tracker, reminder_event)):
+                self._has_message_after_reminder(tracker, reminder_event) or
+                not self._is_reminder_still_valid(tracker, reminder_event)):
             logger.debug("Canceled reminder because it is outdated. "
                          "(event: {} id: {})".format(reminder_event.action_name,
                                                      reminder_event.name))
@@ -216,12 +211,13 @@ class MessageProcessor(object):
             # unrelated message would influence featurization
             tracker.update(UserUttered.empty())
             action = self._get_action(reminder_event.action_name)
-            should_continue = self._run_action(action, tracker, dispatcher)
+            should_continue = await self._run_action(action, tracker,
+                                                     dispatcher)
             if should_continue:
                 user_msg = UserMessage(None,
                                        dispatcher.output_channel,
                                        dispatcher.sender_id)
-                self._predict_and_execute_next_action(user_msg, tracker)
+                await self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
 
@@ -235,17 +231,16 @@ class MessageProcessor(object):
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
 
-    def _parse_message(self, message):
+    async def _parse_message(self, message):
         # for testing - you can short-cut the NLU part with a message
         # in the format /intent{"entity1": val1, "entity2": val2}
         # parse_data is a dict of intent & entities
         if message.text.startswith(INTENT_MESSAGE_PREFIX):
-            parse_data = RegexInterpreter().parse(message.text)
-        elif isinstance(self.interpreter, RasaNLUHttpInterpreter):
-            parse_data = self.interpreter.parse(message.text,
-                                                message.message_id)
+            parse_data = await RegexInterpreter().parse(message.text,
+                                                        message.message_id)
         else:
-            parse_data = self.interpreter.parse(message.text)
+            parse_data = await self.interpreter.parse(message.text,
+                                                      message.message_id)
 
         logger.debug("Received user message '{}' with intent '{}' "
                      "and entities '{}'".format(message.text,
@@ -253,14 +248,15 @@ class MessageProcessor(object):
                                                 parse_data["entities"]))
         return parse_data
 
-    def _handle_message_with_tracker(self,
-                                     message: UserMessage,
-                                     tracker: DialogueStateTracker) -> None:
+    async def _handle_message_with_tracker(self,
+                                           message: UserMessage,
+                                           tracker: DialogueStateTracker
+                                           ) -> None:
 
         if message.parse_data:
             parse_data = message.parse_data
         else:
-            parse_data = self._parse_message(message)
+            parse_data = await self._parse_message(message)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
@@ -278,15 +274,19 @@ class MessageProcessor(object):
     def _should_handle_message(self, tracker):
         return not tracker.is_paused()
 
-    def _predict_and_execute_next_action(self, message, tracker):
-        # this will actually send the response to the user
-
-        dispatcher = Dispatcher(message.sender_id,
-                                message.output_channel,
-                                self.nlg)
+    async def _predict_and_execute_next_action(self, message, tracker):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
+
+        def is_action_limit_reached():
+            return (num_predicted_actions == self.max_number_of_predictions and
+                    should_predict_another_action)
+
+        # this will actually send the response to the user
+        dispatcher = Dispatcher(message.sender_id,
+                                message.output_channel,
+                                self.nlg)
 
         self._log_slots(tracker)
 
@@ -297,15 +297,14 @@ class MessageProcessor(object):
             # this actually just calls the policy's method by the same name
             action, policy, confidence = self.predict_next_action(tracker)
 
-            should_predict_another_action = self._run_action(action,
-                                                             tracker,
-                                                             dispatcher,
-                                                             policy,
-                                                             confidence)
+            should_predict_another_action = await self._run_action(action,
+                                                                   tracker,
+                                                                   dispatcher,
+                                                                   policy,
+                                                                   confidence)
             num_predicted_actions += 1
 
-        if (num_predicted_actions == self.max_number_of_predictions and
-                should_predict_another_action):
+        if is_action_limit_reached():
             # circuit breaker was tripped
             logger.warning(
                 "Circuit breaker tripped. Stopped predicting "
@@ -320,29 +319,48 @@ class MessageProcessor(object):
         is_listen_action = action_name == ACTION_LISTEN_NAME
         return not is_listen_action
 
-    def _schedule_reminders(self, events: List[Event],
-                            dispatcher: Dispatcher) -> None:
+    async def _schedule_reminders(self, events: List[Event],
+                                  tracker: DialogueStateTracker,
+                                  dispatcher: Dispatcher) -> None:
         """Uses the scheduler to time a job to trigger the passed reminder.
 
         Reminders with the same `id` property will overwrite one another
         (i.e. only one of them will eventually run)."""
 
-        if events is not None:
-            for e in events:
-                if isinstance(e, ReminderScheduled):
-                    scheduler.add_job(self.handle_reminder, "date",
-                                      run_date=e.trigger_date_time,
-                                      args=[e, dispatcher],
-                                      id=e.name,
-                                      replace_existing=True,
-                                      name=str(e.action_name))
+        for e in events:
+            if isinstance(e, ReminderScheduled):
+                (await jobs.scheduler()).add_job(
+                    self.handle_reminder, "date",
+                    run_date=e.trigger_date_time,
+                    args=[e, dispatcher],
+                    id=e.name,
+                    replace_existing=True,
+                    name=(str(e.action_name) +
+                          ACTION_NAME_SENDER_ID_CONNECTOR_STR +
+                          tracker.sender_id))
 
-    def _run_action(self, action, tracker, dispatcher, policy=None,
-                    confidence=None):
+    @staticmethod
+    async def _cancel_reminders(events: List[Event],
+                                tracker: DialogueStateTracker) -> None:
+        """Cancel reminders by action_name"""
+
+        # All Reminders with the same action name will be cancelled
+        for e in events:
+            if isinstance(e, ReminderCancelled):
+                name_to_check = (str(e.action_name) +
+                                 ACTION_NAME_SENDER_ID_CONNECTOR_STR +
+                                 tracker.sender_id)
+                scheduler = await jobs.scheduler()
+                for j in scheduler.get_jobs():
+                    if j.name == name_to_check:
+                        scheduler.remove_job(j.id)
+
+    async def _run_action(self, action, tracker, dispatcher, policy=None,
+                          confidence=None):
         # events and return values are used to update
         # the tracker state after an action has been taken
         try:
-            events = action.run(dispatcher, tracker, self.domain)
+            events = await action.run(dispatcher, tracker, self.domain)
         except ActionExecutionRejection:
             events = [ActionExecutionRejected(action.name(),
                                               policy, confidence)]
@@ -359,7 +377,9 @@ class MessageProcessor(object):
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
-        self._schedule_reminders(events, dispatcher)
+
+        await self._schedule_reminders(events, tracker, dispatcher)
+        await self._cancel_reminders(events, tracker)
 
         return self.should_predict_another_action(action.name(), events)
 

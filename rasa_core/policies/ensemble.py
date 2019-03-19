@@ -23,6 +23,7 @@ from rasa_core.policies.memoization import (
     MemoizationPolicy,
     AugmentedMemoizationPolicy)
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core import registry
 
 logger = logging.getLogger(__name__)
 
@@ -222,14 +223,13 @@ class PolicyEnsemble(object):
         cls.ensure_model_compatibility(metadata)
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
-            policy_cls = utils.class_from_module_path(policy_name)
+            policy_cls = registry.policy_from_module_path(policy_name)
             dir_name = 'policy_{}_{}'.format(i, policy_cls.__name__)
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
             policies.append(policy)
-        ensemble_cls = utils.class_from_module_path(
-            metadata["ensemble_name"])
+        ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
@@ -269,7 +269,7 @@ class PolicyEnsemble(object):
                 policy['featurizer'] = featurizer_func(**featurizer_config)
 
             try:
-                constr_func = utils.class_from_module_path(policy_name)
+                constr_func = registry.policy_from_module_path(policy_name)
                 policy_object = constr_func(**policy)
                 parsed_policies.append(policy_object)
             except(ImportError, AttributeError):
@@ -288,7 +288,7 @@ class PolicyEnsemble(object):
                 "policy can have only 1 featurizer")
         featurizer_config = policy['featurizer'][0]
         featurizer_name = featurizer_config.pop('name')
-        featurizer_func = utils.class_from_module_path(featurizer_name)
+        featurizer_func = registry.featurizer_from_module_path(featurizer_name)
 
         return featurizer_func, featurizer_config
 
@@ -302,7 +302,7 @@ class PolicyEnsemble(object):
             featurizer_config['state_featurizer'][0]
         )
         state_featurizer_name = state_featurizer_config.pop('name')
-        state_featurizer_func = utils.class_from_module_path(
+        state_featurizer_func = registry.featurizer_from_module_path(
             state_featurizer_name)
 
         return state_featurizer_func, state_featurizer_config

@@ -6,12 +6,21 @@ from typing import Text, List
 
 import jsonpickle
 import os
+from yarl import URL
 
 from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, Event
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH
+
+
+def latest_request(mocked, request_type, path):
+    return mocked.requests.get((request_type, URL(path)))
+
+
+def json_of_latest_request(r):
+    return r[-1].kwargs["json"]
 
 
 def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
@@ -31,7 +40,7 @@ def read_dialogue_file(filename: Text):
 
 def write_text_to_file(tmpdir: Text, filename: Text, text: Text):
     path = tmpdir.join(filename).strpath
-    with io.open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(text)
     return path
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
-
-from flask import Blueprint, request, jsonify
+from sanic import Blueprint, response
 from twilio.rest import Client
 
 from rasa_core.channels import InputChannel
@@ -23,13 +22,13 @@ class TwilioOutput(Client, OutputChannel):
         self.send_retry = 0
         self.max_retry = 5
 
-    def send_text_message(self, recipient_id, text):
+    async def send_text_message(self, recipient_id, text):
         """Sends text message"""
 
         for message_part in text.split("\n\n"):
-            self._send_text(recipient_id, message_part)
+            await self._send_text(recipient_id, message_part)
 
-    def _send_text(self, recipient_id, text):
+    async def _send_text(self, recipient_id, text):
         from twilio.base.exceptions import TwilioRestException
 
         message = None
@@ -78,11 +77,11 @@ class TwilioInput(InputChannel):
         twilio_webhook = Blueprint('twilio_webhook', __name__)
 
         @twilio_webhook.route("/", methods=['GET'])
-        def health():
-            return jsonify({"status": "ok"})
+        async def health(request):
+            return response.json({"status": "ok"})
 
         @twilio_webhook.route("/webhook", methods=['POST'])
-        def message():
+        async def message(request):
             sender = request.values.get('From', None)
             text = request.values.get('Body', None)
 
@@ -93,8 +92,8 @@ class TwilioInput(InputChannel):
                 try:
                     # @ signs get corrupted in SMSes by some carriers
                     text = text.replace('¡', '@')
-                    on_new_message(UserMessage(text, out_channel, sender,
-                                               input_channel=self.name()))
+                    await on_new_message(UserMessage(text, out_channel, sender,
+                                                     input_channel=self.name()))
                 except Exception as e:
                     logger.error("Exception when trying to handle "
                                  "message.{0}".format(e))
@@ -105,6 +104,6 @@ class TwilioInput(InputChannel):
             else:
                 logger.debug("Invalid message")
 
-            return "success"
+            return response.text("success")
 
         return twilio_webhook

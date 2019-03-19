@@ -8,8 +8,6 @@ import uuid
 from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
-from rasa_core import utils
-
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
 
@@ -155,6 +153,7 @@ class Event(object):
         default: Optional[Type['Event']] = None
     ) -> Optional[Type['Event']]:
         """Returns a slots class by its type name."""
+        from rasa_core import utils
 
         for cls in utils.all_subclasses(Event):
             if cls.type_name == type_name:
@@ -204,8 +203,12 @@ class UserUttered(Event):
 
     @staticmethod
     def _from_parse_data(text, parse_data, timestamp=None, input_channel=None):
-        return UserUttered(text, parse_data["intent"], parse_data["entities"],
-                           parse_data, timestamp, input_channel)
+        return UserUttered(text,
+                           parse_data.get("intent"),
+                           parse_data.get("entities", []),
+                           parse_data,
+                           timestamp,
+                           input_channel)
 
     def __hash__(self):
         return hash((self.text, self.intent.get("name"),
@@ -561,6 +564,44 @@ class ReminderScheduled(Event):
                                   trigger_date_time,
                                   parameters.get("name", None),
                                   parameters.get("kill_on_user_msg", True),
+                                  parameters.get("timestamp"))]
+
+
+# noinspection PyProtectedMember
+class ReminderCancelled(Event):
+    """Cancel all jobs with a specific name."""
+
+    type_name = "cancel_reminder"
+
+    def __init__(self, action_name, timestamp=None):
+        """
+        Args:
+            action_name: name of the scheduled action to be cancelled
+        """
+
+        self.action_name = action_name
+        super(ReminderCancelled, self).__init__(timestamp)
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return isinstance(other, ReminderCancelled)
+
+    def __str__(self):
+        return ("ReminderCancelled(action: {})"
+                .format(self.action_name))
+
+    def as_story_string(self):
+        props = json.dumps(self._data_obj())
+        return "{name}{props}".format(name=self.type_name, props=props)
+
+    @classmethod
+    def _from_story_string(
+            cls,
+            parameters: Dict[Text, Any]
+    ) -> Optional[List[Event]]:
+        return [ReminderCancelled(parameters.get("action"),
                                   parameters.get("timestamp"))]
 
 

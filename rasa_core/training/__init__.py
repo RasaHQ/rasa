@@ -8,7 +8,7 @@ if typing.TYPE_CHECKING:
     from rasa_core.training.structures import StoryGraph
 
 
-def extract_story_graph(
+async def extract_story_graph(
     resource_name: Text,
     domain: 'Domain',
     interpreter: Optional['NaturalLanguageInterpreter'] = None,
@@ -21,7 +21,7 @@ def extract_story_graph(
 
     if not interpreter:
         interpreter = RegexInterpreter()
-    story_steps = StoryFileReader.read_from_folder(
+    story_steps = await StoryFileReader.read_from_folder(
         resource_name,
         domain, interpreter,
         use_e2e=use_e2e,
@@ -29,7 +29,7 @@ def extract_story_graph(
     return StoryGraph(story_steps)
 
 
-def load_data(
+async def load_data(
     resource_name: Text,
     domain: 'Domain',
     remove_duplicates: bool = True,
@@ -44,8 +44,9 @@ def load_data(
     from rasa_core.training.generator import TrainingDataGenerator
 
     if resource_name:
-        graph = extract_story_graph(resource_name, domain,
-                                    exclusion_percentage=exclusion_percentage)
+        graph = await extract_story_graph(
+            resource_name, domain,
+            exclusion_percentage=exclusion_percentage)
 
         g = TrainingDataGenerator(graph, domain,
                                   remove_duplicates,

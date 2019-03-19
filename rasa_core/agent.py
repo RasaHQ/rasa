@@ -1,30 +1,30 @@
-import time
+import asyncio
 import logging
 import os
 import shutil
 import tempfile
 import typing
 import uuid
-from gevent.pywsgi import WSGIServer
-from requests.exceptions import InvalidURL, RequestException
-from threading import Thread
-from typing import Text, List, Optional, Callable, Any, Dict, Union
+from asyncio import CancelledError
+from typing import Any, Callable, Dict, List, Optional, Text, Union
 
-from rasa_core import training, constants, utils
-from rasa_core.channels import UserMessage, OutputChannel, InputChannel
+import aiohttp
+
+from rasa_core import constants, jobs, training, utils
+from rasa_core.channels import InputChannel, OutputChannel, UserMessage
 from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa_core.dispatcher import Dispatcher
-from rasa_core.domain import Domain, check_domain_sanity, InvalidDomain
+from rasa_core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa_core.exceptions import AgentNotReady
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.nlg import NaturalLanguageGenerator
-from rasa_core.policies import Policy, FormPolicy
-from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
+from rasa_core.policies import FormPolicy, Policy
+from rasa_core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.utils import EndpointConfig
+from rasa_core.utils import EndpointConfig, LockCounter
 from rasa_nlu.utils import is_url
 
 logger = logging.getLogger(__name__)
@@ -33,60 +33,44 @@ if typing.TYPE_CHECKING:
     # noinspection PyPep8Naming
     from rasa_core.nlg import NaturalLanguageGenerator as NLG
     from rasa_core.tracker_store import TrackerStore
+    from sanic import Sanic
 
 
-def load_from_server(interpreter: Optional[NaturalLanguageInterpreter] = None,
-                     generator: Optional[Union[EndpointConfig, 'NLG']] = None,
-                     tracker_store: Optional['TrackerStore'] = None,
-                     action_endpoint: Optional[EndpointConfig] = None,
-                     model_server: Optional[EndpointConfig] = None,
-                     ) -> 'Agent':
+async def load_from_server(
+    agent,
+    model_server: Optional[EndpointConfig] = None
+) -> 'Agent':
     """Load a persisted model from a server."""
 
-    agent = Agent(interpreter=interpreter,
-                  generator=generator,
-                  tracker_store=tracker_store,
-                  action_endpoint=action_endpoint)
+    # We are going to pull the model once first, and then schedule a recurring
+    # job. the benefit of this approach is that we can be sure that there
+    # is a model after this function completes -> allows to do proper
+    # "is alive" check on a startup server's `/status` endpoint. If the server
+    # is started, we can be sure that it also already loaded (or tried to)
+    # a model.
+    await _update_model_from_server(model_server, agent)
 
-    wait_time_between_pulls = model_server.kwargs.get(
-        'wait_time_between_pulls',
-        100
-    )
+    wait_time_between_pulls = model_server.kwargs.get('wait_time_between_pulls',
+                                                      100)
 
-    if wait_time_between_pulls is not None and (
-            isinstance(wait_time_between_pulls,
-                       int) or wait_time_between_pulls.isdigit()):
+    if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
-        start_model_pulling_in_worker(model_server,
-                                      int(wait_time_between_pulls),
-                                      agent)
-    else:
-        # just pull the model once
-        _update_model_from_server(model_server, agent)
+        await schedule_model_pulling(model_server,
+                                     int(wait_time_between_pulls),
+                                     agent)
 
     return agent
 
 
-def _init_model_from_server(model_server: EndpointConfig
-                            ) -> Optional[typing.Tuple[Text, Text]]:
-    """Initialise a Rasa Core model from a URL."""
+def _get_stack_model_directory(model_directory: Text) -> Optional[Text]:
+    """Decide whether a persisted model is a stack or a core model.
 
-    if not is_url(model_server.url):
-        raise InvalidURL(model_server.url)
+    Return the root stack model directory if it's a stack model.
+    """
 
-    model_directory = tempfile.mkdtemp()
-
-    fingerprint = _pull_model_and_fingerprint(model_server,
-                                              model_directory,
-                                              fingerprint=None)
-
-    return fingerprint, model_directory
-
-
-def _is_stack_model(model_directory: Text) -> bool:
-    """Decide whether a persisted model is a stack or a core model."""
-
-    return os.path.exists(os.path.join(model_directory, "fingerprint.json"))
+    for root, _, files in os.walk(model_directory):
+        if "fingerprint.json" in files:
+            return root
 
 
 def _load_and_set_updated_model(agent: 'Agent',
@@ -94,10 +78,14 @@ def _load_and_set_updated_model(agent: 'Agent',
                                 fingerprint: Text):
     """Load the persisted model into memory and set the model on the agent."""
 
-    if _is_stack_model(model_directory):
+    logger.debug("Found new model with fingerprint {}. Loading..."
+                 "".format(fingerprint))
+
+    stack_model_directory = _get_stack_model_directory(model_directory)
+    if stack_model_directory:
         from rasa_core.interpreter import RasaNLUInterpreter
-        nlu_model = os.path.join(model_directory, "nlu")
-        core_model = os.path.join(model_directory, "core")
+        nlu_model = os.path.join(stack_model_directory, "nlu")
+        core_model = os.path.join(stack_model_directory, "core")
         interpreter = RasaNLUInterpreter(model_directory=nlu_model)
     else:
         interpreter = agent.interpreter
@@ -110,22 +98,22 @@ def _load_and_set_updated_model(agent: 'Agent',
     try:
         policy_ensemble = PolicyEnsemble.load(core_model)
         agent.update_model(domain, policy_ensemble, fingerprint, interpreter)
+        logger.debug("Finished updating agent to new model.")
     except Exception:
         logger.exception("Failed to load policy and update agent. "
                          "The previous model will stay loaded instead.")
 
 
-def _update_model_from_server(model_server: EndpointConfig,
-                              agent: 'Agent'
-                              ) -> None:
+async def _update_model_from_server(model_server: EndpointConfig,
+                                    agent: 'Agent') -> None:
     """Load a zipped Rasa Core model from a URL and update the passed agent."""
 
     if not is_url(model_server.url):
-        raise InvalidURL(model_server.url)
+        raise aiohttp.InvalidURL(model_server.url)
 
     model_directory = tempfile.mkdtemp()
 
-    new_model_fingerprint = _pull_model_and_fingerprint(
+    new_model_fingerprint = await _pull_model_and_fingerprint(
         model_server, model_directory, agent.fingerprint)
     if new_model_fingerprint:
         _load_and_set_updated_model(agent, model_directory,
@@ -135,66 +123,86 @@ def _update_model_from_server(model_server: EndpointConfig,
                      "URL {}".format(model_server.url))
 
 
-def _pull_model_and_fingerprint(model_server: EndpointConfig,
-                                model_directory: Text,
-                                fingerprint: Optional[Text]
-                                ) -> Optional[Text]:
+async def _pull_model_and_fingerprint(model_server: EndpointConfig,
+                                      model_directory: Text,
+                                      fingerprint: Optional[Text]
+                                      ) -> Optional[Text]:
     """Queries the model server and returns the value of the response's
 
-    <ETag> header which contains the model hash."""
-    header = {"If-None-Match": fingerprint}
-    try:
-        logger.debug("Requesting model from server {}..."
-                     "".format(model_server.url))
-        response = model_server.request(method="GET",
-                                        headers=header,
-                                        timeout=DEFAULT_REQUEST_TIMEOUT)
-    except RequestException as e:
-        logger.warning("Tried to fetch model from server, but couldn't reach "
-                       "server. We'll retry later... Error: {}."
-                       "".format(e))
-        return None
+     <ETag> header which contains the model hash.
+     """
 
-    if response.status_code in [204, 304]:
-        logger.debug("Model server returned {} status code, indicating "
-                     "that no new model is available. "
-                     "Current fingerprint: {}"
-                     "".format(response.status_code, fingerprint))
-        return response.headers.get("ETag")
-    elif response.status_code == 404:
-        logger.debug("Model server didn't find a model for our request. "
-                     "Probably no one did train a model for the project "
-                     "and tag combination yet.")
-        return None
-    elif response.status_code != 200:
-        logger.warning("Tried to fetch model from server, but server response "
-                       "status code is {}. We'll retry later..."
-                       "".format(response.status_code))
-        return None
+    headers = {"If-None-Match": fingerprint}
 
-    utils.unarchive(response.content, model_directory)
-    logger.debug("Unzipped model to '{}'"
-                 "".format(os.path.abspath(model_directory)))
+    logger.debug("Requesting model from server {}..."
+                 "".format(model_server.url))
 
-    # get the new fingerprint
-    return response.headers.get("ETag")
+    async with model_server.session() as session:
+        try:
+            params = model_server.combine_parameters()
+            async with session.request("GET",
+                                       model_server.url,
+                                       timeout=DEFAULT_REQUEST_TIMEOUT,
+                                       headers=headers,
+                                       params=params) as resp:
+
+                if resp.status in [204, 304]:
+                    logger.debug("Model server returned {} status code, "
+                                 "indicating that no new model is available. "
+                                 "Current fingerprint: {}"
+                                 "".format(resp.status, fingerprint))
+                    return resp.headers.get("ETag")
+                elif resp.status == 404:
+                    logger.debug(
+                        "Model server didn't find a model for our request. "
+                        "Probably no one did train a model for the project "
+                        "and tag combination yet.")
+                    return None
+                elif resp.status != 200:
+                    logger.warning(
+                        "Tried to fetch model from server, but server response "
+                        "status code is {}. We'll retry later..."
+                        "".format(resp.status))
+                    return None
+
+                utils.unarchive(await resp.read(), model_directory)
+                logger.debug("Unzipped model to '{}'"
+                             "".format(os.path.abspath(model_directory)))
+
+                # get the new fingerprint
+                return resp.headers.get("ETag")
+
+        except aiohttp.ClientResponseError as e:
+            logger.warning("Tried to fetch model from server, but "
+                           "couldn't reach server. We'll retry later... "
+                           "Error: {}.".format(e))
+            return None
 
 
-def _run_model_pulling_worker(model_server: EndpointConfig,
-                              wait_time_between_pulls: int,
-                              agent: 'Agent') -> None:
+async def _run_model_pulling_worker(model_server: EndpointConfig,
+                                    wait_time_between_pulls: int,
+                                    agent: 'Agent') -> None:
     while True:
-        _update_model_from_server(model_server, agent)
-        time.sleep(wait_time_between_pulls)
+        # noinspection PyBroadException
+        try:
+            await asyncio.sleep(wait_time_between_pulls)
+            await _update_model_from_server(model_server, agent)
+        except CancelledError:
+            logger.warning("Stopping model pulling (cancelled).")
+        except Exception:
+            logger.exception("An exception was raised while fetching "
+                             "a model. Continuing anyways...")
 
 
-def start_model_pulling_in_worker(model_server: EndpointConfig,
-                                  wait_time_between_pulls: int,
-                                  agent: 'Agent') -> None:
-    worker = Thread(target=_run_model_pulling_worker,
-                    args=(model_server, wait_time_between_pulls, agent))
-    worker.setDaemon(True)
-    worker.start()
+async def schedule_model_pulling(model_server: EndpointConfig,
+                                 wait_time_between_pulls: int,
+                                 agent: 'Agent'):
+    (await jobs.scheduler()).add_job(
+        _run_model_pulling_worker, "interval",
+        seconds=wait_time_between_pulls,
+        args=[model_server, wait_time_between_pulls, agent],
+        id="pull-model-from-server",
+        replace_existing=True)
 
 
 class Agent(object):
@@ -205,21 +213,21 @@ class Agent(object):
      getting the next action, and handling a channel."""
 
     def __init__(
-        self,
-        domain: Union[Text, Domain] = None,
-        policies: Union[PolicyEnsemble, List[Policy], None] = None,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, 'NLG', None] = None,
-        tracker_store: Optional['TrackerStore'] = None,
-        action_endpoint: Optional[EndpointConfig] = None,
-        fingerprint: Optional[Text] = None
+            self,
+            domain: Union[Text, Domain] = None,
+            policies: Union[PolicyEnsemble, List[Policy], None] = None,
+            interpreter: Optional[NaturalLanguageInterpreter] = None,
+            generator: Union[EndpointConfig, 'NLG', None] = None,
+            tracker_store: Optional['TrackerStore'] = None,
+            action_endpoint: Optional[EndpointConfig] = None,
+            fingerprint: Optional[Text] = None
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         if self.domain:
             self.domain.add_requested_slot()
         self.policy_ensemble = self._create_ensemble(policies)
-        if self._form_policy_not_present():
+        if not self._is_form_policy_present():
             raise InvalidDomain(
                 "You have defined a form action, but haven't added the "
                 "FormPolicy to your policy ensemble."
@@ -231,6 +239,7 @@ class Agent(object):
         self.tracker_store = self.create_tracker_store(
             tracker_store, self.domain)
         self.action_endpoint = action_endpoint
+        self.conversations_in_processing = {}
 
         self._set_fingerprint(fingerprint)
 
@@ -259,7 +268,7 @@ class Agent(object):
              interpreter: Optional[NaturalLanguageInterpreter] = None,
              generator: Union[EndpointConfig, 'NLG'] = None,
              tracker_store: Optional['TrackerStore'] = None,
-             action_endpoint: Optional[EndpointConfig] = None,
+             action_endpoint: Optional[EndpointConfig] = None
              ) -> 'Agent':
         """Load a persisted model from the passed path."""
 
@@ -296,7 +305,7 @@ class Agent(object):
                 self.tracker_store is not None and
                 self.policy_ensemble is not None)
 
-    def handle_message(
+    async def handle_message(
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
@@ -307,25 +316,52 @@ class Agent(object):
         if not isinstance(message, UserMessage):
             logger.warning("Passing a text to `agent.handle_message(...)` is "
                            "deprecated. Rather use `agent.handle_text(...)`.")
-            return self.handle_text(message,
-                                    message_preprocessor=message_preprocessor,
-                                    **kwargs)
+            # noinspection PyTypeChecker
+            return await self.handle_text(
+                message,
+                message_preprocessor=message_preprocessor,
+                **kwargs)
 
         def noop(_):
             logger.info("Ignoring message as there is no agent to handle it.")
             return None
 
         if not self.is_ready():
-            return noop(message)  #
+            return noop(message)
 
         processor = self.create_processor(message_preprocessor)
-        return processor.handle_message(message)
+
+        # get the lock for the current conversation
+        lock = self.conversations_in_processing.get(message.sender_id)
+        if not lock:
+            logger.debug("created a new lock for conversation '{}'"
+                         "".format(message.sender_id))
+            lock = LockCounter()
+            self.conversations_in_processing[message.sender_id] = lock
+
+        try:
+            async with lock:
+                # this makes sure that there can always only be one coroutine
+                # handling a conversation at any point in time
+                # Note: this doesn't support multi-processing, it just works
+                # for coroutines. If there are multiple processes handling
+                # messages, an external system needs to make sure messages
+                # for the same conversation are always processed by the same
+                # process.
+                return await processor.handle_message(message)
+        finally:
+            if not lock.is_someone_waiting():
+                # dispose of the lock if no one needs it to avoid
+                # accumulating locks
+                del self.conversations_in_processing[message.sender_id]
+                logger.debug("deleted lock for conversation '{}' (unused)"
+                             "".format(message.sender_id))
 
     # noinspection PyUnusedLocal
     def predict_next(
-        self,
-        sender_id: Text,
-        **kwargs: Any
+            self,
+            sender_id: Text,
+            **kwargs: Any
     ) -> Dict[Text, Any]:
         """Handle a single message."""
 
@@ -333,7 +369,7 @@ class Agent(object):
         return processor.predict_next(sender_id)
 
     # noinspection PyUnusedLocal
-    def log_message(
+    async def log_message(
         self,
         message: UserMessage,
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
@@ -342,9 +378,9 @@ class Agent(object):
         """Append a message to a dialogue - does not predict actions."""
 
         processor = self.create_processor(message_preprocessor)
-        return processor.log_message(message)
+        return await processor.log_message(message)
 
-    def execute_action(
+    async def execute_action(
         self,
         sender_id: Text,
         action: Text,
@@ -358,10 +394,11 @@ class Agent(object):
         dispatcher = Dispatcher(sender_id,
                                 output_channel,
                                 self.nlg)
-        return processor.execute_action(sender_id, action, dispatcher, policy,
-                                        confidence)
+        return await processor.execute_action(sender_id, action, dispatcher,
+                                              policy,
+                                              confidence)
 
-    def handle_text(
+    async def handle_text(
         self,
         text_message: Union[Text, Dict[Text, Any]],
         message_preprocessor: Optional[Callable[[Text], Text]] = None,
@@ -387,7 +424,7 @@ class Agent(object):
             ... "examples/restaurantbot/models/nlu/current")
             >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
             ... interpreter=interpreter)
-            >>> agent.handle_text("hello")
+            >>> await agent.handle_text("hello")
             [u'how can I help you?']
 
         """
@@ -399,11 +436,11 @@ class Agent(object):
                           output_channel,
                           sender_id)
 
-        return self.handle_message(msg, message_preprocessor)
+        return await self.handle_message(msg, message_preprocessor)
 
     def toggle_memoization(
-        self,
-        activate: bool
+            self,
+            activate: bool
     ) -> None:
         """Toggles the memoization on and off.
 
@@ -450,22 +487,25 @@ class Agent(object):
     def _are_all_featurizers_using_a_max_history(self):
         """Check if all featurizers are MaxHistoryTrackerFeaturizer."""
 
-        for policy in self.policy_ensemble.policies:
-            if (policy.featurizer and not
-                    hasattr(policy.featurizer, 'max_history')):
+        def has_max_history_featurizer(policy):
+            return (policy.featurizer and
+                    hasattr(policy.featurizer, 'max_history'))
+
+        for p in self.policy_ensemble.policies:
+            if p.featurizer and not has_max_history_featurizer(p):
                 return False
         return True
 
-    def load_data(self,
-                  resource_name: Text,
-                  remove_duplicates: bool = True,
-                  unique_last_num_states: Optional[int] = None,
-                  augmentation_factor: int = 20,
-                  tracker_limit: Optional[int] = None,
-                  use_story_concatenation: bool = True,
-                  debug_plots: bool = False,
-                  exclusion_percentage: int = None
-                  ) -> List[DialogueStateTracker]:
+    async def load_data(self,
+                        resource_name: Text,
+                        remove_duplicates: bool = True,
+                        unique_last_num_states: Optional[int] = None,
+                        augmentation_factor: int = 20,
+                        tracker_limit: Optional[int] = None,
+                        use_story_concatenation: bool = True,
+                        debug_plots: bool = False,
+                        exclusion_percentage: int = None
+                        ) -> List[DialogueStateTracker]:
         """Load training data from a resource."""
 
         max_history = self._max_history()
@@ -487,12 +527,13 @@ class Agent(object):
                            "at least maximum max_history."
                            "".format(unique_last_num_states, max_history))
 
-        return training.load_data(resource_name, self.domain,
-                                  remove_duplicates, unique_last_num_states,
-                                  augmentation_factor,
-                                  tracker_limit, use_story_concatenation,
-                                  debug_plots,
-                                  exclusion_percentage=exclusion_percentage)
+        return await training.load_data(
+            resource_name, self.domain,
+            remove_duplicates, unique_last_num_states,
+            augmentation_factor,
+            tracker_limit, use_story_concatenation,
+            debug_plots,
+            exclusion_percentage=exclusion_percentage)
 
     def train(self,
               training_trackers: List[DialogueStateTracker],
@@ -541,28 +582,29 @@ class Agent(object):
 
     def handle_channels(self, channels: List[InputChannel],
                         http_port: int = constants.DEFAULT_SERVER_PORT,
-                        serve_forever: bool = True,
-                        route: Text = "/webhooks/") -> WSGIServer:
+                        route: Text = "/webhooks/",
+                        cors=None) -> 'Sanic':
         """Start a webserver attaching the input channels and handling msgs.
 
         If ``serve_forever`` is set to ``True``, this call will be blocking.
         Otherwise the webserver will be started, and the method will
         return afterwards."""
-        from flask import Flask
-        import rasa_core
+        from rasa_core import run
 
-        app = Flask(__name__)
-        rasa_core.channels.channel.register(channels,
-                                            app,
-                                            self.handle_message,
-                                            route=route)
+        app = run.configure_app(channels, cors, None,
+                                enable_api=False,
+                                route=route)
 
-        http_server = WSGIServer(('0.0.0.0', http_port), app)
-        http_server.start()
+        app.agent = self
 
-        if serve_forever:
-            http_server.serve_forever()
-        return http_server
+        app.run(host='0.0.0.0', port=http_port,
+                access_log=logger.isEnabledFor(logging.DEBUG))
+
+        # this might seem unnecessary (as run does not return until the server
+        # is killed) - but we use it for tests where we mock `.run` to directly
+        # return and need the app to inspect if we created a properly
+        # configured server
+        return app
 
     def _set_fingerprint(self, fingerprint: Optional[Text] = None) -> None:
 
@@ -611,14 +653,14 @@ class Agent(object):
         logger.info("Persisted model to '{}'"
                     "".format(os.path.abspath(model_path)))
 
-    def visualize(self,
-                  resource_name: Text,
-                  output_file: Text,
-                  max_history: Optional[int] = None,
-                  nlu_training_data: Optional[Text] = None,
-                  should_merge_nodes: bool = True,
-                  fontsize: int = 12
-                  ) -> None:
+    async def visualize(self,
+                        resource_name: Text,
+                        output_file: Text,
+                        max_history: Optional[int] = None,
+                        nlu_training_data: Optional[Text] = None,
+                        should_merge_nodes: bool = True,
+                        fontsize: int = 12
+                        ) -> None:
         from rasa_core.training.visualization import visualize_stories
         from rasa_core.training.dsl import StoryFileReader
         """Visualize the loaded training data from the resource."""
@@ -627,11 +669,12 @@ class Agent(object):
         # largest value from any policy
         max_history = max_history or self._max_history()
 
-        story_steps = StoryFileReader.read_from_folder(resource_name,
-                                                       self.domain)
-        visualize_stories(story_steps, self.domain, output_file,
-                          max_history, self.interpreter,
-                          nlu_training_data, should_merge_nodes, fontsize)
+        story_steps = await StoryFileReader.read_from_folder(resource_name,
+                                                             self.domain)
+        await visualize_stories(story_steps, self.domain, output_file,
+                                max_history, self.interpreter,
+                                nlu_training_data, should_merge_nodes,
+                                fontsize)
 
     def _ensure_agent_is_ready(self) -> None:
         """Checks that an interpreter and a tracker store are set.
@@ -699,10 +742,12 @@ class Agent(object):
                 "of type '{}', but should be policy, an array of "
                 "policies, or a policy ensemble".format(passed_type))
 
-    def _form_policy_not_present(self) -> bool:
-        """Check whether form policy is not present
-            if there is a form action in the domain
-        """
-        return (self.domain and self.domain.form_names and not
-                any(isinstance(p, FormPolicy)
-                    for p in self.policy_ensemble.policies))
+    def _is_form_policy_present(self) -> bool:
+        """Check whether form policy is present and used."""
+
+        has_form_policy = (
+            self.policy_ensemble and
+            any(isinstance(p, FormPolicy)
+                for p in self.policy_ensemble.policies))
+
+        return not self.domain or not self.domain.form_names or has_form_policy
