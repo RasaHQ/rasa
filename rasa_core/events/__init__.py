@@ -569,7 +569,7 @@ class ReminderScheduled(Event):
 
 # noinspection PyProtectedMember
 class ReminderCancelled(Event):
-    """ Cancel all jobs with a specific name."""
+    """Cancel all jobs with a specific name."""
 
     type_name = "cancel_reminder"
 
