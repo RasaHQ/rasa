@@ -15,6 +15,18 @@ how you can migrate from one version to another.
 General
 ~~~~~~~
 
+- The python package has a new new, so has the module. You should install
+  the package using ``pip install rasa`` (instead of ``rasa_core``).
+
+  The code moved from ``rasa_core`` to ``rasa.core`` - best way to fix is a
+  search and replace for the two most common usages:
+  ``from rasa_core`` and ``import rasa_core``.
+
+  We have added a backwards compatibility package to still allow you to import
+  from ``rasa_core``, this will emit a warning but all imports will still
+  work. Nevertheless, you should do the above renaming of any access
+  to ``rasa_core``.
+
 -The `MappingPolicy` is now included in `default_config.yml`. If you are using
   a custom policy configuration make sure to update it appropriately.
 
