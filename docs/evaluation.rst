@@ -21,7 +21,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.evaluate --core models/dialogue \
+    $ python3 -m rasa_core.evaluate --core models/dialogue \
       --stories test_stories.md -o results
 
 
@@ -36,7 +36,7 @@ incorrect action was predicted instead.
 
 The full list of options for the script is:
 
-.. program-output:: python -m rasa_core.evaluate default --help
+.. program-output:: python3 -m rasa_core.test default --help
 
 .. _end_to_end_evaluation:
 
@@ -79,7 +79,7 @@ the full end-to-end evaluation command is this:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.evaluate default --core models/dialogue \
+  $ python3 -m rasa_core.evaluate default --core models/dialogue \
     --nlu models/nlu/current \
     --stories e2e_stories.md --e2e
 
@@ -108,7 +108,7 @@ the train script to train your models:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.train compare -c policy_config1.yml policy_config2.yml \
+  $ python3 -m rasa_core.train compare -c policy_config1.yml policy_config2.yml \
     -d domain.yml -s stories_folder -o comparison_models --runs 3 --percentages \
     0 5 25 50 70 90 95
 
@@ -121,7 +121,7 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ python -m rasa_core.evaluate compare --stories stories_folder \
+  $ python3 -m rasa_core.evaluate compare --stories stories_folder \
     --core comparison_models \
     -o comparison_results
 

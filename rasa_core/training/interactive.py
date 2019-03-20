@@ -256,6 +256,12 @@ def format_bot_output(
         for idx, element in enumerate(data.get("elements")):
             element_str = element_to_string(element, idx)
             output += "\n" + element_str
+
+    if data.get("quick_replies"):
+        output += "\nQuick replies:"
+        for idx, element in enumerate(data.get("quick_replies")):
+            element_str = element_to_string(element, idx)
+            output += "\n" + element_str
     return output
 
 
@@ -1116,7 +1122,7 @@ async def _enter_user_message(sender_id: Text,
     message = await _ask_questions(question, sender_id, endpoint,
                                    lambda a: not a)
 
-    if message == constants.USER_INTENT_RESTART:
+    if message == (INTENT_MESSAGE_PREFIX + constants.USER_INTENT_RESTART):
         raise RestartConversation()
 
     await send_message(endpoint, sender_id, message)

@@ -21,6 +21,10 @@ REQUESTED_SLOT = 'requested_slot'
 # start of special user message section
 INTENT_MESSAGE_PREFIX = "/"
 
-USER_INTENT_RESTART = INTENT_MESSAGE_PREFIX + "restart"
+USER_INTENT_RESTART = "restart"
+
+USER_INTENT_BACK = "back"
 
 USER_INTENT_OUT_OF_SCOPE = 'out_of_scope'
+
+ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"

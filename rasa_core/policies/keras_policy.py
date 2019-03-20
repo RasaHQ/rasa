@@ -254,7 +254,8 @@ class KerasPolicy(Policy):
             with open(tf_config_file, 'wb') as f:
                 pickle.dump(self._tf_config, f)
         else:
-            warnings.warn("Persist called without a trained model present. "
+            warnings.warn("Method `persist(...)` was called "
+                          "without a trained model present. "
                           "Nothing to persist then!")
 
     @classmethod

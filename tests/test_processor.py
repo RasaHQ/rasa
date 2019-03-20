@@ -3,16 +3,17 @@ import pytest
 import uuid
 from aioresponses import aioresponses
 
+import asyncio
+from rasa_core import jobs
 from rasa_core import utils
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.dispatcher import Button, Dispatcher
 from rasa_core.events import (
-    ReminderScheduled, UserUttered, ActionExecuted,
+    ReminderScheduled, ReminderCancelled, UserUttered, ActionExecuted,
     BotUttered, Restarted)
 from rasa_core.processor import MessageProcessor
 from rasa_core.interpreter import RasaNLUHttpInterpreter
 from rasa_core.utils import EndpointConfig
-from httpretty import httpretty
 
 from tests.utilities import json_of_latest_request, latest_request
 
@@ -117,6 +118,46 @@ async def test_reminder_aborted(default_processor):
     # retrieve the updated tracker
     t = default_processor.tracker_store.retrieve(sender_id)
     assert len(t.events) == 3  # nothing should have been executed
+
+
+async def test_reminder_cancelled(default_processor):
+    out = CollectingOutputChannel()
+    sender_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
+    trackers = []
+    for sender_id in sender_ids:
+        t = default_processor.tracker_store.get_or_create_tracker(sender_id)
+
+        t.update(UserUttered("test"))
+        t.update(ActionExecuted("action_reminder_reminder"))
+        t.update(ReminderScheduled("utter_greet", datetime.datetime.now(),
+                                   kill_on_user_message=True))
+        trackers.append(t)
+
+    # cancel reminder for the first user
+    trackers[0].update(ReminderCancelled("utter_greet"))
+
+    for i, t in enumerate(trackers):
+        default_processor.tracker_store.save(t)
+        d = Dispatcher(sender_id, out, default_processor.nlg)
+        await default_processor._schedule_reminders(t.events, t, d)
+    # check that the jobs were added
+    assert len((await jobs.scheduler()).get_jobs()) == 2
+
+    for t in trackers:
+        await default_processor._cancel_reminders(t.events, t)
+    # check that only one job was removed
+    assert len((await jobs.scheduler()).get_jobs()) == 1
+
+    # execute the jobs
+    await asyncio.sleep(3)
+
+    t = default_processor.tracker_store.retrieve(sender_ids[0])
+    # there should be no utter_greet action
+    assert ActionExecuted("utter_greet") not in t.events
+
+    t = default_processor.tracker_store.retrieve(sender_ids[1])
+    # there should be utter_greet action
+    assert ActionExecuted("utter_greet") in t.events
 
 
 async def test_reminder_restart(default_processor: MessageProcessor):

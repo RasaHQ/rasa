@@ -60,7 +60,7 @@ and you can use this file like this:
 
 .. code-block:: bash
 
-    $ python -m rasa_core.run \
+    $ python3 -m rasa_core.run \
        --enable_api \
        -d examples/babi/models/policy/current \
        -u examples/babi/models/nlu/current_py2 \

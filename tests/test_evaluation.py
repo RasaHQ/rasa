@@ -1,17 +1,17 @@
 import os
 
-from rasa.model import add_evaluation_file_to_model
-from rasa_core.server import nlu_model_and_evaluation_files_from_archive
-from rasa_core.test import (test, collect_story_predictions,
-                            _generate_trackers)
 # we need this import to ignore the warning...
 # noinspection PyUnresolvedReferences
+from sklearn.exceptions import UndefinedMetricWarning
+
+from rasa.model import add_evaluation_file_to_model
+from rasa_core.server import nlu_model_and_evaluation_files_from_archive
+from rasa_core.test import (_generate_trackers, collect_story_predictions,
+                            test)
 from rasa_nlu.test import run_evaluation
-from tests.conftest import (
-    DEFAULT_STORIES_FILE, E2E_STORY_FILE_UNKNOWN_ENTITY, END_TO_END_STORY_FILE)
-
-
-# from tests.conftest import E2E_STORY_FILE_UNKNOWN_ENTITY
+from tests.conftest import (DEFAULT_STORIES_FILE,
+                            E2E_STORY_FILE_UNKNOWN_ENTITY,
+                            END_TO_END_STORY_FILE)
 
 
 async def test_evaluation_image_creation(tmpdir, default_agent):

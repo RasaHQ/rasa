@@ -20,7 +20,7 @@ You can run training from the command line like in the :ref:`quickstart`:
 
 .. code-block:: bash
 
-   python -m rasa_core.train -d domain.yml -s data/stories.md \
+   python3 -m rasa_core.train -d domain.yml -s data/stories.md \
      -o models/current/dialogue -c config.yml
 
 Or by creating an agent and running the train method yourself:
@@ -37,7 +37,7 @@ Or by creating an agent and running the train method yourself:
 Training Script Options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. program-output:: python -m rasa_core.train default -h
+.. program-output:: python3 -m rasa_core.train default -h
 
 
 Data Augmentation
@@ -193,8 +193,6 @@ when you create an agent:
 
    agent = Agent("domain.yml",
                  policies=[MemoizationPolicy(), KerasPolicy()])
-
-
 
 Keras Policy
 ^^^^^^^^^^^^
@@ -418,6 +416,40 @@ handles the filling of forms. Once a ``FormAction`` is called, the
 in the form are filled. For more information, see `Slot Filling
 <https://rasa.com/docs/core/slotfilling/>`_.
 
+
+Mapping Policy
+^^^^^^^^^^^^^^
+
+The ``MappingPolicy`` can be used to directly map intents to actions such that
+the mapped action will always be executed. The mappings are assigned by giving
+and intent the property `'triggers'`, e.g.:
+
+.. code-block:: yaml
+
+  intents:
+   - greet: {triggers: utter_goodbye}
+
+An intent can only be mapped to at most one action. The bot will run
+the action once it receives a message of the mapped intent. Afterwards,
+it will listen for the next message.
+
+.. note::
+
+  The mapping policy will predict the mapped action after the intent (e.g.
+  ``utter_goodbye`` in the above example) and afterwards it will wait for
+  the next user message (predicting ``action_listen``). With the next
+  user message normal prediction will resume.
+
+  You should have an example like
+
+  .. code-block:: story
+
+    * greet
+      - utter_goodbye
+
+  in your stories. Otherwise any machine learning policy might be confused
+  by the sudden appearance of the predicted ``action_greet`` in
+  the dialouge history.
 
 .. _fallback_policy:
 

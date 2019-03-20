@@ -93,7 +93,7 @@ class FallbackPolicy(Policy):
         # if NLU interpreter does not provide confidence score,
         # it is set to 1.0 here in order
         # to not override standard behaviour
-        nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
+        nlu_confidence = nlu_data.get("intent", {}).get("confidence", 1.0)
 
         if tracker.latest_action_name == self.fallback_action_name:
             result = [0.0] * domain.num_actions

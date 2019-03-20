@@ -12,9 +12,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- added quick reply representation for command-line output
+- added option to specify custom button type for Facebook buttons
 - ``tf.ConfigProto`` configuration can now be specified
   for tensorflow based pipelines
 - open api spec for the Rasa Core SDK action server
+- `MappingPolicy` which can be used to directly map an intent to an action
+  by adding the `triggers` keyword to an intent in the domain.
 - added tracker store persisting trackers into a SQL database
   (``SQLTrackerStore``)
 - documentation about early deactivation of a form in validation
@@ -33,6 +37,8 @@ Added
   will train a combined Rasa Core and NLU model
 - ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
   access to message triggering the form
+- ``ReminderCancelled(action_name)`` event to cancel given action_name reminder
+  for current user
 - Rasa Stack HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
   This endpoints performs an intent evaluation of a Rasa Stack model
 
@@ -67,6 +73,13 @@ Fixed
 - Handles slot names which contain characters that are invalid as python 
   variable name (e.g. dot) in a template
 - in interactive learning: only updates entity values if user changes annotation
+
+[0.13.4] - 2019-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- properly tag docker image as ``stable`` (instead of tagging alpha tags)
 
 [0.13.3] - 2019-03-04
 ^^^^^^^^^^^^^^^^^^^^^
