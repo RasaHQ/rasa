@@ -51,11 +51,11 @@ posted as the content of the request:
 
 **Using training data in json format**:
 
-.. literalinclude:: ../sample_configs/config_train_server_json.yml
+.. literalinclude:: ../../sample_configs/config_train_server_json.yml
 
 **Using training data in md format**:
 
-.. literalinclude:: ../sample_configs/config_train_server_md.yml
+.. literalinclude:: ../../sample_configs/config_train_server_md.yml
 
 
 Here is an example request showcasing how to send the config to the server

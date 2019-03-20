@@ -13,7 +13,7 @@ The Short Answer
 If you have less than 1000 total training examples, and there is a spaCy model for your 
 language, use the ``pretrained_embeddings_spacy`` pipeline:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 
@@ -185,7 +185,7 @@ Pre-configured Pipelines
 A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 .. code-block:: yaml
@@ -210,7 +210,7 @@ pretrained_embeddings_spacy
 
 To use the ``pretrained_embeddings_spacy`` template:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 See :ref:`section_languages` for possible values for ``language``. To use
@@ -267,7 +267,7 @@ mitie
 There is no pipeline template, as you need to configure the location
 of MITIE's featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
 mitie_2
@@ -278,7 +278,7 @@ Training can be quite slow, so this is not recommended for large datasets.
 There is no pipeline template, as you need to configure the location
 of MITIE's featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
 
 keyword

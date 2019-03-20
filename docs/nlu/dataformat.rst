@@ -246,7 +246,7 @@ Lookup Tables
 -------------
 Lookup tables in the form of external files or lists of elements may also be specified in the training data.  The externally supplied lookup tables must be in a newline-separated format.  For example, ``data/test/lookup_tables/plates.txt`` may contain
 
-.. include:: ../data/test/lookup_tables/plates.txt
+.. include:: ../../data/test/lookup_tables/plates.txt
 
 And can be loaded as:
 

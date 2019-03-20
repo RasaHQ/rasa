@@ -124,13 +124,13 @@ find this file.
 
 The complete pipeline for mitie can be found here
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
 Using MITIE alone can be quite slow to train, but you can use it with this configuration
 
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
 
 

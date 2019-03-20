@@ -157,7 +157,7 @@ Fixed
 - pinned spacy version to ``spacy<=2.0.12,>2.0`` to avoid dependency conflicts
   with tensorflow
 
-[0.13.7] - 2018-10-11`
+[0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
