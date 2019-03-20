@@ -1,7 +1,7 @@
 :desc: Create custom components to create additional features like sentiment
        analysis to integrate with open source bot framework Rasa Stack.
 
-.._section_customcomponents:
+.. _section_customcomponents:
 
 Custom Components
 =================

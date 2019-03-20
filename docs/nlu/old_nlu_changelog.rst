@@ -139,7 +139,7 @@ Fixed
 - Set attributes of custom components correctly if they defer from the default
 - NLU Server can now handle training data mit emojis in it
 - If the ``token_name`` is not given in the endpoint configuration, the default
-  value is ``token`` instead of ``None`
+  value is ``token`` instead of ``None``
 - Throws error only if ``ner_crf`` picks up overlapping entities. If the
   entity extractor supports overlapping entitis no error is thrown.
 - Updated CORS support for the server.
@@ -245,7 +245,7 @@ Changed
 Fixed
 -----
 - pipelines containing the ``EmbeddingIntentClassifier`` are not trained in a
-separate thread, as this may lead to freezing during training
+  separate thread, as this may lead to freezing during training
 
 [0.13.1] - 2018-08-07
 ^^^^^^^^^^^^^^^^^^^^^
@@ -836,6 +836,7 @@ Added
 - multithreading support of build in REST server (e.g. using gunicorn)
 - multitenancy implementation to allow loading multiple models which
   share the same backend
+
 Fixed
 -----
 - error propagation on failed vector model loading (spacy)

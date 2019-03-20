@@ -110,6 +110,7 @@ and save it in a file called ``nlu_config.yml``.
 
 To choose which pipeline is best for you read :ref:`choosing_pipeline`.
 
+.. _training_your_model:
 
 3. Train your Machine Learning NLU model.
 -----------------------------------------
