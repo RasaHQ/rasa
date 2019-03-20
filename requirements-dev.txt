@@ -17,6 +17,12 @@ aioresponses==0.5.2
 mock==2.0.0
 moto==1.2.0
 
+# pipeline dependencies
+git+https://github.com/mit-nlp/MITIE.git#egg=mitie
+spacy==2.0.18
+Jpype1==0.6.2
+jieba==0.39
+
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
