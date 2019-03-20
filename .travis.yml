@@ -75,7 +75,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs/core newdocs . -- -b dirhtml -A html_theme=rasabaster
+    - sphinx-versioning push docs/core docs newdocs . -- -b dirhtml -A html_theme=rasabaster
   - stage: trigger website rebuild
     if: fork = false AND branch = "master" AND type != "pull_request"
     script:
