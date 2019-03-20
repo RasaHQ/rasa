@@ -21,7 +21,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    $ python3 -m rasa.core.evaluate --core models/dialogue \
+    $ python3 -m rasa.core.test --core models/dialogue \
       --stories test_stories.md -o results
 
 
@@ -49,7 +49,7 @@ perform together on whole dialogues.
 The evaluate script lets you evaluate dialogues end-to-end, combining
 Rasa NLU intent predictions with Rasa Core action predictions.
 You can activate this feature with the ``--e2e`` option in the
-``rasa.core.evaluate`` module.
+``rasa.core.test`` module.
 
 The story format used for end-to-end evaluation is slightly different to
 the standard Rasa Core stories, as you'll have to include the user
