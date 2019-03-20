@@ -120,7 +120,7 @@ jobs:
   - stage: integration
     name: "Test Docs NLU"
     install:
-    - pip install -r requirements-dev.txt
+    - pip install -r requirements-docs.txt
     - pip install -e .
     - pip list
     script:
