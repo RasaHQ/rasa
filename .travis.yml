@@ -34,9 +34,9 @@ before_script:
   - export TMPDIR=$HOME/tmp
 script: 
   - py.test --codestyle -m codestyle
-  - py.test tests/core --cov rasa -v --cov-append
-  - py.test tests/nlu/base --cov rasa -v --cov-append
-  - py.test tests/nlu/training --cov rasa -v --cov-append
+  - py.test tests --cov rasa -v --cov-append
+#  - py.test tests/nlu/base --cov rasa -v --cov-append
+#  - py.test tests/nlu/training --cov rasa -v --cov-append
 after_success:
   - coveralls
 jobs:
