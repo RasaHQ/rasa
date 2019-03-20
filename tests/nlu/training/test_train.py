@@ -139,23 +139,6 @@ def test_train_model_noents(language, pipeline, component_builder, tmpdir):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@utilities.slowtest
-@pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_train_model_multithread(language, pipeline, component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-    (trained, _, persisted_path) = train(
-        _config,
-        path=tmpdir.strpath,
-        data=DEFAULT_DATA_PATH,
-        component_builder=component_builder,
-        num_threads=2)
-    assert trained.pipeline
-    loaded = Interpreter.load(persisted_path, component_builder)
-    assert loaded.pipeline
-    assert loaded.parse("hello") is not None
-    assert loaded.parse("Hello today is Monday, again!") is not None
-
-
 def test_train_model_empty_pipeline(component_builder):
     # Should return an empty pipeline
     _config = utilities.base_test_conf(pipeline_template=None)
