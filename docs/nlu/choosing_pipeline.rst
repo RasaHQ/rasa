@@ -7,7 +7,7 @@
 Choosing a Rasa NLU Pipeline
 ============================
 
-Choosing a NLU pipeline allows you to customize your model and finetune
+Choosing an NLU pipeline allows you to customize your model and finetune
 it on your dataset.
 
 The Short Answer
