@@ -61,31 +61,6 @@ jobs:
     - fossa init
     - fossa analyze
     - fossa test
-  - stage: docs
-    name: "Build Rasa NLU Docs"
-    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
-    install:
-    - RASABASTER=rasabaster-0.7.18.tar.gz
-    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
-    - pip install $RASABASTER
-    - pip install -r requirements-docs.txt
-    - pip install -e .
-    - pip list
-    script:
-    - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
-    - tar -xvf secrets.tar
-    - ssh-add docs_key
-    - git config --global user.email "builds@travis-ci.com"
-    - git config --global user.name "Travis CI"
-    - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
-    - export ${!TRAVIS*}
-    - sphinx-versioning push docs/nlu docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "NLU starter pack (NLU only)"
@@ -126,26 +101,6 @@ jobs:
       # be strict about warnings --> they will be treated as errors
     - cd docs/nlu
     - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
-  - stage: trigger website rebuild
-    if: fork = false AND branch = "master" AND type != "pull_request"
-    script:
-    - eval "$(ssh-agent -s)";
-      touch nlu_docs_to_website_trigger_key;
-      chmod 0600 nlu_docs_to_website_trigger_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
-    - tar xvf secrets.tar
-    - ssh-add nlu_docs_to_website_trigger_key
-    - git config --global user.email "builds@travis-ci.com"
-    - git config --global user.name "Travis CI"
-    - git clone -b master --single-branch git@github.com:RasaHQ/rasa-website.git
-    - cd rasa-website
-    - git commit --allow-empty -m "trigger nlu docs update"
-    - git push origin master
   - stage: deploy
     name: "Deploy to PyPI"
     python: 3.6
