@@ -42,27 +42,30 @@ jobs:
       - py.test --codestyle -m codestyle
   - &test-core
     stage: test
-    name: "Test Core"
+    name: "Test Core 3.6"
     python: "3.6"
     script:
       - py.test tests/core --cov rasa -v --cov-append
   - <<: *test-core
+    name: "Test Core 3.5"
     python: '3.5'
   - &test-nlu-base
     stage: test
-    name: "Test NLU"
+    name: "Test NLU 3.6"
     python: "3.6"
     script:
       - py.test tests/nlu/base --cov rasa -v --cov-append
   - <<: *test-nlu-base
+    name: "Test NLU 3.5"
     python: '3.5'
   - &test-nlu-training
     stage: test
-    name: "Test NLU training"
+    name: "Test NLU training 3.6"
     python: "3.6"
     script:
       - py.test tests/nlu/training --cov rasa -v --cov-append
   - <<: *test-nlu-training
+    name: "Test NLU training 3.5"
     python: '3.5'
   - stage: integration
     name: "Test API specification"
