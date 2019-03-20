@@ -116,7 +116,7 @@ def _project_files(project, config_file=DEFAULT_CONFIG_PATH,
         nlu_directory = None
     else:
         core_directory, nlu_directory = data.get_core_nlu_directories(
-            training_files)
+            os.path.join(project, training_files))
     paths = {"config_file": config_file,
              "domain_file": domain,
              "nlu_data": core_directory,
