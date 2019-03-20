@@ -13,13 +13,14 @@ from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa.core.policies.memoization import (
-    AugmentedMemoizationPolicy, MemoizationPolicy, Policy)
+from rasa.core.policies.memoization import (AugmentedMemoizationPolicy,
+                                            MemoizationPolicy, Policy)
 from rasa.core.processor import MessageProcessor
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import zip_folder
+from rasa.train import train_async
 
 matplotlib.use('Agg')
 
@@ -170,6 +171,17 @@ def moodbot_domain():
 @pytest.fixture(scope="session")
 def moodbot_metadata():
     return PolicyEnsemble.load_metadata(MOODBOT_MODEL_PATH)
+
+
+@pytest.fixture()
+async def trained_stack_model(default_domain_path, default_stack_config,
+                              default_nlu_data, default_stories_file):
+    trained_stack_model_path = await train_async(
+        domain=default_domain_path,
+        config=default_stack_config,
+        training_files=[default_nlu_data, default_stories_file])
+
+    return trained_stack_model_path
 
 
 @pytest.fixture

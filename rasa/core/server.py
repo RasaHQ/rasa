@@ -1,10 +1,11 @@
+import glob
 import logging
 import os
 import tempfile
 import zipfile
 from functools import wraps
 from inspect import isawaitable
-from typing import Any, Callable, List, Optional, Text, Union
+from typing import Any, Callable, List, Optional, Text, Union, Tuple
 
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -20,7 +21,9 @@ from rasa.core.events import Event
 from rasa.core.policies import PolicyEnsemble
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import dump_obj_as_str_to_file
+from rasa.core.utils import dump_obj_as_str_to_file, write_request_body_to_file
+from rasa.model import unpack_model, FINGERPRINT_FILE_PATH
+from rasa_nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +167,44 @@ def event_verbosity_parameter(request, default_verbosity):
                             "Invalid parameter value for 'include_events'. "
                             "Should be one of {}".format(enum_values),
                             {"parameter": "include_events", "in": "query"})
+
+
+async def nlu_model_and_evaluation_files_from_archive(
+        zipped_model_path: Text,
+        directory: Text
+) -> Tuple[Text, List[Text]]:
+    """Extract NLU model path and intent evaluation files zipped model.
+
+    Returns a tuple containing the path to the nlu model and a list
+    of paths to evaluation files.
+    """
+
+    # unzip and return NLU evaluation files contained in it
+    unzipped_path = unpack_model(zipped_model_path, directory)
+
+    # cast `unzipped_path` as str for py3.5 compatibility
+    unzipped_path = str(unzipped_path)
+
+    model_path = os.path.join(unzipped_path, 'nlu')
+    nlu_files = await find_nlu_files_in_path(unzipped_path)
+
+    return model_path, nlu_files
+
+
+async def find_nlu_files_in_path(path: Text):
+    """Return list of NLU data paths in `path`.
+
+    Matches files ending on `.md` and `.json`.
+    Excludes `fingerprint.json` files.
+    """
+
+    out = []
+    for t in ["*.md", "*.json"]:
+        match = glob.glob(os.path.join(path, t))
+        match = [m for m in match if not m.endswith(FINGERPRINT_FILE_PATH)]
+        out.extend(match)
+
+    return out
 
 
 # noinspection PyUnusedLocal
@@ -534,6 +575,36 @@ def create_app(agent=None,
                                 "Evaluation could not be created. Error: {}"
                                 "".format(e))
 
+    @app.post("/intentEvaluation")
+    @requires_auth(app, auth_token)
+    async def evaluate_intents(request: Request):
+        """Evaluate intents against a Rasa NLU model."""
+
+        # create `tmpdir` and cast as str for py3.5 compatibility
+        tmpdir = str(tempfile.mkdtemp())
+
+        zipped_model_path = os.path.join(tmpdir, 'model.tar.gz')
+        write_request_body_to_file(request, zipped_model_path)
+
+        model_path, nlu_files = \
+            await nlu_model_and_evaluation_files_from_archive(
+                zipped_model_path, tmpdir)
+
+        if len(nlu_files) == 1:
+            data_path = os.path.abspath(nlu_files[0])
+            try:
+                evaluation = run_evaluation(data_path, model_path)
+                return response.json(evaluation)
+            except ValueError as e:
+                return ErrorResponse(400, "FailedIntentEvaluation",
+                                     "Evaluation could not be created. "
+                                     "Error: {}".format(e))
+        else:
+            return ErrorResponse(400, "FailedIntentEvaluation",
+                                 "NLU evaluation file could not be found. "
+                                 "This endpoint requires a single file ending "
+                                 "on `.md` or `.json`.")
+
     @app.post("/jobs")
     @requires_auth(app, auth_token)
     async def train_stack(request: Request):
@@ -670,8 +741,10 @@ def create_app(agent=None,
             policy_ensemble.probabilities_using_best_policy(tracker,
                                                             app.agent.domain)
 
-        scores = [{"action": a, "score": p}
-                  for a, p in zip(app.agent.domain.action_names, probabilities)]
+        scores = [
+            {"action": a, "score": p}
+            for a, p in zip(app.agent.domain.action_names, probabilities)
+        ]
 
         return response.json({
             "scores": scores,

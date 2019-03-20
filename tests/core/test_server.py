@@ -2,15 +2,16 @@
 import json
 import os
 import tempfile
-import pytest
 import uuid
+
+import pytest
 from freezegun import freeze_time
 
 import rasa.core
-from rasa.model import unpack_model
 from rasa.core import events, constants
 from rasa.core.events import (
     UserUttered, BotUttered, SlotSet, Event)
+from rasa.model import unpack_model, add_evaluation_file_to_model
 from tests.core.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 # a couple of event instances that we can use for testing
@@ -246,6 +247,23 @@ def test_stack_training(app,
     # unpack model and ensure fingerprint is present
     model_path = unpack_model(model_path)
     assert os.path.exists(os.path.join(model_path, 'fingerprint.json'))
+
+
+def test_intent_evaluation(app, default_nlu_data, trained_stack_model):
+    with open(default_nlu_data, 'r') as f:
+        nlu_data = f.read()
+
+    # add evaluation data to model archive
+    zipped_path = add_evaluation_file_to_model(trained_stack_model,
+                                               nlu_data, data_format='md')
+
+    # post zipped stack model with evaluation file
+    with open(zipped_path, 'r+b') as f:
+        _, response = app.post('/intentEvaluation', data=f.read())
+
+    assert response.status == 200
+    assert set(response.json.keys()) == {"intent_evaluation",
+                                         "entity_evaluation"}
 
 
 def test_end_to_end_evaluation(app):
