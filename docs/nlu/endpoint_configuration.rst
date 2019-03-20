@@ -15,7 +15,7 @@ For example:
 
 .. code-block:: bash
 
-    python -m rasa_nlu.server \
+    python -m rasa.nlu.server \
         --path <working directory of the server> \
         --endpoints <path to endpoint configuration>.yml
 
