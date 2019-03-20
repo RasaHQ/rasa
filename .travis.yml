@@ -4,9 +4,7 @@ cache:
   directories:
   - $HOME/.cache/pip
   - /tmp/cached/
-python:
-  - '3.5'
-  - '3.6'
+python: '3.6'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
@@ -42,27 +40,30 @@ jobs:
     python: 3.6
     script:
       - py.test --codestyle -m codestyle
-  - stage: test
+  - &test-core
+    stage: test
     name: "Test Core"
-    python:
-    - 3.5
-    - 3.6
+    python: "3.6"
     script:
       - py.test tests/core --cov rasa -v --cov-append
-  - stage: test
+  - <<: *test-core
+    python: '3.5'
+  - &test-nlu-base
+    stage: test
     name: "Test NLU"
-    python:
-      - 3.5
-      - 3.6
+    python: "3.6"
     script:
       - py.test tests/nlu/base --cov rasa -v --cov-append
-  - stage: test
+  - <<: *test-nlu-base
+    python: '3.5'
+  - &test-nlu-training
+    stage: test
     name: "Test NLU training"
-    python:
-      - 3.5
-      - 3.6
+    python: "3.6"
     script:
       - py.test tests/nlu/training --cov rasa -v --cov-append
+  - <<: *test-nlu-training
+    python: '3.5'
   - stage: integration
     name: "Test API specification"
     language: python
