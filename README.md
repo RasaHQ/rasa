@@ -1,4 +1,4 @@
-# Rasa Stack 
+# Rasa Stack (Rasa Core + Rasa NLU)
 
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa-nlu.svg)](https://badge.fury.io/py/rasa-nlu)
@@ -9,6 +9,10 @@
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu?ref=badge_shield)
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
+
+**Note** This repository now contains the code for both Rasa NLU **AND** Rasa Core.
+Nothing has changed yet in terms of usage, but we are in the process of simplifying
+everything ahead of the next major release. 
 
 Rasa is a framework for building conversational software, which includes
 chatbots on:
