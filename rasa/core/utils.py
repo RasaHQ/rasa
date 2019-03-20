@@ -554,7 +554,7 @@ async def download_file_from_url(url: Text) -> Text:
 
     Returns the file path of the temp file that contains the
     downloaded content."""
-    from rasa_nlu import utils as nlu_utils
+    from rasa.nlu import utils as nlu_utils
 
     if not nlu_utils.is_url(url):
         raise InvalidURL(url)

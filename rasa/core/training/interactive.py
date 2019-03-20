@@ -40,8 +40,8 @@ from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH, visualize_neighborhood)
 from rasa.core.utils import AvailableEndpoints, EndpointConfig
 # noinspection PyProtectedMember
-from rasa_nlu.training_data.loading import _guess_format, load_data
-from rasa_nlu.training_data.message import Message
+from rasa.nlu.training_data.loading import _guess_format, load_data
+from rasa.nlu.training_data.message import Message
 
 # WARNING: This command line UI is using an external library
 # communicating with the shell - these functions are hard to test
@@ -670,10 +670,10 @@ def _split_conversation_at_restarts(
 def _collect_messages(evts: List[Dict[Text, Any]]) -> List[Message]:
     """Collect the message text and parsed data from the UserMessage events
     into a list"""
-    from rasa_nlu.extractors.duckling_http_extractor import \
+    from rasa.nlu.extractors.duckling_http_extractor import \
         DucklingHTTPExtractor
-    from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-    from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+    from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+    from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 
     msgs = []
 
@@ -730,7 +730,7 @@ async def _write_nlu_to_file(
     evts: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
-    from rasa_nlu.training_data import TrainingData
+    from rasa.nlu.training_data import TrainingData
 
     msgs = _collect_messages(evts)
 
@@ -980,7 +980,7 @@ async def _validate_action(action_name: Text,
 
 def _as_md_message(parse_data: Dict[Text, Any]) -> Text:
     """Display the parse data of a message in markdown format."""
-    from rasa_nlu.training_data.formats import MarkdownWriter
+    from rasa.nlu.training_data.formats import MarkdownWriter
 
     if parse_data.get("text", "").startswith(INTENT_MESSAGE_PREFIX):
         return parse_data.get("text")
@@ -1077,7 +1077,7 @@ async def _correct_entities(latest_message: Dict[Text, Any],
     """Validate the entities of a user message.
 
     Returns the corrected entities"""
-    from rasa_nlu.training_data.formats import MarkdownReader
+    from rasa.nlu.training_data.formats import MarkdownReader
 
     parse_original = latest_message.get("parse_data", {})
     entity_str = _as_md_message(parse_original)

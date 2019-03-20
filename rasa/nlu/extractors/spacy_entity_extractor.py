@@ -1,8 +1,8 @@
 import typing
 from typing import Any, Dict, List, Text
 
-from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.training_data import Message
+from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc

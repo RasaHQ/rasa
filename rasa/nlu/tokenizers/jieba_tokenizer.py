@@ -5,16 +5,16 @@ import shutil
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa_nlu.components import Component
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.tokenizers import Token, Tokenizer
-from rasa_nlu.training_data import Message, TrainingData
+from rasa.nlu.components import Component
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.tokenizers import Token, Tokenizer
+from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.model import Metadata
+    from rasa.nlu.model import Metadata
 
 
 class JiebaTokenizer(Tokenizer, Component):

@@ -1,13 +1,13 @@
 # coding=utf-8
 
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.training_data import TrainingData, Message
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.training_data import TrainingData, Message
 from tests.nlu import utilities
 from httpretty import httpretty
 
 
 def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
-    from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     examples = [
         Message("anywhere in the west", {
@@ -57,7 +57,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
 
 
 def test_crf_json_from_BILOU(spacy_nlp, ner_crf_pos_feature_config):
-    from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = u"I need a home cleaning close-by"
     doc = {"spacy_doc": spacy_nlp(sentence)}
@@ -84,7 +84,7 @@ def test_crf_json_from_BILOU(spacy_nlp, ner_crf_pos_feature_config):
 
 
 def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
-    from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+    from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     ner_crf_pos_feature_config.update({"BILOU_flag": False})
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = u"I need a home cleaning close-by"

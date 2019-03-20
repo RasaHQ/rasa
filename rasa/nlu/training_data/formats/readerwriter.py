@@ -1,6 +1,6 @@
 import json
 
-from rasa_nlu import utils
+from rasa.nlu import utils
 
 
 class TrainingDataReader(object):

@@ -74,7 +74,7 @@ def add_run_arguments(parser: argparse.ArgumentParser):
 
 
 def _add_nlu_arguments(parser: argparse.ArgumentParser):
-    from rasa_nlu.cli.server import add_server_arguments
+    from rasa.nlu.cli.server import add_server_arguments
 
     add_server_arguments(parser)
     parser.add_argument('--path',
@@ -99,7 +99,7 @@ def _adk_sdk_arguments(parser: argparse.ArgumentParser):
 
 
 def run_nlu(args: argparse.Namespace):
-    import rasa_nlu.server
+    import rasa.nlu.server
     import tempfile
 
     args.model = get_validated_path(args.path, "path", DEFAULT_MODELS_PATH)
@@ -109,7 +109,7 @@ def run_nlu(args: argparse.Namespace):
     unpacked_model = model.unpack_model(model_archive, working_directory)
     args.path = os.path.dirname(unpacked_model)
 
-    rasa_nlu.server.main(args)
+    rasa.nlu.server.main(args)
 
     shutil.rmtree(unpacked_model)
 

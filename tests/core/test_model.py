@@ -7,13 +7,13 @@ import pytest
 import rasa
 import rasa.data as data
 import rasa.core
-import rasa_nlu
+import rasa.nlu
 from rasa.constants import (
     DEFAULT_CONFIG_PATH, DEFAULT_DATA_PATH, DEFAULT_DOMAIN_PATH)
 from rasa.model import (
-    FINGERPRINT_CONFIG_KEY, FINGERPRINT_CORE_VERSION_KEY,
+    FINGERPRINT_CONFIG_KEY,
     FINGERPRINT_DOMAIN_KEY, FINGERPRINT_FILE_PATH, FINGERPRINT_NLU_DATA_KEY,
-    FINGERPRINT_NLU_VERSION_KEY, FINGERPRINT_RASA_VERSION_KEY,
+    FINGERPRINT_RASA_VERSION_KEY,
     FINGERPRINT_STORIES_KEY, FINGERPRINT_TRAINED_AT_KEY,
     core_fingerprint_changed, create_package_rasa, get_latest_model, get_model,
     get_model_subdirectories, model_fingerprint, nlu_fingerprint_changed)
@@ -45,18 +45,15 @@ def test_get_model_from_directory_with_subdirectories(trained_model):
     assert os.path.exists(unpacked_nlu)
 
 
-def _fingerprint(config=["test"], domain=["test"],
-                 rasa_version="1.0", core_version="1.0",
-                 nlu_version="1.0", stories=["test"], nlu=["test"]):
+def _fingerprint(config=None, domain=None,
+                 rasa_version="1.0", stories=None, nlu=None):
     return {
-        FINGERPRINT_CONFIG_KEY: config,
-        FINGERPRINT_DOMAIN_KEY: domain,
-        FINGERPRINT_NLU_VERSION_KEY: nlu_version,
-        FINGERPRINT_CORE_VERSION_KEY: core_version,
+        FINGERPRINT_CONFIG_KEY: config if config is not None else ["test"],
+        FINGERPRINT_DOMAIN_KEY: domain if domain is not None else ["test"],
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_RASA_VERSION_KEY: rasa_version,
-        FINGERPRINT_STORIES_KEY: stories,
-        FINGERPRINT_NLU_DATA_KEY: nlu
+        FINGERPRINT_STORIES_KEY: stories if stories is not None else ["test"],
+        FINGERPRINT_NLU_DATA_KEY: nlu if nlu is not None else ["test"]
     }
 
 
@@ -70,20 +67,6 @@ def test_persist_and_load_fingerprint():
     actual = fingerprint_from_path(output_directory)
 
     assert actual == fingerprint
-
-
-def test_core_fingerprint_unchanged():
-    fingerprint1 = _fingerprint()
-    fingerprint2 = _fingerprint(nlu_version="other", nlu=[])
-
-    assert core_fingerprint_changed(fingerprint1, fingerprint2) is False
-
-
-def test_nlu_fingerprint_unchanged():
-    fingerprint1 = _fingerprint()
-    fingerprint2 = _fingerprint(core_version="other", stories=[])
-
-    assert nlu_fingerprint_changed(fingerprint1, fingerprint2) is False
 
 
 @pytest.mark.parametrize("fingerprint2", [
@@ -100,8 +83,8 @@ def test_core_fingerprint_changed(fingerprint2):
 @pytest.mark.parametrize("fingerprint2", [
     _fingerprint(config=["other"]),
     _fingerprint(nlu=["test", "other"]),
-    _fingerprint(nlu_version="100"),
-    _fingerprint(nlu_version="100", config=["other"])])
+    _fingerprint(rasa_version="100"),
+    _fingerprint(rasa_version="100", config=["other"])])
 def test_nlu_fingerprint_changed(fingerprint2):
     fingerprint1 = _fingerprint()
     assert nlu_fingerprint_changed(fingerprint1, fingerprint2)
@@ -138,9 +121,9 @@ def test_create_fingerprint_from_paths(project):
 def test_create_fingerprint_from_invalid_paths(project, project_files):
     project_files = _project_files(project, *project_files)
 
-    expected = _fingerprint([], [], rasa_version=rasa.__version__,
-                            core_version=rasa.__version__,
-                            nlu_version=rasa_nlu.__version__, stories=[],
+    expected = _fingerprint([], [],
+                            rasa_version=rasa.__version__,
+                            stories=[],
                             nlu=[])
 
     actual = model_fingerprint(**project_files)

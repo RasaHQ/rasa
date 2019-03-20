@@ -6,10 +6,10 @@ import requests
 import simplejson
 from typing import Any, List, Optional, Text, Dict
 
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.model import Metadata
+from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 

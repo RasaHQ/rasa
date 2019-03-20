@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Text
 
-from rasa_nlu.emulators import NoEmulator
+from rasa.nlu.emulators import NoEmulator
 
 
 class WitEmulator(NoEmulator):

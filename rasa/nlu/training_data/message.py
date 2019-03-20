@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from rasa_nlu.utils import ordered
+from rasa.nlu.utils import ordered
 
 
 class Message(object):

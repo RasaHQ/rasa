@@ -1,6 +1,6 @@
 import numpy as np
 
-from rasa_nlu.components import Component
+from rasa.nlu.components import Component
 
 
 class Featurizer(Component):

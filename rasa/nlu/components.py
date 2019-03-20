@@ -2,12 +2,12 @@ import logging
 import typing
 from typing import Any, Dict, Hashable, List, Optional, Set, Text, Tuple
 
-from rasa_nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.training_data import TrainingData
-    from rasa_nlu.model import Metadata
-    from rasa_nlu.training_data import Message
+    from rasa.nlu.training_data import TrainingData
+    from rasa.nlu.model import Metadata
+    from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def find_unavailable_packages(package_names: List[Text]) -> Set[Text]:
 def validate_requirements(component_names: List[Text]) -> None:
     """Ensures that all required python packages are installed to
     instantiate and used the passed components."""
-    from rasa_nlu import registry
+    from rasa.nlu import registry
 
     # Validate that all required packages are installed
     failed_imports = set()
@@ -258,10 +258,10 @@ class Component(object, metaclass=ComponentMetaclass):
         This is the components chance to train itself provided
         with the training data. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`rasa_nlu.components.Component.create`
+        by a call to :meth:`rasa.nlu.components.Component.create`
         of ANY component and
         on any context attributes created by a call to
-        :meth:`rasa_nlu.components.Component.train`
+        :meth:`rasa.nlu.components.Component.train`
         of components previous to this one."""
         pass
 
@@ -271,10 +271,10 @@ class Component(object, metaclass=ComponentMetaclass):
         This is the components chance to process an incoming
         message. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`rasa_nlu.components.Component.create`
+        by a call to :meth:`rasa.nlu.components.Component.create`
         of ANY component and
         on any context attributes created by a call to
-        :meth:`rasa_nlu.components.Component.process`
+        :meth:`rasa.nlu.components.Component.process`
         of components previous to this one."""
         pass
 
@@ -373,7 +373,7 @@ class ComponentBuilder(object):
         Returns the component, if found, and the cache key.
         """
 
-        from rasa_nlu import registry
+        from rasa.nlu import registry
         # try to get class name first, else create by name
         component_name = component_meta.get('class', component_meta['name'])
         component_class = registry.get_component_class(component_name)
@@ -409,13 +409,13 @@ class ComponentBuilder(object):
             model_dir:
                 the directory to read the model from
             model_metadata (Metadata):
-                the model's :class:`rasa_nlu.model.Metadata`
+                the model's :class:`rasa.nlu.model.Metadata`
 
         Returns:
             Component: the loaded component.
         """
 
-        from rasa_nlu import registry
+        from rasa.nlu import registry
 
         try:
             cached_component, cache_key = self.__get_cached_component(
@@ -437,8 +437,8 @@ class ComponentBuilder(object):
                          cfg: RasaNLUModelConfig) -> Component:
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
-        from rasa_nlu import registry
-        from rasa_nlu.model import Metadata
+        from rasa.nlu import registry
+        from rasa.nlu.model import Metadata
 
         try:
             component, cache_key = self.__get_cached_component(

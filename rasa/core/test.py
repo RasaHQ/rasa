@@ -374,7 +374,7 @@ def collect_story_predictions(
     use_e2e: bool = False
 ) -> Tuple[StoryEvalution, int]:
     """Test the stories from a file, running them through the stored model."""
-    from rasa_nlu.test import get_evaluation_metrics
+    from rasa.nlu.test import get_evaluation_metrics
     from tqdm import tqdm
 
     story_eval_store = EvaluationStore()
@@ -447,7 +447,7 @@ async def test(stories: Text,
                fail_on_prediction_errors: bool = False,
                use_e2e: bool = False):
     """Run the evaluation of the stories, optionally plot the results."""
-    from rasa_nlu.test import get_evaluation_metrics
+    from rasa.nlu.test import get_evaluation_metrics
 
     completed_trackers = await _generate_trackers(stories, agent,
                                                   max_stories, use_e2e)
@@ -514,7 +514,7 @@ def plot_story_evaluation(test_y, predictions,
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
     import matplotlib.pyplot as plt
-    from rasa_nlu.test import plot_confusion_matrix
+    from rasa.nlu.test import plot_confusion_matrix
 
     log_evaluation_table(test_y, "ACTION",
                          report, precision, f1, accuracy,
@@ -538,7 +538,7 @@ async def compare(models: Text,
                   output: Text) -> None:
     """Evaluates multiple trained models on a test set."""
     from rasa.core.agent import Agent
-    import rasa_nlu.utils as nlu_utils
+    import rasa.nlu.utils as nlu_utils
     from rasa.core import utils
 
     num_correct = defaultdict(list)
@@ -612,7 +612,7 @@ def main():
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.utils import (
         AvailableEndpoints, set_default_subparser)
-    import rasa_nlu.utils as nlu_utils
+    import rasa.nlu.utils as nlu_utils
     import rasa.core.cli
     from rasa.core import utils
 

@@ -3,11 +3,11 @@
 import os
 import pytest
 
-from rasa_nlu import registry, train
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.model import Interpreter, Trainer
-from rasa_nlu.train import create_persistor
-from rasa_nlu.training_data import TrainingData
+from rasa.nlu import registry, train
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu.train import create_persistor
+from rasa.nlu.training_data import TrainingData
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 

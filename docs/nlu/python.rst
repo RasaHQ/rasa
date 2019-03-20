@@ -15,9 +15,9 @@ Or, you can train directly in python with a script like the following (using spa
 
 .. testcode::
 
-    from rasa_nlu.training_data import load_data
-    from rasa_nlu.model import Trainer
-    from rasa_nlu import config
+    from rasa.nlu.training_data import load_data
+    from rasa.nlu.model import Trainer
+    from rasa.nlu import config
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
     trainer = Trainer(config.load("sample_configs/config_pretrained_embeddings_spacy.yml"))
@@ -33,7 +33,7 @@ necessary information to reconstruct your model:
 
 .. testcode::
 
-    from rasa_nlu.model import Interpreter
+    from rasa.nlu.model import Interpreter
 
     # where model_directory points to the model folder
     interpreter = Interpreter.load(model_directory)
@@ -60,10 +60,10 @@ To train a model:
 
 .. testcode::
 
-    from rasa_nlu.training_data import load_data
-    from rasa_nlu import config
-    from rasa_nlu.components import ComponentBuilder
-    from rasa_nlu.model import Trainer
+    from rasa.nlu.training_data import load_data
+    from rasa.nlu import config
+    from rasa.nlu.components import ComponentBuilder
+    from rasa.nlu.model import Trainer
 
     builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
 
@@ -76,8 +76,8 @@ The same builder can be used to load a model (can be a totally different one). T
 
 .. testcode::
 
-    from rasa_nlu.model import Interpreter
-    from rasa_nlu import config
+    from rasa.nlu.model import Interpreter
+    from rasa.nlu import config
 
     # For simplicity we will load the same model twice, usually you would want to use the metadata of
     # different models
@@ -92,12 +92,12 @@ Important Classes
 Config
 ^^^^^^
 
-.. automodule:: rasa_nlu.config
+.. automodule:: rasa.nlu.config
 
    .. autofunction:: load
 
 
-.. autoclass:: rasa_nlu.config.RasaNLUModelConfig
+.. autoclass:: rasa.nlu.config.RasaNLUModelConfig
 
    .. automethod:: __init__
 
@@ -105,7 +105,7 @@ Config
 Interpreter
 ^^^^^^^^^^^
 
-.. autoclass:: rasa_nlu.model.Interpreter
+.. autoclass:: rasa.nlu.model.Interpreter
 
 
    .. automethod:: load
@@ -113,7 +113,7 @@ Interpreter
 Metadata
 ^^^^^^^^
 
-.. autoclass:: rasa_nlu.model.Metadata
+.. autoclass:: rasa.nlu.model.Metadata
 
 
    .. automethod:: load
@@ -124,7 +124,7 @@ Metadata
 ComponentBuilder
 ^^^^^^^^^^^^^^^^
 
-.. autoclass:: rasa_nlu.components.ComponentBuilder
+.. autoclass:: rasa.nlu.components.ComponentBuilder
 
 
    .. automethod:: load_component

@@ -9,7 +9,7 @@ from rasa.cli.utils import create_output_path, print_success
 from rasa.constants import DEFAULT_MODELS_PATH
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.model import Interpreter
+    from rasa.nlu.model import Interpreter
 
 
 def train(domain: Text,
@@ -160,10 +160,10 @@ def train_nlu(config: Text, nlu_data: Text, output: Text,
         otherwise the path to the directory with the trained model files.
 
     """
-    import rasa_nlu
+    import rasa.nlu
 
     _train_path = train_path or tempfile.mkdtemp()
-    _, nlu_model, _ = rasa_nlu.train(config, nlu_data, _train_path,
+    _, nlu_model, _ = rasa.nlu.train(config, nlu_data, _train_path,
                                      project="",
                                      fixed_model_name="nlu")
 

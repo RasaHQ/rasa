@@ -4,7 +4,7 @@ import mock
 
 
 def test_whitespace():
-    from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+    from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     tk = WhitespaceTokenizer()
 
     assert ([t.text for t in tk.tokenize("Forecast for lunch")] ==
@@ -30,7 +30,7 @@ def test_whitespace():
 
 
 def test_spacy(spacy_nlp):
-    from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+    from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
     tk = SpacyTokenizer()
 
     text = "Forecast for lunch"
@@ -47,7 +47,7 @@ def test_spacy(spacy_nlp):
 
 
 def test_mitie():
-    from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+    from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
     tk = MitieTokenizer()
 
     text = "Forecast for lunch"
@@ -64,7 +64,7 @@ def test_mitie():
 
 
 def test_jieba():
-    from rasa_nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
+    from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
     tk = JiebaTokenizer()
 
     assert [t.text for t in tk.tokenize("我想去吃兰州拉面")] == \
@@ -81,7 +81,7 @@ def test_jieba():
 
 
 def test_jieba_load_dictionary(tmpdir_factory):
-    from rasa_nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
+    from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
 
     dictionary_path = tmpdir_factory.mktemp("jieba_custom_dictionary").strpath
 

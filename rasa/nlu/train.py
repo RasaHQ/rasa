@@ -2,13 +2,13 @@ import argparse
 import logging
 from typing import Any, Optional, Text, Tuple, Union
 
-from rasa_nlu import config, utils
-from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.model import Interpreter, Trainer
-from rasa_nlu.training_data import load_data
-from rasa_nlu.training_data.loading import load_data_from_endpoint
-from rasa_nlu.utils import EndpointConfig, read_endpoints
+from rasa.nlu import config, utils
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu.training_data import load_data
+from rasa.nlu.training_data.loading import load_data_from_endpoint
+from rasa.nlu.utils import EndpointConfig, read_endpoints
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ def create_persistor(persistor: Optional[Text]):
     """Create a remote persistor to store the model if configured."""
 
     if persistor is not None:
-        from rasa_nlu.persistor import get_persistor
+        from rasa.nlu.persistor import get_persistor
         return get_persistor(persistor)
     else:
         return None

@@ -2,16 +2,16 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa_nlu.components import Component
-from rasa_nlu.config import RasaNLUModelConfig, override_defaults
-from rasa_nlu.training_data import Message, TrainingData
+from rasa.nlu.components import Component
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     from spacy.tokens.doc import Doc
-    from rasa_nlu.model import Metadata
+    from rasa.nlu.model import Metadata
 
 
 class SpacyNLP(Component):

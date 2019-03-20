@@ -7,17 +7,17 @@ import typing
 from tqdm import tqdm
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
-from rasa_nlu.components import Component
+from rasa.nlu.classifiers import INTENT_RANKING_LENGTH
+from rasa.nlu.components import Component
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import tensorflow as tf
-    from rasa_nlu.config import RasaNLUModelConfig
-    from rasa_nlu.training_data import TrainingData
-    from rasa_nlu.model import Metadata
-    from rasa_nlu.training_data import Message
+    from rasa.nlu.config import RasaNLUModelConfig
+    from rasa.nlu.training_data import TrainingData
+    from rasa.nlu.model import Metadata
+    from rasa.nlu.training_data import Message
 
 try:
     import tensorflow as tf

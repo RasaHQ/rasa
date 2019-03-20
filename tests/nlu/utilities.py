@@ -3,9 +3,9 @@ import tempfile
 import pytest
 import ruamel.yaml as yaml
 
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.model import Interpreter
-from rasa_nlu.train import train
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.model import Interpreter
+from rasa.nlu.train import train
 
 slowtest = pytest.mark.slowtest
 

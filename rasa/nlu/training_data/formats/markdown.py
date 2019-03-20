@@ -3,13 +3,13 @@ import re
 import typing
 from typing import Any, Text
 
-from rasa_nlu.training_data.formats.readerwriter import (
+from rasa.nlu.training_data.formats.readerwriter import (
     TrainingDataReader,
     TrainingDataWriter)
-from rasa_nlu.utils import build_entity
+from rasa.nlu.utils import build_entity
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.training_data import Message, TrainingData
+    from rasa.nlu.training_data import Message, TrainingData
 
 INTENT = "intent"
 SYNONYM = "synonym"
@@ -43,7 +43,7 @@ class MarkdownReader(TrainingDataReader):
 
     def reads(self, s: Text, **kwargs: Any) -> 'TrainingData':
         """Read markdown string and create TrainingData object"""
-        from rasa_nlu.training_data import TrainingData
+        from rasa.nlu.training_data import TrainingData
 
         self.__init__()
         s = self._strip_comments(s)
@@ -142,7 +142,7 @@ class MarkdownReader(TrainingDataReader):
         return entities
 
     def _add_synonym(self, text, value):
-        from rasa_nlu.training_data.util import check_duplicate_synonym
+        from rasa.nlu.training_data.util import check_duplicate_synonym
 
         check_duplicate_synonym(self.entity_synonyms, text, value,
                                 "reading markdown")
@@ -157,7 +157,7 @@ class MarkdownReader(TrainingDataReader):
 
     def _parse_training_example(self, example):
         """Extract entities and synonyms, and convert to plain text."""
-        from rasa_nlu.training_data import Message
+        from rasa.nlu.training_data import Message
 
         entities = self._find_entities_in_training_example(example)
         plain_text = re.sub(ent_regex,

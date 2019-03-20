@@ -25,7 +25,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.utils import EndpointConfig, LockCounter
-from rasa_nlu.utils import is_url
+from rasa.nlu.utils import is_url
 
 logger = logging.getLogger(__name__)
 

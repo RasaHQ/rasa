@@ -12,6 +12,7 @@ env:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
+  - COVERALLS_PARALLEL=true
 
 install:
   - sudo apt-get install graphviz graphviz-dev
@@ -32,15 +33,36 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script: 
-  - py.test --codestyle -m codestyle
-  - py.test tests --cov rasa -v --cov-append
-  - py.test tests/nlu/base --cov rasa -v --cov-append
-  - py.test tests/nlu/training --cov rasa -v --cov-append
 after_success:
   - coveralls
 jobs:
   include:
+  - stage: test
+    name: "Test Codestyle"
+    python: 3.6
+    script:
+      - py.test --codestyle -m codestyle
+  - stage: test
+    name: "Test Core"
+    python:
+    - 3.5
+    - 3.6
+    script:
+      - py.test tests/core --cov rasa -v --cov-append
+  - stage: test
+    name: "Test NLU"
+    python:
+      - 3.5
+      - 3.6
+    script:
+      - py.test tests/nlu/base --cov rasa -v --cov-append
+  - stage: test
+    name: "Test NLU training"
+    python:
+      - 3.5
+      - 3.6
+    script:
+      - py.test tests/nlu/training --cov rasa -v --cov-append
   - stage: integration
     name: "Test API specification"
     language: python

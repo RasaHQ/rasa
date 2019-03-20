@@ -9,15 +9,15 @@ from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from rasa_nlu import config, utils
-import rasa_nlu.cli.server as cli
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.data_router import (
+import rasa
+from rasa.nlu import config, utils
+import rasa.nlu.cli.server as cli
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.data_router import (
     DataRouter, InvalidProjectError, MaxTrainingError)
-from rasa_nlu.model import MINIMUM_COMPATIBLE_VERSION
-from rasa_nlu.train import TrainingException
-from rasa_nlu.utils import json_to_string, read_endpoints
-from rasa_nlu.version import __version__
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.nlu.train import TrainingException
+from rasa.nlu.utils import json_to_string, read_endpoints
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ class RasaNLU(object):
     @check_cors
     def hello(self, request):
         """Main Rasa route to check if the server is online"""
-        return "hello from Rasa NLU: " + __version__
+        return "hello from Rasa NLU: " + rasa.__version__
 
     @app.route("/parse", methods=['GET', 'POST', 'OPTIONS'])
     @requires_auth
@@ -195,7 +195,7 @@ class RasaNLU(object):
 
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(
-            {'version': __version__,
+            {'version': rasa.__version__,
              'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
         )
 

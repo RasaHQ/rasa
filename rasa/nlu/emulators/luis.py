@@ -1,6 +1,6 @@
 from typing import Any, Dict, Text
 
-from rasa_nlu.emulators import NoEmulator
+from rasa.nlu.emulators import NoEmulator
 
 
 class LUISEmulator(NoEmulator):

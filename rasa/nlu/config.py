@@ -4,8 +4,8 @@ import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text
 
-from rasa_nlu import utils
-from rasa_nlu.utils import json_to_string
+from rasa.nlu import utils
+from rasa.nlu.utils import json_to_string
 
 # Describes where to search for the config file if no location is specified
 DEFAULT_CONFIG_LOCATION = "config.yml"
@@ -98,7 +98,7 @@ class RasaNLUModelConfig(object):
             # replaces None with empty list
             self.__dict__['pipeline'] = []
         elif isinstance(self.__dict__['pipeline'], str):
-            from rasa_nlu import registry
+            from rasa.nlu import registry
 
             template_name = self.__dict__['pipeline']
             new_names = {"spacy_sklearn": "pretrained_embeddings_spacy",

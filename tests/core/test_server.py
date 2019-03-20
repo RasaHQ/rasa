@@ -8,6 +8,7 @@ import pytest
 from freezegun import freeze_time
 
 import rasa.core
+import rasa.constants
 from rasa.core import events, constants
 from rasa.core.events import (
     UserUttered, BotUttered, SlotSet, Event)
@@ -60,7 +61,7 @@ def test_version(app):
     assert response.status == 200
     assert content.get("version") == rasa.__version__
     assert (content.get("minimum_compatible_version") ==
-            constants.MINIMUM_COMPATIBLE_VERSION)
+            rasa.constants.MINIMUM_COMPATIBLE_VERSION)
 
 
 def test_status(app):

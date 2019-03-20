@@ -45,13 +45,13 @@ To assess your model's performance, use the
 
 .. _section_faq_version:
 
-Which version of Rasa NLU am I running?
----------------------------------------
+Which version of Rasa am I running?
+-----------------------------------
 To find out which Rasa version you are running, you can execute
 
 .. code-block:: bash
 
-   python -c "import rasa_nlu; print(rasa_nlu.__version__);"
+   python -c "import rasa; print(rasa.__version__);"
 
 If you are using a virtual environment to run your python code, make sure
 you are using the correct python to execute the above code.

@@ -14,6 +14,7 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.core import constants, utils
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.domain import Domain
@@ -23,7 +24,7 @@ from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file, write_request_body_to_file
 from rasa.model import unpack_model, FINGERPRINT_FILE_PATH
-from rasa_nlu.test import run_evaluation
+from rasa.nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +271,7 @@ def create_app(agent=None,
 
         return response.json({
             "version": rasa.__version__,
-            "minimum_compatible_version": constants.MINIMUM_COMPATIBLE_VERSION
+            "minimum_compatible_version": MINIMUM_COMPATIBLE_VERSION
         })
 
     # <sender_id> can be be 'default' if there's only 1 client
@@ -562,9 +563,9 @@ def create_app(agent=None,
     @requires_auth(app, auth_token)
     async def evaluate_stories(request: Request):
         """Evaluate stories against the currently loaded model."""
-        import rasa_nlu.utils
+        import rasa.nlu.utils
 
-        tmp_file = rasa_nlu.utils.create_temporary_file(request.body,
+        tmp_file = rasa.nlu.utils.create_temporary_file(request.body,
                                                         mode='w+b')
         use_e2e = utils.bool_arg(request, 'e2e', default=False)
         try:

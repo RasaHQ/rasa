@@ -2,9 +2,9 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa_nlu.components import Component
-from rasa_nlu.config import RasaNLUModelConfig, override_defaults
-from rasa_nlu.model import Metadata
+from rasa.nlu.components import Component
+from rasa.nlu.config import RasaNLUModelConfig, override_defaults
+from rasa.nlu.model import Metadata
 
 if typing.TYPE_CHECKING:
     import mitie

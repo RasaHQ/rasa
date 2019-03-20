@@ -1,7 +1,7 @@
 import argparse
 
-from rasa_nlu import training_data
-from rasa_nlu.utils import write_to_file
+from rasa.nlu import training_data
+from rasa.nlu.utils import write_to_file
 
 
 def add_arguments(parser):

@@ -3,10 +3,10 @@ import os
 import typing
 from typing import Any, Dict, List, Optional, Text
 
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message, TrainingData
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.extractors import EntityExtractor
+from rasa.nlu.model import Metadata
+from rasa.nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 

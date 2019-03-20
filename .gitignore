@@ -52,7 +52,7 @@ test_models/model_*
 test_models/test_model_pretrained_embeddings
 test_projects/test_project_*
 
-rasa_nlu/tmbo_test.py
+rasa/nlu/tmbo_test.py
 .mypy_cache/
 *.tar.gz
 docs/nlu/key

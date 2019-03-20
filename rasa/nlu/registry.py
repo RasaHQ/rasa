@@ -8,36 +8,36 @@ import logging
 import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
-from rasa_nlu import utils
-from rasa_nlu.classifiers.embedding_intent_classifier import \
+from rasa.nlu import utils
+from rasa.nlu.classifiers.embedding_intent_classifier import \
     EmbeddingIntentClassifier
-from rasa_nlu.classifiers.keyword_intent_classifier import \
+from rasa.nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
-from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-from rasa_nlu.classifiers.sklearn_intent_classifier import \
+from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+from rasa.nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
-from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
-from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa_nlu.featurizers.count_vectors_featurizer import \
+from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa.nlu.featurizers.count_vectors_featurizer import \
     CountVectorsFeaturizer
-from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
-from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
-from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
-from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-from rasa_nlu.model import Metadata
-from rasa_nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
-from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa_nlu.utils.mitie_utils import MitieNLP
-from rasa_nlu.utils.spacy_utils import SpacyNLP
+from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
+from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
+from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
+from rasa.nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa.nlu.model import Metadata
+from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
+from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.utils.mitie_utils import MitieNLP
+from rasa.nlu.utils.spacy_utils import SpacyNLP
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.components import Component
-    from rasa_nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
+    from rasa.nlu.components import Component
+    from rasa.nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ def get_component_class(component_name: Text) -> Type['Component']:
                     "sure the mentioned component is not misspelled. If you "
                     "are creating your own component, make sure it is either "
                     "listed as part of the `component_classes` in "
-                    "`rasa_nlu.registry.py` or is a proper name of a class "
+                    "`rasa.nlu.registry.py` or is a proper name of a class "
                     "in a module.".format(component_name))
         else:
             # DEPRECATED ensures compatibility, remove in future versions

@@ -10,6 +10,7 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 import numpy as np
 
 import rasa.core
+import rasa.constants
 from rasa.core import utils, training, constants
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
@@ -188,7 +189,7 @@ class PolicyEnsemble(object):
         from packaging import version
 
         if version_to_check is None:
-            version_to_check = constants.MINIMUM_COMPATIBLE_VERSION
+            version_to_check = rasa.constants.MINIMUM_COMPATIBLE_VERSION
 
         model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):

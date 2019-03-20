@@ -1,9 +1,9 @@
 import pytest
 
-from rasa_nlu import registry
-from rasa_nlu.components import find_unavailable_packages
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.model import Metadata
+from rasa.nlu import registry
+from rasa.nlu.components import find_unavailable_packages
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.model import Metadata
 from tests.nlu import utilities
 
 
@@ -63,9 +63,9 @@ def test_builder_create_unknown(component_builder, default_config):
 
 
 def test_builder_create_by_module_path(component_builder, default_config):
-    from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
+    from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
 
-    path = "rasa_nlu.featurizers.regex_featurizer.RegexFeaturizer"
+    path = "rasa.nlu.featurizers.regex_featurizer.RegexFeaturizer"
     component_config = {'name': path}
     component = component_builder.create_component(component_config,
                                                    default_config)

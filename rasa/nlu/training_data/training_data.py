@@ -9,9 +9,9 @@ import warnings
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set, Text, Tuple
 
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data.util import check_duplicate_synonym
-from rasa_nlu.utils import lazyproperty, list_to_str, write_to_file
+from rasa.nlu.training_data import Message
+from rasa.nlu.training_data.util import check_duplicate_synonym
+from rasa.nlu.utils import lazyproperty, list_to_str, write_to_file
 
 DEFAULT_TRAINING_DATA_OUTPUT_PATH = "training_data.json"
 
@@ -119,12 +119,12 @@ class TrainingData(object):
 
     def as_json(self, **kwargs: Any) -> Text:
         """Represent this set of training examples as json."""
-        from rasa_nlu.training_data.formats import RasaWriter
+        from rasa.nlu.training_data.formats import RasaWriter
         return RasaWriter().dumps(self)
 
     def as_markdown(self) -> Text:
         """Generates the markdown representation of the TrainingData."""
-        from rasa_nlu.training_data.formats import MarkdownWriter
+        from rasa.nlu.training_data.formats import MarkdownWriter
         return MarkdownWriter().dumps(self)
 
     def persist(self, dir_name: Text,

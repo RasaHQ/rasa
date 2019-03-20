@@ -1,5 +1,5 @@
 {
-  "name": "rasa_nlu",
+  "name": "rasa",
   "description": "a service for interpreting natural language",
   "image": "heroku/python",
   "repository": "https://github.com/RasaHQ/rasa_nlu",

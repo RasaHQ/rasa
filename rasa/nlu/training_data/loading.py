@@ -4,16 +4,16 @@ import requests
 import typing
 from typing import Optional, Text
 
-from rasa_nlu import utils
-from rasa_nlu.training_data.formats import markdown
-from rasa_nlu.training_data.formats.dialogflow import (
+from rasa.nlu import utils
+from rasa.nlu.training_data.formats import markdown
+from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT, DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES,
     DIALOGFLOW_INTENT, DIALOGFLOW_INTENT_EXAMPLES, DIALOGFLOW_PACKAGE)
-from rasa_nlu.utils import EndpointConfig
+from rasa.nlu.utils import EndpointConfig
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.training_data import TrainingData
-    from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
+    from rasa.nlu.training_data import TrainingData
+    from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def load_data(resource_name: Text,
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
-    from rasa_nlu.training_data import TrainingData
+    from rasa.nlu.training_data import TrainingData
 
     files = utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
@@ -81,7 +81,7 @@ def load_data_from_endpoint(data_endpoint: EndpointConfig,
 
 def _reader_factory(fformat: Text) -> Optional['TrainingDataReader']:
     """Generates the appropriate reader class based on the file format."""
-    from rasa_nlu.training_data.formats import (
+    from rasa.nlu.training_data.formats import (
         MarkdownReader, WitReader, LuisReader,
         RasaReader, DialogflowReader)
 

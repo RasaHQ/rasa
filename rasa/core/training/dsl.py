@@ -16,11 +16,11 @@ from rasa.core.interpreter import RegexInterpreter
 from rasa.core.training.structures import (
     Checkpoint, STORY_START, StoryStep,
     GENERATED_CHECKPOINT_PREFIX, GENERATED_HASH_LENGTH, FORM_PREFIX)
-from rasa_nlu.training_data.formats import MarkdownReader
+from rasa.nlu.training_data.formats import MarkdownReader
 
 
 if TYPE_CHECKING:
-    from rasa_nlu.training_data import Message
+    from rasa.nlu.training_data import Message
 
 
 logger = logging.getLogger(__name__)
@@ -164,7 +164,7 @@ class StoryFileReader(object):
                                template_variables=None, use_e2e=False,
                                exclusion_percentage=None):
         """Given a path reads all contained story files."""
-        import rasa_nlu.utils as nlu_utils
+        import rasa.nlu.utils as nlu_utils
 
         if not os.path.exists(resource_name):
             raise ValueError("Story file or folder could not be found. Make "

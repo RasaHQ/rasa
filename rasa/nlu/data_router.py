@@ -10,15 +10,15 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import Logger, jsonFileLogObserver
 
-from rasa_nlu import config, utils
-from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.emulators import NoEmulator
-from rasa_nlu.test import run_evaluation
-from rasa_nlu.model import InvalidProjectError
-from rasa_nlu.project import (
+from rasa.nlu import config, utils
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.emulators import NoEmulator
+from rasa.nlu.test import run_evaluation
+from rasa.nlu.model import InvalidProjectError
+from rasa.nlu.project import (
     Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server)
-from rasa_nlu.train import do_train_in_worker
+from rasa.nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ class DataRouter(object):
     def _list_projects_in_cloud(self) -> List[Text]:
         # noinspection PyBroadException
         try:
-            from rasa_nlu.persistor import get_persistor
+            from rasa.nlu.persistor import get_persistor
             p = get_persistor(self.remote_storage)
             if p is not None:
                 return p.list_projects()
@@ -219,20 +219,20 @@ class DataRouter(object):
         if mode is None:
             return NoEmulator()
         elif mode.lower() == 'wit':
-            from rasa_nlu.emulators.wit import WitEmulator
+            from rasa.nlu.emulators.wit import WitEmulator
             return WitEmulator()
         elif mode.lower() == 'luis':
-            from rasa_nlu.emulators.luis import LUISEmulator
+            from rasa.nlu.emulators.luis import LUISEmulator
             return LUISEmulator()
         elif mode.lower() == 'dialogflow':
-            from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+            from rasa.nlu.emulators.dialogflow import DialogflowEmulator
             return DialogflowEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
 
     @staticmethod
     def _tf_in_pipeline(model_config: RasaNLUModelConfig) -> bool:
-        from rasa_nlu.classifiers.embedding_intent_classifier import \
+        from rasa.nlu.classifiers.embedding_intent_classifier import \
             EmbeddingIntentClassifier
         return any(EmbeddingIntentClassifier.name in c.values()
                    for c in model_config.pipeline)

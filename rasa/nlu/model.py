@@ -8,19 +8,18 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-import rasa_nlu
-from rasa_nlu import components, utils
-from rasa_nlu.components import Component, ComponentBuilder
-from rasa_nlu.config import (RasaNLUModelConfig,
+import rasa.nlu
+from rasa.nlu import components, utils
+from rasa.nlu.components import Component, ComponentBuilder
+from rasa.nlu.config import (RasaNLUModelConfig,
                              component_config_from_pipeline,
                              make_path_absolute)
-from rasa_nlu.persistor import Persistor
-from rasa_nlu.training_data import TrainingData, Message
-from rasa_nlu.utils import create_dir, write_json_to_file
+from rasa.nlu.persistor import Persistor
+from rasa.nlu.training_data import TrainingData, Message
+from rasa.nlu.utils import create_dir, write_json_to_file
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 
 logger = logging.getLogger(__name__)
-
-MINIMUM_COMPATIBLE_VERSION = '0.15.0a2'
 
 
 class InvalidProjectError(Exception):
@@ -109,7 +108,7 @@ class Metadata(object):
 
         metadata.update({
             "trained_at": datetime.datetime.now().strftime('%Y%m%d-%H%M%S'),
-            "rasa_nlu_version": rasa_nlu.__version__,
+            "rasa_version": rasa.__version__,
         })
 
         filename = os.path.join(model_dir, 'metadata.json')
@@ -269,7 +268,7 @@ class Interpreter(object):
         if version_to_check is None:
             version_to_check = MINIMUM_COMPATIBLE_VERSION
 
-        model_version = metadata.get("rasa_nlu_version", "0.0.0")
+        model_version = metadata.get("rasa_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedModelError(
                 "The model version is to old to be "
@@ -277,7 +276,7 @@ class Interpreter(object):
                 "Either retrain the model, or run with"
                 "an older version. "
                 "Model version: {} Instance version: {}"
-                "".format(model_version, rasa_nlu.__version__))
+                "".format(model_version, rasa.__version__))
 
     @staticmethod
     def load(model_dir: Text,
@@ -291,7 +290,7 @@ class Interpreter(object):
                 before loading them.
             model_dir: The path of the model to load
             component_builder: The
-                :class:`rasa_nlu.components.ComponentBuilder` to use.
+                :class:`rasa.nlu.components.ComponentBuilder` to use.
 
         Returns:
             An interpreter that uses the loaded model.

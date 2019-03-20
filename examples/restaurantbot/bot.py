@@ -36,9 +36,9 @@ async def train_dialogue(domain_file="domain.yml",
 
 
 def train_nlu():
-    from rasa_nlu.training_data import load_data
-    from rasa_nlu import config
-    from rasa_nlu.model import Trainer
+    from rasa.nlu.training_data import load_data
+    from rasa.nlu import config
+    from rasa.nlu.model import Trainer
 
     training_data = load_data('data/nlu.md')
     trainer = Trainer(config.load("config.yml"))

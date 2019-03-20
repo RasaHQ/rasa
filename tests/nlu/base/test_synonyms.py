@@ -1,5 +1,5 @@
-from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa_nlu.model import Metadata
+from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
+from rasa.nlu.model import Metadata
 import pytest
 
 

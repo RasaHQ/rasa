@@ -43,14 +43,14 @@ Evaluating Models
 
 How is your model performing? Do you have enough data? Are your intents and entities well-designed?
 
-Rasa NLU has an ``evaluate`` mode which helps you answer these questions.
+Rasa NLU has an ``test`` mode which helps you answer these questions.
 A standard technique in machine learning is to keep some data separate as a *test set*.
 If you've done this, you can see how well your model predicts the test cases using this command:
 
 
 .. code-block:: bash
 
-    python -m rasa_nlu.evaluate \
+    python -m rasa.nlu.test \
         --data data/examples/rasa/demo-rasa.json \
         --model projects/default/model_20180323-145833
 
@@ -64,7 +64,7 @@ To do this, run the evaluation script with the ``--mode crossvalidation`` flag:
 
 .. code-block:: bash
 
-    python -m rasa_nlu.evaluate \
+    python -m rasa.nlu.test \
         --data data/examples/rasa/demo-rasa.json \
         --config sample_configs/config_pretrained_embeddings_spacy.yml \
         --mode crossvalidation
@@ -155,11 +155,11 @@ run:
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.evaluate --help
+    $ python -m rasa.nlu.test --help
 
 Which will produce the following output:
 
-.. program-output:: python -m rasa_nlu.evaluate --help
+.. program-output:: python -m rasa.nlu.test --help
 
 
 .. include:: feedback.inc

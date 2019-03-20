@@ -10,12 +10,12 @@ from requests.exceptions import InvalidURL, RequestException
 from threading import Lock, Thread
 from typing import List, Optional, Text
 
-from rasa_nlu import utils
-from rasa_nlu.classifiers.keyword_intent_classifier import \
+from rasa.nlu import utils
+from rasa.nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
-from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.model import Interpreter, Metadata
-from rasa_nlu.utils import EndpointConfig, is_url
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.model import Interpreter, Metadata
+from rasa.nlu.utils import EndpointConfig, is_url
 
 logger = logging.getLogger(__name__)
 
@@ -406,7 +406,7 @@ class Project(object):
     def _list_models_in_cloud(self) -> List[Text]:
 
         try:
-            from rasa_nlu.persistor import get_persistor
+            from rasa.nlu.persistor import get_persistor
             p = get_persistor(self.remote_storage)
             if p is not None:
                 return p.list_models(self._project)
@@ -419,7 +419,7 @@ class Project(object):
 
     def _load_model_from_cloud(self, model_name, target_path):
         try:
-            from rasa_nlu.persistor import get_persistor
+            from rasa.nlu.persistor import get_persistor
             p = get_persistor(self.remote_storage)
             if p is not None:
                 p.retrieve(model_name, self._project, target_path)

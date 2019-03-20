@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Text
 
-from rasa_nlu.components import Component
-from rasa_nlu.training_data import Message
+from rasa.nlu.components import Component
+from rasa.nlu.training_data import Message
 
 
 class EntityExtractor(Component):

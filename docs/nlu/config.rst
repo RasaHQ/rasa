@@ -28,7 +28,7 @@ You can run a simple http server that handles requests using your projects with 
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.server --path projects
+    $ python -m rasa.nlu.server --path projects
 
 The server will look for existing projects under the folder defined by
 the ``path`` parameter. By default a project will load the latest
@@ -60,12 +60,12 @@ to load a specific project.
 .. code-block:: console
 
     $ # This will load all projects under projects/ directory
-    $ python -m rasa_nlu.server -c config.yaml --path projects/
+    $ python -m rasa.nlu.server -c config.yaml --path projects/
 
 .. code-block:: console
 
     $ # This will load only hotels project under projects/ directory
-    $ python -m rasa_nlu.server -c config.yaml --pre_load hotels --path projects/
+    $ python -m rasa.nlu.server -c config.yaml --pre_load hotels --path projects/
 
 
 The file structure under ``path directory`` is as follows:
@@ -111,11 +111,11 @@ There are a number of parameters you can pass when running the server.
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server
+    $ python -m rasa.nlu.server
 
 Here is a quick overview:
 
-.. program-output:: python -m rasa_nlu.server --help
+.. program-output:: python -m rasa.nlu.server --help
 
 
 .. _section_auth:

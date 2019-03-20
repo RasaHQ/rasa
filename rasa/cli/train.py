@@ -11,7 +11,7 @@ from rasa.constants import (
     DEFAULT_MODELS_PATH)
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.model import Interpreter
+    from rasa.nlu.model import Interpreter
 
 
 # noinspection PyProtectedMember

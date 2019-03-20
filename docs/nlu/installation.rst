@@ -28,7 +28,7 @@ the latest stable version of Rasa NLU:
 
 .. copyable::
 
-    pip install rasa_nlu
+    pip install rasa
 
 Latest (Most recent github)
 ---------------------------
@@ -78,7 +78,7 @@ visit the `spacy docs <https://spacy.io/usage/models>`_):
 
 .. code-block:: bash
 
-    pip install rasa_nlu[spacy]
+    pip install rasa[spacy]
     python -m spacy download en_core_web_md
     python -m spacy link en_core_web_md en
 
@@ -99,7 +99,7 @@ To do this, run the following command:
 
 .. code-block:: bash
 
-    pip install rasa_nlu[tensorflow]
+    pip install rasa
 
 
 Second Alternative: MITIE
@@ -114,7 +114,7 @@ First, run
 .. code-block:: bash
 
     pip install git+https://github.com/mit-nlp/MITIE.git
-    pip install rasa_nlu[mitie]
+    pip install rasa[mitie]
 
 and then download the
 `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.

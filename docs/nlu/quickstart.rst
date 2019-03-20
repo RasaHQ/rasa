@@ -115,14 +115,14 @@ To choose which pipeline is best for you read :ref:`choosing_pipeline`.
 3. Train your Machine Learning NLU model.
 -----------------------------------------
 
-To train a model, start the ``rasa_nlu.train`` command, and tell it where to find your configuration and your training data:
+To train a model, start the ``rasa.nlu.train`` command, and tell it where to find your configuration and your training data:
 
 If you are running this in your computer, leave out the ``!`` at the start.
 
 .. runnable::
    :description: nlu-train-nlu
 
-   !python -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
+   !python -m rasa.nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
 
 
 We are also passing the ``--project current`` and ``--fixed_model_name nlu`` parameters, this means the model will be saved at ``./models/current/nlu`` relative to your working directory.
@@ -143,7 +143,7 @@ To use your new model in python, create an ``Interpreter`` object and pass a mes
 .. runnable::
     :description: nlu-parse-nlu-python
 
-    from rasa_nlu.model import Interpreter
+    from rasa.nlu.model import Interpreter
     import json
     interpreter = Interpreter.load("./models/current/nlu")
     message = "let's see some italian restaurants"

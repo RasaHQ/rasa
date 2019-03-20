@@ -44,7 +44,7 @@ def deserialise_entities(entities):
 
 
 def md_format_message(text, intent, entities):
-    from rasa_nlu.training_data.formats import MarkdownWriter, MarkdownReader
+    from rasa.nlu.training_data.formats import MarkdownWriter, MarkdownReader
 
     message_from_md = MarkdownReader()._parse_training_example(text)
     deserialised_entities = deserialise_entities(entities)

@@ -14,7 +14,7 @@ def add_server_arguments(parser):
                              'server. \nIf given `all` as input all the models '
                              'will be loaded.\nElse you can specify a list of '
                              'specific project names.\nEg: python -m '
-                             'rasa_nlu.server --pre_load project1 '
+                             'rasa.nlu.server --pre_load project1 '
                              '--path projects '
                              '-c config.yaml')
     parser.add_argument('-t', '--token',
