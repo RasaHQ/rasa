@@ -22,7 +22,7 @@ clean:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
-	rm -rf docs/_build
+	rm -rf docs/core/_build
 
 lint:
 	py.test --pep8 -m pep8
@@ -34,7 +34,7 @@ doctest: clean
 	cd docs && make doctest
 
 livedocs:
-	cd docs && make livehtml
+	cd docs/core && make livehtml
 
 check-readme:
 	# if this runs through we can be sure the readme is properly shown on pypi

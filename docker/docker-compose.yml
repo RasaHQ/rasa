@@ -1,13 +1,13 @@
 version: '3.0'
 
 services:
-  rasa_core:
-    image: rasa/rasa_core:latest
+  rasa:
+    image: rasa/rasa:latest
     networks: ['rasa-network']
     ports:
     - "5005:5005"
     volumes:
-    - "./rasa-app-data/models/current/dialogue:/app/model"
+    - "./rasa-app-data/models:/app/models"
     - "./rasa-app-data/config:/app/config"
     - "./rasa-app-data/project:/app/project"
     command:
@@ -28,15 +28,6 @@ services:
     - "5055:5055"
     volumes:
     - "./rasa-app-data/actions:/app/actions"
-
-  rasa_nlu:
-    image: rasa/rasa_nlu:latest-full
-    networks: ['rasa-network']
-    ports:
-    - "5000:5000"
-    volumes:
-    - "./rasa-app-data/models/:/app/projects"
-    - "./rasa-app-data/logs:/app/logs"
 
   duckling:
     image: rasa/duckling:latest

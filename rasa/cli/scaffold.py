@@ -43,7 +43,7 @@ def print_train_or_instructions(args: argparse.Namespace,
 
 
 def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
-    from rasa_core import constants
+    from rasa.core import constants
     import questionary
 
     should_run = questionary.confirm("Do you want to speak to the trained bot "

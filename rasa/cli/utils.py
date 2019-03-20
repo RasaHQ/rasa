@@ -99,7 +99,7 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
         Subset of kwargs which are accepted by `func`.
 
     """
-    from rasa_core.utils import arguments_of
+    from rasa.core.utils import arguments_of
 
     possible_arguments = arguments_of(func)
 

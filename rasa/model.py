@@ -151,7 +151,7 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
         The fingerprint.
 
     """
-    import rasa_core
+    import rasa.core
     import rasa_nlu
     import rasa
     import time
@@ -163,13 +163,13 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
         FINGERPRINT_NLU_VERSION_KEY: rasa_nlu.__version__,
-        FINGERPRINT_CORE_VERSION_KEY: rasa_core.__version__,
+        FINGERPRINT_CORE_VERSION_KEY: rasa.__version__,
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__
     }
 
 
 def _get_hashes_for_paths(path: Text) -> List[Text]:
-    from rasa_core.utils import get_file_hash
+    from rasa.core.utils import get_file_hash
 
     files = []
     if path and os.path.isdir(path):
@@ -190,12 +190,12 @@ def fingerprint_from_path(model_path: Text) -> Fingerprint:
     Returns:
         The fingerprint or an empty dict if no fingerprint was found.
     """
-    import rasa_core.utils
+    import rasa.core.utils
 
     fingerprint_path = os.path.join(model_path, FINGERPRINT_FILE_PATH)
 
     if os.path.isfile(fingerprint_path):
-        return rasa_core.utils.read_json_file(fingerprint_path)
+        return rasa.core.utils.read_json_file(fingerprint_path)
     else:
         return {}
 
@@ -208,7 +208,7 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
         fingerprint: The fingerprint to be persisted.
 
     """
-    from rasa_core.utils import dump_obj_as_json_to_file
+    from rasa.core.utils import dump_obj_as_json_to_file
 
     path = os.path.join(output_path, FINGERPRINT_FILE_PATH)
     dump_obj_as_json_to_file(path, fingerprint)

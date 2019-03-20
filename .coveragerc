@@ -7,4 +7,4 @@ exclude_lines =
     def create_argument_parser
     if typing.TYPE_CHECKING
 [run]
-source = rasa_core
+source = rasa

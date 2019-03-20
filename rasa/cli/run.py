@@ -61,7 +61,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
 
 def add_run_arguments(parser: argparse.ArgumentParser):
-    from rasa_core.cli.run import add_run_arguments
+    from rasa.core.cli.run import add_run_arguments
 
     add_run_arguments(parser)
     add_model_param(parser)
