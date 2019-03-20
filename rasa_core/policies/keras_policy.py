@@ -7,13 +7,13 @@ import numpy as np
 import warnings
 from typing import Any, List, Dict, Text, Optional, Tuple
 
-from rasa_core import utils
-from rasa_core.domain import Domain
-from rasa_core.featurizers import (
+from rasa.core import utils
+from rasa.core.domain import Domain
+from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
-from rasa_core.featurizers import TrackerFeaturizer
-from rasa_core.policies.policy import Policy
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.policies.policy import Policy
+from rasa.core.trackers import DialogueStateTracker
 
 try:
     import cPickle as pickle

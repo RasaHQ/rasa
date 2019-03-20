@@ -3,8 +3,8 @@ import logging
 from sanic import Blueprint, response
 from twilio.rest import Client
 
-from rasa_core.channels import InputChannel
-from rasa_core.channels import UserMessage, OutputChannel
+from rasa.core.channels import InputChannel
+from rasa.core.channels import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ from typing import List
 from typing import Text
 
 if typing.TYPE_CHECKING:
-    from rasa_core.events import Event
+    from rasa.core.events import Event
 
 
 class Dialogue(object):

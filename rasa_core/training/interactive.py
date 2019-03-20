@@ -20,25 +20,25 @@ import questionary
 import rasa.cli.utils
 from questionary import Choice, Form, Question
 from rasa.cli import utils as cliutils
-from rasa_core import constants, events, run, train, utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME, default_action_names
-from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import button_to_string, element_to_string
-from rasa_core.constants import (
+from rasa.core import constants, events, run, train, utils
+from rasa.core.actions.action import ACTION_LISTEN_NAME, default_action_names
+from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import button_to_string, element_to_string
+from rasa.core.constants import (
     DEFAULT_SERVER_FORMAT, DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL,
     REQUESTED_SLOT)
-from rasa_core.domain import Domain
-from rasa_core.events import (
+from rasa.core.domain import Domain
+from rasa.core.events import (
     ActionExecuted, BotUttered, Event, Restarted, UserUttered)
-from rasa_core.interpreter import (
+from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
     NaturalLanguageInterpreter)
-from rasa_core.trackers import EventVerbosity
-from rasa_core.training import visualization
-from rasa_core.training.structures import Story
-from rasa_core.training.visualization import (
+from rasa.core.trackers import EventVerbosity
+from rasa.core.training import visualization
+from rasa.core.training.structures import Story
+from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH, visualize_neighborhood)
-from rasa_core.utils import AvailableEndpoints, EndpointConfig
+from rasa.core.utils import AvailableEndpoints, EndpointConfig
 # noinspection PyProtectedMember
 from rasa_nlu.training_data.loading import _guess_format, load_data
 from rasa_nlu.training_data.message import Message
@@ -1241,7 +1241,7 @@ async def record_messages(endpoint: EndpointConfig,
                           ):
     """Read messages from the command line and print bot responses."""
 
-    from rasa_core import training
+    from rasa.core import training
 
     try:
         _print_help(skip_visualization)

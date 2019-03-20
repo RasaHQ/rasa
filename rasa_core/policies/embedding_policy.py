@@ -11,23 +11,23 @@ from tqdm import tqdm
 from typing import (
     Any, List, Optional, Text, Dict, Tuple, Union)
 
-from rasa_core import utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.domain import Domain
-from rasa_core.featurizers import (
+from rasa.core import utils
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.domain import Domain
+from rasa.core.featurizers import (
     TrackerFeaturizer,
     FullDialogueTrackerFeaturizer,
     LabelTokenizerSingleStateFeaturizer)
-from rasa_core.policies.policy import Policy
+from rasa.core.policies.policy import Policy
 
 import tensorflow as tf
-from rasa_core.policies.tf_utils import (
+from rasa.core.policies.tf_utils import (
     TimeAttentionWrapper,
     ChronoBiasLayerNormBasicLSTMCell)
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker
 
 if typing.TYPE_CHECKING:
-    from rasa_core.policies.tf_utils import TimeAttentionWrapperState
+    from rasa.core.policies.tf_utils import TimeAttentionWrapperState
 
 try:
     import cPickle as pickle

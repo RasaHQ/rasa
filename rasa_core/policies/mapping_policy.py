@@ -1,13 +1,13 @@
 import logging
 from typing import Any, List, Text
 
-from rasa_core.actions.action import (
+from rasa.core.actions.action import (
     ACTION_BACK_NAME, ACTION_LISTEN_NAME, ACTION_RESTART_NAME)
-from rasa_core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
-from rasa_core.domain import Domain
-from rasa_core.events import ActionExecuted
-from rasa_core.policies.policy import Policy
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
+from rasa.core.domain import Domain
+from rasa.core.events import ActionExecuted
+from rasa.core.policies.policy import Policy
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

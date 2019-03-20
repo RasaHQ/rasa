@@ -4,13 +4,13 @@ from collections import namedtuple
 import typing
 from typing import Text, List, Dict, Any
 
-from rasa_core.channels import OutputChannel
-from rasa_core.nlg import NaturalLanguageGenerator
+from rasa.core.channels import OutputChannel
+from rasa.core.nlg import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from rasa_core.trackers import DialogueStateTracker
+    from rasa.core.trackers import DialogueStateTracker
 
 
 class Element(dict):

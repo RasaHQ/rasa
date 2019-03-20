@@ -6,8 +6,8 @@ from rasa.core.domain import Domain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.utils import read_file
 from rasa.core.slots import TextSlot
-from tests import utilities
-from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+from tests.core import utilities
+from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 async def test_create_train_data_no_history(default_domain):
@@ -136,7 +136,7 @@ def test_custom_slot_type(tmpdir):
     domain_path = utilities.write_text_to_file(tmpdir, "domain.yml", """
        slots:
          custom:
-           type: tests.conftest.CustomSlot
+           type: tests.core.conftest.CustomSlot
 
        templates:
          utter_greet:
@@ -151,7 +151,7 @@ def test_custom_slot_type(tmpdir):
     """
     slots:
         custom:
-         type: tests.conftest.Unknown
+         type: tests.core.conftest.Unknown
 
     templates:
         utter_greet:

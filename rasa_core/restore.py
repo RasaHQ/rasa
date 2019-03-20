@@ -6,18 +6,18 @@ import warnings
 from difflib import SequenceMatcher
 
 import rasa.cli.utils
-import rasa_core.cli.arguments
+import rasa.core.cli.arguments
 import rasa.utils
 from typing import List, Optional, Text, Tuple
 
 from rasa.cli import utils as cliutils
-from rasa_core import constants, run, utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.channels import UserMessage, CollectingOutputChannel, console
-from rasa_core.domain import Domain
-from rasa_core.events import ActionExecuted, UserUttered
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.utils import AvailableEndpoints
+from rasa.core import constants, run, utils
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.channels import UserMessage, CollectingOutputChannel, console
+from rasa.core.domain import Domain
+from rasa.core.events import ActionExecuted, UserUttered
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.utils import AvailableEndpoints
 
 logger = logging.getLogger()  # get the root logger
 
@@ -45,7 +45,7 @@ def create_argument_parser():
         action="store_true",
         help="Start the web server api in addition to the input channel")
 
-    rasa_core.cli.arguments.add_logging_option_arguments(parser)
+    rasa.core.cli.arguments.add_logging_option_arguments(parser)
 
     return parser
 

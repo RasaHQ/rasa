@@ -21,9 +21,9 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
 
 def start_core(platform_token):
-    from rasa_core.utils import AvailableEndpoints
-    from rasa_core.run import serve_application
-    from rasa_core.utils import EndpointConfig
+    from rasa.core.utils import AvailableEndpoints
+    from rasa.core.run import serve_application
+    from rasa.core.utils import EndpointConfig
 
     _endpoints = AvailableEndpoints(
         # TODO: make endpoints more configurable, esp ports

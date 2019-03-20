@@ -25,7 +25,7 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
-from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 
 logger = logging.getLogger(__name__)
 

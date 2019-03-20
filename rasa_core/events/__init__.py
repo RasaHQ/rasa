@@ -9,7 +9,7 @@ from dateutil import parser
 from typing import List, Dict, Text, Any, Type, Optional
 
 if typing.TYPE_CHECKING:
-    from rasa_core.trackers import DialogueStateTracker
+    from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def first_key(d, default_key):
 # noinspection PyProtectedMember
 class Event(object):
     """Events describe everything that occurs in
-    a conversation and tell the :class:`rasa_core.trackers.DialogueStateTracker`
+    a conversation and tell the :class:`rasa.core.trackers.DialogueStateTracker`
     how to update its state."""
 
     type_name = "event"
@@ -153,7 +153,7 @@ class Event(object):
         default: Optional[Type['Event']] = None
     ) -> Optional[Type['Event']]:
         """Returns a slots class by its type name."""
-        from rasa_core import utils
+        from rasa.core import utils
 
         for cls in utils.all_subclasses(Event):
             if cls.type_name == type_name:
@@ -432,7 +432,7 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker):
-        from rasa_core.actions.action import ACTION_LISTEN_NAME
+        from rasa.core.actions.action import ACTION_LISTEN_NAME
         tracker._reset()
         tracker.trigger_followup_action(ACTION_LISTEN_NAME)
 

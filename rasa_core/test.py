@@ -8,11 +8,11 @@ import warnings
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa_core.events import ActionExecuted, UserUttered
+from rasa.core.events import ActionExecuted, UserUttered
 
 if typing.TYPE_CHECKING:
-    from rasa_core.agent import Agent
-    from rasa_core.trackers import DialogueStateTracker
+    from rasa.core.agent import Agent
+    from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +25,10 @@ StoryEvalution = namedtuple("StoryEvaluation",
 
 def create_argument_parser():
     """Create argument parser for the evaluate script."""
-    import rasa_core.cli.arguments
+    import rasa.core.cli.arguments
 
-    import rasa_core.cli.train
-    from rasa_core import cli
+    import rasa.core.cli.train
+    from rasa.core import cli
 
     parser = argparse.ArgumentParser(
         description='evaluates a dialogue model')
@@ -36,7 +36,7 @@ def create_argument_parser():
     cli.test.add_evaluation_arguments(parent_parser)
     cli.arguments.add_model_and_story_group(parent_parser,
                                             allow_pretrained_model=False)
-    rasa_core.cli.arguments.add_logging_option_arguments(parent_parser)
+    rasa.core.cli.arguments.add_logging_option_arguments(parent_parser)
     subparsers = parser.add_subparsers(help='mode', dest='mode')
     subparsers.add_parser('default',
                           help='default mode: evaluate a dialogue'
@@ -194,7 +194,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
                                                              input_channel)
 
     def as_story_string(self, e2e=True):
-        from rasa_core.events import md_format_message
+        from rasa.core.events import md_format_message
         correct_message = md_format_message(self.text,
                                             self.intent,
                                             self.entities)
@@ -211,9 +211,9 @@ class WronglyClassifiedUserUtterance(UserUttered):
 async def _generate_trackers(resource_name, agent,
                              max_stories=None,
                              use_e2e=False):
-    from rasa_core.training.generator import TrainingDataGenerator
+    from rasa.core.training.generator import TrainingDataGenerator
 
-    from rasa_core import training
+    from rasa.core import training
     story_graph = await training.extract_story_graph(
         resource_name, agent.domain, agent.interpreter, use_e2e)
     g = TrainingDataGenerator(story_graph, agent.domain,
@@ -231,7 +231,7 @@ def _clean_entity_results(entity_results):
 def _collect_user_uttered_predictions(event,
                                       partial_tracker,
                                       fail_on_prediction_errors):
-    from rasa_core.utils import (
+    from rasa.core.utils import (
         pad_list_to_size)
 
     user_uttered_eval_store = EvaluationStore()
@@ -314,7 +314,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
 def _predict_tracker_actions(tracker, agent: 'Agent',
                              fail_on_prediction_errors=False,
                              use_e2e=False):
-    from rasa_core.trackers import DialogueStateTracker
+    from rasa.core.trackers import DialogueStateTracker
 
     processor = agent.create_processor()
     tracker_eval_store = EvaluationStore()
@@ -357,7 +357,7 @@ def _in_training_data_fraction(action_list):
     """Given a list of action items, returns the fraction of actions
 
     that were predicted using one of the Memoization policies."""
-    from rasa_core.policies import SimplePolicyEnsemble
+    from rasa.core.policies import SimplePolicyEnsemble
 
     in_training_data = [
         a["action"] for a in action_list
@@ -537,9 +537,9 @@ async def compare(models: Text,
                   stories_file: Text,
                   output: Text) -> None:
     """Evaluates multiple trained models on a test set."""
-    from rasa_core.agent import Agent
+    from rasa.core.agent import Agent
     import rasa_nlu.utils as nlu_utils
-    from rasa_core import utils
+    from rasa.core import utils
 
     num_correct = defaultdict(list)
 
@@ -579,7 +579,7 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
     """
     import matplotlib.pyplot as plt
     import numpy as np
-    from rasa_core import utils
+    from rasa.core import utils
 
     ax = plt.gca()
 
@@ -608,13 +608,13 @@ def plot_curve(output: Text, no_stories: List[int]) -> None:
 
 
 def main():
-    from rasa_core.agent import Agent
-    from rasa_core.interpreter import NaturalLanguageInterpreter
-    from rasa_core.utils import (
+    from rasa.core.agent import Agent
+    from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.core.utils import (
         AvailableEndpoints, set_default_subparser)
     import rasa_nlu.utils as nlu_utils
-    import rasa_core.cli
-    from rasa_core import utils
+    import rasa.core.cli
+    from rasa.core import utils
 
     loop = asyncio.get_event_loop()
 
@@ -640,7 +640,7 @@ def main():
         _agent = Agent.load(cmdline_arguments.core, interpreter=_interpreter)
 
         stories = loop.run_until_complete(
-            rasa_core.cli.train.stories_from_cli_args(cmdline_arguments))
+            rasa.core.cli.train.stories_from_cli_args(cmdline_arguments))
 
         loop.run_until_complete(
             test(stories, _agent, cmdline_arguments.max_stories,

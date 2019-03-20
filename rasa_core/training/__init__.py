@@ -2,10 +2,10 @@ import typing
 from typing import Text, List, Optional
 
 if typing.TYPE_CHECKING:
-    from rasa_core.domain import Domain
-    from rasa_core.interpreter import NaturalLanguageInterpreter
-    from rasa_core.trackers import DialogueStateTracker
-    from rasa_core.training.structures import StoryGraph
+    from rasa.core.domain import Domain
+    from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.core.trackers import DialogueStateTracker
+    from rasa.core.training.structures import StoryGraph
 
 
 async def extract_story_graph(
@@ -15,9 +15,9 @@ async def extract_story_graph(
     use_e2e: bool = False,
     exclusion_percentage: int = None
 ) -> 'StoryGraph':
-    from rasa_core.interpreter import RegexInterpreter
-    from rasa_core.training.dsl import StoryFileReader
-    from rasa_core.training.structures import StoryGraph
+    from rasa.core.interpreter import RegexInterpreter
+    from rasa.core.training.dsl import StoryFileReader
+    from rasa.core.training.structures import StoryGraph
 
     if not interpreter:
         interpreter = RegexInterpreter()
@@ -40,8 +40,8 @@ async def load_data(
     debug_plots=False,
     exclusion_percentage: int = None
 ) -> List['DialogueStateTracker']:
-    from rasa_core.training import extract_story_graph
-    from rasa_core.training.generator import TrainingDataGenerator
+    from rasa.core.training import extract_story_graph
+    from rasa.core.training.generator import TrainingDataGenerator
 
     if resource_name:
         graph = await extract_story_graph(

@@ -6,29 +6,29 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 import numpy as np
 import time
 
-from rasa_core import jobs
-from rasa_core.actions import Action
-from rasa_core.actions.action import (
+from rasa.core import jobs
+from rasa.core.actions import Action
+from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
     ActionExecutionRejection)
-from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.constants import (
+from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     USER_INTENT_RESTART)
-from rasa_core.dispatcher import Dispatcher
-from rasa_core.domain import Domain
-from rasa_core.events import (
+from rasa.core.dispatcher import Dispatcher
+from rasa.core.domain import Domain
+from rasa.core.events import (
     ActionExecuted, ActionExecutionRejected,
     BotUttered, Event, ReminderCancelled, ReminderScheduled, SlotSet,
     UserUttered)
-from rasa_core.interpreter import (
+from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX,
     NaturalLanguageInterpreter, RegexInterpreter)
-from rasa_core.nlg import NaturalLanguageGenerator
-from rasa_core.policies.ensemble import PolicyEnsemble
-from rasa_core.tracker_store import TrackerStore
-from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import EndpointConfig
+from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.policies.ensemble import PolicyEnsemble
+from rasa.core.tracker_store import TrackerStore
+from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

@@ -7,11 +7,11 @@ import logging
 import uuid
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
-from rasa_core import utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.conversation import Dialogue
-from rasa_core.domain import Domain
-from rasa_core.events import (
+from rasa.core import utils
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.conversation import Dialogue
+from rasa.core.domain import Domain
+from rasa.core.events import (
     UserUttered, ActionExecuted,
     Form, FormValidation,
     SlotSet, Event,
@@ -683,7 +683,7 @@ class StoryGraph(object):
 
     def visualize(self, output_file=None):
         import networkx as nx
-        from rasa_core.training import visualization
+        from rasa.core.training import visualization
         from colorhash import ColorHash
 
         graph = nx.MultiDiGraph()

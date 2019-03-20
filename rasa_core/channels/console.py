@@ -9,12 +9,12 @@ from prompt_toolkit.styles import Style
 import questionary
 import rasa.cli.utils
 from rasa.cli import utils as cliutils
-from rasa_core import utils
-from rasa_core.channels import UserMessage
-from rasa_core.channels.channel import (
+from rasa.core import utils
+from rasa.core.channels import UserMessage
+from rasa.core.channels.channel import (
     RestInput, button_to_string, element_to_string)
-from rasa_core.constants import DEFAULT_SERVER_URL
-from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
+from rasa.core.constants import DEFAULT_SERVER_URL
+from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 
 logger = logging.getLogger(__name__)
 

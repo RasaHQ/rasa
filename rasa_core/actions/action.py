@@ -6,21 +6,21 @@ import logging
 import typing
 from typing import List, Text, Optional, Dict, Any
 
-import rasa_core
-from rasa_core import events
-from rasa_core.constants import (
+import rasa.core
+from rasa.core import events
+from rasa.core.constants import (
     DOCS_BASE_URL,
     DEFAULT_REQUEST_TIMEOUT,
     REQUESTED_SLOT, USER_INTENT_OUT_OF_SCOPE)
-from rasa_core.events import (
+from rasa.core.events import (
     UserUtteranceReverted, UserUttered,
     ActionExecuted, Event)
-from rasa_core.utils import EndpointConfig, ClientResponseError
+from rasa.core.utils import EndpointConfig, ClientResponseError
 
 if typing.TYPE_CHECKING:
-    from rasa_core.trackers import DialogueStateTracker
-    from rasa_core.dispatcher import Dispatcher
-    from rasa_core.domain import Domain
+    from rasa.core.trackers import DialogueStateTracker
+    from rasa.core.dispatcher import Dispatcher
+    from rasa.core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ class Action(object):
         Args:
             dispatcher (Dispatcher): the dispatcher which is used to send
                 messages back to the user. Use ``dispatcher.utter_message()``
-                or any other :class:`rasa_core.dispatcher.Dispatcher` method.
+                or any other :class:`rasa.core.dispatcher.Dispatcher` method.
             tracker (DialogueStateTracker): the state tracker for the current
                 user. You can access slot values using
                 ``tracker.get_slot(slot_name)`` and the most recent user
@@ -130,7 +130,7 @@ class Action(object):
             domain (Domain): the bot's domain
 
         Returns:
-            List[Event]: A list of :class:`rasa_core.events.Event` instances
+            List[Event]: A list of :class:`rasa.core.events.Event` instances
         """
 
         raise NotImplementedError
@@ -197,7 +197,7 @@ class ActionRestart(Action):
         return ACTION_RESTART_NAME
 
     async def run(self, dispatcher, tracker, domain):
-        from rasa_core.events import Restarted
+        from rasa.core.events import Restarted
 
         # only utter the template if it is available
         await dispatcher.utter_template("utter_restart", tracker,
@@ -213,7 +213,7 @@ class ActionDefaultFallback(Action):
         return ACTION_DEFAULT_FALLBACK_NAME
 
     async def run(self, dispatcher, tracker, domain):
-        from rasa_core.events import UserUtteranceReverted
+        from rasa.core.events import UserUtteranceReverted
 
         await dispatcher.utter_template("utter_default", tracker,
                                         silent_fail=True)
@@ -228,7 +228,7 @@ class ActionDeactivateForm(Action):
         return ACTION_DEACTIVATE_FORM_NAME
 
     async def run(self, dispatcher, tracker, domain):
-        from rasa_core.events import Form, SlotSet
+        from rasa.core.events import Form, SlotSet
         return [Form(None), SlotSet(REQUESTED_SLOT, None)]
 
 
@@ -242,7 +242,7 @@ class RemoteAction(Action):
     def _action_call_format(self, tracker: 'DialogueStateTracker',
                             domain: 'Domain') -> Dict[Text, Any]:
         """Create the request json send to the action server."""
-        from rasa_core.trackers import EventVerbosity
+        from rasa.core.trackers import EventVerbosity
 
         tracker_state = tracker.current_state(EventVerbosity.ALL)
 
@@ -251,7 +251,7 @@ class RemoteAction(Action):
             "sender_id": tracker.sender_id,
             "tracker": tracker_state,
             "domain": domain.as_dict(),
-            "version": rasa_core.__version__
+            "version": rasa.__version__
         }
 
     @staticmethod
@@ -424,7 +424,7 @@ class ActionRevertFallbackEvents(Action):
                   dispatcher: 'Dispatcher',
                   tracker: 'DialogueStateTracker',
                   domain: 'Domain') -> List[Event]:
-        from rasa_core.policies.two_stage_fallback import (
+        from rasa.core.policies.two_stage_fallback import (
             has_user_rephrased)
 
         revert_events = []

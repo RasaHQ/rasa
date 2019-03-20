@@ -5,28 +5,28 @@ import os
 from typing import Text
 
 import rasa.utils
-import rasa_core.cli
-import rasa_core.cli.arguments
-import rasa_core.cli.train
+import rasa.core.cli
+import rasa.core.cli.arguments
+import rasa.core.cli.train
 
 logger = logging.getLogger(__name__)
 
 
 def add_arguments(parser: argparse.ArgumentParser):
     """Parse all the command line arguments for the visualisation script."""
-    rasa_core.cli.arguments.add_logging_option_arguments(parser)
-    rasa_core.cli.visualization.add_visualization_arguments(parser)
-    rasa_core.cli.arguments.add_config_arg(parser, nargs=1)
-    rasa_core.cli.arguments.add_domain_arg(parser)
-    rasa_core.cli.arguments.add_model_and_story_group(
+    rasa.core.cli.arguments.add_logging_option_arguments(parser)
+    rasa.core.cli.visualization.add_visualization_arguments(parser)
+    rasa.core.cli.arguments.add_config_arg(parser, nargs=1)
+    rasa.core.cli.arguments.add_domain_arg(parser)
+    rasa.core.cli.arguments.add_model_and_story_group(
         parser, allow_pretrained_model=False)
     return parser
 
 
 async def visualize(config_path: Text, domain_path: Text, stories_path: Text,
                     nlu_data_path: Text, output_path: Text, max_history: int):
-    from rasa_core.agent import Agent
-    from rasa_core import config
+    from rasa.core.agent import Agent
+    from rasa.core import config
 
     policies = config.load(config_path)
 
@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     loop = asyncio.get_event_loop()
     stories = loop.run_until_complete(
-        rasa_core.cli.train.stories_from_cli_args(args))
+        rasa.core.cli.train.stories_from_cli_args(args))
 
     loop.run_until_complete(
         visualize(args.config[0], args.domain, stories, args.nlu_data,

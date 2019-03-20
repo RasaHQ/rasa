@@ -4,10 +4,10 @@ import logging
 
 import rasa.utils
 from policy import RestaurantPolicy
-from rasa_core import utils
-from rasa_core.agent import Agent
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.mapping_policy import MappingPolicy
+from rasa.core import utils
+from rasa.core.agent import Agent
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.policies.mapping_policy import MappingPolicy
 
 logger = logging.getLogger(__name__)
 

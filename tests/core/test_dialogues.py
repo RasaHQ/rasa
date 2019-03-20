@@ -6,8 +6,8 @@ import pytest
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.tracker_store import InMemoryTrackerStore
-from tests.utilities import tracker_from_dialogue_file
-from tests.conftest import TEST_DIALOGUES, EXAMPLE_DOMAINS
+from tests.core.utilities import tracker_from_dialogue_file
+from tests.core.conftest import TEST_DIALOGUES, EXAMPLE_DOMAINS
 
 
 @pytest.mark.parametrize("filename", TEST_DIALOGUES)

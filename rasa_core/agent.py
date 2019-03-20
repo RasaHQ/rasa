@@ -10,29 +10,29 @@ from typing import Any, Callable, Dict, List, Optional, Text, Union
 
 import aiohttp
 
-from rasa_core import constants, jobs, training, utils
-from rasa_core.channels import InputChannel, OutputChannel, UserMessage
-from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa_core.dispatcher import Dispatcher
-from rasa_core.domain import Domain, InvalidDomain, check_domain_sanity
-from rasa_core.exceptions import AgentNotReady
-from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.nlg import NaturalLanguageGenerator
-from rasa_core.policies import FormPolicy, Policy
-from rasa_core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.processor import MessageProcessor
-from rasa_core.tracker_store import InMemoryTrackerStore
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.utils import EndpointConfig, LockCounter
+from rasa.core import constants, jobs, training, utils
+from rasa.core.channels import InputChannel, OutputChannel, UserMessage
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.dispatcher import Dispatcher
+from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
+from rasa.core.exceptions import AgentNotReady
+from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.nlg import NaturalLanguageGenerator
+from rasa.core.policies import FormPolicy, Policy
+from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.processor import MessageProcessor
+from rasa.core.tracker_store import InMemoryTrackerStore
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.utils import EndpointConfig, LockCounter
 from rasa_nlu.utils import is_url
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     # noinspection PyPep8Naming
-    from rasa_core.nlg import NaturalLanguageGenerator as NLG
-    from rasa_core.tracker_store import TrackerStore
+    from rasa.core.nlg import NaturalLanguageGenerator as NLG
+    from rasa.core.tracker_store import TrackerStore
     from sanic import Sanic
 
 
@@ -83,7 +83,7 @@ def _load_and_set_updated_model(agent: 'Agent',
 
     stack_model_directory = _get_stack_model_directory(model_directory)
     if stack_model_directory:
-        from rasa_core.interpreter import RasaNLUInterpreter
+        from rasa.core.interpreter import RasaNLUInterpreter
         nlu_model = os.path.join(stack_model_directory, "nlu")
         core_model = os.path.join(stack_model_directory, "core")
         interpreter = RasaNLUInterpreter(model_directory=nlu_model)
@@ -418,8 +418,8 @@ class Agent(object):
 
         :Example:
 
-            >>> from rasa_core.agent import Agent
-            >>> from rasa_core.interpreter import RasaNLUInterpreter
+            >>> from rasa.core.agent import Agent
+            >>> from rasa.core.interpreter import RasaNLUInterpreter
             >>> interpreter = RasaNLUInterpreter(
             ... "examples/restaurantbot/models/nlu/current")
             >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
@@ -589,7 +589,7 @@ class Agent(object):
         If ``serve_forever`` is set to ``True``, this call will be blocking.
         Otherwise the webserver will be started, and the method will
         return afterwards."""
-        from rasa_core import run
+        from rasa.core import run
 
         app = run.configure_app(channels, cors, None,
                                 enable_api=False,
@@ -661,8 +661,8 @@ class Agent(object):
                         should_merge_nodes: bool = True,
                         fontsize: int = 12
                         ) -> None:
-        from rasa_core.training.visualization import visualize_stories
-        from rasa_core.training.dsl import StoryFileReader
+        from rasa.core.training.visualization import visualize_stories
+        from rasa.core.training.dsl import StoryFileReader
         """Visualize the loaded training data from the resource."""
 
         # if the user doesn't provide a max history, we will use the

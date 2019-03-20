@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Any, Dict, Optional, Text
 
-from rasa_core.utils import EndpointConfig, class_from_module_path
+from rasa.core.utils import EndpointConfig, class_from_module_path
 
 logger = logging.getLogger(__name__)
 

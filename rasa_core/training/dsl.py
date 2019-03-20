@@ -8,12 +8,12 @@ import re
 import warnings
 from typing import Optional, List, Text, Any, Dict, AnyStr, TYPE_CHECKING
 
-from rasa_core import utils
-from rasa_core.events import (
+from rasa.core import utils
+from rasa.core.events import (
     ActionExecuted, UserUttered, Event, SlotSet)
-from rasa_core.exceptions import StoryParseError
-from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training.structures import (
+from rasa.core.exceptions import StoryParseError
+from rasa.core.interpreter import RegexInterpreter
+from rasa.core.training.structures import (
     Checkpoint, STORY_START, StoryStep,
     GENERATED_CHECKPOINT_PREFIX, GENERATED_HASH_LENGTH, FORM_PREFIX)
 from rasa_nlu.training_data.formats import MarkdownReader

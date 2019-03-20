@@ -2,7 +2,7 @@ import logging
 from sanic import Blueprint, response
 from typing import Text
 
-from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
+from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 

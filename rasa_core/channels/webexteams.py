@@ -3,8 +3,8 @@ from sanic import Blueprint, response
 from typing import Text, Optional
 from webexteamssdk import WebexTeamsAPI, Webhook
 
-from rasa_core.channels import InputChannel
-from rasa_core.channels.channel import UserMessage, OutputChannel
+from rasa.core.channels import InputChannel
+from rasa.core.channels.channel import UserMessage, OutputChannel
 
 logger = logging.getLogger(__name__)
 

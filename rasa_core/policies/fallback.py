@@ -3,12 +3,12 @@ import logging
 import os
 from typing import Any, List, Text
 
-from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.actions.action import ACTION_LISTEN_NAME
 
-from rasa_core import utils
-from rasa_core.domain import Domain
-from rasa_core.policies.policy import Policy
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core import utils
+from rasa.core.domain import Domain
+from rasa.core.policies.policy import Policy
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

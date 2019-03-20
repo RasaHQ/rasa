@@ -1,6 +1,6 @@
 import logging
 
-from rasa_core import utils
+from rasa.core import utils
 
 logger = logging.getLogger(__name__)
 

@@ -8,19 +8,19 @@ from enum import Enum
 from typing import Generator, Dict, Text, Any, Optional, Iterator, Type
 from typing import List
 
-from rasa_core import events
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.conversation import Dialogue
-from rasa_core.events import (
+from rasa.core import events
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.conversation import Dialogue
+from rasa.core.events import (
     UserUttered, ActionExecuted,
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted,
     BotUttered, Form)
-from rasa_core.slots import Slot
+from rasa.core.slots import Slot
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from rasa_core.domain import Domain
+    from rasa.core.domain import Domain
 
 
 class EventVerbosity(Enum):
@@ -237,7 +237,7 @@ class DialogueStateTracker(object):
     def init_copy(self):
         # type: () -> DialogueStateTracker
         """Creates a new state tracker with the same initial values."""
-        from rasa_core.channels import UserMessage
+        from rasa.core.channels import UserMessage
 
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                     self.slots.values(),
@@ -409,7 +409,7 @@ class DialogueStateTracker(object):
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
-        from rasa_core.training.structures import Story
+        from rasa.core.training.structures import Story
 
         story = Story.from_events(self.applied_events(), self.sender_id)
         return story.as_story_string(flat=True, e2e=e2e)

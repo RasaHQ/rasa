@@ -1,6 +1,6 @@
 import logging
 
-from rasa_core.policies.keras_policy import KerasPolicy
+from rasa.core.policies.keras_policy import KerasPolicy
 
 logger = logging.getLogger(__name__)
 

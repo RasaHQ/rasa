@@ -4,7 +4,7 @@ from rasa.core import broker, utils
 from rasa.core.broker import FileProducer, PikaProducer, KafkaProducer
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
 from rasa.core.utils import EndpointConfig
-from tests.conftest import DEFAULT_ENDPOINTS_FILE
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 TEST_EVENTS = [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),

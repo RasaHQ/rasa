@@ -4,12 +4,12 @@ import random
 import re
 from typing import Any, Text, List, Dict, Optional, TYPE_CHECKING
 
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.domain import Domain
-from rasa_core.events import UserUttered, ActionExecuted, Event
-from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa_core.training.generator import TrainingDataGenerator
-from rasa_core.training.structures import StoryGraph, StoryStep
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.domain import Domain
+from rasa.core.events import UserUttered, ActionExecuted, Event
+from rasa.core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+from rasa.core.training.generator import TrainingDataGenerator
+from rasa.core.training.structures import StoryGraph, StoryStep
 
 if TYPE_CHECKING:
     from rasa_nlu.training_data import TrainingData, Message

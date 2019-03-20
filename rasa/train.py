@@ -123,10 +123,10 @@ async def train_core_async(domain: Text,
         otherwise the path to the directory with the trained model files.
 
     """
-    import rasa_core.train
+    import rasa.core.train
 
     # normal (not compare) training
-    core_model = await rasa_core.train(
+    core_model = await rasa.core.train(
         domain_file=domain, stories_file=stories,
         output_path=os.path.join(train_path, "core"),
         policy_config=config)

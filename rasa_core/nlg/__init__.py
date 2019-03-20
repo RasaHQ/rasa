@@ -1,3 +1,3 @@
-from rasa_core.nlg.generator import NaturalLanguageGenerator
-from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
-from rasa_core.nlg.callback import CallbackNaturalLanguageGenerator
+from rasa.core.nlg.generator import NaturalLanguageGenerator
+from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa.core.nlg.callback import CallbackNaturalLanguageGenerator

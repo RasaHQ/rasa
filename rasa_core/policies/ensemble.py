@@ -9,27 +9,27 @@ from typing import Text, Optional, Any, List, Dict, Tuple
 
 import numpy as np
 
-import rasa_core
-from rasa_core import utils, training, constants
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.domain import Domain
-from rasa_core.events import SlotSet, ActionExecuted, ActionExecutionRejected
-from rasa_core.exceptions import UnsupportedDialogueModelError
-from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa_core.policies import Policy
-from rasa_core.policies.mapping_policy import MappingPolicy
-from rasa_core.policies.fallback import FallbackPolicy
-from rasa_core.policies.memoization import (
+import rasa.core
+from rasa.core import utils, training, constants
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.domain import Domain
+from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
+from rasa.core.exceptions import UnsupportedDialogueModelError
+from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa.core.policies import Policy
+from rasa.core.policies.mapping_policy import MappingPolicy
+from rasa.core.policies.fallback import FallbackPolicy
+from rasa.core.policies.memoization import (
     MemoizationPolicy,
     AugmentedMemoizationPolicy)
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core import registry
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core import registry
 
 logger = logging.getLogger(__name__)
 
 
 class PolicyEnsemble(object):
-    versioned_packages = ["rasa_core", "tensorflow", "sklearn"]
+    versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
     def __init__(self,
                  policies: List[Policy],
@@ -190,7 +190,7 @@ class PolicyEnsemble(object):
         if version_to_check is None:
             version_to_check = constants.MINIMUM_COMPATIBLE_VERSION
 
-        model_version = metadata.get("rasa_core", "0.0.0")
+        model_version = metadata.get("rasa", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
             raise UnsupportedDialogueModelError(
                 "The model version is to old to be "
@@ -199,7 +199,7 @@ class PolicyEnsemble(object):
                 "an older version. "
                 "Model version: {} Instance version: {} "
                 "Minimal compatible version: {}"
-                "".format(model_version, rasa_core.__version__,
+                "".format(model_version, rasa.__version__,
                           version_to_check),
                 model_version)
 

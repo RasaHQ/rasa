@@ -8,12 +8,12 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 import pkg_resources
 from pykwalify.errors import SchemaError
 
-from rasa_core import utils
-from rasa_core.actions import Action, action
-from rasa_core.constants import REQUESTED_SLOT
-from rasa_core.slots import Slot, UnfeaturizedSlot
-from rasa_core.trackers import SlotSet
-from rasa_core.utils import EndpointConfig, read_file, read_yaml_string
+from rasa.core import utils
+from rasa.core.actions import Action, action
+from rasa.core.constants import REQUESTED_SLOT
+from rasa.core.slots import Slot, UnfeaturizedSlot
+from rasa.core.trackers import SlotSet
+from rasa.core.utils import EndpointConfig, read_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ PREV_PREFIX = 'prev_'
 ACTIVE_FORM_PREFIX = 'active_form_'
 
 if typing.TYPE_CHECKING:
-    from rasa_core.trackers import DialogueStateTracker
+    from rasa.core.trackers import DialogueStateTracker
 
 
 class InvalidDomain(Exception):
@@ -622,7 +622,7 @@ class Domain(object):
                 del slot["initial_value"]
             if slot["auto_fill"]:
                 del slot["auto_fill"]
-            if slot["type"].startswith('rasa_core.slots'):
+            if slot["type"].startswith('rasa.core.slots'):
                 slot["type"] = Slot.resolve_by_type(slot["type"]).type_name
 
         if data["config"]["store_entities_as_slots"]:

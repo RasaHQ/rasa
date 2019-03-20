@@ -1,4 +1,3 @@
-import glob
 import json
 
 import fakeredis
@@ -18,9 +17,9 @@ from rasa.core.tracker_store import (InMemoryTrackerStore,
                                      SQLTrackerStore)
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from tests.conftest import (DEFAULT_STORIES_FILE,
-                            EXAMPLE_DOMAINS, TEST_DIALOGUES)
-from tests.utilities import (
+from tests.core.conftest import (DEFAULT_STORIES_FILE,
+                                 EXAMPLE_DOMAINS, TEST_DIALOGUES)
+from tests.core.utilities import (
     tracker_from_dialogue_file, read_dialogue_file,
     user_uttered, get_tracker)
 

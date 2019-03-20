@@ -1,4 +1,4 @@
-from rasa_core import constants
+from rasa.core import constants
 
 
 def add_run_arguments(parser):

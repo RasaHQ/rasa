@@ -1,1 +1,1 @@
-from rasa_core.actions.action import Action
+from rasa.core.actions.action import Action

@@ -36,7 +36,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
 
 def add_core_visualization_params(parser: argparse.ArgumentParser):
-    from rasa_core.cli.visualization import add_visualization_arguments
+    from rasa.core.cli.visualization import add_visualization_arguments
 
     add_visualization_arguments(parser)
     add_domain_param(parser)
@@ -44,7 +44,7 @@ def add_core_visualization_params(parser: argparse.ArgumentParser):
 
 
 def show_stories(args: argparse.Namespace):
-    import rasa_core.visualize
+    import rasa.core.visualize
 
     loop = asyncio.get_event_loop()
     args.config = args.config
@@ -55,6 +55,6 @@ def show_stories(args: argparse.Namespace):
         args.nlu_data = data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     loop.run_until_complete(
-        rasa_core.visualize(args.config, args.domain,
+        rasa.core.visualize(args.config, args.domain,
                             args.stories, args.nlu_data,
                             args.output, args.max_history))

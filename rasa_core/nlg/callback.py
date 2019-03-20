@@ -1,10 +1,10 @@
 import logging
 from typing import Text, Any, Dict, Optional
 
-from rasa_core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa_core.nlg.generator import NaturalLanguageGenerator
-from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import EndpointConfig
+from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.core.nlg.generator import NaturalLanguageGenerator
+from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

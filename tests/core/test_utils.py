@@ -2,11 +2,9 @@ import os
 import pytest
 from aioresponses import aioresponses
 
-import rasa.core
-from rasa.core import utils, channels
-from rasa.core.channels import FacebookInput
+from rasa.core import utils
 from rasa.core.utils import EndpointConfig
-from tests.utilities import latest_request, json_of_latest_request
+from tests.core.utilities import latest_request, json_of_latest_request
 
 
 @pytest.fixture(scope="session")

@@ -1,7 +1,6 @@
 import itertools
 
 import contextlib
-import io
 from typing import Text, List
 
 import jsonpickle
@@ -12,7 +11,7 @@ from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
-from tests.conftest import DEFAULT_DOMAIN_PATH
+from tests.core.conftest import DEFAULT_DOMAIN_PATH
 
 
 def latest_request(mocked, request_type, path):

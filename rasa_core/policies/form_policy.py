@@ -1,12 +1,12 @@
 import logging
 from typing import List, Optional, Dict, Text
 
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
-from rasa_core.events import FormValidation
-from rasa_core.featurizers import TrackerFeaturizer
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.domain import PREV_PREFIX, ACTIVE_FORM_PREFIX, Domain
+from rasa.core.events import FormValidation
+from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.policies.memoization import MemoizationPolicy
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

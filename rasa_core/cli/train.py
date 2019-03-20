@@ -1,4 +1,4 @@
-from rasa_core.cli import arguments
+from rasa.core.cli import arguments
 
 
 def add_compare_args(parser):
@@ -105,7 +105,7 @@ def add_general_args(parser):
 
 
 async def stories_from_cli_args(cmdline_arguments):
-    from rasa_core import utils
+    from rasa.core import utils
 
     if cmdline_arguments.url:
         return await utils.download_file_from_url(cmdline_arguments.url)

@@ -13,14 +13,14 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
-from rasa_core import constants, utils
-from rasa_core.channels import CollectingOutputChannel, UserMessage
-from rasa_core.domain import Domain
-from rasa_core.events import Event
-from rasa_core.policies import PolicyEnsemble
-from rasa_core.test import test
-from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import dump_obj_as_str_to_file
+from rasa.core import constants, utils
+from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.domain import Domain
+from rasa.core.events import Event
+from rasa.core.policies import PolicyEnsemble
+from rasa.core.test import test
+from rasa.core.trackers import DialogueStateTracker, EventVerbosity
+from rasa.core.utils import dump_obj_as_str_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -691,6 +691,6 @@ def create_app(agent=None,
 
 
 if __name__ == '__main__':
-    raise RuntimeError("Calling `rasa_core.server` directly is "
+    raise RuntimeError("Calling `rasa.core.server` directly is "
                        "no longer supported. "
-                       "Please use `rasa_core.run --enable_api` instead.")
+                       "Please use `rasa.core.run --enable_api` instead.")

@@ -6,15 +6,15 @@ import typing
 from typing import Dict, Optional, Text
 
 if typing.TYPE_CHECKING:
-    from rasa_core.interpreter import NaturalLanguageInterpreter
-    from rasa_core.run import AvailableEndpoints
+    from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.core.run import AvailableEndpoints
 
 logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
     """Parse all the command line arguments for the training script."""
-    from rasa_core import cli
+    from rasa.core import cli
 
     parser = argparse.ArgumentParser(
         description='Train a dialogue model for Rasa Core. '
@@ -58,9 +58,9 @@ async def train(domain_file: Text, stories_file: Text, output_path: Text,
                 policy_config: Text = None,
                 exclusion_percentage: int = None,
                 kwargs: Optional[Dict] = None):
-    from rasa_core.agent import Agent
-    from rasa_core import config, utils
-    from rasa_core.run import AvailableEndpoints
+    from rasa.core.agent import Agent
+    from rasa.core import config, utils
+    from rasa.core.run import AvailableEndpoints
 
     if not endpoints:
         endpoints = AvailableEndpoints()
@@ -111,7 +111,7 @@ async def train_comparison_models(stories,
                                   dump_stories=False,
                                   kwargs=None):
     """Train multiple models for comparison of policies"""
-    from rasa_core import config
+    from rasa.core import config
 
     exclusion_percentages = exclusion_percentages or []
     policy_configs = policy_configs or []
@@ -149,8 +149,8 @@ async def train_comparison_models(stories,
 
 async def get_no_of_stories(story_file, domain):
     """Get number of stories in a file."""
-    from rasa_core.domain import TemplateDomain
-    from rasa_core.training.dsl import StoryFileReader
+    from rasa.core.domain import TemplateDomain
+    from rasa.core.training.dsl import StoryFileReader
 
     stories = await StoryFileReader.read_from_folder(
         story_file, TemplateDomain.load(domain))
@@ -169,7 +169,7 @@ async def do_default_training(cmdline_args, stories, additional_arguments):
 
 
 async def do_compare_training(cmdline_args, stories, additional_arguments):
-    from rasa_core import utils
+    from rasa.core import utils
 
     await train_comparison_models(stories,
                                   cmdline_args.domain,
@@ -194,7 +194,7 @@ async def do_compare_training(cmdline_args, stories, additional_arguments):
 
 def do_interactive_learning(cmdline_args, stories,
                             additional_arguments=None):
-    from rasa_core.training import interactive
+    from rasa.core.training import interactive
 
     if cmdline_args.cors and cmdline_args.finetune:
         raise ValueError("--core can only be used without "
@@ -210,8 +210,8 @@ def do_interactive_learning(cmdline_args, stories,
 
 def main():
     import rasa.utils
-    import rasa_core.cli.train
-    from rasa_core.utils import set_default_subparser
+    import rasa.core.cli.train
+    from rasa.core.utils import set_default_subparser
 
     # Running as standalone python application
     arg_parser = create_argument_parser()
@@ -224,7 +224,7 @@ def main():
     loop = asyncio.get_event_loop()
 
     training_stories = loop.run_until_complete(
-        rasa_core.cli.train.stories_from_cli_args(cmdline_arguments))
+        rasa.core.cli.train.stories_from_cli_args(cmdline_arguments))
 
     if cmdline_arguments.mode == 'default':
         loop.run_until_complete(do_default_training(cmdline_arguments,

@@ -5,10 +5,10 @@ from telegram import (
     Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
     KeyboardButton, ReplyKeyboardMarkup)
 
-from rasa_core import constants, utils
-from rasa_core.channels import InputChannel
-from rasa_core.channels.channel import UserMessage, OutputChannel
-from rasa_core.constants import INTENT_MESSAGE_PREFIX, USER_INTENT_RESTART
+from rasa.core import constants, utils
+from rasa.core.channels import InputChannel
+from rasa.core.channels.channel import UserMessage, OutputChannel
+from rasa.core.constants import INTENT_MESSAGE_PREFIX, USER_INTENT_RESTART
 
 logger = logging.getLogger(__name__)
 

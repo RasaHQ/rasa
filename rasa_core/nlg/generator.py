@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
-from rasa_core.domain import Domain
-from rasa_core.utils import EndpointConfig
+from rasa.core.domain import Domain
+from rasa.core.utils import EndpointConfig
 
 
 class NaturalLanguageGenerator(object):
@@ -25,10 +25,10 @@ class NaturalLanguageGenerator(object):
         if isinstance(obj, NaturalLanguageGenerator):
             return obj
         elif isinstance(obj, EndpointConfig):
-            from rasa_core.nlg import CallbackNaturalLanguageGenerator
+            from rasa.core.nlg import CallbackNaturalLanguageGenerator
             return CallbackNaturalLanguageGenerator(obj)
         elif obj is None:
-            from rasa_core.nlg import TemplatedNaturalLanguageGenerator
+            from rasa.core.nlg import TemplatedNaturalLanguageGenerator
             templates = domain.templates if domain else []
             return TemplatedNaturalLanguageGenerator(templates)
         else:

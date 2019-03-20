@@ -6,12 +6,12 @@ import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 
-from rasa_core import utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.domain import PREV_PREFIX, Domain
-from rasa_core.events import ActionExecuted
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.data import DialogueTrainingData
+from rasa.core import utils
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.domain import PREV_PREFIX, Domain
+from rasa.core.events import ActionExecuted
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 

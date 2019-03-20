@@ -10,7 +10,7 @@ from rasa.model import get_model, get_model_subdirectories
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from rasa_core.agent import Agent
+    from rasa.core.agent import Agent
 
 
 def run(model: Text, endpoints: Text, connector: Text = None,
@@ -24,11 +24,11 @@ def run(model: Text, endpoints: Text, connector: Text = None,
         field).
         credentials: Path to channel credentials file.
         **kwargs: Additional arguments which are passed to
-        `rasa_core.run.serve_application`.
+        `rasa.core.run.serve_application`.
 
     """
-    import rasa_core.run
-    from rasa_core.utils import AvailableEndpoints
+    import rasa.core.run
+    from rasa.core.utils import AvailableEndpoints
 
     model_path = get_model(model)
     core_path, nlu_path = get_model_subdirectories(model_path)
@@ -42,8 +42,8 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     else:
         channel = connector
 
-    kwargs = minimal_kwargs(kwargs, rasa_core.run.serve_application)
-    rasa_core.run.serve_application(core_path,
+    kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
+    rasa.core.run.serve_application(core_path,
                                     nlu_path,
                                     channel=channel,
                                     credentials_file=credentials,
@@ -54,10 +54,10 @@ def run(model: Text, endpoints: Text, connector: Text = None,
 
 def create_agent(model: Text,
                  endpoints: Text = None) -> 'Agent':
-    from rasa_core.interpreter import RasaNLUInterpreter
-    from rasa_core.tracker_store import TrackerStore
-    from rasa_core import broker
-    from rasa_core.utils import AvailableEndpoints
+    from rasa.core.interpreter import RasaNLUInterpreter
+    from rasa.core.tracker_store import TrackerStore
+    from rasa.core import broker
+    from rasa.core.utils import AvailableEndpoints
 
     core_path, nlu_path = get_model_subdirectories(model)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)

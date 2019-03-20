@@ -8,7 +8,7 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from typing import Text, Dict, Any
 
-from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
+from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 

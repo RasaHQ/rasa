@@ -55,7 +55,7 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 # noinspection PyProtectedMember
 def _add_core_arguments(parser: Union[argparse.ArgumentParser,
                                       argparse._ActionsContainer]):
-    from rasa_core.cli.test import add_evaluation_arguments
+    from rasa.core.cli.test import add_evaluation_arguments
 
     add_evaluation_arguments(parser)
     add_model_param(parser, "Core")

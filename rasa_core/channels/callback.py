@@ -1,10 +1,10 @@
 import logging
 from sanic import Blueprint, response
 
-from rasa_core.channels import (
+from rasa.core.channels import (
     CollectingOutputChannel,
     UserMessage, RestInput)
-from rasa_core.utils import EndpointConfig, ClientResponseError
+from rasa.core.utils import EndpointConfig, ClientResponseError
 
 logger = logging.getLogger(__name__)
 

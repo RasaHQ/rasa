@@ -3,17 +3,17 @@ import logging
 import os
 from typing import List, Text
 
-from rasa_core import utils
-from rasa_core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
+from rasa.core import utils
+from rasa.core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME,
                                       ACTION_DEFAULT_ASK_REPHRASE_NAME,
                                       ACTION_DEFAULT_ASK_AFFIRMATION_NAME,
                                       ACTION_LISTEN_NAME)
-from rasa_core.constants import USER_INTENT_OUT_OF_SCOPE
-from rasa_core.domain import Domain, InvalidDomain
-from rasa_core.policies.fallback import FallbackPolicy
-from rasa_core.policies.policy import confidence_scores_for
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.constants import USER_INTENT_OUT_OF_SCOPE
+from rasa.core.domain import Domain, InvalidDomain
+from rasa.core.policies.fallback import FallbackPolicy
+from rasa.core.policies.policy import confidence_scores_for
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

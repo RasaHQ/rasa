@@ -19,12 +19,12 @@ def test(model: Text, stories: Text, nlu_data: Text, endpoints: Text = None,
 def test_core(model: Text, stories: Text, endpoints: Text = None,
               output: Text = DEFAULT_RESULTS_PATH, model_path: Text = None,
               **kwargs: Dict):
-    import rasa_core.test
-    import rasa_core.utils as core_utils
+    import rasa.core.test
+    import rasa.core.utils as core_utils
     from rasa_nlu import utils as nlu_utils
     from rasa.model import get_model
-    from rasa_core.interpreter import NaturalLanguageInterpreter
-    from rasa_core.agent import Agent
+    from rasa.core.interpreter import NaturalLanguageInterpreter
+    from rasa.core.agent import Agent
 
     _endpoints = core_utils.AvailableEndpoints.read_endpoints(endpoints)
 
@@ -45,12 +45,12 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
 
         _agent = Agent.load(core_path, interpreter=_interpreter)
 
-        kwargs = minimal_kwargs(kwargs, rasa_core.test)
+        kwargs = minimal_kwargs(kwargs, rasa.core.test)
         loop.run_until_complete(
-            rasa_core.test(stories, _agent, out_directory=output, **kwargs))
+            rasa.core.test(stories, _agent, out_directory=output, **kwargs))
 
     else:
-        from rasa_core.test import compare, plot_curve
+        from rasa.core.test import compare, plot_curve
 
         compare(model, stories, output)
 

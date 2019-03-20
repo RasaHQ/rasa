@@ -4,7 +4,7 @@ from sanic import Blueprint, request, response
 from mattermostwrapper import MattermostAPI
 from typing import Text
 
-from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
+from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 

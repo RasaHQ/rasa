@@ -11,7 +11,7 @@ from rasa.model import unpack_model
 from rasa.core import events, constants
 from rasa.core.events import (
     UserUttered, BotUttered, SlotSet, Event)
-from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
+from tests.core.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
 
 # a couple of event instances that we can use for testing
 test_events = [

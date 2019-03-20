@@ -4,13 +4,13 @@ import tensorflow as tf
 from typing import (
     Any, List, Optional, Text, Dict, Callable)
 
-from rasa_core import utils
-from rasa_core.domain import Domain
-from rasa_core.featurizers import (
+from rasa.core import utils
+from rasa.core.domain import Domain
+from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
-from rasa_core.featurizers import TrackerFeaturizer
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.data import DialogueTrainingData
+from rasa.core.featurizers import TrackerFeaturizer
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 

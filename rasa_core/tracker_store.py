@@ -5,12 +5,12 @@ import pickle
 # noinspection PyPep8Naming
 from typing import Iterator, KeysView, List, Optional, Text
 
-from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.broker import EventChannel
-from rasa_core.domain import Domain
-from rasa_core.trackers import (
+from rasa.core.actions.action import ACTION_LISTEN_NAME
+from rasa.core.broker import EventChannel
+from rasa.core.domain import Domain
+from rasa.core.trackers import (
     ActionExecuted, DialogueStateTracker, EventVerbosity)
-from rasa_core.utils import class_from_module_path
+from rasa.core.utils import class_from_module_path
 
 logger = logging.getLogger(__name__)
 

@@ -5,8 +5,8 @@ from sanic import Blueprint, response
 from socketio import AsyncServer
 from typing import Optional, Text, Any, List, Dict
 
-from rasa_core.channels import InputChannel
-from rasa_core.channels.channel import (
+from rasa.core.channels import InputChannel
+from rasa.core.channels.channel import (
     UserMessage,
     OutputChannel)
 

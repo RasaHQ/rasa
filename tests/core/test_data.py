@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 import rasa.data as data
-from tests.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
+from tests.core.conftest import DEFAULT_STORIES_FILE, DEFAULT_NLU_DATA
 
 
 def test_get_core_directory(project):

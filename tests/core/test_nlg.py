@@ -12,7 +12,7 @@ from rasa.core.nlg.callback import (
 from rasa.core.nlg.template import TemplatedNaturalLanguageGenerator
 from rasa.core.utils import EndpointConfig
 from rasa.core.agent import Agent
-from tests.conftest import DEFAULT_ENDPOINTS_FILE
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 
 @pytest.fixture(scope="module")

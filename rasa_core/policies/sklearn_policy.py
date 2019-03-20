@@ -13,12 +13,12 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
 
-from rasa_core import utils
-from rasa_core.domain import Domain
-from rasa_core.featurizers import (
+from rasa.core import utils
+from rasa.core.domain import Domain
+from rasa.core.featurizers import (
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
-from rasa_core.policies.policy import Policy
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.policies.policy import Policy
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

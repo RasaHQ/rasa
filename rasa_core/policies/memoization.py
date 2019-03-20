@@ -7,13 +7,13 @@ import os
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
-from rasa_core import utils
-from rasa_core.domain import Domain
-from rasa_core.events import ActionExecuted
-from rasa_core.featurizers import (
+from rasa.core import utils
+from rasa.core.domain import Domain
+from rasa.core.events import ActionExecuted
+from rasa.core.featurizers import (
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
-from rasa_core.policies.policy import Policy
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.policies.policy import Policy
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

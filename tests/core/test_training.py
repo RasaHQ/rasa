@@ -7,7 +7,7 @@ from rasa.core.policies.form_policy import FormPolicy
 
 from rasa.core.training.dsl import StoryFileReader
 from rasa.core.training.visualization import visualize_stories
-from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 async def test_story_visualization(default_domain, tmpdir):

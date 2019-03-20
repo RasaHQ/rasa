@@ -1,7 +1,7 @@
 import glob
 import pytest
 
-from tests.conftest import ExamplePolicy
+from tests.core.conftest import ExamplePolicy
 from rasa.core.config import load
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.keras_policy import KerasPolicy

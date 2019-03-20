@@ -11,10 +11,10 @@ from rasa.core import utils
 from rasa.core.agent import Agent
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.utils import EndpointConfig
-from tests import utilities
-from tests.conftest import MOODBOT_MODEL_PATH
+from tests.core import utilities
+from tests.core.conftest import MOODBOT_MODEL_PATH
 # this is needed so that the tests included as code examples look better
-from tests.utilities import json_of_latest_request, latest_request
+from tests.core.utilities import json_of_latest_request, latest_request
 
 MODEL_PATH = MOODBOT_MODEL_PATH
 

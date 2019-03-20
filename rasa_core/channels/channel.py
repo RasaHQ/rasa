@@ -9,8 +9,8 @@ from typing import (
     Text, List, Dict, Any, Optional, Callable, Iterable,
     Awaitable)
 import uuid
-from rasa_core import utils
-from rasa_core.constants import DOCS_BASE_URL
+from rasa.core import utils
+from rasa.core.constants import DOCS_BASE_URL
 
 try:
     from urlparse import urljoin

@@ -7,13 +7,13 @@ import random
 from tqdm import tqdm
 from typing import Optional, List, Text, Set, Dict, Tuple
 
-from rasa_core import utils
-from rasa_core.domain import Domain
-from rasa_core.events import (
+from rasa.core import utils
+from rasa.core.domain import Domain
+from rasa.core.events import (
     ActionExecuted, UserUttered,
     ActionReverted, UserUtteranceReverted, Restarted, Event)
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.structures import (
+from rasa.core.trackers import DialogueStateTracker
+from rasa.core.training.structures import (
     StoryGraph, STORY_START, StoryStep,
     GENERATED_CHECKPOINT_PREFIX)
 

@@ -5,10 +5,9 @@ from rasa.core.events import SlotSet, ActionExecuted, Restarted
 from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
-    RedisTrackerStore,
-    SQLTrackerStore)
+    RedisTrackerStore)
 from rasa.core.utils import EndpointConfig
-from tests.conftest import DEFAULT_ENDPOINTS_FILE
+from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")
 

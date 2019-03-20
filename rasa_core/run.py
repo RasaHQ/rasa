@@ -7,15 +7,15 @@ from sanic import Sanic
 from sanic_cors import CORS
 from typing import List, Optional, Text
 
-import rasa_core.cli.arguments
+import rasa.core.cli.arguments
 import rasa.utils
 
-import rasa_core
-from rasa_core import constants, utils, cli
-from rasa_core.channels import (BUILTIN_CHANNELS, InputChannel, console)
-from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.tracker_store import TrackerStore
-from rasa_core.utils import AvailableEndpoints, read_yaml_file
+import rasa.core
+from rasa.core import constants, utils, cli
+from rasa.core.channels import (BUILTIN_CHANNELS, InputChannel, console)
+from rasa.core.interpreter import NaturalLanguageInterpreter
+from rasa.core.tracker_store import TrackerStore
+from rasa.core.utils import AvailableEndpoints, read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
 
@@ -59,7 +59,7 @@ def create_http_input_channels(
 
 
 def _create_single_channel(channel, credentials):
-    from rasa_core.channels import BUILTIN_CHANNELS
+    from rasa.core.channels import BUILTIN_CHANNELS
 
     if channel in BUILTIN_CHANNELS:
         return BUILTIN_CHANNELS[channel].from_credentials(credentials)
@@ -86,7 +86,7 @@ def configure_app(input_channels=None,
                   route="/webhooks/",
                   port=None):
     """Run the agent."""
-    from rasa_core import server
+    from rasa.core import server
 
     if enable_api:
         app = server.create_app(cors_origins=cors,
@@ -100,7 +100,7 @@ def configure_app(input_channels=None,
              automatic_options=True)
 
     if input_channels:
-        rasa_core.channels.channel.register(input_channels,
+        rasa.core.channels.channel.register(input_channels,
                                             app,
                                             route=route)
     else:
@@ -167,8 +167,8 @@ async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
 
     Used to be scheduled on server start
     (hence the `app` and `loop` arguments)."""
-    from rasa_core import broker
-    from rasa_core.agent import Agent
+    from rasa.core import broker
+    from rasa.core.agent import Agent
 
     _interpreter = NaturalLanguageInterpreter.create(nlu_model,
                                                      endpoints.nlu)
@@ -178,7 +178,7 @@ async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
         None, endpoints.tracker_store, _broker)
 
     if endpoints and endpoints.model:
-        from rasa_core import agent
+        from rasa.core import agent
 
         app.agent = Agent(interpreter=_interpreter,
                           generator=endpoints.nlg,

@@ -3,7 +3,6 @@ sudo: required
 cache:
   directories:
   - "$HOME/.cache/pip"
-  - "$HOME/build/amn41/rasa_core/data"
 python:
 - '3.5'
 - '3.6'
@@ -16,7 +15,7 @@ install:
 - pip list
 script:
 - py.test --codestyle -m codestyle
-- travis_wait py.test tests --cov rasa_core -v
+- travis_wait py.test tests --cov rasa -v
  #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
 - coveralls
@@ -28,8 +27,8 @@ jobs:
     install:
     - npm install -g swagger-cli
     script:
-    - swagger-cli validate docs/_static/spec/server.yml
-    - swagger-cli validate docs/_static/spec/action_server.yml
+    - swagger-cli validate docs/core/_static/spec/server.yml
+    - swagger-cli validate docs/core/_static/spec/action_server.yml
     after_success:
     - coveralls
   - stage: test
@@ -75,7 +74,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs newdocs . -- -b dirhtml -A html_theme=rasabaster
+    - sphinx-versioning push docs/core newdocs . -- -b dirhtml -A html_theme=rasabaster
   - stage: trigger website rebuild
     if: fork = false AND branch = "master" AND type != "pull_request"
     script:

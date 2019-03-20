@@ -1,9 +1,9 @@
 {
-  "py/object":"rasa_core.conversation.Dialogue",
+  "py/object":"rasa.core.conversation.Dialogue",
   "name":"restaurantbot",
   "events":[
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":null,
       "policy":null,
@@ -11,7 +11,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
 
       ],
@@ -61,7 +61,7 @@
       "timestamp":1551884474.021491
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_ask_howcanhelp",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -69,7 +69,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -79,7 +79,7 @@
       "timestamp":1551884482.058523
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -87,7 +87,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
         {
           "end":50,
@@ -133,19 +133,19 @@
       "timestamp":1551884531.914144
     },
     {
-      "py/object":"rasa_core.events.SlotSet",
+      "py/object":"rasa.core.events.SlotSet",
       "key":"cuisine",
       "timestamp":1551884531.9141529,
       "value":"italian"
     },
     {
-      "py/object":"rasa_core.events.SlotSet",
+      "py/object":"rasa.core.events.SlotSet",
       "key":"location",
       "timestamp":1551884531.9141572,
       "value":"paris"
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_on_it",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -153,7 +153,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -163,7 +163,7 @@
       "timestamp":1551884534.021875
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_ask_numpeople",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -171,7 +171,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -181,7 +181,7 @@
       "timestamp":1551884538.190698
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -189,7 +189,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
         {
           "end":20,
@@ -223,13 +223,13 @@
       "timestamp":1551884558.849935
     },
     {
-      "py/object":"rasa_core.events.SlotSet",
+      "py/object":"rasa.core.events.SlotSet",
       "key":"people",
       "timestamp":1551884558.849946,
       "value":"four"
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_ask_price",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -237,7 +237,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":[
@@ -256,7 +256,7 @@
       "timestamp":1551884561.016482
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -264,7 +264,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
         {
           "confidence":0.839291340764181,
@@ -334,13 +334,13 @@
       "timestamp":1551884568.883223
     },
     {
-      "py/object":"rasa_core.events.SlotSet",
+      "py/object":"rasa.core.events.SlotSet",
       "key":"price",
       "timestamp":1551884568.883248,
       "value":"lo"
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_ask_moreupdates",
       "confidence":0.9925360233665671,
       "policy":"policy_0_KerasPolicy",
@@ -348,7 +348,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -358,7 +358,7 @@
       "timestamp":1551884573.494934
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":0.9998248227762471,
       "policy":"policy_0_KerasPolicy",
@@ -366,7 +366,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
 
       ],
@@ -390,7 +390,7 @@
       "timestamp":1551884585.142624
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_ack_dosearch",
       "confidence":null,
       "policy":null,
@@ -398,7 +398,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -408,7 +408,7 @@
       "timestamp":1551884596.275989
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_search_restaurants",
       "confidence":0.9959966060902363,
       "policy":"policy_0_KerasPolicy",
@@ -416,7 +416,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_suggest",
       "confidence":0.9632275734738791,
       "policy":"policy_0_KerasPolicy",
@@ -424,7 +424,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":0.9950680237822371,
       "policy":"policy_0_KerasPolicy",
@@ -432,7 +432,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
 
       ],
@@ -482,7 +482,7 @@
       "timestamp":1551884610.116241
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_ack_makereservation",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -490,7 +490,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":[
@@ -505,7 +505,7 @@
       "timestamp":1551884614.104864
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -513,7 +513,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
 
       ],
@@ -563,7 +563,7 @@
       "timestamp":1551884620.3249972
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_goodbye",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -571,7 +571,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,

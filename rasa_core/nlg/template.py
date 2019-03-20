@@ -2,10 +2,10 @@ import copy
 import logging
 import re
 
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict, Optional, List
 
-from rasa_core.nlg.generator import NaturalLanguageGenerator
+from rasa.core.nlg.generator import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from fbmessenger import (MessengerClient, attachments)
 from fbmessenger.elements import Text as FBText
 from sanic import Blueprint, response
 
-from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
+from rasa.core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 
