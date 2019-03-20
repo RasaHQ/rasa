@@ -655,6 +655,77 @@ paths:
         400:
           $ref: '#/components/responses/400Training'
 
+  /intentEvaluation:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Model
+      summary: Perform an intent evaluation on a Rasa Stack model
+      description: >-
+        Evaluates NLU intents on a Rasa Stack model. A .tar.gz file has to be
+        provided which must contain the NLU evaluation data and a Rasa Stack
+        model. Example contents of the zipped directory (the NLU evaluation
+        data is contained in data.json):
+
+        evaluation.tar.gz
+        ├── 20190318-115053
+        │   ├── core
+        │   │   ├── domain.json
+        │   │   ├── domain.yml
+        │   │   ├── metadata.json
+        │   │   ├── policy_0_MemoizationPolicy
+        │   │   │   ├── featurizer.json
+        │   │   │   └── memorized_turns.json
+        │   │   └── policy_1_KerasPolicy
+        │   │       ├── featurizer.json
+        │   │       ├── keras_model.h5
+        │   │       ├── keras_policy.json
+        │   │       └── keras_policy.tf_config.pkl
+        │   ├── fingerprint.json
+        │   └── nlu
+        │       ├── checkpoint
+        │       ├── component_1_RegexFeaturizer.pkl
+        │       ├── component_4_CountVectorsFeaturizer.pkl
+        │       ├── component_5_EmbeddingIntentClassifier.ckpt.data-00000-of-00001
+        │       ├── component_5_EmbeddingIntentClassifier.ckpt.index
+        │       ├── component_5_EmbeddingIntentClassifier.ckpt.meta
+        │       ├── component_5_EmbeddingIntentClassifier_encoded_all_intents.pkl
+        │       ├── component_5_EmbeddingIntentClassifier_inv_intent_dict.pkl
+        │       ├── metadata.json
+        │       └── training_data.json
+        └── data.json
+
+        This endpoint returns some common
+        sklearn  evaluation metrics ([accuracy](http://scikit-learn
+        .org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn
+        .metrics.accuracy_score), [f1 score](http://scikit-learn
+        .org/stable/modules/generated/sklearn.metrics.f1_score.html),
+        [precision](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html),
+        as well as a summary [report](http://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html))
+        for both intents and entities.
+
+      operationId: evaluateIntents
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              $ref: '#/components/schemas/IntentEvaluationRequest'
+      responses:
+        200:
+          description: Intent evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentEvaluationResult'
+              examples:
+                IntentEvaluation:
+                  $ref: '#/components/examples/IntentEvaluationResult'
+        400:
+          $ref: '#/components/responses/400IntentEvaluation'
+
   /predict:
     post:
       security:
@@ -1001,6 +1072,50 @@ components:
                     utter_on_it       1.00      0.50      0.67         2
 
                     avg / total       1.00      0.90      0.93        10
+    IntentEvaluationResult:
+          value:
+            intent_evaluation:
+              - accuracy: 0.19047619047619047
+                f1_score: 0.06095238095238095
+                precision: 0.036281179138321996
+                predictions:
+                  - intent: greet
+                    predicted: greet
+                    text: hey
+                    confidence: 1.0
+                  - confidence: 0.9667317867279053
+                    intent: mood_unhappy
+                    predicted: mood_unhappy
+                    text: not very good
+                report: >-
+                  # intent evaluation report
+                            precision    recall  f1-score   support
+
+                  goodbye        1.00      1.00      1.00         4
+                  greet          1.00      1.00      1.00         6
+                  mood_affirm    1.00      1.00      1.00         5
+                  mood_deny      1.00      1.00      1.00         6
+                  mood_great     1.00      1.00      1.00         8
+                  mood_unhappy   1.00      1.00      1.00        10
+
+                  micro avg      1.00      1.00      1.00        39
+                  macro avg      1.00      1.00      1.00        39
+                  weighted avg   1.00      1.00      1.00        39
+            entity_evaluation:
+              CRFEntityExtractor:
+                accuracy: 1.0
+                f1_score: 1.0
+                precision: 1.0
+                report: >-
+                  # entity evaluation report
+                             precision     recall  f1-score   support
+
+                  no_entity       1.00      1.00      1.00        70
+
+                  micro avg       1.00      1.00      1.00        70
+                  macro avg       1.00      1.00      1.00        70
+                  weighted avg    1.00      1.00      1.00        70
+
     StackTrainingRequest:
       value:
         config: >-
@@ -1133,6 +1248,20 @@ components:
             message: >-
               Evaluation could not be created.
             reason: "FailedEvaluation"
+            code: 400
+
+    400IntentEvaluation:
+      description: Failed intent evaluation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Evaluation could not be created.
+            reason: "FailedIntentEvaluation"
             code: 400
 
     400Training:
@@ -1556,6 +1685,55 @@ components:
     StackTrainingResult:
       type: string
       format: binary
+
+    IntentEvaluationRequest:
+      type: string
+      format: binary
+
+    IntentEvaluationResult:
+      type: object
+      properties:
+        intent_evaluattion:
+          type: object
+          description: Rasa NLU intent evaluation
+          properties:
+            report:
+              type: string
+            accuracy:
+              type: number
+            f1_score:
+              type: number
+            precision:
+              type: number
+            predictions:
+              type: array
+              items:
+                type: object
+                properties:
+                  intent:
+                    type: string
+                  predicted:
+                    type: string
+                  text:
+                    type: string
+                  confidence:
+                    type: number
+        entity_evaluation:
+          type: object
+          description: Rasa NLU entity evaluation
+          properties:
+            extractor_name:
+              type: object
+              description: Entity evaluation result for entity extractor
+              properties:
+                report:
+                  type: string
+                precision:
+                  type: number
+                f1_score:
+                  type: number
+                accuracy:
+                  type: number
 
     EvaluationResult:
       type: object
