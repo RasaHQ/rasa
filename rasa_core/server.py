@@ -180,7 +180,7 @@ async def nlu_model_and_evaluation_files_from_archive(
     """
 
     # unzip and return NLU evaluation files contained in it
-    unzipped_path = unpack_model(zipped_model_path, directory)
+    unzipped_path = str(unpack_model(zipped_model_path, directory))
     model_path = os.path.join(unzipped_path, 'nlu')
     nlu_files = await find_nlu_files_in_path(unzipped_path)
 
