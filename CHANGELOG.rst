@@ -50,14 +50,21 @@ Fixed
   code in ``registry.py``
 
 
-[0.14.5] - 2018-03-19
+[0.14.6] - 2019-03-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed Changelog dates (dates had the wrong year attached)
+
+[0.14.5] - 2019-03-19
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - properly tag ``stable`` docker image (instead of alpha)
   
-[0.14.3] - 2018-02-01
+[0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 -
 
