@@ -118,11 +118,11 @@ setup(
              "botkit rasa conversational-agents conversational-ai chatbot"
              "chatbot-framework bot-framework",
     url="https://rasa.com",
-    download_url="https://github.com/RasaHQ/rasa/archive/{}.tar.gz"
+    download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz"
                  "".format(__version__),
     project_urls={
-        "Bug Reports": "https://github.com/rasahq/rasa/issues",
-        "Source": "https://github.com/rasahq/rasa",
+        "Bug Reports": "https://github.com/rasahq/rasa_nlu/issues",
+        "Source": "https://github.com/rasahq/rasa_nlu",
     },
 )
 

@@ -12,7 +12,7 @@ check out our community resources to get help:
 
 - `Rasa Community Forum <https://forum.rasa.com>`_ is the best place to
   ask questions, participate in discussions and get help from the community.
-- `Rasa Core GitHub <https://github.com/RasaHQ/rasa>`_ repository
+- `Rasa Core GitHub <https://github.com/RasaHQ/rasa_nlu>`_ repository
   contains current and past issues, as well as examples and tools to
   get you started.
 
