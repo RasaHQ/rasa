@@ -5,6 +5,7 @@ from typing import Text
 import matplotlib
 import pytest
 
+from rasa.train import train_async
 from rasa_core import server, train, utils
 from rasa_core.agent import Agent
 from rasa_core.channels import CollectingOutputChannel, RestInput, channel
@@ -170,6 +171,17 @@ def moodbot_domain():
 @pytest.fixture(scope="session")
 def moodbot_metadata():
     return PolicyEnsemble.load_metadata(MOODBOT_MODEL_PATH)
+
+
+@pytest.fixture()
+async def trained_stack_model(default_domain_path, default_stack_config,
+                              default_nlu_data, default_stories_file):
+    trained_stack_model_path = await train_async(
+        domain=default_domain_path,
+        config=default_stack_config,
+        training_files=[default_nlu_data, default_stories_file])
+
+    return trained_stack_model_path
 
 
 @pytest.fixture

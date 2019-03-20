@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
-import asyncio
 import json
 import os
-import shutil
-import tarfile
 import tempfile
 import uuid
 
@@ -11,8 +8,7 @@ import pytest
 from freezegun import freeze_time
 
 import rasa_core
-from rasa.model import unpack_model
-from rasa.train import train_async
+from rasa.model import unpack_model, add_evaluation_file_to_model
 from rasa_core import events, constants
 from rasa_core.events import (UserUttered, BotUttered, SlotSet, Event)
 from tests.conftest import DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE
@@ -252,32 +248,13 @@ def test_stack_training(app,
     assert os.path.exists(os.path.join(model_path, 'fingerprint.json'))
 
 
-def test_intent_evaluation(app,
-                           default_domain_path,
-                           default_stories_file,
-                           default_stack_config,
-                           default_nlu_data):
-    # train stack model
-    loop = asyncio.get_event_loop()
-    model_path = loop.run_until_complete(train_async(
-        domain=default_domain_path,
-        config=default_stack_config,
-        training_files=[default_nlu_data, default_stories_file]))
+def test_intent_evaluation(app, default_nlu_data, trained_stack_model):
+    with open(default_nlu_data, 'r') as f:
+        nlu_data = f.read()
 
-    # create temporary directory
-    tmpdir = tempfile.mkdtemp()
-
-    # unpack stack model to tmpdir
-    _ = unpack_model(model_path, tmpdir)
-
-    # copy NLU evaluation file to tmpdir
-    shutil.copy(default_nlu_data, tmpdir)
-
-    # re-archive stack model with evaluation file
-    zipped_path = os.path.join(tmpdir, 'model.tar.gz')
-    with tarfile.open(zipped_path, "w:gz") as tar:
-        for elem in os.scandir(tmpdir):
-            tar.add(elem.path, arcname=elem.name)
+    # add evaluation data to model archive
+    zipped_path = add_evaluation_file_to_model(trained_stack_model,
+                                               nlu_data, data_format='md')
 
     # post zipped stack model with evaluation file
     with open(zipped_path, 'r+b') as f:

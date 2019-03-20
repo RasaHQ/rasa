@@ -397,6 +397,13 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
         return s
 
 
+def write_request_body_to_file(request: Request, path: Text):
+    """Writes the body of `request` to `path`."""
+
+    with open(path, 'w+b') as f:
+        f.write(request.body)
+
+
 def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     """Return a passed boolean argument of the request or a default.
 

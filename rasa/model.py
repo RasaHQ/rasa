@@ -1,7 +1,9 @@
+import glob
+import json
 import logging
 import os
-import glob
 import shutil
+import tarfile
 import tempfile
 from typing import Text, Tuple, Union, Optional, List, Dict
 
@@ -62,6 +64,49 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
         return None
 
     return max(list_of_files, key=os.path.getctime)
+
+
+def add_evaluation_file_to_model(model_path: Text,
+                                 payload: Text,
+                                 data_format: Text = 'json'
+                                 ) -> Text:
+    """Adds NLU data `payload` to zipped model at `model_path`.
+
+    Args:
+        model_path: Path to zipped Rasa Stack model.
+        payload: Json payload to be added to the Rasa Stack model.
+        data_format: NLU data format of `payload` ('json' or 'md').
+
+    Returns:
+        Path of the new archive in a temporary directory.
+    """
+
+    # create temporary directory
+    tmpdir = tempfile.mkdtemp()
+
+    # unpack archive
+    _ = unpack_model(model_path, tmpdir)
+
+    # add model file to folder
+    if data_format == 'json':
+        data_path = os.path.join(tmpdir, 'data.json')
+        with open(data_path, 'w') as f:
+            f.write(json.dumps(payload))
+    elif data_format == 'md':
+        data_path = os.path.join(tmpdir, 'nlu.md')
+        with open(data_path, 'w') as f:
+            f.write(payload)
+    else:
+        raise ValueError("`data_format` needs to be either `md` or `json`.")
+
+    zipped_path = os.path.join(tmpdir, os.path.basename(model_path))
+
+    # re-archive and post
+    with tarfile.open(zipped_path, "w:gz") as tar:
+        for elem in os.scandir(tmpdir):
+            tar.add(elem.path, arcname=elem.name)
+
+    return zipped_path
 
 
 def unpack_model(model_file: Text, working_directory: Optional[Text] = None

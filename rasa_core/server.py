@@ -5,7 +5,7 @@ import tempfile
 import zipfile
 from functools import wraps
 from inspect import isawaitable
-from typing import Any, Callable, List, Optional, Text, Union
+from typing import Any, Callable, List, Optional, Text, Union, Tuple
 
 from sanic import Sanic, response
 from sanic.exceptions import NotFound
@@ -22,7 +22,7 @@ from rasa_core.events import Event
 from rasa_core.policies import PolicyEnsemble
 from rasa_core.test import test
 from rasa_core.trackers import DialogueStateTracker, EventVerbosity
-from rasa_core.utils import dump_obj_as_str_to_file
+from rasa_core.utils import dump_obj_as_str_to_file, write_request_body_to_file
 from rasa_nlu.test import run_evaluation
 
 logger = logging.getLogger(__name__)
@@ -169,10 +169,29 @@ def event_verbosity_parameter(request, default_verbosity):
                             {"parameter": "include_events", "in": "query"})
 
 
+async def nlu_model_and_evaluation_files_from_archive(
+        zipped_model_path: Text,
+        directory: Text
+) -> Tuple[Text, List[Text]]:
+    """Extract NLU model path and intent evaluation files zipped model.
+
+    Returns a tuple containing the path to the nlu model and a list
+    of paths to evaluation files.
+    """
+
+    # unzip and return NLU evaluation files contained in it
+    unzipped_path = unpack_model(zipped_model_path, directory)
+    model_path = os.path.join(unzipped_path, 'nlu')
+    nlu_files = await find_nlu_files_in_path(unzipped_path)
+
+    return model_path, nlu_files
+
+
 async def find_nlu_files_in_path(path: Text):
     """Return list of NLU data paths in `path`.
 
-    Exclude `fingerprint.json` files.
+    Matches files ending on `.md` and `.json`.
+    Excludes `fingerprint.json` files.
     """
 
     out = []
@@ -180,6 +199,7 @@ async def find_nlu_files_in_path(path: Text):
         match = glob.glob(os.path.join(path, t))
         match = [m for m in match if not m.endswith(FINGERPRINT_FILE_PATH)]
         out.extend(match)
+
     return out
 
 
@@ -557,16 +577,12 @@ def create_app(agent=None,
         """Evaluate intents against a Rasa NLU model."""
 
         tmpdir = tempfile.mkdtemp()
-
         zipped_model_path = os.path.join(tmpdir, 'model.tar.gz')
-        with open(zipped_model_path, 'w+b') as f:
-            f.write(request.body)
+        write_request_body_to_file(request, zipped_model_path)
 
-        unzipped_path = unpack_model(zipped_model_path, tmpdir)
-
-        model_path = os.path.join(unzipped_path, 'nlu')
-
-        nlu_files = await find_nlu_files_in_path(unzipped_path)
+        model_path, nlu_files = \
+            await nlu_model_and_evaluation_files_from_archive(
+                zipped_model_path, tmpdir)
 
         if len(nlu_files) == 1:
             data_path = os.path.abspath(nlu_files[0])
