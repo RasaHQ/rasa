@@ -5,7 +5,7 @@ import os
 import shutil
 import tarfile
 import tempfile
-from typing import Text, Tuple, Union, Optional, List, Dict
+from typing import Text, Tuple, Union, Optional, List, Dict, Any
 
 from rasa.constants import DEFAULT_MODELS_PATH
 
@@ -67,7 +67,7 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
 
 
 def add_evaluation_file_to_model(model_path: Text,
-                                 payload: Text,
+                                 payload: Union[Text, Dict[Text, Any]],
                                  data_format: Text = 'json'
                                  ) -> Text:
     """Adds NLU data `payload` to zipped model at `model_path`.
