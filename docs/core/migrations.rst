@@ -15,7 +15,7 @@ how you can migrate from one version to another.
 General
 ~~~~~~~
 
-- The python package has a new new, so has the module. You should install
+- The python package has a new name, as does the module. You should install
   the package using ``pip install rasa`` (instead of ``rasa_core``).
 
   The code moved from ``rasa_core`` to ``rasa.core`` - best way to fix is a
