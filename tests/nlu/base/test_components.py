@@ -82,7 +82,7 @@ def test_builder_load_unknown(component_builder):
 
 def test_example_component(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig({"pipeline": [
-        {"name": "tests.example_component.MyComponent"}]})
+        {"name": "tests.nlu.example_component.MyComponent"}]})
 
     interpreter = utilities.interpreter_for(
         component_builder,
