@@ -87,5 +87,5 @@ You can see an independent benchmark comparing Rasa NLU to closed source alterna
    customcomponents
    migrations
    license
-   changelog
+   old_nlu_changelog
    support

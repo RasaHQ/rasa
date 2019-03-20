@@ -4,7 +4,7 @@ import pytest
 from moto import mock_s3
 
 from rasa_nlu import persistor, train
-from tests import utilities
+from tests.nlu import utilities
 
 
 class Object(object):

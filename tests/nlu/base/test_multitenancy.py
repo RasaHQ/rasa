@@ -9,7 +9,7 @@ from rasa_nlu import config
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.model import Trainer
 from rasa_nlu.server import RasaNLU
-from tests.utilities import ResponseTest
+from tests.nlu.utilities import ResponseTest
 
 
 @pytest.fixture(scope="module")

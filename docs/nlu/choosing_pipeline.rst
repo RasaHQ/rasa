@@ -7,13 +7,16 @@
 Choosing a Rasa NLU Pipeline
 ============================
 
+Choosing an NLU pipeline allows you to customize your model and finetune
+it on your dataset.
+
 The Short Answer
 ----------------
 
 If you have less than 1000 total training examples, and there is a spaCy model for your 
 language, use the ``pretrained_embeddings_spacy`` pipeline:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 
@@ -48,7 +51,7 @@ but very different to the word "cash". In a banking domain, "balance" and "cash"
 and you'd like your model to capture that. This pipeline doesn't use a language-specific model,
 so it will work with any language that you can tokenize (on whitespace or using a custom tokenizer).
 
-You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ .
+You can read more about this topic `here <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`__ .
 
 
 There are also the ``mitie`` and ``mitie_sklearn`` pipelines, which use MITIE as a source of word vectors.
@@ -72,7 +75,7 @@ To do this, use these flags:
     - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use a bag-of-words representations for them;
     - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
 
-`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`_ is a tutorial on how to use multiple intents in Rasa Core and NLU.
+`Here <https://blog.rasa.com/how-to-handle-multiple-intents-per-input-using-rasa-nlu-tensorflow-pipeline/>`__ is a tutorial on how to use multiple intents in Rasa Core and NLU.
 
 Here's an example configuration:
 
@@ -124,20 +127,25 @@ For example, the ``entities`` attribute is created by the ``CRFEntityExtractor``
 
 Component Lifecycle
 -------------------
-Every component can implement several methods from the :class:`Component` base class; in a pipeline these different methods
-will be called in a specific order. Lets assume, we added the following pipeline to our config:
+Every component can implement several methods from the ``Component``
+base class; in a pipeline these different methods
+will be called in a specific order. Lets assume, we added the following
+pipeline to our config:
 ``"pipeline": ["Component A", "Component B", "Last Component"]``.
 The image shows the call order during the training of this pipeline :
 
 .. image:: _static/images/component_lifecycle.png
 
-Before the first component is created using the ``create`` function, a so called ``context`` is created (which is
-nothing more than a python dict). This context is used to pass information between the components. For example,
-one component can calculate feature vectors for the training data, store that within the context and another
-component can retrieve these feature vectors from the context and do intent classification.
+Before the first component is created using the ``create`` function, a so
+called ``context`` is created (which is nothing more than a python dict).
+This context is used to pass information between the components. For example,
+one component can calculate feature vectors for the training data, store
+that within the context and another component can retrieve these feature
+vectors from the context and do intent classification.
 
-Initially the context is filled with all configuration values, the arrows in the image show the call order
-and visualize the path of the passed context. After all components are trained and persisted, the
+Initially the context is filled with all configuration values, the arrows
+in the image show the call order and visualize the path of the passed
+context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
 
 
@@ -185,7 +193,7 @@ Pre-configured Pipelines
 A template is just a shortcut for
 a full list of components. For example, these two configurations are equivalent:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 .. code-block:: yaml
@@ -210,7 +218,7 @@ pretrained_embeddings_spacy
 
 To use the ``pretrained_embeddings_spacy`` template:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_spacy.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_spacy.yml
     :language: yaml
 
 See :ref:`section_languages` for possible values for ``language``. To use
@@ -267,7 +275,7 @@ mitie
 There is no pipeline template, as you need to configure the location
 of MITIE's featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie.yml
     :language: yaml
 
 mitie_2
@@ -278,7 +286,7 @@ Training can be quite slow, so this is not recommended for large datasets.
 There is no pipeline template, as you need to configure the location
 of MITIE's featurizer. To use the components and configure them separately:
 
-.. literalinclude:: ../sample_configs/config_pretrained_embeddings_mitie_2.yml
+.. literalinclude:: ../../sample_configs/config_pretrained_embeddings_mitie_2.yml
     :language: yaml
 
 keyword

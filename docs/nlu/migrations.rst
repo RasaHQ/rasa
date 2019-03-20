@@ -30,10 +30,11 @@ model configuration
 custom components
 ~~~~~~~~~~~~~~~~~
 - The signature of Component's methods have been changed:
+
   - ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
     additionally take component's meta/config dicts
   - ``persist(...)`` method additionally takes file name prefix
-  Change your custom components accordingly.
+    Change your custom components accordingly.
 
 function names
 ~~~~~~~~~~~~~~
@@ -165,7 +166,7 @@ parameters. Example:
 
 
 All other parameters have either been moved to the scripts
-for training (:ref:`train_parameters`), serving models
+for training, serving models
 (:ref:`server_parameters`), or put into the pipeline
 configuration (:ref:`section_pipeline`).
 

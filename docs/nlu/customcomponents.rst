@@ -1,7 +1,7 @@
 :desc: Create custom components to create additional features like sentiment
        analysis to integrate with open source bot framework Rasa Stack.
 
-.._section_customcomponents:
+.. _section_customcomponents:
 
 Custom Components
 =================
@@ -24,7 +24,7 @@ Also be sure to read the section on the :ref:`section_component_lifecycle` .
 To get started, you can use this skeleton that contains the most important
 methods that you should implement:
 
-.. literalinclude:: ../tests/example_component.py
+.. literalinclude:: ../../tests/example_component.py
     :language: python
     :linenos:
 

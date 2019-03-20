@@ -1,5 +1,7 @@
-Change Log
-==========
+:desc: Rasa NLU Changelog
+
+NLU Change Log
+==============
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
@@ -44,7 +46,7 @@ Removed
 Fixed
 -----
 - ``RegexFeaturizer`` detects all regex in user message (not just first)
-- do_extractors_support_overlap now correctly throws an exception only if no extractors are 
+- do_extractors_support_overlap now correctly throws an exception only if no extractors are
   passed or if extractors that do not support overlapping entities are used.
 - Docs entry for pretrained embeddings pipeline is now consistent with the
   code in ``registry.py``
@@ -63,7 +65,7 @@ Fixed
 Fixed
 -----
 - properly tag ``stable`` docker image (instead of alpha)
-  
+
 [0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 -
@@ -137,7 +139,7 @@ Fixed
 - Set attributes of custom components correctly if they defer from the default
 - NLU Server can now handle training data mit emojis in it
 - If the ``token_name`` is not given in the endpoint configuration, the default
-  value is ``token`` instead of ``None`
+  value is ``token`` instead of ``None``
 - Throws error only if ``ner_crf`` picks up overlapping entities. If the
   entity extractor supports overlapping entitis no error is thrown.
 - Updated CORS support for the server.
@@ -155,7 +157,7 @@ Fixed
 - pinned spacy version to ``spacy<=2.0.12,>2.0`` to avoid dependency conflicts
   with tensorflow
 
-[0.13.7] - 2018-10-11`
+[0.13.7] - 2018-10-11
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
@@ -243,7 +245,7 @@ Changed
 Fixed
 -----
 - pipelines containing the ``EmbeddingIntentClassifier`` are not trained in a
-separate thread, as this may lead to freezing during training
+  separate thread, as this may lead to freezing during training
 
 [0.13.1] - 2018-08-07
 ^^^^^^^^^^^^^^^^^^^^^
@@ -834,6 +836,7 @@ Added
 - multithreading support of build in REST server (e.g. using gunicorn)
 - multitenancy implementation to allow loading multiple models which
   share the same backend
+
 Fixed
 -----
 - error propagation on failed vector model loading (spacy)

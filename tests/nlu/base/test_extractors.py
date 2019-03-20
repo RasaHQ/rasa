@@ -1,9 +1,8 @@
 # coding=utf-8
 
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.training_data import TrainingData, Message
-from tests import utilities
+from tests.nlu import utilities
 from httpretty import httpretty
 
 

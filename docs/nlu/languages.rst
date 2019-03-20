@@ -28,6 +28,7 @@ One way to define the pipeline configuration is to use a template configuration:
     language: "en"
 
     pipeline: "supervised_embeddings"
+
 Another way is to define a custom configuration by listing all components you would like your pipeline to use.
 The ``supervised_embeddings`` pipeline supports any language that can be tokenized. The default is to use a simple 
 whitespace tokenizer:

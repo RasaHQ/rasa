@@ -192,34 +192,34 @@ CountVectorsFeaturizer
           # whether to use word or character n-grams
           # 'char_wb' creates character n-grams only inside word boundaries
           # n-grams at the edges of words are padded with space.
-          "analyzer": 'word',  # use 'char' or 'char_wb' for character
+          analyzer: 'word'  # use 'char' or 'char_wb' for character
           # the parameters are taken from
           # sklearn's CountVectorizer
           # regular expression for tokens
-          "token_pattern": r'(?u)\b\w\w+\b'
+          token_pattern: r'(?u)\b\w\w+\b'
           # remove accents during the preprocessing step
-          "strip_accents": None  # {'ascii', 'unicode', None}
+          strip_accents: None  # {'ascii', 'unicode', None}
           # list of stop words
-          "stop_words": None  # string {'english'}, list, or None (default)
+          stop_words: None  # string {'english'}, list, or None (default)
           # min document frequency of a word to add to vocabulary
           # float - the parameter represents a proportion of documents
           # integer - absolute counts
-          "min_df": 1  # float in range [0.0, 1.0] or int
+          min_df: 1  # float in range [0.0, 1.0] or int
           # max document frequency of a word to add to vocabulary
           # float - the parameter represents a proportion of documents
           # integer - absolute counts
-          "max_df": 1.0  # float in range [0.0, 1.0] or int
+          max_df: 1.0  # float in range [0.0, 1.0] or int
           # set ngram range
-          "min_ngram": 1  # int
-          "max_ngram": 1  # int
+          min_ngram: 1  # int
+          max_ngram: 1  # int
           # limit vocabulary size
-          "max_features": None  # int or None
+          max_features: None  # int or None
           # if convert all characters to lowercase
-          "lowercase": true  # bool
+          lowercase: true  # bool
           # handling Out-Of-Vacabulary (OOV) words
           # will be converted to lowercase if lowercase is true
-          "OOV_token": None  # string or None
-          "OOV_words": []  # list of strings
+          OOV_token: None  # string or None
+          OOV_words: []  # list of strings
 
 KeywordIntentClassifier
 ~~~~~~~~~~~~~~~~~~~~~~~

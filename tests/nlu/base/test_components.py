@@ -4,7 +4,7 @@ from rasa_nlu import registry
 from rasa_nlu.components import find_unavailable_packages
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
-from tests import utilities
+from tests.nlu import utilities
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -82,7 +82,7 @@ def test_builder_load_unknown(component_builder):
 
 def test_example_component(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig({"pipeline": [
-        {"name": "tests.example_component.MyComponent"}]})
+        {"name": "tests.nlu.example_component.MyComponent"}]})
 
     interpreter = utilities.interpreter_for(
         component_builder,

@@ -4,7 +4,7 @@ import pytest
 
 from rasa_nlu import registry, training_data
 from rasa_nlu.model import Interpreter
-from tests import utilities
+from tests.nlu import utilities
 
 
 @utilities.slowtest

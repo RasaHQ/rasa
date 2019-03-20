@@ -10,8 +10,8 @@ from treq.testing import StubTreq
 
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.server import RasaNLU
-from tests import utilities
-from tests.utilities import ResponseTest
+from tests.nlu import utilities
+from tests.nlu.utilities import ResponseTest
 
 
 @pytest.fixture(scope="module")
