@@ -129,7 +129,7 @@ def unpack_model(model_file: Text, working_directory: Optional[Text] = None
 
     tar = tarfile.open(model_file)
     # All files are in a subdirectory.
-    tar.extractall(working_directory)
+    tar.extractall(str(working_directory))
     tar.close()
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
