@@ -34,7 +34,7 @@ def _add_interactive_arguments(parser: argparse.ArgumentParser):
 
 
 def interactive(args: argparse.Namespace):
-    from rasa_core.train import do_interactive_learning
+    from rasa.core.train import do_interactive_learning
 
     args.finetune = False  # Don't support finetuning
 

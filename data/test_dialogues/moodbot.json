@@ -1,9 +1,9 @@
 {
-  "py/object":"rasa_core.conversation.Dialogue",
+  "py/object":"rasa.core.conversation.Dialogue",
   "name":"moodbot",
   "events":[
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":null,
       "policy":null,
@@ -11,7 +11,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
 
       ],
@@ -61,7 +61,7 @@
       "timestamp":1551883971.410778
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_greet",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -69,7 +69,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":[
@@ -88,7 +88,7 @@
       "timestamp":1551883975.645656
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -96,7 +96,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
 
       ],
@@ -146,7 +146,7 @@
       "timestamp":1551883982.540276
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_cheer_up",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -154,7 +154,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":"https://i.imgur.com/nGF1K8f.jpg",
         "buttons":null,
@@ -164,7 +164,7 @@
       "timestamp":1551883985.0316749
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_did_that_help",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -172,7 +172,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,
@@ -182,7 +182,7 @@
       "timestamp":1551883985.940421
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"action_listen",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -190,7 +190,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.UserUttered",
+      "py/object":"rasa.core.events.UserUttered",
       "entities":[
 
       ],
@@ -240,7 +240,7 @@
       "timestamp":1551883989.0720608
     },
     {
-      "py/object":"rasa_core.events.ActionExecuted",
+      "py/object":"rasa.core.events.ActionExecuted",
       "action_name":"utter_goodbye",
       "confidence":1.0,
       "policy":"policy_2_MemoizationPolicy",
@@ -248,7 +248,7 @@
       "unpredictable":false
     },
     {
-      "py/object":"rasa_core.events.BotUttered",
+      "py/object":"rasa.core.events.BotUttered",
       "data":{
         "attachment":null,
         "buttons":null,

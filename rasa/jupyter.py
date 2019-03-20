@@ -2,11 +2,11 @@ import asyncio
 import pprint as pretty_print
 from typing import Any, Dict, Text, TYPE_CHECKING
 from rasa.cli.utils import print_success, print_error
-from rasa_core.interpreter import NaturalLanguageInterpreter, RasaNLUInterpreter
+from rasa.core.interpreter import NaturalLanguageInterpreter, RasaNLUInterpreter
 import rasa.model as model
 
 if TYPE_CHECKING:
-    from rasa_core.agent import Agent
+    from rasa.core.agent import Agent
 
 
 def pprint(object: Any):

@@ -1,7 +1,7 @@
 import asyncio
 
 import rasa.utils
-from rasa_core import train, utils
+from rasa.core import train, utils
 
 import logging
 

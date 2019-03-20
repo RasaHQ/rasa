@@ -2,8 +2,8 @@ import asyncio
 import logging
 
 import rasa.utils
-from rasa_core import utils
-from rasa_core.training import interactive
+from rasa.core import utils
+from rasa.core.training import interactive
 
 logger = logging.getLogger(__name__)
 

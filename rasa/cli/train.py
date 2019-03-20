@@ -17,7 +17,7 @@ if typing.TYPE_CHECKING:
 # noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
-    import rasa_core.cli.train as core_cli
+    import rasa.core.cli.train as core_cli
 
     train_parser = subparsers.add_parser(
         "train", help="Train the Rasa bot")
@@ -125,7 +125,7 @@ def train_core(args: argparse.Namespace,
 
         return train_core(args.domain, config, stories, output, train_path)
     else:
-        from rasa_core.train import do_compare_training
+        from rasa.core.train import do_compare_training
         loop.run_until_complete(do_compare_training(args, stories, None))
         return None
 

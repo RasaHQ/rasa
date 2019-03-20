@@ -3,9 +3,9 @@ import logging
 
 from sanic import Sanic, response
 
-from rasa_core.domain import Domain
-from rasa_core.nlg import TemplatedNaturalLanguageGenerator
-from rasa_core.trackers import DialogueStateTracker
+from rasa.core.domain import Domain
+from rasa.core.nlg import TemplatedNaturalLanguageGenerator
+from rasa.core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 

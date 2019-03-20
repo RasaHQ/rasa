@@ -1,11 +1,10 @@
-import logging
+import rasa.core
+import sys
+import warnings
 
-import rasa
+# this makes sure old code can still import from `rasa_core`
+# although the package has been moved to `rasa.core`
+sys.modules['rasa_core'] = rasa.core
 
-from rasa_core.train import train
-from rasa_core.test import test
-from rasa_core.visualize import visualize
-
-logging.getLogger(__name__).addHandler(logging.NullHandler())
-
-__version__ = rasa.__version__
+warnings.warn("The 'rasa_core' package hase been renamed. You should change "
+              "your imports to use 'rasa.core' instead.", UserWarning)

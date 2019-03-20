@@ -28,6 +28,7 @@ bower_components/
 build/
 build/lib/
 dist/
+docs/core/_build
 docs/_build
 jnk/
 logs/
@@ -55,8 +56,8 @@ examples/concertbot/data*
 examples/concertbot/models*
 examples/moodbot/models*
 examples/restaurantbot/models*
-docs/key 
-docs/key.pub
+docs/core/key 
+docs/core/key.pub
 secrets.tar
 failed_stories.md
 .python-version

@@ -13,13 +13,13 @@ function print_help {
 
 case ${1} in
     start)
-        exec python3 -m rasa_core.run --enable_api "${@:2}"
+        exec python3 -m rasa.core.run --enable_api "${@:2}"
         ;;
     run)
         exec "${@:2}"
         ;;
     train)
-        exec python3 -m rasa_core.train -s project/stories.md -d project/domain.yml -o ./model "${@:2}"
+        exec python3 -m rasa.core.train -s project/stories.md -d project/domain.yml -o ./model "${@:2}"
         ;;
     *)
         print_help
