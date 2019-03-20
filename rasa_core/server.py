@@ -576,8 +576,8 @@ def create_app(agent=None,
     async def evaluate_intents(request: Request):
         """Evaluate intents against a Rasa NLU model."""
 
-        tmpdir = tempfile.mkdtemp()
-        zipped_model_path = os.path.join(str(tmpdir), 'model.tar.gz')
+        tmpdir = str(tempfile.mkdtemp())
+        zipped_model_path = os.path.join(tmpdir, 'model.tar.gz')
         write_request_body_to_file(request, zipped_model_path)
 
         model_path, nlu_files = \
