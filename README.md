@@ -10,7 +10,7 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
-**Note: ** This repository now contains the code for both Rasa NLU **AND** Rasa Core.
+**Note** This repository now contains the code for both Rasa NLU **AND** Rasa Core.
 Nothing has changed yet in terms of usage, but we are in the process of simplifying
 everything ahead of the next major release. 
 
