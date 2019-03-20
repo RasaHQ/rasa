@@ -128,8 +128,12 @@ def unpack_model(model_file: Text, working_directory: Optional[Text] = None
         working_directory = tempfile.mkdtemp()
 
     tar = tarfile.open(model_file)
+
+    # cast `working_directory` as str for py3.5 compatibility
+    working_directory = str(working_directory)
+
     # All files are in a subdirectory.
-    tar.extractall(str(working_directory))
+    tar.extractall()
     tar.close()
     logger.debug("Extracted model to '{}'.".format(working_directory))
 
