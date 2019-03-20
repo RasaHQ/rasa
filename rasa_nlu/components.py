@@ -211,7 +211,7 @@ class Component(object, metaclass=ComponentMetaclass):
         calling `persist`. When the pipeline gets loaded again,
         this component needs to be able to restore itself.
         Components can rely on any context attributes that are
-        created by :meth:`components.Component.pipeline_init`
+        created by :meth:`components.Component.create`
         calls to components previous
         to this one."""
         if cached_component:
@@ -258,10 +258,10 @@ class Component(object, metaclass=ComponentMetaclass):
         This is the components chance to train itself provided
         with the training data. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`components.Component.pipeline_init`
+        by a call to :meth:`rasa_nlu.components.Component.create`
         of ANY component and
         on any context attributes created by a call to
-        :meth:`components.Component.train`
+        :meth:`rasa_nlu.components.Component.train`
         of components previous to this one."""
         pass
 
@@ -271,10 +271,10 @@ class Component(object, metaclass=ComponentMetaclass):
         This is the components chance to process an incoming
         message. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`components.Component.pipeline_init`
+        by a call to :meth:`rasa_nlu.components.Component.create`
         of ANY component and
         on any context attributes created by a call to
-        :meth:`components.Component.process`
+        :meth:`rasa_nlu.components.Component.process`
         of components previous to this one."""
         pass
 
@@ -404,12 +404,12 @@ class ComponentBuilder(object):
         ``load`` to create a new component.
 
         Args:
-            component_meta (dict):
+            component_meta:
                 the metadata of the component to load in the pipeline
-            model_dir (str):
+            model_dir:
                 the directory to read the model from
             model_metadata (Metadata):
-                the model's :class:`rasa_nlu.models.Metadata`
+                the model's :class:`rasa_nlu.model.Metadata`
 
         Returns:
             Component: the loaded component.

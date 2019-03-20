@@ -59,7 +59,7 @@ class Metadata(object):
         """Loads the metadata from a models directory.
 
         Args:
-            model_dir (str): the directory where the model is saved.
+            model_dir: the directory where the model is saved.
         Returns:
             Metadata: A metadata object describing the model
         """
@@ -290,7 +290,8 @@ class Interpreter(object):
                 required packages for the components are installed
                 before loading them.
             model_dir: The path of the model to load
-            component_builder: The :class:`ComponentBuilder` to use.
+            component_builder: The
+                :class:`rasa_nlu.components.ComponentBuilder` to use.
 
         Returns:
             An interpreter that uses the loaded model.

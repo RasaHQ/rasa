@@ -24,7 +24,7 @@ Also be sure to read the section on the :ref:`section_component_lifecycle` .
 To get started, you can use this skeleton that contains the most important
 methods that you should implement:
 
-.. literalinclude:: ../../tests/example_component.py
+.. literalinclude:: ../../tests/nlu/example_component.py
     :language: python
     :linenos:
 
