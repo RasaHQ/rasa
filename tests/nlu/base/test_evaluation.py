@@ -24,7 +24,7 @@ from rasa_nlu import utils
 import json
 import os
 from rasa_nlu import training_data, config
-from tests import utilities
+from tests.nlu import utilities
 
 logging.basicConfig(level="DEBUG")
 

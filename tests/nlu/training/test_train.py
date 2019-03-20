@@ -8,8 +8,8 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter, Trainer
 from rasa_nlu.train import create_persistor
 from rasa_nlu.training_data import TrainingData
-from tests import utilities
-from tests.conftest import DEFAULT_DATA_PATH
+from tests.nlu import utilities
+from tests.nlu.conftest import DEFAULT_DATA_PATH
 
 
 def as_pipeline(*components):

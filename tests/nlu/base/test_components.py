@@ -4,7 +4,7 @@ from rasa_nlu import registry
 from rasa_nlu.components import find_unavailable_packages
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
-from tests import utilities
+from tests.nlu import utilities
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
