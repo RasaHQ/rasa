@@ -71,7 +71,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
+    - sphinx-versioning push docs/nlu docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "NLU starter pack"

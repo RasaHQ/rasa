@@ -1,5 +1,7 @@
-Change Log
-==========
+:desc: Rasa NLU Changelog
+
+NLU Change Log
+==============
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
@@ -44,7 +46,7 @@ Removed
 Fixed
 -----
 - ``RegexFeaturizer`` detects all regex in user message (not just first)
-- do_extractors_support_overlap now correctly throws an exception only if no extractors are 
+- do_extractors_support_overlap now correctly throws an exception only if no extractors are
   passed or if extractors that do not support overlapping entities are used.
 - Docs entry for pretrained embeddings pipeline is now consistent with the
   code in ``registry.py``
@@ -63,7 +65,7 @@ Fixed
 Fixed
 -----
 - properly tag ``stable`` docker image (instead of alpha)
-  
+
 [0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 -
