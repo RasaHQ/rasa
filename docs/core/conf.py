@@ -151,7 +151,7 @@ html_theme = "rasabaster"
 html_theme_options = {
     'description': "Rasa",
     'github_user': 'RasaHQ',
-    'github_repo': 'rasa',
+    'github_repo': 'rasa_nlu',
     'fixed_sidebar': True,
     'product': "Core",
     'base_url': 'https://rasa.com/docs/core/'
@@ -356,7 +356,7 @@ Agent.handle_channel = Mock('handle_channel')
 
 extlinks = {
     'gh-code': (
-        'https://github.com/RasaHQ/rasa/tree/{}/%s'.format(release),
+        'https://github.com/RasaHQ/rasa_nlu/tree/{}/%s'.format(release),
         'github ')
 }
 
