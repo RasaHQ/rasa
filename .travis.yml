@@ -14,9 +14,12 @@ env:
   - BOTO_CONFIG=/dev/null
 
 install:
+  - sudo apt-get install graphviz graphviz-dev
+  - python -m pip install -U pip
   - pip install git+https://github.com/tmbo/MITIE.git
-  - pip install -r alt_requirements/requirements_dev.txt
+  - pip install -r dev-requirements.txt
   - pip install -e .
+  - pip install coveralls==1.3.0
   - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > jnk
   - python -m spacy link en_core_web_md en
   - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > jnk
@@ -31,12 +34,23 @@ before_script:
   - export TMPDIR=$HOME/tmp
 script: 
   - py.test --codestyle -m codestyle
-  - py.test tests/nlu/base --cov rasa_nlu -v --cov-append
-  - py.test tests/nlu/training --cov rasa_nlu -v --cov-append
+  - py.test tests/core --cov rasa -v --cov-append
+  - py.test tests/nlu/base --cov rasa -v --cov-append
+  - py.test tests/nlu/training --cov rasa -v --cov-append
 after_success:
   - coveralls
 jobs:
   include:
+  - stage: integration
+    name: "Test API specification"
+    language: python
+    install:
+    - npm install -g swagger-cli
+    script:
+    - swagger-cli validate docs/core/_static/spec/server.yml
+    - swagger-cli validate docs/core/_static/spec/action_server.yml
+    after_success:
+    - coveralls
   - stage: test
     if: fork = false
     name: Check Dependency Licenses
@@ -48,13 +62,13 @@ jobs:
     - fossa analyze
     - fossa test
   - stage: docs
+    name: "Build Rasa NLU Docs"
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
     - RASABASTER=rasabaster-0.7.18.tar.gz
     - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
     - pip install $RASABASTER
-    - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
-    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+    - pip install -r requirements-docs.txt
     - pip install -e .
     - pip list
     script:
@@ -74,20 +88,44 @@ jobs:
     - sphinx-versioning push docs/nlu docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "NLU starter pack"
+    name: "NLU starter pack (NLU only)"
     python: 3.6
     script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
+    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-nlu.git
     - cd starter-pack-rasa-nlu
-    - python -m pytest tests/test_nlu.py
+    - python -m pytest tests
+  - stage: test
+    name: "Test CLI"
+    script:
+    - timeout 2 time rasa --help
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "Stack starter pack (NLU only)"
+    name: "Stack starter pack"
     python: 3.6
     script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
     - cd starter-pack-rasa-stack
-    - python -m pytest tests/test_nlu.py
+    - python -m pytest tests
+  - stage: integration
+    name: "Test Docs Core"
+    install:
+    - pip install -r docs-requirements.txt
+    - pip install -e .
+    - pip list
+    script:
+      # be strict about warnings --> they will be treated as errors
+    - cd docs/core
+    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+  - stage: integration
+    name: "Test Docs NLU"
+    install:
+    - pip install -r docs-requirements.txt
+    - pip install -e .
+    - pip list
+    script:
+      # be strict about warnings --> they will be treated as errors
+    - cd docs/nlu
+    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
   - stage: trigger website rebuild
     if: fork = false AND branch = "master" AND type != "pull_request"
     script:

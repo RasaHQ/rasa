@@ -1,0 +1,7 @@
+tracker_store:
+  type: tests.core.test_tracker_stores.ExampleTrackerStore
+  url: localhost
+  port: 6379
+  db: 0
+  password: password
+  record_exp: 30000

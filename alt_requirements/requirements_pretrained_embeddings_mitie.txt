@@ -1,4 +1,4 @@
 # Minimum Install Requirements
--r requirements_bare.txt
+-r ../requirements.txt
 
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie

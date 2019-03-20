@@ -1,0 +1,36 @@
+slots:
+  concerts:
+    type: list
+  venues:
+    type: list
+
+intents:
+ - greet
+ - thankyou
+ - goodbye
+ - search_concerts
+ - search_venues
+ - compare_reviews
+
+entities:
+ - name
+
+templates:
+  utter_greet:
+    - "hey there!"
+  utter_goodbye:
+    - "goodbye :("
+  utter_default:
+    - "default message"
+  utter_youarewelcome:
+    - "you're very welcome"
+
+actions:
+  - utter_default
+  - utter_greet
+  - utter_goodbye
+  - utter_youarewelcome
+  - action_search_concerts
+  - action_search_venues
+  - action_show_concert_reviews
+  - action_show_venue_reviews

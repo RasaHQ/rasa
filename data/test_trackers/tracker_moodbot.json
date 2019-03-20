@@ -1,0 +1,125 @@
+{
+  "latest_message": {
+    "entities": [],
+    "intent": {
+      "confidence": 0.60,
+      "name": "mood_great"
+    },
+    "text": "/mood_great",
+    "intent_ranking": [
+      {
+        "confidence": 0.60,
+        "name": "mood_great"
+      },
+      {
+        "confidence": 0.20,
+        "name": "greet"
+      },
+      {
+        "confidence": 0.20,
+        "name": "goodbye"
+      }
+    ]
+  },
+  "sender_id": "mysender",
+  "latest_action_name": "action_listen",
+  "active_form": {},
+  "paused": false,
+  "latest_event_time": 1517821726.211042,
+  "followup_action": null,
+  "slots": {"name": null},
+  "latest_input_channel": null,
+  "events": [
+    {
+      "timestamp": 1517821726.211031,
+      "event": "action",
+      "name": "action_listen",
+      "policy": null,
+      "confidence": null
+    },
+    {
+      "timestamp": 1517821726.200036,
+      "parse_data": {
+        "entities": [],
+        "intent": {
+          "confidence": 0.54,
+          "name": "greet"
+        },
+        "text": "/greet",
+        "intent_ranking": [
+          {
+            "confidence": 0.54,
+            "name": "greet"
+          },
+          {
+            "confidence": 0.31,
+            "name": "goodbye"
+          },
+          {
+            "confidence": 0.15,
+            "name": "default"
+          }
+        ]
+      },
+      "event": "user",
+      "text": "/greet",
+      "input_channel": null
+    },
+    {
+      "timestamp": 1517821726.200373,
+      "event": "action",
+      "name": "utter_greet",
+      "policy": null,
+      "confidence": null
+    },
+    {
+      "timestamp": 1517821726.211038,
+      "event": "action",
+      "name": "action_listen",
+      "policy": null,
+      "confidence": null
+    },
+    {
+      "timestamp": 1517821726.209836,
+      "parse_data": {
+        "entities": [],
+        "intent": {
+          "confidence": 0.60,
+          "name": "mood_great"
+        },
+        "text": "/mood_great",
+        "intent_ranking": [
+          {
+            "confidence": 0.60,
+            "name": "mood_great"
+          },
+          {
+            "confidence": 0.20,
+            "name": "greet"
+          },
+          {
+            "confidence": 0.20,
+            "name": "goodbye"
+          }
+        ]
+      },
+      "event": "user",
+      "text": "/mood_great",
+      "input_channel": null
+    },
+    {
+      "timestamp": 1517821726.209908,
+      "event": "action",
+      "name": "utter_happy",
+      "policy": "policy_1_KerasPolicy",
+      "confidence": 0.8
+    },
+    {
+      "timestamp": 1517821726.211042,
+      "event": "action",
+      "name": "action_listen",
+      "policy": "policy_2_MemoizationPolicy",
+      "confidence": 1.0
+    }
+  ]
+}

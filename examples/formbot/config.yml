@@ -1,0 +1,12 @@
+pipeline:
+- name: WhitespaceTokenizer
+- name: CRFEntityExtractor
+- name: EntitySynonymMapper
+- name: CountVectorsFeaturizer
+  token_pattern: (?u)\b\w+\b
+- name: EmbeddingIntentClassifier
+- name: DucklingHTTPExtractor
+  url: http://localhost:8000
+  dimensions:
+  - number
+language: en

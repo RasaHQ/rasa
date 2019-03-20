@@ -1,0 +1,22 @@
+# install requirements
+-r requirements.txt
+
+# test
+pytest==3.5.1
+pytest-pycodestyle==1.4.0
+pytest-cov==2.5.1
+pytest-twisted==1.6
+pytest_localserver==0.4.1
+pytest_sanic==0.1.12
+treq==17.8.0
+responses==0.9.0
+httpretty==0.9.5
+freezegun==0.3.10
+nbsphinx==0.3.2
+aioresponses==0.5.2
+mock==2.0.0
+moto==1.2.0
+
+# other
+google-cloud-storage==1.7.0
+azure-storage-blob==1.0.0
