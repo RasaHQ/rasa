@@ -50,7 +50,8 @@ jobs:
     - pip list
     script:
       # be strict about warnings --> they will be treated as errors
-    - cd docs && make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+    - cd docs/core
+    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
   - stage: build docs
     if: fork = false AND branch = "master"
     install:
