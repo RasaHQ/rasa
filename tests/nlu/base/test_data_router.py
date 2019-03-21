@@ -1,7 +1,7 @@
 import mock
 
-from rasa_nlu import data_router
-from rasa_nlu import persistor
+from rasa.nlu import data_router
+from rasa.nlu import persistor
 
 
 def test_list_projects_in_cloud_method():

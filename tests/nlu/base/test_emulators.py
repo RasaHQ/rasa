@@ -1,12 +1,12 @@
 def test_luis_request():
-    from rasa_nlu.emulators.luis import LUISEmulator
+    from rasa.nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "project": "default", "time": None}
 
 
 def test_luis_response():
-    from rasa_nlu.emulators.luis import LUISEmulator
+    from rasa.nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
     data = {
         "text": "I want italian food",
@@ -70,14 +70,14 @@ def test_luis_response():
 
 
 def test_wit_request():
-    from rasa_nlu.emulators.wit import WitEmulator
+    from rasa.nlu.emulators.wit import WitEmulator
     em = WitEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "project": "default", "time": None}
 
 
 def test_wit_response():
-    from rasa_nlu.emulators.wit import WitEmulator
+    from rasa.nlu.emulators.wit import WitEmulator
     em = WitEmulator()
     data = {
         "text": "I want italian food",
@@ -102,14 +102,14 @@ def test_wit_response():
 
 
 def test_dialogflow_request():
-    from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+    from rasa.nlu.emulators.dialogflow import DialogflowEmulator
     em = DialogflowEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "project": "default", "time": None}
 
 
 def test_dialogflow_response():
-    from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+    from rasa.nlu.emulators.dialogflow import DialogflowEmulator
     em = DialogflowEmulator()
     data = {
         "text": "I want italian food",
@@ -150,7 +150,7 @@ def test_dialogflow_response():
 
 
 def test_dummy_request():
-    from rasa_nlu.emulators import NoEmulator
+    from rasa.nlu.emulators import NoEmulator
     em = NoEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "project": "default", "time": None}
@@ -165,14 +165,14 @@ def test_dummy_request():
 
 
 def test_dummy_response():
-    from rasa_nlu.emulators import NoEmulator
+    from rasa.nlu.emulators import NoEmulator
     em = NoEmulator()
     data = {"intent": "greet", "text": "hi", "entities": {}, "confidence": 1.0}
     assert em.normalise_response_json(data) == data
 
 
 def test_emulators_can_handle_missing_data():
-    from rasa_nlu.emulators.luis import LUISEmulator
+    from rasa.nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
     norm = em.normalise_response_json({
         "text": "this data doesn't contain an intent result"})

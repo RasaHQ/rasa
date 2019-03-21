@@ -5,10 +5,10 @@ import tempfile
 import pytest
 from treq.testing import StubTreq
 
-from rasa_nlu import config
-from rasa_nlu.data_router import DataRouter
-from rasa_nlu.model import Trainer
-from rasa_nlu.server import RasaNLU
+from rasa.nlu import config
+from rasa.nlu.data_router import DataRouter
+from rasa.nlu.model import Trainer
+from rasa.nlu.server import RasaNLU
 from tests.nlu.utilities import ResponseTest
 
 
@@ -151,7 +151,7 @@ def test_post_parse_invalid_model(app, response_test):
 def train_models(component_builder, data):
     # Retrain different multitenancy models
     def train(cfg_name, project_name):
-        from rasa_nlu import training_data
+        from rasa.nlu import training_data
 
         cfg = config.load(cfg_name)
         trainer = Trainer(cfg, component_builder)

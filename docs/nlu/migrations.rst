@@ -95,8 +95,8 @@ function names
 
   .. code-block:: python
 
-    from rasa_nlu.utils import EndpointConfig
-    from rasa_nlu.data_router import DataRouter
+    from rasa.nlu.utils import EndpointConfig
+    from rasa.nlu.data_router import DataRouter
 
     model_endpoint = EndpointConfig(
         url="http://my_model_server.com/models/default/nlu/tags/latest",

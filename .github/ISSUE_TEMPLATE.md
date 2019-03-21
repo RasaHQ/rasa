@@ -1,13 +1,21 @@
-<!-- If you don't know your Rasa NLU version, here is some help: https://goo.gl/g9QQg2. If you are creating a feature request, feel free to remove all the system information stuff. --> 
+<!-- THIS INFORMATION IS MANDATORY - YOUR ISSUE WILL BE CLOSED IF IT IS MISSING. If you don't know your Rasa Core version, use `pip list | grep rasa`. Removing the below information is allowed for FEATURE REQUESTS. --> 
 
-**Rasa NLU version**:
+**Rasa version**:
+
+**Python version**: 
 
 **Operating system** (windows, osx, ...):
 
-**Content of model configuration file**:
+**Issue**:
+
+
+
+**Content of configuration file (config.yml)**:
 ```yml
 
 ```
 
-**Issue**:
+**Content of domain file (domain.yml)** (if used & relevant):
+```yaml
 
+```

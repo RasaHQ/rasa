@@ -3,11 +3,11 @@
 import os
 import pytest
 
-from rasa_nlu import registry, train
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.model import Interpreter, Trainer
-from rasa_nlu.train import create_persistor
-from rasa_nlu.training_data import TrainingData
+from rasa.nlu import registry, train
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.model import Interpreter, Trainer
+from rasa.nlu.train import create_persistor
+from rasa.nlu.training_data import TrainingData
 from tests.nlu import utilities
 from tests.nlu.conftest import DEFAULT_DATA_PATH
 
@@ -132,23 +132,6 @@ def test_train_model_noents(language, pipeline, component_builder, tmpdir):
         path=tmpdir.strpath,
         data="./data/test/demo-rasa-noents.json",
         component_builder=component_builder)
-    assert trained.pipeline
-    loaded = Interpreter.load(persisted_path, component_builder)
-    assert loaded.pipeline
-    assert loaded.parse("hello") is not None
-    assert loaded.parse("Hello today is Monday, again!") is not None
-
-
-@utilities.slowtest
-@pytest.mark.parametrize("language, pipeline", pipelines_for_tests())
-def test_train_model_multithread(language, pipeline, component_builder, tmpdir):
-    _config = RasaNLUModelConfig({"pipeline": pipeline, "language": language})
-    (trained, _, persisted_path) = train(
-        _config,
-        path=tmpdir.strpath,
-        data=DEFAULT_DATA_PATH,
-        component_builder=component_builder,
-        num_threads=2)
     assert trained.pipeline
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
