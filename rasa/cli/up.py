@@ -1,13 +1,18 @@
 import argparse
+import logging
 import sys
 from multiprocessing import Process
-from typing import List
+from typing import List, Text
 
 import rasa.cli.run
 from rasa.cli.utils import print_error, print_success
-
-
+from rasa.core import utils, cli
 # noinspection PyProtectedMember
+from rasa.core.run import serve_application
+from rasa.core.utils import AvailableEndpoints, EndpointConfig
+from rasa.utils import configure_colored_logging
+
+
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     shell_parser = subparsers.add_parser(
@@ -16,58 +21,102 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         help="Run the Rasa Interface")
+
+    shell_parser.add_argument(
+        "--production",
+        action="store_true",
+        help="Run Rasa in a production environment")
+
+    shell_parser.add_argument(
+        "--auth_token",
+        type=str,
+        help="Rasa API auth token")
+
+    shell_parser.add_argument(
+        "--nlg",
+        type=str,
+        default="http://localhost:5002/api/nlg",
+        help="Rasa NLG endpoint")
+
+    shell_parser.add_argument(
+        "--model_endpoint_url",
+        type=str,
+        default=("http://localhost:5002/api/projects/"
+                 "default/models/tags/production"),
+        help="Rasa Stack model endpoint URL")
+
     rasa.cli.run.add_run_arguments(shell_parser)
+
     shell_parser.set_defaults(func=up)
 
+    cli.arguments.add_logging_option_arguments(shell_parser)
 
-def start_core(platform_token):
-    from rasa.core.utils import AvailableEndpoints
-    from rasa.core.run import serve_application
-    from rasa.core.utils import EndpointConfig
 
-    _endpoints = AvailableEndpoints(
-        # TODO: make endpoints more configurable, esp ports
-        model=EndpointConfig("http://localhost:5002"
-                             "/api/projects/default/models/tags/production",
+def start_core(args: argparse.Namespace,
+               endpoints: AvailableEndpoints = None,
+               **kwargs):
+    """Starts the Rasa Core application."""
+
+    if endpoints is None:
+        endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
+
+    serve_application(endpoints=endpoints, **kwargs)
+
+
+def start_core_for_local_platform(args: argparse.Namespace,
+                                  platform_token: Text):
+    """Starts the Rasa API with Rasa Core as a background process."""
+
+    endpoints = AvailableEndpoints(
+        model=EndpointConfig(args.model_endpoint_url,
                              token=platform_token,
                              wait_time_between_pulls=1),
         event_broker=EndpointConfig(**{"type": "file"}),
-        nlg=EndpointConfig("http://localhost:5002"
-                           "/api/nlg",
-                           token=platform_token))
+        nlg=EndpointConfig(args.nlg, token=platform_token))
 
-    serve_application("models",
-                      nlu_model=None,
-                      channel="rasa",
-                      credentials_file="credentials.yml",
-                      cors="*",
-                      auth_token=None,  # TODO: configure auth token
-                      enable_api=True,
-                      endpoints=_endpoints)
+    local_kwargs = dict(nlu_model=None,
+                        channel="rasa",
+                        credentials_file="credentials.yml",
+                        cors="*",
+                        auth_token=args.auth_token,
+                        enable_api=True)
 
-
-def start_event_service():
-    from rasa_platform.services.event_service import main
-    main("rasa_event.log")
+    p = Process(target=start_core, args=(args, endpoints),
+                kwargs=local_kwargs)
+    p.start()
 
 
 def up(args: argparse.Namespace):
-    try:
-        from rasa_platform import config
-        from rasa_platform.api.server import main_local
-    except ImportError:
-        print_error("Rasa Platform is not installed. The `rasa up` command "
-                    "requires an installation of Rasa Platform.")
-        sys.exit()
+    logging.getLogger('werkzeug').setLevel(logging.WARN)
+    logging.getLogger('engineio').setLevel(logging.WARN)
+    logging.getLogger('matplotlib').setLevel(logging.WARN)
+    logging.getLogger('socketio').setLevel(logging.ERROR)
 
-    print_success("Starting Rasa Core")
+    configure_colored_logging(args.loglevel)
+    utils.configure_file_logging(args.loglevel,
+                                 args.log_file)
 
-    p = Process(target=start_core, args=(config.platform_token,))
-    p.start()
+    if args.production:
+        print_success("Starting Rasa Core")
+        print_success("have args: {}".format(args))
+        start_core(args)
+    else:
+        try:
+            from rasa_platform import config
+            from rasa_platform.api.server import main_local
+            from rasa_platform.services.event_service import main
+        except ImportError:
+            print_error("Rasa Platform is not installed. The `rasa up` "
+                        "command requires an installation of Rasa Platform.")
+            sys.exit()
 
-    p = Process(target=start_event_service)
-    p.start()
+        print_success("Starting Rasa Event Service")
+        print_success("Starting Rasa Core")
+        print_success("Starting Rasa Interface")
 
-    print_success("Starting Rasa Interface...")
+        p = Process(target=main, args=("rasa_event.log",))
+        p.start()
 
-    main_local(".")
+        start_core_for_local_platform(args, config.platform_token)
+
+        main_local(".")
