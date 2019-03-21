@@ -1,16 +1,15 @@
-import asyncio
-from functools import partial
-
 import argparse
+import asyncio
 import logging
-from sanic import Sanic
-from sanic_cors import CORS
+from functools import partial
 from typing import List, Optional, Text
 
-import rasa.core.cli.arguments
-import rasa.utils
+from sanic import Sanic
+from sanic_cors import CORS
 
 import rasa.core
+import rasa.core.cli.arguments
+import rasa.utils
 from rasa.core import constants, utils, cli
 from rasa.core.channels import (BUILTIN_CHANNELS, InputChannel, console)
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -135,7 +134,7 @@ def serve_application(core_model=None,
                       nlu_model=None,
                       channel=None,
                       port=constants.DEFAULT_SERVER_PORT,
-                      credentials_file=None,
+                      credentials=None,
                       cors=None,
                       auth_token=None,
                       enable_api=True,
@@ -143,10 +142,10 @@ def serve_application(core_model=None,
                       jwt_method=None,
                       endpoints=None
                       ):
-    if not channel and not credentials_file:
+    if not channel and not credentials:
         channel = "cmdline"
 
-    input_channels = create_http_input_channels(channel, credentials_file)
+    input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(input_channels, cors, auth_token, enable_api,
                         jwt_secret, jwt_method, port=port)

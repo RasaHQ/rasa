@@ -46,7 +46,7 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     rasa.core.run.serve_application(core_path,
                                     nlu_path,
                                     channel=channel,
-                                    credentials_file=credentials,
+                                    credentials=credentials,
                                     endpoints=_endpoints,
                                     **kwargs)
     shutil.rmtree(model_path)

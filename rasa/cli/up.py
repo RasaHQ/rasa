@@ -76,7 +76,7 @@ def start_core_for_local_platform(args: argparse.Namespace,
 
     local_kwargs = dict(nlu_model=None,
                         channel="rasa",
-                        credentials_file="credentials.yml",
+                        credentials="credentials.yml",
                         cors="*",
                         auth_token=args.auth_token,
                         enable_api=True)
