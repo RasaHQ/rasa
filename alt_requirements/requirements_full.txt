@@ -7,5 +7,4 @@
 # MITIE Requirements
 -r requirements_pretrained_embeddings_mitie.txt
 
-Jpype1==0.6.2
 jieba==0.39

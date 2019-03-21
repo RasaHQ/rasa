@@ -20,7 +20,6 @@ moto==1.2.0
 # pipeline dependencies
 git+https://github.com/tmbo/MITIE.git#egg=mitie
 spacy==2.0.18
-Jpype1==0.6.2
 jieba==0.39
 
 # other
