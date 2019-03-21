@@ -7,12 +7,12 @@ from typing import List, Text
 import rasa.cli.run
 from rasa.cli.utils import print_error, print_success
 from rasa.core import utils, cli
-# noinspection PyProtectedMember
 from rasa.core.run import serve_application
 from rasa.core.utils import AvailableEndpoints, EndpointConfig
 from rasa.utils import configure_colored_logging
 
 
+# noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
     shell_parser = subparsers.add_parser(
@@ -53,14 +53,20 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
 
 def start_core(args: argparse.Namespace,
-               endpoints: AvailableEndpoints = None,
-               **kwargs):
+               endpoints: AvailableEndpoints = None):
     """Starts the Rasa Core application."""
 
     if endpoints is None:
         endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
 
-    serve_application(endpoints=endpoints, **kwargs)
+    serve_application(endpoints=endpoints,
+                      port=args.port,
+                      credentials=args.credentials,
+                      cors=args.cors,
+                      auth_token=args.auth_token,
+                      enable_api=True,
+                      jwt_secret=args.jwt_secret,
+                      jwt_method=args.jwt_method)
 
 
 def start_core_for_local_platform(args: argparse.Namespace,
@@ -74,15 +80,15 @@ def start_core_for_local_platform(args: argparse.Namespace,
         event_broker=EndpointConfig(**{"type": "file"}),
         nlg=EndpointConfig(args.nlg, token=platform_token))
 
-    local_kwargs = dict(nlu_model=None,
-                        channel="rasa",
-                        credentials="credentials.yml",
-                        cors="*",
-                        auth_token=args.auth_token,
-                        enable_api=True)
+    vars(args).update(dict(nlu_model=None,
+                           channel="rasa",
+                           credentials="credentials.yml",
+                           cors="*",
+                           auth_token=args.auth_token,
+                           enable_api=True,
+                           endpoints=endpoints))
 
-    p = Process(target=start_core, args=(args, endpoints),
-                kwargs=local_kwargs)
+    p = Process(target=start_core, args=(args, endpoints))
     p.start()
 
 

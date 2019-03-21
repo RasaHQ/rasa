@@ -10,6 +10,7 @@ from sanic_cors import CORS
 import rasa.core
 import rasa.core.cli.arguments
 import rasa.utils
+from rasa.cli.utils import print_success
 from rasa.core import constants, utils, cli
 from rasa.core.channels import (BUILTIN_CHANNELS, InputChannel, console)
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -140,11 +141,11 @@ def serve_application(core_model=None,
                       enable_api=True,
                       jwt_secret=None,
                       jwt_method=None,
-                      endpoints=None
+                      endpoints: AvailableEndpoints = None
                       ):
     if not channel and not credentials:
         channel = "cmdline"
-
+    print_success('have endpoints {}'.format(endpoints.model.url))
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(input_channels, cors, auth_token, enable_api,
