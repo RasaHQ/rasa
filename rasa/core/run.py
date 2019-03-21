@@ -145,7 +145,7 @@ def serve_application(core_model=None,
                       ):
     if not channel and not credentials:
         channel = "cmdline"
-    print_success('have endpoints {}'.format(endpoints.model.url))
+
     input_channels = create_http_input_channels(channel, credentials)
 
     app = configure_app(input_channels, cors, auth_token, enable_api,

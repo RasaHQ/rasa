@@ -104,7 +104,6 @@ def up(args: argparse.Namespace):
 
     if args.production:
         print_success("Starting Rasa Core")
-        print_success("have args: {}".format(args))
         start_core(args)
     else:
         try:
