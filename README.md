@@ -1,228 +1,112 @@
-# Rasa NLU
-[![Join the forum at https://forum.rasa.com](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# Rasa Stack (Rasa Core + Rasa NLU)
+
+[![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa-nlu.svg)](https://badge.fury.io/py/rasa-nlu)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/rasa_nlu.svg)](https://pypi.python.org/pypi/rasa_nlu)
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
-[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs/nlu/)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasa.com/docs)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FRasaHQ%2Frasa_nlu?ref=badge_shield)
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
-Rasa NLU (Natural Language Understanding) is a tool for understanding what is being said in short pieces of text.
-For example, taking a short message like:
+**Note** This repository now contains the code for both Rasa NLU **AND** Rasa Core.
+Nothing has changed yet in terms of usage, but we are in the process of simplifying
+everything ahead of the next major release. 
 
-> *"I'm looking for a Mexican restaurant in the center of town"*
+Rasa is a framework for building conversational software, which includes
+chatbots on:
+- Facebook Messenger
+- Slack
+- Microsoft Bot Framework
+- Rocket.Chat
+- Mattermost
+- Telegram
+- Twilio
 
-And returning structured data like:
+But you can also build assistants using:
+- Alexa Skills
+- Google Home Actions
 
-```
-  intent: search_restaurant
-  entities: 
-    - cuisine : Mexican
-    - location : center
-```
+Rasa's primary purpose is to help you build contextual, layered
+conversations with lots of back-and-forth. To have a real conversation,
+you need to have some memory and build on things that were said earlier.
+Rasa lets you do that in a scalable way.
 
-Rasa NLU is primarily used to build chatbots and voice apps, where this is called intent classification and entity extraction.
-To use Rasa, *you have to provide some training data*.
-That is, a set of messages which you've already labelled with their intents and entities.
-Rasa then uses machine learning to pick up patterns and generalise to unseen sentences. 
+There's a lot more background information in this
+[blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a).
 
-You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
+---
+- **What do Rasa Core & NLU do? 🤔**
+  [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
 
-If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](https://rasa.com/docs/nlu/quickstart/).
+- **I'd like to read the detailed docs 🤓**
+  [Read The Docs](https://rasa.com/docs)
 
-- **What does Rasa NLU do? 🤔** [Read About the Rasa Stack](http://rasa.com/products/rasa-stack/)
+- **I'm ready to install Rasa! 🚀**
+  [Installation](https://rasa.com/docs/core/installation/)
 
-- **I'd like to read the detailed docs 🤓** [Read The Docs](https://rasa.com/docs/nlu/)
+- **I'm ready to start building! 🤖**
+  [Rasa Stack starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
 
-- **I'm ready to install Rasa NLU! 🚀** [Installation](https://rasa.com/docs/nlu/installation/)
+- **I have a question ❓**
+  [Rasa Community Forum](https://forum.rasa.com)
 
-- **I have a question ❓** [Rasa Community Forum](https://forum.rasa.com)
+- **I would like to contribute 🤗**
+  [How to contribute](#how-to-contribute)
+  
+---  
+## Where to get help
 
-- **I would like to contribute 🤗** [How to contribute](#how-to-contribute)
+There is extensive documentation at [Rasa Docs](https://rasa.com/docs). 
+Make sure to select the correct version to make sure you are looking at 
+the docs for the version you installed.
 
-### Important Note
+Please use [Rasa Community Forum](https://forum.rasa.com) for quick answers to
+questions.
 
-Current github master version does NOT support python 2.7 anymore (neither
-will the next major release). If you want to use Rasa NLU with python 
-2.7, please install the most recent version from pypi (0.14).
-
-
-# Quick Install
-
-For the full installation instructions, please head over to the documentation: [Installation](https://rasa.com/docs/nlu/installation/)
-
-**Via Docker Image**
-From docker hub:
-```
-docker run -p 5000:5000 rasa/rasa_nlu:latest-full
-```
-(for more docker installation options see [Advanced Docker Installation](#advanced-docker))
-
-**Via Python Library**
-From pypi:
-```
-pip install rasa_nlu
-python -m rasa_nlu.server &
-```
-(for more python installation options see [Advanced Python Installation](#advanced-python))
-
-### Basic test
-The below command can be executed for either method used above.
-```
-curl 'http://localhost:5000/parse?q=hello'
-```
-
-# Example use
-
-### Get the Server Status
-```
-curl 'http://localhost:5000/status'
-```
-
-### Check the Server Version
-```
-curl 'http://localhost:5000/version'
-```
-
-### Training New Models
-[Examples](https://github.com/RasaHQ/rasa_nlu/tree/master/data/examples/rasa)
-and [Documentation](https://rasa.com/docs/nlu/dataformat/) of the training data
-format are provided. But as a quick start execute the below command to train
-a new model
-
-#### Json format
-```
-curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/sample_configs/config_train_server_json.yml' | \
-curl --request POST --header 'content-type: application/x-yml' --data-binary @- --url 'localhost:5000/train?project=test_model'
-```
-
-This will train a simple keyword based models (not usable for anything but this demo). For better
-pipelines consult the documentation.
-
-#### Markdown format
-```
-wget 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/sample_configs/config_train_server_md.yml'
-curl --request POST --header 'content-type: application/x-yml' --data-binary @config_train_server_md.yml --url 'localhost:5000/train?project=test_model'
-```
-
-The above command does the following:
-1. It Fetches some of the example data in the repo
-2. It `POSTS` that data to the `/train` endpoint and names the model `project=test_model`
-
-### Parsing New Requests
-Make sure the above command has finished before executing the below. You can check with the `/status` command above.
-```
-curl 'http://localhost:5000/parse?q=hello&project=test_model'
-```
-
-# FAQ
-
-### Who is it for?
-The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://www.luis.ai), or [Dialogflow](https://dialogflow.com). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](https://rasa.com/docs/nlu/http/). If your project is written in Python you can [simply import the relevant classes](https://rasa.com/docs/nlu/python/). If you're currently using wit/LUIS/Dialogflow, you just:
-
-1. Download your app data from wit, LUIS, or Dialogflow and feed it into Rasa NLU
-2. Run Rasa NLU on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.
-
-### Why should I use Rasa NLU?
-* You don't have to hand over your data to FB/MSFT/GOOG
-* You don't have to make a `https` call to parse every message.
-* You can tune models to work well on your particular use case.
-
-These points are laid out in more detail in a [blog post](https://blog.rasa.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself/). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open-sourced. 
-
-### What languages does it support?
-It depends. Some things, like intent classification with the `tensorflow_embedding` pipeline, work in any language. 
-Other features are more restricted. See details [here](https://rasa.com/docs/nlu/languages/)
+### README Contents:
+- [How to contribute](#how-to-contribute)
+- [Development Internals](#development-internals)
+- [License](#license)
 
 ### How to contribute
-We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://rasa.com/docs/contributing/).
+We are very happy to receive and merge your contributions. There is
+some more information about the style of the code and docs in the
+[documentation](https://rasa.com/docs/contributing/).
 
 In general the process is rather simple:
-1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/RasaHQ/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
+1. create an issue describing the feature you want to work on (or
+   have a look at issues with the label
+   [help wanted](https://github.com/RasaHQ/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
 2. write your code, tests and documentation
 3. create a pull request describing your changes
 
-You pull request will be reviewed by a maintainer, who might get back to you about any necessary changes or questions. You will also be asked to sign the [Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa_nlu)
+You pull request will be reviewed by a maintainer, who might get
+back to you about any necessary changes or questions. You will
+also be asked to sign a
+[Contributor License Agreement](https://cla-assistant.io/RasaHQ/rasa_nlu).
 
-# Advanced installation
-### Advanced Python
-From github:
-```
-git clone git@github.com:RasaHQ/rasa_nlu.git
-cd rasa_nlu
-pip install -r requirements.txt
-pip install -e .
-```
 
-For local development make sure you install the development requirements:
-```
-pip install -r alt_requirements/requirements_dev.txt
-pip install -e .
-```
-
-To test the installation use (this will run a very stupid default model. you need to [train your own model](https://rasa.com/docs/nlu/quickstart/) to do something useful!):
-
-### Advanced Docker
-Before you start, ensure you have the latest version of docker engine on your machine. You can check if you have docker installed by typing ```docker -v``` in your terminal.
-
-To see all available builds go to the [Rasa docker hub](https://hub.docker.com/r/rasa/rasa_nlu/), but to get up and going the quickest just run:
-```
-docker run -p 5000:5000 rasa/rasa_nlu:latest-full
-```
-
-There are also three volumes, which you may want to map: `/app/projects`, `/app/logs`, and `/app/data`. It is also possible to override the config file used by the server by mapping a new config file to the volume `/app/config.json`. For complete docker usage instructions go to the official [docker hub readme](https://hub.docker.com/r/rasa/rasa_nlu/).
-
-To test run the below command after the container has started. For more info on using the HTTP API see [here](https://rasa.com/docs/nlu/http/#endpoints)
-```
-curl 'http://localhost:5000/parse?q=hello'
-```
-
-### Docker Cloud
-Warning! setting up Docker Cloud is quite involved - this method isn't recommended unless you've already configured Docker Cloud Nodes (or swarms)
-
-[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/?repo=https://github.com/RasaHQ/rasa_nlu/tree/master/docker)
-
-### Install Pretrained Models for Spacy & Mitie
-In order to use the Spacy or Mitie backends make sure you have one of their pretrained models installed.
-```
-python -m spacy download en
-```
-
-To download the Mitie model run and place it in a location that you can 
-reference in your configuration during model training:
-```
-wget https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
-tar jxf MITIE-models-v0.2.tar.bz2
-```
-
-If you want to run the tests, you need to copy the model into the Rasa folder:
+## Development Internals
+### Running and changing the documentation
+To build & edit the docs, first install all necessary dependencies:
 
 ```
-cp MITIE-models/english/total_word_feature_extractor.dat RASA_NLU_ROOT/data/
-``` 
+brew install sphinx
+pip3 install -r dev-requirements.txt
+```
 
-Where `RASA_NLU_ROOT` points to your Rasa installation directory.
+After the installation has finished, you can run and view the documentation
+locally using:
+```
+make livedocs-nlu
+make livedocs-core
+```
 
-# Development Internals
-
-### Steps to release a new version
-Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version
-1. update [rasa_nlu/version.py](https://github.com/RasaHQ/rasa_nlu/blob/master/rasa_nlu/version.py) to reflect the correct version number
-2. edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa_nlu/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
-3. edit the [migration guide](https://github.com/RasaHQ/rasa_nlu/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
-4. commit all the above changes and tag a new release, e.g. using 
-    ```
-    git tag -f 0.7.0 -m "Some helpful line describing the release"
-    git push origin 0.7.0
-    ```
-    travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa_nlu)
-5. only if it is a **major release**, a new branch should be created pointing to the same commit as the tag to allow for future minor patches, e.g.
-    ```
-    git checkout -b 0.7.x
-    git push origin 0.7.x
-    ```
+Visit the local version of the docs at http://localhost:8000 in your browser.
+You can now change the docs locally and the web page will automatically reload
+and apply your changes.
 
 ### Running the Tests
 In order to run the tests make sure that you have the development requirements installed.
@@ -230,9 +114,26 @@ In order to run the tests make sure that you have the development requirements i
 make test
 ```
 
+### Steps to release a new version
+Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version
+1. update [rasa/version.py](https://github.com/RasaHQ/rasa_nlu/blob/master/rasa/version.py) to reflect the correct version number
+2. edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa_nlu/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
+3. edit the [migration guide](https://github.com/RasaHQ/rasa_nlu/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
+4. commit all the above changes and tag a new release, e.g. using 
+    ```
+    git tag -f 0.7.0 -m "Some helpful line describing the release"
+    git push origin 0.7.0
+    ```
+    travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa)
+5. only if it is a **major release**, a new branch should be created pointing to the same commit as the tag to allow for future minor patches, e.g.
+    ```
+    git checkout -b 0.7.x
+    git push origin 0.7.x
+    ```
+
 ## License
-Licensed under the Apache License, Version 2.0. Copyright 2019 
-Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Licensed under the Apache License, Version 2.0.
+Copyright 2019 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 A list of the Licenses of the dependencies of the project can be found at
 the bottom of the

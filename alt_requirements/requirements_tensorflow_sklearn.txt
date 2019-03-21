@@ -1,8 +1,0 @@
-# Minimum Install Requirements
--r requirements_bare.txt
-
-tensorflow==1.12.0
-scipy==1.1.0
-sklearn-crfsuite==0.3.6
-keras-applications==1.0.6
-keras-preprocessing==1.0.5
