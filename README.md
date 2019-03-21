@@ -9,7 +9,7 @@
 
 <img align="right" height="244" src="https://www.rasa.com/assets/img/sara/sara-open-source-lg.png">
 
-⚠️ The code is now part of https://github.com/RasaHQ/rasa_nlu. Please create any Pull Requests or Issues there. ⚠️
+⚠️👷‍♀️ The code is now part of https://github.com/RasaHQ/rasa_nlu. Please create any Pull Requests or Issues there. 👷‍♂️⚠️
 
 Rasa Core is a framework for building conversational software, which includes
 chatbots on:
