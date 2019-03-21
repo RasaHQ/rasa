@@ -7,7 +7,7 @@ Custom Components
 =================
 
 You can create a custom Component to perform a specific task which NLU doesn't currently offer (for example, sentiment analysis).
-Below is the specification of the :class:`rasa_nlu.components.Component` class with the methods you'll need to implement.
+Below is the specification of the :class:`rasa.nlu.components.Component` class with the methods you'll need to implement.
 
 You can add a custom component to your pipeline by adding the module path.
 So if you have a module called ``sentiment``
@@ -32,7 +32,7 @@ methods that you should implement:
 Component
 ^^^^^^^^^
 
-.. autoclass:: rasa_nlu.components.Component
+.. autoclass:: rasa.nlu.components.Component
 
    .. automethod:: required_packages
 

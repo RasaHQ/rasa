@@ -358,7 +358,7 @@ Let's run
 .. runnable::
    :description: core-train-nlu
 
-   !python3 -m rasa_nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
+   !python3 -m rasa.nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
 
 
 to train our NLU model. A new directory ``models/current/nlu`` should have been

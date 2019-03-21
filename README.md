@@ -116,7 +116,7 @@ make test
 
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version
-1. update [rasa_nlu/version.py](https://github.com/RasaHQ/rasa_nlu/blob/master/rasa/version.py) to reflect the correct version number
+1. update [rasa/version.py](https://github.com/RasaHQ/rasa_nlu/blob/master/rasa/version.py) to reflect the correct version number
 2. edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa_nlu/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
 3. edit the [migration guide](https://github.com/RasaHQ/rasa_nlu/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
 4. commit all the above changes and tag a new release, e.g. using 

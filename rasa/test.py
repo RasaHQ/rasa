@@ -21,7 +21,7 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
               **kwargs: Dict):
     import rasa.core.test
     import rasa.core.utils as core_utils
-    from rasa_nlu import utils as nlu_utils
+    from rasa.nlu import utils as nlu_utils
     from rasa.model import get_model
     from rasa.core.interpreter import NaturalLanguageInterpreter
     from rasa.core.agent import Agent
@@ -61,7 +61,7 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
 
 
 def test_nlu(model: Text, nlu_data: Text, **kwargs: Dict):
-    from rasa_nlu.test import run_evaluation
+    from rasa.nlu.test import run_evaluation
 
     unpacked_model = get_model(model)
     nlu_model = os.path.join(unpacked_model, "nlu")
@@ -70,11 +70,11 @@ def test_nlu(model: Text, nlu_data: Text, **kwargs: Dict):
 
 
 def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
-    import rasa_nlu.config
-    import rasa_nlu.test as nlu_test
+    import rasa.nlu.config
+    import rasa.nlu.test as nlu_test
 
-    nlu_config = rasa_nlu.config.load(config)
-    data = rasa_nlu.training_data.load_data(nlu)
+    nlu_config = rasa.nlu.config.load(config)
+    data = rasa.nlu.training_data.load_data(nlu)
     data = nlu_test.drop_intents_below_freq(data, cutoff=5)
     results, entity_results = nlu_test.cross_validate(data, int(folds),
                                                       nlu_config)

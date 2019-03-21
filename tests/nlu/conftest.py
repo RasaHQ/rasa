@@ -2,11 +2,11 @@ import logging
 import os
 
 import pytest
-from rasa_nlu import data_router, config
-from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.model import Trainer
-from rasa_nlu.utils import zip_folder
-from rasa_nlu import training_data
+from rasa.nlu import data_router, config
+from rasa.nlu.components import ComponentBuilder
+from rasa.nlu.model import Trainer
+from rasa.nlu.utils import zip_folder
+from rasa.nlu import training_data
 
 logging.basicConfig(level="DEBUG")
 
@@ -16,7 +16,7 @@ DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 TEST_MODEL_PATH = "test_models/test_model_pretrained_embeddings"
 
-# see `rasa_nlu.data_router` for details. avoids deadlock in
+# see `rasa.nlu.data_router` for details. avoids deadlock in
 # `deferred_from_future` function during tests
 data_router.DEFERRED_RUN_IN_REACTOR_THREAD = False
 

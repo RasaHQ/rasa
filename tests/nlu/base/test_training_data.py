@@ -4,12 +4,12 @@ import pytest
 import tempfile
 from jsonschema import ValidationError
 
-from rasa_nlu import training_data, utils
-from rasa_nlu.convert import convert_training_data
-from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa_nlu.training_data.formats import MarkdownReader
-from rasa_nlu.training_data.formats.rasa import validate_rasa_nlu_data
+from rasa.nlu import training_data, utils
+from rasa.nlu.convert import convert_training_data
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa.nlu.training_data.formats import MarkdownReader
+from rasa.nlu.training_data.formats.rasa import validate_rasa_nlu_data
 
 
 def test_example_training_data_is_valid():

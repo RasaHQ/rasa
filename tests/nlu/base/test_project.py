@@ -2,8 +2,8 @@ import io
 
 import mock
 import responses
-from rasa_nlu.project import Project, load_from_server
-from rasa_nlu.utils import EndpointConfig
+from rasa.nlu.project import Project, load_from_server
+from rasa.nlu.utils import EndpointConfig
 
 
 def test_dynamic_load_model_with_exists_model():

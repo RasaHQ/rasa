@@ -18,8 +18,6 @@ FINGERPRINT_FILE_PATH = "fingerprint.json"
 
 FINGERPRINT_CONFIG_KEY = "config"
 FINGERPRINT_DOMAIN_KEY = "domain"
-FINGERPRINT_NLU_VERSION_KEY = "nlu_version"
-FINGERPRINT_CORE_VERSION_KEY = "core_version"
 FINGERPRINT_RASA_VERSION_KEY = "version"
 FINGERPRINT_STORIES_KEY = "stories"
 FINGERPRINT_NLU_DATA_KEY = "messages"
@@ -201,7 +199,7 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
 
     """
     import rasa.core
-    import rasa_nlu
+    import rasa.nlu
     import rasa
     import time
 
@@ -211,8 +209,6 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
         FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
-        FINGERPRINT_NLU_VERSION_KEY: rasa_nlu.__version__,
-        FINGERPRINT_CORE_VERSION_KEY: rasa.__version__,
         FINGERPRINT_RASA_VERSION_KEY: rasa.__version__
     }
 
@@ -275,9 +271,8 @@ def core_fingerprint_changed(fingerprint1: Fingerprint,
         `True` if the fingerprint for the Core model changed, else `False`.
 
     """
-    relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_CORE_VERSION_KEY,
-                     FINGERPRINT_DOMAIN_KEY, FINGERPRINT_STORIES_KEY,
-                     FINGERPRINT_RASA_VERSION_KEY]
+    relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_DOMAIN_KEY,
+                     FINGERPRINT_STORIES_KEY, FINGERPRINT_RASA_VERSION_KEY]
 
     for k in relevant_keys:
         if fingerprint1.get(k) != fingerprint2.get(k):
@@ -300,8 +295,8 @@ def nlu_fingerprint_changed(fingerprint1: Fingerprint,
 
     """
 
-    relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_VERSION_KEY,
-                     FINGERPRINT_NLU_DATA_KEY, FINGERPRINT_RASA_VERSION_KEY]
+    relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_DATA_KEY,
+                     FINGERPRINT_RASA_VERSION_KEY]
 
     for k in relevant_keys:
         if fingerprint1.get(k) != fingerprint2.get(k):

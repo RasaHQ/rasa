@@ -8,8 +8,8 @@ import pytest
 import tempfile
 from httpretty import httpretty
 
-from rasa_nlu import utils
-from rasa_nlu.utils import (
+from rasa.nlu import utils
+from rasa.nlu.utils import (
     EndpointConfig, create_dir, is_model_dir, is_url, ordered,
     relative_normpath, remove_model, write_json_to_file, write_to_file)
 
@@ -224,7 +224,7 @@ def test_emojis_in_tmp_file():
 
 def test_read_emojis_from_json():
     import json
-    from rasa_nlu.utils import read_yaml
+    from rasa.nlu.utils import read_yaml
     d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} f\u00fcr"}
     json_string = json.dumps(d, indent=2)
 

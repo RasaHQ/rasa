@@ -12,7 +12,7 @@ from rasa.core.training.generator import TrainingDataGenerator
 from rasa.core.training.structures import StoryGraph, StoryStep
 
 if TYPE_CHECKING:
-    from rasa_nlu.training_data import TrainingData, Message
+    from rasa.nlu.training_data import TrainingData, Message
     import networkx
 
 EDGE_NONE_LABEL = "NONE"

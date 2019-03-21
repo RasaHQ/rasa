@@ -4,9 +4,9 @@ import logging
 
 import pytest
 
-from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa_nlu.test import (
+from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa.nlu.test import (
     is_token_within_entity, do_entities_overlap,
     merge_labels, remove_duckling_entities,
     remove_empty_intent_examples, get_entity_extractors,
@@ -14,16 +14,16 @@ from rasa_nlu.test import (
     find_component, remove_duckling_extractors, drop_intents_below_freq,
     cross_validate, substitute_labels, IntentEvaluationResult,
     evaluate_intents, evaluate_entities)
-from rasa_nlu.test import does_token_cross_borders
-from rasa_nlu.test import align_entity_predictions
-from rasa_nlu.test import determine_intersection
-from rasa_nlu.test import determine_token_labels
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.tokenizers import Token
-from rasa_nlu import utils
+from rasa.nlu.test import does_token_cross_borders
+from rasa.nlu.test import align_entity_predictions
+from rasa.nlu.test import determine_intersection
+from rasa.nlu.test import determine_token_labels
+from rasa.nlu.config import RasaNLUModelConfig
+from rasa.nlu.tokenizers import Token
+from rasa.nlu import utils
 import json
 import os
-from rasa_nlu import training_data, config
+from rasa.nlu import training_data, config
 from tests.nlu import utilities
 
 logging.basicConfig(level="DEBUG")

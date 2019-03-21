@@ -8,8 +8,8 @@ import pytest
 import ruamel.yaml as yaml
 from treq.testing import StubTreq
 
-from rasa_nlu.data_router import DataRouter
-from rasa_nlu.server import RasaNLU
+from rasa.nlu.data_router import DataRouter
+from rasa.nlu.server import RasaNLU
 from tests.nlu import utilities
 from tests.nlu.utilities import ResponseTest
 

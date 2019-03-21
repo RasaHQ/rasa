@@ -4,14 +4,13 @@ cache:
   directories:
   - $HOME/.cache/pip
   - /tmp/cached/
-python:
-  - '3.5'
-  - '3.6'
+python: '3.6'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
+  - COVERALLS_PARALLEL=true
 
 install:
   - sudo apt-get install graphviz graphviz-dev
@@ -32,15 +31,42 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script: 
-  - py.test --codestyle -m codestyle
-  - py.test tests --cov rasa -v --cov-append
-  - py.test tests/nlu/base --cov rasa -v --cov-append
-  - py.test tests/nlu/training --cov rasa -v --cov-append
 after_success:
   - coveralls
 jobs:
   include:
+  - stage: test
+    name: "Test Codestyle"
+    python: 3.6
+    script:
+      - py.test --codestyle -m codestyle
+  - &test-core
+    stage: test
+    name: "Test Core 3.6"
+    python: "3.6"
+    script:
+      - py.test tests/core --cov rasa -v --cov-append
+  - <<: *test-core
+    name: "Test Core 3.5"
+    python: '3.5'
+  - &test-nlu-base
+    stage: test
+    name: "Test NLU 3.6"
+    python: "3.6"
+    script:
+      - py.test tests/nlu/base --cov rasa -v --cov-append
+  - <<: *test-nlu-base
+    name: "Test NLU 3.5"
+    python: '3.5'
+  - &test-nlu-training
+    stage: test
+    name: "Test NLU training 3.6"
+    python: "3.6"
+    script:
+      - py.test tests/nlu/training --cov rasa -v --cov-append
+  - <<: *test-nlu-training
+    name: "Test NLU training 3.5"
+    python: '3.5'
   - stage: integration
     name: "Test API specification"
     language: python
@@ -94,7 +120,7 @@ jobs:
   - stage: integration
     name: "Test Docs NLU"
     install:
-    - pip install -r requirements-dev.txt
+    - pip install -r requirements-docs.txt
     - pip install -e .
     - pip list
     script:

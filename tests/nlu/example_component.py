@@ -1,9 +1,9 @@
-from rasa_nlu.components import Component
+from rasa.nlu.components import Component
 import typing
 from typing import Any, Optional, Text, Dict
 
 if typing.TYPE_CHECKING:
-    from rasa_nlu.model import Metadata
+    from rasa.nlu.model import Metadata
 
 
 class MyComponent(Component):

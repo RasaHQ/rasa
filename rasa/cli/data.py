@@ -10,7 +10,7 @@ from rasa.constants import DEFAULT_DATA_PATH
 # noinspection PyProtectedMember
 def add_subparser(subparsers: argparse._SubParsersAction,
                   parents: List[argparse.ArgumentParser]):
-    import rasa_nlu.convert as convert
+    import rasa.nlu.convert as convert
 
     data_parser = subparsers.add_parser(
         "data",
@@ -66,7 +66,7 @@ def _add_split_args(parser: argparse.ArgumentParser) -> None:
 
 
 def split_nlu_data(args):
-    from rasa_nlu.training_data.loading import load_data
+    from rasa.nlu.training_data.loading import load_data
 
     data_path = get_validated_path(args.nlu, "nlu", DEFAULT_DATA_PATH)
     data_path = data.get_nlu_directory(data_path)

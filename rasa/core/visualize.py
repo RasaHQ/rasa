@@ -36,7 +36,7 @@ async def visualize(config_path: Text, domain_path: Text, stories_path: Text,
     # messages in the stories should be replaced with actual
     # messages (e.g. `hello`)
     if nlu_data_path is not None:
-        from rasa_nlu.training_data import load_data
+        from rasa.nlu.training_data import load_data
 
         nlu_data_path = load_data(nlu_data_path)
     else:
