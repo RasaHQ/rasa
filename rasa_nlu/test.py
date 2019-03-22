@@ -391,20 +391,23 @@ def substitute_labels(labels, old, new):
 def collect_ner_results(utterance_targets,
                         utterance_predictions,
                         ner_filename):
+    """Log messages which result in both successful and
+       unsuccessful entity predictions and save them to file"""
 
     # there should be a finite number of utterances
     if (utterance_targets is None or utterance_predictions is None or
             len(utterance_targets) != len(utterance_predictions)):
+        logger.debug("Utterance mismatch.  Cannot report on entities")
         return
 
     # list of pairs.  The first is the expected.  The second is predicted.
-    # None is present if one of the two is not relevant (e.g. FN)
+    # None is present if one of the two is not relevant
     tps = []
     fps = []
     fns = []
 
-    utterance_count = len(utterance_predictions)
-    for index in range(0, utterance_count):
+    logger.info("Iterating through utterances for entity mentions")
+    for index in range(0, len(utterance_predictions)):
         target_entities = utterance_targets[index]
         predicted_entities = utterance_predictions[index]
         target_count = 0
@@ -439,25 +442,14 @@ def collect_ner_results(utterance_targets,
                 target_count += 1
                 predicted_count += 1
 
-    ner_dict = {}
-    ner_dict['TP'] = []
+    logger.info("Writing entity mentions to file")
+    ner_dict = {'TP': [], 'FP': [], 'FN': []}
     for tp in tps:
-        em_dict = {}
-        em_dict['Expected'] = tp[0]
-        em_dict['Predicted'] = tp[1]
-        ner_dict['TP'].append(em_dict)
-    ner_dict['FP'] = []
+        ner_dict['TP'].append({'Expected': tp[0], 'Predicted': tp[1]})
     for fp in fps:
-        em_dict = {}
-        em_dict['Expected'] = fp[0]
-        em_dict['Predicted'] = fp[1]
-        ner_dict['FP'].append(em_dict)
-    ner_dict['FN'] = []
+        ner_dict['FP'].append({'Expected': fp[0], 'Predicted': fp[1]})
     for fn in fns:
-        em_dict = {}
-        em_dict['Expected'] = fn[0]
-        em_dict['Predicted'] = fn[1]
-        ner_dict['FN'].append(em_dict)
+        ner_dict['FN'].append({'Expected': fn[0], 'Predicted': fn[1]})
     save_json(ner_dict, ner_filename)
 
 
