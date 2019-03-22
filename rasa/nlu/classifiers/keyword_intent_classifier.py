@@ -82,4 +82,3 @@ class KeywordIntentClassifier(Component):
             logger.warning("Failed to load IntentKeywordClassifier, maybe {}"
                            "does not exist.".format(keyword_file))
         return self()
-
