@@ -2,9 +2,9 @@ import os
 import logging
 from typing import Any, Dict, Optional, Text
 
-from rasa_nlu import utils
-from rasa_nlu.components import Component
-from rasa_nlu.training_data import Message
+from rasa.nlu import utils
+from rasa.nlu.components import Component
+from rasa.nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 
