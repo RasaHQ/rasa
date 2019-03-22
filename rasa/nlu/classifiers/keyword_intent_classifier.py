@@ -74,11 +74,11 @@ class KeywordIntentClassifier(Component):
              **kwargs: Any) -> 'KeywordIntentClassifier':
 
         file_name = meta.get("file")
-        keyword_file = os.path.join(model_dir, file_name)
-
-        if os.path.exists(keyword_file):
-            self.intent_keyword_map = utils.read_json_file(keyword_file)
-        else:
-            logger.warning("Failed to load IntentKeywordClassifier, maybe {}"
-                           "does not exist.".format(keyword_file))
+        if file_name is not None:
+            keyword_file = os.path.join(model_dir, file_name)
+            if os.path.exists(keyword_file):
+                self.intent_keyword_map = utils.read_json_file(keyword_file)
+            else:
+                logger.warning("Failed to load IntentKeywordClassifier, maybe {}"
+                               "does not exist.".format(keyword_file))
         return self()
