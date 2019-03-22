@@ -59,6 +59,8 @@ class MappingPolicy(Policy):
             elif intent == USER_INTENT_BACK:
                 idx = domain.index_for_action(ACTION_BACK_NAME)
                 prediction[idx] = 1
+            if any(prediction):
+                logger.debug("There is a mapped action for this intent.")
         elif tracker.latest_action_name == action and action is not None:
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.name == action
