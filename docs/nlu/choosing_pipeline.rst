@@ -309,6 +309,9 @@ To use the components and configure them separately:
     pipeline:
     - name: "KeywordIntentClassifier"
 
+This classifier will treat any word in the training data as a keyword for the
+intent that it is an example of. The first intent to have a keyword matching a
+word in the utterance will be the one to which that utterance is classified.
 
 
 Custom pipelines
