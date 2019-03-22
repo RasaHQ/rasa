@@ -9,6 +9,8 @@ from typing import (
     Text, List, Dict, Any, Optional, Callable, Iterable,
     Awaitable)
 import uuid
+
+from rasa.cli.utils import print_success
 from rasa.core import utils
 from rasa.core.constants import DOCS_BASE_URL
 
@@ -396,6 +398,7 @@ class RestInput(InputChannel):
             text = self._extract_message(request)
             should_use_stream = utils.bool_arg(request, "stream",
                                                default=False)
+            print_success("Received message {}".format(text))
 
             if should_use_stream:
                 return response.stream(
