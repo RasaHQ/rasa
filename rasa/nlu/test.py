@@ -411,32 +411,35 @@ def collect_ner_results(utterance_targets,
         predicted_count = 0
         while (target_count < len(target_entities) or
                predicted_count < len(predicted_entities)):
-            if predicted_count == len(predicted_entities):
-                fns.append((target_entities[target_count], None))
+            target_entity = (
+                None if target_count == len(target_entities)
+                else target_entities[target_count])
+            predicted_entity = (
+                None if predicted_count == len(predicted_entities)
+                else predicted_entities[predicted_count])
+            if predicted_entity is None:
+                fns.append((target_entity, predicted_entity))
                 target_count += 1
-            elif target_count == len(target_entities):
-                fps.append((None, predicted_entities[predicted_count]))
+            elif target_entity is None:
+                fps.append((target_entity, predicted_entity))
                 predicted_count += 1
-            else:
-                target_entity = target_entities[target_count]
-                predicted_entity = predicted_entities[predicted_count]
-                if (target_entity['start'] == predicted_entity['start']
+            elif (target_entity['start'] == predicted_entity['start']
                         and target_entity['end'] == predicted_entity['end']):
-                    target_type = target_entity['entity']
-                    predicted_type = predicted_entity['entity']
-                    if predicted_type == target_type:
-                        tps.append((target_entity, predicted_entity))
-                    else:
-                        fps.append((target_entity, predicted_entity))
-                        fns.append((target_entity, predicted_entity))
-                    target_count += 1
-                    predicted_count += 1
-                elif target_entity['start'] < predicted_entity['start']:
-                    fns.append((target_entity, None))
-                    target_count += 1
+                target_type = target_entity['entity']
+                predicted_type = predicted_entity['entity']
+                if predicted_type == target_type:
+                    tps.append((target_entity, predicted_entity))
                 else:
-                    fps.append((None, predicted_entity))
-                    predicted_count += 1
+                    fps.append((target_entity, predicted_entity))
+                    fns.append((target_entity, predicted_entity))
+                target_count += 1
+                predicted_count += 1
+            elif target_entity['start'] < predicted_entity['start']:
+                fns.append((target_entity, None))
+                target_count += 1
+            else:
+                fps.append((None, predicted_entity))
+                predicted_count += 1
 
     ner_dict = {}
     ner_dict['TP'] = []
