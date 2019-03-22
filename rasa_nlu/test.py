@@ -407,19 +407,17 @@ def collect_ner_results(utterance_targets,
     fns = []
 
     logger.info("Iterating through utterances for entity mentions")
-    for index in range(0, len(utterance_predictions)):
-        target_entities = utterance_targets[index]
-        predicted_entities = utterance_predictions[index]
+    for te, pe in zip(utterance_targets, utterane_predictions):
         target_count = 0
         predicted_count = 0
-        while (target_count < len(target_entities) or
-               predicted_count < len(predicted_entities)):
+        while (target_count < len(te) or
+               predicted_count < len(pe)):
             target_entity = (
-                None if target_count == len(target_entities)
-                else target_entities[target_count])
+                None if target_count == len(te)
+                else te[target_count])
             predicted_entity = (
-                None if predicted_count == len(predicted_entities)
-                else predicted_entities[predicted_count])
+                None if predicted_count == len(pe)
+                else pe[predicted_count])
             if (predicted_entity is None or
                 (target_entity is not None and
                  target_entity['start'] < predicted_entity['start'])):
