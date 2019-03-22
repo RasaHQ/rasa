@@ -389,13 +389,13 @@ def substitute_labels(labels, old, new):
 def collect_ner_results(utterance_targets, utterance_predictions, ner_filename):
 
     # there should be a finite number of utterances
-    if utterance_targets == None or utterance_predictions == None or len(utterance_targets) != len(utterance_predictions):
-        return    
-    
+    if utterance_targets is None or utterance_predictions is None or len(utterance_targets) != len(utterance_predictions):
+        return
+
     # list of pairs.  The first is the expected.  The second is predicted.  None is present if one of the two is not relevant (e.g. FN)
     tps = []
     fps = []
-    fns = []    
+    fns = []
 
     utterance_count = len(utterance_predictions)
     for index in range(0, utterance_count):
