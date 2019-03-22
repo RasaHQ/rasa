@@ -644,7 +644,7 @@ def create_app(agent=None,
             model_path = await train_async(
                 domain=domain_path,
                 config=config_path,
-                training_files=[nlu_path, stories_path],
+                training_files=temp_dir,
                 output=rjs.get("out", temp_dir),
                 force_training=rjs.get("force", False))
 

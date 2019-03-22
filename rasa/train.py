@@ -47,6 +47,7 @@ async def train_async(domain: Text,
 
     story_directory, nlu_data_directory = data.get_core_nlu_directories(
         training_files)
+
     new_fingerprint = model.model_fingerprint(config, domain,
                                               nlu_data_directory,
                                               story_directory)
