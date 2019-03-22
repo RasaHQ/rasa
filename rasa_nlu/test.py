@@ -417,28 +417,26 @@ def collect_ner_results(utterance_targets,
             predicted_entity = (
                 None if predicted_count == len(predicted_entities)
                 else predicted_entities[predicted_count])
-            if predicted_entity is None:
-                fns.append((target_entity, predicted_entity))
+            if (predicted_entity is None or
+                (target_entity is not None and
+                 target_entity['start'] < predicted_entity['start'])):
+                fns.append((target_entity, None))
                 target_count += 1
-            elif target_entity is None:
-                fps.append((target_entity, predicted_entity))
+            elif (target_entity is None or
+                  (predicted_entity is not None and
+                   predicted_entity['start'] < target_entity['start'])):
+                fps.append((None, predicted_entity))
                 predicted_count += 1
-            elif (target_entity['start'] == predicted_entity['start']
-                        and target_entity['end'] == predicted_entity['end']):
+            else:
                 target_type = target_entity['entity']
                 predicted_type = predicted_entity['entity']
-                if predicted_type == target_type:
+                if (predicted_type == target_type and
+                        predicted_entity['end'] == target_entity['end']):
                     tps.append((target_entity, predicted_entity))
                 else:
                     fps.append((target_entity, predicted_entity))
                     fns.append((target_entity, predicted_entity))
                 target_count += 1
-                predicted_count += 1
-            elif target_entity['start'] < predicted_entity['start']:
-                fns.append((target_entity, None))
-                target_count += 1
-            else:
-                fps.append((None, predicted_entity))
                 predicted_count += 1
 
     ner_dict = {}
