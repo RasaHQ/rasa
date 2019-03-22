@@ -131,6 +131,9 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                                            1.0,
                                            domain)
         else:
+            logger.debug("NLU confidence threshold met, confidence of "
+                         "fallback action set to core threshold ({})."
+                         .format(self.core_threshold))
             result = self.fallback_scores(domain, self.core_threshold)
 
         return result
