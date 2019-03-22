@@ -81,7 +81,7 @@ def _add_arguments(parser):
                         help="output path for the confidence histogram")
 
     parser.add_argument('--ner', required=False, default="entity_results.txt",
-                        help="output path for the expected and predicted entity mentions")
+                        help="output path for the entity mentions")
 
     parser.add_argument('--confmat', required=False, default="confmat.png",
                         help="output path for the confusion matrix plot")
@@ -268,6 +268,7 @@ def collect_nlu_errors(intent_results, errors_filename):
     else:
         logger.info("Your model made no errors")
 
+
 def plot_intent_confidences(intent_results, intent_hist_filename):
     import matplotlib.pyplot as plt
     # create histogram of confidence distribution, save to file and display
@@ -386,13 +387,18 @@ def substitute_labels(labels, old, new):
     """Replaces label names in a list of labels."""
     return [new if label == old else label for label in labels]
 
-def collect_ner_results(utterance_targets, utterance_predictions, ner_filename):
+
+def collect_ner_results(utterance_targets, 
+                        utterance_predictions, 
+                        ner_filename):
 
     # there should be a finite number of utterances
-    if utterance_targets is None or utterance_predictions is None or len(utterance_targets) != len(utterance_predictions):
+    if (utterance_targets is None or utterance_predictions is None or 
+        len(utterance_targets) != len(utterance_predictions)):
         return
 
-    # list of pairs.  The first is the expected.  The second is predicted.  None is present if one of the two is not relevant (e.g. FN)
+    # list of pairs.  The first is the expected.  The second is predicted. 
+    # None is present if one of the two is not relevant (e.g. FN)
     tps = []
     fps = []
     fns = []
@@ -403,7 +409,8 @@ def collect_ner_results(utterance_targets, utterance_predictions, ner_filename):
         predicted_entities = utterance_predictions[index]
         target_count = 0
         predicted_count = 0
-        while target_count < len(target_entities) or predicted_count < len(predicted_entities):
+        while (target_count < len(target_entities) or 
+               predicted_count < len(predicted_entities)):
             if predicted_count == len(predicted_entities):
                 fns.append((target_entities[target_count], None))
                 target_count += 1
@@ -413,7 +420,8 @@ def collect_ner_results(utterance_targets, utterance_predictions, ner_filename):
             else:
                 target_entity = target_entities[target_count]
                 predicted_entity = predicted_entities[predicted_count]
-                if target_entity['start'] == predicted_entity['start'] and target_entity['end'] == predicted_entity['end']:
+                if (target_entity['start'] == predicted_entity['start'] 
+                    and target_entity['end'] == predicted_entity['end']):
                     target_type = target_entity['entity']
                     predicted_type = predicted_entity['entity']
                     if predicted_type == target_type:
@@ -450,6 +458,7 @@ def collect_ner_results(utterance_targets, utterance_predictions, ner_filename):
         em_dict['Predicted'] = fn[1]
         ner_dict['FN'].append(em_dict)
     save_json(ner_dict, ner_filename)
+
 
 def evaluate_entities(targets,
                       predictions,
