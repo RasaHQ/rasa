@@ -388,16 +388,16 @@ def substitute_labels(labels, old, new):
     return [new if label == old else label for label in labels]
 
 
-def collect_ner_results(utterance_targets, 
-                        utterance_predictions, 
+def collect_ner_results(utterance_targets,
+                        utterance_predictions,
                         ner_filename):
 
     # there should be a finite number of utterances
-    if (utterance_targets is None or utterance_predictions is None or 
-        len(utterance_targets) != len(utterance_predictions)):
+    if (utterance_targets is None or utterance_predictions is None or
+            len(utterance_targets) != len(utterance_predictions)):
         return
 
-    # list of pairs.  The first is the expected.  The second is predicted. 
+    # list of pairs.  The first is the expected.  The second is predicted.
     # None is present if one of the two is not relevant (e.g. FN)
     tps = []
     fps = []
@@ -409,7 +409,7 @@ def collect_ner_results(utterance_targets,
         predicted_entities = utterance_predictions[index]
         target_count = 0
         predicted_count = 0
-        while (target_count < len(target_entities) or 
+        while (target_count < len(target_entities) or
                predicted_count < len(predicted_entities)):
             if predicted_count == len(predicted_entities):
                 fns.append((target_entities[target_count], None))
@@ -420,8 +420,8 @@ def collect_ner_results(utterance_targets,
             else:
                 target_entity = target_entities[target_count]
                 predicted_entity = predicted_entities[predicted_count]
-                if (target_entity['start'] == predicted_entity['start'] 
-                    and target_entity['end'] == predicted_entity['end']):
+                if (target_entity['start'] == predicted_entity['start']
+                        and target_entity['end'] == predicted_entity['end']):
                     target_type = target_entity['entity']
                     predicted_type = predicted_entity['entity']
                     if predicted_type == target_type:
