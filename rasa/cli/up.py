@@ -45,6 +45,20 @@ def add_subparser(subparsers: argparse._SubParsersAction,
                  "default/models/tags/production"),
         help="Rasa Stack model endpoint URL")
 
+    shell_parser.add_argument(
+        "--project_path",
+        type=str,
+        default=".",
+        help="Path to the Rasa project directory"
+    )
+    shell_parser.add_argument(
+        "--data_path",
+        type=str,
+        default="data",
+        help="Path to the directory containing Rasa NLU training data "
+             "and Rasa Core stories"
+    )
+
     rasa.cli.run.add_run_arguments(shell_parser)
 
     shell_parser.set_defaults(func=up)
@@ -124,4 +138,4 @@ def up(args: argparse.Namespace):
 
         start_core_for_local_platform(args, config.platform_token)
 
-        main_local(".")
+        main_local(args.project_path, args.data_path)
