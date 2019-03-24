@@ -23,18 +23,17 @@ class WhitespaceTokenizer(Tokenizer, Component):
 
     @staticmethod
     def tokenize(text: Text) -> List[Token]:
-
         # remove 'not a word character' if
         words = re.sub(
             # there is a space or an end of a string after it
-            r'[^\w#@&]+(\s|$)|'
+            r'[^\w#@&]+(?=\s|$)|'
             # there is a space or beginning of a string before it
             # not followed by a number
-            r'(\s|^)[^\w#@&]+(?=[^0-9])|'
+            r'(\s|^)[^\w#@&]+(?=[^0-9\s])|'
             # not in between numbers and not . or @ or & or - or #
             # e.g. 10'000.00 or blabla@gmail.com
             # and not url characters
-            r'(?<=[^0-9])[^\w._~:/?#\[\]@!$&*+,;=-]+(?=[^0-9])',
+            r'(?<=[^0-9\s])[^\w._~:/?#\[\]()@!$&*+,;=-]+(?=[^0-9\s])',
             ' ', text
         ).split()
 
