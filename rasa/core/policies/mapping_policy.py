@@ -60,19 +60,23 @@ class MappingPolicy(Policy):
                 idx = domain.index_for_action(ACTION_BACK_NAME)
                 prediction[idx] = 1
             if any(prediction):
-                logger.debug("There is a mapped action for the predicted "
-                             "intent.")
+                logger.debug("The predicted intent is '{}', which is mapped to "
+                             " action '{}' in the domain."
+                             "".format(intent, action))
         elif tracker.latest_action_name == action and action is not None:
             latest_action = tracker.get_last_event_for(ActionExecuted)
             assert latest_action.name == action
-            logger.debug("MappingPolicy returning to action_listen.")
+            logger.debug("The mapped action, '{}', for this intent, '{}', was "
+                         "executed last so MappingPolicy is returning to "
+                         "action_listen.".format(action,intent))
             if latest_action.policy == type(self).__name__:
                 # this ensures that we only predict listen, if we predicted
                 # the mapped action
                 idx = domain.index_for_action(ACTION_LISTEN_NAME)
                 prediction[idx] = 1
         else:
-            logger.debug("There is no mapped action for the predicted intent.")
+            logger.debug("There is no mapped action for the predicted intent, "
+                         "'{}'.".format(intent))
         return prediction
 
     def persist(self, path: Text) -> None:
