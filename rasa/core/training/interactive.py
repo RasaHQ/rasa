@@ -571,7 +571,8 @@ async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
                  Choice("Undo Last", "undo"),
                  Choice("Fork", "fork"),
                  Choice("Start Fresh", "restart"),
-                 Choice("Export & Quit", "quit")]).ask()
+                 Choice("Export & Quit", "quit"), 
+                 Choice("Quit Without Saving", "exit")]).ask()
 
     if not answer or answer == "quit":
         # this is also the default answer if the user presses Ctrl-C
@@ -587,6 +588,8 @@ async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
         raise ForkTracker()
     elif answer == "restart":
         raise RestartConversation()
+    elif answer == "exit":
+        raise Abort()
 
 
 async def _request_action_from_user(
