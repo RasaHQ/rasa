@@ -130,8 +130,9 @@ class InMemoryTrackerStore(TrackerStore):
         self.store = {}
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
-    def save(self, tracker: DialogueStateTracker) -> None:
-        if self.event_broker:
+    def save(self, tracker: DialogueStateTracker,
+             should_stream_events=True) -> None:
+        if should_stream_events and self.event_broker:
             self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised

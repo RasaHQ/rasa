@@ -14,6 +14,7 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
+from rasa.cli.utils import print_success
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DEFAULT_MODELS_PATH
 from rasa.core import constants, utils
 from rasa.core.channels import CollectingOutputChannel, UserMessage
@@ -353,8 +354,12 @@ def create_app(agent=None,
         tracker = DialogueStateTracker.from_dict(sender_id,
                                                  request_params,
                                                  app.agent.domain.slots)
+
+        stream_events = \
+            request.raw_args.get("stream_events", "true").lower() == "true"
+        print_success("Stream events {} req args {}".format(stream_events, request.raw_args))
         # will override an existing tracker with the same id!
-        app.agent.tracker_store.save(tracker)
+        app.agent.tracker_store.save(tracker, stream_events)
         return response.json(tracker.current_state(verbosity))
 
     @app.get("/conversations")
