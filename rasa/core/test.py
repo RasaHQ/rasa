@@ -292,8 +292,7 @@ def _emulate_form_rejection(processor, partial_tracker):
             if isinstance(p, FormPolicy):
                 # emulate form rejection
                 partial_tracker.update(ActionExecutionRejected(
-                    partial_tracker.active_form["name"]
-                ))
+                    partial_tracker.active_form["name"]))
                 # check if unhappy path is covered by the train stories
                 if not p.state_is_unhappy(partial_tracker, processor.domain):
                     # this state is not covered by the stories
@@ -315,7 +314,8 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
         # but it might be Ok if form action is rejected
         _emulate_form_rejection(processor, partial_tracker)
         # try again
-        action, policy, confidence = processor.predict_next_action(partial_tracker)
+        action, policy, confidence = processor.predict_next_action(
+            partial_tracker)
         predicted = action.name()
 
     action_executed_eval_store.add_to_store(action_predictions=predicted,
