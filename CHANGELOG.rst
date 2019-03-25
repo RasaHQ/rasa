@@ -12,6 +12,7 @@ Added
 - Added a detailed warning showing which entities are overlapping
 - Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
 - `SpacyEntityExtractor` supports same entity filtering as `DucklingHTTPExtractor`
+- Added entity mention reporting when crf_ner component is used in pipeline
 
 Changed
 -------
