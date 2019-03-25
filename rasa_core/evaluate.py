@@ -19,7 +19,7 @@ from rasa_core.events import (ActionExecuted, ActionExecutionRejected,
                               UserUttered)
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
-from rasa.core.policies.form_policy import FormPolicy
+from rasa_core.policies.form_policy import FormPolicy
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.utils import (
