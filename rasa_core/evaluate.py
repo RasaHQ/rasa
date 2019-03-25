@@ -15,9 +15,11 @@ from typing import List, Optional, Any, Text, Dict, Tuple
 from rasa_core import training, cli
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.events import ActionExecuted, UserUttered
+from rasa_core.events import (ActionExecuted, ActionExecutionRejected,
+                              UserUttered)
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies import SimplePolicyEnsemble
+from rasa_core.policies.ensemble import SimplePolicyEnsemble
+from rasa.core.policies.form_policy import FormPolicy
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.utils import (
@@ -320,14 +322,37 @@ def _collect_user_uttered_predictions(event,
     return user_uttered_eval_store
 
 
+def _emulate_form_rejection(processor, partial_tracker):
+    if partial_tracker.active_form.get("name"):
+        for p in processor.policy_ensemble.policies:
+            if isinstance(p, FormPolicy):
+                # emulate form rejection
+                partial_tracker.update(ActionExecutionRejected(
+                    partial_tracker.active_form["name"]))
+                # check if unhappy path is covered by the train stories
+                if not p.state_is_unhappy(partial_tracker, processor.domain):
+                    # this state is not covered by the stories
+                    del partial_tracker.events[-1]
+                    partial_tracker.active_form['rejected'] = False
+
+
 def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
     action_executed_eval_store = EvaluationStore()
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
-
-    predicted = action.name()
     gold = event.action_name
+
+    action, policy, confidence = processor.predict_next_action(partial_tracker)
+    predicted = action.name()
+
+    if predicted != gold and FormPolicy.__name__ in policy:
+        # FormPolicy predicted wrong action
+        # but it might be Ok if form action is rejected
+        _emulate_form_rejection(processor, partial_tracker)
+        # try again
+        action, policy, confidence = processor.predict_next_action(
+            partial_tracker)
+        predicted = action.name()
 
     action_executed_eval_store.add_to_store(action_predictions=predicted,
                                             action_targets=gold)
@@ -338,9 +363,15 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                                       event.confidence,
                                                       event.timestamp))
         if fail_on_prediction_errors:
-            raise ValueError(
-                "Model predicted a wrong action. Failed Story: "
-                "\n\n{}".format(partial_tracker.export_stories()))
+            error_msg = ("Model predicted a wrong action. Failed Story: "
+                         "\n\n{}".format(partial_tracker.export_stories()))
+            if FormPolicy.__name__ in policy:
+                error_msg += ("FormAction is not run during "
+                              "evaluation therefore it is impossible to know "
+                              "if validation failed or this story is wrong. "
+                              "If the story is correct, add it to the "
+                              "training stories and retrain.")
+            raise ValueError(error_msg)
     else:
         partial_tracker.update(event)
 

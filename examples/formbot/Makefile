@@ -12,7 +12,7 @@ help:
 
 
 train-core:
-	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --debug
+	python3 -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --debug
 
 run-core:
 	python -m rasa_core.run --core models/dialogue --nlu models/nlu/current --debug --endpoints endpoints.yml
@@ -32,3 +32,6 @@ visualize:
 
 train-nlu:
 	python -m rasa_nlu.train -c nlu_tensorflow.yml --fixed_model_name current --data data/nlu_data.md -o models --project nlu --verbose
+
+evaluate-core:
+	python3 -m rasa_core.evaluate --core models/dialogue -s data/stories.md --fail_on_prediction_errors
