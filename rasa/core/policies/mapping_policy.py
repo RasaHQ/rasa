@@ -68,7 +68,7 @@ class MappingPolicy(Policy):
             assert latest_action.name == action
             logger.debug("The mapped action, '{}', for this intent, '{}', was "
                          "executed last so MappingPolicy is returning to "
-                         "action_listen.".format(action,intent))
+                         "action_listen.".format(action, intent))
             if latest_action.policy == type(self).__name__:
                 # this ensures that we only predict listen, if we predicted
                 # the mapped action
