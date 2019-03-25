@@ -407,7 +407,7 @@ def collect_ner_results(utterance_targets,
     fns = []
 
     logger.info("Iterating through utterances for entity mentions")
-    for te, pe in zip(utterance_targets, utterane_predictions):
+    for te, pe in zip(utterance_targets, utterance_predictions):
         target_count = 0
         predicted_count = 0
         while (target_count < len(te) or
