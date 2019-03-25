@@ -111,6 +111,8 @@ def up(args: argparse.Namespace):
     logging.getLogger('engineio').setLevel(logging.WARN)
     logging.getLogger('matplotlib').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
+    logging.getLogger('apscheduler').setLevel(logging.ERROR)
+    logging.getLogger('rasa.core.training.dsl').setLevel(logging.ERROR)
 
     configure_colored_logging(args.loglevel)
     utils.configure_file_logging(args.loglevel,
