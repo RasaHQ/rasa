@@ -90,7 +90,7 @@ def start_core_for_local_platform(args: argparse.Namespace,
     endpoints = AvailableEndpoints(
         model=EndpointConfig(args.model_endpoint_url,
                              token=platform_token,
-                             wait_time_between_pulls=1),
+                             wait_time_between_pulls=5),
         event_broker=EndpointConfig(**{"type": "file"}),
         nlg=EndpointConfig(args.nlg, token=platform_token))
 
