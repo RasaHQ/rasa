@@ -60,7 +60,7 @@ class MappingPolicy(Policy):
                 idx = domain.index_for_action(ACTION_BACK_NAME)
                 prediction[idx] = 1
             if any(prediction):
-                logger.debug("The predicted intent is '{}', which is mapped to "
+                logger.debug("The predicted intent '{}' is mapped to "
                              " action '{}' in the domain."
                              "".format(intent, action))
         elif tracker.latest_action_name == action and action is not None:
