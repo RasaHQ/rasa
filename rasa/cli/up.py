@@ -58,6 +58,11 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         help="Path to the directory containing Rasa NLU training data "
              "and Rasa Core stories"
     )
+    shell_parser.add_argument(
+        "--qq",
+        action="store_true",
+        help="Automatic yes to prompts and suppressed warnings"
+    )
 
     rasa.cli.run.add_run_arguments(shell_parser)
 
@@ -109,10 +114,15 @@ def start_core_for_local_platform(args: argparse.Namespace,
 def up(args: argparse.Namespace):
     logging.getLogger('werkzeug').setLevel(logging.WARN)
     logging.getLogger('engineio').setLevel(logging.WARN)
-    logging.getLogger('matplotlib').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
-    logging.getLogger('apscheduler').setLevel(logging.ERROR)
-    logging.getLogger('rasa.core.training.dsl').setLevel(logging.ERROR)
+
+    if args.qq:
+        logging.getLogger('py.warnings').setLevel(logging.ERROR)
+        logging.getLogger('rasa.core.training.dsl').setLevel(logging.ERROR)
+
+        # TODO: remove once https://github.com/RasaHQ/rasa_nlu/issues/3120
+        # is fixed
+        logging.getLogger('apscheduler').setLevel(logging.ERROR)
 
     configure_colored_logging(args.loglevel)
     utils.configure_file_logging(args.loglevel,
