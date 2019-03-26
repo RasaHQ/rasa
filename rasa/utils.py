@@ -25,15 +25,15 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
     as a base url if it starts with `/` but will always append it to the
     `base`."""
 
-    if subpath:
-        url = base
-        if not base.endswith("/"):
-            url += "/"
-        if subpath.startswith("/"):
-            subpath = subpath[1:]
-        return url + subpath
-    else:
+    if not subpath:
         return base
+
+    url = base
+    if not base.endswith("/"):
+        url += "/"
+    if subpath.startswith("/"):
+        subpath = subpath[1:]
+    return url + subpath
 
 
 class EndpointConfig(object):
@@ -111,7 +111,6 @@ class EndpointConfig(object):
                     headers=headers,
                     params=self.combine_parameters(kwargs),
                     **kwargs) as resp:
-
                 if resp.status >= 400:
                     raise ClientResponseError(resp.status,
                                               resp.reason,
