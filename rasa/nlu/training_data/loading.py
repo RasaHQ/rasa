@@ -60,14 +60,14 @@ def load_data(resource_name: Text,
     return training_data
 
 
-def load_data_from_endpoint(data_endpoint: EndpointConfig,
+async def load_data_from_endpoint(data_endpoint: EndpointConfig,
                             language: Optional[Text] = 'en') -> 'TrainingData':
     """Load training data from a URL."""
 
     if not utils.is_url(data_endpoint.url):
         raise requests.exceptions.InvalidURL(data_endpoint.url)
     try:
-        response = data_endpoint.request("get")
+        response = await data_endpoint.request("get")
         response.raise_for_status()
         temp_data_file = utils.create_temporary_file(response.content,
                                                      mode="w+b")

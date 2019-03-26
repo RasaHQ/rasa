@@ -25,7 +25,7 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
-from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -610,109 +610,6 @@ class AvailableEndpoints(object):
         self.nlg = nlg
         self.tracker_store = tracker_store
         self.event_broker = event_broker
-
-
-class ClientResponseError(aiohttp.ClientError):
-    def __init__(self, status, message, text):
-        self.status = status
-        self.message = message
-        self.text = text
-        super().__init__("{}, {}, body='{}'".format(status, message, text))
-
-
-class EndpointConfig(object):
-    """Configuration for an external HTTP endpoint."""
-
-    def __init__(self, url=None, params=None, headers=None, basic_auth=None,
-                 token=None, token_name="token", **kwargs):
-        self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
-        self.token = token
-        self.token_name = token_name
-        self.type = kwargs.pop('store_type', kwargs.pop('type', None))
-        self.kwargs = kwargs
-
-    def session(self):
-        # create authentication parameters
-        if self.basic_auth:
-            auth = aiohttp.BasicAuth(self.basic_auth["username"],
-                                     self.basic_auth["password"])
-        else:
-            auth = None
-
-        return aiohttp.ClientSession(
-            headers=self.headers,
-            auth=auth,
-            timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT),
-        )
-
-    def combine_parameters(self, kwargs=None):
-        # construct GET parameters
-        params = self.params.copy()
-
-        # set the authentication token if present
-        if self.token:
-            params[self.token_name] = self.token
-
-        if kwargs and "params" in kwargs:
-            params.update(kwargs["params"])
-            del kwargs["params"]
-        return params
-
-    async def request(self,
-                      method: Text = "post",
-                      subpath: Optional[Text] = None,
-                      content_type: Optional[Text] = "application/json",
-                      **kwargs: Any
-                      ):
-        """Send a HTTP request to the endpoint.
-
-        All additional arguments will get passed through
-        to aiohttp's `session.request`."""
-
-        # create the appropriate headers
-        headers = {}
-        if content_type:
-            headers["Content-Type"] = content_type
-
-        if "headers" in kwargs:
-            headers.update(kwargs["headers"])
-            del kwargs["headers"]
-
-        url = concat_url(self.url, subpath)
-        async with self.session() as session:
-            async with session.request(
-                    method,
-                    url,
-                    headers=headers,
-                    params=self.combine_parameters(kwargs),
-                    **kwargs) as resp:
-
-                if resp.status >= 400:
-                    raise ClientResponseError(resp.status,
-                                              resp.reason,
-                                              await resp.content.read())
-                return await resp.json()
-
-    @classmethod
-    def from_dict(cls, data):
-        return EndpointConfig(**data)
-
-    def __eq__(self, other):
-        if isinstance(self, type(other)):
-            return (other.url == self.url and
-                    other.params == self.params and
-                    other.headers == self.headers and
-                    other.basic_auth == self.basic_auth and
-                    other.token == self.token and
-                    other.token_name == self.token_name)
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
 
 # noinspection PyProtectedMember

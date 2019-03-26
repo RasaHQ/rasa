@@ -9,11 +9,10 @@ import tempfile
 from collections import namedtuple
 from typing import Any, Callable, Dict, List, Optional, Text, Type
 
-import requests
 import ruamel.yaml as yaml
 import simplejson
-from requests import Response
-from requests.auth import HTTPBasicAuth
+
+from rasa.utils import EndpointConfig
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -427,85 +426,3 @@ def read_endpoints(endpoint_file: Text) -> 'AvailableEndpoints':
 # The EndpointConfig class is currently used to define external endpoints
 # for pulling NLU models from a server and training data
 AvailableEndpoints = namedtuple('AvailableEndpoints', 'model data')
-
-
-class EndpointConfig(object):
-    """Configuration for an external HTTP endpoint."""
-
-    def __init__(self,
-                 url: Text,
-                 params: Dict[Text, Any] = None,
-                 headers: Dict[Text, Any] = None,
-                 basic_auth: Dict[Text, Text] = None,
-                 token: Optional[Text] = None,
-                 token_name: Text = "token"):
-        self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
-        self.token = token
-        self.token_name = token_name
-
-    def request(self,
-                method: Text = "post",
-                subpath: Optional[Text] = None,
-                content_type: Optional[Text] = "application/json",
-                **kwargs: Any
-                ) -> Response:
-        """Send a HTTP request to the endpoint.
-
-        All additional arguments will get passed through
-        to `requests.request`."""
-
-        # create the appropriate headers
-        headers = self.headers.copy()
-        if content_type:
-            headers["Content-Type"] = content_type
-        if "headers" in kwargs:
-            headers.update(kwargs["headers"])
-            del kwargs["headers"]
-
-        # create authentication parameters
-        if self.basic_auth:
-            auth = HTTPBasicAuth(self.basic_auth["username"],
-                                 self.basic_auth["password"])
-        else:
-            auth = None
-
-        url = concat_url(self.url, subpath)
-
-        # construct GET parameters
-        params = self.params.copy()
-
-        # set the authentication token if present
-        if self.token:
-            params[self.token_name] = self.token
-
-        if "params" in kwargs:
-            params.update(kwargs["params"])
-            del kwargs["params"]
-
-        return requests.request(method,
-                                url,
-                                headers=headers,
-                                params=params,
-                                auth=auth,
-                                **kwargs)
-
-    @classmethod
-    def from_dict(cls, data):
-        return EndpointConfig(data.pop("url"), **data)
-
-    def __eq__(self, other):
-        if isinstance(self, type(other)):
-            return (other.url == self.url and
-                    other.params == self.params and
-                    other.headers == self.headers and
-                    other.basic_auth == self.basic_auth and
-                    other.token == self.token and
-                    other.token_name == self.token_name)
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)

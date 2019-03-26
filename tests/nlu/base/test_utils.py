@@ -10,8 +10,9 @@ from httpretty import httpretty
 
 from rasa.nlu import utils
 from rasa.nlu.utils import (
-    EndpointConfig, create_dir, is_model_dir, is_url, ordered,
+    create_dir, is_model_dir, is_url, ordered,
     relative_normpath, remove_model, write_json_to_file, write_to_file)
+from rasa.utils import EndpointConfig
 
 
 @pytest.fixture
@@ -108,40 +109,6 @@ def test_remove_model_invalid(empty_model_dir):
 def test_is_url():
     assert not is_url('./some/file/path')
     assert is_url('https://rasa.com/')
-
-
-def test_endpoint_config():
-    endpoint = EndpointConfig(
-        "https://abc.defg/",
-        params={"A": "B"},
-        headers={"X-Powered-By": "Rasa"},
-        basic_auth={"username": "user",
-                    "password": "pass"},
-        token="mytoken",
-        token_name="letoken"
-    )
-
-    httpretty.register_uri(
-        httpretty.POST,
-        'https://abc.defg/test',
-        status=500,
-        body='')
-
-    httpretty.enable()
-    endpoint.request("post", subpath="test",
-                     content_type="application/text",
-                     json={"c": "d"},
-                     params={"P": "1"})
-    httpretty.disable()
-
-    r = httpretty.latest_requests[-1]
-
-    assert json.loads(str(r.body.decode("utf-8"))) == {"c": "d"}
-    assert r.headers.get("X-Powered-By") == "Rasa"
-    assert r.headers.get("Authorization") == "Basic dXNlcjpwYXNz"
-    assert r.querystring.get("A") == ["B"]
-    assert r.querystring.get("P") == ["1"]
-    assert r.querystring.get("letoken") == ["mytoken"]
 
 
 def test_environment_variable_not_existing():

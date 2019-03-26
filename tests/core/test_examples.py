@@ -9,9 +9,8 @@ from aioresponses import aioresponses
 from rasa.core import utils
 from rasa.core.agent import Agent
 from rasa.core.train import train
-from rasa.core.utils import (
-    EndpointConfig, AvailableEndpoints,
-    ClientResponseError)
+from rasa.core.utils import AvailableEndpoints
+from rasa.utils import EndpointConfig, ClientResponseError
 
 
 @pytest.fixture(scope="session")
