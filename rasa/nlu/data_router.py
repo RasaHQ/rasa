@@ -103,8 +103,13 @@ class DataRouter(object):
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
 
-        self.project_store = asyncio.run(self._create_project_store(
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+
+        self.project_store = loop.run_until_complete(self._create_project_store(
             project_dir))
+        loop.close()
 
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
@@ -159,7 +164,7 @@ class DataRouter(object):
         return projects
 
     async def _create_project_store(self,
-                              project_dir: Text) -> Dict[Text, Any]:
+                                    project_dir: Text) -> Dict[Text, Any]:
         default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
 
         projects = self._collect_projects(project_dir)

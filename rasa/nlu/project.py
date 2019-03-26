@@ -31,12 +31,12 @@ STATUS_FAILED = -1
 
 
 async def load_from_server(component_builder: Optional[ComponentBuilder] = None,
-                     project: Optional[Text] = None,
-                     project_dir: Optional[Text] = None,
-                     remote_storage: Optional[Text] = None,
-                     model_server: Optional[EndpointConfig] = None,
-                     wait_time_between_pulls: Optional[int] = None,
-                     ) -> 'Project':
+                           project: Optional[Text] = None,
+                           project_dir: Optional[Text] = None,
+                           remote_storage: Optional[Text] = None,
+                           model_server: Optional[EndpointConfig] = None,
+                           wait_time_between_pulls: Optional[int] = None,
+                           ) -> 'Project':
     """Load a persisted model from a server."""
 
     project = Project(component_builder=component_builder,
@@ -56,7 +56,7 @@ async def load_from_server(component_builder: Optional[ComponentBuilder] = None,
 
 
 async def _update_model_from_server(model_server: EndpointConfig,
-                              project: 'Project') -> None:
+                                    project: 'Project') -> None:
     """Load a zipped Rasa NLU model from a URL and update the passed
 
     project."""
@@ -88,9 +88,9 @@ def _get_remote_model_name(filename: Optional[Text]) -> Text:
 
 
 async def _pull_model_and_fingerprint(model_server: EndpointConfig,
-                                model_directory: Text,
-                                fingerprint: Optional[Text]
-                                ) -> (Optional[Text], Optional[Text]):
+                                      model_directory: Text,
+                                      fingerprint: Optional[Text]
+                                      ) -> (Optional[Text], Optional[Text]):
     """Queries the model server and returns a tuple of containing the
 
     response's <ETag> header which contains the model hash, and the
@@ -100,8 +100,8 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
         logger.debug("Requesting model from server {}..."
                      "".format(model_server.url))
         response = await model_server.request(method="GET",
-                                        headers=header,
-                                        timeout=DEFAULT_REQUEST_TIMEOUT)
+                                              headers=header,
+                                              timeout=DEFAULT_REQUEST_TIMEOUT)
     except RequestException as e:
         logger.warning("Tried to fetch model from server, but couldn't reach "
                        "server. We'll retry later... Error: {}."
@@ -134,8 +134,8 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
 
 
 async def _run_model_pulling_worker(model_server: EndpointConfig,
-                              wait_time_between_pulls: int,
-                              project: 'Project') -> None:
+                                    wait_time_between_pulls: int,
+                                    project: 'Project') -> None:
     while True:
         await _update_model_from_server(model_server, project)
         time.sleep(wait_time_between_pulls)
