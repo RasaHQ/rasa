@@ -138,7 +138,8 @@ def unpack_model(model_file: Text, working_directory: Optional[Text] = None
     return working_directory
 
 
-def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
+def get_model_subdirectories(unpacked_model_path: Text) -> \
+        Tuple[Optional[Text], Optional[Text]]:
     """Returns paths for core and nlu model directories.
 
     Args:
@@ -147,8 +148,10 @@ def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
     Returns:
         Tuple (path to Core subdirectory, path to NLU subdirectory).
     """
-    return (os.path.join(unpacked_model_path, "core"),
-            os.path.join(unpacked_model_path, "nlu"))
+    core_path = os.path.join(unpacked_model_path, "core")
+    nlu_path = os.path.join(unpacked_model_path, "nlu")
+
+    return core_path, nlu_path
 
 
 def create_package_rasa(training_directory: Text, output_filename: Text,
