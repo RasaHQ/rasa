@@ -4,7 +4,7 @@ from aioresponses import aioresponses
 from rasa.core.interpreter import (
     INTENT_MESSAGE_PREFIX, RasaNLUHttpInterpreter, RegexInterpreter)
 from rasa.core.utils import EndpointConfig
-from tests.core.utilities import latest_request, json_of_latest_request
+from tests.utilities import latest_request, json_of_latest_request
 
 
 @pytest.fixture

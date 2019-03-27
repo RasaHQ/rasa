@@ -14,14 +14,6 @@ from rasa.core.trackers import DialogueStateTracker
 from tests.core.conftest import DEFAULT_DOMAIN_PATH
 
 
-def latest_request(mocked, request_type, path):
-    return mocked.requests.get((request_type, URL(path)))
-
-
-def json_of_latest_request(r):
-    return r[-1].kwargs["json"]
-
-
 def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
     dialogue = read_dialogue_file(filename)
 

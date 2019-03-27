@@ -7,7 +7,7 @@ from rasa.core import utils
 from rasa.core.training import interactive
 from rasa.core.utils import EndpointConfig
 from rasa.core.actions.action import default_actions
-from tests.core.utilities import latest_request, json_of_latest_request
+from tests.utilities import latest_request, json_of_latest_request
 
 
 @pytest.fixture

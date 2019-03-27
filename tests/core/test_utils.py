@@ -1,10 +1,7 @@
 import os
 import pytest
-from aioresponses import aioresponses
 
 from rasa.core import utils
-from rasa.core.utils import EndpointConfig
-from tests.core.utilities import latest_request, json_of_latest_request
 
 
 @pytest.fixture(scope="session")

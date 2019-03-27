@@ -15,7 +15,7 @@ from rasa.core.processor import MessageProcessor
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.core.utils import EndpointConfig
 
-from tests.core.utilities import json_of_latest_request, latest_request
+from tests.utilities import json_of_latest_request, latest_request
 
 
 @pytest.fixture(scope="module")
