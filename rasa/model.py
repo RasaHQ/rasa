@@ -40,7 +40,10 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     elif os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
 
-    return unpack_model(model_path)
+    if model_path:
+        return unpack_model(model_path)
+
+    return None
 
 
 def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
@@ -138,8 +141,7 @@ def unpack_model(model_file: Text, working_directory: Optional[Text] = None
     return working_directory
 
 
-def get_model_subdirectories(unpacked_model_path: Text) -> \
-        Tuple[Optional[Text], Optional[Text]]:
+def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
     """Returns paths for core and nlu model directories.
 
     Args:

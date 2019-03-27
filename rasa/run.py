@@ -32,6 +32,11 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     from rasa.core.utils import AvailableEndpoints
 
     model_path = get_model(model)
+    if not model_path:
+        logger.warning("No models found. Train some models before running the "
+                       "server with `rasa train`.")
+        return
+
     core_path, nlu_path = get_model_subdirectories(model_path)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
@@ -56,6 +61,7 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     #  server for now
     elif os.path.exists(nlu_path):
         logger.debug("Just run the NLU server as no core model was found.")
+        rasa.nlu.run.run_cmdline(nlu_path)
 
     shutil.rmtree(model_path)
 
