@@ -11,6 +11,7 @@ import numpy as np
 
 import rasa.core
 import rasa.constants
+import rasa.utils
 from rasa.core import utils, training, constants
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
@@ -181,7 +182,8 @@ class PolicyEnsemble(object):
     @classmethod
     def load_metadata(cls, path):
         metadata_path = os.path.join(path, 'metadata.json')
-        metadata = json.loads(utils.read_file(os.path.abspath(metadata_path)))
+        metadata = json.loads(rasa.utils.read_file(os.path.abspath(
+            metadata_path)))
         return metadata
 
     @staticmethod

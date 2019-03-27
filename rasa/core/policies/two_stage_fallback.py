@@ -3,6 +3,7 @@ import logging
 import os
 from typing import List, Text
 
+import rasa.utils
 from rasa.core import utils
 from rasa.core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME,
@@ -149,7 +150,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                          tracker: DialogueStateTracker) -> bool:
         return (tracker.last_executed_action_has(
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME) and
-            last_intent == self.deny_suggestion_intent_name)
+                last_intent == self.deny_suggestion_intent_name)
 
     def _results_for_user_denied(self, tracker: DialogueStateTracker,
                                  domain: Domain) -> List[float]:
@@ -184,6 +185,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         if os.path.exists(path):
             meta_path = os.path.join(path, "two_stage_fallback_policy.json")
             if os.path.isfile(meta_path):
-                meta = json.loads(utils.read_file(meta_path))
+                meta = json.loads(rasa.utils.read_file(meta_path))
 
         return cls(**meta)

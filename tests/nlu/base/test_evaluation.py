@@ -4,6 +4,7 @@ import logging
 
 import pytest
 
+import rasa.utils
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.test import (
@@ -269,17 +270,17 @@ def test_run_cv_evaluation():
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
     assert len(entity_results.train[
-        'CRFEntityExtractor']["Accuracy"]) == n_folds
+                   'CRFEntityExtractor']["Accuracy"]) == n_folds
     assert len(entity_results.train[
-        'CRFEntityExtractor']["Precision"]) == n_folds
+                   'CRFEntityExtractor']["Precision"]) == n_folds
     assert len(entity_results.train[
-        'CRFEntityExtractor']["F1-score"]) == n_folds
+                   'CRFEntityExtractor']["F1-score"]) == n_folds
     assert len(entity_results.test[
-        'CRFEntityExtractor']["Accuracy"]) == n_folds
+                   'CRFEntityExtractor']["Accuracy"]) == n_folds
     assert len(entity_results.test[
-        'CRFEntityExtractor']["Precision"]) == n_folds
+                   'CRFEntityExtractor']["Precision"]) == n_folds
     assert len(entity_results.test[
-        'CRFEntityExtractor']["F1-score"]) == n_folds
+                   'CRFEntityExtractor']["F1-score"]) == n_folds
 
 
 def test_intent_evaluation_report(tmpdir_factory):
@@ -302,7 +303,7 @@ def test_intent_evaluation_report(tmpdir_factory):
                               confmat_filename=None,
                               intent_hist_filename=None)
 
-    report = json.loads(utils.read_file(report_filename))
+    report = json.loads(rasa.utils.read_file(report_filename))
 
     greet_results = {"precision": 1.0,
                      "recall": 1.0,
@@ -335,8 +336,8 @@ def test_entity_evaluation_report(tmpdir_factory):
                                mock_extractors,
                                report_folder)
 
-    report_a = json.loads(utils.read_file(report_filename_a))
-    report_b = json.loads(utils.read_file(report_filename_b))
+    report_a = json.loads(rasa.utils.read_file(report_filename_a))
+    report_b = json.loads(rasa.utils.read_file(report_filename_b))
 
     assert len(report_a) == 8
     assert report_a["datetime"]["support"] == 1.0

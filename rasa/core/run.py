@@ -15,7 +15,8 @@ from rasa.core import constants, utils, cli
 from rasa.core.channels import (BUILTIN_CHANNELS, InputChannel, console)
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
-from rasa.core.utils import AvailableEndpoints, read_yaml_file
+from rasa.core.utils import AvailableEndpoints
+from rasa.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
 

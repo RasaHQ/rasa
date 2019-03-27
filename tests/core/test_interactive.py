@@ -3,6 +3,7 @@ import pytest
 import uuid
 from aioresponses import aioresponses
 
+import rasa.utils
 from rasa.core import utils
 from rasa.core.training import interactive
 from rasa.core.utils import EndpointConfig
@@ -93,7 +94,7 @@ def test_bot_output_format():
 
 def test_latest_user_message():
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.read_file(tracker_dump))
 
     m = interactive.latest_user_message(tracker_json.get("events"))
 
@@ -110,7 +111,7 @@ def test_latest_user_message_on_no_events():
 
 def test_all_events_before_user_msg():
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.read_file(tracker_dump))
     evts = tracker_json.get("events")
 
     m = interactive.all_events_before_latest_user_msg(evts)
@@ -124,7 +125,7 @@ def test_all_events_before_user_msg_on_no_events():
 
 
 async def test_print_history(mock_endpoint):
-    tracker_dump = utils.read_file(
+    tracker_dump = rasa.utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
@@ -142,7 +143,7 @@ async def test_print_history(mock_endpoint):
 
 
 async def test_is_listening_for_messages(mock_endpoint):
-    tracker_dump = utils.read_file(
+    tracker_dump = rasa.utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
 
     sender_id = uuid.uuid4().hex
@@ -161,7 +162,7 @@ async def test_is_listening_for_messages(mock_endpoint):
 
 def test_splitting_conversation_at_restarts():
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    evts = json.loads(utils.read_file(tracker_dump)).get("events")
+    evts = json.loads(rasa.utils.read_file(tracker_dump)).get("events")
     evts_wo_restarts = evts[:]
     evts.insert(2, {"event": "restart"})
     evts.append({"event": "restart"})
@@ -238,7 +239,7 @@ def test_validate_user_message():
 
 
 async def test_undo_latest_msg(mock_endpoint):
-    tracker_dump = utils.read_file(
+    tracker_dump = rasa.utils.read_file(
         "data/test_trackers/tracker_moodbot.json")
     tracker_json = json.loads(tracker_dump)
     evts = tracker_json.get("events")
@@ -305,7 +306,7 @@ async def test_interactive_domain_persistence(mock_endpoint, tmpdir):
         await interactive._write_domain_to_file(domain_path, events,
                                                 mock_endpoint)
 
-    saved_domain = utils.read_yaml_file(domain_path)
+    saved_domain = rasa.utils.read_yaml_file(domain_path)
 
     for default_action in default_actions():
         assert default_action.name() not in saved_domain["actions"]

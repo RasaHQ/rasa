@@ -1,6 +1,23 @@
 import aiohttp
 from typing import Any, Optional, Text, Dict
+
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.utils import read_yaml_file
+
+
+def read_endpoint_config(filename: Text,
+                         endpoint_type: Text) -> Optional['EndpointConfig']:
+    """Read an endpoint configuration file from disk and extract one
+
+    config. """
+    if not filename:
+        return None
+
+    content = read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
 
 
 class EndpointConfig(object):

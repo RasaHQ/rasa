@@ -1,6 +1,7 @@
 import os
 import pytest
 
+import rasa.utils
 from rasa.core import utils
 
 
@@ -111,7 +112,7 @@ def test_read_yaml_string():
     user: user
     password: pass
     """
-    r = utils.read_yaml_string(config_without_env_var)
+    r = rasa.utils.read_yaml(config_without_env_var)
     assert r['user'] == 'user' and r['password'] == 'pass'
 
 
@@ -120,7 +121,7 @@ def test_read_yaml_string_with_env_var():
     user: ${USER_NAME}
     password: ${PASS}
     """
-    r = utils.read_yaml_string(config_with_env_var)
+    r = rasa.utils.read_yaml(config_with_env_var)
     assert r['user'] == 'user' and r['password'] == 'pass'
 
 
@@ -129,7 +130,7 @@ def test_read_yaml_string_with_multiple_env_vars_per_line():
     user: ${USER_NAME} ${PASS}
     password: ${PASS}
     """
-    r = utils.read_yaml_string(config_with_env_var)
+    r = rasa.utils.read_yaml(config_with_env_var)
     assert r['user'] == 'user pass' and r['password'] == 'pass'
 
 
@@ -138,7 +139,7 @@ def test_read_yaml_string_with_env_var_prefix():
     user: db_${USER_NAME}
     password: db_${PASS}
     """
-    r = utils.read_yaml_string(config_with_env_var_prefix)
+    r = rasa.utils.read_yaml(config_with_env_var_prefix)
     assert r['user'] == 'db_user' and r['password'] == 'db_pass'
 
 
@@ -147,7 +148,7 @@ def test_read_yaml_string_with_env_var_postfix():
     user: ${USER_NAME}_admin
     password: ${PASS}_admin
     """
-    r = utils.read_yaml_string(config_with_env_var_postfix)
+    r = rasa.utils.read_yaml(config_with_env_var_postfix)
     assert r['user'] == 'user_admin' and r['password'] == 'pass_admin'
 
 
@@ -156,7 +157,7 @@ def test_read_yaml_string_with_env_var_infix():
     user: db_${USER_NAME}_admin
     password: db_${PASS}_admin
     """
-    r = utils.read_yaml_string(config_with_env_var_infix)
+    r = rasa.utils.read_yaml(config_with_env_var_infix)
     assert r['user'] == 'db_user_admin' and r['password'] == 'db_pass_admin'
 
 
@@ -166,4 +167,4 @@ def test_read_yaml_string_with_env_var_not_exist():
     password: ${PASSWORD}
     """
     with pytest.raises(ValueError):
-        utils.read_yaml_string(config_with_env_var_not_exist)
+        rasa.utils.read_yaml(config_with_env_var_not_exist)

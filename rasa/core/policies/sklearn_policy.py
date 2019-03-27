@@ -13,6 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
 
+import rasa.utils
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
@@ -30,16 +31,16 @@ class SklearnPolicy(Policy):
     """Use an sklearn classifier to train a policy."""
 
     def __init__(
-        self,
-        featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
-        priority: int = 1,
-        model: Optional['sklearn.base.BaseEstimator'] = None,
-        param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
-        cv: Optional[int] = None,
-        scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
-        label_encoder: LabelEncoder = LabelEncoder(),
-        shuffle: bool = True,
-        **kwargs: Any
+            self,
+            featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
+            priority: int = 1,
+            model: Optional['sklearn.base.BaseEstimator'] = None,
+            param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
+            cv: Optional[int] = None,
+            scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
+            label_encoder: LabelEncoder = LabelEncoder(),
+            shuffle: bool = True,
+            **kwargs: Any
     ) -> None:
         """Create a new sklearn policy.
 
@@ -201,7 +202,7 @@ class SklearnPolicy(Policy):
              "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
 
         meta_file = os.path.join(path, "sklearn_policy.json")
-        meta = json.loads(utils.read_file(meta_file))
+        meta = json.loads(rasa.utils.read_file(meta_file))
         policy = cls(featurizer=featurizer, priority=meta["priority"])
 
         with open(filename, 'rb') as f:

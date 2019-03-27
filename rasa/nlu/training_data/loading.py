@@ -4,6 +4,7 @@ import requests
 import typing
 from typing import Optional, Text
 
+import rasa.utils
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
@@ -120,7 +121,7 @@ def _load(filename: Text, language: Optional[Text] = 'en'
 def _guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file."""
     guess = UNK
-    content = utils.read_file(filename)
+    content = rasa.utils.read_file(filename)
     try:
         js = json.loads(content)
     except ValueError:

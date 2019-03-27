@@ -2,13 +2,14 @@ import tempfile
 
 import pytest
 
-from rasa.nlu import config, utils
+from rasa.nlu import config
 from rasa.nlu.registry import registered_pipeline_templates
 from rasa.nlu.components import ComponentBuilder
+from rasa.utils import read_yaml_file
 from tests.nlu.conftest import CONFIG_DEFAULTS_PATH
 from tests.nlu.utilities import write_file_config
 
-defaults = utils.read_yaml_file(CONFIG_DEFAULTS_PATH)
+defaults = read_yaml_file(CONFIG_DEFAULTS_PATH)
 
 
 def test_default_config(default_config):

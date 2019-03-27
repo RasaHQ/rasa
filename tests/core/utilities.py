@@ -7,7 +7,7 @@ import jsonpickle
 import os
 from yarl import URL
 
-from rasa.core import utils
+import rasa.utils
 from rasa.core.domain import Domain
 from rasa.core.events import UserUttered, Event
 from rasa.core.trackers import DialogueStateTracker
@@ -26,7 +26,7 @@ def tracker_from_dialogue_file(filename: Text, domain: Domain = None):
 
 
 def read_dialogue_file(filename: Text):
-    return jsonpickle.loads(utils.read_file(filename))
+    return jsonpickle.loads(rasa.utils.read_file(filename))
 
 
 def write_text_to_file(tmpdir: Text, filename: Text, text: Text):

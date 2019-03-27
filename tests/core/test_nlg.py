@@ -5,6 +5,7 @@ import pytest
 from flask import Flask, request, jsonify
 from pytest_localserver.http import WSGIServer
 
+import rasa.utils.endpoints
 from rasa.core import utils
 from rasa.core.nlg.callback import (
     nlg_request_format_spec,
@@ -67,7 +68,8 @@ async def test_nlg(http_nlg, default_agent_path):
 
 
 def test_nlg_endpoint_config_loading():
-    cfg = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "nlg")
+    cfg = rasa.utils.endpoints.read_endpoint_config(DEFAULT_ENDPOINTS_FILE,
+                                                    "nlg")
 
     assert cfg == EndpointConfig.from_dict({
         "url": "http://localhost:5055/nlg"

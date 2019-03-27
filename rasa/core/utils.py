@@ -265,22 +265,6 @@ def replace_environment_variables():
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
-def read_yaml_file(filename: Text) -> Dict[Text, Any]:
-    """Read contents of `filename` interpreting them as yaml."""
-    return read_yaml_string(read_file(filename))
-
-
-def read_yaml_string(string: Text) -> Dict[Text, Any]:
-    replace_environment_variables()
-    import ruamel.yaml
-
-    yaml_parser = ruamel.yaml.YAML(typ="safe")
-    yaml_parser.version = "1.1"
-    yaml_parser.unicode_supplementary = True
-
-    return yaml_parser.load(string) or {}
-
-
 def _dump_yaml(obj, output):
     import ruamel.yaml
 
@@ -303,12 +287,6 @@ def dump_obj_as_yaml_to_string(obj):
     str_io = StringIO()
     _dump_yaml(obj, str_io)
     return str_io.getvalue()
-
-
-def read_file(filename, encoding="utf-8"):
-    """Read text from a file."""
-    with open(filename, encoding=encoding) as f:
-        return f.read()
 
 
 def read_json_file(filename):
@@ -496,20 +474,6 @@ def all_subclasses(cls: Any) -> List[Any]:
 
     return cls.__subclasses__() + [g for s in cls.__subclasses__()
                                    for g in all_subclasses(s)]
-
-
-def read_endpoint_config(filename: Text,
-                         endpoint_type: Text) -> Optional['EndpointConfig']:
-    """Read an endpoint configuration file from disk and extract one config."""
-
-    if not filename:
-        return None
-
-    content = read_yaml_file(filename)
-    if endpoint_type in content:
-        return EndpointConfig.from_dict(content[endpoint_type])
-    else:
-        return None
 
 
 def is_limit_reached(num_messages, limit):

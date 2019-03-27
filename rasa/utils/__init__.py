@@ -1,3 +1,8 @@
+import io
+from typing import Text, Any, Dict
+import ruamel.yaml as yaml
+
+
 def configure_colored_logging(loglevel):
     import coloredlogs
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
@@ -10,3 +15,77 @@ def configure_colored_logging(loglevel):
         fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
         level_styles=level_styles,
         field_styles=field_styles)
+
+
+def fix_yaml_loader() -> None:
+    """Ensure that any string read by yaml is represented as unicode."""
+
+    def construct_yaml_str(self, node):
+        # Override the default string handling function
+        # to always return unicode objects
+        return self.construct_scalar(node)
+
+    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
+                                    construct_yaml_str)
+
+
+def replace_environment_variables() -> None:
+    """Enable yaml loader to process the environment variables in the yaml."""
+    import re
+    import os
+
+    # noinspection RegExpRedundantEscape
+    env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
+    yaml.add_implicit_resolver('!env_var', env_var_pattern)
+
+    def env_var_constructor(loader, node):
+        """Process environment variables found in the YAML."""
+        value = loader.construct_scalar(node)
+        prefix, env_var, postfix = env_var_pattern.match(value).groups()
+        return prefix + os.environ[env_var] + postfix
+
+    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
+
+
+def read_yaml(content: Text) -> Any:
+    """Parses yaml from a text.
+
+     Args:
+        content: A text containing yaml content.
+    """
+    fix_yaml_loader()
+    replace_environment_variables()
+
+    yaml_parser = yaml.YAML(typ="safe")
+    yaml_parser.version = "1.2"
+    yaml_parser.unicode_supplementary = True
+
+    # noinspection PyUnresolvedReferences
+    try:
+        return yaml_parser.load(content)
+    except yaml.scanner.ScannerError as _:
+        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
+        # unicode sequences that form surrogate pairs. Try converting the input
+        # to a parsable format based on
+        # https://stackoverflow.com/a/52187065/3429596.
+        content = (content.encode('utf-8')
+                   .decode('raw_unicode_escape')
+                   .encode("utf-16", 'surrogatepass')
+                   .decode('utf-16'))
+        return yaml_parser.load(content)
+
+
+def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
+    """Read text from a file."""
+    with io.open(filename, encoding=encoding) as f:
+        return f.read()
+
+
+def read_yaml_file(filename: Text) -> Dict[Text, Any]:
+    """Parses a yaml file.
+
+     Args:
+        filename: The path to the file which should be read.
+    """
+    return read_yaml(read_file(filename, "utf-8"))

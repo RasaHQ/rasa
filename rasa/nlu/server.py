@@ -11,6 +11,7 @@ from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 import rasa
+import rasa.utils
 from rasa.nlu import config, utils
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
@@ -234,7 +235,7 @@ class RasaNLU(object):
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
 
-            model_config = utils.read_yaml(request_content)
+            model_config = rasa.utils.read_yaml(request_content)
             data = model_config.get("data")
 
         elif 'json' in content_type:

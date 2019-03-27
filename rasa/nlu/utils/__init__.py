@@ -9,10 +9,10 @@ import tempfile
 from collections import namedtuple
 from typing import Any, Callable, Dict, List, Optional, Text, Type
 
-import ruamel.yaml as yaml
 import simplejson
 
-from rasa.utils.endpoints import EndpointConfig
+from rasa.utils import read_file
+from rasa.utils.endpoints import read_endpoint_config
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -183,12 +183,6 @@ def write_to_file(filename: Text, text: Text) -> None:
         f.write(str(text))
 
 
-def read_file(filename: Text, encoding: Text = "utf-8-sig") -> Any:
-    """Read text from a file."""
-    with io.open(filename, encoding=encoding) as f:
-        return f.read()
-
-
 def read_json_file(filename: Text) -> Any:
     """Read json from a file."""
     content = read_file(filename)
@@ -197,74 +191,6 @@ def read_json_file(filename: Text) -> Any:
     except ValueError as e:
         raise ValueError("Failed to read json from '{}'. Error: "
                          "{}".format(os.path.abspath(filename), e))
-
-
-def fix_yaml_loader() -> None:
-    """Ensure that any string read by yaml is represented as unicode."""
-
-    def construct_yaml_str(self, node):
-        # Override the default string handling function
-        # to always return unicode objects
-        return self.construct_scalar(node)
-
-    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
-                                    construct_yaml_str)
-
-
-def replace_environment_variables() -> None:
-    """Enable yaml loader to process the environment variables in the yaml."""
-    import re
-    import os
-
-    # noinspection RegExpRedundantEscape
-    env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
-    yaml.add_implicit_resolver('!env_var', env_var_pattern)
-
-    def env_var_constructor(loader, node):
-        """Process environment variables found in the YAML."""
-        value = loader.construct_scalar(node)
-        prefix, env_var, postfix = env_var_pattern.match(value).groups()
-        return prefix + os.environ[env_var] + postfix
-
-    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
-
-
-def read_yaml(content: Text) -> Any:
-    """Parses yaml from a text.
-
-     Args:
-        content: A text containing yaml content.
-    """
-    fix_yaml_loader()
-    replace_environment_variables()
-
-    yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = "1.2"
-    yaml_parser.unicode_supplementary = True
-
-    # noinspection PyUnresolvedReferences
-    try:
-        return yaml_parser.load(content)
-    except yaml.scanner.ScannerError as _:
-        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
-        # unicode sequences that form surrogate pairs. Try converting the input
-        # to a parsable format based on
-        # https://stackoverflow.com/a/52187065/3429596.
-        content = (content.encode('utf-8')
-                   .decode('raw_unicode_escape')
-                   .encode("utf-16", 'surrogatepass')
-                   .decode('utf-16'))
-        return yaml_parser.load(content)
-
-
-def read_yaml_file(filename: Text) -> Any:
-    """Parses a yaml file.
-
-     Args:
-        filename: The path to the file which should be read.
-    """
-    return read_yaml(read_file(filename, "utf-8"))
 
 
 def build_entity(start: int,
@@ -397,21 +323,6 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
         return url + subpath
     else:
         return base
-
-
-def read_endpoint_config(filename: Text,
-                         endpoint_type: Text) -> Optional['EndpointConfig']:
-    """Read an endpoint configuration file from disk and extract one
-
-    config. """
-    if not filename:
-        return None
-
-    content = read_yaml_file(filename)
-    if endpoint_type in content:
-        return EndpointConfig.from_dict(content[endpoint_type])
-    else:
-        return None
 
 
 def read_endpoints(endpoint_file: Text) -> 'AvailableEndpoints':

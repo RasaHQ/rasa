@@ -12,6 +12,7 @@ from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
+from rasa.utils import read_file
 
 logger = logging.getLogger(__name__)
 
@@ -303,8 +304,8 @@ class TrackerFeaturizer(object):
         return states
 
     def _featurize_states(
-        self,
-        trackers_as_states: List[List[Dict[Text, float]]]
+            self,
+            trackers_as_states: List[List[Dict[Text, float]]]
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X"""
         features = []
@@ -332,9 +333,9 @@ class TrackerFeaturizer(object):
         return X, true_lengths
 
     def _featurize_labels(
-        self,
-        trackers_as_actions: List[List[Text]],
-        domain: Domain
+            self,
+            trackers_as_actions: List[List[Text]],
+            domain: Domain
     ) -> np.ndarray:
         """Create y"""
 
@@ -356,9 +357,9 @@ class TrackerFeaturizer(object):
         return y
 
     def training_states_and_actions(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain
+            self,
+            trackers: List[DialogueStateTracker],
+            domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions"""
         raise NotImplementedError("Featurizer must have the capacity to "
@@ -411,7 +412,7 @@ class TrackerFeaturizer(object):
     def load(path):
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(utils.read_file(featurizer_file))
+            return jsonpickle.decode(read_file(featurizer_file))
         else:
             logger.error("Couldn't load featurizer for policy. "
                          "File '{}' doesn't exist.".format(featurizer_file))
@@ -449,9 +450,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         return states
 
     def training_states_and_actions(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain
+            self,
+            trackers: List[DialogueStateTracker],
+            domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
 
         trackers_as_states = []
@@ -531,8 +532,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[Dict[Text, float]],
-        slice_length: int
+            states: List[Dict[Text, float]],
+            slice_length: int
     ) -> List[Optional[Dict[Text, float]]]:
         """Slices states from the trackers history.
 
@@ -555,9 +556,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return hash((frozen_states, frozen_actions))
 
     def training_states_and_actions(
-        self,
-        trackers: List[DialogueStateTracker],
-        domain: Domain
+            self,
+            trackers: List[DialogueStateTracker],
+            domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
 
         trackers_as_states = []

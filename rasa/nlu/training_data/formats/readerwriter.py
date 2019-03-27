@@ -1,12 +1,13 @@
 import json
 
+import rasa.utils
 from rasa.nlu import utils
 
 
 class TrainingDataReader(object):
     def read(self, filename, **kwargs):
         """Reads TrainingData from a file."""
-        return self.reads(utils.read_file(filename), **kwargs)
+        return self.reads(rasa.utils.read_file(filename), **kwargs)
 
     def reads(self, s, **kwargs):
         """Reads TrainingData from a string."""
