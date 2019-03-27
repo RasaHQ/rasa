@@ -14,8 +14,8 @@ from tests.nlu import utilities
 from tests.nlu.utilities import ResponseTest
 
 
-@pytest.fixture(scope="module")
-def app(tmpdir_factory):
+@pytest.fixture
+async def app(tmpdir_factory):
     """Use IResource interface of Klein to mock Rasa HTTP server.
 
     :param component_builder:
@@ -25,6 +25,7 @@ def app(tmpdir_factory):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
+    await router.initialize_router()
     rasa = RasaNLU(router,
                    logfile=nlu_log_file,
                    testing=True)
