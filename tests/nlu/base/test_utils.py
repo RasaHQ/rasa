@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
-
 import io
-import json
 import os
 import pickle
 import pytest
 import tempfile
-from httpretty import httpretty
 
 from rasa.nlu import utils
 from rasa.nlu.utils import (
     create_dir, is_model_dir, is_url, ordered,
     relative_normpath, remove_model, write_json_to_file, write_to_file)
-from rasa.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture

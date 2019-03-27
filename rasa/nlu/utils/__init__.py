@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, Text, Type
 import ruamel.yaml as yaml
 import simplejson
 
-from rasa.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):

@@ -38,7 +38,8 @@ from rasa.core.training import visualization
 from rasa.core.training.structures import Story
 from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH, visualize_neighborhood)
-from rasa.core.utils import AvailableEndpoints, EndpointConfig
+from rasa.core.utils import AvailableEndpoints
+from rasa.utils.endpoints import EndpointConfig
 # noinspection PyProtectedMember
 from rasa.nlu.training_data.loading import _guess_format, load_data
 from rasa.nlu.training_data.message import Message
@@ -90,10 +91,10 @@ class Abort(Exception):
 
 
 async def send_message(
-    endpoint: EndpointConfig,
-    sender_id: Text,
-    message: Text,
-    parse_data: Optional[Dict[Text, Any]] = None
+        endpoint: EndpointConfig,
+        sender_id: Text,
+        message: Text,
+        parse_data: Optional[Dict[Text, Any]] = None
 ) -> Dict[Text, Any]:
     """Send a user message to a conversation."""
 
@@ -110,8 +111,8 @@ async def send_message(
 
 
 async def request_prediction(
-    endpoint: EndpointConfig,
-    sender_id: Text
+        endpoint: EndpointConfig,
+        sender_id: Text
 ) -> Dict[Text, Any]:
     """Request the next action prediction from core."""
 
@@ -135,9 +136,9 @@ async def retrieve_status(endpoint: EndpointConfig) -> Dict[Text, Any]:
 
 
 async def retrieve_tracker(
-    endpoint: EndpointConfig,
-    sender_id: Text,
-    verbosity: EventVerbosity = EventVerbosity.ALL
+        endpoint: EndpointConfig,
+        sender_id: Text,
+        verbosity: EventVerbosity = EventVerbosity.ALL
 ) -> Dict[Text, Any]:
     """Retrieve a tracker from core."""
 
@@ -149,12 +150,12 @@ async def retrieve_tracker(
 
 
 async def send_action(
-    endpoint: EndpointConfig,
-    sender_id: Text,
-    action_name: Text,
-    policy: Optional[Text] = None,
-    confidence: Optional[float] = None,
-    is_new_action: bool = False
+        endpoint: EndpointConfig,
+        sender_id: Text,
+        action_name: Text,
+        policy: Optional[Text] = None,
+        confidence: Optional[float] = None,
+        is_new_action: bool = False
 ) -> Dict[Text, Any]:
     """Log an action to a conversation."""
 
@@ -188,9 +189,9 @@ async def send_action(
 
 
 async def send_event(
-    endpoint: EndpointConfig,
-    sender_id: Text,
-    evt: Dict[Text, Any]
+        endpoint: EndpointConfig,
+        sender_id: Text,
+        evt: Dict[Text, Any]
 ) -> Dict[Text, Any]:
     """Log an event to a conversation."""
 
@@ -202,9 +203,9 @@ async def send_event(
 
 
 async def replace_events(
-    endpoint: EndpointConfig,
-    sender_id: Text,
-    evts: List[Dict[Text, Any]]
+        endpoint: EndpointConfig,
+        sender_id: Text,
+        evts: List[Dict[Text, Any]]
 ) -> Dict[Text, Any]:
     """Replace all the events of a conversation with the provided ones."""
 
@@ -216,8 +217,8 @@ async def replace_events(
 
 
 async def send_finetune(
-    endpoint: EndpointConfig,
-    evts: List[Dict[Text, Any]]
+        endpoint: EndpointConfig,
+        evts: List[Dict[Text, Any]]
 ) -> Dict[Text, Any]:
     """Finetune a core model on the provided additional training samples."""
 
@@ -227,7 +228,7 @@ async def send_finetune(
 
 
 def format_bot_output(
-    message: Dict[Text, Any]
+        message: Dict[Text, Any]
 ) -> Text:
     """Format a bot response to be displayed in the history table."""
 
@@ -266,7 +267,7 @@ def format_bot_output(
 
 
 def latest_user_message(
-    evts: List[Dict[Text, Any]]
+        evts: List[Dict[Text, Any]]
 ) -> Optional[Dict[Text, Any]]:
     """Return most recent user message."""
 
@@ -277,7 +278,7 @@ def latest_user_message(
 
 
 def all_events_before_latest_user_msg(
-    evts: List[Dict[Text, Any]]
+        evts: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Any]]:
     """Return all events that happened before the most recent user message."""
 
@@ -288,10 +289,10 @@ def all_events_before_latest_user_msg(
 
 
 async def _ask_questions(
-    questions: Union[Form, Question],
-    sender_id: Text,
-    endpoint: EndpointConfig,
-    is_abort: Callable[[Dict[Text, Any]], bool] = lambda x: False
+        questions: Union[Form, Question],
+        sender_id: Text,
+        endpoint: EndpointConfig,
+        is_abort: Callable[[Dict[Text, Any]], bool] = lambda x: False
 ) -> Any:
     """Ask the user a question, if Ctrl-C is pressed provide user with menu."""
 
@@ -308,7 +309,7 @@ async def _ask_questions(
 
 
 def _selection_choices_from_intent_prediction(
-    predictions: List[Dict[Text, Any]]
+        predictions: List[Dict[Text, Any]]
 ) -> List[Dict[Text, Text]]:
     """"Given a list of ML predictions create a UI choice list."""
 
@@ -329,34 +330,34 @@ def _selection_choices_from_intent_prediction(
 
 
 async def _request_free_text_intent(
-    sender_id: Text,
-    endpoint: EndpointConfig
+        sender_id: Text,
+        endpoint: EndpointConfig
 ) -> Text:
     question = questionary.text("Please type the intent name")
     return await _ask_questions(question, sender_id, endpoint)
 
 
 async def _request_free_text_action(
-    sender_id: Text,
-    endpoint: EndpointConfig
+        sender_id: Text,
+        endpoint: EndpointConfig
 ) -> Text:
     question = questionary.text("Please type the action name")
     return await _ask_questions(question, sender_id, endpoint)
 
 
 async def _request_selection_from_intent_list(
-    intent_list: List[Dict[Text, Text]],
-    sender_id: Text,
-    endpoint: EndpointConfig
+        intent_list: List[Dict[Text, Text]],
+        sender_id: Text,
+        endpoint: EndpointConfig
 ) -> Text:
     question = questionary.select("What intent is it?", choices=intent_list)
     return await _ask_questions(question, sender_id, endpoint)
 
 
 async def _request_fork_point_from_list(
-    forks: List[Dict[Text, Text]],
-    sender_id: Text,
-    endpoint: EndpointConfig
+        forks: List[Dict[Text, Text]],
+        sender_id: Text,
+        endpoint: EndpointConfig
 ) -> Text:
     question = questionary.select(
         "Before which user message do you want to fork?",
@@ -365,8 +366,8 @@ async def _request_fork_point_from_list(
 
 
 async def _request_fork_from_user(
-    sender_id,
-    endpoint
+        sender_id,
+        endpoint
 ) -> Optional[List[Dict[Text, Any]]]:
     """Take in a conversation and ask at which point to fork the conversation.
 
@@ -392,10 +393,10 @@ async def _request_fork_from_user(
 
 
 async def _request_intent_from_user(
-    latest_message,
-    intents,
-    sender_id,
-    endpoint
+        latest_message,
+        intents,
+        sender_id,
+        endpoint
 ) -> Dict[Text, Any]:
     """Take in latest message and ask which intent it should have been.
 
@@ -590,8 +591,8 @@ async def _ask_if_quit(sender_id: Text, endpoint: EndpointConfig) -> bool:
 
 
 async def _request_action_from_user(
-    predictions: List[Dict[Text, Any]],
-    sender_id: Text, endpoint: EndpointConfig
+        predictions: List[Dict[Text, Any]],
+        sender_id: Text, endpoint: EndpointConfig
 ) -> (Text, bool):
     """Ask the user to correct an action prediction."""
 
@@ -645,7 +646,7 @@ def _request_export_info() -> Tuple[Text, Text, Text]:
 
 
 def _split_conversation_at_restarts(
-    evts: List[Dict[Text, Any]]
+        evts: List[Dict[Text, Any]]
 ) -> List[List[Dict[Text, Any]]]:
     """Split a conversation at restart events.
 
@@ -711,8 +712,8 @@ def _collect_actions(evts: List[Dict[Text, Any]]) -> List[Dict[Text, Any]]:
 
 
 async def _write_stories_to_file(
-    export_story_path: Text,
-    evts: List[Dict[Text, Any]]
+        export_story_path: Text,
+        evts: List[Dict[Text, Any]]
 ) -> None:
     """Write the conversation of the sender_id to the file paths."""
 
@@ -726,8 +727,8 @@ async def _write_stories_to_file(
 
 
 async def _write_nlu_to_file(
-    export_nlu_path: Text,
-    evts: List[Dict[Text, Any]]
+        export_nlu_path: Text,
+        evts: List[Dict[Text, Any]]
 ) -> None:
     """Write the nlu data of the sender_id to the file paths."""
     from rasa.nlu.training_data import TrainingData
@@ -788,9 +789,9 @@ def _intents_from_messages(messages):
 
 
 async def _write_domain_to_file(
-    domain_path: Text,
-    evts: List[Dict[Text, Any]],
-    endpoint: EndpointConfig
+        domain_path: Text,
+        evts: List[Dict[Text, Any]],
+        endpoint: EndpointConfig
 ) -> None:
     """Write an updated domain file to the file path."""
 
@@ -1367,7 +1368,6 @@ def start_visualization(image_path: Text = None) -> None:
 # noinspection PyUnusedLocal
 async def train_agent_on_start(args, endpoints, additional_arguments, app,
                                loop):
-
     _interpreter = NaturalLanguageInterpreter.create(args.get("nlu"),
                                                      endpoints.nlu)
 

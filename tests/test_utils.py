@@ -1,5 +1,5 @@
 from aioresponses import aioresponses
-from rasa.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 from tests.utilities import latest_request, json_of_latest_request
 
 

@@ -15,7 +15,7 @@ from rasa.core.constants import (
 from rasa.core.events import (
     UserUtteranceReverted, UserUttered,
     ActionExecuted, Event)
-from rasa.utils import EndpointConfig, ClientResponseError
+from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 if typing.TYPE_CHECKING:
     from rasa.core.trackers import DialogueStateTracker

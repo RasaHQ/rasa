@@ -3,39 +3,6 @@ from typing import Any, Optional, Text, Dict
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
 
 
-def configure_colored_logging(loglevel):
-    import coloredlogs
-    field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
-    field_styles['asctime'] = {}
-    level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
-    level_styles['debug'] = {}
-    coloredlogs.install(
-        level=loglevel,
-        use_chroot=False,
-        fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
-        level_styles=level_styles,
-        field_styles=field_styles)
-
-
-def concat_url(base: Text, subpath: Optional[Text]) -> Text:
-    """Append a subpath to a base url.
-
-    Strips leading slashes from the subpath if necessary. This behaves
-    differently than `urlparse.urljoin` and will not treat the subpath
-    as a base url if it starts with `/` but will always append it to the
-    `base`."""
-
-    if not subpath:
-        return base
-
-    url = base
-    if not base.endswith("/"):
-        url += "/"
-    if subpath.startswith("/"):
-        subpath = subpath[1:]
-    return url + subpath
-
-
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
@@ -55,6 +22,25 @@ class EndpointConfig(object):
         self.token_name = token_name
         self.type = kwargs.pop('store_type', kwargs.pop('type', None))
         self.kwargs = kwargs
+
+    @staticmethod
+    def _concat_url(base: Text, subpath: Optional[Text]) -> Text:
+        """Append a subpath to a base url.
+
+        Strips leading slashes from the subpath if necessary. This behaves
+        differently than `urlparse.urljoin` and will not treat the subpath
+        as a base url if it starts with `/` but will always append it to the
+        `base`."""
+
+        if not subpath:
+            return base
+
+        url = base
+        if not base.endswith("/"):
+            url += "/"
+        if subpath.startswith("/"):
+            subpath = subpath[1:]
+        return url + subpath
 
     def session(self):
         # create authentication parameters
@@ -103,7 +89,7 @@ class EndpointConfig(object):
             headers.update(kwargs["headers"])
             del kwargs["headers"]
 
-        url = concat_url(self.url, subpath)
+        url = self._concat_url(self.url, subpath)
         async with self.session() as session:
             async with session.request(
                     method,

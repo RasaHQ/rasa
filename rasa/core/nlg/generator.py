@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
 from rasa.core.domain import Domain
-from rasa.core.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 
 class NaturalLanguageGenerator(object):
@@ -17,8 +17,8 @@ class NaturalLanguageGenerator(object):
 
     @staticmethod
     def create(
-        obj: Union['NaturalLanguageGenerator', EndpointConfig, None],
-        domain: Optional[Domain]
+            obj: Union['NaturalLanguageGenerator', EndpointConfig, None],
+            domain: Optional[Domain]
     ) -> 'NaturalLanguageGenerator':
         """Factory to create a generator."""
 

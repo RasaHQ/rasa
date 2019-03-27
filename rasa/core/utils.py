@@ -25,7 +25,7 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
-from rasa.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

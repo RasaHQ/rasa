@@ -15,7 +15,8 @@ from rasa.nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.model import Interpreter, Metadata
-from rasa.nlu.utils import EndpointConfig, is_url
+from rasa.nlu.utils import is_url
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

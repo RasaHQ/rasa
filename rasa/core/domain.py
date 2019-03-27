@@ -13,7 +13,8 @@ from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.core.trackers import SlotSet
-from rasa.core.utils import EndpointConfig, read_file, read_yaml_string
+from rasa.core.utils import read_file, read_yaml_string
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ def check_domain_sanity(domain):
         return message
 
     def get_duplicate_exception_message(
-        duplicates: List[Tuple[List[Text], Text]]
+            duplicates: List[Tuple[List[Text], Text]]
     ) -> Text:
         """Return a message given a list of duplicates."""
 
@@ -241,7 +242,7 @@ class Domain(object):
 
     @staticmethod
     def collect_templates(
-        yml_templates: Dict[Text, List[Any]]
+            yml_templates: Dict[Text, List[Any]]
     ) -> Dict[Text, List[Dict[Text, Any]]]:
         """Go through the templates and make sure they are all in dict format
         """

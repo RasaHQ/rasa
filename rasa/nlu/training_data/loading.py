@@ -9,7 +9,7 @@ from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT, DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES,
     DIALOGFLOW_INTENT, DIALOGFLOW_INTENT_EXAMPLES, DIALOGFLOW_PACKAGE)
-from rasa.nlu.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
