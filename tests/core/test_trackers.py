@@ -473,8 +473,8 @@ def test_get_last_event_for_with_skip():
     tracker = get_tracker(events)
 
     assert (
-            tracker.get_last_event_for(ActionExecuted,
-                                       skip=1).action_name == 'one')
+        tracker.get_last_event_for(ActionExecuted,
+                                   skip=1).action_name == 'one')
 
 
 def test_get_last_event_for_with_exclude():
