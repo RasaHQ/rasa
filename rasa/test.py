@@ -40,14 +40,15 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
         model_path = get_model(model)
         core_path, nlu_path = get_model_subdirectories(model_path)
 
-        _interpreter = NaturalLanguageInterpreter.create(nlu_path,
-                                                         _endpoints.nlu)
+        if os.path.exists(core_path) and os.path.exists(nlu_path):
+            _interpreter = NaturalLanguageInterpreter.create(nlu_path,
+                                                             _endpoints.nlu)
 
-        _agent = Agent.load(core_path, interpreter=_interpreter)
+            _agent = Agent.load(core_path, interpreter=_interpreter)
 
-        kwargs = minimal_kwargs(kwargs, rasa.core.test)
-        loop.run_until_complete(
-            rasa.core.test(stories, _agent, out_directory=output, **kwargs))
+            kwargs = minimal_kwargs(kwargs, rasa.core.test)
+            loop.run_until_complete(
+                rasa.core.test(stories, _agent, out_directory=output, **kwargs))
 
     else:
         from rasa.core.test import compare, plot_curve
@@ -65,8 +66,9 @@ def test_nlu(model: Text, nlu_data: Text, **kwargs: Dict):
 
     unpacked_model = get_model(model)
     nlu_model = os.path.join(unpacked_model, "nlu")
-    kwargs = minimal_kwargs(kwargs, run_evaluation)
-    run_evaluation(nlu_data, nlu_model, **kwargs)
+    if os.path.exists(nlu_model):
+        kwargs = minimal_kwargs(kwargs, run_evaluation)
+        run_evaluation(nlu_data, nlu_model, **kwargs)
 
 
 def test_nlu_with_cross_validation(config: Text, nlu: Text, folds: int = 3):
