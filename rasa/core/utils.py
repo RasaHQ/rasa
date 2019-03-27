@@ -240,31 +240,6 @@ class HashableNDArray(object):
         return self.__wrapped
 
 
-def replace_environment_variables():
-    """Enable yaml loader to process the environment variables in the yaml."""
-    import ruamel.yaml as yaml
-    import re
-    import os
-
-    # eg. ${USER_NAME}, ${PASSWORD}
-    env_var_pattern = re.compile(r'^(.*)\$\{(.*)\}(.*)$')
-    yaml.add_implicit_resolver('!env_var', env_var_pattern)
-
-    def env_var_constructor(loader, node):
-        """Process environment variables found in the YAML."""
-        value = loader.construct_scalar(node)
-        expanded_vars = os.path.expandvars(value)
-        if '$' in expanded_vars:
-            not_expanded = [w for w in expanded_vars.split() if '$' in w]
-            raise ValueError(
-                "Error when trying to expand the environment variables"
-                " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(value, not_expanded))
-        return expanded_vars
-
-    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
-
-
 def _dump_yaml(obj, output):
     import ruamel.yaml
 
