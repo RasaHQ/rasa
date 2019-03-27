@@ -14,6 +14,7 @@ def read_endpoint_config(filename: Text,
         return None
 
     content = read_yaml_file(filename)
+
     if endpoint_type in content:
         return EndpointConfig.from_dict(content[endpoint_type])
     else:

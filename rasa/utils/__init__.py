@@ -48,7 +48,7 @@ def replace_environment_variables() -> None:
     yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
 
 
-def read_yaml(content: Text) -> Any:
+def read_yaml(content: Text) -> Dict[Text, Any]:
     """Parses yaml from a text.
 
      Args:
@@ -63,7 +63,7 @@ def read_yaml(content: Text) -> Any:
 
     # noinspection PyUnresolvedReferences
     try:
-        return yaml_parser.load(content)
+        return yaml_parser.load(content) or {}
     except yaml.scanner.ScannerError as _:
         # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
         # unicode sequences that form surrogate pairs. Try converting the input
@@ -73,7 +73,7 @@ def read_yaml(content: Text) -> Any:
                    .decode('raw_unicode_escape')
                    .encode("utf-16", 'surrogatepass')
                    .decode('utf-16'))
-        return yaml_parser.load(content)
+        return yaml_parser.load(content) or {}
 
 
 def read_file(filename: Text, encoding: Text = "utf-8") -> Any:
