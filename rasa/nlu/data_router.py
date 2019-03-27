@@ -97,19 +97,12 @@ class DataRouter(object):
         self.remote_storage = remote_storage
         self.model_server = model_server
         self.wait_time_between_pulls = wait_time_between_pulls
+        self.project_store = None
 
         if component_builder:
             self.component_builder = component_builder
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
-
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-
-        self.project_store = loop.run_until_complete(self._create_project_store(
-            project_dir))
-        loop.close()
 
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
@@ -118,6 +111,9 @@ class DataRouter(object):
         multiprocessing.set_start_method('spawn', force=True)
 
         self.pool = ProcessPool(self._training_processes)
+
+    async def initialize_router(self):
+        self.project_store = await self._create_project_store(self.project_dir)
 
     def __del__(self):
         """Terminates workers pool processes"""

@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import io
 import logging
 import os
@@ -374,6 +375,10 @@ def main(args):
         model_server=_endpoints.model,
         wait_time_between_pulls=args.wait_time_between_pulls
     )
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(router.initialize_router())
+
     if pre_load:
         logger.debug('Preloading....')
         if 'all' in pre_load:
