@@ -33,8 +33,8 @@ def run(model: Text, endpoints: Text, connector: Text = None,
 
     model_path = get_model(model)
     if not model_path:
-        logger.warning("No models found. Train some models before running the "
-                       "server with `rasa train`.")
+        logger.error("No model found. Train a model before running the "
+                     "server using `rasa train`.")
         return
 
     core_path, nlu_path = get_model_subdirectories(model_path)
@@ -57,10 +57,8 @@ def run(model: Text, endpoints: Text, connector: Text = None,
                                         endpoints=_endpoints,
                                         **kwargs)
 
-    # TODO: If core path is not given (no core model found), run only nlu
-    #  server for now
+    # TODO: No core model was found, run only nlu server for now
     elif os.path.exists(nlu_path):
-        logger.debug("Just run the NLU server as no core model was found.")
         rasa.nlu.run.run_cmdline(nlu_path)
 
     shutil.rmtree(model_path)
