@@ -59,9 +59,10 @@ def add_subparser(subparsers: argparse._SubParsersAction,
              "and Rasa Core stories"
     )
     shell_parser.add_argument(
-        "--qq",
+        "--no_prompt",
         action="store_true",
-        help="Automatic yes to prompts and suppressed warnings"
+        help="Automatic yes or default options to prompts and "
+             "suppressed warnings"
     )
 
     rasa.cli.run.add_run_arguments(shell_parser)
@@ -116,7 +117,7 @@ def up(args: argparse.Namespace):
     logging.getLogger('engineio').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
 
-    if args.qq:
+    if args.no_prompt:
         logging.getLogger('py.warnings').setLevel(logging.ERROR)
         logging.getLogger('rasa.core.training.dsl').setLevel(logging.ERROR)
 

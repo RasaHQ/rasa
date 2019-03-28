@@ -17,9 +17,10 @@ def add_subparser(subparsers: argparse._SubParsersAction,
         parents=parents,
         help="Create a new project from a initial_project")
     scaffold_parser.add_argument(
-        "--qq",
+        "--no_prompt",
         action="store_true",
-        help="Automatic yes to prompts and suppressed warnings"
+        help="Automatic yes or default options to prompts and "
+             "suppressed warnings"
     )
     scaffold_parser.set_defaults(func=run)
 
@@ -30,7 +31,7 @@ def print_train_or_instructions(args: argparse.Namespace,
 
     print_success("Your bot is ready to go!")
 
-    if not args.qq:
+    if not args.no_prompt:
         should_train = questionary.confirm(
             "Do you want me to train an initial "
             "model for the bot? 💪🏽").ask()
@@ -57,7 +58,7 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa.core import constants
     import questionary
 
-    if not args.qq:
+    if not args.no_prompt:
         should_run = questionary.confirm(
             "Do you want to speak to the trained bot "
             "on the command line? 🤖").ask()
@@ -138,7 +139,7 @@ def run(args: argparse.Namespace) -> None:
           "here: https://rasa.com/docs/core/quickstart \n\n"
           "Now let's start! 👇🏽\n")
 
-    if not args.qq:
+    if not args.no_prompt:
         path = questionary.text(
             "Please enter a folder path where I should create "
             "the initial project [default: current directory]",
@@ -152,7 +153,7 @@ def run(args: argparse.Namespace) -> None:
     if path is None or not os.path.isdir(path):
         print_cancel()
 
-    if not args.qq and len(os.listdir(path)) > 0:
+    if not args.no_prompt and len(os.listdir(path)) > 0:
         _ask_overwrite(path)
 
     init_project(args, path)
