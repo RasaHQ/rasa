@@ -76,6 +76,7 @@ Fixed
 - Handles slot names which contain characters that are invalid as python
   variable name (e.g. dot) in a template
 - in interactive learning: only updates entity values if user changes annotation
+- correctly process intent messages in end-to-end evaluations
 
 [0.13.4] - 2019-03-19
 ^^^^^^^^^^^^^^^^^^^^^
