@@ -196,7 +196,7 @@ def do_interactive_learning(cmdline_args, stories,
                             additional_arguments=None):
     from rasa.core.training import interactive
 
-    if cmdline_args.cors and cmdline_args.finetune:
+    if cmdline_args.core and cmdline_args.finetune:
         raise ValueError("--core can only be used without "
                          "--finetune flag.")
 
