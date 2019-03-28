@@ -135,7 +135,7 @@ def up(args: argparse.Namespace):
     else:
         try:
             from rasa_platform import config
-            from rasa_platform.api.server import main_local
+            from rasa_platform.api.local import main as main_local
             from rasa_platform.services.event_service import main
         except ImportError as e:
             print_error("Rasa Platform is not installed. The `rasa up` "
