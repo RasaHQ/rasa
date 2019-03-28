@@ -24,8 +24,9 @@ def get_validated_path(current: Optional[Text], parameter: Text,
     if (current is None or
             current is not None and not os.path.exists(current)):
         if default is not None and os.path.exists(default):
-            print_warning("'{}' not found. Using default location '{}' instead."
-                          "".format(current, default))
+            print_warning(
+                "'{}' not found. Using default location '{}' instead."
+                "".format(current, default))
             current = default
         elif none_is_valid:
             current = None
@@ -50,8 +51,9 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
     if default:
         default_clause = ("use the default location ('{}') or "
                           "".format(default))
-    print_error("The path '{}' does not exist. Please make sure to {}specify it"
-                " with '--{}'.".format(current, default_clause, parameter))
+    print_error(
+        "The path '{}' does not exist. Please make sure to {}specify it"
+        " with '--{}'.".format(current, default_clause, parameter))
     exit(1)
 
 
@@ -106,8 +108,8 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
     return {k: v for k, v in kwargs.items() if k in possible_arguments}
 
 
-def print_success(text: Text):
-    print_color(text, bcolors.OKGREEN)
+def print_success(*text: Text):
+    print_color(*text, color=bcolors.OKGREEN)
 
 
 class bcolors(object):
@@ -121,17 +123,17 @@ class bcolors(object):
     UNDERLINE = '\033[4m'
 
 
-def wrap_with_color(text: Text, color: Text):
-    return color + text + bcolors.ENDC
+def wrap_with_color(*args: Text, color: Text):
+    return color + " ".join(s for s in args) + bcolors.ENDC
 
 
-def print_color(text: Text, color: Text):
-    print(wrap_with_color(text, color))
+def print_color(*args: Text, color: Text):
+    print(wrap_with_color(*args, color=color))
 
 
-def print_warning(text: Text):
-    print_color(text, bcolors.WARNING)
+def print_warning(*args: Text):
+    print_color(*args, color=bcolors.WARNING)
 
 
-def print_error(text: Text):
-    print_color(text, bcolors.FAIL)
+def print_error(*args: Text):
+    print_color(*args, color=bcolors.FAIL)

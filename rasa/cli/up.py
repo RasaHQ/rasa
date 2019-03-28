@@ -133,15 +133,14 @@ def up(args: argparse.Namespace):
         print_success("Starting Rasa Core")
         start_core(args)
     else:
-        try:
-            from rasa_platform import config
-            from rasa_platform.api.local import main as main_local
-            from rasa_platform.services.event_service import main
-        except ImportError as e:
-            print_error("Rasa Platform is not installed. The `rasa up` "
-                        "command requires an installation of Rasa Platform."
-                        "Error:\n{}".format(e))
-            sys.exit()
+        from rasa_platform import config
+        from rasa_platform.api.local import main_local
+        from rasa_platform.services.event_service import main
+        # except ImportError as e:
+        #     print_error("Rasa Platform is not installed. The `rasa up` "
+        #                 "command requires an installation of Rasa Platform."
+        #                 "Error:\n{}".format(e))
+        #     sys.exit()
 
         print_success("Starting Rasa Event Service")
         print_success("Starting Rasa Core")
