@@ -114,7 +114,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
             result = confidence_scores_for(ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                            1.0, domain)
         elif tracker.last_executed_action_has(
-            ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
+                ACTION_DEFAULT_ASK_AFFIRMATION_NAME):
             if not should_nlu_fallback:
                 logger.debug("User '{}' affirmed intent '{}'"
                              "".format(tracker.sender_id,
@@ -150,7 +150,7 @@ class TwoStageFallbackPolicy(FallbackPolicy):
                          tracker: DialogueStateTracker) -> bool:
         return (tracker.last_executed_action_has(
             ACTION_DEFAULT_ASK_AFFIRMATION_NAME) and
-                last_intent == self.deny_suggestion_intent_name)
+            last_intent == self.deny_suggestion_intent_name)
 
     def _results_for_user_denied(self, tracker: DialogueStateTracker,
                                  domain: Domain) -> List[float]:

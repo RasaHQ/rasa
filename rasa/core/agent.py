@@ -38,8 +38,8 @@ if typing.TYPE_CHECKING:
 
 
 async def load_from_server(
-    agent,
-    model_server: Optional[EndpointConfig] = None
+        agent,
+        model_server: Optional[EndpointConfig] = None
 ) -> 'Agent':
     """Load a persisted model from a server."""
 
@@ -214,14 +214,14 @@ class Agent(object):
      getting the next action, and handling a channel."""
 
     def __init__(
-        self,
-        domain: Union[Text, Domain] = None,
-        policies: Union[PolicyEnsemble, List[Policy], None] = None,
-        interpreter: Optional[NaturalLanguageInterpreter] = None,
-        generator: Union[EndpointConfig, 'NLG', None] = None,
-        tracker_store: Optional['TrackerStore'] = None,
-        action_endpoint: Optional[EndpointConfig] = None,
-        fingerprint: Optional[Text] = None
+            self,
+            domain: Union[Text, Domain] = None,
+            policies: Union[PolicyEnsemble, List[Policy], None] = None,
+            interpreter: Optional[NaturalLanguageInterpreter] = None,
+            generator: Union[EndpointConfig, 'NLG', None] = None,
+            tracker_store: Optional['TrackerStore'] = None,
+            action_endpoint: Optional[EndpointConfig] = None,
+            fingerprint: Optional[Text] = None
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
@@ -307,10 +307,10 @@ class Agent(object):
                 self.policy_ensemble is not None)
 
     async def handle_message(
-        self,
-        message: UserMessage,
-        message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs
+            self,
+            message: UserMessage,
+            message_preprocessor: Optional[Callable[[Text], Text]] = None,
+            **kwargs
     ) -> Optional[List[Text]]:
         """Handle a single message."""
 
@@ -360,9 +360,9 @@ class Agent(object):
 
     # noinspection PyUnusedLocal
     def predict_next(
-        self,
-        sender_id: Text,
-        **kwargs: Any
+            self,
+            sender_id: Text,
+            **kwargs: Any
     ) -> Dict[Text, Any]:
         """Handle a single message."""
 
@@ -371,10 +371,10 @@ class Agent(object):
 
     # noinspection PyUnusedLocal
     async def log_message(
-        self,
-        message: UserMessage,
-        message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        **kwargs: Any
+            self,
+            message: UserMessage,
+            message_preprocessor: Optional[Callable[[Text], Text]] = None,
+            **kwargs: Any
     ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
 
@@ -382,12 +382,12 @@ class Agent(object):
         return await processor.log_message(message)
 
     async def execute_action(
-        self,
-        sender_id: Text,
-        action: Text,
-        output_channel: OutputChannel,
-        policy: Text,
-        confidence: float
+            self,
+            sender_id: Text,
+            action: Text,
+            output_channel: OutputChannel,
+            policy: Text,
+            confidence: float
     ) -> DialogueStateTracker:
         """Handle a single message."""
 
@@ -400,11 +400,11 @@ class Agent(object):
                                               confidence)
 
     async def handle_text(
-        self,
-        text_message: Union[Text, Dict[Text, Any]],
-        message_preprocessor: Optional[Callable[[Text], Text]] = None,
-        output_channel: Optional[OutputChannel] = None,
-        sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
+            self,
+            text_message: Union[Text, Dict[Text, Any]],
+            message_preprocessor: Optional[Callable[[Text], Text]] = None,
+            output_channel: Optional[OutputChannel] = None,
+            sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
@@ -440,8 +440,8 @@ class Agent(object):
         return await self.handle_message(msg, message_preprocessor)
 
     def toggle_memoization(
-        self,
-        activate: bool
+            self,
+            activate: bool
     ) -> None:
         """Toggles the memoization on and off.
 
@@ -558,7 +558,7 @@ class Agent(object):
                             "to the policy configuration instead. More info "
                             "https://rasa.com/docs/core/migrations.html")
         if kwargs.get('epochs') or kwargs.get('max_history') or kwargs.get(
-            'batch_size'):
+                'batch_size'):
             raise Exception("Passing policy configuration parameters "
                             "to `agent.train(...)` is not supported "
                             "anymore. Specify parameters directly in the "
@@ -728,7 +728,7 @@ class Agent(object):
 
     @staticmethod
     def _create_ensemble(
-        policies: Union[List[Policy], PolicyEnsemble, None]
+            policies: Union[List[Policy], PolicyEnsemble, None]
     ) -> Optional[PolicyEnsemble]:
         if policies is None:
             return None
@@ -749,6 +749,7 @@ class Agent(object):
         has_form_policy = (
             self.policy_ensemble and
             any(isinstance(p, FormPolicy)
-                for p in self.policy_ensemble.policies))
+                for p in self.policy_ensemble.policies)
+        )
 
         return not self.domain or not self.domain.form_names or has_form_policy

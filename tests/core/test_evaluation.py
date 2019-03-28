@@ -23,7 +23,7 @@ async def test_evaluation_image_creation(tmpdir, default_agent):
         max_stories=None,
         use_e2e=False
     )
-    
+
     assert os.path.isfile(img_path)
     assert os.path.isfile(stories_path)
 
