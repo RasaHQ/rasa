@@ -127,14 +127,6 @@ class TrainingData(object):
         from rasa.nlu.training_data.formats import MarkdownWriter
         return MarkdownWriter().dumps(self)
 
-<<<<<<< HEAD:rasa_nlu/training_data/training_data.py
-    def persist(
-        self, dir_name: Text, filename: Text = "training_data.json"
-    ) -> Dict[Text, Any]:
-        """Persists this training data to disk and returns necessary
-        information to load it again."""
-
-=======
     def persist(self, dir_name: Text,
                 filename: Text = DEFAULT_TRAINING_DATA_OUTPUT_PATH
                 ) -> Dict[Text, Any]:
@@ -144,16 +136,11 @@ class TrainingData(object):
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
->>>>>>> 26583aa649bcd65a7f3c01b27f9d8be7d993bad0:rasa/nlu/training_data/training_data.py
         data_file = os.path.join(dir_name, filename)
         write_to_file(data_file, self.as_json(indent=2))
 
         return {
-<<<<<<< HEAD:rasa_nlu/training_data/training_data.py
-            "training_data": filename
-=======
             "training_data": DEFAULT_TRAINING_DATA_OUTPUT_PATH
->>>>>>> 26583aa649bcd65a7f3c01b27f9d8be7d993bad0:rasa/nlu/training_data/training_data.py
         }
 
     def sorted_entities(self) -> List[Any]:
