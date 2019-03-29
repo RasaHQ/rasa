@@ -37,8 +37,8 @@ under ``forms:`` section:
 
 .. _section_form_basics:
 
-Basics
-------
+Forms Basics
+------------
 
 Using a ``FormAction``, you can describe *all* of the happy paths with a single
 story. By "happy path", we mean that whenever you ask a user for some information,
@@ -54,6 +54,14 @@ happy paths.
         - restaurant_form
         - form{"name": "restaurant_form"}
         - form{"name": null}
+
+In this story the user intent is ``request_restaurant``, which is followed by
+the form action ``restaurant_form``. With ``form{"name": "restaurant_form"}`` the
+form is activated and with ``form{"name": null}`` the form is deactivated again.
+As shown in the section :ref:`section_unhappy` the the bot can execute any kind of
+actions outside the form while the form is still active. On the "happy path",
+where the user is cooperating well and the system understands the user input correctly,
+the form is filling all requested slots without interruption.
 
 The ``FormAction`` will only requests slots which haven't already been set.
 If a user says
@@ -159,7 +167,7 @@ Validating user input
 After extracting a slot value from user input, the form will try to validate the
 value of the slot. By default, this only checks if the requested slot was extracted.
 If you want to add custom validation, for example to check a value against a database,
-you can do this by overwriting the ``validate()`` method.
+you can do this by writing ``validate_{slot}()`` method.
 Here is an example which checks if the extracted cuisine slot belongs to a
 list of supported cuisines.
 
@@ -167,10 +175,7 @@ list of supported cuisines.
    :pyobject: RestaurantForm.cuisine_db
 
 .. literalinclude:: ../../examples/formbot/actions.py
-   :pyobject: RestaurantForm.is_int
-
-.. literalinclude:: ../../examples/formbot/actions.py
-   :pyobject: RestaurantForm.validate
+   :pyobject: RestaurantForm.validate_cuisine
 
 You can also deactivate the form directly during this validation step (in case the
 slot is filled with something that you are certain can't be handled) by returning
@@ -303,7 +308,7 @@ kinds of logic into your forms.
 Configuration
 -------------
 To use forms, make sure to include the ``FormPolicy`` in your policy
-configuration file. For exmple:
+configuration file. For example:
 
 .. code-block:: yaml
 
