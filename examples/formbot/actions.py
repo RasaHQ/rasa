@@ -59,7 +59,7 @@ class RestaurantForm(FormAction):
                 "mexican"]
 
     @staticmethod
-    def is_int(string: Text) -> Any:
+    def is_int(string: Text) -> bool:
         """Check if a string is an integer"""
 
         try:
@@ -91,12 +91,12 @@ class RestaurantForm(FormAction):
                             domain: Dict[Text, Any]) -> Optional[Text]:
         """Validate num_people value."""
 
-        if not self.is_int(value) or int(value) <= 0:
+        if self.is_int(value) and int(value) > 0:
+            return value
+        else:
             dispatcher.utter_template('utter_wrong_num_people', tracker)
             # validation failed, set slot to None
             return None
-        else:
-            return value
 
     @staticmethod
     def validate_outdoor_seating(value: Text,
