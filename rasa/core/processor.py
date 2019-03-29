@@ -221,7 +221,7 @@ class MessageProcessor(object):
         # Log currently set slots
         slot_values = "\n".join(["\t{}: {}".format(s.name, s.value)
                                  for s in tracker.slots.values()])
-        logger.debug("Current slot values: \n{}".format(slot_values))
+        logger.debug("Current slot values: \n{}".format(slot_values)) #todo: this is printed at wrong position for form valid and restart!
 
     def _get_action(self, action_name):
         return self.domain.action_for_name(action_name, self.action_endpoint)
@@ -285,8 +285,6 @@ class MessageProcessor(object):
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
                                 self.nlg)
-
-        self._log_slots(tracker)
 
         # action loop. predicts actions until we hit action listen
         while (should_predict_another_action and
@@ -374,6 +372,7 @@ class MessageProcessor(object):
 
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
+        self._log_slots(tracker)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
 
         await self._schedule_reminders(events, tracker, dispatcher)
@@ -430,7 +429,7 @@ class MessageProcessor(object):
             events = []
 
         logger.debug("Action '{}' ended with events '{}'".format(
-            action_name, ['{}'.format(e) for e in events]))
+            action_name, ['{}'.format(e) for e in events]))#todo: wrong placement before action is executed?
 
         self._warn_about_new_slots(tracker, action_name, events)
 
