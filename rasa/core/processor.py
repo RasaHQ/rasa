@@ -429,7 +429,7 @@ class MessageProcessor(object):
             events = []
 
         logger.debug("Action '{}' ended with events '{}'".format(
-            action_name, ['{}'.format(e) for e in events]))#todo: wrong placement before action is executed?
+            action_name, ['{}'.format(e) for e in events]))
 
         self._warn_about_new_slots(tracker, action_name, events)
 
