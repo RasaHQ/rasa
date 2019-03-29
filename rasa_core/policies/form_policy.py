@@ -78,6 +78,28 @@ class FormPolicy(MemoizationPolicy):
         # modify the states
         return self._recall_states(self._modified_states(states))
 
+    def state_is_unhappy(self, tracker, domain):
+        # since it is assumed that training stories contain
+        # only unhappy paths, notify the form that
+        # it should not be validated if predicted by other policy
+        tracker_as_states = self.featurizer.prediction_states(
+            [tracker], domain)
+        states = tracker_as_states[0]
+
+        memorized_form = self.recall(states, tracker, domain)
+
+        state_is_unhappy = (
+            memorized_form is not None and
+            memorized_form == tracker.active_form.get('name')
+        )
+
+        if state_is_unhappy:
+            logger.debug("There is a memorized tracker state {}, "
+                         "added `FormValidation(False)` event"
+                         "".format(self._modified_states(states)))
+
+        return state_is_unhappy
+
     def predict_action_probabilities(self,
                                      tracker: DialogueStateTracker,
                                      domain: Domain) -> List[float]:
@@ -91,18 +113,7 @@ class FormPolicy(MemoizationPolicy):
                 # predict form action after user utterance
 
                 if tracker.active_form.get('rejected'):
-                    # since it is assumed that training stories contain
-                    # only unhappy paths, notify the form that
-                    # it should not be validated if predicted by other policy
-                    tracker_as_states = self.featurizer.prediction_states(
-                        [tracker], domain)
-                    states = tracker_as_states[0]
-                    memorized_form = self.recall(states, tracker, domain)
-
-                    if memorized_form == tracker.active_form['name']:
-                        logger.debug("There is a memorized tracker state {}, "
-                                     "added `FormValidation(False)` event"
-                                     "".format(self._modified_states(states)))
+                    if self.state_is_unhappy(tracker, domain):
                         tracker.update(FormValidation(False))
                         return result
 
