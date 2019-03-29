@@ -18,7 +18,7 @@ train-core:
 	python -m rasa.core.train -s data/stories.md -d domain.yml -o models/dialogue
 
 train-interactive:
-	python -m rasa.core.train interactive -s data/stories.md -d domain.yml -o models/dialogue
+	python -m rasa.core.train interactive -s data/stories.md --nlu models/nlu/current -d domain.yml -o models/dialogue
 
 run-fb:
 	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials credentials.yml

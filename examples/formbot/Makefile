@@ -25,7 +25,7 @@ run:
 	make run-core
 
 train-interactive:
-	python -m rasa.core.train interactive -s data/stories.md -d domain.yml -o models/dialogue --verbose --endpoints endpoints.yml
+	python -m rasa.core.train interactive -s data/stories.md --nlu models/nlu/current -d domain.yml -o models/dialogue --verbose --endpoints endpoints.yml
 
 visualize:
 	python -m rasa.core.visualize -s data/stories.md -d domain.yml -o story_graph.html
