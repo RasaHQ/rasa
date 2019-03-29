@@ -460,12 +460,12 @@ Put the description of your custom pipeline in there, e.g.:
 .. code-block:: yaml
 
   pipeline:
-  - name: "nlp_spacy"
-  - name: "tokenizer_spacy"
-  - name: "intent_entity_featurizer_regex"
-  - name: "intent_featurizer_spacy"
-  - name: "ner_crf"
-  - name: "intent_classifier_sklearn"
+  - name: "SpacyNLP"
+  - name: "SpacyTokenizer"
+  - name: "RegexFeaturizer"
+  - name: "SpacyFeaturizer"
+  - name: "CRFEntityExtractor"
+  - name: "SklearnIntentClassifier"
 
 Then retrain your NLU model. In contrast to the previous training also mount
 the ``config`` directory which contains the NLU configuration
@@ -509,8 +509,8 @@ Depending on the selected
 `NLU Pipeline <https://rasa.com/docs/nlu/choosing_pipeline/>`_ you might
 have to use a different Rasa NLU image:
 
-  - ``rasa/rasa_nlu:latest-spacy``: To use the ``spaCy`` pipeline
-  - ``rasa/rasa_nlu:latest-tensorflow``: To use the ``tensorflow_embedding``
+  - ``rasa/rasa_nlu:latest-spacy``: To use the ``pretrained_embeddings_spacy`` pipeline
+  - ``rasa/rasa_nlu:latest-tensorflow``: To use the ``supervised_embeddings``
     pipeline
   - ``rasa/rasa_nlu:latest-mitie``: To use a pipeline which includes ``mitie``
   - ``rasa/rasa_nlu:latest-full``: To build a pipeline with dependencies to

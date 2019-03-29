@@ -23,7 +23,7 @@ def test_blank_config():
 
 
 def test_invalid_config_json():
-    file_config = """pipeline: [spacy_sklearn"""  # invalid yaml
+    file_config = """pipeline: [pretrained_embeddings_spacy"""  # invalid yaml
     with tempfile.NamedTemporaryFile("w+",
                                      suffix="_tmp_config_file.json") as f:
         f.write(file_config)
