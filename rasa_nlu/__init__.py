@@ -1,7 +1,10 @@
-import logging
+import rasa.nlu
+import sys
+import warnings
 
-import rasa_nlu.version
+# this makes sure old code can still import from `rasa_nlu`
+# although the package has been moved to `rasa.nlu`
+sys.modules['rasa_nlu'] = rasa.nlu
 
-logging.getLogger(__name__).addHandler(logging.NullHandler())
-
-__version__ = rasa_nlu.version.__version__
+warnings.warn("The 'rasa_nlu' package hase been renamed. You should change "
+              "your imports to use 'rasa.nlu' instead.", UserWarning)

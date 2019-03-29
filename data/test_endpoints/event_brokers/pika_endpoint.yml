@@ -1,0 +1,6 @@
+event_broker:
+  url: localhost
+  username: username
+  password: password
+  queue: queue
+  type: pika

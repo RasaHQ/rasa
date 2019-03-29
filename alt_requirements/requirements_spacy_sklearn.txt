@@ -1,6 +1,0 @@
-# Minimum Install Requirements
--r requirements_bare.txt
-
-spacy==2.0.18
-scipy==1.1.0
-sklearn-crfsuite==0.3.6

@@ -1,0 +1,4 @@
+# Minimum Install Requirements
+-r ../requirements.txt
+
+spacy==2.0.18

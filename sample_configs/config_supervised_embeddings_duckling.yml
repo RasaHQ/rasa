@@ -1,0 +1,7 @@
+language: "en"
+
+pipeline:
+- name: "CountVectorsFeaturizer"
+- name: "EmbeddingIntentClassifier"
+- name: "DucklingHTTPExtractor"
+  url: "http://duckling:8000"
