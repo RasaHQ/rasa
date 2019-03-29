@@ -391,7 +391,7 @@ def main(args):
         args.loglevel,
         args.write,
         args.num_threads,
-        get_token(cmdline_args.token),
+        get_token(args.token),
         args.cors,
         default_config_path=args.config
     )
