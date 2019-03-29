@@ -108,8 +108,8 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
     return {k: v for k, v in kwargs.items() if k in possible_arguments}
 
 
-def print_success(*text: Text):
-    print_color(*text, color=bcolors.OKGREEN)
+def print_success(*args: Text):
+    print_color(*args, color=bcolors.OKGREEN)
 
 
 class bcolors(object):
