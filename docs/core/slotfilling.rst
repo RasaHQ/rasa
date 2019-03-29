@@ -175,7 +175,7 @@ list of supported cuisines.
    :pyobject: RestaurantForm.cuisine_db
 
 .. literalinclude:: ../../examples/formbot/actions.py
-   :pyobject: RestaurantForm.validate
+   :pyobject: RestaurantForm.validate_cuisine
 
 You can also deactivate the form directly during this validation step (in case the
 slot is filled with something that you are certain can't be handled) by returning
