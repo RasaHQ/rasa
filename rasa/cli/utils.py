@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Any, Callable, Dict, Optional, Text
 
 from rasa.constants import DEFAULT_MODELS_PATH
@@ -108,7 +109,7 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
     return {k: v for k, v in kwargs.items() if k in possible_arguments}
 
 
-def print_success(*args: Text):
+def print_success(*args: Any):
     print_color(*args, color=bcolors.OKGREEN)
 
 
@@ -123,17 +124,22 @@ class bcolors(object):
     UNDERLINE = '\033[4m'
 
 
-def wrap_with_color(*args: Text, color: Text):
-    return color + " ".join(s for s in args) + bcolors.ENDC
+def wrap_with_color(*args: Any, color: Text):
+    return color + " ".join(str(s) for s in args) + bcolors.ENDC
 
 
-def print_color(*args: Text, color: Text):
+def print_color(*args: Any, color: Text):
     print(wrap_with_color(*args, color=color))
 
 
-def print_warning(*args: Text):
+def print_warning(*args: Any):
     print_color(*args, color=bcolors.WARNING)
 
 
-def print_error(*args: Text):
+def print_error(*args: Any):
     print_color(*args, color=bcolors.FAIL)
+
+
+def signal_handler(sig, frame):
+    print("Goodbye 👋")
+    sys.exit(0)

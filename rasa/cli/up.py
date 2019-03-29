@@ -1,15 +1,17 @@
 import argparse
 import logging
-import sys
+import signal
 from multiprocessing import Process
 from typing import List, Text
 
 import rasa.cli.run
-from rasa.cli.utils import print_error, print_success
+from rasa.cli.utils import print_success, signal_handler
 from rasa.core import utils, cli
 from rasa.core.run import serve_application
 from rasa.core.utils import AvailableEndpoints, EndpointConfig
 from rasa.utils import configure_colored_logging
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 # noinspection PyProtectedMember
