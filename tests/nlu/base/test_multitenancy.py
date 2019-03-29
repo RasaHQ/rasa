@@ -13,7 +13,7 @@ from tests.nlu.utilities import ResponseTest
 
 
 @pytest.fixture
-async def app(component_builder):
+def app(component_builder, loop):
     """Use IResource interface of Klein to mock Rasa HTTP server.
 
     :param component_builder:
@@ -31,7 +31,8 @@ async def app(component_builder):
                  os.path.join(root_dir, "data/examples/rasa/demo-rasa.json"))
 
     router = DataRouter(os.path.join(root_dir, "test_projects"))
-    await router.initialize_router()
+    loop.run_until_complete(router.initialize_router())
+
     rasa = RasaNLU(router, logfile=nlu_log_file, testing=True)
 
     return StubTreq(rasa.app.resource())

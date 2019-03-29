@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import io
 import json
 import tempfile
@@ -15,17 +16,17 @@ from tests.nlu.utilities import ResponseTest
 
 
 @pytest.fixture
-async def app(tmpdir_factory):
+def app(tmpdir_factory, loop):
     """Use IResource interface of Klein to mock Rasa HTTP server.
 
     :param component_builder:
     :return:
     """
-
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
-    await router.initialize_router()
+    loop.run_until_complete(router.initialize_router())
+
     rasa = RasaNLU(router,
                    logfile=nlu_log_file,
                    testing=True)
