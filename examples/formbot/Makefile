@@ -15,7 +15,7 @@ train-core:
 	python -m rasa.core.train -s data/stories.md -d domain.yml -o models/dialogue --debug
 
 run-core:
-	python -m rasa.core.run --core models/dialogue --verbose --endpoints endpoints.yml
+	python -m rasa.core.run --core models/dialogue --nlu models/nlu/current --verbose --endpoints endpoints.yml
 
 run-actions:
 	python -m rasa_core_sdk.endpoint --actions actions
