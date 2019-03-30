@@ -343,7 +343,7 @@ NLU model:
 
    nlu_config = """
    language: en
-   pipeline: tensorflow_embedding
+   pipeline: supervised_embeddings
    """
    %store nlu_config > nlu_config.yml
 
