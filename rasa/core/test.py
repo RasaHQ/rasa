@@ -55,13 +55,13 @@ class EvaluationStore(object):
     """Class storing action, intent and entity predictions and targets."""
 
     def __init__(
-        self,
-        action_predictions: Optional[List[str]] = None,
-        action_targets: Optional[List[str]] = None,
-        intent_predictions: Optional[List[str]] = None,
-        intent_targets: Optional[List[str]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None
+            self,
+            action_predictions: Optional[List[str]] = None,
+            action_targets: Optional[List[str]] = None,
+            intent_predictions: Optional[List[str]] = None,
+            intent_targets: Optional[List[str]] = None,
+            entity_predictions: Optional[List[Dict[Text, Any]]] = None,
+            entity_targets: Optional[List[Dict[Text, Any]]] = None
     ) -> None:
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
@@ -71,13 +71,13 @@ class EvaluationStore(object):
         self.entity_targets = entity_targets or []
 
     def add_to_store(
-        self,
-        action_predictions: Optional[List[str]] = None,
-        action_targets: Optional[List[str]] = None,
-        intent_predictions: Optional[List[str]] = None,
-        intent_targets: Optional[List[str]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None
+            self,
+            action_predictions: Optional[List[str]] = None,
+            action_targets: Optional[List[str]] = None,
+            intent_predictions: Optional[List[str]] = None,
+            intent_targets: Optional[List[str]] = None,
+            entity_predictions: Optional[List[Dict[Text, Any]]] = None,
+            entity_targets: Optional[List[Dict[Text, Any]]] = None
     ) -> None:
         """Add items or lists of items to the store"""
         for k, v in locals().items():
@@ -284,14 +284,37 @@ def _collect_user_uttered_predictions(event,
     return user_uttered_eval_store
 
 
+def _emulate_form_rejection(processor, partial_tracker):
+    if partial_tracker.active_form.get("name"):
+        for p in processor.policy_ensemble.policies:
+            if isinstance(p, FormPolicy):
+                # emulate form rejection
+                partial_tracker.update(ActionExecutionRejected(
+                    partial_tracker.active_form["name"]))
+                # check if unhappy path is covered by the train stories
+                if not p.state_is_unhappy(partial_tracker, processor.domain):
+                    # this state is not covered by the stories
+                    del partial_tracker.events[-1]
+                    partial_tracker.active_form['rejected'] = False
+
+
 def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
     action_executed_eval_store = EvaluationStore()
 
-    action, policy, confidence = processor.predict_next_action(partial_tracker)
-
-    predicted = action.name()
     gold = event.action_name
+
+    action, policy, confidence = processor.predict_next_action(partial_tracker)
+    predicted = action.name()
+
+    if predicted != gold and FormPolicy.__name__ in policy:
+        # FormPolicy predicted wrong action
+        # but it might be Ok if form action is rejected
+        _emulate_form_rejection(processor, partial_tracker)
+        # try again
+        action, policy, confidence = processor.predict_next_action(
+            partial_tracker)
+        predicted = action.name()
 
     action_executed_eval_store.add_to_store(action_predictions=predicted,
                                             action_targets=gold)
@@ -302,9 +325,15 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
                                                       event.confidence,
                                                       event.timestamp))
         if fail_on_prediction_errors:
-            raise ValueError(
-                "Model predicted a wrong action. Failed Story: "
-                "\n\n{}".format(partial_tracker.export_stories()))
+            error_msg = ("Model predicted a wrong action. Failed Story: "
+                         "\n\n{}".format(partial_tracker.export_stories()))
+            if FormPolicy.__name__ in policy:
+                error_msg += ("FormAction is not run during "
+                              "evaluation therefore it is impossible to know "
+                              "if validation failed or this story is wrong. "
+                              "If the story is correct, add it to the "
+                              "training stories and retrain.")
+            raise ValueError(error_msg)
     else:
         partial_tracker.update(event)
 

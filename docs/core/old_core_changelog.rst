@@ -77,6 +77,21 @@ Fixed
   variable name (e.g. dot) in a template
 - in interactive learning: only updates entity values if user changes annotation
 
+
+[0.13.7] - 2019-04-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process form actions in end-to-end evaluations
+
+[0.13.6] - 2019-03-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process intent messages in end-to-end evaluations
+
 [0.13.4] - 2019-03-19
 ^^^^^^^^^^^^^^^^^^^^^
 

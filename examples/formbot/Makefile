@@ -32,3 +32,6 @@ visualize:
 
 train-nlu:
 	python -m rasa_nlu.train -c config.yml --fixed_model_name current --data data/nlu.md -o models --project nlu --verbose
+
+test-core:
+	python -m rasa.core.test --core models/dialogue -s data/stories.md --fail_on_prediction_errors
