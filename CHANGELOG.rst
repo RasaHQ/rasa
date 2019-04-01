@@ -4,6 +4,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+[0.13.7] - 2019-04-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process form actions in end-to-end evaluations
+
 [0.13.6] - 2019-03-28
 ^^^^^^^^^^^^^^^^^^^^^
 
