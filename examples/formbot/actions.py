@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
-from typing import Dict, Text, Any, List, Union
+from typing import Dict, Text, Any, List, Union, Optional
 
-from rasa_core_sdk import ActionExecutionRejection
 from rasa_core_sdk import Tracker
-from rasa_core_sdk.events import SlotSet
 from rasa_core_sdk.executor import CollectingDispatcher
-from rasa_core_sdk.forms import FormAction, REQUESTED_SLOT
+from rasa_core_sdk.forms import FormAction
 
 
 class RestaurantForm(FormAction):
     """Example of a custom form action"""
 
-    def name(self):
-        # type: () -> Text
+    def name(self) -> Text:
         """Unique identifier of the form"""
 
         return "restaurant_form"
@@ -24,8 +21,7 @@ class RestaurantForm(FormAction):
         return ["cuisine", "num_people", "outdoor_seating",
                 "preferences", "feedback"]
 
-    def slot_mappings(self):
-        # type: () -> Dict[Text: Union[Dict, List[Dict]]]
+    def slot_mappings(self) -> Dict[Text: Union[Dict, List[Dict]]]:
         """A dictionary to map required slots to
             - an extracted entity
             - intent: value pairs
@@ -51,9 +47,9 @@ class RestaurantForm(FormAction):
                              self.from_text()]}
 
     @staticmethod
-    def cuisine_db():
-        # type: () -> List[Text]
+    def cuisine_db() -> List[Text]:
         """Database of supported cuisines"""
+
         return ["caribbean",
                 "chinese",
                 "french",
@@ -65,70 +61,66 @@ class RestaurantForm(FormAction):
     @staticmethod
     def is_int(string: Text) -> bool:
         """Check if a string is an integer"""
+
         try:
             int(string)
             return True
         except ValueError:
             return False
 
-    def validate(self,
-                 dispatcher: CollectingDispatcher,
-                 tracker: Tracker,
-                 domain: Dict[Text, Any]) -> List[Dict]:
-        """Validate extracted requested slot
-            else reject the execution of the form action
-        """
-        # extract other slots that were not requested
-        # but set by corresponding entity
-        slot_values = self.extract_other_slots(dispatcher, tracker, domain)
+    def validate_cuisine(self,
+                         value: Text,
+                         dispatcher: CollectingDispatcher,
+                         tracker: Tracker,
+                         domain: Dict[Text, Any]) -> Optional[Text]:
+        """Validate cuisine value."""
 
-        # extract requested slot
-        slot_to_fill = tracker.get_slot(REQUESTED_SLOT)
-        if slot_to_fill:
-            slot_values.update(self.extract_requested_slot(dispatcher,
-                                                           tracker, domain))
-            if not slot_values:
-                # reject form action execution
-                # if some slot was requested but nothing was extracted
-                # it will allow other policies to predict another action
-                raise ActionExecutionRejection(self.name(),
-                                               "Failed to validate slot {0} "
-                                               "with action {1}"
-                                               "".format(slot_to_fill,
-                                                         self.name()))
+        if value.lower() in self.cuisine_db():
+            # validation succeeded
+            return value
+        else:
+            dispatcher.utter_template('utter_wrong_cuisine', tracker)
+            # validation failed, set this slot to None, meaning the
+            # user will be asked for the slot again
+            return None
 
-        # we'll check when validation failed in order
-        # to add appropriate utterances
-        for slot, value in slot_values.items():
-            if slot == 'cuisine':
-                if value.lower() not in self.cuisine_db():
-                    dispatcher.utter_template('utter_wrong_cuisine', tracker)
-                    # validation failed, set slot to None
-                    slot_values[slot] = None
+    def validate_num_people(self,
+                            value: Text,
+                            dispatcher: CollectingDispatcher,
+                            tracker: Tracker,
+                            domain: Dict[Text, Any]) -> Optional[Text]:
+        """Validate num_people value."""
 
-            elif slot == 'num_people':
-                if not self.is_int(value) or int(value) <= 0:
-                    dispatcher.utter_template('utter_wrong_num_people',
-                                              tracker)
-                    # validation failed, set slot to None
-                    slot_values[slot] = None
+        if self.is_int(value) and int(value) > 0:
+            return value
+        else:
+            dispatcher.utter_template('utter_wrong_num_people', tracker)
+            # validation failed, set slot to None
+            return None
 
-            elif slot == 'outdoor_seating':
-                if isinstance(value, str):
-                    if 'out' in value:
-                        # convert "out..." to True
-                        slot_values[slot] = True
-                    elif 'in' in value:
-                        # convert "in..." to False
-                        slot_values[slot] = False
-                    else:
-                        dispatcher.utter_template('utter_wrong_outdoor_seating',
-                                                  tracker)
-                        # validation failed, set slot to None
-                        slot_values[slot] = None
+    @staticmethod
+    def validate_outdoor_seating(value: Text,
+                                 dispatcher: CollectingDispatcher,
+                                 tracker: Tracker,
+                                 domain: Dict[Text, Any]) -> Any:
+        """Validate outdoor_seating value."""
 
-        # validation succeed, set the slots values to the extracted values
-        return [SlotSet(slot, value) for slot, value in slot_values.items()]
+        if isinstance(value, str):
+            if 'out' in value:
+                # convert "out..." to True
+                return True
+            elif 'in' in value:
+                # convert "in..." to False
+                return False
+            else:
+                dispatcher.utter_template('utter_wrong_outdoor_seating',
+                                          tracker)
+                # validation failed, set slot to None
+                return None
+
+        else:
+            # affirm/deny was picked up as T/F
+            return value
 
     def submit(self,
                dispatcher: CollectingDispatcher,

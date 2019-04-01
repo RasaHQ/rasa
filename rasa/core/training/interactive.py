@@ -1021,7 +1021,7 @@ async def _validate_user_text(latest_message: Dict[Text, Any],
     if entities:
         message = ("Is the intent '{}' correct for '{}' and are "
                    "all entities labeled correctly?"
-                   .format(text, intent))
+                   .format(intent, text))
     else:
         message = ("Your NLU model classified '{}' with intent '{}'"
                    " and there are no entities, is this correct?"
