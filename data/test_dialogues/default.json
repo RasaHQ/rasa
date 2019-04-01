@@ -1,0 +1,72 @@
+{
+  "py/object": "rasa.core.conversation.Dialogue",
+  "name": "default",
+  "events": [
+    {
+      "py/object": "rasa.core.events.ActionExecuted",
+      "action_name": "action_listen",
+      "confidence": null,
+      "policy": null,
+      "timestamp": 1551952977.4850519,
+      "unpredictable": false
+    },
+    {
+      "py/object": "rasa.core.events.UserUttered",
+      "entities": [
+        {
+          "end": 19,
+          "entity": "name",
+          "start": 14,
+          "value": "Peter"
+        }
+      ],
+      "input_channel": null,
+      "intent": {
+        "confidence": 0.0,
+        "name": "greet"
+      },
+      "message_id": null,
+      "parse_data": {
+        "entities": [
+          {
+            "end": 19,
+            "entity": "name",
+            "start": 14,
+            "value": "Peter"
+          }
+        ],
+        "intent": {
+          "confidence": 0.0,
+          "name": "greet"
+        },
+        "text": "Hi my name is Peter"
+      },
+      "text": "Hi my name is Peter",
+      "timestamp": 1551953035.076376
+    },
+    {
+      "py/object": "rasa.core.events.SlotSet",
+      "key": "name",
+      "timestamp": 1551953035.076385,
+      "value": "Peter"
+    },
+    {
+      "py/object": "rasa.core.events.ActionExecuted",
+      "action_name": "utter_greet",
+      "confidence": null,
+      "policy": null,
+      "timestamp": 1551953040.607782,
+      "unpredictable": false
+    },
+    {
+      "py/object": "rasa.core.events.BotUttered",
+      "data": {
+        "attachment": null,
+        "buttons": null,
+        "elements": null
+      },
+      "text": "hey there Peter!",
+      "timestamp": 1551953040.60779
+    }
+  ]
+}
