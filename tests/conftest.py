@@ -1,11 +1,9 @@
 import logging
-import os
 
 import pytest
 from rasa_nlu import data_router, config
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.model import Trainer
-from rasa_nlu.utils import zip_folder
 from rasa_nlu import training_data
 from rasa_nlu.config import RasaNLUModelConfig
 
@@ -67,6 +65,6 @@ def trained_nlu_model():
 
     trainer.train(td)
     model_path = trainer.persist("test_models",
-                                 project_name="test_keyword_model")
+                                 project_name="test_model_keyword")
 
     return model_path

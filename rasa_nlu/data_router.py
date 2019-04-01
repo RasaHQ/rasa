@@ -408,7 +408,10 @@ class DataRouter(object):
 
         result = self.pool.submit(run_evaluation,
                                   data_path,
-                                  model_path)
+                                  model_path,
+                                  None,
+                                  None,
+                                  None)
 
         result = deferred_from_future(result)
         result.addCallback(training_callback)

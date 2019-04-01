@@ -1,4 +1,5 @@
 import io
+from rasa_nlu.utils import zip_folder
 
 import mock
 import responses
@@ -104,22 +105,14 @@ def test_dynamic_load_model_with_model_is_none():
 
 
 @responses.activate
-def test_project_with_model_server(zipped_nlu_model):
+def test_project_with_model_server(trained_nlu_model):
     fingerprint = 'somehash'
     model_endpoint = EndpointConfig('http://server.com/models/nlu/tags/latest')
 
-    model_dir_list = os.listdir(TEST_MODEL_PATH)
-
-    # directory name of latest model
-    model_dir = sorted(model_dir_list)[-1]
-
-    # path of that directory
-    model_path = os.path.join(TEST_MODEL_PATH, model_dir)
-
-    zip_path = zip_folder(model_path)
+    zip_path = zip_folder(trained_nlu_model)
 
     # mock a response that returns a zipped model
-    with io.open(zipped_nlu_model, 'rb') as f:
+    with io.open(zip_path, 'rb') as f:
         responses.add(responses.GET,
                       model_endpoint.url,
                       headers={"ETag": fingerprint,

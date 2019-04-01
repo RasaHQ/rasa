@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import io
 import json
-import tempfile, shutil
+import tempfile
+import shutil
 import time
 
 import pytest
@@ -16,16 +17,14 @@ from tests.utilities import ResponseTest
 
 @pytest.fixture(scope="module")
 def app(tmpdir_factory, trained_nlu_model):
-    """Use IResource interface of Klein to mock Rasa HTTP server.
-    :param component_builder:
-    :return:
-    """
+    """Use IResource interface of Klein to mock Rasa HTTP server"""
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     temp_path = tmpdir_factory.mktemp("projects")
     try:
-        shutil.copytree(trained_nlu_model, temp_path.join("keywordproject").join("keywordmodel"))
+        shutil.copytree(trained_nlu_model,
+                        temp_path.join("keywordproject").join("keywordmodel"))
     except FileExistsError:
         pass
 
@@ -72,24 +71,28 @@ def test_version(app):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://dummy-uri/parse?q=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        "http://dummy-uri/parse?project=keywordproject&model=keywordmodel"
+        "&q=hello",
+        {'project': 'keywordproject', 'entities': [], 'model': 'keywordmodel',
          'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?query=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        "http://dummy-uri/parse?project=keywordproject&model=keywordmodel"
+        "&query=hello",
+        {'project': 'keywordproject', 'entities': [], 'model': 'keywordmodel',
          'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?q=hello ńöñàśçií",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        "http://dummy-uri/parse?project=keywordproject&model=keywordmodel"
+        "&q=hello ńöñàśçií",
+        {'project': 'keywordproject', 'entities': [], 'model': 'keywordmodel',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello ńöñàśçií'}
     ),
     ResponseTest(
-        "http://dummy-uri/parse?q=",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        "http://dummy-uri/parse?project=keywordproject&model=keywordmodel"
+        "&q=",
+        {'project': 'keywordproject', 'entities': [], 'model': 'keywordmodel',
          'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
     ),
 ])
@@ -107,24 +110,30 @@ def test_get_parse(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy-uri/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'project': 'keywordproject', 'entities': [], 'model': 'keywordmodel',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello'},
-        payload={"q": "hello"}
+        payload={"q": "hello",
+                 "project": "keywordproject",
+                 "model": "keywordmodel"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'project': 'keywordproject', 'entities': [], 'model': 'keywordmodel',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello'},
-        payload={"query": "hello"}
+        payload={"query": "hello",
+                 "project": "keywordproject",
+                 "model": "keywordmodel"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'project': 'keywordproject', 'entities': [], 'model': 'keywordmodel',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello ńöñàśçií'},
-        payload={"q": "hello ńöñàśçií"}
+        payload={"q": "hello ńöñàśçií",
+                 "project": "keywordproject",
+                 "model": "keywordmodel"}
     ),
 ])
 @pytest.inlineCallbacks
@@ -233,10 +242,11 @@ def test_evaluate_no_model(app):
     assert response.code == 500, "No model in project 'default' to evaluate"
     assert "error" in rjs
 
+
 @pytest.inlineCallbacks
 def test_evaluate_internal_error(app, rasa_default_train_data):
     response = app.post("http://dummy-uri/evaluate",
-                        json={"data":"dummy_data_for_triggering_an_error"})
+                        json={"data": "dummy_data_for_triggering_an_error"})
     time.sleep(3)
     app.flush()
     response = yield response
@@ -246,34 +256,36 @@ def test_evaluate_internal_error(app, rasa_default_train_data):
 
 @pytest.inlineCallbacks
 def test_unload_model_error(app):
-    project_err = "http://dummy-uri/models?project=my_project&model=my_model"
+    project_err = "http://dummy-uri/models" \
+                  "?project=fakeproject" \
+                  "&model=fakemodel"
     response = yield app.delete(project_err)
     rjs = yield response.json()
     assert response.code == 500, "Project not found"
-    assert rjs['error'] == "Project my_project could not be found"
+    assert rjs['error'] == "Project fakeproject could not be found"
 
-    model_err = "http://dummy-uri/models?model=my_model"
+    model_err = "http://dummy-uri/models?project=keywordproject&model=my_model"
     response = yield app.delete(model_err)
     rjs = yield response.json()
     assert response.code == 500, "Model not found"
     assert rjs['error'] == ("Failed to unload model my_model for project "
-                            "default.")
+                            "keywordproject.")
 
 
 @pytest.inlineCallbacks
-def test_unload_fallback(app):
-    unload = "http://dummy-uri/models?model=fallback"
+def test_unload(app):
+    unload = "http://dummy-uri/models?project=keywordproject&model=keywordmodel"
     response = yield app.delete(unload)
     rjs = yield response.json()
     assert response.code == 200, "Fallback model unloaded"
-    assert rjs == "fallback"
+    assert rjs == "keywordmodel"
 
 
 @pytest.inlineCallbacks
 def test_evaluate(app, rasa_default_train_data):
     response = app.post("http://dummy-uri/evaluate"
                         "?project=keywordproject"
-                        "?model=keywordmodel",
+                        "&model=keywordmodel",
                         json=rasa_default_train_data)
     time.sleep(3)
     app.flush()

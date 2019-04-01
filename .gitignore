@@ -33,6 +33,7 @@ tmp_training_data.json
 models/
 projects/
 test_models/model_*
+test_models/test_model_keyword/*
 test_projects/test_project_*
 
 rasa_nlu/tmbo_test.py
