@@ -453,7 +453,7 @@ def test_collect_ner_results_both_nonempty_equal():
                                'entity': 'Person'}]]
     ner_filename = 'test.json'
     collect_ner_results(utterance_targets, utterance_predictions, ner_filename)
-    (tp, fp, fn) = analyze__ner_file(ner_filename)
+    (tp, fp, fn) = analyze_ner_file(ner_filename)
     os.remove(ner_filename)
     assert(tp == 1)
     assert(fp == 0)
