@@ -1,0 +1,84 @@
+intents:
+  - request_restaurant:
+      use_entities: false
+  - chitchat:
+      use_entities: false
+  - inform
+  - affirm
+  - deny
+  - stop
+  - thankyou
+  - greet
+
+entities:
+  - cuisine
+  - num_people
+  - number
+  - feedback
+  - seating
+
+slots:
+  cuisine:
+    type: unfeaturized
+    auto_fill: false
+  num_people:
+    type: unfeaturized
+    auto_fill: false
+  outdoor_seating:
+    type: unfeaturized
+    auto_fill: false
+  preferences:
+    type: unfeaturized
+    auto_fill: false
+  feedback:
+    type: unfeaturized
+    auto_fill: false
+  requested_slot:
+    type: unfeaturized
+
+templates:
+  utter_ask_cuisine:
+    - text: "what cuisine?"
+  utter_ask_num_people:
+    - text: "how many people?"
+  utter_ask_outdoor_seating:
+    - text: "do you want to seat outside?"
+  utter_ask_preferences:
+    - text: "please provide additional preferences"
+  utter_ask_feedback:
+    - text: "please give your feedback on your experience so far"
+  utter_submit:
+    - text: "All done!"
+  utter_slots_values:
+    - text: "I am going to run a restaurant search using the following parameters:\n
+             - cuisine: {cuisine}\n
+             - num_people: {num_people}\n
+             - outdoor_seating: {outdoor_seating}\n
+             - preferences: {preferences}\n
+             - feedback: {feedback}"
+  utter_noworries:
+    - text: "you are welcome :)"
+  utter_chitchat:
+    - text: "chitchat"
+  utter_ask_continue:
+    - text: "do you want to continue?"
+  utter_wrong_cuisine:
+    - text: "cuisine type is not in the database, please try again"
+  utter_wrong_num_people:
+    - text: "number of people should be a positive integer, please try again"
+  utter_wrong_outdoor_seating:
+    - text: "could not convert input to boolean value, please try again"
+  utter_default:
+    - text: "sorry, I didn't understand you, please try input something else"
+  utter_greet:
+    - text: "Hello! I am restaurant search assistant! How can I help?"
+
+actions:
+  - utter_slots_values
+  - utter_noworries
+  - utter_chitchat
+  - utter_ask_continue
+  - utter_greet
+
+forms:
+  - restaurant_form

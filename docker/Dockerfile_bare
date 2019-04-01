@@ -16,13 +16,15 @@ WORKDIR ${RASA_NLU_HOME}
 
 COPY . ${RASA_NLU_HOME}
 
-RUN pip install -r alt_requirements/requirements_bare.txt
+RUN pip install -r requirements.txt
 
 RUN pip install -e .
+
+COPY sample_configs/config_supervised_embeddings.yml ${RASA_NLU_HOME}/config.yml
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["help"]
+CMD ["start", "-c", "config.yml", "--path", "/app/projects"]
