@@ -326,6 +326,7 @@ def test_entity_evaluation_report(tmpdir_factory):
     mock_extractors = ["A", "B"]
     report_filename_a = os.path.join(report_folder, "A_report.json")
     report_filename_b = os.path.join(report_folder, "B_report.json")
+    ner_filename = os.path.join(report_folder, 'ner_filename.json')
 
     utils.create_dir(report_folder)
 
@@ -333,7 +334,8 @@ def test_entity_evaluation_report(tmpdir_factory):
                                [EN_predicted],
                                [EN_tokens],
                                mock_extractors,
-                               report_folder)
+                               report_folder,
+                               ner_filename)
 
     report_a = json.loads(utils.read_file(report_filename_a))
     report_b = json.loads(utils.read_file(report_filename_b))
