@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import io
+import os
 import json
 import tempfile
 import shutil
@@ -24,7 +25,7 @@ def app(tmpdir_factory, trained_nlu_model):
     temp_path = tmpdir_factory.mktemp("projects")
     try:
         shutil.copytree(trained_nlu_model,
-                        temp_path.join("keywordproject").join("keywordmodel"))
+                        os.path.join(temp_path, "keywordproject/keywordmodel"))
     except FileExistsError:
         pass
 
