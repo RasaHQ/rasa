@@ -23,4 +23,3 @@ Fixed
 -----
 - the ``/evaluate`` route for the rasa nlu server now runs evaluation
   in a parallel process, which prevents the currently loaded model unloading
-
