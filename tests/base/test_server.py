@@ -25,7 +25,8 @@ def app(tmpdir_factory, trained_nlu_model):
     temp_path = tmpdir_factory.mktemp("projects")
     try:
         shutil.copytree(trained_nlu_model,
-                        os.path.join(temp_path, "keywordproject/keywordmodel"))
+                        os.path.join(temp_path.strpath,
+                                     "keywordproject/keywordmodel"))
     except FileExistsError:
         pass
 
