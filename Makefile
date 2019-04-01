@@ -1,4 +1,4 @@
-.PHONY: clean test lint
+.PHONY: clean test lint init check-readme
 
 TEST_PATH=./
 
@@ -11,6 +11,11 @@ help:
 	@echo "        Run py.test"
 	@echo "    check-readme"
 	@echo "        Check if the readme can be converted from md to rst for pypi"
+	@echo "    init"
+	@echo "        Install Rasa Core"
+
+init:
+	pip install -r requirements.txt
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -19,7 +24,8 @@ clean:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
-	rm -rf docs/_build
+	rm -rf docs/core/_build
+	rm -rf docs/nlu/_build
 
 lint:
 	py.test --pep8 -m pep8
@@ -27,8 +33,14 @@ lint:
 test: clean
 	py.test tests --verbose --pep8 --color=yes $(TEST_PATH)
 
-livedocs:
-	cd docs && make livehtml
+doctest: clean
+	cd docs/core && make doctest
+
+livedocs-core:
+	cd docs/core && make livehtml
+
+livedocs-nlu:
+	cd docs/nlu && make livehtml
 
 check-readme:
 	# if this runs through we can be sure the readme is properly shown on pypi
