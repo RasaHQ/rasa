@@ -27,9 +27,9 @@ def test_collect_ner_results_both_empty():
 
 
 def test_collect_ner_results_both_nonempty_equal():
-    utterance_targets = [[{'start': '10', 'end': '15', 'value': 'Chris', 
+    utterance_targets = [[{'start': '10', 'end': '15', 'value': 'Chris',
                            'entity': 'Person'}]]
-    utterance_predictions = [[{'start': '10', 'end': '15', 'value': 'Chris', 
+    utterance_predictions = [[{'start': '10', 'end': '15', 'value': 'Chris',
                                'entity': 'Person'}]]
     ner_filename = 'test.json'
     collect_ner_results(utterance_targets, utterance_predictions, ner_filename)
