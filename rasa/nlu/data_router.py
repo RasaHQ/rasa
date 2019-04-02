@@ -79,30 +79,6 @@ def deferred_from_future(future):
     return d
 
 
-async def create_data_router(
-        project_dir=None,
-        max_training_processes=1,
-        response_log=None,
-        emulation_mode=None,
-        remote_storage=None,
-        component_builder=None,
-        model_server=None,
-        wait_time_between_pulls=None):
-    router = DataRouter(
-        project_dir,
-        max_training_processes,
-        response_log,
-        emulation_mode,
-        remote_storage,
-        component_builder,
-        model_server,
-        wait_time_between_pulls
-    )
-    await router.initialize_router()
-    router.initialize_pool()
-    return router
-
-
 class DataRouter(object):
     def __init__(self,
                  project_dir=None,
@@ -121,17 +97,16 @@ class DataRouter(object):
         self.remote_storage = remote_storage
         self.model_server = model_server
         self.wait_time_between_pulls = wait_time_between_pulls
-        self.project_store = None
 
         if component_builder:
             self.component_builder = component_builder
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
 
-    async def initialize_router(self):
-        self.project_store = await self._create_project_store(self.project_dir)
+        # TODO: Should be moved to separate method
+        loop = asyncio.get_event_loop()
+        self.project_store = loop.run_until_complete(self._create_project_store(self.project_dir))
 
-    def initialize_pool(self):
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
         # https://github.com/tensorflow/tensorflow/issues/5448#issuecomment
@@ -139,7 +114,6 @@ class DataRouter(object):
         multiprocessing.set_start_method('spawn', force=True)
 
         self.pool = ProcessPool(self._training_processes)
-
 
     def __del__(self):
         """Terminates workers pool processes"""
