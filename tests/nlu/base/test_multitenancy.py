@@ -6,7 +6,7 @@ import pytest
 from treq.testing import StubTreq
 
 from rasa.nlu import config
-from rasa.nlu.data_router import DataRouter
+from rasa.nlu.data_router import DataRouter, create_data_router
 from rasa.nlu.model import Trainer
 from rasa.nlu.server import RasaNLU
 from tests.nlu.utilities import ResponseTest
@@ -30,8 +30,7 @@ def app(component_builder, loop):
     train_models(component_builder,
                  os.path.join(root_dir, "data/examples/rasa/demo-rasa.json"))
 
-    router = DataRouter(os.path.join(root_dir, "test_projects"))
-    loop.run_until_complete(router.initialize_router())
+    router = loop.run_until_complete(create_data_router(os.path.join(root_dir, "test_projects")))
 
     rasa = RasaNLU(router, logfile=nlu_log_file, testing=True)
 

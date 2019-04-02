@@ -79,6 +79,29 @@ def deferred_from_future(future):
     return d
 
 
+async def create_data_router(
+        project_dir=None,
+        max_training_processes=1,
+        response_log=None,
+        emulation_mode=None,
+        remote_storage=None,
+        component_builder=None,
+        model_server=None,
+        wait_time_between_pulls=None):
+    router = DataRouter(
+        project_dir,
+        max_training_processes,
+        response_log,
+        emulation_mode,
+        remote_storage,
+        component_builder,
+        model_server,
+        wait_time_between_pulls
+    )
+    await router.initialize_router()
+    return router
+
+
 class DataRouter(object):
     def __init__(self,
                  project_dir=None,

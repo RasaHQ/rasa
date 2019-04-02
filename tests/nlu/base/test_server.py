@@ -9,7 +9,7 @@ import pytest
 import ruamel.yaml as yaml
 from treq.testing import StubTreq
 
-from rasa.nlu.data_router import DataRouter
+from rasa.nlu.data_router import DataRouter, create_data_router
 from rasa.nlu.server import RasaNLU
 from tests.nlu import utilities
 from tests.nlu.utilities import ResponseTest
@@ -24,8 +24,7 @@ def app(tmpdir_factory, loop):
     """
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
-    loop.run_until_complete(router.initialize_router())
+    router = loop.run_until_complete(create_data_router(tmpdir_factory.mktemp("projects").strpath))
 
     rasa = RasaNLU(router,
                    logfile=nlu_log_file,

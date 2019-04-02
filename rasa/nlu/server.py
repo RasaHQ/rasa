@@ -16,7 +16,7 @@ from rasa.nlu import config, utils
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.data_router import (
-    DataRouter, InvalidProjectError, MaxTrainingError)
+    DataRouter, InvalidProjectError, MaxTrainingError, create_data_router)
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import json_to_string, read_endpoints
@@ -367,18 +367,15 @@ def main(args):
 
     _endpoints = read_endpoints(args.endpoints)
 
-    router = DataRouter(
+    loop = asyncio.get_event_loop()
+    router = loop.run_until_complete(create_data_router(
         args.path,
         args.max_training_processes,
         args.response_log,
         args.emulate,
         args.storage,
         model_server=_endpoints.model,
-        wait_time_between_pulls=args.wait_time_between_pulls
-    )
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(router.initialize_router())
+        wait_time_between_pulls=args.wait_time_between_pulls))
 
     if pre_load:
         logger.debug('Preloading....')
