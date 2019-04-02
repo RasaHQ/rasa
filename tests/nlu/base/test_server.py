@@ -30,7 +30,6 @@ def app(tmpdir_factory, trained_nlu_model):
     except FileExistsError:
         pass
 
-    print(temp_path.strpath)
 
     router = DataRouter(temp_path.strpath)
     rasa = RasaNLU(router,

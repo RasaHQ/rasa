@@ -365,7 +365,7 @@ class DataRouter(object):
                  model: Optional[Text] = None) -> Deferred:
         """Perform a model evaluation."""
 
-        logger.debug("Evaluation request received")
+        logger.debug("Evaluation request received for project '{}' and model '{}'.".format(project, model))
 
         if self._training_processes <= self._current_training_processes:
             raise MaxTrainingError
@@ -375,17 +375,17 @@ class DataRouter(object):
 
         if project not in self.project_store:
             raise InvalidProjectError("Project '{}' could not "
-                                      "be found".format(project))
+                                      "be found.".format(project))
 
         model = model or self.project_store[project]._dynamic_load_model(model)
 
         if model == FALLBACK_MODEL_NAME:
             raise InvalidProjectError("No model in project '{}' to "
-                                      "evaluate".format(project))
+                                      "evaluate.".format(project))
 
         model_path = os.path.join(self.project_store[project]._path, model)
 
-        def training_callback(result):
+        def evaluation_callback(result):
             logger.debug("Evaluation was successful")
 
             self._current_training_processes -= 1
@@ -393,7 +393,7 @@ class DataRouter(object):
 
             return result
 
-        def training_errback(failure):
+        def evaluation_errback(failure):
             logger.warning(failure)
 
             self._current_training_processes -= 1
@@ -401,7 +401,7 @@ class DataRouter(object):
 
             return failure
 
-        logger.debug("New evaluation queued")
+        logger.debug("New evaluation queued.")
 
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
@@ -414,8 +414,8 @@ class DataRouter(object):
                                   None)
 
         result = deferred_from_future(result)
-        result.addCallback(training_callback)
-        result.addErrback(training_errback)
+        result.addCallback(evaluation_callback)
+        result.addErrback(evaluation_errback)
 
         return result
 
