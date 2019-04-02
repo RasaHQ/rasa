@@ -99,6 +99,7 @@ async def create_data_router(
         wait_time_between_pulls
     )
     await router.initialize_router()
+    router.initialize_pool()
     return router
 
 
@@ -127,6 +128,10 @@ class DataRouter(object):
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
 
+    async def initialize_router(self):
+        self.project_store = await self._create_project_store(self.project_dir)
+
+    def initialize_pool(self):
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
         # https://github.com/tensorflow/tensorflow/issues/5448#issuecomment
@@ -135,8 +140,6 @@ class DataRouter(object):
 
         self.pool = ProcessPool(self._training_processes)
 
-    async def initialize_router(self):
-        self.project_store = await self._create_project_store(self.project_dir)
 
     def __del__(self):
         """Terminates workers pool processes"""
