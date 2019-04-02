@@ -111,8 +111,7 @@ def test_is_url():
 
 def test_environment_variable_not_existing():
     content = "model: \n  test: ${variable}"
-    with pytest.raises(ValueError
-                       ):
+    with pytest.raises(ValueError):
         rasa.utils.read_yaml(content)
 
 
