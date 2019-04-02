@@ -4,6 +4,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+[Unreleased 0.13.a8]
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Message parse data no longer passed to graph node label in interactive
+  learning visualization
+
 [0.13.7] - 2019-04-01
 ^^^^^^^^^^^^^^^^^^^^^
 
