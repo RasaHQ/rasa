@@ -1,0 +1,128 @@
+openapi: "3.0.2"
+info:
+  title: "Rasa Core SDK - Action Server Endpoint"
+  version: "0.0.0"
+  description: >-
+    API of the action server which is used by Rasa Core 
+    to execute custom actions.
+servers:
+  - url: "http://localhost:5055/webhook"
+    description: "Local development action server"
+paths:
+  /:
+    post:
+      summary: Core request to execute a custom action
+      description: >-
+        Rasa Core sends a request to the action server to execute a
+        certain custom action. As a response to the action call from Core,
+        you can modify the tracker, e.g. by setting slots and send responses
+        back to the user.
+      operationId: call_action
+      requestBody:
+        description: >- 
+          Describes the action to be called and provides information on the 
+          current state of the conversation.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                next_action:
+                  description: The name of the action which should be executed.
+                  type: string
+                sender_id:
+                  description: >-
+                    Unique id of the user who is having the
+                    current conversation.
+                  type: string
+                tracker:
+                  $ref: "./server.yml#/components/schemas/Tracker"
+                domain:
+                  $ref: "./server.yml#/components/schemas/Domain"
+      responses:
+        200:
+          description: Action was executed succesfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    description: Events returned by the action.
+                    type: array
+                    items:
+                      $ref: "./server.yml#/components/schemas/Event"
+                  responses:
+                    description: >-
+                      List of responses which should be sent to the user
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Response"
+        400:
+          description: >-
+            Action execution was rejected. This is the same as returning
+            an `ActionExecutionRejected` event.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  action_name:
+                    type: string
+                    description: >-
+                      Name of the action which rejected its execution.
+                  error:
+                    type: string
+                    description: The error message.
+        500:
+          description: >-
+            The action server encountered an exception while running the action.
+components:
+  schemas:
+    Response:
+      oneOf:
+        - $ref: '#/components/schemas/TextResponse'
+        - $ref: '#/components/schemas/TemplateResponse'
+        - $ref: '#/components/schemas/ButtonResponse'
+    TextResponse:
+      description: Text which the bot should utter.
+      type: object
+      properties:
+        text:
+          description: The text which should be uttered.
+          type: string
+      required: ["text"]
+    TemplateResponse:
+      description: Response template the bot should utter.
+      type: object
+      properties:
+        template:
+          description: Name of the template
+          type: string
+      additionalProperties:
+        description: Keyword argument to fill the template
+        type: string
+      required: ["template"]
+    ButtonResponse:
+      description: Text with buttons which should be sent to the user.
+      type: object
+      properties:
+        text:
+          type: string
+          description: Message
+        buttons:
+          type: array
+          items:
+            $ref: '#/components/schemas/Button'
+    Button:
+      description: >-
+        A button which can be clicked by the user in the conversation.
+      type: object
+      properties:
+        title:
+          type: string
+          description: The text on the button
+        payload:
+          type: string
+          description: Payload which is sent if the button is pressed.

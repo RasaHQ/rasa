@@ -2,4 +2,4 @@ Rasa Technologies GmbH
 Copyright 2016-2019 Rasa Technologies GmbH
 
 This product includes software from spaCy (https://github.com/explosion/spaCy),
-under the MIT License (see: rasa_nlu.extractors.crf_entity_extractor).
+under the MIT License (see: rasa.nlu.extractors.crf_entity_extractor).

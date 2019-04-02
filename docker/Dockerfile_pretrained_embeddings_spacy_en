@@ -26,6 +26,8 @@ RUN pip install -e .
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
     && python -m spacy link en_core_web_md en 
 
+COPY sample_configs/config_pretrained_embeddings_spacy.yml ${RASA_NLU_HOME}/config.yml
+
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
