@@ -49,6 +49,9 @@ def test_core(model: Text, stories: Text, endpoints: Text = None,
             kwargs = minimal_kwargs(kwargs, rasa.core.test)
             loop.run_until_complete(
                 rasa.core.test(stories, _agent, out_directory=output, **kwargs))
+        else:
+            logger.warning("Not able to test. Make sure both models, core and "
+                           "nlu, are available.")
 
     else:
         from rasa.core.test import compare, plot_curve
