@@ -195,32 +195,3 @@ async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
                                action_endpoint=endpoints.action)
 
     return app.agent
-
-
-if __name__ == '__main__':
-    # Running as standalone python application
-    arg_parser = create_argument_parser()
-    cmdline_args = arg_parser.parse_args()
-
-    logging.getLogger('werkzeug').setLevel(logging.WARN)
-    logging.getLogger('engineio').setLevel(logging.WARN)
-    logging.getLogger('matplotlib').setLevel(logging.WARN)
-    logging.getLogger('socketio').setLevel(logging.ERROR)
-
-    rasa.utils.io.configure_colored_logging(cmdline_args.loglevel)
-    utils.configure_file_logging(cmdline_args.loglevel,
-                                 cmdline_args.log_file)
-
-    _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
-
-    serve_application(cmdline_args.core,
-                      cmdline_args.nlu,
-                      cmdline_args.connector,
-                      cmdline_args.port,
-                      cmdline_args.credentials,
-                      cmdline_args.cors,
-                      cmdline_args.auth_token,
-                      cmdline_args.enable_api,
-                      cmdline_args.jwt_secret,
-                      cmdline_args.jwt_method,
-                      _endpoints)

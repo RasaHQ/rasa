@@ -152,24 +152,3 @@ def train(nlu_config: Union[Text, RasaNLUModelConfig],
         persisted_path = None
 
     return trainer, interpreter, persisted_path
-
-
-if __name__ == '__main__':
-    cmdline_args = create_argument_parser().parse_args()
-
-    utils.configure_colored_logging(cmdline_args.loglevel)
-
-    if cmdline_args.url:
-        data_endpoint = EndpointConfig(cmdline_args.url)
-    else:
-        data_endpoint = read_endpoints(cmdline_args.endpoints).data
-
-    train(cmdline_args.config,
-          cmdline_args.data,
-          cmdline_args.path,
-          cmdline_args.project,
-          cmdline_args.fixed_model_name,
-          cmdline_args.storage,
-          training_data_endpoint=data_endpoint,
-          num_threads=cmdline_args.num_threads)
-    logger.info("Finished training")

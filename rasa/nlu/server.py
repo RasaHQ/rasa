@@ -394,9 +394,3 @@ def main(args):
 
     logger.info('Started http server on port %s' % args.port)
     rasa.app.run('0.0.0.0', args.port)
-
-
-if __name__ == '__main__':
-    # Running as standalone python application
-    cmdline_args = create_argument_parser().parse_args()
-    main(cmdline_args)

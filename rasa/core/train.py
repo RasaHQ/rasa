@@ -240,7 +240,3 @@ def main():
         loop.run_until_complete(do_compare_training(cmdline_arguments,
                                                     training_stories,
                                                     additional_args))
-
-
-if __name__ == '__main__':
-    main()

@@ -995,7 +995,3 @@ def main():
                        cmdline_args.histogram)
 
     logger.info("Finished evaluation")
-
-
-if __name__ == '__main__':  # pragma: no cover
-    main()

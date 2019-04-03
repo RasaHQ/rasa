@@ -693,7 +693,3 @@ def main():
         plot_curve(cmdline_arguments.output, number_of_stories)
 
     logger.info("Finished evaluation")
-
-
-if __name__ == '__main__':
-    main()

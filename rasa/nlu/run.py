@@ -31,11 +31,3 @@ def run_cmdline(model_path, component_builder=None):
         r = interpreter.parse(text)
         print(json.dumps(r, indent=2))
         logger.info("Next message:")
-
-
-if __name__ == '__main__':
-    cmdline_args = create_argument_parser().parse_args()
-
-    utils.configure_colored_logging(cmdline_args.loglevel)
-
-    run_cmdline(cmdline_args.model)
