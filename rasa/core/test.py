@@ -312,7 +312,6 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     action, policy, confidence = processor.predict_next_action(partial_tracker)
     predicted = action.name()
 
-
     if predicted != gold and FormPolicy.__name__ in policy:
         # FormPolicy predicted wrong action
         # but it might be Ok if form action is rejected
