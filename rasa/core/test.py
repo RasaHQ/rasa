@@ -8,7 +8,9 @@ import warnings
 from collections import defaultdict, namedtuple
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa.core.events import ActionExecuted, UserUttered
+from rasa.core.events import (
+    ActionExecuted, UserUttered,
+    ActionExecutionRejected)
 
 if typing.TYPE_CHECKING:
     from rasa.core.agent import Agent
@@ -285,6 +287,7 @@ def _collect_user_uttered_predictions(event,
 
 
 def _emulate_form_rejection(processor, partial_tracker):
+    from rasa.core.policies import FormPolicy
     if partial_tracker.active_form.get("name"):
         for p in processor.policy_ensemble.policies:
             if isinstance(p, FormPolicy):
@@ -300,6 +303,8 @@ def _emulate_form_rejection(processor, partial_tracker):
 
 def _collect_action_executed_predictions(processor, partial_tracker, event,
                                          fail_on_prediction_errors):
+    from rasa.core.policies import FormPolicy
+
     action_executed_eval_store = EvaluationStore()
 
     gold = event.action_name
