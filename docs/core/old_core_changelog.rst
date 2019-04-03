@@ -78,6 +78,14 @@ Fixed
 - in interactive learning: only updates entity values if user changes annotation
 
 
+[Unreleased 0.13.8.aX]
+^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Message parse data no longer passed to graph node label in interactive
+  learning visualization
+
 [0.13.7] - 2019-04-01
 ^^^^^^^^^^^^^^^^^^^^^
 
