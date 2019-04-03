@@ -22,6 +22,7 @@ def app(tmpdir_factory):
     :param component_builder:
     :return:
     """
+
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     router = DataRouter(tmpdir_factory.mktemp("projects").strpath)

@@ -109,6 +109,7 @@ class DataRouter(object):
             loop = asyncio.new_event_loop()
         self.project_store = loop.run_until_complete(
             self._create_project_store(self.project_dir))
+        loop.close()
 
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
