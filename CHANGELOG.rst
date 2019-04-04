@@ -22,4 +22,6 @@ Removed
 
 Fixed
 -----
+- added missing implementation of the ``keys()`` function for the Redis Tracker
+  Store
 
