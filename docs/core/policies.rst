@@ -20,7 +20,7 @@ You can run training from the command line like in the :ref:`quickstart`:
 
 .. code-block:: bash
 
-   python3 -m rasa.core.train -d domain.yml -s data/stories.md \
+   rasa train core -d domain.yml -s data/stories.md \
      -o models/current/dialogue -c config.yml
 
 Or by creating an agent and running the train method yourself:
@@ -37,7 +37,7 @@ Or by creating an agent and running the train method yourself:
 Training Script Options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. program-output:: python3 -m rasa.core.train default -h
+.. program-output:: rasa train core --help
 
 
 Data Augmentation

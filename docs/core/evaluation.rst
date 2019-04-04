@@ -21,7 +21,7 @@ by using the evaluate script:
 
 .. code-block:: bash
 
-    $ python3 -m rasa.core.test --core models/dialogue \
+    $ rasa test core --core models/dialogue \
       --stories test_stories.md -o results
 
 
@@ -36,7 +36,7 @@ incorrect action was predicted instead.
 
 The full list of options for the script is:
 
-.. program-output:: python3 -m rasa.core.test default --help
+.. program-output:: rasa test core --help
 
 .. _end_to_end_evaluation:
 
