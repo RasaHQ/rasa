@@ -67,8 +67,7 @@ async def test_nlg(http_nlg, default_agent_path):
 
 
 def test_nlg_endpoint_config_loading():
-    cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE,
-                                                    "nlg")
+    cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "nlg")
 
     assert cfg == EndpointConfig.from_dict({
         "url": "http://localhost:5055/nlg"
