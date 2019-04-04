@@ -62,10 +62,10 @@ def add_subparser(subparsers: argparse._SubParsersAction,
              "and Rasa Core stories"
     )
     shell_parser.add_argument(
-        "--no_prompt",
+        "--vvvv",
+        default=False,
         action="store_true",
-        help="Automatic yes or default options to prompts and "
-             "suppressed warnings"
+        help="Verbose mode"
     )
 
     rasa.cli.run.add_run_arguments(shell_parser)
@@ -121,9 +121,13 @@ def up(args: argparse.Namespace):
     logging.getLogger('engineio').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
 
-    if args.no_prompt:
+    if not args.vvvv:
+        logging.getLogger().setLevel(logging.ERROR)
         logging.getLogger('py.warnings').setLevel(logging.ERROR)
-        logging.getLogger('rasa.core.training.dsl').setLevel(logging.ERROR)
+        logging.getLogger('rasa.cli').setLevel(logging.ERROR)
+        logging.getLogger('sanic.root').setLevel(logging.ERROR)
+        logging.getLogger('rasa.core').setLevel(logging.ERROR)
+        logging.getLogger('rasa.nlu').setLevel(logging.ERROR)
 
         # TODO: remove once https://github.com/RasaHQ/rasa_nlu/issues/3120
         # is fixed
@@ -154,9 +158,7 @@ def up(args: argparse.Namespace):
                         "Error:\n{}".format(e))
             sys.exit()
 
-        print_success("Starting Rasa Event Service")
-        print_success("Starting Rasa Core")
-        print_success("Starting Rasa Interface")
+        print_success("Starting Rasa 🚀")
 
         p = Process(target=main, args=("rasa_event.log",))
         p.start()
