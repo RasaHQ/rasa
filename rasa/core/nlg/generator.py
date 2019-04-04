@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
 from rasa.core.domain import Domain
-from rasa.core.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 
 class NaturalLanguageGenerator(object):

@@ -15,6 +15,7 @@ Added
 Changed
 -------
 - changed removing punctuation logic in ``WhitespaceTokenizer``
+- created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 
 Removed
 -------
