@@ -488,9 +488,9 @@ class Domain(object):
                 logger.warning(
                     "Failed to use action '{}' in history. "
                     "Please make sure all actions are listed in the "
-                    "domains action list. If you recently removed an "
-                    "action, don't worry about this warning. It "
-                    "should stop appearing after a while. "
+                    "domains action list. If you just added or recently "
+                    "removed an action, don't worry about this warning. "
+                    "It should stop appearing after a while. "
                     "".format(latest_action))
                 return {}
         else:

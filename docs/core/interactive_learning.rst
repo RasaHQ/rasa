@@ -131,7 +131,8 @@ model has assigned to each of the actions:
 .. code-block:: text
 
     ? What is the next action of the bot?  (Use arrow keys)
-     ❯ 0.53 action_show_venue_reviews
+     ❯ <create new action>
+       0.53 action_show_venue_reviews
        0.46 action_show_concert_reviews
        0.00 utter_goodbye
        0.00 action_search_concerts
@@ -145,17 +146,38 @@ model has assigned to each of the actions:
 
 
 
-In this case, the bot should ``action_show_concert_reviews`` (rather than venue
-reviews!) so we select that action.
+In this case, the bot should execute ``action_show_concert_reviews``
+(rather than venue reviews!) so we select that action.
+
+At this point we can also choose to create a new action, if the correct action
+is not yet implemented. There are two types of new actions that can be created
+1) create an ``utter_{}`` action which uses :ref:`_utter_templates` or
+2) create a custom action which returns events.
+
+Only the first type can be created during interactive learning. After choosing
+``<create new action>`` we are prompted to type the action name, in order to
+create a template action we use the prefix ``utter_`` and name the action for
+example ``utter_compliment``. Now we get a new prompt asking for the text
+that the template for our new action should store to send back to the user.
+
+If we choose to create a new action which should return events and not just
+play back an utterance, this needs to be implemented in our action server as
+:ref:`_customactions`. We can still add the action name in interactive learning
+and continue the session, but no events will be returned and you are advised
+to implement the action first.
 
 Now we can keep talking to the bot for as long as we like to create a longer
 conversation. At any point you can press ``Ctrl-C`` and the bot will
 provide you with exit options. You can write your newly-created stories and NLU
 data to files. You can also go back a step if you made a mistake when providing
-feedback.
+feedback, start fresh or fork from a previous point in the story line.
+When starting fresh or forking the story line a new additional story will be
+created.
 
-Make sure to combine the dumped stories and NLU examples with your original
-training data for the next training.
+If you choose your current file names to store data, the new data is merged
+with existing data, so that no old data is lost.
+If you choose to save the files separately, make sure to combine the dumped
+stories and NLU examples with your original training data for the next training.
 
 Visualization of conversations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

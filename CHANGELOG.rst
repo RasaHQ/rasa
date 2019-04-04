@@ -11,6 +11,9 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- option to create template for new utterance action in ``interactive learning``
+- you can now choose actions previously created in the same session
+in ``interactive learning``
 
 Changed
 -------
