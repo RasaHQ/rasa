@@ -1,4 +1,3 @@
-from rasa.core import utils
 from rasa.core.channels import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Restarted
