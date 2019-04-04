@@ -22,4 +22,4 @@ Removed
 
 Fixed
 -----
-
+-evaluating core stories with two stage fallback gave an error, trying to handle None for a policy
