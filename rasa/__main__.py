@@ -1,9 +1,9 @@
 import argparse
 import logging
 
-from rasa.core.cli.arguments import add_logging_option_arguments
-from rasa.utils import configure_colored_logging
+import rasa.utils.io
 
+from rasa.core.cli.arguments import add_logging_option_arguments
 from rasa import version
 from rasa.cli import (scaffold, run, train, interactive,
                       shell, test, show, data, up)
@@ -57,7 +57,7 @@ def main() -> None:
     cmdline_arguments = arg_parser.parse_args()
 
     if hasattr(cmdline_arguments, "func"):
-        configure_colored_logging(cmdline_arguments.loglevel)
+        rasa.utils.io.configure_colored_logging(cmdline_arguments.loglevel)
         cmdline_arguments.func(cmdline_arguments)
     elif hasattr(cmdline_arguments, "version"):
         print_version()

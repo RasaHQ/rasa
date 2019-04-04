@@ -8,8 +8,8 @@ import os
 from typing import Text, List, Dict, Any
 
 from rasa.core import constants
-from rasa.core.utils import EndpointConfig
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

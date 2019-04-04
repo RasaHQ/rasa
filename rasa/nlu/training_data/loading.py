@@ -4,12 +4,13 @@ import requests
 import typing
 from typing import Optional, Text
 
+import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats import markdown
 from rasa.nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT, DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES,
     DIALOGFLOW_INTENT, DIALOGFLOW_INTENT_EXAMPLES, DIALOGFLOW_PACKAGE)
-from rasa.nlu.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 if typing.TYPE_CHECKING:
     from rasa.nlu.training_data import TrainingData
@@ -60,14 +61,15 @@ def load_data(resource_name: Text,
     return training_data
 
 
-def load_data_from_endpoint(data_endpoint: EndpointConfig,
-                            language: Optional[Text] = 'en') -> 'TrainingData':
+async def load_data_from_endpoint(data_endpoint: EndpointConfig,
+                                  language: Optional[
+                                      Text] = 'en') -> 'TrainingData':
     """Load training data from a URL."""
 
     if not utils.is_url(data_endpoint.url):
         raise requests.exceptions.InvalidURL(data_endpoint.url)
     try:
-        response = data_endpoint.request("get")
+        response = await data_endpoint.request("get")
         response.raise_for_status()
         temp_data_file = utils.create_temporary_file(response.content,
                                                      mode="w+b")
@@ -119,7 +121,7 @@ def _load(filename: Text, language: Optional[Text] = 'en'
 def _guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file."""
     guess = UNK
-    content = utils.read_file(filename)
+    content = rasa.utils.io.read_file(filename)
     try:
         js = json.loads(content)
     except ValueError:
