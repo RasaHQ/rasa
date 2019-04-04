@@ -638,7 +638,7 @@ async def _request_action_from_user(
     [session_actions_unique.append(a) for a in session_actions_all if
      a not in session_actions_unique]
     old_actions = [action["value"] for action in choices]
-    new_actions = [{"name": action, "value": OTHER_ACTION+action} for action
+    new_actions = [{"name": action, "value": OTHER_ACTION + action} for action
                    in session_actions_unique if action not in old_actions]
 
     choices = ([{"name": "<create new action>", "value": NEW_ACTION}] +
