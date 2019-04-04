@@ -78,7 +78,7 @@ class BotFramework(OutputChannel):
 
     async def send(self, recipient_id: Text, message_data: Dict[Text, Any]) -> None:
 
-        post_message_uri = "{}conversations/{}/activities" "".format(
+        post_message_uri = "{}conversations/{}/activities".format(
             self.global_uri, self.conversation["id"]
         )
         data = {
@@ -97,7 +97,7 @@ class BotFramework(OutputChannel):
 
         if not send_response.ok:
             logger.error(
-                "Error trying to send botframework messge. " "Response: %s",
+                "Error trying to send botframework messge. Response: %s",
                 send_response.text,
             )
 
@@ -185,7 +185,7 @@ class BotFrameworkInput(InputChannel):
                 else:
                     logger.info("Not received message type")
             except Exception as e:
-                logger.error("Exception when trying to handle " "message.{0}".format(e))
+                logger.error("Exception when trying to handle message.{0}".format(e))
                 logger.debug(e, exc_info=True)
                 pass
 

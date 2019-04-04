@@ -211,7 +211,7 @@ class StoryFileReader(object):
             reader = StoryFileReader(domain, interpreter, template_variables, use_e2e)
             return await reader.process_lines(lines)
         except ValueError as err:
-            file_info = "Invalid story file format. Failed to parse " "'{}'".format(
+            file_info = "Invalid story file format. Failed to parse '{}'".format(
                 os.path.abspath(filename)
             )
             logger.exception(file_info)
@@ -260,7 +260,7 @@ class StoryFileReader(object):
             return event_name, parameters
         else:
             warnings.warn(
-                "Failed to parse action line '{}'. " "Ignoring this line.".format(line)
+                "Failed to parse action line '{}'. Ignoring this line.".format(line)
             )
             return "", {}
 

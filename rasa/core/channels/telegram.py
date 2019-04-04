@@ -143,7 +143,7 @@ class TelegramInput(InputChannel):
             if request.method == "POST":
 
                 if not out_channel.get_me()["username"] == self.verify:
-                    logger.debug("Invalid access token, check it " "matches Telegram")
+                    logger.debug("Invalid access token, check it matches Telegram")
                     return response.text("failed")
 
                 update = Update.de_json(request.json, out_channel)
@@ -155,7 +155,7 @@ class TelegramInput(InputChannel):
                     if self._is_user_message(msg):
                         text = msg.text.replace("/bot", "")
                     elif self._is_location(msg):
-                        text = '{{"lng":{0}, "lat":{1}}}' "".format(
+                        text = '{{"lng":{0}, "lat":{1}}}'.format(
                             msg.location.longitude, msg.location.latitude
                         )
                     else:
@@ -184,7 +184,7 @@ class TelegramInput(InputChannel):
                         )
                 except Exception as e:
                     logger.error(
-                        "Exception when trying to handle " "message.{0}".format(e)
+                        "Exception when trying to handle message.{0}".format(e)
                     )
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:

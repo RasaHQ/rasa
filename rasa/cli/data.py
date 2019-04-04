@@ -67,14 +67,14 @@ def _add_split_args(parser: argparse.ArgumentParser) -> None:
         "--training_fraction",
         type=float,
         default=0.8,
-        help="Percentage of the data which should be the " "training data",
+        help="Percentage of the data which should be the training data",
     )
     parser.add_argument(
         "-o",
         "--out",
         type=str,
         default="train_test_split",
-        help="Directory where the split files should be " "stored",
+        help="Directory where the split files should be stored",
     )
 
 

@@ -30,12 +30,12 @@ def start_core(platform_token):
     _endpoints = AvailableEndpoints(
         # TODO: make endpoints more configurable, esp ports
         model=EndpointConfig(
-            "http://localhost:5002" "/api/projects/default/models/tags/production",
+            "http://localhost:5002/api/projects/default/models/tags/production",
             token=platform_token,
             wait_time_between_pulls=1,
         ),
         event_broker=EndpointConfig(**{"type": "file"}),
-        nlg=EndpointConfig("http://localhost:5002" "/api/nlg", token=platform_token),
+        nlg=EndpointConfig("http://localhost:5002/api/nlg", token=platform_token),
     )
 
     serve_application(

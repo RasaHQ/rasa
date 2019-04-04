@@ -76,7 +76,7 @@ def _load_and_set_updated_model(
     """Load the persisted model into memory and set the model on the agent."""
 
     logger.debug(
-        "Found new model with fingerprint {}. Loading..." "".format(fingerprint)
+        "Found new model with fingerprint {}. Loading...".format(fingerprint)
     )
 
     stack_model_directory = _get_stack_model_directory(model_directory)
@@ -121,7 +121,7 @@ async def _update_model_from_server(
     if new_model_fingerprint:
         _load_and_set_updated_model(agent, model_directory, new_model_fingerprint)
     else:
-        logger.debug("No new model found at " "URL {}".format(model_server.url))
+        logger.debug("No new model found at URL {}".format(model_server.url))
 
 
 async def _pull_model_and_fingerprint(
@@ -134,7 +134,7 @@ async def _pull_model_and_fingerprint(
 
     headers = {"If-None-Match": fingerprint}
 
-    logger.debug("Requesting model from server {}..." "".format(model_server.url))
+    logger.debug("Requesting model from server {}...".format(model_server.url))
 
     async with model_server.session() as session:
         try:
@@ -172,7 +172,7 @@ async def _pull_model_and_fingerprint(
 
                 utils.unarchive(await resp.read(), model_directory)
                 logger.debug(
-                    "Unzipped model to '{}'" "".format(os.path.abspath(model_directory))
+                    "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )
 
                 # get the new fingerprint
@@ -357,7 +357,7 @@ class Agent(object):
         lock = self.conversations_in_processing.get(message.sender_id)
         if not lock:
             logger.debug(
-                "created a new lock for conversation '{}'" "".format(message.sender_id)
+                "created a new lock for conversation '{}'".format(message.sender_id)
             )
             lock = LockCounter()
             self.conversations_in_processing[message.sender_id] = lock
@@ -480,7 +480,7 @@ class Agent(object):
     ) -> None:
 
         if not self.is_ready():
-            raise AgentNotReady("Can't continue training without a policy " "ensemble.")
+            raise AgentNotReady("Can't continue training without a policy ensemble.")
 
         self.policy_ensemble.continue_training(trackers, self.domain, **kwargs)
         self._set_fingerprint()
@@ -681,7 +681,7 @@ class Agent(object):
         self.domain.persist(os.path.join(model_path, "domain.yml"))
         self.domain.persist_specification(model_path)
 
-        logger.info("Persisted model to '{}'" "".format(os.path.abspath(model_path)))
+        logger.info("Persisted model to '{}'".format(os.path.abspath(model_path)))
 
     async def visualize(
         self,

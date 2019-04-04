@@ -71,7 +71,7 @@ class Metadata(object):
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
             raise InvalidProjectError(
-                "Failed to load model metadata " "from '{}'. {}".format(abspath, e)
+                "Failed to load model metadata from '{}'. {}".format(abspath, e)
             )
 
     def __init__(self, metadata: Dict[Text, Any], model_dir: Optional[Text]):
@@ -189,7 +189,7 @@ class Trainer(object):
         working_data = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            logger.info("Starting to train component {}" "".format(component.name))
+            logger.info("Starting to train component {}".format(component.name))
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
@@ -247,7 +247,7 @@ class Trainer(object):
         if persistor is not None:
             persistor.persist(dir_name, model_name, project_name)
         logger.info(
-            "Successfully saved model into " "'{}'".format(os.path.abspath(dir_name))
+            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
         )
         return dir_name
 

@@ -269,7 +269,7 @@ class StoryStep(object):
                         self._store_bot_strings(s, FORM_PREFIX)
 
             else:
-                raise Exception("Unexpected element in story step: " "{}".format(s))
+                raise Exception("Unexpected element in story step: {}".format(s))
 
         if (
             not self.end_checkpoints

@@ -412,7 +412,7 @@ class EmbeddingPolicy(Policy):
                 units=layer_size,
                 activation=tf.nn.relu,
                 kernel_regularizer=reg,
-                name="hidden_layer_{}_{}" "".format(layer_name_suffix, i),
+                name="hidden_layer_{}_{}".format(layer_name_suffix, i),
                 reuse=tf.AUTO_REUSE,
             )
             x = tf.layers.dropout(x, rate=droprate, training=self._is_training)
@@ -427,7 +427,7 @@ class EmbeddingPolicy(Policy):
             units=self.embed_dim,
             activation=None,
             kernel_regularizer=reg,
-            name="embed_layer_{}" "".format(layer_name_suffix),
+            name="embed_layer_{}".format(layer_name_suffix),
             reuse=tf.AUTO_REUSE,
         )
         return embed_x

@@ -234,7 +234,7 @@ class UserUttered(Event):
             )
 
     def __str__(self):
-        return "UserUttered(text: {}, intent: {}, " "entities: {})".format(
+        return "UserUttered(text: {}, intent: {}, entities: {})".format(
             self.text, self.intent, self.entities
         )
 
@@ -323,7 +323,7 @@ class BotUttered(Event):
             )
 
     def __str__(self):
-        return "BotUttered(text: {}, data: {})" "".format(
+        return "BotUttered(text: {}, data: {})".format(
             self.text, json.dumps(self.data, indent=2)
         )
 
@@ -791,7 +791,7 @@ class ActionExecuted(Event):
         super(ActionExecuted, self).__init__(timestamp)
 
     def __str__(self):
-        return "ActionExecuted(action: {}, policy: {}, confidence: {})" "".format(
+        return "ActionExecuted(action: {}, policy: {}, confidence: {})".format(
             self.action_name, self.policy, self.confidence
         )
 
@@ -892,7 +892,7 @@ class AgentUttered(Event):
                 parameters.get("timestamp"),
             )
         except KeyError as e:
-            raise ValueError("Failed to parse agent uttered event. " "{}".format(e))
+            raise ValueError("Failed to parse agent uttered event. {}".format(e))
 
 
 class Form(Event):

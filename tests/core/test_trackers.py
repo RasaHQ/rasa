@@ -143,7 +143,7 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent):
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
-    expected = "action_listen;" "greet;utter_greet;action_listen;" "greet;action_listen"
+    expected = "action_listen;greet;utter_greet;action_listen;greet;action_listen"
     assert (
         ";".join([e.as_story_string() for e in tracker.events if e.as_story_string()])
         == expected

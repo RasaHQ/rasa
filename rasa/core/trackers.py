@@ -411,7 +411,7 @@ class DialogueStateTracker(object):
         """Modify the state of the tracker according to an ``Event``. """
         if not isinstance(event, Event):  # pragma: no cover
             raise ValueError(
-                "event to log must be an instance " "of a subclass of Event."
+                "event to log must be an instance of a subclass of Event."
             )
 
         self.events.append(event)

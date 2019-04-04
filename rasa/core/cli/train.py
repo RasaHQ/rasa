@@ -32,7 +32,7 @@ def add_interactive_args(parser):
         "--skip_visualization",
         default=False,
         action="store_true",
-        help="disables plotting the visualization during " "interactive learning",
+        help="disables plotting the visualization during interactive learning",
     )
     parser.add_argument(
         "--finetune",

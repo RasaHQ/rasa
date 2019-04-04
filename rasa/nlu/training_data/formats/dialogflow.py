@@ -39,7 +39,7 @@ class DialogflowReader(TrainingDataReader):
 
         if not examples_js:
             logger.warning(
-                "No training examples found for dialogflow file {}!" "".format(fn)
+                "No training examples found for dialogflow file {}!".format(fn)
             )
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:

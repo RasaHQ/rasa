@@ -79,7 +79,7 @@ async def load_data_from_endpoint(
 
         return training_data
     except Exception as e:
-        logger.warning("Could not retrieve training data " "from URL:\n{}".format(e))
+        logger.warning("Could not retrieve training data from URL:\n{}".format(e))
 
 
 def _reader_factory(fformat: Text) -> Optional["TrainingDataReader"]:

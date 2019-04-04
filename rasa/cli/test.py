@@ -124,7 +124,7 @@ def _add_nlu_arguments(
         nargs="?",
         const="reports",
         default=False,
-        help="output path to save the intent/entity" "metrics report",
+        help="output path to save the intent/entity metrics report",
     )
 
     parser.add_argument(
@@ -194,7 +194,7 @@ def test_nlu(args: argparse.Namespace, model_path: Optional[Text] = None) -> Non
     if model_path:
         test_nlu(nlu_data=nlu_data, **vars(args))
     else:
-        print ("No model specified. Model will be trained using cross " "validation.")
+        print ("No model specified. Model will be trained using cross validation.")
         config = get_validated_path(args.config, "config", DEFAULT_CONFIG_PATH)
 
         test_nlu_with_cross_validation(config, nlu_data, args.folds)

@@ -59,7 +59,7 @@ class NGramFeaturizer(Featurizer):
 
         start = time.time()
         self.train_on_sentences(training_data.intent_examples)
-        logger.debug("Ngram collection took {} seconds" "".format(time.time() - start))
+        logger.debug("Ngram collection took {} seconds".format(time.time() - start))
 
         for example in training_data.training_examples:
             updated = self._text_features_with_ngrams(example, self.best_num_ngrams)
@@ -397,12 +397,12 @@ class NGramFeaturizer(Featurizer):
                 )
                 scores.append(score)
                 logger.debug(
-                    "Evaluating usage of {} ngrams. " "Score: {}".format(n, score)
+                    "Evaluating usage of {} ngrams. Score: {}".format(n, score)
                 )
 
             n_top = num_ngrams[np.argmax(scores)]
             logger.info(
-                "Best score with {} ngrams: " "{}".format(n_top, np.max(scores))
+                "Best score with {} ngrams: {}".format(n_top, np.max(scores))
             )
             return n_top
         else:

@@ -578,7 +578,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert "greet" == tracker.latest_message.parse_data["intent"]["name"]
         assert tracker.export_stories() == (
-            "## sender\n" "* greet\n" "    - utter_hello\n" "* greet\n"
+            "## sender\n* greet\n    - utter_hello\n* greet\n"
         )
 
     def test_ask_rephrase(self, trained_policy, default_domain):
@@ -694,7 +694,7 @@ class TestTwoStageFallbackPolicy(PolicyTestCollection):
 
         assert "bye" == tracker.latest_message.parse_data["intent"]["name"]
         assert tracker.export_stories() == (
-            "## sender\n" "* greet\n" "    - utter_hello\n" "* bye\n"
+            "## sender\n* greet\n    - utter_hello\n* bye\n"
         )
 
     def test_unknown_instead_affirmation(self, trained_policy, default_domain):

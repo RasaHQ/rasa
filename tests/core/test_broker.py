@@ -15,7 +15,7 @@ TEST_EVENTS = [
 
 def test_pika_broker_from_config():
     cfg = read_endpoint_config(
-        "data/test_endpoints/event_brokers/" "pika_endpoint.yml", "event_broker"
+        "data/test_endpoints/event_brokers/pika_endpoint.yml", "event_broker"
     )
     actual = broker.from_endpoint_config(cfg)
 
@@ -35,7 +35,7 @@ def test_no_broker_in_config():
 
 def test_file_broker_from_config():
     cfg = read_endpoint_config(
-        "data/test_endpoints/event_brokers/" "file_endpoint.yml", "event_broker"
+        "data/test_endpoints/event_brokers/file_endpoint.yml", "event_broker"
     )
     actual = broker.from_endpoint_config(cfg)
 
@@ -93,7 +93,7 @@ def test_load_non_existent_custom_broker_name():
 
 
 def test_kafka_broker_from_config():
-    endpoints_path = "data/test_endpoints/event_brokers/" "kafka_plaintext_endpoint.yml"
+    endpoints_path = "data/test_endpoints/event_brokers/kafka_plaintext_endpoint.yml"
     cfg = read_endpoint_config(endpoints_path, "event_broker")
 
     actual = KafkaProducer.from_endpoint_config(cfg)

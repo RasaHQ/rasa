@@ -60,7 +60,7 @@ class Policy(object):
             key: kwargs.get(key) for key in kwargs.keys() if not params.get(key)
         }
         logger.debug(
-            "Parameters ignored by `model.fit(...)`: {}" "".format(ignored_params)
+            "Parameters ignored by `model.fit(...)`: {}".format(ignored_params)
         )
         return params
 
@@ -94,7 +94,7 @@ class Policy(object):
     ) -> None:
         """Trains the policy on given training trackers."""
 
-        raise NotImplementedError("Policy must have the capacity " "to train.")
+        raise NotImplementedError("Policy must have the capacity to train.")
 
     def _training_data_for_continue_training(
         self,
@@ -141,17 +141,17 @@ class Policy(object):
 
         Returns the list of probabilities for the next actions"""
 
-        raise NotImplementedError("Policy must have the capacity " "to predict.")
+        raise NotImplementedError("Policy must have the capacity to predict.")
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
-        raise NotImplementedError("Policy must have the capacity " "to persist itself.")
+        raise NotImplementedError("Policy must have the capacity to persist itself.")
 
     @classmethod
     def load(cls, path: Text) -> "Policy":
         """Loads a policy from the storage.
             Needs to load its featurizer"""
-        raise NotImplementedError("Policy must have the capacity " "to load itself.")
+        raise NotImplementedError("Policy must have the capacity to load itself.")
 
 
 def confidence_scores_for(action_name, value, domain):

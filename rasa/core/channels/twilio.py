@@ -44,7 +44,7 @@ class TwilioOutput(Client, OutputChannel):
             self.send_retry = 0
 
         if not message and self.send_retry == self.max_retry:
-            logger.error("Failed to send message. Max number of " "retires exceeded.")
+            logger.error("Failed to send message. Max number of retires exceeded.")
 
         return message
 
@@ -100,7 +100,7 @@ class TwilioInput(InputChannel):
                     )
                 except Exception as e:
                     logger.error(
-                        "Exception when trying to handle " "message.{0}".format(e)
+                        "Exception when trying to handle message.{0}".format(e)
                     )
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:

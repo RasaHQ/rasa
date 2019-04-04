@@ -110,7 +110,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         try:
             payload = self._payload(text, reference_time)
             headers = {
-                "Content-Type": "application/x-www-form-urlencoded; " "charset=UTF-8"
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
             response = requests.post(
                 self._url() + "/parse", data=payload, headers=headers

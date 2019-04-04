@@ -20,7 +20,7 @@ def add_run_arguments(parser):
         "--cors",
         nargs="*",
         type=str,
-        help="enable CORS for the passed origin. " "Use * to whitelist all origins",
+        help="enable CORS for the passed origin. Use * to whitelist all origins",
     )
     server_arguments.add_argument(
         "--enable_api",
@@ -63,5 +63,5 @@ def add_run_arguments(parser):
         "--jwt_method",
         type=str,
         default="HS256",
-        help="Method used for the signature of the JWT authentication " "payload.",
+        help="Method used for the signature of the JWT authentication payload.",
     )

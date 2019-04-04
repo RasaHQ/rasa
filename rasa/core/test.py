@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 StoryEvalution = namedtuple(
     "StoryEvaluation",
-    "evaluation_store " "failed_stories " "action_list " "in_training_data_fraction",
+    "evaluation_store failed_stories action_list in_training_data_fraction",
 )
 
 
@@ -37,7 +37,7 @@ def create_argument_parser():
     subparsers = parser.add_subparsers(help="mode", dest="mode")
     subparsers.add_parser(
         "default",
-        help="default mode: evaluate a dialogue" " model",
+        help="default mode: evaluate a dialogue model",
         parents=[parent_parser],
     )
     subparsers.add_parser(
@@ -201,7 +201,7 @@ class WronglyClassifiedUserUtterance(UserUttered):
         predicted_message = md_format_message(
             self.text, self.predicted_intent, self.predicted_entities
         )
-        return ("{}: {}   <!-- predicted: {}: {} -->" "").format(
+        return ("{}: {}   <!-- predicted: {}: {} -->").format(
             self.intent.get("name"),
             correct_message,
             self.predicted_intent,
@@ -432,7 +432,7 @@ def collect_story_predictions(
     correct_dialogues = []
     num_stories = len(completed_trackers)
 
-    logger.info("Evaluating {} stories\n" "Progress:".format(num_stories))
+    logger.info("Evaluating {} stories\nProgress:".format(num_stories))
 
     action_list = []
 
@@ -566,12 +566,12 @@ def log_evaluation_table(
     """Log the sklearn evaluation metrics."""
     logger.info("Evaluation Results on {} level:".format(name))
     logger.info(
-        "\tCorrect:          {} / {}" "".format(int(len(golds) * accuracy), len(golds))
+        "\tCorrect:          {} / {}".format(int(len(golds) * accuracy), len(golds))
     )
     logger.info("\tF1-Score:         {:.3f}".format(f1))
     logger.info("\tPrecision:        {:.3f}".format(precision))
     logger.info("\tAccuracy:         {:.3f}".format(accuracy))
-    logger.info("\tIn-data fraction: {:.3g}" "".format(in_training_data_fraction))
+    logger.info("\tIn-data fraction: {:.3g}".format(in_training_data_fraction))
 
     if include_report:
         logger.info("\tClassification report: \n{}".format(report))
@@ -712,7 +712,7 @@ def main():
 
     if not cmdline_arguments.core:
         raise ValueError(
-            "you must provide a core model directory to evaluate " "using -d / --core"
+            "you must provide a core model directory to evaluate using -d / --core"
         )
     if cmdline_arguments.mode == "default":
 

@@ -114,7 +114,7 @@ class CRFEntityExtractor(EntityExtractor):
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
             raise ValueError(
-                "Need an odd number of crf feature " "lists to have a center word."
+                "Need an odd number of crf feature lists to have a center word."
             )
 
     @classmethod
@@ -303,7 +303,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         if len(tokens) != len(entities):
             raise Exception(
-                "Inconsistency in amount of tokens " "between crfsuite and message"
+                "Inconsistency in amount of tokens between crfsuite and message"
             )
 
         if self.component_config["BILOU_flag"]:

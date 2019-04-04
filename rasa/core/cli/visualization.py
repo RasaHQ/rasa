@@ -11,7 +11,7 @@ def add_visualization_arguments(parser):
         "--max_history",
         default=2,
         type=int,
-        help="max history to consider when merging " "paths in the output graph",
+        help="max history to consider when merging paths in the output graph",
     )
     parser.add_argument(
         "-nlu",

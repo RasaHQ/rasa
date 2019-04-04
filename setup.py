@@ -133,5 +133,5 @@ setup(
 )
 
 print ("\nWelcome to Rasa!")
-print ("If any questions please visit documentation " "page https://rasa.com/docs")
+print ("If any questions please visit documentation page https://rasa.com/docs")
 print ("or join the community discussions on https://forum.rasa.com")

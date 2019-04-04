@@ -34,7 +34,7 @@ def create_argument_parser():
     )
     compare_parser = subparsers.add_parser(
         "compare",
-        help="train multiple dialogue models to compare " "policies",
+        help="train multiple dialogue models to compare policies",
         parents=[parent_parser],
     )
     interactive_parser = subparsers.add_parser(
@@ -137,7 +137,7 @@ async def train_comparison_models(
 
                 if len(policies) > 1:
                     raise ValueError(
-                        "You can only specify one policy per " "model for comparison"
+                        "You can only specify one policy per model for comparison"
                     )
 
                 policy_name = type(policies[0]).__name__
@@ -216,7 +216,7 @@ def do_interactive_learning(cmdline_args, stories, additional_arguments=None):
     from rasa.core.training import interactive
 
     if cmdline_args.core and cmdline_args.finetune:
-        raise ValueError("--core can only be used without " "--finetune flag.")
+        raise ValueError("--core can only be used without --finetune flag.")
 
     interactive.run_interactive_learning(
         stories,

@@ -53,7 +53,7 @@ class JiebaTokenizer(Tokenizer, Component):
 
         jieba_userdicts = glob.glob("{}/*".format(path))
         for jieba_userdict in jieba_userdicts:
-            logger.info("Loading Jieba User Dictionary at " "{}".format(jieba_userdict))
+            logger.info("Loading Jieba User Dictionary at {}".format(jieba_userdict))
             jieba.load_userdict(jieba_userdict)
 
     def train(

@@ -15,7 +15,7 @@ def test_no_components_with_same_name(component_class):
     names = [cls.name for cls in registry.component_classes]
     assert (
         names.count(component_class.name) == 1
-    ), "There is more than one component named {}" "".format(component_class.name)
+    ), "There is more than one component named {}".format(component_class.name)
 
 
 @pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates)

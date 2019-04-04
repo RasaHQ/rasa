@@ -98,7 +98,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
         if not self.num_features:
             raise Exception(
-                "BinarySingleStateFeaturizer " "was not prepared " "before encoding."
+                "BinarySingleStateFeaturizer was not prepared before encoding."
             )
 
         if state is None or None in state:
@@ -370,7 +370,7 @@ class TrackerFeaturizer(object):
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions"""
         raise NotImplementedError(
-            "Featurizer must have the capacity to " "encode trackers to feature vectors"
+            "Featurizer must have the capacity to encode trackers to feature vectors"
         )
 
     def featurize_trackers(
@@ -394,7 +394,7 @@ class TrackerFeaturizer(object):
     ) -> List[List[Dict[Text, float]]]:
         """Transforms list of trackers to lists of states for prediction"""
         raise NotImplementedError(
-            "Featurizer must have the capacity to " "create feature vector"
+            "Featurizer must have the capacity to create feature vector"
         )
 
     # noinspection PyPep8Naming
@@ -506,7 +506,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_actions.append(actions)
 
         self.max_len = self._calculate_max_len(trackers_as_actions)
-        logger.debug("The longest dialogue has {} actions." "".format(self.max_len))
+        logger.debug("The longest dialogue has {} actions.".format(self.max_len))
 
         return trackers_as_states, trackers_as_actions
 
@@ -621,7 +621,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         )
                     idx += 1
 
-        logger.debug("Created {} action examples." "".format(len(trackers_as_actions)))
+        logger.debug("Created {} action examples.".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 

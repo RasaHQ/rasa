@@ -31,7 +31,7 @@ def _add_interactive_arguments(parser: argparse.ArgumentParser):
         "--skip_visualization",
         default=False,
         action="store_true",
-        help="Disables plotting the visualization during " "interactive learning",
+        help="Disables plotting the visualization during interactive learning",
     )
 
 

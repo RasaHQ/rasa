@@ -53,7 +53,7 @@ def cancel_cause_not_found(
 
     default_clause = ""
     if default:
-        default_clause = "use the default location ('{}') or " "".format(default)
+        default_clause = "use the default location ('{}') or ".format(default)
     print_error(
         "The path '{}' does not exist. Please make sure to {}specify it"
         " with '--{}'.".format(current, default_clause, parameter)

@@ -75,7 +75,7 @@ class EntitySynonymMapper(EntityExtractor):
         else:
             synonyms = None
             warnings.warn(
-                "Failed to load synonyms file from '{}'" "".format(entity_synonyms_file)
+                "Failed to load synonyms file from '{}'".format(entity_synonyms_file)
             )
         return cls(meta, synonyms)
 

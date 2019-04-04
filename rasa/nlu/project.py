@@ -98,7 +98,7 @@ async def _pull_model_and_fingerprint(
     <filename> header containing the model name."""
     header = {"If-None-Match": fingerprint}
     try:
-        logger.debug("Requesting model from server {}..." "".format(model_server.url))
+        logger.debug("Requesting model from server {}...".format(model_server.url))
         response = await model_server.request(
             method="GET", headers=header, timeout=DEFAULT_REQUEST_TIMEOUT
         )
@@ -134,7 +134,7 @@ async def _pull_model_and_fingerprint(
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
     zip_ref.extractall(model_directory)
-    logger.debug("Unzipped model to {}" "".format(os.path.abspath(model_directory)))
+    logger.debug("Unzipped model to {}".format(os.path.abspath(model_directory)))
 
     # get the new fingerprint and filename
     return response.headers.get("ETag"), response.headers.get("filename")
@@ -441,7 +441,7 @@ class Project(object):
                 return []
         except Exception as e:
             logger.warning(
-                "Failed to list models of project {}. " "{}".format(self._project, e)
+                "Failed to list models of project {}. {}".format(self._project, e)
             )
             return []
 
@@ -456,7 +456,7 @@ class Project(object):
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
             logger.warning(
-                "Using default interpreter, couldn't fetch " "model: {}".format(e)
+                "Using default interpreter, couldn't fetch model: {}".format(e)
             )
             raise  # re-raise this exception because nothing we can do now
 

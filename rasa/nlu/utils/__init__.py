@@ -22,7 +22,7 @@ def add_logging_option_arguments(parser, default=logging.WARNING):
     # arguments for logging configuration
     parser.add_argument(
         "--debug",
-        help="Print lots of debugging statements. " "Sets logging level to DEBUG",
+        help="Print lots of debugging statements. Sets logging level to DEBUG",
         action="store_const",
         dest="loglevel",
         const=logging.DEBUG,
@@ -94,7 +94,7 @@ def list_directory(path: Text) -> List[Text]:
         return results
     else:
         raise ValueError(
-            "Could not locate the resource '{}'." "".format(os.path.abspath(path))
+            "Could not locate the resource '{}'.".format(os.path.abspath(path))
         )
 
 

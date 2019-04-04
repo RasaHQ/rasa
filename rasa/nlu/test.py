@@ -38,7 +38,7 @@ entity_processors = {"EntitySynonymMapper"}
 CVEvaluationResult = namedtuple("Results", "train test")
 
 IntentEvaluationResult = namedtuple(
-    "IntentEvaluationResult", "target " "prediction " "message " "confidence"
+    "IntentEvaluationResult", "target prediction message confidence"
 )
 
 
@@ -92,7 +92,7 @@ def _add_arguments(parser):
         nargs="?",
         const="reports",
         default=False,
-        help="output path to save the intent/entity" "metrics report",
+        help="output path to save the intent/entity metrics report",
     )
 
     parser.add_argument(
@@ -292,7 +292,7 @@ def collect_nlu_successes(intent_results, successes_filename):
             "Model prediction successes saved to {}.".format(successes_filename)
         )
         logger.debug(
-            "\n\nSuccessfully predicted the following" "intents: \n{}".format(successes)
+            "\n\nSuccessfully predicted the following intents: \n{}".format(successes)
         )
     else:
         logger.info("Your model made no successful predictions")
@@ -371,7 +371,7 @@ def evaluate_intents(
         report_filename = os.path.join(report_folder, "intent_report.json")
 
         save_json(report, report_filename)
-        logger.info("Classification report saved to {}." "".format(report_filename))
+        logger.info("Classification report saved to {}.".format(report_filename))
 
     else:
         report, precision, f1, accuracy = get_evaluation_metrics(targets, predictions)

@@ -291,7 +291,7 @@ class DataRouter(object):
                     )
                 except Exception as e:
                     raise InvalidProjectError(
-                        "Unable to load project '{}'. " "Error: {}".format(project, e)
+                        "Unable to load project '{}'. Error: {}".format(project, e)
                     )
 
         time = data.get("time")
@@ -402,7 +402,7 @@ class DataRouter(object):
 
         if project not in self.project_store:
             raise InvalidProjectError(
-                "Project {} could not " "be found".format(project)
+                "Project {} could not be found".format(project)
             )
 
         model_name = self.project_store[project]._dynamic_load_model(model)
@@ -430,7 +430,7 @@ class DataRouter(object):
             raise InvalidProjectError("No project specified")
         elif project not in self.project_store:
             raise InvalidProjectError(
-                "Project {} could not " "be found".format(project)
+                "Project {} could not be found".format(project)
             )
 
         try:
@@ -438,5 +438,5 @@ class DataRouter(object):
             return unloaded_model
         except KeyError:
             raise InvalidProjectError(
-                "Failed to unload model {} " "for project {}.".format(model, project)
+                "Failed to unload model {} for project {}.".format(model, project)
             )

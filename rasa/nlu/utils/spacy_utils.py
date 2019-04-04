@@ -58,7 +58,7 @@ class SpacyNLP(Component):
             component_config["model"] = config.language
 
         logger.info(
-            "Trying to load spacy model with " "name '{}'".format(spacy_model_name)
+            "Trying to load spacy model with name '{}'".format(spacy_model_name)
         )
 
         nlp = spacy.load(spacy_model_name, disable=["parser"])

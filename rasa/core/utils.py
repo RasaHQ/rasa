@@ -65,7 +65,7 @@ def class_from_module_path(
             return getattr(m, module_path)
         else:
             raise ImportError(
-                "Cannot retrieve class from path {}." "".format(module_path)
+                "Cannot retrieve class from path {}.".format(module_path)
             )
 
 

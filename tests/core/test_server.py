@@ -145,7 +145,7 @@ def test_pushing_event(app, event):
     assert response.json is not None
     assert response.status == 200
 
-    _, tracker_response = app.get("/conversations/{}/tracker" "".format(cid))
+    _, tracker_response = app.get("/conversations/{}/tracker".format(cid))
     tracker = tracker_response.json
     assert tracker is not None
     assert len(tracker.get("events")) == 6

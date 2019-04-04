@@ -79,7 +79,7 @@ async def train_async(
         train_nlu(config, nlu_data_directory, output, train_path)
     else:
         print (
-            "NLU data / configuration did not change. " "No need to retrain NLU model."
+            "NLU data / configuration did not change. No need to retrain NLU model."
         )
 
     if retrain_core or retrain_nlu:
@@ -144,7 +144,7 @@ async def train_core_async(
         new_fingerprint = model.model_fingerprint(config, domain, stories=stories)
         model.create_package_rasa(train_path, output_path, new_fingerprint)
         print_success(
-            "Your Rasa Core model is trained and saved at '{}'." "".format(output_path)
+            "Your Rasa Core model is trained and saved at '{}'.".format(output_path)
         )
 
     return core_model
@@ -180,7 +180,7 @@ def train_nlu(
         new_fingerprint = model.model_fingerprint(config, nlu_data=nlu_data)
         model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success(
-            "Your Rasa NLU model is trained and saved at '{}'." "".format(output_path)
+            "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
         )
 
     return nlu_model

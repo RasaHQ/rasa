@@ -40,7 +40,7 @@ class Persistor(object):
 
         if not os.path.isdir(model_directory):
             raise ValueError(
-                "Target directory '{}' not " "found.".format(model_directory)
+                "Target directory '{}' not found.".format(model_directory)
             )
 
         file_key, tar_path = self._compress(model_directory, model_name, project)
@@ -147,7 +147,7 @@ class AWSPersistor(Persistor):
             ]
         except Exception as e:
             logger.warning(
-                "Failed to list models for project {} in " "AWS. {}".format(project, e)
+                "Failed to list models for project {} in AWS. {}".format(project, e)
             )
             return []
 
@@ -231,7 +231,7 @@ class GCSPersistor(Persistor):
             return list(projects_set)
         except Exception as e:
             logger.warning(
-                "Failed to list projects in " "google cloud storage. {}".format(e)
+                "Failed to list projects in google cloud storage. {}".format(e)
             )
             return []
 
@@ -309,7 +309,7 @@ class AzurePersistor(Persistor):
             }
             return list(projects_set)
         except Exception as e:
-            logger.warning("Failed to list projects in " "Azure. {}".format(e))
+            logger.warning("Failed to list projects in Azure. {}".format(e))
             return []
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:

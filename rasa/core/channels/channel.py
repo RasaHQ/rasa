@@ -184,7 +184,7 @@ class OutputChannel(object):
         """Send a message through this channel."""
 
         raise NotImplementedError(
-            "Output channel needs to implement a send " "message for simple texts."
+            "Output channel needs to implement a send message for simple texts."
         )
 
     async def send_image_url(self, recipient_id: Text, image_url: Text) -> None:

@@ -350,7 +350,7 @@ class RemoteAction(Action):
 
         try:
             logger.debug(
-                "Calling action endpoint to run action '{}'." "".format(self.name())
+                "Calling action endpoint to run action '{}'.".format(self.name())
             )
             response = await self.action_endpoint.request(
                 json=json_body, method="post", timeout=DEFAULT_REQUEST_TIMEOUT
@@ -408,7 +408,7 @@ class ActionExecutionRejection(Exception):
 
     def __init__(self, action_name, message=None):
         self.action_name = action_name
-        self.message = message or "Custom action '{}' rejected to run" "".format(
+        self.message = message or "Custom action '{}' rejected to run".format(
             action_name
         )
 

@@ -22,7 +22,7 @@ def policy_from_module_path(module_path: Text) -> Type["Policy"]:
         )
     except ImportError:
         raise ImportError(
-            "Cannot retrieve policy from path '{}'" "".format(module_path)
+            "Cannot retrieve policy from path '{}'".format(module_path)
         )
 
 
@@ -36,5 +36,5 @@ def featurizer_from_module_path(module_path: Text) -> Type["TrackerFeaturizer"]:
         )
     except ImportError:
         raise ImportError(
-            "Cannot retrieve featurizer from path '{}'" "".format(module_path)
+            "Cannot retrieve featurizer from path '{}'".format(module_path)
         )

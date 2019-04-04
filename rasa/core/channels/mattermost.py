@@ -94,7 +94,7 @@ class MattermostInput(InputChannel):
                     await on_new_message(user_msg)
                 except Exception as e:
                     logger.error(
-                        "Exception when trying to handle " "message.{0}".format(e)
+                        "Exception when trying to handle message.{0}".format(e)
                     )
                     logger.debug(e, exc_info=True)
                     pass

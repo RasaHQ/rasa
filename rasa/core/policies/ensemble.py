@@ -89,7 +89,7 @@ class PolicyEnsemble(object):
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
         else:
-            logger.info("Skipped training, because there are no " "training samples.")
+            logger.info("Skipped training, because there are no training samples.")
         self.training_trackers = training_trackers
         self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -209,7 +209,7 @@ class PolicyEnsemble(object):
     def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
         if policy is None:
             raise Exception(
-                "Failed to load policy {}: " "load returned None".format(policy_name)
+                "Failed to load policy {}: load returned None".format(policy_name)
             )
         elif not isinstance(policy, policy_cls):
             raise Exception(
@@ -248,7 +248,7 @@ class PolicyEnsemble(object):
             )
         if len(policies) == 0:
             raise InvalidPolicyConfig(
-                "The policy configuration file has to " "include at least one policy."
+                "The policy configuration file has to include at least one policy."
             )
 
         parsed_policies = []
@@ -391,7 +391,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         if np.sum(result) != 0:
             result = result / np.nansum(result)
 
-        logger.debug("Predicted next action using {}" "".format(best_policy_name))
+        logger.debug("Predicted next action using {}".format(best_policy_name))
         return result, best_policy_name
 
 

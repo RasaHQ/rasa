@@ -93,7 +93,7 @@ class Messenger:
             await self.on_new_message(user_msg)
         except Exception:
             logger.exception(
-                "Exception when trying to handle webhook " "for facebook message."
+                "Exception when trying to handle webhook for facebook message."
             )
             pass
 

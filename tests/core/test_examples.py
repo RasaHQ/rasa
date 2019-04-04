@@ -83,7 +83,7 @@ async def test_formbot_example():
         assert responses[0]["text"] == "what cuisine?"
 
     response = {
-        "error": "Failed to validate slot cuisine with action " "restaurant_form",
+        "error": "Failed to validate slot cuisine with action restaurant_form",
         "action_name": "restaurant_form",
     }
 
@@ -107,6 +107,6 @@ async def test_concertbot_training():
         domain_file="examples/concertbot/domain.yml",
         stories_file="examples/concertbot/data/stories.md",
         model_path="examples/concertbot/models/dialogue",
-        policy_config="examples/concertbot/" "config.yml",
+        policy_config="examples/concertbot/config.yml",
     )
     assert r is not None

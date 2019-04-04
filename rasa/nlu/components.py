@@ -111,7 +111,7 @@ class UnsupportedLanguageError(Exception):
         super(UnsupportedLanguageError, self).__init__(component, language)
 
     def __str__(self) -> Text:
-        return "component {} does not support language {}" "".format(
+        return "component {} does not support language {}".format(
             self.component, self.language
         )
 
@@ -340,7 +340,7 @@ class Component(object, metaclass=ComponentMetaclass):
             for component in self.partial_processing_pipeline:
                 component.process(message, **self.partial_processing_context)
         else:
-            logger.info("Failed to run partial processing due " "to missing pipeline.")
+            logger.info("Failed to run partial processing due to missing pipeline.")
         return message
 
     @classmethod

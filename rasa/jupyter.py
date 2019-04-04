@@ -36,13 +36,13 @@ def chat(
         # HACK: this skips loading the interpreter and directly
         # sets it afterwards
         nlu_interpreter = RasaNLUInterpreter(
-            "skip this and use given " "interpreter", lazy_init=True
+            "skip this and use given interpreter", lazy_init=True
         )
         nlu_interpreter.interpreter = interpreter
         agent.interpreter = interpreter
     else:
         print_error(
-            "You either have to define a model path or an agent and " "an interpreter."
+            "You either have to define a model path or an agent and an interpreter."
         )
 
     print ("Your bot is ready to talk! Type your messages here or send '/stop'.")

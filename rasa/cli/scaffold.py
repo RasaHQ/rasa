@@ -23,7 +23,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
     print_success("Your bot is ready to go!")
     should_train = questionary.confirm(
-        "Do you want me to train an initial " "model for the bot? 💪🏽"
+        "Do you want me to train an initial model for the bot? 💪🏽"
     ).ask()
     if should_train:
         config = os.path.join(path, DEFAULT_CONFIG_PATH)
@@ -48,7 +48,7 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     import questionary
 
     should_run = questionary.confirm(
-        "Do you want to speak to the trained bot " "on the command line? 🤖"
+        "Do you want to speak to the trained bot on the command line? 🤖"
     ).ask()
 
     if should_run:
@@ -96,7 +96,7 @@ def scaffold_path() -> Text:
 
 def print_cancel() -> None:
     print_success(
-        "Ok. Then I stop here. If you need me again, simply type " "'rasa init' 🙋🏽‍♀️"
+        "Ok. Then I stop here. If you need me again, simply type 'rasa init' 🙋🏽‍♀️"
     )
     exit(0)
 
@@ -105,7 +105,7 @@ def _ask_create_path(path: Text) -> None:
     import questionary
 
     should_create = questionary.confirm(
-        "Path '{}' does not exist 🧐. " "Should I create it?" "".format(path)
+        "Path '{}' does not exist 🧐. Should I create it?".format(path)
     ).ask()
     if should_create:
         os.makedirs(path)
@@ -121,7 +121,7 @@ def _ask_overwrite(path: Text) -> None:
     import questionary
 
     overwrite = questionary.confirm(
-        "Directory '{}' is not empty. Continue?" "".format(os.path.abspath(path))
+        "Directory '{}' is not empty. Continue?".format(os.path.abspath(path))
     ).ask()
     if not overwrite:
         print_cancel()

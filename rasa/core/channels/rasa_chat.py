@@ -28,7 +28,7 @@ class RasaChatInput(RestInput):
     async def _check_token(self, token):
         url = "{}/user".format(self.base_url)
         headers = {"Authorization": token}
-        logger.debug("Requesting user information from auth server {}." "".format(url))
+        logger.debug("Requesting user information from auth server {}.".format(url))
 
         async with aiohttp.ClientSession() as session:
             async with session.get(

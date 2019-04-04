@@ -83,7 +83,7 @@ def add_logging_option_arguments(parser):
     logging_arguments.add_argument(
         "-vv",
         "--debug",
-        help="Print lots of debugging statements. " "Sets logging level to DEBUG",
+        help="Print lots of debugging statements. Sets logging level to DEBUG",
         action="store_const",
         dest="loglevel",
         const=logging.DEBUG,

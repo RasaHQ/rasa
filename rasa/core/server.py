@@ -78,7 +78,7 @@ def request_parameters(request):
             return request.json
         except ValueError as e:
             logger.error(
-                "Failed to decode json during respond request. " "Error: {}.".format(e)
+                "Failed to decode json during respond request. Error: {}.".format(e)
             )
             raise
 
@@ -345,7 +345,7 @@ def create_app(
             raise ErrorResponse(
                 400,
                 "InvalidParameter",
-                "Couldn't extract a proper event from the " "request body.",
+                "Couldn't extract a proper event from the request body.",
                 {"parameter": "", "in": "body"},
             )
 
@@ -553,7 +553,7 @@ def create_app(
             raise ErrorResponse(
                 400,
                 "InvalidParameter",
-                "You did not supply a model as part of your " "request.",
+                "You did not supply a model as part of your request.",
                 {"parameter": "model", "in": "body"},
             )
 
@@ -595,7 +595,7 @@ def create_app(
             raise ErrorResponse(
                 400,
                 "FailedEvaluation",
-                "Evaluation could not be created. Error: {}" "".format(e),
+                "Evaluation could not be created. Error: {}".format(e),
             )
 
     @app.post("/intentEvaluation")
@@ -622,7 +622,7 @@ def create_app(
                 return ErrorResponse(
                     400,
                     "FailedIntentEvaluation",
-                    "Evaluation could not be created. " "Error: {}".format(e),
+                    "Evaluation could not be created. Error: {}".format(e),
                 )
         else:
             return ErrorResponse(
@@ -683,7 +683,7 @@ def create_app(
             raise ErrorResponse(
                 400,
                 "TrainingError",
-                "Rasa Stack model could not be trained. " "Error: {}".format(e),
+                "Rasa Stack model could not be trained. Error: {}".format(e),
             )
 
     @app.get("/domain")

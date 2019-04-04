@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class NaturalLanguageInterpreter(object):
     async def parse(self, text, message_id=None):
         raise NotImplementedError(
-            "Interpreter needs to be able to parse " "messages into structured output."
+            "Interpreter needs to be able to parse messages into structured output."
         )
 
     @staticmethod
@@ -143,7 +143,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             return event_name, confidence, entities
         else:
             logger.warning(
-                "Failed to parse intent end entities from " "'{}'. ".format(user_input)
+                "Failed to parse intent end entities from '{}'. ".format(user_input)
             )
             return None, 0.0, []
 
@@ -230,7 +230,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
                         return None
         except Exception:
             logger.exception(
-                "Failed to parse text '{}' using rasa NLU over http. " "".format(text)
+                "Failed to parse text '{}' using rasa NLU over http.".format(text)
             )
             return None
 

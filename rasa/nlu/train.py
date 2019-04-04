@@ -43,7 +43,7 @@ def create_argument_parser():
     group.add_argument(
         "--endpoints",
         default=None,
-        help="EndpointConfig defining the server from which " "pull training data.",
+        help="EndpointConfig defining the server from which pull training data.",
     )
 
     parser.add_argument(

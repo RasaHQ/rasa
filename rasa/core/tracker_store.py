@@ -130,10 +130,10 @@ class InMemoryTrackerStore(TrackerStore):
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         if sender_id in self.store:
-            logger.debug("Recreating tracker for " "id '{}'".format(sender_id))
+            logger.debug("Recreating tracker for id '{}'".format(sender_id))
             return self.deserialise_tracker(sender_id, self.store[sender_id])
         else:
-            logger.debug("Creating a new tracker for " "id '{}'.".format(sender_id))
+            logger.debug("Creating a new tracker for id '{}'.".format(sender_id))
             return None
 
     def keys(self) -> KeysView[Text]:
@@ -305,7 +305,7 @@ class SQLTrackerStore(TrackerStore):
 
         self.Base.metadata.create_all(self.engine)
 
-        logger.debug("Connection to SQL database '{}' " "successful".format(db))
+        logger.debug("Connection to SQL database '{}' successful".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
@@ -322,7 +322,7 @@ class SQLTrackerStore(TrackerStore):
         events = [json.loads(event.data) for event in result]
 
         if self.domain and len(events) > 0:
-            logger.debug("Recreating tracker " "from sender id '{}'".format(sender_id))
+            logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
 
             return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
         else:

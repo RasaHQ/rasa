@@ -218,7 +218,7 @@ class TrainingDataGenerator(object):
         phase = 0  # one phase is one traversal of all story steps.
         min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
         logger.debug(
-            "Number of augmentation rounds is {}" "".format(min_num_aug_phases)
+            "Number of augmentation rounds is {}".format(min_num_aug_phases)
         )
 
         # placeholder to track gluing process of checkpoints
@@ -241,7 +241,7 @@ class TrainingDataGenerator(object):
                     "".format(phase_name, num_active_trackers)
                 )
             else:
-                logger.debug("There are no trackers for {}" "".format(phase_name))
+                logger.debug("There are no trackers for {}".format(phase_name))
                 break
 
             # track unused checkpoints for this phase
@@ -316,7 +316,7 @@ class TrainingDataGenerator(object):
 
             num_finished = len(finished_trackers) + len(story_end_trackers)
             logger.debug(
-                "Finished phase ({} training samples found)." "".format(num_finished)
+                "Finished phase ({} training samples found).".format(num_finished)
             )
 
             # prepare next round
@@ -352,7 +352,7 @@ class TrainingDataGenerator(object):
 
                     logger.debug("Data generation rounds finished.")
                     logger.debug(
-                        "Found {} unused checkpoints" "".format(len(previous_unused))
+                        "Found {} unused checkpoints".format(len(previous_unused))
                     )
                     phase = 0
                 else:
@@ -380,7 +380,7 @@ class TrainingDataGenerator(object):
 
         finished_trackers.extend(story_end_trackers)
         self._issue_unused_checkpoint_notification(previous_unused)
-        logger.debug("Found {} training trackers." "".format(len(finished_trackers)))
+        logger.debug("Found {} training trackers.".format(len(finished_trackers)))
 
         if self.config.augmentation_factor > 0:
             augmented_trackers, original_trackers = [], []
@@ -397,7 +397,7 @@ class TrainingDataGenerator(object):
                 "".format(len(augmented_trackers))
             )
             logger.debug(
-                "There are {} original trackers." "".format(len(original_trackers))
+                "There are {} original trackers.".format(len(original_trackers))
             )
             finished_trackers = original_trackers + augmented_trackers
 

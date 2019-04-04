@@ -118,7 +118,7 @@ class FormPolicy(MemoizationPolicy):
 
         if tracker.active_form.get("name"):
             logger.debug(
-                "There is an active form '{}'" "".format(tracker.active_form["name"])
+                "There is an active form '{}'".format(tracker.active_form["name"])
             )
             if tracker.latest_action_name == ACTION_LISTEN_NAME:
                 # predict form action after user utterance

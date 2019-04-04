@@ -115,7 +115,7 @@ async def send_message(
     return await endpoint.request(
         json=payload,
         method="post",
-        subpath="/conversations/{}/messages" "".format(sender_id),
+        subpath="/conversations/{}/messages".format(sender_id),
     )
 
 
@@ -715,7 +715,7 @@ async def _write_nlu_to_file(
     try:
         previous_examples = load_data(export_nlu_path)
     except Exception as e:
-        logger.exception("An exception occurred while trying to load the " "NLU data.")
+        logger.exception("An exception occurred while trying to load the NLU data.")
 
         export_nlu_path = questionary.text(
             message="Could not load existing NLU data, please "
@@ -1031,7 +1031,7 @@ async def _validate_user_text(
         )
 
     if intent is None:
-        print ("The NLU classification for '{}' returned '{}'" "".format(text, intent))
+        print ("The NLU classification for '{}' returned '{}'".format(text, intent))
         return False
     else:
         question = questionary.confirm(message)
@@ -1217,7 +1217,7 @@ def _print_help(skip_visualization: bool) -> None:
 
     if not skip_visualization:
         visualization_url = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT + 1)
-        visualization_help = "Visualisation at {}/visualization.html." "".format(
+        visualization_help = "Visualisation at {}/visualization.html.".format(
             visualization_url
         )
     else:

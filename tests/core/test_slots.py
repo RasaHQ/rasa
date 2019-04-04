@@ -140,7 +140,7 @@ class TestUnfeaturizedSlot(SlotTestCollection):
         return UnfeaturizedSlot("test")
 
     @pytest.fixture(
-        params=["there is nothing invalid, " "but we need to pass something"]
+        params=["there is nothing invalid, but we need to pass something"]
     )
     def invalid_value(self, request):
         return request.param

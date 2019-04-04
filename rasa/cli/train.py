@@ -65,7 +65,7 @@ def add_joint_parser_arguments(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Force a model training even if the data " "has not changed.",
+        help="Force a model training even if the data has not changed.",
     )
     parser.add_argument(
         "--data",

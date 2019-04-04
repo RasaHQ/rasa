@@ -23,7 +23,7 @@ def add_arguments(parser):
         "--format",
         required=True,
         choices=["json", "md"],
-        help="Output format the training data should be " "converted into.",
+        help="Output format the training data should be converted into.",
     )
     return parser
 

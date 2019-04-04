@@ -156,7 +156,7 @@ class MemoizationPolicy(Policy):
             trackers_as_actions,
         ) = self.featurizer.training_states_and_actions(training_trackers, domain)
         self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
-        logger.debug("Memorized {} unique examples." "".format(len(self.lookup)))
+        logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
     def continue_training(
         self,
@@ -206,7 +206,7 @@ class MemoizationPolicy(Policy):
         logger.debug("Current tracker state {}".format(states))
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug("There is a memorised next action '{}'" "".format(recalled))
+            logger.debug("There is a memorised next action '{}'".format(recalled))
 
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
