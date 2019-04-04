@@ -11,18 +11,26 @@ from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import (
-    UserUttered, ActionExecuted, Restarted, ActionReverted,
-    UserUtteranceReverted)
-from rasa.core.tracker_store import (InMemoryTrackerStore,
-                                     RedisTrackerStore,
-                                     SQLTrackerStore)
+    UserUttered,
+    ActionExecuted,
+    Restarted,
+    ActionReverted,
+    UserUtteranceReverted,
+)
+from rasa.core.tracker_store import (
+    InMemoryTrackerStore,
+    RedisTrackerStore,
+    SQLTrackerStore,
+)
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from tests.core.conftest import (DEFAULT_STORIES_FILE,
-                                 EXAMPLE_DOMAINS, TEST_DIALOGUES)
+from tests.core.conftest import DEFAULT_STORIES_FILE, EXAMPLE_DOMAINS, TEST_DIALOGUES
 from tests.core.utilities import (
-    tracker_from_dialogue_file, read_dialogue_file,
-    user_uttered, get_tracker)
+    tracker_from_dialogue_file,
+    read_dialogue_file,
+    user_uttered,
+    get_tracker,
+)
 
 domain = Domain.load("examples/moodbot/domain.yml")
 
@@ -30,6 +38,7 @@ domain = Domain.load("examples/moodbot/domain.yml")
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
+
     return utils.enable_async_loop_debugging(next(sanic_loop()))
 
 
@@ -42,16 +51,15 @@ class MockRedisTrackerStore(RedisTrackerStore):
 
 def stores_to_be_tested():
     temp = tempfile.mkdtemp()
-    return [MockRedisTrackerStore(domain),
-            InMemoryTrackerStore(domain),
-            SQLTrackerStore(domain,
-                            db=os.path.join(temp, 'rasa.db'))]
+    return [
+        MockRedisTrackerStore(domain),
+        InMemoryTrackerStore(domain),
+        SQLTrackerStore(domain, db=os.path.join(temp, "rasa.db")),
+    ]
 
 
 def stores_to_be_tested_ids():
-    return ["redis-tracker",
-            "in-memory-tracker",
-            "SQL-tracker"]
+    return ["redis-tracker", "in-memory-tracker", "SQL-tracker"]
 
 
 def test_tracker_duplicate():
@@ -59,9 +67,9 @@ def test_tracker_duplicate():
     dialogue = read_dialogue_file(filename)
     tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
-    num_actions = len([event
-                       for event in dialogue.events
-                       if isinstance(event, ActionExecuted)])
+    num_actions = len(
+        [event for event in dialogue.events if isinstance(event, ActionExecuted)]
+    )
 
     # There is always one duplicated tracker more than we have actions,
     # as the tracker also gets duplicated for the
@@ -69,8 +77,7 @@ def test_tracker_duplicate():
     assert len(list(tracker.generate_all_prior_trackers())) == num_actions + 1
 
 
-@pytest.mark.parametrize("store", stores_to_be_tested(),
-                         ids=stores_to_be_tested_ids())
+@pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
 def test_tracker_store_storage_and_retrieval(store):
     tracker = store.get_or_create_tracker("some-id")
     # the retrieved tracker should be empty
@@ -97,8 +104,7 @@ def test_tracker_store_storage_and_retrieval(store):
     assert len(other_tracker.events) == 1
 
 
-@pytest.mark.parametrize("store", stores_to_be_tested(),
-                         ids=stores_to_be_tested_ids())
+@pytest.mark.parametrize("store", stores_to_be_tested(), ids=stores_to_be_tested_ids())
 @pytest.mark.parametrize("pair", zip(TEST_DIALOGUES, EXAMPLE_DOMAINS))
 def test_tracker_store(store, pair):
     filename, domainpath = pair
@@ -111,7 +117,8 @@ def test_tracker_store(store, pair):
 
 async def test_tracker_write_to_story(tmpdir, moodbot_domain):
     tracker = tracker_from_dialogue_file(
-        "data/test_dialogues/moodbot.json", moodbot_domain)
+        "data/test_dialogues/moodbot.json", moodbot_domain
+    )
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
     trackers = await training.load_data(
@@ -119,14 +126,13 @@ async def test_tracker_write_to_story(tmpdir, moodbot_domain):
         moodbot_domain,
         use_story_concatenation=False,
         tracker_limit=1000,
-        remove_duplicates=False
+        remove_duplicates=False,
     )
     assert len(trackers) == 1
     recovered = trackers[0]
     assert len(recovered.events) == 11
     assert recovered.events[4].type_name == "user"
-    assert recovered.events[4].intent == {'confidence': 1.0,
-                                          'name': 'mood_unhappy'}
+    assert recovered.events[4].intent == {"confidence": 1.0, "name": "mood_unhappy"}
 
 
 async def test_tracker_state_regression_without_bot_utterance(default_agent):
@@ -137,11 +143,11 @@ async def test_tracker_state_regression_without_bot_utterance(default_agent):
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
-    expected = ("action_listen;"
-                "greet;utter_greet;action_listen;"
-                "greet;action_listen")
-    assert ";".join([e.as_story_string() for e in
-                     tracker.events if e.as_story_string()]) == expected
+    expected = "action_listen;" "greet;utter_greet;action_listen;" "greet;action_listen"
+    assert (
+        ";".join([e.as_story_string() for e in tracker.events if e.as_story_string()])
+        == expected
+    )
 
 
 async def test_tracker_state_regression_with_bot_utterance(default_agent):
@@ -150,8 +156,15 @@ async def test_tracker_state_regression_with_bot_utterance(default_agent):
         await default_agent.handle_message("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
-    expected = ["action_listen", "greet", "utter_greet", None,
-                "action_listen", "greet", "action_listen"]
+    expected = [
+        "action_listen",
+        "greet",
+        "utter_greet",
+        None,
+        "action_listen",
+        "greet",
+        "action_listen",
+    ]
 
     assert [e.as_story_string() for e in tracker.events] == expected
 
@@ -165,7 +178,7 @@ async def test_bot_utterance_comes_after_action_event(default_agent):
 
     # important is, that the 'bot' comes after the second 'action' and not
     # before
-    expected = ['action', 'user', 'action', 'bot', 'action']
+    expected = ["action", "user", "action", "bot", "action"]
 
     assert [e.type_name for e in tracker.events] == expected
 
@@ -177,13 +190,21 @@ def test_tracker_entity_retrieval(default_domain):
     assert list(tracker.get_latest_entity_values("entity_name")) == []
 
     intent = {"name": "greet", "confidence": 1.0}
-    tracker.update(UserUttered("/greet", intent, [{
-        "start": 1,
-        "end": 5,
-        "value": "greet",
-        "entity": "entity_name",
-        "extractor": "manual"
-    }]))
+    tracker.update(
+        UserUttered(
+            "/greet",
+            intent,
+            [
+                {
+                    "start": 1,
+                    "end": 5,
+                    "value": "greet",
+                    "entity": "entity_name",
+                    "extractor": "manual",
+                }
+            ],
+        )
+    )
     assert list(tracker.get_latest_entity_values("entity_name")) == ["greet"]
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
@@ -310,6 +331,7 @@ def test_traveling_back_in_time(default_domain):
     tracker.update(UserUttered("/greet", intent, []))
 
     import time
+
     time.sleep(1)
     time_for_timemachine = time.time()
     time.sleep(1)
@@ -343,8 +365,9 @@ async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
         dumped = tracker.current_state(EventVerbosity.AFTER_RESTART)
         utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
 
-        restored_tracker = restore.load_tracker_from_json(out_path.strpath,
-                                                          default_agent.domain)
+        restored_tracker = restore.load_tracker_from_json(
+            out_path.strpath, default_agent.domain
+        )
 
         assert restored_tracker == tracker
 
@@ -353,8 +376,9 @@ def test_read_json_dump(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 
-    restored_tracker = restore.load_tracker_from_json(tracker_dump,
-                                                      default_agent.domain)
+    restored_tracker = restore.load_tracker_from_json(
+        tracker_dump, default_agent.domain
+    )
 
     assert len(restored_tracker.events) == 7
     assert restored_tracker.latest_action_name == "action_listen"
@@ -362,8 +386,7 @@ def test_read_json_dump(default_agent):
     assert restored_tracker.sender_id == "mysender"
     assert restored_tracker.events[-1].timestamp == 1517821726.211042
 
-    restored_state = restored_tracker.current_state(
-        EventVerbosity.AFTER_RESTART)
+    restored_state = restored_tracker.current_state(EventVerbosity.AFTER_RESTART)
     assert restored_state == tracker_json
 
 
@@ -373,9 +396,11 @@ def test_current_state_after_restart(default_agent):
 
     tracker_json["events"].insert(3, {"event": "restart"})
 
-    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
-                                             tracker_json.get("events", []),
-                                             default_agent.domain.slots)
+    tracker = DialogueStateTracker.from_dict(
+        tracker_json.get("sender_id"),
+        tracker_json.get("events", []),
+        default_agent.domain.slots,
+    )
 
     events_after_restart = [e.as_dict() for e in list(tracker.events)[4:]]
 
@@ -389,9 +414,11 @@ def test_current_state_all_events(default_agent):
 
     tracker_json["events"].insert(3, {"event": "restart"})
 
-    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
-                                             tracker_json.get("events", []),
-                                             default_agent.domain.slots)
+    tracker = DialogueStateTracker.from_dict(
+        tracker_json.get("sender_id"),
+        tracker_json.get("events", []),
+        default_agent.domain.slots,
+    )
 
     evts = [e.as_dict() for e in tracker.events]
 
@@ -403,9 +430,11 @@ def test_current_state_no_events(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
     tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 
-    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
-                                             tracker_json.get("events", []),
-                                             default_agent.domain.slots)
+    tracker = DialogueStateTracker.from_dict(
+        tracker_json.get("sender_id"),
+        tracker_json.get("events", []),
+        default_agent.domain.slots,
+    )
 
     state = tracker.current_state(EventVerbosity.NONE)
     assert state.get("events") is None
@@ -420,9 +449,11 @@ def test_current_state_applied_events(default_agent):
     tracker_json["events"].insert(7, {"event": "rewind"})
     tracker_json["events"].insert(8, {"event": "undo"})
 
-    tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
-                                             tracker_json.get("events", []),
-                                             default_agent.domain.slots)
+    tracker = DialogueStateTracker.from_dict(
+        tracker_json.get("sender_id"),
+        tracker_json.get("events", []),
+        default_agent.domain.slots,
+    )
 
     evts = [e.as_dict() for e in tracker.events]
     applied_events = [evts[2], evts[9]]
@@ -439,26 +470,24 @@ async def test_tracker_dump_e2e_story(default_agent):
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     story = tracker.export_stories(e2e=True)
-    assert story.strip().split('\n') == [
+    assert story.strip().split("\n") == [
         "## test_tracker_dump_e2e_story",
         "* greet: /greet",
         "    - utter_greet",
-        "* goodbye: /goodbye"]
+        "* goodbye: /goodbye",
+    ]
 
 
 def test_get_last_event_for():
-    events = [ActionExecuted('one'),
-              user_uttered('two', 1)]
+    events = [ActionExecuted("one"), user_uttered("two", 1)]
 
     tracker = get_tracker(events)
 
-    assert tracker.get_last_event_for(ActionExecuted).action_name == 'one'
+    assert tracker.get_last_event_for(ActionExecuted).action_name == "one"
 
 
 def test_get_last_event_with_reverted():
-    events = [ActionExecuted('one'),
-              ActionReverted(),
-              user_uttered('two', 1)]
+    events = [ActionExecuted("one"), ActionReverted(), user_uttered("two", 1)]
 
     tracker = get_tracker(events)
 
@@ -466,44 +495,45 @@ def test_get_last_event_with_reverted():
 
 
 def test_get_last_event_for_with_skip():
-    events = [ActionExecuted('one'),
-              user_uttered('two', 1),
-              ActionExecuted('three')]
+    events = [ActionExecuted("one"), user_uttered("two", 1), ActionExecuted("three")]
+
+    tracker = get_tracker(events)
+
+    assert tracker.get_last_event_for(ActionExecuted, skip=1).action_name == "one"
+
+
+def test_get_last_event_for_with_exclude():
+    events = [ActionExecuted("one"), user_uttered("two", 1), ActionExecuted("three")]
 
     tracker = get_tracker(events)
 
     assert (
-        tracker.get_last_event_for(ActionExecuted,
-                                   skip=1).action_name == 'one')
-
-
-def test_get_last_event_for_with_exclude():
-    events = [ActionExecuted('one'),
-              user_uttered('two', 1),
-              ActionExecuted('three')]
-
-    tracker = get_tracker(events)
-
-    assert (tracker.get_last_event_for(ActionExecuted,
-                                       action_names_to_exclude=['three']).
-            action_name == 'one')
+        tracker.get_last_event_for(
+            ActionExecuted, action_names_to_exclude=["three"]
+        ).action_name
+        == "one"
+    )
 
 
 def test_last_executed_has():
-    events = [ActionExecuted('one'),
-              user_uttered('two', 1),
-              ActionExecuted(ACTION_LISTEN_NAME)]
+    events = [
+        ActionExecuted("one"),
+        user_uttered("two", 1),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
 
     tracker = get_tracker(events)
 
-    assert tracker.last_executed_action_has('one') is True
+    assert tracker.last_executed_action_has("one") is True
 
 
 def test_last_executed_has_not_name():
-    events = [ActionExecuted('one'),
-              user_uttered('two', 1),
-              ActionExecuted(ACTION_LISTEN_NAME)]
+    events = [
+        ActionExecuted("one"),
+        user_uttered("two", 1),
+        ActionExecuted(ACTION_LISTEN_NAME),
+    ]
 
     tracker = get_tracker(events)
 
-    assert tracker.last_executed_action_has('another') is False
+    assert tracker.last_executed_action_has("another") is False

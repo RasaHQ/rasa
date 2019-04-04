@@ -16,19 +16,22 @@ class RestaurantAPI(object):
         return "papi's pizza place"
 
 
-async def train_dialogue(domain_file="domain.yml",
-                         model_path="models/dialogue",
-                         training_data_file="data/stories.md"):
-    agent = Agent(domain_file,
-                  policies=[MemoizationPolicy(max_history=3),
-                            MappingPolicy(),
-                            RestaurantPolicy(batch_size=100, epochs=400,
-                                             validation_split=0.2)])
+async def train_dialogue(
+    domain_file="domain.yml",
+    model_path="models/dialogue",
+    training_data_file="data/stories.md",
+):
+    agent = Agent(
+        domain_file,
+        policies=[
+            MemoizationPolicy(max_history=3),
+            MappingPolicy(),
+            RestaurantPolicy(batch_size=100, epochs=400, validation_split=0.2),
+        ],
+    )
 
     training_data = await agent.load_data(training_data_file)
-    agent.train(
-        training_data
-    )
+    agent.train(training_data)
 
     agent.persist(model_path)
     return agent
@@ -39,25 +42,24 @@ def train_nlu():
     from rasa.nlu import config
     from rasa.nlu.model import Trainer
 
-    training_data = load_data('data/nlu.md')
+    training_data = load_data("data/nlu.md")
     trainer = Trainer(config.load("config.yml"))
     trainer.train(training_data)
-    model_directory = trainer.persist('models/nlu/',
-                                      fixed_model_name="current")
+    model_directory = trainer.persist("models/nlu/", fixed_model_name="current")
 
     return model_directory
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rasa.utils.io.configure_colored_logging(loglevel="INFO")
 
-    parser = argparse.ArgumentParser(
-        description='starts the bot')
+    parser = argparse.ArgumentParser(description="starts the bot")
 
     parser.add_argument(
-        'task',
+        "task",
         choices=["train-nlu", "train-dialogue", "run"],
-        help="what the bot should do - e.g. run or train?")
+        help="what the bot should do - e.g. run or train?",
+    )
     task = parser.parse_args().task
 
     loop = asyncio.get_event_loop()

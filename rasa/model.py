@@ -64,10 +64,9 @@ def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     return max(list_of_files, key=os.path.getctime)
 
 
-def add_evaluation_file_to_model(model_path: Text,
-                                 payload: Union[Text, Dict[Text, Any]],
-                                 data_format: Text = 'json'
-                                 ) -> Text:
+def add_evaluation_file_to_model(
+    model_path: Text, payload: Union[Text, Dict[Text, Any]], data_format: Text = "json"
+) -> Text:
     """Adds NLU data `payload` to zipped model at `model_path`.
 
     Args:
@@ -86,13 +85,13 @@ def add_evaluation_file_to_model(model_path: Text,
     _ = unpack_model(model_path, tmpdir)
 
     # add model file to folder
-    if data_format == 'json':
-        data_path = os.path.join(tmpdir, 'data.json')
-        with open(data_path, 'w') as f:
+    if data_format == "json":
+        data_path = os.path.join(tmpdir, "data.json")
+        with open(data_path, "w") as f:
             f.write(json.dumps(payload))
-    elif data_format == 'md':
-        data_path = os.path.join(tmpdir, 'nlu.md')
-        with open(data_path, 'w') as f:
+    elif data_format == "md":
+        data_path = os.path.join(tmpdir, "nlu.md")
+        with open(data_path, "w") as f:
             f.write(payload)
     else:
         raise ValueError("`data_format` needs to be either `md` or `json`.")
@@ -107,8 +106,7 @@ def add_evaluation_file_to_model(model_path: Text,
     return zipped_path
 
 
-def unpack_model(model_file: Text, working_directory: Optional[Text] = None
-                 ) -> Text:
+def unpack_model(model_file: Text, working_directory: Optional[Text] = None) -> Text:
     """Unpacks a zipped Rasa model.
 
     Args:
@@ -147,12 +145,17 @@ def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
     Returns:
         Tuple (path to Core subdirectory, path to NLU subdirectory).
     """
-    return (os.path.join(unpacked_model_path, "core"),
-            os.path.join(unpacked_model_path, "nlu"))
+    return (
+        os.path.join(unpacked_model_path, "core"),
+        os.path.join(unpacked_model_path, "nlu"),
+    )
 
 
-def create_package_rasa(training_directory: Text, output_filename: Text,
-                        fingerprint: Optional[Fingerprint] = None) -> Text:
+def create_package_rasa(
+    training_directory: Text,
+    output_filename: Text,
+    fingerprint: Optional[Fingerprint] = None,
+) -> Text:
     """Creates a zipped Rasa model from trained model files.
 
     Args:
@@ -182,9 +185,12 @@ def create_package_rasa(training_directory: Text, output_filename: Text,
     return output_filename
 
 
-def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
-                      nlu_data: Optional[Text] = None,
-                      stories: Optional[Text] = None) -> Fingerprint:
+def model_fingerprint(
+    config_file: Text,
+    domain_file: Optional[Text] = None,
+    nlu_data: Optional[Text] = None,
+    stories: Optional[Text] = None,
+) -> Fingerprint:
     """Creates a model fingerprint from its used configuration and training
     data.
 
@@ -209,7 +215,7 @@ def model_fingerprint(config_file: Text, domain_file: Optional[Text] = None,
         FINGERPRINT_NLU_DATA_KEY: _get_hashes_for_paths(nlu_data),
         FINGERPRINT_STORIES_KEY: _get_hashes_for_paths(stories),
         FINGERPRINT_TRAINED_AT_KEY: time.time(),
-        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__
+        FINGERPRINT_RASA_VERSION_KEY: rasa.__version__,
     }
 
 
@@ -218,8 +224,9 @@ def _get_hashes_for_paths(path: Text) -> List[Text]:
 
     files = []
     if path and os.path.isdir(path):
-        files = [os.path.join(path, f) for f in os.listdir(path)
-                 if not f.startswith('.')]
+        files = [
+            os.path.join(path, f) for f in os.listdir(path) if not f.startswith(".")
+        ]
     elif path and os.path.isfile(path):
         files = [path]
 
@@ -259,8 +266,9 @@ def persist_fingerprint(output_path: Text, fingerprint: Fingerprint):
     dump_obj_as_json_to_file(path, fingerprint)
 
 
-def core_fingerprint_changed(fingerprint1: Fingerprint,
-                             fingerprint2: Fingerprint) -> bool:
+def core_fingerprint_changed(
+    fingerprint1: Fingerprint, fingerprint2: Fingerprint
+) -> bool:
     """Checks whether the fingerprints of the Core model changed.
 
     Args:
@@ -271,19 +279,23 @@ def core_fingerprint_changed(fingerprint1: Fingerprint,
         `True` if the fingerprint for the Core model changed, else `False`.
 
     """
-    relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_DOMAIN_KEY,
-                     FINGERPRINT_STORIES_KEY, FINGERPRINT_RASA_VERSION_KEY]
+    relevant_keys = [
+        FINGERPRINT_CONFIG_KEY,
+        FINGERPRINT_DOMAIN_KEY,
+        FINGERPRINT_STORIES_KEY,
+        FINGERPRINT_RASA_VERSION_KEY,
+    ]
 
     for k in relevant_keys:
         if fingerprint1.get(k) != fingerprint2.get(k):
-            logger.info("Data ({}) for dialogue model changed."
-                        "".format(k))
+            logger.info("Data ({}) for dialogue model changed." "".format(k))
             return True
     return False
 
 
-def nlu_fingerprint_changed(fingerprint1: Fingerprint,
-                            fingerprint2: Fingerprint) -> bool:
+def nlu_fingerprint_changed(
+    fingerprint1: Fingerprint, fingerprint2: Fingerprint
+) -> bool:
     """Checks whether the fingerprints of the NLU model changed.
 
     Args:
@@ -295,13 +307,15 @@ def nlu_fingerprint_changed(fingerprint1: Fingerprint,
 
     """
 
-    relevant_keys = [FINGERPRINT_CONFIG_KEY, FINGERPRINT_NLU_DATA_KEY,
-                     FINGERPRINT_RASA_VERSION_KEY]
+    relevant_keys = [
+        FINGERPRINT_CONFIG_KEY,
+        FINGERPRINT_NLU_DATA_KEY,
+        FINGERPRINT_RASA_VERSION_KEY,
+    ]
 
     for k in relevant_keys:
         if fingerprint1.get(k) != fingerprint2.get(k):
-            logger.info("Data ({}) for NLU model changed."
-                        "".format(k))
+            logger.info("Data ({}) for NLU model changed." "".format(k))
             return True
     return False
 
