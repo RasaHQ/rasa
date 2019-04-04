@@ -100,8 +100,9 @@ def start_core_for_local_platform(args: argparse.Namespace,
         model=EndpointConfig(args.model_endpoint_url,
                              token=platform_token,
                              wait_time_between_pulls=5),
-        event_broker=EndpointConfig(**{"type": "file"}),
-        nlg=EndpointConfig(args.nlg, token=platform_token))
+        event_broker=EndpointConfig(type="file"),
+        nlg=EndpointConfig(args.nlg, token=platform_token),
+        tracker_store=EndpointConfig(type="sql", db="tracker.db"))
 
     vars(args).update(dict(nlu_model=None,
                            channel="rasa",
