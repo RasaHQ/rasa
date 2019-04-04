@@ -159,7 +159,7 @@ def up(args: argparse.Namespace):
 
         print_success("Starting Rasa 🚀")
 
-        p = Process(target=main, args=("rasa_event.log",))
+        p = Process(target=main)
         p.start()
 
         start_core_for_local_platform(args, config.platform_token)
