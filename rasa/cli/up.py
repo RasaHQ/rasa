@@ -139,8 +139,15 @@ def up(args: argparse.Namespace):
     else:
         try:
             from rasa_platform import config
-            from rasa_platform.api.local import main_local
             from rasa_platform.services.event_service import main
+
+            # TODO: workaround until two platform development branches
+            # have `main_local()` in the same module
+            try:
+                from rasa_platform.api.local import main_local
+            except ImportError:
+                from rasa_platform.api.server import main_local
+
         except ImportError as e:
             print_error("Rasa Platform is not installed. The `rasa up` "
                         "command requires an installation of Rasa Platform."
