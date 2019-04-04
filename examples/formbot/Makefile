@@ -18,7 +18,7 @@ run-core:
 	python -m rasa.core.run --core models/dialogue --nlu models/nlu/current --verbose --endpoints endpoints.yml
 
 run-actions:
-	python -m rasa.core_sdk.endpoint --actions actions
+	python -m rasa_core_sdk.endpoint --actions actions
 
 run:
 	make run-actions&
@@ -32,3 +32,6 @@ visualize:
 
 train-nlu:
 	python -m rasa.nlu.train -c config.yml --fixed_model_name current --data data/nlu.md -o models --project nlu --verbose
+
+evaluate-core:
+	python -m rasa.core.test --core models/dialogue -s data/stories.md --fail_on_prediction_errors

@@ -4,7 +4,7 @@ from typing import Text, Any, Dict, Optional
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
 from rasa.core.nlg.generator import NaturalLanguageGenerator
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

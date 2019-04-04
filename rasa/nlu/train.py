@@ -8,7 +8,8 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.training_data import load_data
 from rasa.nlu.training_data.loading import load_data_from_endpoint
-from rasa.nlu.utils import EndpointConfig, read_endpoints
+from rasa.nlu.utils import read_endpoints
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 

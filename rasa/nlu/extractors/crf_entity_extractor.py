@@ -433,20 +433,30 @@ class CRFEntityExtractor(EntityExtractor):
         if self.pos_features:
             from spacy.gold import GoldParse
 
-            doc = message.get("spacy_doc")
-            gold = GoldParse(doc, entities=entity_offsets)
+            doc_or_tokens = message.get("spacy_doc")
+            gold = GoldParse(doc_or_tokens, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            tokens = message.get("tokens")
-            ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
+            doc_or_tokens = message.get("tokens")
+            ents = self._bilou_tags_from_offsets(doc_or_tokens, entity_offsets)
 
-        if '-' in ents:
-            logger.warning("Misaligned entity annotation in sentence '{}'. "
-                           "Make sure the start and end values of the "
-                           "annotated training examples end at token "
-                           "boundaries (e.g. don't include trailing "
-                           "whitespaces or punctuation)."
-                           "".format(message.text))
+        # collect badly annotated examples
+        collected = []
+        for t, e in zip(doc_or_tokens, ents):
+            if e == '-':
+                collected.append(t)
+            elif collected:
+                collected_text = ' '.join([t.text for t in collected])
+                logger.warning("Misaligned entity annotation for '{}' "
+                               "in sentence '{}' with intent '{}'. "
+                               "Make sure the start and end values of the "
+                               "annotated training examples end at token "
+                               "boundaries (e.g. don't include trailing "
+                               "whitespaces or punctuation)."
+                               "".format(collected_text, message.text,
+                                         message.get('intent')))
+                collected = []
+
         if not self.component_config["BILOU_flag"]:
             for i, label in enumerate(ents):
                 if self._bilou_from_label(label) in {"B", "I", "U", "L"}:

@@ -15,7 +15,8 @@ from rasa.nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.model import Interpreter, Metadata
-from rasa.nlu.utils import EndpointConfig, is_url
+from rasa.nlu.utils import is_url
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -30,13 +31,13 @@ STATUS_TRAINING = 1
 STATUS_FAILED = -1
 
 
-def load_from_server(component_builder: Optional[ComponentBuilder] = None,
-                     project: Optional[Text] = None,
-                     project_dir: Optional[Text] = None,
-                     remote_storage: Optional[Text] = None,
-                     model_server: Optional[EndpointConfig] = None,
-                     wait_time_between_pulls: Optional[int] = None,
-                     ) -> 'Project':
+async def load_from_server(component_builder: Optional[ComponentBuilder] = None,
+                           project: Optional[Text] = None,
+                           project_dir: Optional[Text] = None,
+                           remote_storage: Optional[Text] = None,
+                           model_server: Optional[EndpointConfig] = None,
+                           wait_time_between_pulls: Optional[int] = None,
+                           ) -> 'Project':
     """Load a persisted model from a server."""
 
     project = Project(component_builder=component_builder,
@@ -45,7 +46,7 @@ def load_from_server(component_builder: Optional[ComponentBuilder] = None,
                       remote_storage=remote_storage,
                       pull_models=True)
 
-    _update_model_from_server(model_server, project)
+    await _update_model_from_server(model_server, project)
 
     if wait_time_between_pulls:
         # continuously pull the model every `wait_time_between_pulls` seconds
@@ -55,8 +56,8 @@ def load_from_server(component_builder: Optional[ComponentBuilder] = None,
     return project
 
 
-def _update_model_from_server(model_server: EndpointConfig,
-                              project: 'Project') -> None:
+async def _update_model_from_server(model_server: EndpointConfig,
+                                    project: 'Project') -> None:
     """Load a zipped Rasa NLU model from a URL and update the passed
 
     project."""
@@ -65,7 +66,7 @@ def _update_model_from_server(model_server: EndpointConfig,
 
     model_directory = tempfile.mkdtemp()
 
-    new_model_fingerprint, filename = _pull_model_and_fingerprint(
+    new_model_fingerprint, filename = await _pull_model_and_fingerprint(
         model_server, model_directory, project.fingerprint)
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
@@ -87,10 +88,10 @@ def _get_remote_model_name(filename: Optional[Text]) -> Text:
         return MODEL_NAME_PREFIX + timestamp
 
 
-def _pull_model_and_fingerprint(model_server: EndpointConfig,
-                                model_directory: Text,
-                                fingerprint: Optional[Text]
-                                ) -> (Optional[Text], Optional[Text]):
+async def _pull_model_and_fingerprint(model_server: EndpointConfig,
+                                      model_directory: Text,
+                                      fingerprint: Optional[Text]
+                                      ) -> (Optional[Text], Optional[Text]):
     """Queries the model server and returns a tuple of containing the
 
     response's <ETag> header which contains the model hash, and the
@@ -99,9 +100,9 @@ def _pull_model_and_fingerprint(model_server: EndpointConfig,
     try:
         logger.debug("Requesting model from server {}..."
                      "".format(model_server.url))
-        response = model_server.request(method="GET",
-                                        headers=header,
-                                        timeout=DEFAULT_REQUEST_TIMEOUT)
+        response = await model_server.request(method="GET",
+                                              headers=header,
+                                              timeout=DEFAULT_REQUEST_TIMEOUT)
     except RequestException as e:
         logger.warning("Tried to fetch model from server, but couldn't reach "
                        "server. We'll retry later... Error: {}."
@@ -133,11 +134,11 @@ def _pull_model_and_fingerprint(model_server: EndpointConfig,
     return response.headers.get("ETag"), response.headers.get("filename")
 
 
-def _run_model_pulling_worker(model_server: EndpointConfig,
-                              wait_time_between_pulls: int,
-                              project: 'Project') -> None:
+async def _run_model_pulling_worker(model_server: EndpointConfig,
+                                    wait_time_between_pulls: int,
+                                    project: 'Project') -> None:
     while True:
-        _update_model_from_server(model_server, project)
+        await _update_model_from_server(model_server, project)
         time.sleep(wait_time_between_pulls)
 
 

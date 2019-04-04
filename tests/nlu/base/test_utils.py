@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-
 import io
-import json
 import os
 import pickle
 import pytest
 import tempfile
-from httpretty import httpretty
 
+import rasa.utils.io
 from rasa.nlu import utils
 from rasa.nlu.utils import (
-    EndpointConfig, create_dir, is_model_dir, is_url, ordered,
+    create_dir, is_model_dir, is_url, ordered,
     relative_normpath, remove_model, write_json_to_file, write_to_file)
+from rasa.utils.endpoints import EndpointConfig
 
 
 @pytest.fixture
@@ -110,51 +109,17 @@ def test_is_url():
     assert is_url('https://rasa.com/')
 
 
-def test_endpoint_config():
-    endpoint = EndpointConfig(
-        "https://abc.defg/",
-        params={"A": "B"},
-        headers={"X-Powered-By": "Rasa"},
-        basic_auth={"username": "user",
-                    "password": "pass"},
-        token="mytoken",
-        token_name="letoken"
-    )
-
-    httpretty.register_uri(
-        httpretty.POST,
-        'https://abc.defg/test',
-        status=500,
-        body='')
-
-    httpretty.enable()
-    endpoint.request("post", subpath="test",
-                     content_type="application/text",
-                     json={"c": "d"},
-                     params={"P": "1"})
-    httpretty.disable()
-
-    r = httpretty.latest_requests[-1]
-
-    assert json.loads(str(r.body.decode("utf-8"))) == {"c": "d"}
-    assert r.headers.get("X-Powered-By") == "Rasa"
-    assert r.headers.get("Authorization") == "Basic dXNlcjpwYXNz"
-    assert r.querystring.get("A") == ["B"]
-    assert r.querystring.get("P") == ["1"]
-    assert r.querystring.get("letoken") == ["mytoken"]
-
-
 def test_environment_variable_not_existing():
     content = "model: \n  test: ${variable}"
-    with pytest.raises(KeyError):
-        utils.read_yaml(content)
+    with pytest.raises(ValueError):
+        rasa.utils.io.read_yaml(content)
 
 
 def test_environment_variable_dict_without_prefix_and_postfix():
     os.environ['variable'] = 'test'
     content = "model: \n  test: ${variable}"
 
-    result = utils.read_yaml(content)
+    result = rasa.utils.io.read_yaml(content)
 
     assert result['model']['test'] == 'test'
 
@@ -163,7 +128,7 @@ def test_environment_variable_in_list():
     os.environ['variable'] = 'test'
     content = "model: \n  - value\n  - ${variable}"
 
-    result = utils.read_yaml(content)
+    result = rasa.utils.io.read_yaml(content)
 
     assert result['model'][1] == 'test'
 
@@ -172,7 +137,7 @@ def test_environment_variable_dict_with_prefix():
     os.environ['variable'] = 'test'
     content = "model: \n  test: dir/${variable}"
 
-    result = utils.read_yaml(content)
+    result = rasa.utils.io.read_yaml(content)
 
     assert result['model']['test'] == 'dir/test'
 
@@ -181,7 +146,7 @@ def test_environment_variable_dict_with_postfix():
     os.environ['variable'] = 'test'
     content = "model: \n  test: ${variable}/dir"
 
-    result = utils.read_yaml(content)
+    result = rasa.utils.io.read_yaml(content)
 
     assert result['model']['test'] == 'test/dir'
 
@@ -190,7 +155,7 @@ def test_environment_variable_dict_with_prefix_and_with_postfix():
     os.environ['variable'] = 'test'
     content = "model: \n  test: dir/${variable}/dir"
 
-    result = utils.read_yaml(content)
+    result = rasa.utils.io.read_yaml(content)
 
     assert result['model']['test'] == 'dir/test/dir'
 
@@ -201,7 +166,7 @@ def test_emojis_in_yaml():
         - one 😁💯 👩🏿‍💻👨🏿‍💻
         - two £ (?u)\\b\\w+\\b f\u00fcr
     """
-    actual = utils.read_yaml(test_data)
+    actual = rasa.utils.io.read_yaml(test_data)
 
     assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
@@ -216,7 +181,7 @@ def test_emojis_in_tmp_file():
     test_file = utils.create_temporary_file(test_data)
     with io.open(test_file, mode='r', encoding="utf-8") as f:
         content = f.read()
-    actual = utils.read_yaml(content)
+    actual = rasa.utils.io.read_yaml(content)
 
     assert actual["data"][0] == "one 😁💯 👩🏿‍💻👨🏿‍💻"
     assert actual["data"][1] == "two £ (?u)\\b\\w+\\b für"
@@ -224,11 +189,10 @@ def test_emojis_in_tmp_file():
 
 def test_read_emojis_from_json():
     import json
-    from rasa.nlu.utils import read_yaml
     d = {"text": "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} f\u00fcr"}
     json_string = json.dumps(d, indent=2)
 
-    s = read_yaml(json_string)
+    s = rasa.utils.io.read_yaml(json_string)
 
     expected = "hey 😁💯 👩🏿‍💻👨🏿‍💻🧜‍♂️(?u)\\b\\w+\\b} für"
     assert s.get('text') == expected
@@ -241,7 +205,7 @@ def test_bool_str():
     three: "True"
     """
 
-    actual = utils.read_yaml(test_data)
+    actual = rasa.utils.io.read_yaml(test_data)
 
     assert actual["one"] == "yes"
     assert actual["two"] == "true"
