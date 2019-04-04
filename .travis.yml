@@ -36,6 +36,10 @@ after_success:
 jobs:
   include:
   - stage: test
+    name: Check code style
+    python: 3.6
+    script: pip install black; black --config rasa_nlu.toml --check
+  - stage: test
     name: "Test Codestyle"
     python: 3.6
     script:

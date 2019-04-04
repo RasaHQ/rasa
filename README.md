@@ -131,6 +131,17 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git push origin 0.7.x
     ```
 
+### Code Style
+
+To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
+If your code is not formatted properly, travis will fail to build.
+
+To install black run `pip install black`.
+To reformat files execute
+```
+black --config rasa_nlu.toml .
+```
+
 ## License
 Licensed under the Apache License, Version 2.0.
 Copyright 2019 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
