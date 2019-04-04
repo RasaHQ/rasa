@@ -54,3 +54,7 @@ async def visualize(config_path: Text, domain_path: Text, stories_path: Text,
     import webbrowser
     webbrowser.open(full_output_path)
 
+if __name__ == '__main__':
+    raise RuntimeError("Calling `rasa.core.visualize` directly is "
+                       "no longer supported. "
+                       "Please use `rasa show` instead.")

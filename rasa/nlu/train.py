@@ -152,3 +152,9 @@ def train(nlu_config: Union[Text, RasaNLUModelConfig],
         persisted_path = None
 
     return trainer, interpreter, persisted_path
+
+
+if __name__ == '__main__':
+    raise RuntimeError("Calling `rasa.nlu.train` directly is "
+                       "no longer supported. "
+                       "Please use `rasa train nlu` instead.")

@@ -762,3 +762,9 @@ def create_app(agent=None,
         return response.json(parse_data)
 
     return app
+
+
+if __name__ == '__main__':
+    raise RuntimeError("Calling `rasa.core.server` directly is "
+                       "no longer supported. "
+                       "Please use `rasa run core` instead.")

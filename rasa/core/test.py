@@ -693,3 +693,9 @@ def main():
         plot_curve(cmdline_arguments.output, number_of_stories)
 
     logger.info("Finished evaluation")
+
+
+if __name__ == '__main__':
+    raise RuntimeError("Calling `rasa.core.test` directly is "
+                       "no longer supported. "
+                       "Please use `rasa test core` instead.")

@@ -41,3 +41,9 @@ def main(args):
                           args.out_file,
                           args.format,
                           args.language)
+
+
+if __name__ == '__main__':
+    raise RuntimeError("Calling `rasa.nlu.convert` directly is "
+                       "no longer supported. "
+                       "Please use `rasa data` instead.")
