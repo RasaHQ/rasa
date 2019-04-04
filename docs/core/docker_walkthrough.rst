@@ -479,7 +479,7 @@ and specify it in the run command:
     -v $(pwd)/config:/app/config \
     rasa/rasa_nlu:latest-spacy \
     run \
-      python3 -m rasa_nlu.train \
+      python3 -m rasa.train \
       -c config/nlu_config.yml \
       -d project/data/nlu.md \
       -o models \

@@ -49,7 +49,7 @@ perform together on whole dialogues.
 The evaluate script lets you evaluate dialogues end-to-end, combining
 Rasa NLU intent predictions with Rasa Core action predictions.
 You can activate this feature with the ``--e2e`` option in the
-``rasa.core.test`` module.
+``rasa test core`` module.
 
 The story format used for end-to-end evaluation is slightly different to
 the standard Rasa Core stories, as you'll have to include the user
@@ -79,15 +79,13 @@ the full end-to-end evaluation command is this:
 
 .. code-block:: bash
 
-  $ python3 -m rasa.core.test default --core models/dialogue \
-    --nlu models/nlu/current \
-    --stories e2e_stories.md --e2e
+  $ rasa test core -m models --stories e2e_stories.md --e2e
 
 .. note::
 
-  Make sure you specify an NLU model to load with the dialogue model using the
-  ``--nlu`` option of ``rasa.core.test``. If you do not specify an NLU
-  model, Rasa Core will load the default ``RegexInterpreter``.
+  Make sure your model file in ``models`` contains both models, ``core``
+  and ``nlu``. If it does not contain a ``nlu`` model, Rasa Core will load
+  the default ``RegexInterpreter``.
 
 
 Comparing Policies
@@ -108,7 +106,7 @@ the train script to train your models:
 
 .. code-block:: bash
 
-  $ python3 -m rasa.core.train compare -c policy_config1.yml policy_config2.yml \
+  $ rasa train core -c policy_config1.yml policy_config2.yml \
     -d domain.yml -s stories_folder -o comparison_models --runs 3 --percentages \
     0 5 25 50 70 90 95
 
@@ -121,7 +119,7 @@ mode to evaluate the models you just trained:
 
 .. code-block:: bash
 
-  $ python3 -m rasa.core.test compare --stories stories_folder \
+  $ rasa test core --stories stories_folder \
     --core comparison_models \
     -o comparison_results
 

@@ -38,17 +38,16 @@ models with:
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
+    $ rasa run core \
         --enable_api \
-        -d models/dialogue \
-        -u models/nlu/current \
+        -m models \
         -o out.log
 
 The different parameters are:
 
 - ``--enable_api``, enables this additional API
-- ``-d``, which is the path to the Rasa Core model.
-- ``-u``, which is the path to the Rasa NLU model.
+- ``-m``, which is the path to the folder containing your Rasa Core model
+and Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
 .. note::
@@ -94,11 +93,10 @@ the server:
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
+    $ rasa run core \
         --enable_api \
         --auth_token thisismysecret \
-        -d models/dialogue \
-        -u models/nlu/current \
+        -m models \
         -o out.log
 
 Your requests should pass the token, in our case ``thisismysecret``,
@@ -122,11 +120,10 @@ if the ``sender_id`` matches the user's ``username``.
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
+    $ rasa run core \
         --enable_api \
         --jwt_secret thisismysecret \
-        -d models/dialogue \
-        -u models/nlu/current \
+        -m models \
         -o out.log
 
 Your requests should have set a proper JWT header:
@@ -150,8 +147,8 @@ For example:
 
 .. code-block:: bash
 
-    python -m rasa.core.run \
-        --d <core model> \
+    rasa run core \
+        --m <core model> \
         --endpoints <path to endpoint configuration>.yml
 
 .. note::
@@ -166,10 +163,9 @@ You can also configure the http server to fetch models from another URL:
 
 .. code-block:: bash
 
-    $ python -m rasa.core.run \
+    $ rasa run core \
         --enable_api \
-        -d models/dialogue \
-        -u models/nlu/current \
+        -m models \
         --endpoints my_endpoints.yaml \
         -o out.log
 
@@ -219,15 +215,12 @@ into your endpoint configuration file:
         token: <token>  # [optional]
         token_name: <name of the token> # [optional] (default: token)
 
-Then run Rasa Core with the ``--endpoints <path_to_your_endpoint_config>.yml``
-and specify the nlu model to use with the `-u` flag.
+Then run Rasa Core with the ``--endpoints <path_to_your_endpoint_config>.yml``.
 For example:
 
 .. code-block:: bash
 
-    python -m rasa.core.run -d models/current/dialogue \
-        -u <project_name>/<model_name> \
-        --endpoints endpoints.yml
+    rasa run core -m models --endpoints endpoints.yml
 
 Connecting a Tracker Store
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
