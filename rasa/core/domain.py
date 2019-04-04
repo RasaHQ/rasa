@@ -8,13 +8,12 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 import pkg_resources
 from pykwalify.errors import SchemaError
 
-import rasa.utils
+import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions import Action, action
 from rasa.core.constants import REQUESTED_SLOT
 from rasa.core.slots import Slot, UnfeaturizedSlot
 from rasa.core.trackers import SlotSet
-from rasa.utils import read_file, read_yaml
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
@@ -121,12 +120,12 @@ class Domain(object):
             raise Exception(
                 "Failed to load domain specification from '{}'. "
                 "File not found!".format(os.path.abspath(filename)))
-        return cls.from_yaml(read_file(filename))
+        return cls.from_yaml(rasa.utils.io.read_file(filename))
 
     @classmethod
     def from_yaml(cls, yaml):
         cls.validate_domain_yaml(yaml)
-        data = read_yaml(yaml)
+        data = rasa.utils.io.read_yaml(yaml)
         return cls.from_dict(data)
 
     @classmethod
@@ -203,7 +202,7 @@ class Domain(object):
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        source_data = read_yaml(yaml)
+        source_data = rasa.utils.io.read_yaml(yaml)
         c = Core(source_data=source_data,
                  schema_files=[schema_file])
         try:
@@ -558,7 +557,7 @@ class Domain(object):
         """Load a domains specification from a dumped model directory."""
 
         metadata_path = os.path.join(path, 'domain.json')
-        specification = json.loads(rasa.utils.read_file(metadata_path))
+        specification = json.loads(rasa.utils.io.read_file(metadata_path))
         return specification
 
     def compare_with_specification(self, path: Text) -> bool:

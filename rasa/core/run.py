@@ -8,15 +8,14 @@ from sanic_cors import CORS
 from typing import List, Optional, Text
 
 import rasa.core.cli.arguments
-import rasa.utils
-
+import rasa.utils.io
 import rasa.core
+
 from rasa.core import constants, utils, cli
 from rasa.core.channels import (BUILTIN_CHANNELS, InputChannel, console)
 from rasa.core.interpreter import NaturalLanguageInterpreter
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.utils import AvailableEndpoints
-from rasa.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
 
@@ -48,7 +47,7 @@ def create_http_input_channels(
     """Instantiate the chosen input channel."""
 
     if credentials_file:
-        all_credentials = read_yaml_file(credentials_file)
+        all_credentials = rasa.utils.io.read_yaml_file(credentials_file)
     else:
         all_credentials = {}
 
@@ -208,7 +207,7 @@ if __name__ == '__main__':
     logging.getLogger('matplotlib').setLevel(logging.WARN)
     logging.getLogger('socketio').setLevel(logging.ERROR)
 
-    rasa.utils.configure_colored_logging(cmdline_args.loglevel)
+    rasa.utils.io.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
                                  cmdline_args.log_file)
 

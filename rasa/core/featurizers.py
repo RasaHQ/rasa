@@ -6,13 +6,13 @@ import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 
+import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
 from rasa.core.events import ActionExecuted
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
-from rasa.utils import read_file
 
 logger = logging.getLogger(__name__)
 
@@ -412,7 +412,7 @@ class TrackerFeaturizer(object):
     def load(path):
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(read_file(featurizer_file))
+            return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
         else:
             logger.error("Couldn't load featurizer for policy. "
                          "File '{}' doesn't exist.".format(featurizer_file))

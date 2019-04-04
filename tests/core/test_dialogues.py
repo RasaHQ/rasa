@@ -3,7 +3,7 @@ import json
 import jsonpickle
 import pytest
 
-import rasa.utils
+import rasa.utils.io
 from rasa.core.domain import Domain
 from rasa.core.tracker_store import InMemoryTrackerStore
 from tests.core.utilities import tracker_from_dialogue_file
@@ -12,7 +12,7 @@ from tests.core.conftest import TEST_DIALOGUES, EXAMPLE_DOMAINS
 
 @pytest.mark.parametrize("filename", TEST_DIALOGUES)
 def test_dialogue_serialisation(filename):
-    dialogue_json = rasa.utils.read_file(filename)
+    dialogue_json = rasa.utils.io.read_file(filename)
     restored = json.loads(dialogue_json)
     tracker = tracker_from_dialogue_file(filename)
     en_de_coded = json.loads(jsonpickle.encode(tracker.as_dialogue()))

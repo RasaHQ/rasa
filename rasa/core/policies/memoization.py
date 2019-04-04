@@ -7,7 +7,8 @@ import os
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
-import rasa.utils
+import rasa.utils.io
+
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
@@ -227,7 +228,7 @@ class MemoizationPolicy(Policy):
         featurizer = TrackerFeaturizer.load(path)
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
-            data = json.loads(rasa.utils.read_file(memorized_file))
+            data = json.loads(rasa.utils.io.read_file(memorized_file))
             return cls(featurizer=featurizer, priority=data["priority"],
                        lookup=data["lookup"])
         else:

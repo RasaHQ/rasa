@@ -1,10 +1,10 @@
 import json
 import pytest
 
+import rasa.utils.io
 from rasa.core import training
 from rasa.core.domain import Domain
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa.utils import read_file
 from rasa.core.slots import TextSlot
 from tests.core import utilities
 from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
@@ -129,7 +129,7 @@ def test_utter_templates():
 def test_restaurant_domain_is_valid():
     # should raise no exception
     Domain.validate_domain_yaml(
-        read_file('examples/restaurantbot/domain.yml'))
+        rasa.utils.io.read_file('examples/restaurantbot/domain.yml'))
 
 
 def test_custom_slot_type(tmpdir):

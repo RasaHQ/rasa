@@ -5,7 +5,7 @@ import pytest
 import tempfile
 import os
 
-import rasa.utils
+import rasa.utils.io
 from rasa.core import training, restore
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
@@ -351,7 +351,7 @@ async def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
 
 def test_read_json_dump(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(rasa.utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 
     restored_tracker = restore.load_tracker_from_json(tracker_dump,
                                                       default_agent.domain)
@@ -369,7 +369,7 @@ def test_read_json_dump(default_agent):
 
 def test_current_state_after_restart(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(rasa.utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 
     tracker_json["events"].insert(3, {"event": "restart"})
 
@@ -385,7 +385,7 @@ def test_current_state_after_restart(default_agent):
 
 def test_current_state_all_events(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(rasa.utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 
     tracker_json["events"].insert(3, {"event": "restart"})
 
@@ -401,7 +401,7 @@ def test_current_state_all_events(default_agent):
 
 def test_current_state_no_events(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(rasa.utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 
     tracker = DialogueStateTracker.from_dict(tracker_json.get("sender_id"),
                                              tracker_json.get("events", []),
@@ -413,7 +413,7 @@ def test_current_state_no_events(default_agent):
 
 def test_current_state_applied_events(default_agent):
     tracker_dump = "data/test_trackers/tracker_moodbot.json"
-    tracker_json = json.loads(rasa.utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
 
     # add some events that result in other events not being applied anymore
     tracker_json["events"].insert(1, {"event": "restart"})

@@ -3,7 +3,7 @@ import logging
 import os
 from typing import List, Text
 
-import rasa.utils
+import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import (ACTION_REVERT_FALLBACK_EVENTS_NAME,
                                       ACTION_DEFAULT_FALLBACK_NAME,
@@ -185,6 +185,6 @@ class TwoStageFallbackPolicy(FallbackPolicy):
         if os.path.exists(path):
             meta_path = os.path.join(path, "two_stage_fallback_policy.json")
             if os.path.isfile(meta_path):
-                meta = json.loads(rasa.utils.read_file(meta_path))
+                meta = json.loads(rasa.utils.io.read_file(meta_path))
 
         return cls(**meta)

@@ -6,8 +6,7 @@ from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
     RedisTrackerStore)
-from rasa.core.utils import EndpointConfig
-from rasa.utils.endpoints import read_endpoint_config
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")

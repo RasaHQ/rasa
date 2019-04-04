@@ -209,7 +209,7 @@ def do_interactive_learning(cmdline_args, stories,
 
 
 def main():
-    import rasa.utils
+    from rasa.utils.io import configure_colored_logging
     import rasa.core.cli.train
     from rasa.core.utils import set_default_subparser
 
@@ -219,7 +219,7 @@ def main():
     cmdline_arguments = arg_parser.parse_args()
     additional_args = _additional_arguments(cmdline_arguments)
 
-    rasa.utils.configure_colored_logging(cmdline_arguments.loglevel)
+    configure_colored_logging(cmdline_arguments.loglevel)
 
     loop = asyncio.get_event_loop()
 

@@ -11,7 +11,8 @@ from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 import simplejson
 
-from rasa.utils import read_file
+import rasa.utils.io
+
 from rasa.utils.endpoints import read_endpoint_config
 
 
@@ -185,7 +186,7 @@ def write_to_file(filename: Text, text: Text) -> None:
 
 def read_json_file(filename: Text) -> Any:
     """Read json from a file."""
-    content = read_file(filename)
+    content = rasa.utils.io.read_file(filename)
     try:
         return simplejson.loads(content)
     except ValueError as e:

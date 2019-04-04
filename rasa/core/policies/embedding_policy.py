@@ -11,7 +11,7 @@ from tqdm import tqdm
 from typing import (
     Any, List, Optional, Text, Dict, Tuple, Union)
 
-import rasa.utils
+import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
@@ -1450,7 +1450,7 @@ class EmbeddingPolicy(Policy):
             return cls(featurizer=featurizer)
 
         meta_file = os.path.join(path, "embedding_policy.json")
-        meta = json.loads(rasa.utils.read_file(meta_file))
+        meta = json.loads(rasa.utils.io.read_file(meta_file))
 
         tf_config_file = os.path.join(
             path, "{}.tf_config.pkl".format(file_name))
