@@ -23,3 +23,6 @@ Removed
 Fixed
 -----
 -evaluating core stories with two stage fallback gave an error, trying to handle None for a policy
+- added missing implementation of the ``keys()`` function for the Redis Tracker
+  Store
+
