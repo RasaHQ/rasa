@@ -285,7 +285,6 @@ class MessageProcessor(object):
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
                                 self.nlg)
-        
         self._log_slots(tracker)
         # action loop. predicts actions until we hit action listen
         while (should_predict_another_action and
