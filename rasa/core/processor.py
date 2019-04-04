@@ -285,7 +285,8 @@ class MessageProcessor(object):
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
                                 self.nlg)
-
+        
+        self._log_slots(tracker)
         # action loop. predicts actions until we hit action listen
         while (should_predict_another_action and
                self._should_handle_message(tracker) and
@@ -372,7 +373,6 @@ class MessageProcessor(object):
 
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
-        self._log_slots(tracker)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
 
         await self._schedule_reminders(events, tracker, dispatcher)
