@@ -304,8 +304,8 @@ class TrackerFeaturizer(object):
         return states
 
     def _featurize_states(
-            self,
-            trackers_as_states: List[List[Dict[Text, float]]]
+        self,
+        trackers_as_states: List[List[Dict[Text, float]]]
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X"""
         features = []
@@ -333,9 +333,9 @@ class TrackerFeaturizer(object):
         return X, true_lengths
 
     def _featurize_labels(
-            self,
-            trackers_as_actions: List[List[Text]],
-            domain: Domain
+        self,
+        trackers_as_actions: List[List[Text]],
+        domain: Domain
     ) -> np.ndarray:
         """Create y"""
 
@@ -357,9 +357,9 @@ class TrackerFeaturizer(object):
         return y
 
     def training_states_and_actions(
-            self,
-            trackers: List[DialogueStateTracker],
-            domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions"""
         raise NotImplementedError("Featurizer must have the capacity to "
@@ -450,9 +450,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         return states
 
     def training_states_and_actions(
-            self,
-            trackers: List[DialogueStateTracker],
-            domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
 
         trackers_as_states = []
@@ -556,9 +556,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         return hash((frozen_states, frozen_actions))
 
     def training_states_and_actions(
-            self,
-            trackers: List[DialogueStateTracker],
-            domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
 
         trackers_as_states = []

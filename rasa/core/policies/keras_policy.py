@@ -93,9 +93,9 @@ class KerasPolicy(Policy):
         return
 
     def model_architecture(
-            self,
-            input_shape: Tuple[int, int],
-            output_shape: Tuple[int, Optional[int]]
+        self,
+        input_shape: Tuple[int, int],
+        output_shape: Tuple[int, Optional[int]]
     ) -> tf.keras.models.Sequential:
         """Build a keras model and return a compiled model."""
 

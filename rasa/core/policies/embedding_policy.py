@@ -138,31 +138,31 @@ class EmbeddingPolicy(Policy):
             LabelTokenizerSingleStateFeaturizer())
 
     def __init__(
-            self,
-            featurizer: Optional[FullDialogueTrackerFeaturizer] = None,
-            priority: int = 1,
-            encoded_all_actions: Optional[np.ndarray] = None,
-            graph: Optional[tf.Graph] = None,
-            session: Optional[tf.Session] = None,
-            intent_placeholder: Optional[tf.Tensor] = None,
-            action_placeholder: Optional[tf.Tensor] = None,
-            slots_placeholder: Optional[tf.Tensor] = None,
-            prev_act_placeholder: Optional[tf.Tensor] = None,
-            dialogue_len: Optional[tf.Tensor] = None,
-            x_for_no_intent: Optional[tf.Tensor] = None,
-            y_for_no_action: Optional[tf.Tensor] = None,
-            y_for_action_listen: Optional[tf.Tensor] = None,
-            similarity_op: Optional[tf.Tensor] = None,
-            alignment_history: Optional[tf.Tensor] = None,
-            user_embed: Optional[tf.Tensor] = None,
-            bot_embed: Optional[tf.Tensor] = None,
-            slot_embed: Optional[tf.Tensor] = None,
-            dial_embed: Optional[tf.Tensor] = None,
-            rnn_embed: Optional[tf.Tensor] = None,
-            attn_embed: Optional[tf.Tensor] = None,
-            copy_attn_debug: Optional[tf.Tensor] = None,
-            all_time_masks: Optional[tf.Tensor] = None,
-            **kwargs: Any
+        self,
+        featurizer: Optional[FullDialogueTrackerFeaturizer] = None,
+        priority: int = 1,
+        encoded_all_actions: Optional[np.ndarray] = None,
+        graph: Optional[tf.Graph] = None,
+        session: Optional[tf.Session] = None,
+        intent_placeholder: Optional[tf.Tensor] = None,
+        action_placeholder: Optional[tf.Tensor] = None,
+        slots_placeholder: Optional[tf.Tensor] = None,
+        prev_act_placeholder: Optional[tf.Tensor] = None,
+        dialogue_len: Optional[tf.Tensor] = None,
+        x_for_no_intent: Optional[tf.Tensor] = None,
+        y_for_no_action: Optional[tf.Tensor] = None,
+        y_for_action_listen: Optional[tf.Tensor] = None,
+        similarity_op: Optional[tf.Tensor] = None,
+        alignment_history: Optional[tf.Tensor] = None,
+        user_embed: Optional[tf.Tensor] = None,
+        bot_embed: Optional[tf.Tensor] = None,
+        slot_embed: Optional[tf.Tensor] = None,
+        dial_embed: Optional[tf.Tensor] = None,
+        rnn_embed: Optional[tf.Tensor] = None,
+        attn_embed: Optional[tf.Tensor] = None,
+        copy_attn_debug: Optional[tf.Tensor] = None,
+        all_time_masks: Optional[tf.Tensor] = None,
+        **kwargs: Any
     ) -> None:
         if featurizer:
             if not isinstance(featurizer, FullDialogueTrackerFeaturizer):
@@ -291,8 +291,8 @@ class EmbeddingPolicy(Policy):
     # data helpers
     # noinspection PyPep8Naming
     def _create_X_slots_previous_actions(
-            self,
-            data_X: np.ndarray
+        self,
+        data_X: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extract feature vectors
 
@@ -726,7 +726,7 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _alignments_history_from(
-            final_state: 'TimeAttentionWrapperState'
+        final_state: 'TimeAttentionWrapperState'
     ) -> tf.Tensor:
         """Extract alignments history form final rnn cell state."""
 
@@ -744,7 +744,7 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _all_time_masks_from(
-            final_state: 'TimeAttentionWrapperState'
+        final_state: 'TimeAttentionWrapperState'
     ) -> tf.Tensor:
         """Extract all time masks form final rnn cell state."""
 

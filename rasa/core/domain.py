@@ -79,7 +79,7 @@ def check_domain_sanity(domain):
         return message
 
     def get_duplicate_exception_message(
-            duplicates: List[Tuple[List[Text], Text]]
+        duplicates: List[Tuple[List[Text], Text]]
     ) -> Text:
         """Return a message given a list of duplicates."""
 
@@ -242,7 +242,7 @@ class Domain(object):
 
     @staticmethod
     def collect_templates(
-            yml_templates: Dict[Text, List[Any]]
+        yml_templates: Dict[Text, List[Any]]
     ) -> Dict[Text, List[Dict[Text, Any]]]:
         """Go through the templates and make sure they are all in dict format
         """

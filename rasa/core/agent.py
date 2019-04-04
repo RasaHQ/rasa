@@ -38,8 +38,8 @@ if typing.TYPE_CHECKING:
 
 
 async def load_from_server(
-        agent,
-        model_server: Optional[EndpointConfig] = None
+    agent,
+    model_server: Optional[EndpointConfig] = None
 ) -> 'Agent':
     """Load a persisted model from a server."""
 
@@ -307,10 +307,10 @@ class Agent(object):
                 self.policy_ensemble is not None)
 
     async def handle_message(
-            self,
-            message: UserMessage,
-            message_preprocessor: Optional[Callable[[Text], Text]] = None,
-            **kwargs
+        self,
+        message: UserMessage,
+        message_preprocessor: Optional[Callable[[Text], Text]] = None,
+        **kwargs
     ) -> Optional[List[Text]]:
         """Handle a single message."""
 
@@ -371,10 +371,10 @@ class Agent(object):
 
     # noinspection PyUnusedLocal
     async def log_message(
-            self,
-            message: UserMessage,
-            message_preprocessor: Optional[Callable[[Text], Text]] = None,
-            **kwargs: Any
+        self,
+        message: UserMessage,
+        message_preprocessor: Optional[Callable[[Text], Text]] = None,
+        **kwargs: Any
     ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
 
@@ -382,12 +382,12 @@ class Agent(object):
         return await processor.log_message(message)
 
     async def execute_action(
-            self,
-            sender_id: Text,
-            action: Text,
-            output_channel: OutputChannel,
-            policy: Text,
-            confidence: float
+        self,
+        sender_id: Text,
+        action: Text,
+        output_channel: OutputChannel,
+        policy: Text,
+        confidence: float
     ) -> DialogueStateTracker:
         """Handle a single message."""
 
@@ -400,11 +400,11 @@ class Agent(object):
                                               confidence)
 
     async def handle_text(
-            self,
-            text_message: Union[Text, Dict[Text, Any]],
-            message_preprocessor: Optional[Callable[[Text], Text]] = None,
-            output_channel: Optional[OutputChannel] = None,
-            sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
+        self,
+        text_message: Union[Text, Dict[Text, Any]],
+        message_preprocessor: Optional[Callable[[Text], Text]] = None,
+        output_channel: Optional[OutputChannel] = None,
+        sender_id: Optional[Text] = UserMessage.DEFAULT_SENDER_ID
     ) -> Optional[List[Dict[Text, Any]]]:
         """Handle a single message.
 
@@ -728,7 +728,7 @@ class Agent(object):
 
     @staticmethod
     def _create_ensemble(
-            policies: Union[List[Policy], PolicyEnsemble, None]
+        policies: Union[List[Policy], PolicyEnsemble, None]
     ) -> Optional[PolicyEnsemble]:
         if policies is None:
             return None

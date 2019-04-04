@@ -31,16 +31,16 @@ class SklearnPolicy(Policy):
     """Use an sklearn classifier to train a policy."""
 
     def __init__(
-            self,
-            featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
-            priority: int = 1,
-            model: Optional['sklearn.base.BaseEstimator'] = None,
-            param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
-            cv: Optional[int] = None,
-            scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
-            label_encoder: LabelEncoder = LabelEncoder(),
-            shuffle: bool = True,
-            **kwargs: Any
+        self,
+        featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
+        priority: int = 1,
+        model: Optional['sklearn.base.BaseEstimator'] = None,
+        param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
+        cv: Optional[int] = None,
+        scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
+        label_encoder: LabelEncoder = LabelEncoder(),
+        shuffle: bool = True,
+        **kwargs: Any
     ) -> None:
         """Create a new sklearn policy.
 
