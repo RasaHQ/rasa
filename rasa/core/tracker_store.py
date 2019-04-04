@@ -106,7 +106,7 @@ class TrackerStore(object):
             body.update(evt.as_dict())
             self.event_broker.publish(body)
 
-    def keys(self) -> Optional[List[Text]]:
+    def keys(self) -> List[Text]:
         raise NotImplementedError()
 
     @staticmethod
@@ -250,7 +250,7 @@ class MongoTrackerStore(TrackerStore):
         else:
             return None
 
-    def keys(self):
+    def keys(self) -> List[Text]:
         return [c["sender_id"] for c in self.conversations.find()]
 
 
