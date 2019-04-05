@@ -36,7 +36,7 @@ after_success:
 jobs:
   include:
   - stage: test
-    name: Check code style
+    name: "Black Formatting"
     python: 3.6
     script: pip install black; black --config rasa_nlu.toml --check
   - stage: test
