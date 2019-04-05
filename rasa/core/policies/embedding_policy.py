@@ -931,9 +931,8 @@ class EmbeddingPolicy(Policy):
         # average the loss over the batch
         loss = (
             tf.reduce_mean(loss)
-            +
             # add regularization losses
-            self._regularization_loss()
+            + self._regularization_loss()
             + tf.losses.get_regularization_loss()
         )
         return loss
