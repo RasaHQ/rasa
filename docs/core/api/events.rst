@@ -34,7 +34,7 @@ Set a Slot
 :Short: Event to set a slot on a tracker
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
+      :lines: 1-
       :dedent: 8
       :start-after: # DOCS MARKER SetSlot
       :end-before: # DOCS END
