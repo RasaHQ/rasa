@@ -106,8 +106,7 @@ class TrackerStore(object):
             body.update(evt.as_dict())
             self.event_broker.publish(body)
 
-    def keys(self):
-        # type: () -> Optional[List[Text]]
+    def keys(self) -> List[Text]:
         raise NotImplementedError()
 
     @staticmethod
@@ -152,14 +151,14 @@ class InMemoryTrackerStore(TrackerStore):
 
 
 class RedisTrackerStore(TrackerStore):
-    def keys(self):
-        pass
+    def keys(self) -> List[Text]:
+        return self.red.keys()
 
     def __init__(self, domain, host='localhost',
                  port=6379, db=0, password=None, event_broker=None,
                  record_exp=None):
-
         import redis
+
         self.red = redis.StrictRedis(host=host, port=port, db=db,
                                      password=password)
         self.record_exp = record_exp
@@ -252,7 +251,7 @@ class MongoTrackerStore(TrackerStore):
         else:
             return None
 
-    def keys(self):
+    def keys(self) -> List[Text]:
         return [c["sender_id"] for c in self.conversations.find()]
 
 

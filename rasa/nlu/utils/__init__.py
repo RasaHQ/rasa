@@ -9,11 +9,11 @@ import tempfile
 from collections import namedtuple
 from typing import Any, Callable, Dict, List, Optional, Text, Type
 
-import requests
-import ruamel.yaml as yaml
 import simplejson
-from requests import Response
-from requests.auth import HTTPBasicAuth
+
+import rasa.utils.io
+
+from rasa.utils.endpoints import read_endpoint_config
 
 
 def add_logging_option_arguments(parser, default=logging.WARNING):
@@ -184,88 +184,14 @@ def write_to_file(filename: Text, text: Text) -> None:
         f.write(str(text))
 
 
-def read_file(filename: Text, encoding: Text = "utf-8-sig") -> Any:
-    """Read text from a file."""
-    with io.open(filename, encoding=encoding) as f:
-        return f.read()
-
-
 def read_json_file(filename: Text) -> Any:
     """Read json from a file."""
-    content = read_file(filename)
+    content = rasa.utils.io.read_file(filename)
     try:
         return simplejson.loads(content)
     except ValueError as e:
         raise ValueError("Failed to read json from '{}'. Error: "
                          "{}".format(os.path.abspath(filename), e))
-
-
-def fix_yaml_loader() -> None:
-    """Ensure that any string read by yaml is represented as unicode."""
-
-    def construct_yaml_str(self, node):
-        # Override the default string handling function
-        # to always return unicode objects
-        return self.construct_scalar(node)
-
-    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
-                                    construct_yaml_str)
-
-
-def replace_environment_variables() -> None:
-    """Enable yaml loader to process the environment variables in the yaml."""
-    import re
-    import os
-
-    # noinspection RegExpRedundantEscape
-    env_var_pattern = re.compile(r"^(.*)\$\{(.*)\}(.*)$")
-    yaml.add_implicit_resolver('!env_var', env_var_pattern)
-
-    def env_var_constructor(loader, node):
-        """Process environment variables found in the YAML."""
-        value = loader.construct_scalar(node)
-        prefix, env_var, postfix = env_var_pattern.match(value).groups()
-        return prefix + os.environ[env_var] + postfix
-
-    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
-
-
-def read_yaml(content: Text) -> Any:
-    """Parses yaml from a text.
-
-     Args:
-        content: A text containing yaml content.
-    """
-    fix_yaml_loader()
-    replace_environment_variables()
-
-    yaml_parser = yaml.YAML(typ="safe")
-    yaml_parser.version = "1.2"
-    yaml_parser.unicode_supplementary = True
-
-    # noinspection PyUnresolvedReferences
-    try:
-        return yaml_parser.load(content)
-    except yaml.scanner.ScannerError as _:
-        # A `ruamel.yaml.scanner.ScannerError` might happen due to escaped
-        # unicode sequences that form surrogate pairs. Try converting the input
-        # to a parsable format based on
-        # https://stackoverflow.com/a/52187065/3429596.
-        content = (content.encode('utf-8')
-                   .decode('raw_unicode_escape')
-                   .encode("utf-16", 'surrogatepass')
-                   .decode('utf-16'))
-        return yaml_parser.load(content)
-
-
-def read_yaml_file(filename: Text) -> Any:
-    """Parses a yaml file.
-
-     Args:
-        filename: The path to the file which should be read.
-    """
-    return read_yaml(read_file(filename, "utf-8"))
 
 
 def build_entity(start: int,
@@ -400,21 +326,6 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
         return base
 
 
-def read_endpoint_config(filename: Text,
-                         endpoint_type: Text) -> Optional['EndpointConfig']:
-    """Read an endpoint configuration file from disk and extract one
-
-    config. """
-    if not filename:
-        return None
-
-    content = read_yaml_file(filename)
-    if endpoint_type in content:
-        return EndpointConfig.from_dict(content[endpoint_type])
-    else:
-        return None
-
-
 def read_endpoints(endpoint_file: Text) -> 'AvailableEndpoints':
     model = read_endpoint_config(endpoint_file,
                                  endpoint_type="model")
@@ -427,85 +338,3 @@ def read_endpoints(endpoint_file: Text) -> 'AvailableEndpoints':
 # The EndpointConfig class is currently used to define external endpoints
 # for pulling NLU models from a server and training data
 AvailableEndpoints = namedtuple('AvailableEndpoints', 'model data')
-
-
-class EndpointConfig(object):
-    """Configuration for an external HTTP endpoint."""
-
-    def __init__(self,
-                 url: Text,
-                 params: Dict[Text, Any] = None,
-                 headers: Dict[Text, Any] = None,
-                 basic_auth: Dict[Text, Text] = None,
-                 token: Optional[Text] = None,
-                 token_name: Text = "token"):
-        self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
-        self.token = token
-        self.token_name = token_name
-
-    def request(self,
-                method: Text = "post",
-                subpath: Optional[Text] = None,
-                content_type: Optional[Text] = "application/json",
-                **kwargs: Any
-                ) -> Response:
-        """Send a HTTP request to the endpoint.
-
-        All additional arguments will get passed through
-        to `requests.request`."""
-
-        # create the appropriate headers
-        headers = self.headers.copy()
-        if content_type:
-            headers["Content-Type"] = content_type
-        if "headers" in kwargs:
-            headers.update(kwargs["headers"])
-            del kwargs["headers"]
-
-        # create authentication parameters
-        if self.basic_auth:
-            auth = HTTPBasicAuth(self.basic_auth["username"],
-                                 self.basic_auth["password"])
-        else:
-            auth = None
-
-        url = concat_url(self.url, subpath)
-
-        # construct GET parameters
-        params = self.params.copy()
-
-        # set the authentication token if present
-        if self.token:
-            params[self.token_name] = self.token
-
-        if "params" in kwargs:
-            params.update(kwargs["params"])
-            del kwargs["params"]
-
-        return requests.request(method,
-                                url,
-                                headers=headers,
-                                params=params,
-                                auth=auth,
-                                **kwargs)
-
-    @classmethod
-    def from_dict(cls, data):
-        return EndpointConfig(data.pop("url"), **data)
-
-    def __eq__(self, other):
-        if isinstance(self, type(other)):
-            return (other.url == self.url and
-                    other.params == self.params and
-                    other.headers == self.headers and
-                    other.basic_auth == self.basic_auth and
-                    other.token == self.token and
-                    other.token_name == self.token_name)
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)

@@ -11,14 +11,14 @@ help:
 	@echo "        Show your stories as a graph."
 
 train-nlu:
-	python -m rasa_nlu.train -c config.yml --fixed_model_name current \
+	python -m rasa.nlu.train -c config.yml --fixed_model_name current \
 	       --data ./data/nlu.md --path models/ --project nlu
 
 train-core:
 	python -m rasa.core.train -s data/stories.md -d domain.yml -o models/dialogue
 
 train-interactive:
-	python -m rasa.core.train interactive -s data/stories.md -d domain.yml -o models/dialogue
+	python -m rasa.core.train interactive -s data/stories.md --nlu models/nlu/current -d domain.yml -o models/dialogue
 
 run-fb:
 	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials credentials.yml
@@ -45,7 +45,7 @@ run-cmdline:
 	python -m rasa.core.run -d models/dialogue -u models/nlu/current
 
 evaluate-nlu:
-	python -m rasa_nlu.evaluate  --model models/nlu/current --data ./data/nlu.md
+	python -m rasa.nlu.test  --model models/nlu/current --data ./data/nlu.md
 
 visualize:
 	python -m rasa.core.visualize -s data/stories.md -d domain.yml -o story_graph.html

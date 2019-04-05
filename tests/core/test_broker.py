@@ -1,9 +1,9 @@
 import json
 
-from rasa.core import broker, utils
+from rasa.core import broker
 from rasa.core.broker import FileProducer, PikaProducer, KafkaProducer
 from rasa.core.events import Event, Restarted, SlotSet, UserUttered
-from rasa.core.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 TEST_EVENTS = [
@@ -13,9 +13,8 @@ TEST_EVENTS = [
 
 
 def test_pika_broker_from_config():
-    cfg = utils.read_endpoint_config('data/test_endpoints/event_brokers/'
-                                     'pika_endpoint.yml',
-                                     "event_broker")
+    cfg = read_endpoint_config('data/test_endpoints/event_brokers/'
+                               'pika_endpoint.yml', "event_broker")
     actual = broker.from_endpoint_config(cfg)
 
     assert isinstance(actual, PikaProducer)
@@ -25,7 +24,7 @@ def test_pika_broker_from_config():
 
 
 def test_no_broker_in_config():
-    cfg = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "event_broker")
+    cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "event_broker")
 
     actual = broker.from_endpoint_config(cfg)
 
@@ -33,9 +32,8 @@ def test_no_broker_in_config():
 
 
 def test_file_broker_from_config():
-    cfg = utils.read_endpoint_config("data/test_endpoints/event_brokers/"
-                                     "file_endpoint.yml",
-                                     "event_broker")
+    cfg = read_endpoint_config("data/test_endpoints/event_brokers/"
+                               "file_endpoint.yml", "event_broker")
     actual = broker.from_endpoint_config(cfg)
 
     assert isinstance(actual, FileProducer)
@@ -92,8 +90,7 @@ def test_load_non_existent_custom_broker_name():
 def test_kafka_broker_from_config():
     endpoints_path = 'data/test_endpoints/event_brokers/' \
                      'kafka_plaintext_endpoint.yml'
-    cfg = utils.read_endpoint_config(endpoints_path,
-                                     "event_broker")
+    cfg = read_endpoint_config(endpoints_path, "event_broker")
 
     actual = KafkaProducer.from_endpoint_config(cfg)
 
