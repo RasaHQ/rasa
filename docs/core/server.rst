@@ -47,7 +47,7 @@ The different parameters are:
 
 - ``--enable_api``, enables this additional API
 - ``-m``, which is the path to the folder containing your Rasa Core model
-and Rasa NLU model.
+  and Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
 .. note::
