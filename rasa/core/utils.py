@@ -64,9 +64,7 @@ def class_from_module_path(
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError(
-                "Cannot retrieve class from path {}.".format(module_path)
-            )
+            raise ImportError("Cannot retrieve class from path {}.".format(module_path))
 
 
 def module_path_from_instance(inst: Any) -> Text:

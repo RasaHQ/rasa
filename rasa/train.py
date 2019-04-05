@@ -78,9 +78,7 @@ async def train_async(
     if force_training or retrain_nlu:
         train_nlu(config, nlu_data_directory, output, train_path)
     else:
-        print (
-            "NLU data / configuration did not change. No need to retrain NLU model."
-        )
+        print ("NLU data / configuration did not change. No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
         output = create_output_path(output)

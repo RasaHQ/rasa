@@ -51,9 +51,7 @@ class EventChannel(object):
     def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a json-formatted Rasa Core event into an event queue."""
 
-        raise NotImplementedError(
-            "Event broker must implement the `publish` method."
-        )
+        raise NotImplementedError("Event broker must implement the `publish` method.")
 
 
 class PikaProducer(EventChannel):

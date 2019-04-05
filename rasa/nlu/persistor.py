@@ -39,9 +39,7 @@ class Persistor(object):
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
         if not os.path.isdir(model_directory):
-            raise ValueError(
-                "Target directory '{}' not found.".format(model_directory)
-            )
+            raise ValueError("Target directory '{}' not found.".format(model_directory))
 
         file_key, tar_path = self._compress(model_directory, model_name, project)
         self._persist_tar(file_key, tar_path)

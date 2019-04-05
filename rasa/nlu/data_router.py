@@ -401,9 +401,7 @@ class DataRouter(object):
         file_name = utils.create_temporary_file(data, "_training_data")
 
         if project not in self.project_store:
-            raise InvalidProjectError(
-                "Project {} could not be found".format(project)
-            )
+            raise InvalidProjectError("Project {} could not be found".format(project))
 
         model_name = self.project_store[project]._dynamic_load_model(model)
 
@@ -429,9 +427,7 @@ class DataRouter(object):
         if project is None:
             raise InvalidProjectError("No project specified")
         elif project not in self.project_store:
-            raise InvalidProjectError(
-                "Project {} could not be found".format(project)
-            )
+            raise InvalidProjectError("Project {} could not be found".format(project))
 
         try:
             unloaded_model = self.project_store[project].unload(model)

@@ -33,9 +33,14 @@ def test_whitespace():
         20,
     ]
 
-    assert [
-        t.text for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")
-    ] == ["привет", "10.000", "ńöñàśçií", "how", "re", "you"]
+    assert [t.text for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")] == [
+        "привет",
+        "10.000",
+        "ńöñàśçií",
+        "how",
+        "re",
+        "you",
+    ]
 
     assert [
         t.offset for t in tk.tokenize("привет! 10.000, ńöñàśçií. (how're you?)")

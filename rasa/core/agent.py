@@ -75,9 +75,7 @@ def _load_and_set_updated_model(
 ):
     """Load the persisted model into memory and set the model on the agent."""
 
-    logger.debug(
-        "Found new model with fingerprint {}. Loading...".format(fingerprint)
-    )
+    logger.debug("Found new model with fingerprint {}. Loading...".format(fingerprint))
 
     stack_model_directory = _get_stack_model_directory(model_directory)
     if stack_model_directory:

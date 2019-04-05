@@ -152,8 +152,6 @@ class Dispatcher(object):
         )
 
         if message is None and not silent_fail:
-            logger.error(
-                "Couldn't create message for template '{}'.".format(template)
-            )
+            logger.error("Couldn't create message for template '{}'.".format(template))
 
         return message

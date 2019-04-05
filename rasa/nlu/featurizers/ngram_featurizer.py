@@ -401,9 +401,7 @@ class NGramFeaturizer(Featurizer):
                 )
 
             n_top = num_ngrams[np.argmax(scores)]
-            logger.info(
-                "Best score with {} ngrams: {}".format(n_top, np.max(scores))
-            )
+            logger.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
             return n_top
         else:
             warnings.warn(
