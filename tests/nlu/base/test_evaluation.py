@@ -8,13 +8,11 @@ import rasa.utils.io
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa.nlu.test import (
-    is_token_within_entity, do_entities_overlap,
-    merge_labels, remove_duckling_entities,
+    is_token_within_entity, do_entities_overlap, merge_labels,
     remove_empty_intent_examples, get_entity_extractors,
-    get_duckling_dimensions, known_duckling_dimensions,
-    find_component, remove_duckling_extractors, drop_intents_below_freq,
-    cross_validate, substitute_labels, IntentEvaluationResult,
-    evaluate_intents, evaluate_entities)
+    remove_pretrained_extractors, drop_intents_below_freq, cross_validate,
+    substitute_labels, IntentEvaluationResult, evaluate_intents,
+    evaluate_entities)
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
 from rasa.nlu.test import determine_intersection
@@ -31,9 +29,11 @@ logging.basicConfig(level="DEBUG")
 
 
 @pytest.fixture(scope="session")
-def duckling_interpreter(component_builder, tmpdir_factory):
+def pretrained_interpreter(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig(
-        {"pipeline": [{"name": "DucklingHTTPExtractor"}]}
+        {"pipeline": [{"name": "SpacyNLP"},
+                      {"name": "SpacyEntityExtractor"},
+                      {"name": "DucklingHTTPExtractor"}]}
     )
     return utilities.interpreter_for(
         component_builder,
@@ -215,36 +215,6 @@ def test_label_merging():
                ["O", "O", "O", "O", "O"])
 
 
-def test_duckling_patching():
-    entities = [[
-        {
-            "start": 37,
-            "end": 56,
-            "value": "near Alexanderplatz",
-            "entity": "location",
-            "extractor": "CRFEntityExtractor"
-        },
-        {
-            "start": 57,
-            "end": 64,
-            "value": "tonight",
-            "entity": "Time",
-            "extractor": "DucklingHTTPExtractor"
-
-        }
-    ]]
-    patched = [[
-        {
-            "start": 37,
-            "end": 56,
-            "value": "near Alexanderplatz",
-            "entity": "location",
-            "extractor": "CRFEntityExtractor"
-        }
-    ]]
-    assert remove_duckling_entities(entities) == patched
-
-
 def test_drop_intents_below_freq():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     clean_td = drop_intents_below_freq(td, 0)
@@ -392,27 +362,18 @@ def test_evaluate_entities_cv():
     }, "Wrong entity prediction alignment"
 
 
-def test_get_entity_extractors(duckling_interpreter):
+def test_get_entity_extractors(pretrained_interpreter):
     assert get_entity_extractors(
-        duckling_interpreter) == {"DucklingHTTPExtractor"}
+        pretrained_interpreter) == {"SpacyEntityExtractor",
+                                    "DucklingHTTPExtractor"}
 
 
-def test_get_duckling_dimensions(duckling_interpreter):
-    dims = get_duckling_dimensions(duckling_interpreter,
-                                   "DucklingHTTPExtractor")
-    assert set(dims) == known_duckling_dimensions
-
-
-def test_find_component(duckling_interpreter):
-    name = find_component(duckling_interpreter, "DucklingHTTPExtractor").name
-    assert name == "DucklingHTTPExtractor"
-
-
-def test_remove_duckling_extractors(duckling_interpreter):
-    target = set([])
-
-    patched = remove_duckling_extractors({"DucklingHTTPExtractor"})
-    assert patched == target
+def test_remove_pretrained_extractors(pretrained_interpreter):
+    target_components_names = set(['SpacyNLP'])
+    filtered_pipeline = remove_pretrained_extractors(
+        pretrained_interpreter.pipeline)
+    filtered_components_names = set([c.name for c in filtered_pipeline])
+    assert filtered_components_names == target_components_names
 
 
 def test_label_replacement():
