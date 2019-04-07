@@ -21,7 +21,7 @@ class RestaurantForm(FormAction):
         return ["cuisine", "num_people", "outdoor_seating",
                 "preferences", "feedback"]
 
-    def slot_mappings(self) -> Dict[Text: Union[Dict, List[Dict]]]:
+    def slot_mappings(self) -> Dict[Text, Union[Dict, List[Dict]]]:
         """A dictionary to map required slots to
             - an extracted entity
             - intent: value pairs
@@ -102,7 +102,7 @@ class RestaurantForm(FormAction):
     def validate_outdoor_seating(value: Text,
                                  dispatcher: CollectingDispatcher,
                                  tracker: Tracker,
-                                 domain: Dict[Text, Any]) -> Any:
+                                 domain: Dict[Text, Any]) -> Optional[bool]:
         """Validate outdoor_seating value."""
 
         if isinstance(value, str):

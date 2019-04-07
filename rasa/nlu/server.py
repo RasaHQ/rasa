@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import io
 import logging
 import os
@@ -10,6 +11,7 @@ from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 import rasa
+import rasa.utils.io
 from rasa.nlu import config, utils
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
@@ -236,7 +238,7 @@ class RasaNLU(object):
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
 
-            model_config = utils.read_yaml(request_content)
+            model_config = rasa.utils.io.read_yaml(request_content)
             data = model_config.get("data")
 
         elif 'json' in content_type:
@@ -374,8 +376,8 @@ def main(args):
         args.emulate,
         args.storage,
         model_server=_endpoints.model,
-        wait_time_between_pulls=args.wait_time_between_pulls
-    )
+        wait_time_between_pulls=args.wait_time_between_pulls)
+
     if pre_load:
         logger.debug('Preloading....')
         if 'all' in pre_load:
@@ -387,7 +389,7 @@ def main(args):
         args.loglevel,
         args.write,
         args.num_threads,
-        get_token(cmdline_args.token),
+        get_token(args.token),
         args.cors,
         default_config_path=args.config
     )

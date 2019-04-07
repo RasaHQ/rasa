@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import io
 import json
 import tempfile
@@ -25,6 +26,7 @@ def app(tmpdir_factory):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
+
     rasa = RasaNLU(router,
                    logfile=nlu_log_file,
                    testing=True)

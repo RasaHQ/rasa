@@ -28,7 +28,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies.ensemble import PolicyEnsemble
 from rasa.core.tracker_store import TrackerStore
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
-from rasa.core.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
