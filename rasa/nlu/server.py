@@ -142,7 +142,10 @@ class RasaNLU(object):
 
     @staticmethod
     def _configure_logging(loglevel, logfile):
-        logging.basicConfig(filename=logfile, level=loglevel)
+        if logfile is None:
+            utils.configure_colored_logging(loglevel)
+        else:
+            logging.basicConfig(filename=logfile, level=loglevel)
         logging.captureWarnings(True)
 
     @app.route("/", methods=["GET", "OPTIONS"])
@@ -365,7 +368,6 @@ def get_token(_clitoken: str) -> str:
 
 
 def main(args):
-    utils.configure_colored_logging(args.loglevel)
     pre_load = args.pre_load
 
     _endpoints = read_endpoints(args.endpoints)
