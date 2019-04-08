@@ -1076,5 +1076,9 @@ def main():
     logger.info("Finished evaluation")
 
 
-if __name__ == "__main__":  # pragma: no cover
-    main()
+if __name__ == "__main__":
+    raise RuntimeError(
+        "Calling `rasa.nlu.test` directly is "
+        "no longer supported. "
+        "Please use `rasa test nlu` instead."
+    )

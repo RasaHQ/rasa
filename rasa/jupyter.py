@@ -32,6 +32,7 @@ def chat(
 
         unpacked = model.get_model(model_path)
         agent = create_agent(unpacked)
+
     elif agent and interpreter:
         # HACK: this skips loading the interpreter and directly
         # sets it afterwards

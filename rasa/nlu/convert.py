@@ -44,8 +44,8 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Convert training data formats into one another"
+    raise RuntimeError(
+        "Calling `rasa.nlu.convert` directly is "
+        "no longer supported. "
+        "Please use `rasa data` instead."
     )
-    add_arguments(parser)
-    main(parser.parse_args())

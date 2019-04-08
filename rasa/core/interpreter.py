@@ -35,6 +35,12 @@ class NaturalLanguageInterpreter(object):
                 )
             return RegexInterpreter()  # default interpreter
 
+        if not os.path.exists(obj):
+            logger.warning(
+                "No NLU model found. Using RegexInterpreter instead.".format(obj)
+            )
+            return RegexInterpreter()  # default interpreter
+
         if not endpoint:
             return RasaNLUInterpreter(model_directory=obj)
 

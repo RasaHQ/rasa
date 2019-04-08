@@ -810,5 +810,5 @@ if __name__ == "__main__":
     raise RuntimeError(
         "Calling `rasa.core.server` directly is "
         "no longer supported. "
-        "Please use `rasa.core.run --enable_api` instead."
+        "Please use `rasa run core` instead."
     )

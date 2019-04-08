@@ -40,7 +40,10 @@ def get_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
     elif os.path.isdir(model_path):
         model_path = get_latest_model(model_path)
 
-    return unpack_model(model_path)
+    if model_path:
+        return unpack_model(model_path)
+
+    return None
 
 
 def get_latest_model(model_path: Text = DEFAULT_MODELS_PATH) -> Optional[Text]:
@@ -145,10 +148,10 @@ def get_model_subdirectories(unpacked_model_path: Text) -> Tuple[Text, Text]:
     Returns:
         Tuple (path to Core subdirectory, path to NLU subdirectory).
     """
-    return (
-        os.path.join(unpacked_model_path, "core"),
-        os.path.join(unpacked_model_path, "nlu"),
-    )
+    core_path = os.path.join(unpacked_model_path, "core")
+    nlu_path = os.path.join(unpacked_model_path, "nlu")
+
+    return core_path, nlu_path
 
 
 def create_package_rasa(

@@ -54,7 +54,7 @@ SQLTrackerStore
 
         .. code-block:: bash
 
-            python3 -m rasa.core.run --core models/dialogue --endpoints endpoints.yml
+            rasa run core -m models --endpoints endpoints.yml
 :Parameters:
     - ``dialect`` (default: ``sqlite``): The dialect used to communicate with your SQL backend.  `Consult the SQLAlchemy docs for available dialects <https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_
     - ``url`` (default: ``None``): URL of your SQL database
@@ -91,7 +91,7 @@ RedisTrackerStore
 
         .. code-block:: bash
 
-            python3 -m rasa.core.run --core models/dialogue --endpoints endpoints.yml
+            rasa run core -m models --endpoints endpoints.yml
 :Parameters:
     - ``url`` (default: ``localhost``): The url of your redis instance
     - ``port`` (default: ``6379``): The port which redis is running on
@@ -129,7 +129,7 @@ MongoTrackerStore
 
             .. code-block:: bash
 
-                python3 -m rasa.core.run --core models/dialogue --endpoints endpoints.yml
+                rasa run core -m models --endpoints endpoints.yml
 :Parameters:
     - ``url`` (default: ``mongodb://localhost:27017``): URL of your MongoDB
     - ``db`` (default: ``rasa``): The database name which should be used

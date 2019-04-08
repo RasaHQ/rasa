@@ -63,24 +63,8 @@ async def visualize(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Visualize the stories in a dialogue training file"
-    )
-    arg_parser = add_arguments(parser)
-    args = arg_parser.parse_args()
-
-    rasa.utils.io.configure_colored_logging(args.loglevel)
-
-    loop = asyncio.get_event_loop()
-    stories = loop.run_until_complete(rasa.core.cli.train.stories_from_cli_args(args))
-
-    loop.run_until_complete(
-        visualize(
-            args.config[0],
-            args.domain,
-            stories,
-            args.nlu_data,
-            args.output,
-            args.max_history,
-        )
+    raise RuntimeError(
+        "Calling `rasa.core.visualize` directly is "
+        "no longer supported. "
+        "Please use `rasa show` instead."
     )
