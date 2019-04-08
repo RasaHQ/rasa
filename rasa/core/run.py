@@ -200,4 +200,4 @@ async def load_agent_on_start(core_model, endpoints, nlu_model, app, loop):
 if __name__ == '__main__':
     raise RuntimeError("Calling `rasa.core.run` directly is "
                        "no longer supported. "
-                       "Please use `rasa shell core` instead.")
+                       "Please use `rasa shell` instead.")

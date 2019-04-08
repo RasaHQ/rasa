@@ -36,4 +36,4 @@ def run_cmdline(model_path, component_builder=None):
 if __name__ == '__main__':
     raise RuntimeError("Calling `rasa.nlu.server` directly is "
                        "no longer supported. "
-                       "Please use `rasa shell nlu` instead.")
+                       "Please use `rasa shell` instead.")
