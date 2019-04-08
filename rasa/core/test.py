@@ -696,4 +696,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    raise RuntimeError("Calling `rasa.core.test` directly is "
+                       "no longer supported. "
+                       "Please use `rasa test core` instead.")

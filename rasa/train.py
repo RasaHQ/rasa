@@ -125,10 +125,12 @@ async def train_core_async(domain: Text,
     """
     import rasa.core.train
 
+    _train_path = train_path or tempfile.mkdtemp()
+
     # normal (not compare) training
     core_model = await rasa.core.train(
         domain_file=domain, stories_file=stories,
-        output_path=os.path.join(train_path, "core"),
+        output_path=os.path.join(_train_path, "core"),
         policy_config=config)
 
     if not train_path:
@@ -137,7 +139,7 @@ async def train_core_async(domain: Text,
         output_path = create_output_path(output, prefix="core-")
         new_fingerprint = model.model_fingerprint(config, domain,
                                                   stories=stories)
-        model.create_package_rasa(train_path, output_path, new_fingerprint)
+        model.create_package_rasa(_train_path, output_path, new_fingerprint)
         print_success("Your Rasa Core model is trained and saved at '{}'."
                       "".format(output_path))
 
