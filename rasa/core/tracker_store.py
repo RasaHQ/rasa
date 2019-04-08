@@ -1,9 +1,14 @@
 import itertools
 import json
 import logging
+import os
 import pickle
 # noinspection PyPep8Naming
+from time import sleep
 from typing import Iterator, KeysView, List, Optional, Text
+
+import psycopg2
+import sqlalchemy
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
@@ -39,7 +44,7 @@ class TrackerStore(object):
                                      **store.kwargs)
         elif store.type.lower() == 'sql':
             return SQLTrackerStore(domain=domain,
-                                   url=store.url,
+                                   host=store.url,
                                    event_broker=event_broker,
                                    **store.kwargs)
         else:
@@ -278,7 +283,8 @@ class SQLTrackerStore(TrackerStore):
     def __init__(self,
                  domain: Optional[Domain] = None,
                  dialect: Text = 'sqlite',
-                 url: Text = None,
+                 host: Text = None,
+                 port: int = 5432,
                  db: Text = 'rasa.db',
                  username: Text = None,
                  password: Text = None,
@@ -287,20 +293,64 @@ class SQLTrackerStore(TrackerStore):
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
-        engine_url = URL(dialect, username, password, url, database=db)
+        engine_url = URL(dialect, username, password, host, port,
+                         database="rasa")
 
         logger.debug('Attempting to connect to database '
                      'via "{}"'.format(engine_url.__to_string__()))
 
-        self.engine = create_engine(engine_url)
-        self.session = sessionmaker(bind=self.engine)()
+        # Database might take a while to come up
+        while True:
+            try:
+                self.engine = create_engine(engine_url)
 
-        self.Base.metadata.create_all(self.engine)
+                if os.environ.get("CREATE_DATABASE"):
+                    self._create_database_and_update_engine(db, engine_url)
+
+                if os.environ.get("CREATE_TABLES"):
+                    print("creating stack tables")
+                    try:
+                        self.Base.metadata.create_all(self.engine)
+                    except sqlalchemy.exc.OperationalError:
+                        pass
+
+                self.session = sessionmaker(bind=self.engine)()
+                break
+            except (sqlalchemy.exc.OperationalError,
+                    sqlalchemy.exc.IntegrityError) as e:
+                logger.warning(e)
+                sleep(5)
 
         logger.debug("Connection to SQL database '{}' "
                      "successful".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
+
+    def _create_database_and_update_engine(self, db, engine_url):
+        from sqlalchemy import create_engine
+
+        self._create_database(self.engine, db)
+        engine_url.database = db
+        self.engine = create_engine(engine_url)
+
+    @staticmethod
+    def _create_database(engine, db_name):
+        conn = engine.connect()
+
+        cursor = conn.connection.cursor()
+        cursor.execute("COMMIT")
+        cursor.execute(
+            ("SELECT 1 FROM pg_catalog.pg_database "
+             "WHERE datname = '{}'".format(db_name)))
+        exists = cursor.fetchone()
+        if not exists:
+            try:
+                cursor.execute('CREATE DATABASE {}'.format(db_name))
+            except psycopg2.IntegrityError:
+                pass
+
+        cursor.close()
+        conn.close()
 
     def keys(self) -> List[Text]:
         """Collect all keys of the items stored in the database."""
@@ -334,7 +384,6 @@ class SQLTrackerStore(TrackerStore):
         events = self._additional_events(tracker)  # only store recent events
 
         for event in events:
-
             data = event.as_dict()
 
             intent = data.get("parse_data", {}).get("intent", {}).get("name")

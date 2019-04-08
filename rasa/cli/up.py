@@ -9,8 +9,9 @@ import rasa.cli.run
 from rasa.cli.utils import print_success, signal_handler, print_error
 from rasa.core import utils, cli
 from rasa.core.run import serve_application
-from rasa.core.utils import AvailableEndpoints, EndpointConfig
-from rasa.utils import configure_colored_logging
+from rasa.core.utils import AvailableEndpoints
+from rasa.utils.endpoints import EndpointConfig
+from rasa.utils.io import configure_colored_logging
 
 signal.signal(signal.SIGINT, signal_handler)
 

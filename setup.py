@@ -80,7 +80,8 @@ install_requires = [
     "async_generator~=1.10",
     "keras-applications==1.0.6",
     "keras-preprocessing==1.0.5",
-    "sqlalchemy~=1.2",
+    "SQLAlchemy~=1.2.18",
+    "psycopg2~=2.7",
     "kafka-python~=1.4",
     "sklearn-crfsuite~=0.3.6",
 ]

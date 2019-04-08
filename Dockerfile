@@ -15,6 +15,7 @@ RUN apt-get update -qq && \
   libffi6 \
   libffi-dev \
   libpng-dev \
+  libpq-dev \
   curl && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
