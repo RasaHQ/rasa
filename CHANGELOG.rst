@@ -4,6 +4,28 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
+[Unreleased 0.13.a8]
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Message parse data no longer passed to graph node label in interactive
+  learning visualization
+
+[0.13.7] - 2019-04-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process form actions in end-to-end evaluations
+
+[0.13.6] - 2019-03-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process intent messages in end-to-end evaluations
+
 [0.13.4] - 2019-03-19
 ^^^^^^^^^^^^^^^^^^^^^
 
