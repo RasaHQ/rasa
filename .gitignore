@@ -16,10 +16,6 @@ venv
 .ruby-version
 .tox
 dist/
-data/*
-!data/examples
-!data/test
-!data/README.md
 docs/nlu/_build
 docs/_build
 server/

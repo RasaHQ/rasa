@@ -43,6 +43,7 @@ Added
   for current user
 - Rasa Stack HTTP intent evaluation endpoint at ``POST /intentEvaluation``.
   This endpoints performs an intent evaluation of a Rasa Stack model
+- channel-specific utterances via the "channel" key in utterance template
 
 Changed
 -------

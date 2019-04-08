@@ -1,5 +1,6 @@
 # coding=utf-8
 import pytest
+from httpretty import httpretty
 
 from rasa.core.channels import CollectingOutputChannel
 from rasa.core.dispatcher import Button, Element, Dispatcher
@@ -21,6 +22,27 @@ async def test_dispatcher_utter_template(default_dispatcher_collecting,
                                                        default_tracker)
     collected = default_dispatcher_collecting.output_channel.latest_output()
     assert collected['text'] in {"goodbye 😢", "bye bye 😢"}
+
+
+async def test_dispatcher_utter_channel_template(default_nlg, default_tracker):
+    from rasa.core.channels.slack import SlackBot
+
+    httpretty.register_uri(httpretty.POST,
+                           'https://slack.com/api/chat.postMessage',
+                           body='{"ok":true,"purpose":"Testing bots"}')
+    httpretty.enable()
+
+    bot = SlackBot("DummyToken", "General")
+    dispatcher = Dispatcher("my-sender", bot, default_nlg)
+
+    await dispatcher.utter_template("utter_channel", default_tracker)
+    httpretty.disable()
+
+    r = httpretty.latest_requests[-1]
+
+    assert r.parsed_body == {'as_user': ['True'],
+                             'channel': ['General'],
+                             'text': ["you're talking to me on slack!"]}
 
 
 async def test_dispatcher_handle_unknown_template(default_dispatcher_collecting,
