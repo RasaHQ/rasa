@@ -32,14 +32,14 @@ class BotFramework(OutputChannel):
                  app_id: Text,
                  app_password: Text,
                  conversation: Dict[Text, Any],
-                 bot_id: Text,
+                 bot: Dict[Text, Any],
                  service_url: Text) -> None:
 
         self.app_id = app_id
         self.app_password = app_password
         self.conversation = conversation
         self.global_uri = "{}v3/".format(service_url)
-        self.bot_id = bot_id
+        self.bot = bot
 
     async def _get_headers(self):
         if BotFramework.token_expiration_date < datetime.datetime.now():
@@ -81,7 +81,7 @@ class BotFramework(OutputChannel):
                 "recipient": {
                     "id": recipient_id
                 },
-                "from": self.bot_id,
+                "from": self.bot,
                 "channelData": {
                     "notification": {
                         "alert": "true"
@@ -173,7 +173,7 @@ class BotFrameworkInput(InputChannel):
                 if postdata["type"] == "message":
                     out_channel = BotFramework(self.app_id, self.app_password,
                                                postdata["conversation"],
-                                               postdata["recipient"]["id"],
+                                               postdata["recipient"],
                                                postdata["serviceUrl"])
 
                     user_msg = UserMessage(postdata["text"], out_channel,
