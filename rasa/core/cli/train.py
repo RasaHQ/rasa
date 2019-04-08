@@ -50,9 +50,9 @@ def add_interactive_args(parser):
         default=False,
         action='store_true',
         help="retrain the model immediately based on feedback.")
-    parser.add_argument('--data',
+    parser.add_argument('--nlu_data',
         default=None,
-        help="Location where the training data should be saved.")
+        help="Location where the nlu training data should be saved.")
 
     arguments.add_output_arg(
         parser,
