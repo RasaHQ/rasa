@@ -28,6 +28,7 @@ def chat(model_path: Text = None, agent: 'Agent' = None,
         from rasa.run import create_agent
         unpacked = model.get_model(model_path)
         agent = create_agent(unpacked)
+
     elif agent and interpreter:
         # HACK: this skips loading the interpreter and directly
         # sets it afterwards
@@ -60,4 +61,4 @@ def _display_bot_response(response: Dict):
 
         if response_type == 'image':
             image = Image(url=value)
-            display(image,)
+            display(image, )
