@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added arguments to set the file paths for interactive training
 
 Changed
 -------
