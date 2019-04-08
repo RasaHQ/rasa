@@ -38,7 +38,8 @@ from rasa.core.training import visualization
 from rasa.core.training.structures import Story
 from rasa.core.training.visualization import (
     VISUALIZATION_TEMPLATE_PATH, visualize_neighborhood)
-from rasa.core.utils import AvailableEndpoints, EndpointConfig
+from rasa.core.utils import AvailableEndpoints
+from rasa.utils.endpoints import EndpointConfig
 # noinspection PyProtectedMember
 from rasa.nlu.training_data.loading import _guess_format, load_data
 from rasa.nlu.training_data.message import Message
@@ -1367,7 +1368,6 @@ def start_visualization(image_path: Text = None) -> None:
 # noinspection PyUnusedLocal
 async def train_agent_on_start(args, endpoints, additional_arguments, app,
                                loop):
-
     _interpreter = NaturalLanguageInterpreter.create(args.get("nlu"),
                                                      endpoints.nlu)
 

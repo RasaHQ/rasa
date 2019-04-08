@@ -7,11 +7,11 @@ from difflib import SequenceMatcher
 
 import rasa.cli.utils
 import rasa.core.cli.arguments
-import rasa.utils
+import rasa.utils.io
 from typing import List, Optional, Text, Tuple
 
 from rasa.cli import utils as cliutils
-from rasa.core import constants, run, utils
+from rasa.core import constants, run
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.channels import UserMessage, CollectingOutputChannel, console
 from rasa.core.domain import Domain
@@ -140,7 +140,7 @@ def load_tracker_from_json(tracker_dump: Text,
                            domain: Domain) -> DialogueStateTracker:
     """Read the json dump from the file and instantiate a tracker it."""
 
-    tracker_json = json.loads(utils.read_file(tracker_dump))
+    tracker_json = json.loads(rasa.utils.io.read_file(tracker_dump))
     sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
     return DialogueStateTracker.from_dict(sender_id,
                                           tracker_json.get("events", []),
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    rasa.utils.configure_colored_logging(cmdline_args.loglevel)
+    rasa.utils.io.configure_colored_logging(cmdline_args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
     print(cliutils.wrap_with_color(

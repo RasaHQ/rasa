@@ -25,7 +25,7 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
-from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
+from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
 
@@ -240,47 +240,6 @@ class HashableNDArray(object):
         return self.__wrapped
 
 
-def replace_environment_variables():
-    """Enable yaml loader to process the environment variables in the yaml."""
-    import ruamel.yaml as yaml
-    import re
-    import os
-
-    # eg. ${USER_NAME}, ${PASSWORD}
-    env_var_pattern = re.compile(r'^(.*)\$\{(.*)\}(.*)$')
-    yaml.add_implicit_resolver('!env_var', env_var_pattern)
-
-    def env_var_constructor(loader, node):
-        """Process environment variables found in the YAML."""
-        value = loader.construct_scalar(node)
-        expanded_vars = os.path.expandvars(value)
-        if '$' in expanded_vars:
-            not_expanded = [w for w in expanded_vars.split() if '$' in w]
-            raise ValueError(
-                "Error when trying to expand the environment variables"
-                " in '{}'. Please make sure to also set these environment"
-                " variables: '{}'.".format(value, not_expanded))
-        return expanded_vars
-
-    yaml.SafeConstructor.add_constructor(u'!env_var', env_var_constructor)
-
-
-def read_yaml_file(filename: Text) -> Dict[Text, Any]:
-    """Read contents of `filename` interpreting them as yaml."""
-    return read_yaml_string(read_file(filename))
-
-
-def read_yaml_string(string: Text) -> Dict[Text, Any]:
-    replace_environment_variables()
-    import ruamel.yaml
-
-    yaml_parser = ruamel.yaml.YAML(typ="safe")
-    yaml_parser.version = "1.1"
-    yaml_parser.unicode_supplementary = True
-
-    return yaml_parser.load(string) or {}
-
-
 def _dump_yaml(obj, output):
     import ruamel.yaml
 
@@ -303,12 +262,6 @@ def dump_obj_as_yaml_to_string(obj):
     str_io = StringIO()
     _dump_yaml(obj, str_io)
     return str_io.getvalue()
-
-
-def read_file(filename, encoding="utf-8"):
-    """Read text from a file."""
-    with open(filename, encoding=encoding) as f:
-        return f.read()
 
 
 def read_json_file(filename):
@@ -498,20 +451,6 @@ def all_subclasses(cls: Any) -> List[Any]:
                                    for g in all_subclasses(s)]
 
 
-def read_endpoint_config(filename: Text,
-                         endpoint_type: Text) -> Optional['EndpointConfig']:
-    """Read an endpoint configuration file from disk and extract one config."""
-
-    if not filename:
-        return None
-
-    content = read_yaml_file(filename)
-    if endpoint_type in content:
-        return EndpointConfig.from_dict(content[endpoint_type])
-    else:
-        return None
-
-
 def is_limit_reached(num_messages, limit):
     return limit is not None and num_messages >= limit
 
@@ -610,109 +549,6 @@ class AvailableEndpoints(object):
         self.nlg = nlg
         self.tracker_store = tracker_store
         self.event_broker = event_broker
-
-
-class ClientResponseError(aiohttp.ClientError):
-    def __init__(self, status, message, text):
-        self.status = status
-        self.message = message
-        self.text = text
-        super().__init__("{}, {}, body='{}'".format(status, message, text))
-
-
-class EndpointConfig(object):
-    """Configuration for an external HTTP endpoint."""
-
-    def __init__(self, url=None, params=None, headers=None, basic_auth=None,
-                 token=None, token_name="token", **kwargs):
-        self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
-        self.token = token
-        self.token_name = token_name
-        self.type = kwargs.pop('store_type', kwargs.pop('type', None))
-        self.kwargs = kwargs
-
-    def session(self):
-        # create authentication parameters
-        if self.basic_auth:
-            auth = aiohttp.BasicAuth(self.basic_auth["username"],
-                                     self.basic_auth["password"])
-        else:
-            auth = None
-
-        return aiohttp.ClientSession(
-            headers=self.headers,
-            auth=auth,
-            timeout=aiohttp.ClientTimeout(total=DEFAULT_REQUEST_TIMEOUT),
-        )
-
-    def combine_parameters(self, kwargs=None):
-        # construct GET parameters
-        params = self.params.copy()
-
-        # set the authentication token if present
-        if self.token:
-            params[self.token_name] = self.token
-
-        if kwargs and "params" in kwargs:
-            params.update(kwargs["params"])
-            del kwargs["params"]
-        return params
-
-    async def request(self,
-                      method: Text = "post",
-                      subpath: Optional[Text] = None,
-                      content_type: Optional[Text] = "application/json",
-                      **kwargs: Any
-                      ):
-        """Send a HTTP request to the endpoint.
-
-        All additional arguments will get passed through
-        to aiohttp's `session.request`."""
-
-        # create the appropriate headers
-        headers = {}
-        if content_type:
-            headers["Content-Type"] = content_type
-
-        if "headers" in kwargs:
-            headers.update(kwargs["headers"])
-            del kwargs["headers"]
-
-        url = concat_url(self.url, subpath)
-        async with self.session() as session:
-            async with session.request(
-                    method,
-                    url,
-                    headers=headers,
-                    params=self.combine_parameters(kwargs),
-                    **kwargs) as resp:
-
-                if resp.status >= 400:
-                    raise ClientResponseError(resp.status,
-                                              resp.reason,
-                                              await resp.content.read())
-                return await resp.json()
-
-    @classmethod
-    def from_dict(cls, data):
-        return EndpointConfig(**data)
-
-    def __eq__(self, other):
-        if isinstance(self, type(other)):
-            return (other.url == self.url and
-                    other.params == self.params and
-                    other.headers == self.headers and
-                    other.basic_auth == self.basic_auth and
-                    other.token == self.token and
-                    other.token_name == self.token_name)
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
 
 # noinspection PyProtectedMember

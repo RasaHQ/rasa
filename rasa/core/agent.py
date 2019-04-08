@@ -24,7 +24,8 @@ from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.processor import MessageProcessor
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import EndpointConfig, LockCounter
+from rasa.utils.endpoints import EndpointConfig
+from rasa.core.utils import LockCounter
 from rasa.nlu.utils import is_url
 
 logger = logging.getLogger(__name__)
@@ -748,6 +749,7 @@ class Agent(object):
         has_form_policy = (
             self.policy_ensemble and
             any(isinstance(p, FormPolicy)
-                for p in self.policy_ensemble.policies))
+                for p in self.policy_ensemble.policies)
+        )
 
         return not self.domain or not self.domain.form_names or has_form_policy

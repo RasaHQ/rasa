@@ -1,4 +1,3 @@
-from rasa.core import utils
 from rasa.core.channels import UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, Restarted
@@ -6,7 +5,7 @@ from rasa.core.tracker_store import (
     TrackerStore,
     InMemoryTrackerStore,
     RedisTrackerStore)
-from rasa.core.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig, read_endpoint_config
 from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 
 domain = Domain.load("data/test_domains/default.yml")
@@ -56,7 +55,7 @@ def test_tracker_store_remembers_max_history(default_domain):
 
 
 def test_tracker_store_endpoint_config_loading():
-    cfg = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+    cfg = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
 
     assert cfg == EndpointConfig.from_dict({
         "type": "redis",
@@ -69,7 +68,7 @@ def test_tracker_store_endpoint_config_loading():
 
 
 def test_find_tracker_store(default_domain):
-    store = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
+    store = read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "tracker_store")
     tracker_store = RedisTrackerStore(domain=default_domain,
                                       host="localhost",
                                       port=6379,
@@ -95,7 +94,7 @@ class ExampleTrackerStore(RedisTrackerStore):
 
 def test_tracker_store_from_string(default_domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
-    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+    store_config = read_endpoint_config(endpoints_path, "tracker_store")
 
     tracker_store = TrackerStore.find_tracker_store(default_domain,
                                                     store_config)
@@ -105,7 +104,7 @@ def test_tracker_store_from_string(default_domain):
 
 def test_tracker_store_from_invalid_module(default_domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
-    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+    store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "a.module.which.cannot.be.found"
 
     tracker_store = TrackerStore.find_tracker_store(default_domain,
@@ -116,7 +115,7 @@ def test_tracker_store_from_invalid_module(default_domain):
 
 def test_tracker_store_from_invalid_string(default_domain):
     endpoints_path = "data/test_endpoints/custom_tracker_endpoints.yml"
-    store_config = utils.read_endpoint_config(endpoints_path, "tracker_store")
+    store_config = read_endpoint_config(endpoints_path, "tracker_store")
     store_config.type = "any string"
 
     tracker_store = TrackerStore.find_tracker_store(default_domain,
