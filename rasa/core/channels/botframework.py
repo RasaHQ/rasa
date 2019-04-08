@@ -173,7 +173,7 @@ class BotFrameworkInput(InputChannel):
                 if postdata["type"] == "message":
                     out_channel = BotFramework(self.app_id, self.app_password,
                                                postdata["conversation"],
-                                               postdata["recipient"]["id"],
+                                               postdata["recipient"],
                                                postdata["serviceUrl"])
 
                     user_msg = UserMessage(postdata["text"], out_channel,
