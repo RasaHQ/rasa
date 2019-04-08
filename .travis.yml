@@ -38,7 +38,7 @@ jobs:
   - stage: test
     name: "Black Formatting"
     python: 3.6
-    script: pip install black; black --config rasa_nlu.toml --check .
+    script: pip install black; black --check .
   - stage: test
     name: "Test Codestyle"
     python: 3.6

@@ -142,7 +142,7 @@ Just install it via `pip install pre-commit` and execute `pre-commit install`.
 If you want to set it up manually, install black via `pip install black`.
 To reformat files execute
 ```
-black --config rasa_platform.toml .
+black .
 ```
 
 ## License
