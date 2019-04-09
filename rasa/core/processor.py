@@ -372,7 +372,10 @@ class MessageProcessor(object):
 
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
-        self._log_slots(tracker)
+
+        if action.name() != 'action_listen':
+            self._log_slots(tracker)
+
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
 
         await self._schedule_reminders(events, tracker, dispatcher)
