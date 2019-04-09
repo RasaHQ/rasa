@@ -243,4 +243,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    raise RuntimeError("Calling `rasa.core.train` directly is "
+                       "no longer supported. "
+                       "Please use `rasa train core` instead.")

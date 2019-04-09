@@ -18,7 +18,7 @@ For example:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current --debug
+  rasa run core -m models --debug
 
 
 This will print lots of information to help you understand what's going on.
@@ -78,11 +78,10 @@ You can visualize stories with this command:
 ..  code-block:: bash
 
    cd examples/concertbot/
-   python3 -m rasa.core.visualize -d domain.yml -s data/stories.md -o graph.html -c config.yml
+   rasa show stories
 
 This will run through the stories of the ``concertbot`` example in
-``data/stories.md`` and create a graph which can be shown in your browser by
-opening ``graph.html`` with browser of your choice.
+``data/stories.md`` and create a graph which will be shown in your browser.
 
 .. image:: _static/images/concert_stories.png
 

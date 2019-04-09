@@ -399,6 +399,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    # Running as standalone python application
-    cmdline_args = create_argument_parser().parse_args()
-    main(cmdline_args)
+    raise RuntimeError("Calling `rasa.nlu.server` directly is "
+                       "no longer supported. "
+                       "Please use `rasa run nlu` instead.")
