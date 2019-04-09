@@ -9,6 +9,7 @@ from typing import Optional
 from typing import Text
 
 import rasa.nlu
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import components, utils, constants
 from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu.config import (RasaNLUModelConfig,
@@ -265,7 +266,7 @@ class Interpreter(object):
         from packaging import version
 
         if version_to_check is None:
-            version_to_check = constants.MINIMUM_COMPATIBLE_VERSION
+            version_to_check = MINIMUM_COMPATIBLE_VERSION
 
         model_version = metadata.get("rasa_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):

@@ -12,7 +12,7 @@ import simplejson
 
 import rasa
 import rasa.utils.io
-import rasa.utils.utils
+import rasa.utils.common
 import rasa.utils.endpoints
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import config, utils, constants
@@ -63,7 +63,7 @@ def requires_auth(app: Sanic,
                   ) -> Callable[[Any, Any], Any]:
         def sender_id_from_args(args: Any,
                                 kwargs: Any) -> Optional[Text]:
-            argnames = rasa.utils.utils.arguments_of(f)
+            argnames = rasa.utils.common.arguments_of(f)
             try:
                 sender_id_arg_idx = argnames.index("sender_id")
                 if "sender_id" in kwargs:  # try to fetch from kwargs first

@@ -33,7 +33,7 @@ General
   ``rasa.nlu.train`` -> ``rasa train nlu``
 
 
-script parameters
+Script parameters
 ~~~~~~~~~~~~~~~~~
 - the ``--num_threads`` parameter got removed from the ``run`` command. The
   server will always run single threaded, but in an async way. If you want to
