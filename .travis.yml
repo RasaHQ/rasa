@@ -4,19 +4,21 @@ cache:
   directories:
   - $HOME/.cache/pip
   - /tmp/cached/
-python:
-  - '3.5'
-  - '3.6'
+python: '3.6'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global:
   - BOTO_CONFIG=/dev/null
+  - COVERALLS_PARALLEL=true
 
 install:
+  - sudo apt-get install graphviz graphviz-dev
+  - python -m pip install -U pip
   - pip install git+https://github.com/tmbo/MITIE.git
-  - pip install -r alt_requirements/requirements_dev.txt
+  - pip install -r requirements-dev.txt
   - pip install -e .
+  - pip install coveralls==1.3.0
   - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > jnk
   - python -m spacy link en_core_web_md en
   - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > jnk
@@ -29,14 +31,52 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script: 
-  - py.test --codestyle -m codestyle
-  - py.test tests/base --cov rasa_nlu -v --cov-append
-  - py.test tests/training --cov rasa_nlu -v --cov-append
 after_success:
   - coveralls
 jobs:
   include:
+  - stage: test
+    name: "Test Codestyle"
+    python: 3.6
+    script:
+      - py.test --codestyle -m codestyle
+  - &test-core
+    stage: test
+    name: "Test Core 3.6"
+    python: "3.6"
+    script:
+      - py.test tests/core --cov rasa -v --cov-append
+  - <<: *test-core
+    name: "Test Core 3.5"
+    python: '3.5'
+  - &test-nlu-base
+    stage: test
+    name: "Test NLU 3.6"
+    python: "3.6"
+    script:
+      - py.test tests/nlu/base --cov rasa -v --cov-append
+  - <<: *test-nlu-base
+    name: "Test NLU 3.5"
+    python: '3.5'
+  - &test-nlu-training
+    stage: test
+    name: "Test NLU training 3.6"
+    python: "3.6"
+    script:
+      - py.test tests/nlu/training --cov rasa -v --cov-append
+  - <<: *test-nlu-training
+    name: "Test NLU training 3.5"
+    python: '3.5'
+  - stage: integration
+    name: "Test API specification"
+    language: python
+    install:
+    - npm install -g swagger-cli
+    script:
+    - swagger-cli validate docs/core/_static/spec/server.yml
+    - swagger-cli validate docs/core/_static/spec/action_server.yml
+    after_success:
+    - coveralls
   - stage: test
     if: fork = false
     name: Check Dependency Licenses
@@ -47,67 +87,46 @@ jobs:
     - fossa init
     - fossa analyze
     - fossa test
-  - stage: docs
-    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
+  - stage: test
+    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
+    name: "NLU starter pack (NLU only)"
+    python: 3.6
+    script:
+    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-nlu.git
+    - cd starter-pack-rasa-nlu
+    - python -m pytest tests
+  - stage: test
+    name: "Test CLI"
+    script:
+    - timeout 2 time rasa --help
+  - stage: test
+    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
+    name: "Stack starter pack"
+    python: 3.6
+    script:
+    - git clone -b latest https://github.com/RasaHQ/starter-pack-rasa-stack.git
+    - cd starter-pack-rasa-stack
+    - python -m pytest tests
+  - stage: integration
+    name: "Test Docs Core"
     install:
-    - RASABASTER=rasabaster-0.7.18.tar.gz
-    - curl -sSL -o $RASABASTER "https://storage.googleapis.com/docs-theme/${RASABASTER}?q=$(date +%s%N)"
-    - pip install $RASABASTER
-    - pip install --no-cache-dir -r alt_requirements/requirements_docs.txt
-    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+    - pip install -r requirements-docs.txt
     - pip install -e .
     - pip list
     script:
-    - eval "$(ssh-agent -s)"; touch docs_key; chmod 0600 docs_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
-    - tar -xvf secrets.tar
-    - ssh-add docs_key
-    - git config --global user.email "builds@travis-ci.com"
-    - git config --global user.name "Travis CI"
-    - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
-    - export ${!TRAVIS*}
-    - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
-  - stage: test
-    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "NLU starter pack"
-    python: 3.6
+      # be strict about warnings --> they will be treated as errors
+    - cd docs/core
+    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
+  - stage: integration
+    name: "Test Docs NLU"
+    install:
+    - pip install -r requirements-docs.txt
+    - pip install -e .
+    - pip list
     script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-nlu.git
-    - cd starter-pack-rasa-nlu
-    - python -m pytest tests/test_nlu.py
-  - stage: test
-    if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
-    name: "Stack starter pack (NLU only)"
-    python: 3.6
-    script:
-    - git clone https://github.com/RasaHQ/starter-pack-rasa-stack.git
-    - cd starter-pack-rasa-stack
-    - python -m pytest tests/test_nlu.py
-  - stage: trigger website rebuild
-    if: fork = false AND branch = "master" AND type != "pull_request"
-    script:
-    - eval "$(ssh-agent -s)";
-      touch nlu_docs_to_website_trigger_key;
-      chmod 0600 nlu_docs_to_website_trigger_key
-    - openssl aes-256-cbc
-      -K $encrypted_1708c37fe733_key
-      -iv $encrypted_1708c37fe733_iv
-      -in secrets.tar.enc
-      -out secrets.tar
-      -d
-    - tar xvf secrets.tar
-    - ssh-add nlu_docs_to_website_trigger_key
-    - git config --global user.email "builds@travis-ci.com"
-    - git config --global user.name "Travis CI"
-    - git clone -b master --single-branch git@github.com:RasaHQ/rasa-website.git
-    - cd rasa-website
-    - git commit --allow-empty -m "trigger nlu docs update"
-    - git push origin master
+      # be strict about warnings --> they will be treated as errors
+    - cd docs/nlu
+    - make SPHINXOPTS="-W --keep-going -A html_theme=rasabaster" html
   - stage: deploy
     name: "Deploy to PyPI"
     python: 3.6

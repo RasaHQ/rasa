@@ -1,0 +1,31 @@
+allowempty: True
+mapping:
+  intents:
+    type: "seq"
+    sequence:
+    - type: "map"
+      mapping:
+        use_entities:
+          type: "bool"
+      allowempty: True
+    - type: "str"
+  entities:
+    type: "seq"
+    sequence:
+    - type: "str"
+  actions:
+    type: "seq"
+    sequence:
+    - type: "str"
+      required: True
+  templates:
+    type: "map"
+    allowempty: True
+  slots:
+    type: "map"
+    allowempty: True
+  forms:
+    type: "seq"
+    sequence:
+    - type: "str"
+    allowempty: True

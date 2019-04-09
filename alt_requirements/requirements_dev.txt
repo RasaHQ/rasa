@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 -r requirements_full.txt
 
 -r requirements_docs.txt
@@ -17,3 +18,8 @@ httpretty==0.9.5
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
 boto3==1.5.20
+=======
+# deprecated, will be removed. please use the `requirements-dev.txt`
+# in the mainfolder instead
+-r ../requirements-dev.txt
+>>>>>>> master

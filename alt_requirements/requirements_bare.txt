@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 gevent==1.2.2
 hyperlink==17.3.1
 typing==3.6.2
@@ -17,3 +18,8 @@ scikit-learn==0.20.2
 sanic==18.12.0
 sanic-cors==0.9.7
 sanic-jwt==1.2.1
+=======
+# deprecated, will be removed. please use the `requirements.txt`
+# in the mainfolder instead
+-r ../requirements.txt
+>>>>>>> master

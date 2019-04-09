@@ -26,6 +26,8 @@ RUN pip install -e .
 RUN pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
     && python -m spacy link de_core_news_sm de
 
+COPY sample_configs/config_pretrained_embeddings_spacy_de.yml ${RASA_NLU_HOME}/config.yml
+
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
