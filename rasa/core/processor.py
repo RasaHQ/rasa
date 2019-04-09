@@ -373,7 +373,7 @@ class MessageProcessor(object):
         self._log_action_on_tracker(tracker, action.name(), events, policy,
                                     confidence)
 
-        if action.name() != 'action_listen':
+        if action.name() != 'action_listen' and 'utter_' not in action.name():
             self._log_slots(tracker)
 
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
