@@ -25,4 +25,3 @@ jieba==0.39
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
-black==19.3b0
