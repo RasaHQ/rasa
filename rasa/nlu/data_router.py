@@ -1,17 +1,10 @@
 import asyncio
-import multiprocessing
-from asyncio import Task
-
 import datetime
 import logging
 import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Dict, List, Optional, Text
-
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.logger import Logger, jsonFileLogObserver
 
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
@@ -81,8 +74,8 @@ class DataRouter(object):
         loop = asyncio.get_event_loop()
         if loop.is_closed():
             loop = asyncio.new_event_loop()
-        self.project_store = loop.run_until_complete(
-            self._create_project_store(self.project_dir))
+        self.project = loop.run_until_complete(
+            self._create_project(self.project_dir))
         loop.close()
 
         # tensorflow sessions are not fork-safe,
@@ -139,8 +132,8 @@ class DataRouter(object):
         projects.extend(self._list_projects_in_cloud())
         return projects
 
-    async def _create_project_store(self,
-                                    project_dir: Text) -> Dict[Text, Any]:
+    async def _create_project(self,
+                              project_dir: Text) -> Project:
         default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
 
         projects = self._collect_projects(project_dir)
@@ -148,7 +141,7 @@ class DataRouter(object):
         project_store = {}
 
         if self.model_server is not None:
-            project_store[default_project] = await load_from_server(
+            return await load_from_server(
                 self.component_builder,
                 default_project,
                 self.project_dir,

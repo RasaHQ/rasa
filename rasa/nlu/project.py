@@ -10,11 +10,13 @@ from requests.exceptions import InvalidURL, RequestException
 from threading import Lock, Thread
 from typing import List, Optional, Text
 
+from rasa.model import get_model
 from rasa.nlu import utils
 from rasa.nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.model import Interpreter, Metadata
+from rasa.nlu.persistor import Persistor
 from rasa.nlu.utils import is_url
 from rasa.utils.endpoints import EndpointConfig
 
@@ -31,55 +33,80 @@ STATUS_TRAINING = 1
 STATUS_FAILED = -1
 
 
-async def load_from_server(component_builder: Optional[ComponentBuilder] = None,
-                           project: Optional[Text] = None,
-                           project_dir: Optional[Text] = None,
-                           remote_storage: Optional[Text] = None,
-                           model_server: Optional[EndpointConfig] = None,
-                           wait_time_between_pulls: Optional[int] = None,
-                           ) -> 'Project':
+def interpreter_for_model(component_builder, model_dir):
+    metadata = Metadata.load(model_dir)
+    return Interpreter.create(metadata, component_builder)
+
+
+async def load_from_server(component_builder: Optional[ComponentBuilder],
+                           project_dir: Optional[Text],
+                           model_server: Optional[EndpointConfig],
+                           ) -> (str, Interpreter):
     """Load a persisted model from a server."""
 
-    project = Project(component_builder=component_builder,
-                      project=project,
-                      project_dir=project_dir,
-                      remote_storage=remote_storage,
-                      pull_models=True)
-
-    await _update_model_from_server(model_server, project)
-
-    if wait_time_between_pulls:
-        # continuously pull the model every `wait_time_between_pulls` seconds
-        start_model_pulling_in_worker(model_server,
-                                      wait_time_between_pulls,
-                                      project)
-    return project
-
-
-async def _update_model_from_server(model_server: EndpointConfig,
-                                    project: 'Project') -> None:
-    """Load a zipped Rasa NLU model from a URL and update the passed
-
-    project."""
     if not is_url(model_server.url):
         raise InvalidURL(model_server)
 
-    model_directory = tempfile.mkdtemp()
+    model_directory = project_dir if project_dir is not None else tempfile.mkdtemp()
 
-    new_model_fingerprint, filename = await _pull_model_and_fingerprint(
-        model_server, model_directory, project.fingerprint)
-    if new_model_fingerprint:
+    model_fingerprint, filename = await _pull_model_and_fingerprint(
+        model_server, model_directory, None)
+
+    if model_fingerprint:
         model_name = _get_remote_model_name(filename)
-        project.fingerprint = new_model_fingerprint
-        project.update_model_from_dir_and_unload_others(model_directory,
-                                                        model_name)
+        interpreter = interpreter_for_model(component_builder, model_directory)
+
+        return model_name, interpreter
+
+    logger.debug("No model found at URL {}".format(model_server.url))
+
+
+async def load_from_cloud_storage(
+        component_builder: Optional[ComponentBuilder],
+        project_dir: Optional[Text],
+        remote_storage: Optional[Text],
+        model_name: Optional[Text] = None,
+) -> (str, Interpreter):
+
+    # TODO
+    # check if model name given - yes, download that model - no, use latest model
+    try:
+        from rasa.nlu.persistor import get_persistor
+        p = get_persistor(remote_storage)
+        if p is not None:
+            p.retrieve(model_name, "", project_dir)
+        else:
+            raise RuntimeError("Unable to initialize persistor")
+
+    except Exception as e:
+        logger.warning("Using default interpreter, couldn't fetch "
+                       "model: {}".format(e))
+        raise  # re-raise this exception because nothing we can do now
+
+    interpreter = interpreter_for_model(component_builder, project_dir)
+    return model_name, interpreter
+
+
+async def load_from_local_storage(
+        component_builder: Optional[ComponentBuilder],
+        project_dir: Optional[Text],
+        remote_storage: Optional[Text],
+        model_name: Optional[Text] = None,
+) -> (str, Interpreter):
+
+    if model_name is None:
+        model_path = get_model(project_dir)
     else:
-        logger.debug("No new model found at URL {}".format(model_server.url))
+        model_path = get_model(os.path.join(project_dir, model_name))
+
+    interpreter = interpreter_for_model(component_builder, model_path)
+    model_name = "" # TODO
+
+    return model_name, interpreter
 
 
 def _get_remote_model_name(filename: Optional[Text]) -> Text:
     """Get the name to save a model under that was fetched from a
-
     remote server."""
     if filename is not None:  # use the filename header if present
         return filename.strip(".zip")
@@ -93,7 +120,6 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
                                       fingerprint: Optional[Text]
                                       ) -> (Optional[Text], Optional[Text]):
     """Queries the model server and returns a tuple of containing the
-
     response's <ETag> header which contains the model hash, and the
     <filename> header containing the model name."""
     header = {"If-None-Match": fingerprint}
@@ -133,22 +159,6 @@ async def _pull_model_and_fingerprint(model_server: EndpointConfig,
     # get the new fingerprint and filename
     return response.headers.get("ETag"), response.headers.get("filename")
 
-
-async def _run_model_pulling_worker(model_server: EndpointConfig,
-                                    wait_time_between_pulls: int,
-                                    project: 'Project') -> None:
-    while True:
-        await _update_model_from_server(model_server, project)
-        time.sleep(wait_time_between_pulls)
-
-
-def start_model_pulling_in_worker(model_server: Optional[EndpointConfig],
-                                  wait_time_between_pulls: int,
-                                  project: 'Project') -> None:
-    worker = Thread(target=_run_model_pulling_worker,
-                    args=(model_server, wait_time_between_pulls, project))
-    worker.setDaemon(True)
-    worker.start()
 
 
 class Project(object):
