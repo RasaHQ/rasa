@@ -251,8 +251,7 @@ class DataRouter(object):
                                                      model)
 
         if self.responses:
-            self.responses.info('', user_input=response, project=project,
-                                model=response.get('model'))
+            self.responses.info(response)
 
         return self.format_response(response)
 
