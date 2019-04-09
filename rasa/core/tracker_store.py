@@ -308,7 +308,6 @@ class SQLTrackerStore(TrackerStore):
                     self._create_database_and_update_engine(db, engine_url)
 
                 if os.environ.get("CREATE_TABLES"):
-                    print("creating stack tables")
                     try:
                         self.Base.metadata.create_all(self.engine)
                     except sqlalchemy.exc.OperationalError:
