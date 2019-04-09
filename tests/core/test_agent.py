@@ -5,6 +5,7 @@ import pytest
 from async_generator import async_generator, yield_
 from sanic import Sanic, response
 
+import rasa.utils.io
 import rasa.core
 from rasa.core import jobs, utils
 from rasa.core.agent import Agent
@@ -16,7 +17,7 @@ from rasa.utils.endpoints import EndpointConfig
 @pytest.fixture(scope="session")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash"):

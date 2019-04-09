@@ -5,7 +5,7 @@ import pytest
 from flask import Flask, request, jsonify
 from pytest_localserver.http import WSGIServer
 
-from rasa.core import utils
+import rasa.utils.io
 from rasa.core.nlg.callback import (
     nlg_request_format_spec,
     CallbackNaturalLanguageGenerator)
@@ -18,7 +18,7 @@ from tests.core.conftest import DEFAULT_ENDPOINTS_FILE
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 def nlg_app(base_url="/"):

@@ -3,6 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+import rasa.utils.io
 from rasa.core import training, utils
 from rasa.core.actions.action import (
     ACTION_DEFAULT_ASK_AFFIRMATION_NAME, ACTION_DEFAULT_ASK_REPHRASE_NAME,
@@ -66,7 +67,7 @@ async def train_trackers(domain, augmentation_factor=20):
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 # We are going to use class style testing here since unfortunately pytest

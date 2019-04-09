@@ -25,6 +25,7 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
+import rasa.utils.endpoints
 from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
@@ -363,7 +364,7 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
 
-    return default_arg(request, name, str(default)).lower() == 'true'
+    return rasa.utils.endpoints.default_arg(request, name, str(default)).lower() == 'true'
 
 
 def float_arg(request: Request,
@@ -374,7 +375,7 @@ def float_arg(request: Request,
     Checks the `name` parameter of the request if it contains a valid
     float value. If not, `None` is returned."""
 
-    arg = default_arg(request, key, default)
+    arg = rasa.utils.endpoints.default_arg(request, key, default)
 
     if arg is default:
         return arg
@@ -383,20 +384,6 @@ def float_arg(request: Request,
         return float(arg)
     except (ValueError, TypeError):
         logger.warning("Failed to convert '{}' to float.".format(arg))
-        return default
-
-
-def default_arg(request: Request,
-                key: Text,
-                default: Any = None) -> Optional[Any]:
-    """Return an argument of the request or a default.
-
-    Checks the `name` parameter of the request if it contains a value.
-    If not, `default` is returned."""
-    found = request.raw_args.get(key)
-    if found is not None:
-        return found
-    else:
         return default
 
 
@@ -416,13 +403,6 @@ def extract_args(kwargs: Dict[Text, Any],
             remaining[k] = v
 
     return extracted, remaining
-
-
-def arguments_of(func):
-    """Return the parameters of the function `func` as a list of names."""
-    import inspect
-
-    return list(inspect.signature(func).parameters.keys())
 
 
 def concat_url(base: Text, subpath: Optional[Text]) -> Text:
@@ -572,23 +552,6 @@ def set_default_subparser(parser,
         if not subparser_found:
             # insert default in first position before all other arguments
             sys.argv.insert(1, default_subparser)
-
-
-def enable_async_loop_debugging(event_loop: AbstractEventLoop
-                                ) -> AbstractEventLoop:
-    logging.info("Enabling coroutine debugging. "
-                 "Loop id {}".format(id(asyncio.get_event_loop())))
-
-    # Enable debugging
-    event_loop.set_debug(True)
-
-    # Make the threshold for "slow" tasks very very small for
-    # illustration. The default is 0.1 (= 100 milliseconds).
-    event_loop.slow_callback_duration = 0.001
-
-    # Report all mistakes managing asynchronous resources.
-    warnings.simplefilter('always', ResourceWarning)
-    return event_loop
 
 
 def create_task_error_logger(error_message: Text = ""

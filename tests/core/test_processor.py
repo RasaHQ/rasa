@@ -4,8 +4,8 @@ import uuid
 from aioresponses import aioresponses
 
 import asyncio
+import rasa.utils.io
 from rasa.core import jobs
-from rasa.core import utils
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.dispatcher import Button, Dispatcher
 from rasa.core.events import (
@@ -21,7 +21,7 @@ from tests.utilities import json_of_latest_request, latest_request
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 async def test_message_processor(default_processor):

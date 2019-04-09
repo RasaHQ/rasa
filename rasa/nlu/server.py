@@ -12,6 +12,8 @@ import simplejson
 
 import rasa
 import rasa.utils.io
+import rasa.utils.utils
+import rasa.utils.endpoints
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
@@ -61,7 +63,7 @@ def requires_auth(app: Sanic,
                   ) -> Callable[[Any, Any], Any]:
         def sender_id_from_args(args: Any,
                                 kwargs: Any) -> Optional[Text]:
-            argnames = utils.arguments_of(f)
+            argnames = rasa.utils.utils.arguments_of(f)
             try:
                 sender_id_arg_idx = argnames.index("sender_id")
                 if "sender_id" in kwargs:  # try to fetch from kwargs first
@@ -94,7 +96,7 @@ def requires_auth(app: Sanic,
                             *args: Any,
                             **kwargs: Any) -> Any:
 
-            provided = utils.default_arg(request, 'token', None)
+            provided = rasa.utils.endpoints.default_arg(request, 'token', None)
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 result = f(request, *args, **kwargs)
@@ -153,7 +155,7 @@ def _load_default_config(path):
 # configure async loop logging
 async def configure_logging():
     if logger.isEnabledFor(logging.DEBUG):
-        utils.enable_async_loop_debugging(asyncio.get_event_loop())
+        rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
 
 def create_app(data_router,
@@ -263,14 +265,6 @@ def create_app(data_router,
                             "or 'application/json'")
 
         return model_config, data
-
-    def get_request_content_type(self, request):
-        content_type = request.requestHeaders.getRawHeaders("Content-Type", [])
-
-        if len(content_type) is not 1:
-            raise Exception("The request must have exactly one content type")
-        else:
-            return content_type[0]
 
     @app.post("/train")
     @requires_auth(app, token)

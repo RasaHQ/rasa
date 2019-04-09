@@ -4,7 +4,7 @@ import tensorflow as tf
 from typing import (
     Any, List, Optional, Text, Dict, Callable)
 
-from rasa.core import utils
+import rasa.utils.utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
@@ -51,7 +51,7 @@ class Policy(object):
     @staticmethod
     def _get_valid_params(func: Callable, **kwargs: Any) -> Dict:
         # filter out kwargs that cannot be passed to func
-        valid_keys = utils.arguments_of(func)
+        valid_keys = rasa.utils.utils.arguments_of(func)
 
         params = {key: kwargs.get(key)
                   for key in valid_keys if kwargs.get(key)}
