@@ -222,11 +222,10 @@ def create_app(data_router,
     async def version(request):
         """Returns the Rasa server's version"""
 
-        request.setHeader('Content-Type', 'application/json')
-        return json_to_string(
-            {'version': rasa.__version__,
-             'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
-        )
+        return response.json({
+            "version": rasa.__version__,
+            "minimum_compatible_version": MINIMUM_COMPATIBLE_VERSION
+        })
 
     @app.get("/status")
     @requires_auth(app, token)

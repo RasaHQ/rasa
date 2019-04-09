@@ -1,3 +1,4 @@
+import asyncio
 import errno
 import glob
 import io
@@ -6,6 +7,10 @@ import logging
 import os
 import re
 import tempfile
+import warnings
+from asyncio import AbstractEventLoop
+
+from sanic.request import Request
 from collections import namedtuple
 from typing import Any, Callable, Dict, List, Optional, Text, Type
 
@@ -46,6 +51,44 @@ def relative_normpath(f: Optional[Text], path: Text) -> Optional[Text]:
         return os.path.normpath(os.path.relpath(f, path))
     else:
         return None
+
+
+def default_arg(request: Request,
+                key: Text,
+                default: Any = None) -> Optional[Any]:
+    """Return an argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a value.
+    If not, `default` is returned."""
+    found = request.raw_args.get(key)
+    if found is not None:
+        return found
+    else:
+        return default
+
+
+def enable_async_loop_debugging(event_loop: AbstractEventLoop
+                                ) -> AbstractEventLoop:
+    logging.info("Enabling coroutine debugging. "
+                 "Loop id {}".format(id(asyncio.get_event_loop())))
+
+    # Enable debugging
+    event_loop.set_debug(True)
+
+    # Make the threshold for "slow" tasks very very small for
+    # illustration. The default is 0.1 (= 100 milliseconds).
+    event_loop.slow_callback_duration = 0.001
+
+    # Report all mistakes managing asynchronous resources.
+    warnings.simplefilter('always', ResourceWarning)
+    return event_loop
+
+
+def arguments_of(func):
+    """Return the parameters of the function `func` as a list of names."""
+    import inspect
+
+    return list(inspect.signature(func).parameters.keys())
 
 
 def create_dir(dir_path: Text) -> None:
