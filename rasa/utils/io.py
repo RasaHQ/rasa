@@ -23,10 +23,10 @@ def configure_colored_logging(loglevel):
     )
 
 
-def enable_async_loop_debugging(event_loop: AbstractEventLoop
-                                ) -> AbstractEventLoop:
-    logging.info("Enabling coroutine debugging. Loop id {}".format(
-        id(asyncio.get_event_loop())))
+def enable_async_loop_debugging(event_loop: AbstractEventLoop) -> AbstractEventLoop:
+    logging.info(
+        "Enabling coroutine debugging. Loop id {}".format(id(asyncio.get_event_loop()))
+    )
 
     # Enable debugging
     event_loop.set_debug(True)
@@ -36,7 +36,7 @@ def enable_async_loop_debugging(event_loop: AbstractEventLoop
     event_loop.slow_callback_duration = 0.001
 
     # Report all mistakes managing asynchronous resources.
-    warnings.simplefilter('always', ResourceWarning)
+    warnings.simplefilter("always", ResourceWarning)
     return event_loop
 
 

@@ -70,8 +70,8 @@ async def train_trackers(domain, augmentation_factor=20):
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 # We are going to use class style testing here since unfortunately pytest

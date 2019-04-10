@@ -88,10 +88,8 @@ def request_parameters(request):
 def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
     """Wraps a request handler with token authentication."""
 
-    def decorator(f: Callable[[Any, Any, Any], Any]
-                  ) -> Callable[[Any, Any], Any]:
-        def sender_id_from_args(args: Any,
-                                kwargs: Any) -> Optional[Text]:
+    def decorator(f: Callable[[Any, Any, Any], Any]) -> Callable[[Any, Any], Any]:
+        def sender_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
             argnames = rasa.utils.common.arguments_of(f)
 
             try:
@@ -122,7 +120,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
         @wraps(f)
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
 
-            provided = rasa.utils.endpoints.default_arg(request, 'token', None)
+            provided = rasa.utils.endpoints.default_arg(request, "token", None)
 
             # noinspection PyProtectedMember
             if token is not None and provided == token:

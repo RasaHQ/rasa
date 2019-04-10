@@ -17,8 +17,8 @@ from rasa.utils.endpoints import EndpointConfig
 @pytest.fixture(scope="session")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 def model_server_app(model_path: Text, model_hash: Text = "somehash"):

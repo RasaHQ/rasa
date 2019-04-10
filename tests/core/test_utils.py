@@ -8,6 +8,7 @@ from rasa.core import utils
 @pytest.fixture(scope="session")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
+
     return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 

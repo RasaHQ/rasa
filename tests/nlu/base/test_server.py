@@ -25,9 +25,7 @@ def app(tmpdir_factory):
 
     router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
 
-    rasa = create_app(
-        router,
-        logfile=nlu_log_file)
+    rasa = create_app(router, logfile=nlu_log_file)
     return rasa.test_client
 
 
@@ -61,66 +59,101 @@ def test_version(app):
     assert set(rjs.keys()) == {"version", "minimum_compatible_version"}
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "/parse?q=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
-    ),
-    ResponseTest(
-        "/parse?query=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
-    ),
-    ResponseTest(
-        "/parse?q=hello ńöñàśçií",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello ńöñàśçií'}
-    ),
-    ResponseTest(
-        "/parse?q=",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
-    ),
-])
-
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse?q=hello",
+            {
+                "project": "default",
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+        ),
+        ResponseTest(
+            "/parse?query=hello",
+            {
+                "project": "default",
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+        ),
+        ResponseTest(
+            "/parse?q=hello ńöñàśçií",
+            {
+                "project": "default",
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+        ),
+        ResponseTest(
+            "/parse?q=",
+            {
+                "project": "default",
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 0.0, "name": None},
+                "text": "",
+            },
+        ),
+    ],
+)
 def test_get_parse(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
     assert response.status == 200
     assert rjs == response_test.expected_response
-    assert all(prop in rjs for prop in
-               ['project', 'entities', 'intent',
-                'text', 'model'])
+    assert all(
+        prop in rjs for prop in ["project", "entities", "intent", "text", "model"]
+    )
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello'},
-        payload={"q": "hello"}
-    ),
-    ResponseTest(
-        "/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello'},
-        payload={"query": "hello"}
-    ),
-    ResponseTest(
-        "/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 1.0, 'name': 'greet'},
-         'text': 'hello ńöñàśçií'},
-        payload={"q": "hello ńöñàśçií"}
-    ),
-])
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse",
+            {
+                "project": "default",
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"q": "hello"},
+        ),
+        ResponseTest(
+            "/parse",
+            {
+                "project": "default",
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"query": "hello"},
+        ),
+        ResponseTest(
+            "/parse",
+            {
+                "project": "default",
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+            payload={"q": "hello ńöñàśçií"},
+        ),
+    ],
+)
 def test_post_parse(app, response_test):
-    _, response = app.post(response_test.endpoint,
-                           json=response_test.payload)
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 200
     assert rjs == response_test.expected_response
@@ -143,8 +176,7 @@ def test_post_train_success(app, rasa_default_train_data):
 
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
 
-    _, response = app.post("/train?project=test&model=test",
-                           json=model_config)
+    _, response = app.post("/train?project=test&model=test", json=model_config)
 
     content = response.body
     assert response.status == 200
@@ -153,8 +185,9 @@ def test_post_train_success(app, rasa_default_train_data):
 
 @utilities.slowtest
 def test_post_train_internal_error(app, rasa_default_train_data):
-    _, response = app.post("/train?project=test",
-                           json={"data": "dummy_data_for_triggering_an_error"})
+    _, response = app.post(
+        "/train?project=test", json={"data": "dummy_data_for_triggering_an_error"}
+    )
     rjs = response.json
     assert response.status == 500, "The training data format is not valid"
     assert "error" in rjs
@@ -166,27 +199,29 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     assert response.status == 404, "Project should not exist yet"
     train_u = "/train?project=my_keyword_model"
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
-    model_str = yaml.safe_dump(model_config, default_flow_style=False,
-                               allow_unicode=True)
-    _, response = app.post(train_u,
-                           headers={"Content-Type": "application/x-yml"},
-                           data=model_str)
+    model_str = yaml.safe_dump(
+        model_config, default_flow_style=False, allow_unicode=True
+    )
+    _, response = app.post(
+        train_u, headers={"Content-Type": "application/x-yml"}, data=model_str
+    )
     assert response.status == 200, "Training should end successfully"
 
-    _, response = app.post(train_u,
-                           headers={"Content-Type": "application/json"},
-                           data=json.dumps(model_config))
+    _, response = app.post(
+        train_u,
+        headers={"Content-Type": "application/json"},
+        data=json.dumps(model_config),
+    )
     assert response.status == 200, "Training should end successfully"
 
     _, response = app.get(query)
-    assert response.status == 200, "Project should now exist " \
-                                   "after it got trained"
+    assert response.status == 200, "Project should now exist " "after it got trained"
 
 
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
-    _, response = app.post("/evaluate",
-                           json=rasa_default_train_data,
-                           params={"project": "project123"})
+    _, response = app.post(
+        "/evaluate", json=rasa_default_train_data, params={"project": "project123"}
+    )
 
     rjs = response.json
     assert response.status == 500, "The project cannot be found"
@@ -196,8 +231,9 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
 
 
 def test_evaluate_internal_error(app, rasa_default_train_data):
-    _, response = app.post("/evaluate",
-                           json={"data": "dummy_data_for_triggering_an_error"})
+    _, response = app.post(
+        "/evaluate", json={"data": "dummy_data_for_triggering_an_error"}
+    )
 
     rjs = response.json
     assert response.status == 500, "The training data format is not valid"
@@ -206,8 +242,7 @@ def test_evaluate_internal_error(app, rasa_default_train_data):
 
 
 def test_evaluate(app, rasa_default_train_data):
-    _, response = app.post("/evaluate",
-                           json=rasa_default_train_data)
+    _, response = app.post("/evaluate", json=rasa_default_train_data)
 
     rjs = response.json
     assert response.status == 200, "Evaluation should start"
@@ -224,14 +259,13 @@ def test_unload_model_error(app):
     _, response = app.delete(project_err)
     rjs = response.json
     assert response.status == 500, "Project not found"
-    assert rjs['error'] == "Project my_project could not be found"
+    assert rjs["error"] == "Project my_project could not be found"
 
     model_err = "/models?model=my_model"
     _, response = app.delete(model_err)
     rjs = response.json
     assert response.status == 500, "Model not found"
-    assert rjs['error'] == ("Failed to unload model my_model for project "
-                            "default.")
+    assert rjs["error"] == ("Failed to unload model my_model for project " "default.")
 
 
 def test_unload_fallback(app):

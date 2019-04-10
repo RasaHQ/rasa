@@ -99,8 +99,7 @@ class DataRouter(object):
         # -258934405
         multiprocessing.set_start_method("spawn", force=True)
 
-        self.pool = ProcessPoolExecutor(
-            max_workers=self._training_processes)
+        self.pool = ProcessPoolExecutor(max_workers=self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -122,10 +121,10 @@ class DataRouter(object):
             # which we are going to use to log requests
             utils.create_dir_for_file(response_logfile)
             # noinspection PyTypeChecker
-            query_logger = logging.getLogger('query-logger')
+            query_logger = logging.getLogger("query-logger")
             query_logger.setLevel(logging.INFO)
             ch = logging.FileHandler(response_logfile)
-            ch.setFormatter(logging.Formatter('%(message)s'))
+            ch.setFormatter(logging.Formatter("%(message)s"))
             query_logger.propagate = False
             query_logger.addHandler(ch)
             logger.info("Logging requests to '{}'.".format(response_logfile))
@@ -298,12 +297,13 @@ class DataRouter(object):
             },
         }
 
-    async def start_train_process(self,
-                                  data_file: Text,
-                                  project: Text,
-                                  train_config: RasaNLUModelConfig,
-                                  model_name: Optional[Text] = None
-                                  ):
+    async def start_train_process(
+        self,
+        data_file: Text,
+        project: Text,
+        train_config: RasaNLUModelConfig,
+        model_name: Optional[Text] = None,
+    ):
         """Start a model training."""
 
         if not project:
@@ -327,22 +327,26 @@ class DataRouter(object):
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
 
-        task = loop.run_in_executor(self.pool,
-                                    do_train_in_worker,
-                                    train_config,
-                                    data_file,
-                                    self.project_dir,
-                                    project,
-                                    model_name,
-                                    self.remote_storage)
+        task = loop.run_in_executor(
+            self.pool,
+            do_train_in_worker,
+            train_config,
+            data_file,
+            self.project_dir,
+            project,
+            model_name,
+            self.remote_storage,
+        )
 
         try:
             model_path = await task
             model_dir = os.path.basename(os.path.normpath(model_path))
             self.project_store[project].update(model_dir)
 
-            if (self.project_store[project].current_training_processes == 1 and
-                    self.project_store[project].status == STATUS_TRAINING):
+            if (
+                self.project_store[project].current_training_processes == 1
+                and self.project_store[project].status == STATUS_TRAINING
+            ):
                 self.project_store[project].status = STATUS_READY
             return model_path
         except Exception as e:
@@ -355,10 +359,9 @@ class DataRouter(object):
             self.project_store[project].current_training_processes -= 1
 
     # noinspection PyProtectedMember
-    async def evaluate(self,
-                       data: Text,
-                       project: Optional[Text] = None,
-                       model: Optional[Text] = None) -> Dict[Text, Any]:
+    async def evaluate(
+        self, data: Text, project: Optional[Text] = None, model: Optional[Text] = None
+    ) -> Dict[Text, Any]:
 
         """Perform a model evaluation."""
 
@@ -387,9 +390,9 @@ class DataRouter(object):
             errors_filename=None,
         )
 
-    async def unload_model(self,
-                           project: Optional[Text],
-                           model: Text) -> Dict[Text, Any]:
+    async def unload_model(
+        self, project: Optional[Text], model: Text
+    ) -> Dict[Text, Any]:
 
         """Unload a model from server memory."""
 

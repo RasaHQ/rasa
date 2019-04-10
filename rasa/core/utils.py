@@ -373,8 +373,9 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
 
-    return rasa.utils.endpoints.default_arg(
-        request, name, str(default)).lower() == 'true'
+    return (
+        rasa.utils.endpoints.default_arg(request, name, str(default)).lower() == "true"
+    )
 
 
 def float_arg(
@@ -397,9 +398,9 @@ def float_arg(
         return default
 
 
-def extract_args(kwargs: Dict[Text, Any],
-                 keys_to_extract: Set[Text]
-                 ) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:
+def extract_args(
+    kwargs: Dict[Text, Any], keys_to_extract: Set[Text]
+) -> Tuple[Dict[Text, Any], Dict[Text, Any]]:
     """Go through the kwargs and filter out the specified keys.
 
     Return both, the filtered kwargs as well as the remaining kwargs."""
@@ -561,8 +562,7 @@ def set_default_subparser(parser, default_subparser):
             sys.argv.insert(1, default_subparser)
 
 
-def create_task_error_logger(error_message: Text = ""
-                             ) -> Callable[[Future], None]:
+def create_task_error_logger(error_message: Text = "") -> Callable[[Future], None]:
     """Error logger to be attached to a task.
 
     This will ensure exceptions are properly logged and won't get lost."""

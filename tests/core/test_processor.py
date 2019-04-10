@@ -26,6 +26,7 @@ from tests.utilities import json_of_latest_request, latest_request
 @pytest.fixture(scope="module")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
+
     return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
