@@ -24,6 +24,7 @@ Removed
 -------
 - removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
   Use the CLI for rasa instead, e.g. ``rasa train core``.
+- removed ``_sklearn_numpy_warning_fix`` from the ``SklearnIntentClassifier``
 
 Fixed
 -----

@@ -17,18 +17,6 @@ if typing.TYPE_CHECKING:
     import sklearn
 
 
-def _sklearn_numpy_warning_fix():
-    """Fixes unecessary warnings emitted by sklearns use of numpy.
-
-    Sklearn will fix the warnings in their next release in ~ August 2018.
-    based on https://stackoverflow.com/a/49668081"""
-    import warnings
-
-    warnings.filterwarnings(
-        module="sklearn*", action="ignore", category=DeprecationWarning
-    )
-
-
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
 
@@ -68,8 +56,6 @@ class SklearnIntentClassifier(Component):
         else:
             self.le = LabelEncoder()
         self.clf = clf
-
-        _sklearn_numpy_warning_fix()
 
     @classmethod
     def required_packages(cls) -> List[Text]:
