@@ -38,6 +38,7 @@ templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
 
 .. _customactions:
+
 Custom Actions
 --------------
 

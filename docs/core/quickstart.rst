@@ -179,7 +179,7 @@ Rasa Core's job is to choose the right action to execute at each step
 of the conversation. Simple actions are just sending a message to a user.
 These simple actions are the ``actions`` in the domain, which start
 with ``utter_``. They will just respond with a message based on a template
-from the ``templates`` section. See :ref:`customactions` for how to build
+from the ``templates`` section. See :ref:`actions` for how to build
 more interesting actions.
 
 In our simple example we don't need ``slots`` and ``entities``,

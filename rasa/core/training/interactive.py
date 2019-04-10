@@ -179,9 +179,6 @@ async def send_action(
                     "but the new utterance will be saved to your domain file "
                     "when you exit and save this session. "
                     "You do not need to do anything further. "
-                    "If you want to change the utterance or implement '{0}' as "
-                    "a custom action you are recommended to implement this "
-                    "in your domain file/ action server and try again. "
                     "".format(action_name, [*NEW_TEMPLATES[action_name]]))
                 await _ask_questions(warning_questions, sender_id, endpoint)
                 payload = ActionExecuted(action_name).as_dict()
@@ -633,10 +630,11 @@ async def _request_action_from_user(
     tracker = await retrieve_tracker(endpoint, sender_id)
     evts = tracker.get("events", [])
 
-    session_actions_unique = []
+    # session_actions_unique = []
     session_actions_all = [a["name"] for a in _collect_actions(evts)]
-    [session_actions_unique.append(a) for a in session_actions_all if
-     a not in session_actions_unique]
+    session_actions_unique = list(set(session_actions_all))
+    # [session_actions_unique.append(a) for a in session_actions_all if
+    #  a not in session_actions_unique]
     old_actions = [action["value"] for action in choices]
     new_actions = [{"name": action, "value": OTHER_ACTION + action} for action
                    in session_actions_unique if action not in old_actions]

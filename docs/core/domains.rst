@@ -48,7 +48,7 @@ For example, an ``action`` can:
 * make an external API call
 * query a database
 
-see :ref:`customactions`
+see :ref:`actions`
 
 For a more complete example domain, check the :doc:`quickstart`.
 
@@ -74,7 +74,7 @@ a class ``MyAwesomeAction``, and module ``my_slots`` containing
 
 The ``name`` function of ``MyAwesomeAction`` needs to return
 ``my_custom_action`` in this example (for more details,
-see :ref:`customactions`).
+see :ref:`actions`).
 
 .. _utter_templates:
 

@@ -151,20 +151,20 @@ In this case, the bot should execute ``action_show_concert_reviews``
 
 At this point we can also choose to create a new action, if the correct action
 is not yet implemented. There are two types of new actions that can be created
-1) create an ``utter_{}`` action which uses :ref:`_utter_templates` or
-2) create a custom action which returns events.
+1) create an ``utter_{}`` action which uses :ref:`utter_templates` or
+2) create a custom action.
 
-Only the first type can be created during interactive learning. After choosing
-``<create new action>`` we are prompted to type the action name, in order to
-create a template action we use the prefix ``utter_`` and name the action for
-example ``utter_compliment``. Now we get a new prompt asking for the text
-that the template for our new action should store to send back to the user.
+Only the first type is fully implemented by interactive learning.
+After choosing ``<create new action>`` we are prompted to type the action name,
+in order to create a template action we use the prefix ``utter_`` and name the
+action for example ``utter_compliment``. Now we get a new prompt asking for the
+text that the template for our new action should store to send back to the user.
 
-If we choose to create a new action which should return events and not just
-play back an utterance, this needs to be implemented in our action server as
-:ref:`_customactions`. We can still add the action name in interactive learning
-and continue the session, but no events will be returned and you are advised
-to implement the action first.
+If we choose to create a new action which for example should return events
+and not just play back an utterance, this needs to be implemented in our
+action server as :ref:`customactions`. We can still add the action name in
+interactive learning and continue the session, but no events will be returned
+and you are advised to implement the action first.
 
 Now we can keep talking to the bot for as long as we like to create a longer
 conversation. At any point you can press ``Ctrl-C`` and the bot will
