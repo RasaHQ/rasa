@@ -14,9 +14,7 @@ import zipfile
 from asyncio import AbstractEventLoop, Future
 from hashlib import md5, sha1
 from io import BytesIO as IOReader, StringIO
-from typing import (
-    Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple,
-    Callable)
+from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
 
 import aiohttp
 from aiohttp import InvalidURL
@@ -36,15 +34,16 @@ if TYPE_CHECKING:
 
 def configure_file_logging(loglevel, logfile):
     if logfile:
-        fh = logging.FileHandler(logfile, encoding='utf-8')
+        fh = logging.FileHandler(logfile, encoding="utf-8")
         fh.setLevel(loglevel)
-        logging.getLogger('').addHandler(fh)
+        logging.getLogger("").addHandler(fh)
     logging.captureWarnings(True)
 
 
 # noinspection PyUnresolvedReferences
-def class_from_module_path(module_path: Text,
-                           lookup_path: Optional[Text] = None) -> Any:
+def class_from_module_path(
+    module_path: Text, lookup_path: Optional[Text] = None
+) -> Any:
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects. """
@@ -52,7 +51,7 @@ def class_from_module_path(module_path: Text,
 
     # load the module, will raise ImportError if module cannot be loaded
     if "." in module_path:
-        module_name, _, class_name = module_path.rpartition('.')
+        module_name, _, class_name = module_path.rpartition(".")
         m = importlib.import_module(module_name)
         # get the class, will raise AttributeError if class cannot be found
         return getattr(m, class_name)
@@ -66,8 +65,7 @@ def class_from_module_path(module_path: Text,
             m = importlib.import_module(lookup_path)
             return getattr(m, module_path)
         else:
-            raise ImportError("Cannot retrieve class from path {}."
-                              "".format(module_path))
+            raise ImportError("Cannot retrieve class from path {}.".format(module_path))
 
 
 def module_path_from_instance(inst: Any) -> Text:
@@ -84,15 +82,17 @@ def dump_obj_as_json_to_file(filename: Text, obj: Any) -> None:
 def dump_obj_as_str_to_file(filename: Text, text: Text) -> None:
     """Dump a text to a file."""
 
-    with open(filename, 'w', encoding="utf-8") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         # noinspection PyTypeChecker
         f.write(str(text))
 
 
-def subsample_array(arr: List[Any],
-                    max_values: int,
-                    can_modify_incoming_array: bool = True,
-                    rand: Optional['Random'] = None) -> List[Any]:
+def subsample_array(
+    arr: List[Any],
+    max_values: int,
+    can_modify_incoming_array: bool = True,
+    rand: Optional["Random"] = None,
+) -> List[Any]:
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -124,7 +124,7 @@ def lazyproperty(fn):
     will happen once, on the first call of the property. All succeeding calls
     will use the value stored in the private property."""
 
-    attr_name = '_lazy_' + fn.__name__
+    attr_name = "_lazy_" + fn.__name__
 
     @property
     def _lazyprop(self):
@@ -148,9 +148,12 @@ def create_dir_for_file(file_path: Text) -> None:
 
 def one_hot(hot_idx, length, dtype=None):
     import numpy
+
     if hot_idx >= length:
-        raise ValueError("Can't create one hot. Index '{}' is out "
-                         "of range (length '{}')".format(hot_idx, length))
+        raise ValueError(
+            "Can't create one hot. Index '{}' is out "
+            "of range (length '{}')".format(hot_idx, length)
+        )
     r = numpy.zeros(length, dtype)
     r[hot_idx] = 1
     return r
@@ -162,6 +165,7 @@ def str_range_list(start, end):
 
 def generate_id(prefix="", max_chars=None):
     import uuid
+
     gid = uuid.uuid4().hex
     if max_chars:
         gid = gid[:max_chars]
@@ -171,9 +175,12 @@ def generate_id(prefix="", max_chars=None):
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
-        print("Invalid answer, only {}{} allowed\n".format(
-            ", ".join(valid_values[:max_suggested]),
-            ",..." if len(valid_values) > max_suggested else ""))
+        print (
+            "Invalid answer, only {}{} allowed\n".format(
+                ", ".join(valid_values[:max_suggested]),
+                ",..." if len(valid_values) > max_suggested else "",
+            )
+        )
 
     while True:
         try:
@@ -254,7 +261,7 @@ def _dump_yaml(obj, output):
 
 def dump_obj_as_yaml_to_file(filename, obj):
     """Writes data (python dict) to the filename in yaml repr."""
-    with open(filename, 'w', encoding="utf-8") as output:
+    with open(filename, "w", encoding="utf-8") as output:
         _dump_yaml(obj, output)
 
 
@@ -276,6 +283,7 @@ def list_routes(app: Sanic):
 
     Mainly used for debugging."""
     from urllib.parse import unquote
+
     output = {}
 
     def find_route(suffix, path):
@@ -295,12 +303,13 @@ def list_routes(app: Sanic):
         if not isinstance(route.handler, CompositionView):
             handlers = [(list(route.methods)[0], route.name)]
         else:
-            handlers = [(method, find_route(v.__name__, endpoint) or v.__name__)
-                        for method, v in route.handler.handlers.items()]
+            handlers = [
+                (method, find_route(v.__name__, endpoint) or v.__name__)
+                for method, v in route.handler.handlers.items()
+            ]
 
         for method, name in handlers:
-            line = unquote(
-                "{:50s} {:30s} {}".format(endpoint, method, name))
+            line = unquote("{:50s} {:30s} {}".format(endpoint, method, name))
             output[name] = line
 
     url_table = "\n".join(output[url] for url in sorted(output))
@@ -344,7 +353,7 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
 
     if len(s) > char_limit:
         if append_ellipsis:
-            return s[:char_limit - 3] + "..."
+            return s[: char_limit - 3] + "..."
         else:
             return s[:char_limit]
     else:
@@ -354,7 +363,7 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
 def write_request_body_to_file(request: Request, path: Text):
     """Writes the body of `request` to `path`."""
 
-    with open(path, 'w+b') as f:
+    with open(path, "w+b") as f:
         f.write(request.body)
 
 
@@ -368,9 +377,9 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
         request, name, str(default)).lower() == 'true'
 
 
-def float_arg(request: Request,
-              key: Text,
-              default: Optional[float] = None) -> Optional[float]:
+def float_arg(
+    request: Request, key: Text, default: Optional[float] = None
+) -> Optional[float]:
     """Return a passed argument cast as a float or None.
 
     Checks the `name` parameter of the request if it contains a valid
@@ -428,8 +437,9 @@ def concat_url(base: Text, subpath: Optional[Text]) -> Text:
 def all_subclasses(cls: Any) -> List[Any]:
     """Returns all known (imported) subclasses of a class."""
 
-    return cls.__subclasses__() + [g for s in cls.__subclasses__()
-                                   for g in all_subclasses(s)]
+    return cls.__subclasses__() + [
+        g for s in cls.__subclasses__() for g in all_subclasses(s)
+    ]
 
 
 def is_limit_reached(num_messages, limit):
@@ -441,7 +451,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
     line_filter = re.compile(line_pattern)
 
-    with open(filename, 'r', encoding="utf-8") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         num_messages = 0
         for line in f:
             m = line_filter.match(line)
@@ -455,7 +465,7 @@ def read_lines(filename, max_line_limit=None, line_pattern=".*"):
 
 def file_as_bytes(path: Text) -> bytes:
     """Read in a file as a byte array."""
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         return f.read()
 
 
@@ -481,8 +491,7 @@ async def download_file_from_url(url: Text) -> Text:
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, raise_for_status=True) as resp:
-            filename = nlu_utils.create_temporary_file(await resp.read(),
-                                                       mode="w+b")
+            filename = nlu_utils.create_temporary_file(await resp.read(), mode="w+b")
 
     return filename
 
@@ -502,28 +511,26 @@ class AvailableEndpoints(object):
 
     @classmethod
     def read_endpoints(cls, endpoint_file):
-        nlg = read_endpoint_config(
-            endpoint_file, endpoint_type="nlg")
-        nlu = read_endpoint_config(
-            endpoint_file, endpoint_type="nlu")
-        action = read_endpoint_config(
-            endpoint_file, endpoint_type="action_endpoint")
-        model = read_endpoint_config(
-            endpoint_file, endpoint_type="models")
+        nlg = read_endpoint_config(endpoint_file, endpoint_type="nlg")
+        nlu = read_endpoint_config(endpoint_file, endpoint_type="nlu")
+        action = read_endpoint_config(endpoint_file, endpoint_type="action_endpoint")
+        model = read_endpoint_config(endpoint_file, endpoint_type="models")
         tracker_store = read_endpoint_config(
-            endpoint_file, endpoint_type="tracker_store")
-        event_broker = read_endpoint_config(
-            endpoint_file, endpoint_type="event_broker")
+            endpoint_file, endpoint_type="tracker_store"
+        )
+        event_broker = read_endpoint_config(endpoint_file, endpoint_type="event_broker")
 
         return cls(nlg, nlu, action, model, tracker_store, event_broker)
 
-    def __init__(self,
-                 nlg=None,
-                 nlu=None,
-                 action=None,
-                 model=None,
-                 tracker_store=None,
-                 event_broker=None):
+    def __init__(
+        self,
+        nlg=None,
+        nlu=None,
+        action=None,
+        model=None,
+        tracker_store=None,
+        event_broker=None,
+    ):
         self.model = model
         self.action = action
         self.nlu = nlu
@@ -533,15 +540,14 @@ class AvailableEndpoints(object):
 
 
 # noinspection PyProtectedMember
-def set_default_subparser(parser,
-                          default_subparser):
+def set_default_subparser(parser, default_subparser):
     """default subparser selection. Call after setup, just before parse_args()
 
     parser: the name of the parser you're making changes to
     default_subparser: the name of the subparser to call by default"""
     subparser_found = False
     for arg in sys.argv[1:]:
-        if arg in ['-h', '--help']:  # global help if no subparser
+        if arg in ["-h", "--help"]:  # global help if no subparser
             break
     else:
         for x in parser._subparsers._actions:
@@ -566,8 +572,10 @@ def create_task_error_logger(error_message: Text = ""
         try:
             fut.result()
         except Exception:
-            logger.exception("An exception was raised while running task. "
-                             "{}".format(error_message))
+            logger.exception(
+                "An exception was raised while running task. "
+                "{}".format(error_message)
+            )
 
     return handler
 

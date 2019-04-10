@@ -20,6 +20,8 @@ import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.data_router import (
     DataRouter, InvalidProjectError, MaxTrainingError)
+from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxTrainingError
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import read_endpoints, json_to_string
 
@@ -47,7 +49,6 @@ def _docs(sub_url: Text) -> Text:
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(description='parse incoming text')
-
     cli.add_server_arguments(parser)
     utils.add_logging_option_arguments(parser)
 
@@ -209,8 +210,8 @@ def create_app(data_router,
     async def parse(request):
         request_params = request.json
 
-        if 'query' in request_params:
-            request_params['q'] = request_params.pop('query')
+        if "query" in request_params:
+            request_params["q"] = request_params.pop("query")
 
         if 'q' not in request_params:
             return response.json({
@@ -269,7 +270,6 @@ def create_app(data_router,
     @app.post("/train")
     @requires_auth(app, token)
     async def train(request):
-
         # if not set will use the default project name, e.g. "default"
         project = request.raw_args.get("project", None)
         # if set will not generate a model name but use the passed one
@@ -288,6 +288,7 @@ def create_app(data_router,
                 RasaNLUModelConfig(model_config), model_name)
             zipped_path = utils.zip_folder(path_to_model)
             return await response.file(zipped_path)
+
         except MaxTrainingError as e:
             return response.json({"error": "{}".format(e)}, status=403)
         except InvalidProjectError as e:
@@ -335,8 +336,8 @@ def get_token(_clitoken: str) -> str:
             " with value `{}`, and with an environment variable, "
             "with value `{}`. "
             "Please set the token with just one method "
-            "to avoid unexpected behaviours.".format(
-                _clitoken, _envtoken))
+            "to avoid unexpected behaviours.".format(_clitoken, _envtoken)
+        )
 
     token = _clitoken or _envtoken
     return token
@@ -354,11 +355,12 @@ def main(args):
         args.emulate,
         args.storage,
         model_server=_endpoints.model,
-        wait_time_between_pulls=args.wait_time_between_pulls)
+        wait_time_between_pulls=args.wait_time_between_pulls,
+    )
 
     if pre_load:
-        logger.debug('Preloading....')
-        if 'all' in pre_load:
+        logger.debug("Preloading....")
+        if "all" in pre_load:
             pre_load = router.project_store.keys()
         router._pre_load(pre_load)
 
@@ -368,7 +370,7 @@ def main(args):
         args.write,
         get_token(args.token),
         args.cors,
-        default_config_path=args.config
+        default_config_path=args.config,
     )
     rasa.add_task(configure_logging)
 
@@ -378,7 +380,9 @@ def main(args):
              access_log=logger.isEnabledFor(logging.DEBUG))
 
 
-if __name__ == '__main__':
-    raise RuntimeError("Calling `rasa.nlu.server` directly is "
-                       "no longer supported. "
-                       "Please use `rasa run nlu` instead.")
+if __name__ == "__main__":
+    raise RuntimeError(
+        "Calling `rasa.nlu.server` directly is "
+        "no longer supported. "
+        "Please use `rasa run nlu` instead."
+    )

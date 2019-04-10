@@ -33,8 +33,9 @@ def app(tmpdir_factory):
 
 @pytest.fixture
 def rasa_default_train_data():
-    with io.open('data/examples/rasa/demo-rasa.json',
-                 encoding='utf-8-sig') as train_file:
+    with io.open(
+        "data/examples/rasa/demo-rasa.json", encoding="utf-8-sig"
+    ) as train_file:
         return json.loads(train_file.read())
 
 
@@ -83,6 +84,7 @@ def test_version(app):
          'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
     ),
 ])
+
 def test_get_parse(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
@@ -122,9 +124,9 @@ def test_post_parse(app, response_test):
     rjs = response.json
     assert response.status == 200
     assert rjs == response_test.expected_response
-    assert all(prop in rjs for prop in
-               ['project', 'entities', 'intent',
-                'text', 'model'])
+    assert all(
+        prop in rjs for prop in ["project", "entities", "intent", "text", "model"]
+    )
 
 
 @utilities.slowtest
@@ -138,6 +140,7 @@ def test_post_train(app, rasa_default_train_data):
 @utilities.slowtest
 def test_post_train_success(app, rasa_default_train_data):
     import zipfile
+
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
 
     _, response = app.post("/train?project=test&model=test",
@@ -187,6 +190,7 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
 
     rjs = response.json
     assert response.status == 500, "The project cannot be found"
+
     assert "error" in rjs
     assert rjs["error"] == "Project project123 could not be found"
 
@@ -209,11 +213,10 @@ def test_evaluate(app, rasa_default_train_data):
     assert response.status == 200, "Evaluation should start"
     assert "intent_evaluation" in rjs
     assert "entity_evaluation" in rjs
-    assert all(prop in rjs["intent_evaluation"] for prop in ["report",
-                                                             "predictions",
-                                                             "precision",
-                                                             "f1_score",
-                                                             "accuracy"])
+    assert all(
+        prop in rjs["intent_evaluation"]
+        for prop in ["report", "predictions", "precision", "f1_score", "accuracy"]
+    )
 
 
 def test_unload_model_error(app):

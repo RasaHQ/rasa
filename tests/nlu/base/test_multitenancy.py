@@ -52,6 +52,7 @@ def app(router):
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
+
 def test_get_parse(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
@@ -71,6 +72,7 @@ def test_get_parse(app, response_test):
         {"error": "No project found with name 'umpalumpa'."}
     )
 ])
+
 def test_get_parse_invalid_model(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
@@ -157,9 +159,9 @@ def train_models(component_builder, data):
         trainer.train(training_data)
         trainer.persist("test_projects", project_name=project_name)
 
-    train("sample_configs/config_pretrained_embeddings_spacy.yml",
-          "test_project_spacy")
-    train("sample_configs/config_pretrained_embeddings_mitie.yml",
-          "test_project_mitie")
-    train("sample_configs/config_pretrained_embeddings_mitie_2.yml",
-          "test_project_mitie_2")
+    train("sample_configs/config_pretrained_embeddings_spacy.yml", "test_project_spacy")
+    train("sample_configs/config_pretrained_embeddings_mitie.yml", "test_project_mitie")
+    train(
+        "sample_configs/config_pretrained_embeddings_mitie_2.yml",
+        "test_project_mitie_2",
+    )
