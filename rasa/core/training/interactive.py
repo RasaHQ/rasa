@@ -174,12 +174,13 @@ async def send_action(
             if action_name in NEW_TEMPLATES:
                 warning_questions = questionary.confirm(
                     "WARNING: You have created a new action: '{0}', "
-                    "with matching template: {1}. "
+                    "with matching template: '{1}'. "
                     "This action will not return its message in this session, "
                     "but the new utterance will be saved to your domain file "
                     "when you exit and save this session. "
                     "You do not need to do anything further. "
-                    "".format(action_name, [*NEW_TEMPLATES[action_name]]))
+                    "".format(action_name, [*NEW_TEMPLATES[action_name]][0]))
+
                 await _ask_questions(warning_questions, sender_id, endpoint)
                 payload = ActionExecuted(action_name).as_dict()
                 return await send_event(endpoint, sender_id, payload)
@@ -630,11 +631,8 @@ async def _request_action_from_user(
     tracker = await retrieve_tracker(endpoint, sender_id)
     evts = tracker.get("events", [])
 
-    # session_actions_unique = []
     session_actions_all = [a["name"] for a in _collect_actions(evts)]
     session_actions_unique = list(set(session_actions_all))
-    # [session_actions_unique.append(a) for a in session_actions_all if
-    #  a not in session_actions_unique]
     old_actions = [action["value"] for action in choices]
     new_actions = [{"name": action, "value": OTHER_ACTION + action} for action
                    in session_actions_unique if action not in old_actions]
