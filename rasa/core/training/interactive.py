@@ -629,7 +629,7 @@ async def _request_action_from_user(
         if "utter_" in action_name:
             utter_message = await _request_free_text_utterance(
                 sender_id, endpoint, action_name)
-            NEW_TEMPLATES[action_name] = {utter_message: "new message IL"}
+            NEW_TEMPLATES[action_name] = {utter_message: utter_message}
 
     elif action_name[:32] == OTHER_ACTION:
         # action was newly created in the session, but not this turn
@@ -638,6 +638,7 @@ async def _request_action_from_user(
 
     print("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name, is_new_action
+
 
 def _request_export_info() -> Tuple[Text, Text, Text]:
     """Request file path and export stories & nlu data to that path"""
