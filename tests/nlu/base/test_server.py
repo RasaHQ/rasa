@@ -2,6 +2,8 @@
 import asyncio
 import io
 import json
+import os
+import shutil
 import tempfile
 import time
 
@@ -9,25 +11,40 @@ import pytest
 import ruamel.yaml as yaml
 import tempfile
 
-
+from rasa import data, model
+from rasa.cli.utils import create_output_path
+from rasa.nlu import config
 from rasa.nlu.data_router import DataRouter
+from rasa.nlu.model import Trainer
 from rasa.nlu.server import create_app
 from tests.nlu import utilities
 from tests.nlu.utilities import ResponseTest
 
 
+@pytest.fixture(scope="module")
+def router(component_builder):
+    """Test sanic server."""
+
+    if "TRAVIS_BUILD_DIR" in os.environ:
+        root_dir = os.environ["TRAVIS_BUILD_DIR"]
+    else:
+        root_dir = os.getcwd()
+
+    train_models(component_builder,
+                 os.path.join(root_dir, "data/examples/rasa/demo-rasa.json"))
+
+    router = DataRouter(os.path.join(root_dir, "test_projects/test_project_spacy"))
+    return router
+
+
 @pytest.fixture
-def app(tmpdir_factory):
-    """Use IResource interface of Klein to mock Rasa HTTP server.
-    """
-
+def app(router):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
-
-    router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
 
     rasa = create_app(
         router,
         logfile=nlu_log_file)
+
     return rasa.test_client
 
 
@@ -47,10 +64,10 @@ def test_root(app):
 def test_status(app):
     _, response = app.get("/status")
     rjs = response.json
-    assert response.status == 200 and "available_projects" in rjs
+    assert response.status == 200
+    assert "loaded_model" in rjs
     assert "current_training_processes" in rjs
     assert "max_training_processes" in rjs
-    assert "default" in rjs["available_projects"]
 
 
 def test_version(app):
@@ -63,23 +80,23 @@ def test_version(app):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse?q=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "/parse?query=hello",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "/parse?q=hello ńöñàśçií",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello ńöñàśçií'}
     ),
     ResponseTest(
         "/parse?q=",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'entities': [], 'model': 'fallback',
          'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
     ),
 ])
@@ -87,30 +104,32 @@ def test_get_parse(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
     assert response.status == 200
-    assert rjs == response_test.expected_response
     assert all(prop in rjs for prop in
-               ['project', 'entities', 'intent',
+               ['entities', 'intent',
                 'text', 'model'])
+    assert rjs['entities'] == response_test.expected_response['entities']
+    assert rjs['model'].startswith('nlu')
+    assert rjs['text'] == response_test.expected_response['text']
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'entities': [],
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello'},
         payload={"q": "hello"}
     ),
     ResponseTest(
         "/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        { 'entities': [],
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello'},
         payload={"query": "hello"}
     ),
     ResponseTest(
         "/parse",
-        {'project': 'default', 'entities': [], 'model': 'fallback',
+        {'entities': [],
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello ńöñàśçií'},
         payload={"q": "hello ńöñàśçií"}
@@ -121,10 +140,12 @@ def test_post_parse(app, response_test):
                            json=response_test.payload)
     rjs = response.json
     assert response.status == 200
-    assert rjs == response_test.expected_response
     assert all(prop in rjs for prop in
-               ['project', 'entities', 'intent',
+               ['entities', 'intent',
                 'text', 'model'])
+    assert rjs['entities'] == response_test.expected_response['entities']
+    assert rjs['model'].startswith('nlu')
+    assert rjs['text'] == response_test.expected_response['text']
 
 
 @utilities.slowtest
@@ -140,7 +161,7 @@ def test_post_train_success(app, rasa_default_train_data):
     import zipfile
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
 
-    _, response = app.post("/train?project=test&model=test",
+    _, response = app.post("/train?model=test",
                            json=model_config)
 
     content = response.body
@@ -150,7 +171,7 @@ def test_post_train_success(app, rasa_default_train_data):
 
 @utilities.slowtest
 def test_post_train_internal_error(app, rasa_default_train_data):
-    _, response = app.post("/train?project=test",
+    _, response = app.post("/train",
                            json={"data": "dummy_data_for_triggering_an_error"})
     rjs = response.json
     assert response.status == 500, "The training data format is not valid"
@@ -158,10 +179,10 @@ def test_post_train_internal_error(app, rasa_default_train_data):
 
 
 def test_model_hot_reloading(app, rasa_default_train_data):
-    query = "/parse?q=hello&project=my_keyword_model"
+    query = "/parse?q=hello&model=not-existing"
     _, response = app.get(query)
     assert response.status == 404, "Project should not exist yet"
-    train_u = "/train?project=my_keyword_model"
+    train_u = "/train"
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
     model_str = yaml.safe_dump(model_config, default_flow_style=False,
                                allow_unicode=True)
@@ -181,14 +202,13 @@ def test_model_hot_reloading(app, rasa_default_train_data):
 
 
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
-    _, response = app.post("/evaluate",
-                           json=rasa_default_train_data,
-                           params={"project": "project123"})
+    _, response = app.post("/evaluate?model=not-existing",
+                           json=rasa_default_train_data)
 
     rjs = response.json
     assert response.status == 500, "The project cannot be found"
     assert "error" in rjs
-    assert rjs["error"] == "Project project123 could not be found"
+    assert rjs["error"] == "No model loaded with name 'not-existing'."
 
 
 def test_evaluate_internal_error(app, rasa_default_train_data):
@@ -217,23 +237,40 @@ def test_evaluate(app, rasa_default_train_data):
 
 
 def test_unload_model_error(app):
-    project_err = "/models?project=my_project&model=my_model"
+    project_err = "/models?model=my_model"
     _, response = app.delete(project_err)
     rjs = response.json
     assert response.status == 500, "Project not found"
-    assert rjs['error'] == "Project my_project could not be found"
-
-    model_err = "/models?model=my_model"
-    _, response = app.delete(model_err)
-    rjs = response.json
-    assert response.status == 500, "Model not found"
-    assert rjs['error'] == ("Failed to unload model my_model for project "
-                            "default.")
+    assert rjs['error'] == "No model loaded with name 'my_model'."
 
 
-def test_unload_fallback(app):
-    unload = "/models?model=fallback"
+def test_unload_model(app):
+    unload = "/models"
     _, response = app.delete(unload)
-    rjs = response.json
-    assert response.status == 200, "Fallback model unloaded"
-    assert rjs == "fallback"
+    assert response.status == 204, "No Content"
+
+
+def train_models(component_builder, data_path):
+    # Retrain different multitenancy models
+    def train(cfg_name, sub_folder):
+        from rasa.nlu import training_data
+
+        cfg = config.load(cfg_name)
+        trainer = Trainer(cfg, component_builder)
+        training_data = training_data.load_data(data_path)
+
+        trainer.train(training_data)
+
+        model_dir = os.path.join("test_projects", sub_folder)
+        model_path = trainer.persist(model_dir)
+
+        nlu_data = data.get_nlu_directory(data_path)
+        output_path = create_output_path(model_dir, prefix="nlu-")
+        new_fingerprint = model.model_fingerprint(cfg_name, nlu_data=nlu_data)
+        model.create_package_rasa(model_path, output_path, new_fingerprint)
+
+    if os.path.exists("test_projects"):
+        shutil.rmtree("test_projects")
+
+    train("sample_configs/config_pretrained_embeddings_spacy.yml",
+          "test_project_spacy")

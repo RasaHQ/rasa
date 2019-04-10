@@ -14,6 +14,8 @@ import rasa
 import rasa.utils.io
 import rasa.utils.utils
 import rasa.utils.endpoints
+from rasa import model
+from rasa.cli.utils import create_output_path
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
@@ -217,6 +219,7 @@ def create_app(data_router,
                 "error": "Invalid parse parameter specified"},
                 status=404)
         else:
+
             return await parse_response(request_params)
 
     @app.get("/version")
@@ -284,6 +287,14 @@ def create_app(data_router,
             path_to_model = await data_router.start_train_process(
                 data_file,
                 RasaNLUModelConfig(model_config), model_name)
+
+            nlu_data = data.get_nlu_directory(data_file)
+            output_path = create_output_path(path_to_model, prefix="nlu-")
+            new_fingerprint = model.model_fingerprint(model_config, nlu_data=nlu_data)
+            model.create_package_rasa(path_to_model, output_path, new_fingerprint)
+            logger.info("Your Rasa NLU model is trained and saved at '{}'.".format(
+                output_path))
+
             zipped_path = utils.zip_folder(path_to_model)
             return await response.file(zipped_path)
         except MaxTrainingError as e:
@@ -299,9 +310,8 @@ def create_app(data_router,
         data_string = request.body.decode('utf-8', 'strict')
 
         try:
-            payload = await data_router.evaluate(
+            payload = data_router.evaluate(
                 data_string,
-                request.raw_args.get('project'),
                 request.raw_args.get('model'))
             return response.json(payload)
         except Exception as e:
@@ -311,10 +321,10 @@ def create_app(data_router,
     @requires_auth(app, token)
     async def unload_model(request):
         try:
-            await data_router.unload_model(
+            data_router.unload_model(
                 request.raw_args.get('model')
             )
-            return response.STATUS_CODES.get(204)
+            return response.json(None, status=204)
         except Exception as e:
             logger.exception(e)
             return response.json({"error": "{}".format(e)}, status=500)

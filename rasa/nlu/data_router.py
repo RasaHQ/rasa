@@ -185,18 +185,21 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     async def parse(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        project = data.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME)
         model = data.get("model")
+
+        if self.interpreter is None:
+            raise InvalidProjectError("No model loaded.")
 
         if model is not None and model != self.model_name:
             logger.warning("The given model '{}' is not loaded. Currently, the model "
                            "'{}' is loaded".format(model, self.model_name))
+            raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         response = self.interpreter.parse(data['text'], data.get('time'))
         response['model'] = self.model_name
 
         if self.responses:
-            self.responses.info('', user_input=response, project=project,
+            self.responses.info('', user_input=response,
                                 model=response.get('model'))
 
         return self._format_response(response)
@@ -248,17 +251,15 @@ class DataRouter(object):
             self._current_training_processes -= 1
 
     # noinspection PyProtectedMember
-    def evaluate(self,
-                       data: Text,
-                       model: Optional[Text] = None) -> Dict[Text, Any]:
+    def evaluate(self, data: Text, model: Optional[Text] = None) -> Dict[Text, Any]:
         """Perform a model evaluation."""
         if self.interpreter is None:
-            logger.warning("Currently, no model is loaded. Cannot evaluate.")
-            return {}
+            raise InvalidProjectError("No model loaded.".format(model))
 
         if model is not None and model != self.model_name:
             logger.warning("The given model '{}' is not loaded. Currently, the model "
                            "'{}' is loaded".format(model, self.model_name))
+            raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         file_name = utils.create_temporary_file(data, "_training_data")
 
@@ -273,7 +274,7 @@ class DataRouter(object):
         if model is not None and model != self.model_name:
             logger.warning("The passed model '{}' is currently not loaded. Currently, "
                            "the model '{}' is loaded.".format(model, self.model_name))
-            return
+            raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         self.model_name = None
         self.interpreter = None
@@ -309,7 +310,9 @@ class DataRouter(object):
         unpacked_model = model.unpack_model(model_archive, working_directory)
         _, nlu_model = model.get_model_subdirectories(unpacked_model)
 
+        model_path = nlu_model if os.path.exists(nlu_model) else unpacked_model
+
         model_name = os.path.basename(model_archive)
-        interpreter = self._interpreter_for_model(nlu_model)
+        interpreter = self._interpreter_for_model(model_path)
 
         return model_name, interpreter
