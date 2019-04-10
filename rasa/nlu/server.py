@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import io
 import logging
 import os
@@ -10,6 +11,7 @@ from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 import rasa
+import rasa.utils.io
 from rasa.nlu import config, utils
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
@@ -141,8 +143,11 @@ class RasaNLU(object):
 
     @staticmethod
     def _configure_logging(loglevel, logfile):
-        logging.basicConfig(filename=logfile,
-                            level=loglevel)
+        if logfile is None:
+            utils.configure_colored_logging(loglevel)
+        else:
+            logging.basicConfig(filename=logfile,
+                                level=loglevel)
         logging.captureWarnings(True)
 
     @app.route("/", methods=['GET', 'OPTIONS'])
@@ -233,7 +238,7 @@ class RasaNLU(object):
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
 
-            model_config = utils.read_yaml(request_content)
+            model_config = rasa.utils.io.read_yaml(request_content)
             data = model_config.get("data")
 
         elif 'json' in content_type:
@@ -369,7 +374,6 @@ def get_token(_clitoken: str) -> str:
 
 
 def main(args):
-    utils.configure_colored_logging(args.loglevel)
     pre_load = args.pre_load
 
     _endpoints = read_endpoints(args.endpoints)
@@ -381,8 +385,8 @@ def main(args):
         args.emulate,
         args.storage,
         model_server=_endpoints.model,
-        wait_time_between_pulls=args.wait_time_between_pulls
-    )
+        wait_time_between_pulls=args.wait_time_between_pulls)
+
     if pre_load:
         logger.debug('Preloading....')
         if 'all' in pre_load:
@@ -394,7 +398,7 @@ def main(args):
         args.loglevel,
         args.write,
         args.num_threads,
-        get_token(cmdline_args.token),
+        get_token(args.token),
         args.cors,
         default_config_path=args.config
     )
@@ -404,6 +408,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    # Running as standalone python application
-    cmdline_args = create_argument_parser().parse_args()
-    main(cmdline_args)
+    raise RuntimeError("Calling `rasa.nlu.server` directly is "
+                       "no longer supported. "
+                       "Please use `rasa run nlu` instead.")

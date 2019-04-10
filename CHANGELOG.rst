@@ -16,11 +16,17 @@ Changed
 -------
 - changed removing punctuation logic in ``WhitespaceTokenizer``
 - ``training_processes`` in the Rasa NLU data router have been renamed to ``pool_processes``
+- created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 
 Removed
 -------
+- removed possibility to execute ``python -m rasa_core.train`` etc. (e.g. scripts in ``rasa.core`` and ``rasa.nlu``).
+  Use the CLI for rasa instead, e.g. ``rasa train core``.
 
 Fixed
 -----
 - the ``/evaluate`` route for the Rasa NLU server now runs evaluation
   in a parallel process, which prevents the currently loaded model unloading
+- added missing implementation of the ``keys()`` function for the Redis Tracker
+  Store
+

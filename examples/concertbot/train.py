@@ -1,7 +1,7 @@
 import asyncio
 
-import rasa.utils
-from rasa.core import train, utils
+import rasa.utils.io
+from rasa.core import train
 
 import logging
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(train_dialogue())
 
-    rasa.utils.configure_colored_logging(loglevel="INFO")
+    rasa.utils.io.configure_colored_logging(loglevel="INFO")
     logger.info("This example does not include NLU data."
                 "Please specify the desired intent with a preceding '/', e.g."
                 "'/greet' .")

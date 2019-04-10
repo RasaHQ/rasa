@@ -11,14 +11,15 @@ import numpy as np
 
 import rasa.core
 import rasa.constants
-from rasa.core import utils, training, constants
+import rasa.utils.io
+
+from rasa.core import utils, training
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import Domain
 from rasa.core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies import Policy
-from rasa.core.policies.mapping_policy import MappingPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.memoization import (
     MemoizationPolicy,
@@ -181,7 +182,8 @@ class PolicyEnsemble(object):
     @classmethod
     def load_metadata(cls, path):
         metadata_path = os.path.join(path, 'metadata.json')
-        metadata = json.loads(utils.read_file(os.path.abspath(metadata_path)))
+        metadata = json.loads(rasa.utils.io.read_file(os.path.abspath(
+            metadata_path)))
         return metadata
 
     @staticmethod

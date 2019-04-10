@@ -13,6 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
 
+import rasa.utils.io
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
@@ -201,7 +202,7 @@ class SklearnPolicy(Policy):
              "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
 
         meta_file = os.path.join(path, "sklearn_policy.json")
-        meta = json.loads(utils.read_file(meta_file))
+        meta = json.loads(rasa.utils.io.read_file(meta_file))
         policy = cls(featurizer=featurizer, priority=meta["priority"])
 
         with open(filename, 'rb') as f:

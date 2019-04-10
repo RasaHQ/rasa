@@ -7,6 +7,8 @@ import numpy as np
 import warnings
 from typing import Any, List, Dict, Text, Optional, Tuple
 
+import rasa.utils.io
+
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
@@ -266,7 +268,7 @@ class KerasPolicy(Policy):
             featurizer = TrackerFeaturizer.load(path)
             meta_file = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_file):
-                meta = json.loads(utils.read_file(meta_file))
+                meta = json.loads(rasa.utils.io.read_file(meta_file))
 
                 tf_config_file = os.path.join(
                     path, "keras_policy.tf_config.pkl")

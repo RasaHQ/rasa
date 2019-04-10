@@ -4,7 +4,7 @@ from rasa.nlu.utils import zip_folder
 import mock
 import responses
 from rasa.nlu.project import Project, load_from_server
-from rasa.nlu.utils import EndpointConfig
+from rasa.utils.endpoints import EndpointConfig
 
 
 def test_dynamic_load_model_with_exists_model():
@@ -105,7 +105,7 @@ def test_dynamic_load_model_with_model_is_none():
 
 
 @responses.activate
-def test_project_with_model_server(trained_nlu_model):
+async def test_project_with_model_server(trained_nlu_model):
     fingerprint = 'somehash'
     model_endpoint = EndpointConfig('http://server.com/models/nlu/tags/latest')
 
@@ -120,5 +120,5 @@ def test_project_with_model_server(trained_nlu_model):
                       body=f.read(),
                       content_type='application/zip',
                       stream=True)
-    project = load_from_server(model_server=model_endpoint)
+    project = await load_from_server(model_server=model_endpoint)
     assert project.fingerprint == fingerprint

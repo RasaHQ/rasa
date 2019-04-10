@@ -12,8 +12,8 @@ from rasa.core.actions.action import (
 from rasa.core.domain import Domain
 from rasa.core.events import Restarted, SlotSet, UserUtteranceReverted
 from rasa.core.trackers import DialogueStateTracker
-from rasa.core.utils import ClientResponseError, EndpointConfig
-from tests.core.utilities import json_of_latest_request, latest_request
+from rasa.utils.endpoints import ClientResponseError, EndpointConfig
+from tests.utilities import json_of_latest_request, latest_request
 
 
 async def test_restart(default_dispatcher_collecting, default_domain):

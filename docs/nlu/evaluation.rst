@@ -155,11 +155,11 @@ run:
 
 .. code-block:: bash
 
-    $ python -m rasa.nlu.test --help
+    $ rasa test nlu --help
 
 Which will produce the following output:
 
-.. program-output:: python -m rasa.nlu.test --help
+.. program-output:: rasa test nlu --help
 
 
 .. include:: feedback.inc

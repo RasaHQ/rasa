@@ -4,7 +4,7 @@ import os
 import ruamel.yaml as yaml
 from typing import Any, Dict, List, Optional, Text
 
-from rasa.nlu import utils
+import rasa.utils.io
 from rasa.nlu.utils import json_to_string
 
 # Describes where to search for the config file if no location is specified
@@ -33,7 +33,7 @@ def load(filename: Optional[Text] = None,
 
     if filename is not None:
         try:
-            file_config = utils.read_yaml_file(filename)
+            file_config = rasa.utils.io.read_yaml_file(filename)
         except yaml.parser.ParserError as e:
             raise InvalidConfigError("Failed to read configuration file "
                                      "'{}'. Error: {}".format(filename, e))
