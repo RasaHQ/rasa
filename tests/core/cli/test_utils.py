@@ -3,20 +3,14 @@ import tempfile
 
 import pytest
 
-from rasa.cli.utils import (
-    parse_last_positional_argument_as_model_path,
-    get_validated_path,
-)
+from rasa.cli.utils import (parse_last_positional_argument_as_model_path,
+                            get_validated_path)
 
 
-@pytest.mark.parametrize(
-    "argv",
-    [
-        ["rasa", "run"],
-        ["rasa", "run", "core"],
-        ["rasa", "test", "nlu", "--param", "xy"],
-    ],
-)
+@pytest.mark.parametrize("argv",
+                         [["rasa", "run"],
+                          ["rasa", "run", "core"],
+                          ["rasa", "test", "nlu", "--param", "xy"]])
 def test_parse_last_positional_argument_as_model_path(argv):
     test_model_dir = tempfile.gettempdir()
     argv.append(test_model_dir)
@@ -28,14 +22,11 @@ def test_parse_last_positional_argument_as_model_path(argv):
     assert sys.argv[-1] == test_model_dir
 
 
-@pytest.mark.parametrize(
-    "argv",
-    [
-        ["rasa", "run"],
-        ["rasa", "run", "core"],
-        ["rasa", "test", "nlu", "--param", "xy", "--model", "test"],
-    ],
-)
+@pytest.mark.parametrize("argv",
+                         [["rasa", "run"],
+                          ["rasa", "run", "core"],
+                          ["rasa", "test", "nlu", "--param", "xy", "--model",
+                           "test"]])
 def test_parse_no_positional_model_path_argument(argv):
     sys.argv = argv.copy()
 

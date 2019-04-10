@@ -6,8 +6,7 @@ from typing import Any, Dict, Text
 
 from rasa.nlu.training_data.formats.readerwriter import (
     JsonTrainingDataReader,
-    TrainingDataWriter,
-)
+    TrainingDataWriter)
 from rasa.nlu.training_data.util import transform_entity_synonyms
 from rasa.nlu.utils import json_to_string
 
@@ -24,7 +23,7 @@ class RasaReader(JsonTrainingDataReader):
 
         validate_rasa_nlu_data(js)
 
-        data = js["rasa_nlu_data"]
+        data = js['rasa_nlu_data']
         common_examples = data.get("common_examples", [])
         intent_examples = data.get("intent_examples", [])
         entity_examples = data.get("entity_examples", [])
@@ -35,24 +34,22 @@ class RasaReader(JsonTrainingDataReader):
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
         if intent_examples or entity_examples:
-            logger.warning(
-                "DEPRECATION warning: your rasa data "
-                "contains 'intent_examples' "
-                "or 'entity_examples' which will be "
-                "removed in the future. Consider "
-                "putting all your examples "
-                "into the 'common_examples' section."
-            )
+            logger.warning("DEPRECATION warning: your rasa data "
+                           "contains 'intent_examples' "
+                           "or 'entity_examples' which will be "
+                           "removed in the future. Consider "
+                           "putting all your examples "
+                           "into the 'common_examples' section.")
 
         all_examples = common_examples + intent_examples + entity_examples
         training_examples = []
         for ex in all_examples:
-            msg = Message.build(ex["text"], ex.get("intent"), ex.get("entities"))
+            msg = Message.build(ex['text'], ex.get("intent"),
+                                ex.get("entities"))
             training_examples.append(msg)
 
-        return TrainingData(
-            training_examples, entity_synonyms, regex_features, lookup_tables
-        )
+        return TrainingData(training_examples, entity_synonyms,
+                            regex_features, lookup_tables)
 
 
 class RasaWriter(TrainingDataWriter):
@@ -63,26 +60,20 @@ class RasaWriter(TrainingDataWriter):
             if k != v:
                 js_entity_synonyms[v].append(k)
 
-        formatted_synonyms = [
-            {"value": value, "synonyms": syns}
-            for value, syns in js_entity_synonyms.items()
-        ]
+        formatted_synonyms = [{'value': value, 'synonyms': syns}
+                              for value, syns in js_entity_synonyms.items()]
 
-        formatted_examples = [
-            example.as_dict() for example in training_data.training_examples
-        ]
+        formatted_examples = [example.as_dict()
+                              for example in training_data.training_examples]
 
-        return json_to_string(
-            {
-                "rasa_nlu_data": {
-                    "common_examples": formatted_examples,
-                    "regex_features": training_data.regex_features,
-                    "lookup_tables": training_data.lookup_tables,
-                    "entity_synonyms": formatted_synonyms,
-                }
-            },
-            **kwargs
-        )
+        return json_to_string({
+            "rasa_nlu_data": {
+                "common_examples": formatted_examples,
+                "regex_features": training_data.regex_features,
+                "lookup_tables": training_data.lookup_tables,
+                "entity_synonyms": formatted_synonyms
+            }
+        }, **kwargs)
 
 
 def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
@@ -95,11 +86,9 @@ def validate_rasa_nlu_data(data: Dict[Text, Any]) -> None:
     try:
         validate(data, _rasa_nlu_data_schema())
     except ValidationError as e:
-        e.message += (
-            ". Failed to validate training data, make sure your data "
-            "is valid. For more information about the format visit "
-            "https://rasa.com/docs/nlu/dataformat/"
-        )
+        e.message += (". Failed to validate training data, make sure your data "
+                      "is valid. For more information about the format visit "
+                      "https://rasa.com/docs/nlu/dataformat/")
         raise e
 
 
@@ -117,18 +106,21 @@ def _rasa_nlu_data_schema():
                         "start": {"type": "number"},
                         "end": {"type": "number"},
                         "value": {"type": "string"},
-                        "entity": {"type": "string"},
+                        "entity": {"type": "string"}
                     },
-                    "required": ["start", "end", "entity"],
-                },
-            },
+                    "required": ["start", "end", "entity"]
+                }
+            }
         },
-        "required": ["text"],
+        "required": ["text"]
     }
 
     regex_feature_schema = {
         "type": "object",
-        "properties": {"name": {"type": "string"}, "pattern": {"type": "string"}},
+        "properties": {
+            "name": {"type": "string"},
+            "pattern": {"type": "string"},
+        }
     }
 
     lookup_table_schema = {
@@ -137,11 +129,14 @@ def _rasa_nlu_data_schema():
             "name": {"type": "string"},
             "elements": {
                 "oneOf": [
-                    {"type": "array", "items": {"type": "string"}},
-                    {"type": "string"},
+                    {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    {"type": "string"}
                 ]
-            },
-        },
+            }
+        }
     }
 
     return {
@@ -150,22 +145,28 @@ def _rasa_nlu_data_schema():
             "rasa_nlu_data": {
                 "type": "object",
                 "properties": {
-                    "regex_features": {"type": "array", "items": regex_feature_schema},
+                    "regex_features": {
+                        "type": "array",
+                        "items": regex_feature_schema
+                    },
                     "common_examples": {
                         "type": "array",
-                        "items": training_example_schema,
+                        "items": training_example_schema
                     },
                     "intent_examples": {
                         "type": "array",
-                        "items": training_example_schema,
+                        "items": training_example_schema
                     },
                     "entity_examples": {
                         "type": "array",
-                        "items": training_example_schema,
+                        "items": training_example_schema
                     },
-                    "lookup_tables": {"type": "array", "items": lookup_table_schema},
-                },
+                    "lookup_tables": {
+                        "type": "array",
+                        "items": lookup_table_schema
+                    }
+                }
             }
         },
-        "additionalProperties": False,
+        "additionalProperties": False
     }

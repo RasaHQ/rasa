@@ -59,7 +59,8 @@ def test_same_file_names_get_resolved(tmpdir):
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_one)
     shutil.copy2(DEFAULT_NLU_DATA, nlu_dir_two)
 
-    core_directory, nlu_directory = data.get_core_nlu_directories([tmpdir.strpath])
+    core_directory, nlu_directory = data.get_core_nlu_directories(
+        [tmpdir.strpath])
 
     nlu_files = os.listdir(nlu_directory)
 
@@ -72,27 +73,18 @@ def test_same_file_names_get_resolved(tmpdir):
     assert all([f.endswith("stories.md") for f in stories])
 
 
-@pytest.mark.parametrize(
-    "line",
-    [
-        "##intent:aintent",
-        "##synonym: synonym",
-        "##regex:a_regex",
-        " ##lookup:additional",
-    ],
-)
+@pytest.mark.parametrize("line", [
+    "##intent:aintent",
+    "##synonym: synonym",
+    "##regex:a_regex",
+    " ##lookup:additional"])
 def test_contains_nlu_pattern(line):
     assert data._contains_nlu_pattern(line)
 
 
 def test_is_nlu_file_with_json():
-    test = {
-        "rasa_nlu_data": {
-            "lookup_tables": [
-                {"name": "plates", "elements": ["beans", "rice", "tacos", "cheese"]}
-            ]
-        }
-    }
+    test = {"rasa_nlu_data": {"lookup_tables": [
+        {"name": "plates", "elements": ["beans", "rice", "tacos", "cheese"]}]}}
 
     directory = tempfile.mkdtemp()
     file = os.path.join(directory, "test.json")
@@ -111,8 +103,10 @@ def test_is_not_nlu_file_with_json():
     assert not data._is_nlu_file(file)
 
 
-@pytest.mark.parametrize(
-    "line", ["- example", "## story intent 1 + two" "##slots" "* entry"]
-)
+@pytest.mark.parametrize("line", [
+    "- example",
+    "## story intent 1 + two"
+    "##slots"
+    "* entry"])
 def test_not_contains_nlu_pattern(line):
     assert not data._contains_nlu_pattern(line)

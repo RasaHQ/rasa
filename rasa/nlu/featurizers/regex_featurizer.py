@@ -23,7 +23,8 @@ class RegexFeaturizer(Featurizer):
 
     requires = ["tokens"]
 
-    def __init__(self, component_config=None, known_patterns=None, lookup_tables=None):
+    def __init__(self, component_config=None,
+                 known_patterns=None, lookup_tables=None):
 
         super(RegexFeaturizer, self).__init__(component_config)
 
@@ -31,9 +32,8 @@ class RegexFeaturizer(Featurizer):
         lookup_tables = lookup_tables or []
         self._add_lookup_table_regexes(lookup_tables)
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
+    def train(self, training_data: TrainingData, config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         self.known_patterns = training_data.regex_features
         self._add_lookup_table_regexes(training_data.lookup_tables)
@@ -59,7 +59,8 @@ class RegexFeaturizer(Featurizer):
         # self.known_patterns
         for table in lookup_tables:
             regex_pattern = self._generate_lookup_regex(table)
-            lookup_regex = {"name": table["name"], "pattern": regex_pattern}
+            lookup_regex = {'name': table['name'],
+                            'pattern': regex_pattern}
             self.known_patterns.append(lookup_regex)
 
     def features_for_patterns(self, message):
@@ -90,7 +91,7 @@ class RegexFeaturizer(Featurizer):
 
     def _generate_lookup_regex(self, lookup_table):
         """creates a regex out of the contents of a lookup table file"""
-        lookup_elements = lookup_table["elements"]
+        lookup_elements = lookup_table['elements']
         elements_to_regex = []
 
         # if it's a list, it should be the elements directly
@@ -101,12 +102,11 @@ class RegexFeaturizer(Featurizer):
         else:
 
             try:
-                f = io.open(lookup_elements, "r", encoding="utf-8")
+                f = io.open(lookup_elements, 'r', encoding='utf-8')
             except IOError:
-                raise ValueError(
-                    "Could not load lookup table {}"
-                    "Make sure you've provided the correct path".format(lookup_elements)
-                )
+                raise ValueError("Could not load lookup table {}"
+                                 "Make sure you've provided the correct path"
+                                 .format(lookup_elements))
 
             with f:
                 for line in f:
@@ -118,18 +118,17 @@ class RegexFeaturizer(Featurizer):
         elements_sanitized = [re.escape(e) for e in elements_to_regex]
 
         # regex matching elements with word boundaries on either side
-        regex_string = "(?i)(\\b" + "\\b|\\b".join(elements_sanitized) + "\\b)"
+        regex_string = '(?i)(\\b' + '\\b|\\b'.join(elements_sanitized) + '\\b)'
         return regex_string
 
     @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional["RegexFeaturizer"] = None,
-        **kwargs: Any
-    ) -> "RegexFeaturizer":
+    def load(cls,
+             meta: Dict[Text, Any],
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional['RegexFeaturizer'] = None,
+             **kwargs: Any
+             ) -> 'RegexFeaturizer':
 
         file_name = meta.get("file")
         regex_file = os.path.join(model_dir, file_name)
@@ -140,7 +139,9 @@ class RegexFeaturizer(Featurizer):
         else:
             return RegexFeaturizer(meta)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again."""

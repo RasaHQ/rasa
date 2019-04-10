@@ -9,16 +9,20 @@ import typing
 from typing import Any, Dict, List, Optional, Text, Type
 
 from rasa.nlu import utils
-from rasa.nlu.classifiers.embedding_intent_classifier import EmbeddingIntentClassifier
-from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
+from rasa.nlu.classifiers.embedding_intent_classifier import \
+    EmbeddingIntentClassifier
+from rasa.nlu.classifiers.keyword_intent_classifier import \
+    KeywordIntentClassifier
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa.nlu.classifiers.sklearn_intent_classifier import \
+    SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa.nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+from rasa.nlu.featurizers.count_vectors_featurizer import \
+    CountVectorsFeaturizer
 from rasa.nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa.nlu.featurizers.regex_featurizer import RegexFeaturizer
@@ -42,30 +46,18 @@ logger = logging.getLogger(__name__)
 # its class name should be listed here.
 component_classes = [
     # utils
-    SpacyNLP,
-    MitieNLP,
+    SpacyNLP, MitieNLP,
     # tokenizers
-    MitieTokenizer,
-    SpacyTokenizer,
-    WhitespaceTokenizer,
-    JiebaTokenizer,
+    MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer, JiebaTokenizer,
     # extractors
-    SpacyEntityExtractor,
-    MitieEntityExtractor,
-    CRFEntityExtractor,
-    DucklingHTTPExtractor,
-    EntitySynonymMapper,
+    SpacyEntityExtractor, MitieEntityExtractor, CRFEntityExtractor,
+    DucklingHTTPExtractor, EntitySynonymMapper,
     # featurizers
-    SpacyFeaturizer,
-    MitieFeaturizer,
-    NGramFeaturizer,
-    RegexFeaturizer,
+    SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     CountVectorsFeaturizer,
     # classifiers
-    SklearnIntentClassifier,
-    MitieIntentClassifier,
-    KeywordIntentClassifier,
-    EmbeddingIntentClassifier,
+    SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
+    EmbeddingIntentClassifier
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -92,7 +84,7 @@ old_style_names = {
     "intent_classifier_sklearn": "SklearnIntentClassifier",
     "intent_classifier_mitie": "MitieIntentClassifier",
     "intent_classifier_keyword": "KeywordIntentClassifier",
-    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier",
+    "intent_classifier_tensorflow_embedding": "EmbeddingIntentClassifier"
 }
 
 # To simplify usage, there are a couple of model templates, that already add
@@ -108,15 +100,17 @@ registered_pipeline_templates = {
         "EntitySynonymMapper",
         "SklearnIntentClassifier",
     ],
-    "keyword": ["KeywordIntentClassifier"],
+    "keyword": [
+        "KeywordIntentClassifier",
+    ],
     "supervised_embeddings": [
         "WhitespaceTokenizer",
         "RegexFeaturizer",
         "CRFEntityExtractor",
         "EntitySynonymMapper",
         "CountVectorsFeaturizer",
-        "EmbeddingIntentClassifier",
-    ],
+        "EmbeddingIntentClassifier"
+    ]
 }
 
 
@@ -132,7 +126,7 @@ def pipeline_template(s: Text) -> Optional[List[Dict[Text, Text]]]:
         return None
 
 
-def get_component_class(component_name: Text) -> Type["Component"]:
+def get_component_class(component_name: Text) -> Type['Component']:
     """Resolve component name to a registered components class."""
 
     if component_name not in registered_components:
@@ -147,50 +141,46 @@ def get_component_class(component_name: Text) -> Type["Component"]:
                     "are creating your own component, make sure it is either "
                     "listed as part of the `component_classes` in "
                     "`rasa.nlu.registry.py` or is a proper name of a class "
-                    "in a module.".format(component_name)
-                )
+                    "in a module.".format(component_name))
         else:
             # DEPRECATED ensures compatibility, remove in future versions
-            logger.warning(
-                "DEPRECATION warning: your nlu config file "
-                "contains old style component name `{}`, "
-                "you should change it to its class name: `{}`."
-                "".format(component_name, old_style_names[component_name])
-            )
+            logger.warning("DEPRECATION warning: your nlu config file "
+                           "contains old style component name `{}`, "
+                           "you should change it to its class name: `{}`."
+                           "".format(component_name,
+                                     old_style_names[component_name]))
             component_name = old_style_names[component_name]
 
     return registered_components[component_name]
 
 
-def load_component_by_meta(
-    component_meta: Dict[Text, Any],
-    model_dir: Text,
-    metadata: Metadata,
-    cached_component: Optional["Component"],
-    **kwargs: Any
-) -> Optional["Component"]:
+def load_component_by_meta(component_meta: Dict[Text, Any],
+                           model_dir: Text,
+                           metadata: Metadata,
+                           cached_component: Optional['Component'],
+                           **kwargs: Any
+                           ) -> Optional['Component']:
     """Resolves a component and calls its load method.
 
     Inits it based on a previously persisted model.
     """
 
     # try to get class name first, else create by name
-    component_name = component_meta.get("class", component_meta["name"])
+    component_name = component_meta.get('class', component_meta['name'])
     component_class = get_component_class(component_name)
-    return component_class.load(
-        component_meta, model_dir, metadata, cached_component, **kwargs
-    )
+    return component_class.load(component_meta, model_dir, metadata,
+                                cached_component, **kwargs)
 
 
-def create_component_by_config(
-    component_config: Dict[Text, Any], config: "RasaNLUModelConfig"
-) -> Optional["Component"]:
+def create_component_by_config(component_config: Dict[Text, Any],
+                               config: 'RasaNLUModelConfig'
+                               ) -> Optional['Component']:
     """Resolves a component and calls it's create method.
 
     Inits it based on a previously persisted model.
     """
 
     # try to get class name first, else create by name
-    component_name = component_config.get("class", component_config["name"])
+    component_name = component_config.get('class', component_config['name'])
     component_class = get_component_class(component_name)
     return component_class.create(component_config, config)

@@ -8,7 +8,6 @@ from rasa.core import utils
 @pytest.fixture(scope="session")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
-
     return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
@@ -22,7 +21,8 @@ def test_is_int():
 
 def test_subsample_array_read_only():
     t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    r = utils.subsample_array(t, 5, can_modify_incoming_array=False)
+    r = utils.subsample_array(t, 5,
+                              can_modify_incoming_array=False)
 
     assert len(r) == 5
     assert set(r).issubset(t)
@@ -50,32 +50,29 @@ def test_on_hot_out_of_range():
 
 def test_list_routes(default_agent):
     from rasa.core import server
-
     app = server.create_app(default_agent, auth_token=None)
 
     routes = utils.list_routes(app)
-    assert set(routes.keys()) == {
-        "hello",
-        "version",
-        "execute_action",
-        "append_event",
-        "replace_events",
-        "list_trackers",
-        "retrieve_tracker",
-        "retrieve_story",
-        "respond",
-        "predict",
-        "parse",
-        "train_stack",
-        "evaluate_intents",
-        "log_message",
-        "load_model",
-        "evaluate_stories",
-        "get_domain",
-        "continue_training",
-        "status",
-        "tracker_predict",
-    }
+    assert set(routes.keys()) == {'hello',
+                                  'version',
+                                  'execute_action',
+                                  'append_event',
+                                  'replace_events',
+                                  'list_trackers',
+                                  'retrieve_tracker',
+                                  'retrieve_story',
+                                  'respond',
+                                  'predict',
+                                  'parse',
+                                  'train_stack',
+                                  'evaluate_intents',
+                                  'log_message',
+                                  'load_model',
+                                  'evaluate_stories',
+                                  'get_domain',
+                                  'continue_training',
+                                  'status',
+                                  'tracker_predict'}
 
 
 def test_cap_length():
@@ -83,7 +80,8 @@ def test_cap_length():
 
 
 def test_cap_length_without_ellipsis():
-    assert utils.cap_length("mystring", 3, append_ellipsis=False) == "mys"
+    assert utils.cap_length("mystring", 3,
+                            append_ellipsis=False) == "mys"
 
 
 def test_cap_length_with_short_string():
@@ -91,26 +89,22 @@ def test_cap_length_with_short_string():
 
 
 def test_pad_list_to_size():
-    assert utils.pad_list_to_size(["e1", "e2"], 4, "other") == [
-        "e1",
-        "e2",
-        "other",
-        "other",
-    ]
+    assert (utils.pad_list_to_size(["e1", "e2"], 4, "other") ==
+            ["e1", "e2", "other", "other"])
 
 
 def test_read_lines():
-    lines = utils.read_lines(
-        "data/test_stories/stories.md", max_line_limit=2, line_pattern=r"\*.*"
-    )
+    lines = utils.read_lines("data/test_stories/stories.md",
+                             max_line_limit=2,
+                             line_pattern=r"\*.*")
 
     lines = list(lines)
 
     assert len(lines) == 2
 
 
-os.environ["USER_NAME"] = "user"
-os.environ["PASS"] = "pass"
+os.environ['USER_NAME'] = 'user'
+os.environ['PASS'] = 'pass'
 
 
 def test_read_yaml_string():
@@ -119,7 +113,7 @@ def test_read_yaml_string():
     password: pass
     """
     r = rasa.utils.io.read_yaml(config_without_env_var)
-    assert r["user"] == "user" and r["password"] == "pass"
+    assert r['user'] == 'user' and r['password'] == 'pass'
 
 
 def test_read_yaml_string_with_env_var():
@@ -128,7 +122,7 @@ def test_read_yaml_string_with_env_var():
     password: ${PASS}
     """
     r = rasa.utils.io.read_yaml(config_with_env_var)
-    assert r["user"] == "user" and r["password"] == "pass"
+    assert r['user'] == 'user' and r['password'] == 'pass'
 
 
 def test_read_yaml_string_with_multiple_env_vars_per_line():
@@ -137,7 +131,7 @@ def test_read_yaml_string_with_multiple_env_vars_per_line():
     password: ${PASS}
     """
     r = rasa.utils.io.read_yaml(config_with_env_var)
-    assert r["user"] == "user pass" and r["password"] == "pass"
+    assert r['user'] == 'user pass' and r['password'] == 'pass'
 
 
 def test_read_yaml_string_with_env_var_prefix():
@@ -146,7 +140,7 @@ def test_read_yaml_string_with_env_var_prefix():
     password: db_${PASS}
     """
     r = rasa.utils.io.read_yaml(config_with_env_var_prefix)
-    assert r["user"] == "db_user" and r["password"] == "db_pass"
+    assert r['user'] == 'db_user' and r['password'] == 'db_pass'
 
 
 def test_read_yaml_string_with_env_var_postfix():
@@ -155,7 +149,7 @@ def test_read_yaml_string_with_env_var_postfix():
     password: ${PASS}_admin
     """
     r = rasa.utils.io.read_yaml(config_with_env_var_postfix)
-    assert r["user"] == "user_admin" and r["password"] == "pass_admin"
+    assert r['user'] == 'user_admin' and r['password'] == 'pass_admin'
 
 
 def test_read_yaml_string_with_env_var_infix():
@@ -164,7 +158,7 @@ def test_read_yaml_string_with_env_var_infix():
     password: db_${PASS}_admin
     """
     r = rasa.utils.io.read_yaml(config_with_env_var_infix)
-    assert r["user"] == "db_user_admin" and r["password"] == "db_pass_admin"
+    assert r['user'] == 'db_user_admin' and r['password'] == 'db_pass_admin'
 
 
 def test_read_yaml_string_with_env_var_not_exist():

@@ -35,11 +35,9 @@ class SingleStateFeaturizer(object):
         pass
 
     def encode(self, state: Dict[Text, float]) -> np.ndarray:
-        raise NotImplementedError(
-            "SingleStateFeaturizer must have "
-            "the capacity to "
-            "encode states to a feature vector"
-        )
+        raise NotImplementedError("SingleStateFeaturizer must have "
+                                  "the capacity to "
+                                  "encode states to a feature vector")
 
     @staticmethod
     def action_as_one_hot(action: Text, domain: Domain) -> np.ndarray:
@@ -72,7 +70,8 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.num_features = domain.num_states
         self.input_state_map = domain.input_state_map
 
-        self.user_feature_len = len(domain.intent_states) + len(domain.entity_states)
+        self.user_feature_len = (len(domain.intent_states) +
+                                 len(domain.entity_states))
         self.slot_feature_len = len(domain.slot_states)
 
     def encode(self, state: Dict[Text, float]) -> np.ndarray:
@@ -97,9 +96,9 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         """
 
         if not self.num_features:
-            raise Exception(
-                "BinarySingleStateFeaturizer " "was not prepared " "before encoding."
-            )
+            raise Exception("BinarySingleStateFeaturizer "
+                            "was not prepared "
+                            "before encoding.")
 
         if state is None or None in state:
             return np.ones(self.num_features, dtype=np.int32) * -1
@@ -116,8 +115,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
                 logger.debug(
                     "Feature '{}' (value: '{}') could not be found in "
                     "feature map. Make sure you added all intents and "
-                    "entities to the domain".format(state_name, prob)
-                )
+                    "entities to the domain".format(state_name, prob))
 
         if using_only_ints:
             # this is an optimization - saves us a bit of memory
@@ -144,9 +142,9 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
             the same vocabulary for user intents and bot actions.
     """
 
-    def __init__(
-        self, use_shared_vocab: bool = False, split_symbol: Text = "_"
-    ) -> None:
+    def __init__(self,
+                 use_shared_vocab: bool = False,
+                 split_symbol: Text = '_') -> None:
         """inits vocabulary for label bag of words representation"""
         super(LabelTokenizerSingleStateFeaturizer, self).__init__()
 
@@ -162,15 +160,16 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.user_vocab = None
 
     @staticmethod
-    def _create_label_token_dict(labels, split_symbol="_"):
+    def _create_label_token_dict(labels, split_symbol='_'):
         """Splits labels into tokens by using provided symbol.
         Creates the lookup dictionary for this tokens.
         Values in this dict are used for featurization."""
 
-        distinct_tokens = set(
-            [token for label in labels for token in label.split(split_symbol)]
-        )
-        return {token: idx for idx, token in enumerate(sorted(distinct_tokens))}
+        distinct_tokens = set([token
+                               for label in labels
+                               for token in label.split(split_symbol)])
+        return {token: idx
+                for idx, token in enumerate(sorted(distinct_tokens))}
 
     def prepare_from_domain(self, domain: Domain) -> None:
         """Creates internal vocabularies for user intents
@@ -180,31 +179,27 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.bot_labels = domain.action_names
 
         if self.use_shared_vocab:
-            self.bot_vocab = self._create_label_token_dict(
-                self.bot_labels + self.user_labels, self.split_symbol
-            )
+            self.bot_vocab = self._create_label_token_dict(self.bot_labels +
+                                                           self.user_labels,
+                                                           self.split_symbol)
             self.user_vocab = self.bot_vocab
         else:
-            self.bot_vocab = self._create_label_token_dict(
-                self.bot_labels, self.split_symbol
-            )
-            self.user_vocab = self._create_label_token_dict(
-                self.user_labels, self.split_symbol
-            )
+            self.bot_vocab = self._create_label_token_dict(self.bot_labels,
+                                                           self.split_symbol)
+            self.user_vocab = self._create_label_token_dict(self.user_labels,
+                                                            self.split_symbol)
 
-        self.num_features = (
-            len(self.user_vocab) + len(self.slot_labels) + len(self.bot_vocab)
-        )
+        self.num_features = (len(self.user_vocab) +
+                             len(self.slot_labels) +
+                             len(self.bot_vocab))
 
         self.user_feature_len = len(self.user_vocab)
         self.slot_feature_len = len(self.slot_labels)
 
     def encode(self, state: Dict[Text, float]) -> np.ndarray:
         if not self.num_features:
-            raise Exception(
-                "LabelTokenizerSingleStateFeaturizer "
-                "was not prepared before encoding."
-            )
+            raise Exception("LabelTokenizerSingleStateFeaturizer "
+                            "was not prepared before encoding.")
 
         if state is None or None in state:
             return np.ones(self.num_features, dtype=np.int32) * -1
@@ -225,18 +220,16 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                 idx = self.slot_labels.index(state_name)
                 used_features[offset + idx] += prob
 
-            elif state_name[len(PREV_PREFIX) :] in self.bot_labels:
-                action_name = state_name[len(PREV_PREFIX) :]
+            elif state_name[len(PREV_PREFIX):] in self.bot_labels:
+                action_name = state_name[len(PREV_PREFIX):]
                 for t in action_name.split(self.split_symbol):
                     offset = len(self.user_vocab) + len(self.slot_labels)
                     idx = self.bot_vocab[t]
                     used_features[offset + idx] += prob
 
             else:
-                logger.warning(
-                    "Feature '{}' could not be found in "
-                    "feature map.".format(state_name)
-                )
+                logger.warning("Feature '{}' could not be found in "
+                               "feature map.".format(state_name))
 
         if using_only_ints:
             # this is an optimization - saves us a bit of memory
@@ -247,9 +240,9 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     def create_encoded_all_actions(self, domain: Domain) -> np.ndarray:
         """Create matrix with all actions from domain
             encoded in rows as bag of words."""
-        encoded_all_actions = np.zeros(
-            (domain.num_actions, len(self.bot_vocab)), dtype=int
-        )
+        encoded_all_actions = np.zeros((domain.num_actions,
+                                        len(self.bot_vocab)),
+                                       dtype=int)
         for idx, name in enumerate(domain.action_names):
             for t in name.split(self.split_symbol):
                 encoded_all_actions[idx, self.bot_vocab[t]] = 1
@@ -259,21 +252,18 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
 
-    def __init__(
-        self,
-        state_featurizer: Optional[SingleStateFeaturizer] = None,
-        use_intent_probabilities: bool = False,
-    ) -> None:
+    def __init__(self,
+                 state_featurizer: Optional[SingleStateFeaturizer] = None,
+                 use_intent_probabilities: bool = False) -> None:
 
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
         self.use_intent_probabilities = use_intent_probabilities
 
-    def _create_states(
-        self,
-        tracker: DialogueStateTracker,
-        domain: Domain,
-        is_binary_training: bool = False,
-    ) -> List[Dict[Text, float]]:
+    def _create_states(self,
+                       tracker: DialogueStateTracker,
+                       domain: Domain,
+                       is_binary_training: bool = False
+                       ) -> List[Dict[Text, float]]:
         """Create states: a list of dictionaries.
             If use_intent_probabilities is False (default behaviour),
             pick the most probable intent out of all provided ones and
@@ -289,7 +279,7 @@ class TrackerFeaturizer(object):
                 best_intent = None
                 best_intent_prob = -1.0
                 for state_name, prob in state:
-                    if state_name.startswith("intent_"):
+                    if state_name.startswith('intent_'):
                         if prob > best_intent_prob:
                             # finding the maximum confidence intent
                             if best_intent is not None:
@@ -314,7 +304,8 @@ class TrackerFeaturizer(object):
         return states
 
     def _featurize_states(
-        self, trackers_as_states: List[List[Dict[Text, float]]]
+        self,
+        trackers_as_states: List[List[Dict[Text, float]]]
     ) -> Tuple[np.ndarray, List[int]]:
         """Create X"""
         features = []
@@ -330,9 +321,8 @@ class TrackerFeaturizer(object):
             if len(trackers_as_states) > 1:
                 tracker_states = self._pad_states(tracker_states)
 
-            story_features = [
-                self.state_featurizer.encode(state) for state in tracker_states
-            ]
+            story_features = [self.state_featurizer.encode(state)
+                              for state in tracker_states]
 
             features.append(story_features)
             true_lengths.append(dialogue_len)
@@ -343,7 +333,9 @@ class TrackerFeaturizer(object):
         return X, true_lengths
 
     def _featurize_labels(
-        self, trackers_as_actions: List[List[Text]], domain: Domain
+        self,
+        trackers_as_actions: List[List[Text]],
+        domain: Domain
     ) -> np.ndarray:
         """Create y"""
 
@@ -353,10 +345,9 @@ class TrackerFeaturizer(object):
             if len(trackers_as_actions) > 1:
                 tracker_actions = self._pad_states(tracker_actions)
 
-            story_labels = [
-                self.state_featurizer.action_as_one_hot(action, domain)
-                for action in tracker_actions
-            ]
+            story_labels = [self.state_featurizer.action_as_one_hot(action,
+                                                                    domain)
+                            for action in tracker_actions]
 
             labels.append(story_labels)
 
@@ -366,22 +357,24 @@ class TrackerFeaturizer(object):
         return y
 
     def training_states_and_actions(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
         """Transforms list of trackers to lists of states and actions"""
-        raise NotImplementedError(
-            "Featurizer must have the capacity to " "encode trackers to feature vectors"
-        )
+        raise NotImplementedError("Featurizer must have the capacity to "
+                                  "encode trackers to feature vectors")
 
-    def featurize_trackers(
-        self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> DialogueTrainingData:
+    def featurize_trackers(self,
+                           trackers: List[DialogueStateTracker],
+                           domain: Domain
+                           ) -> DialogueTrainingData:
         """Create training data"""
         self.state_featurizer.prepare_from_domain(domain)
 
-        (trackers_as_states, trackers_as_actions) = self.training_states_and_actions(
-            trackers, domain
-        )
+        (trackers_as_states,
+         trackers_as_actions) = self.training_states_and_actions(trackers,
+                                                                 domain)
 
         # noinspection PyPep8Naming
         X, true_lengths = self._featurize_states(trackers_as_states)
@@ -389,18 +382,19 @@ class TrackerFeaturizer(object):
 
         return DialogueTrainingData(X, y, true_lengths)
 
-    def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    def prediction_states(self,
+                          trackers: List[DialogueStateTracker],
+                          domain: Domain
+                          ) -> List[List[Dict[Text, float]]]:
         """Transforms list of trackers to lists of states for prediction"""
-        raise NotImplementedError(
-            "Featurizer must have the capacity to " "create feature vector"
-        )
+        raise NotImplementedError("Featurizer must have the capacity to "
+                                  "create feature vector")
 
     # noinspection PyPep8Naming
-    def create_X(
-        self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> np.ndarray:
+    def create_X(self,
+                 trackers: List[DialogueStateTracker],
+                 domain: Domain
+                 ) -> np.ndarray:
         """Create X for prediction"""
 
         trackers_as_states = self.prediction_states(trackers, domain)
@@ -410,7 +404,7 @@ class TrackerFeaturizer(object):
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
         utils.create_dir_for_file(featurizer_file)
-        with open(featurizer_file, "w", encoding="utf-8") as f:
+        with open(featurizer_file, 'w', encoding="utf-8") as f:
             # noinspection PyTypeChecker
             f.write(str(jsonpickle.encode(self)))
 
@@ -420,10 +414,8 @@ class TrackerFeaturizer(object):
         if os.path.isfile(featurizer_file):
             return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
         else:
-            logger.error(
-                "Couldn't load featurizer for policy. "
-                "File '{}' doesn't exist.".format(featurizer_file)
-            )
+            logger.error("Couldn't load featurizer for policy. "
+                         "File '{}' doesn't exist.".format(featurizer_file))
             return None
 
 
@@ -434,11 +426,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest
     dialogue with -1"""
 
-    def __init__(
-        self,
-        state_featurizer: SingleStateFeaturizer,
-        use_intent_probabilities: bool = False,
-    ) -> None:
+    def __init__(self,
+                 state_featurizer: SingleStateFeaturizer,
+                 use_intent_probabilities: bool = False) -> None:
         super(FullDialogueTrackerFeaturizer, self).__init__(
             state_featurizer, use_intent_probabilities
         )
@@ -460,24 +450,24 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         return states
 
     def training_states_and_actions(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
 
         trackers_as_states = []
         trackers_as_actions = []
 
-        logger.debug(
-            "Creating states and action examples from "
-            "collected trackers (by {}({}))..."
-            "".format(type(self).__name__, type(self.state_featurizer).__name__)
-        )
-        pbar = tqdm(
-            trackers,
-            desc="Processed trackers",
-            disable=(not logger.isEnabledFor(logging.DEBUG)),
-        )
+        logger.debug("Creating states and action examples from "
+                     "collected trackers (by {}({}))..."
+                     "".format(type(self).__name__,
+                               type(self.state_featurizer).__name__))
+        pbar = tqdm(trackers,
+                    desc="Processed trackers",
+                    disable=(not logger.isEnabledFor(logging.DEBUG)))
         for tracker in pbar:
-            states = self._create_states(tracker, domain, is_binary_training=True)
+            states = self._create_states(tracker, domain,
+                                         is_binary_training=True)
 
             delete_first_state = False
             actions = []
@@ -491,11 +481,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                         # unpredictable actions can be
                         # only the first in the story
                         if delete_first_state:
-                            raise Exception(
-                                "Found two unpredictable "
-                                "actions in one story."
-                                "Check your story files."
-                            )
+                            raise Exception("Found two unpredictable "
+                                            "actions in one story."
+                                            "Check your story files.")
                         else:
                             delete_first_state = True
 
@@ -506,17 +494,18 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_actions.append(actions)
 
         self.max_len = self._calculate_max_len(trackers_as_actions)
-        logger.debug("The longest dialogue has {} actions." "".format(self.max_len))
+        logger.debug("The longest dialogue has {} actions."
+                     "".format(self.max_len))
 
         return trackers_as_states, trackers_as_actions
 
-    def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    def prediction_states(self,
+                          trackers: List[DialogueStateTracker],
+                          domain: Domain
+                          ) -> List[List[Dict[Text, float]]]:
 
-        trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in trackers
-        ]
+        trackers_as_states = [self._create_states(tracker, domain)
+                              for tracker in trackers]
 
         return trackers_as_states
 
@@ -530,13 +519,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     MAX_HISTORY_DEFAULT = 5
 
-    def __init__(
-        self,
-        state_featurizer: Optional[SingleStateFeaturizer] = None,
-        max_history: int = None,
-        remove_duplicates: bool = True,
-        use_intent_probabilities: bool = False,
-    ) -> None:
+    def __init__(self,
+                 state_featurizer: Optional[SingleStateFeaturizer] = None,
+                 max_history: int = None,
+                 remove_duplicates: bool = True,
+                 use_intent_probabilities: bool = False) -> None:
         super(MaxHistoryTrackerFeaturizer, self).__init__(
             state_featurizer, use_intent_probabilities
         )
@@ -545,7 +532,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[Dict[Text, float]], slice_length: int
+            states: List[Dict[Text, float]],
+            slice_length: int
     ) -> List[Optional[Dict[Text, float]]]:
         """Slices states from the trackers history.
 
@@ -561,14 +549,16 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def _hash_example(states, action):
-        frozen_states = tuple(
-            (s if s is None else frozenset(s.items()) for s in states)
-        )
+        frozen_states = tuple((s if s is None
+                               else frozenset(s.items())
+                               for s in states))
         frozen_actions = (action,)
         return hash((frozen_states, frozen_actions))
 
     def training_states_and_actions(
-        self, trackers: List[DialogueStateTracker], domain: Domain
+        self,
+        trackers: List[DialogueStateTracker],
+        domain: Domain
     ) -> Tuple[List[List[Dict]], List[List[Text]]]:
 
         trackers_as_states = []
@@ -578,16 +568,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         # we only need to keep one.
         hashed_examples = set()
 
-        logger.debug(
-            "Creating states and action examples from "
-            "collected trackers (by {}({}))..."
-            "".format(type(self).__name__, type(self.state_featurizer).__name__)
-        )
-        pbar = tqdm(
-            trackers,
-            desc="Processed trackers",
-            disable=(not logger.isEnabledFor(logging.DEBUG)),
-        )
+        logger.debug("Creating states and action examples from "
+                     "collected trackers (by {}({}))..."
+                     "".format(type(self).__name__,
+                               type(self.state_featurizer).__name__))
+        pbar = tqdm(trackers, desc="Processed trackers",
+                    disable=(not logger.isEnabledFor(logging.DEBUG)))
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
 
@@ -598,13 +584,11 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         # only actions which can be
                         # predicted at a stories start
                         sliced_states = self.slice_state_history(
-                            states[: idx + 1], self.max_history
-                        )
+                            states[:idx + 1], self.max_history)
 
                         if self.remove_duplicates:
-                            hashed = self._hash_example(
-                                sliced_states, event.action_name
-                            )
+                            hashed = self._hash_example(sliced_states,
+                                                        event.action_name)
 
                             # only continue with tracker_states that created a
                             # hashed_featurization we haven't observed
@@ -616,25 +600,24 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                             trackers_as_states.append(sliced_states)
                             trackers_as_actions.append([event.action_name])
 
-                        pbar.set_postfix(
-                            {"# actions": "{:d}".format(len(trackers_as_actions))}
-                        )
+                        pbar.set_postfix({"# actions": "{:d}".format(
+                            len(trackers_as_actions))})
                     idx += 1
 
-        logger.debug("Created {} action examples." "".format(len(trackers_as_actions)))
+        logger.debug("Created {} action examples."
+                     "".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 
-    def prediction_states(
-        self, trackers: List[DialogueStateTracker], domain: Domain
-    ) -> List[List[Dict[Text, float]]]:
+    def prediction_states(self,
+                          trackers: List[DialogueStateTracker],
+                          domain: Domain
+                          ) -> List[List[Dict[Text, float]]]:
 
-        trackers_as_states = [
-            self._create_states(tracker, domain) for tracker in trackers
-        ]
-        trackers_as_states = [
-            self.slice_state_history(states, self.max_history)
-            for states in trackers_as_states
-        ]
+        trackers_as_states = [self._create_states(tracker, domain)
+                              for tracker in trackers]
+        trackers_as_states = [self.slice_state_history(states,
+                                                       self.max_history)
+                              for states in trackers_as_states]
 
         return trackers_as_states

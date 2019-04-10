@@ -28,8 +28,9 @@ def component_builder():
 
 @pytest.fixture(scope="session")
 def spacy_nlp(component_builder, default_config):
-    spacy_nlp_config = {"name": "SpacyNLP"}
-    return component_builder.create_component(spacy_nlp_config, default_config).nlp
+    spacy_nlp_config = {'name': 'SpacyNLP'}
+    return component_builder.create_component(spacy_nlp_config,
+                                              default_config).nlp
 
 
 @pytest.fixture(scope="session")
@@ -37,29 +38,17 @@ def ner_crf_pos_feature_config():
     return {
         "features": [
             ["low", "title", "upper", "pos", "pos2"],
-            [
-                "bias",
-                "low",
-                "suffix3",
-                "suffix2",
-                "upper",
-                "title",
-                "digit",
-                "pos",
-                "pos2",
-                "pattern",
-            ],
-            ["low", "title", "upper", "pos", "pos2"],
-        ]
+            ["bias", "low", "suffix3", "suffix2", "upper",
+             "title", "digit", "pos", "pos2", "pattern"],
+            ["low", "title", "upper", "pos", "pos2"]]
     }
 
 
 @pytest.fixture(scope="session")
 def mitie_feature_extractor(component_builder, default_config):
-    mitie_nlp_config = {"name": "MitieNLP"}
-    return component_builder.create_component(
-        mitie_nlp_config, default_config
-    ).extractor
+    mitie_nlp_config = {'name': 'MitieNLP'}
+    return component_builder.create_component(mitie_nlp_config,
+                                              default_config).extractor
 
 
 @pytest.fixture(scope="session")
@@ -76,7 +65,8 @@ def zipped_nlu_model():
     td = training_data.load_data(DEFAULT_DATA_PATH)
 
     trainer.train(td)
-    trainer.persist("test_models", project_name="test_model_pretrained_embeddings")
+    trainer.persist("test_models",
+                    project_name="test_model_pretrained_embeddings")
 
     model_dir_list = os.listdir(TEST_MODEL_PATH)
 

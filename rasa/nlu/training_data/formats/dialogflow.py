@@ -21,7 +21,7 @@ DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
 
 class DialogflowReader(TrainingDataReader):
-    def read(self, fn: Text, **kwargs: Any) -> "TrainingData":
+    def read(self, fn: Text, **kwargs: Any) -> 'TrainingData':
         """Loads training data stored in the Dialogflow data format."""
         from rasa.nlu.training_data import TrainingData
 
@@ -29,18 +29,15 @@ class DialogflowReader(TrainingDataReader):
         fformat = kwargs["fformat"]
 
         if fformat not in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
-            raise ValueError(
-                "fformat must be either {}, or {}"
-                "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES)
-            )
+            raise ValueError("fformat must be either {}, or {}"
+                             "".format(DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES))
 
         root_js = utils.read_json_file(fn)
         examples_js = self._read_examples_js(fn, language, fformat)
 
         if not examples_js:
-            logger.warning(
-                "No training examples found for dialogflow file {}!" "".format(fn)
-            )
+            logger.warning("No training examples found for dialogflow file {}!"
+                           "".format(fn))
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
@@ -55,7 +52,7 @@ class DialogflowReader(TrainingDataReader):
 
         training_examples = []
         for ex in examples_js:
-            text, entities = self._join_text_chunks(ex["data"])
+            text, entities = self._join_text_chunks(ex['data'])
             training_examples.append(Message.build(text, intent, entities))
 
         return TrainingData(training_examples)
@@ -80,10 +77,10 @@ class DialogflowReader(TrainingDataReader):
         entity = None
         if "meta" in chunk or "alias" in chunk:
             start = current_offset
-            text = chunk["text"]
+            text = chunk['text']
             end = start + len(text)
             entity_type = chunk.get("alias", chunk["meta"])
-            if entity_type != u"@sys.ignore":
+            if entity_type != u'@sys.ignore':
                 entity = utils.build_entity(start, end, text, entity_type)
 
         return entity
@@ -101,7 +98,10 @@ class DialogflowReader(TrainingDataReader):
 
         if len(elements) == 0:
             return False
-        return [{"name": name, "elements": elements}]
+        return [{
+            'name': name,
+            'elements': elements
+        }]
 
     @staticmethod
     def _read_entities(entity_js, examples_js):
@@ -110,7 +110,8 @@ class DialogflowReader(TrainingDataReader):
         entity_synonyms = transform_entity_synonyms(examples_js)
 
         name = entity_js.get("name")
-        lookup_tables = DialogflowReader._extract_lookup_tables(name, examples_js)
+        lookup_tables = DialogflowReader._extract_lookup_tables(name,
+                                                                examples_js)
         return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod

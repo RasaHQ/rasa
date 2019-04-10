@@ -17,25 +17,21 @@ class NaturalLanguageGenerator(object):
 
     @staticmethod
     def create(
-        obj: Union["NaturalLanguageGenerator", EndpointConfig, None],
-        domain: Optional[Domain],
-    ) -> "NaturalLanguageGenerator":
+        obj: Union['NaturalLanguageGenerator', EndpointConfig, None],
+        domain: Optional[Domain]
+    ) -> 'NaturalLanguageGenerator':
         """Factory to create a generator."""
 
         if isinstance(obj, NaturalLanguageGenerator):
             return obj
         elif isinstance(obj, EndpointConfig):
             from rasa.core.nlg import CallbackNaturalLanguageGenerator
-
             return CallbackNaturalLanguageGenerator(obj)
         elif obj is None:
             from rasa.core.nlg import TemplatedNaturalLanguageGenerator
-
             templates = domain.templates if domain else []
             return TemplatedNaturalLanguageGenerator(templates)
         else:
-            raise Exception(
-                "Cannot create a NaturalLanguageGenerator "
-                "based on the passed object. Type: `{}`"
-                "".format(type(obj))
-            )
+            raise Exception("Cannot create a NaturalLanguageGenerator "
+                            "based on the passed object. Type: `{}`"
+                            "".format(type(obj)))

@@ -3,12 +3,14 @@ from rasa.core.training import visualization
 
 
 def test_style_transfer():
-    r = visualization._transfer_style({"class": "dashed great"}, {"class": "myclass"})
+    r = visualization._transfer_style({"class": "dashed great"},
+                                      {"class": "myclass"})
     assert r["class"] == "myclass dashed"
 
 
 def test_style_transfer_empty():
-    r = visualization._transfer_style({"class": "dashed great"}, {"something": "else"})
+    r = visualization._transfer_style({"class": "dashed great"},
+                                      {"something": "else"})
     assert r["class"] == "dashed"
 
 
@@ -79,23 +81,22 @@ async def test_graph_persistence(default_domain, tmpdir):
     from rasa.core.interpreter import RegexInterpreter
 
     story_steps = await StoryFileReader.read_from_file(
-        "data/test_stories/stories.md", default_domain, interpreter=RegexInterpreter()
-    )
+        "data/test_stories/stories.md", default_domain,
+        interpreter=RegexInterpreter())
     out_file = tmpdir.join("graph.html").strpath
     generated_graph = await visualization.visualize_stories(
         story_steps,
         default_domain,
         output_file=out_file,
         max_history=3,
-        should_merge_nodes=False,
-    )
+        should_merge_nodes=False)
 
     generated_graph = nx_pydot.to_pydot(generated_graph)
 
     assert isfile(out_file)
 
-    with open(out_file, "r") as graph_file:
+    with open(out_file, 'r') as graph_file:
         content = graph_file.read()
 
-    assert "isClient = true" in content
+    assert 'isClient = true' in content
     assert "graph = `{}`".format(generated_graph.to_string()) in content

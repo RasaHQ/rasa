@@ -8,70 +8,65 @@ from rasa.utils.endpoints import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-def from_endpoint_config(
-    broker_config: Optional[EndpointConfig]
-) -> Optional["EventChannel"]:
+def from_endpoint_config(broker_config: Optional[EndpointConfig]
+                         ) -> Optional['EventChannel']:
     """Instantiate an event channel based on its configuration."""
 
     if broker_config is None:
         return None
-    elif broker_config.type == "pika" or broker_config.type is None:
+    elif broker_config.type == 'pika' or broker_config.type is None:
         return PikaProducer.from_endpoint_config(broker_config)
-    elif broker_config.type == "file":
+    elif broker_config.type == 'file':
         return FileProducer.from_endpoint_config(broker_config)
-    elif broker_config.type == "kafka":
+    elif broker_config.type == 'kafka':
         return FileProducer.from_endpoint_config(broker_config)
     else:
         return load_event_channel_from_module_string(broker_config)
 
 
-def load_event_channel_from_module_string(
-    broker_config: EndpointConfig
-) -> Optional["EventChannel"]:
+def load_event_channel_from_module_string(broker_config: EndpointConfig
+                                          ) -> Optional['EventChannel']:
     """Instantiate an event channel based on its class name."""
 
     try:
         event_channel = class_from_module_path(broker_config.type)
         return event_channel.from_endpoint_config(broker_config)
     except (AttributeError, ImportError) as e:
-        logger.warning(
-            "EventChannel type '{}' not found. "
-            "Not using any event channel. Error: {}".format(broker_config.type, e)
-        )
+        logger.warning("EventChannel type '{}' not found. "
+                       "Not using any event channel. Error: {}"
+                       .format(broker_config.type, e))
         return None
 
 
 class EventChannel(object):
     @classmethod
-    def from_endpoint_config(cls, broker_config: EndpointConfig) -> "EventChannel":
-        raise NotImplementedError(
-            "Event broker must implement the " "`from_endpoint_config` method."
-        )
+    def from_endpoint_config(cls, broker_config: EndpointConfig
+                             ) -> 'EventChannel':
+        raise NotImplementedError("Event broker must implement the "
+                                  "`from_endpoint_config` method.")
 
     def publish(self, event: Dict[Text, Any]) -> None:
         """Publishes a json-formatted Rasa Core event into an event queue."""
 
-        raise NotImplementedError(
-            "Event broker must implement the `publish` " "method."
-        )
+        raise NotImplementedError("Event broker must implement the `publish` "
+                                  "method.")
 
 
 class PikaProducer(EventChannel):
-    def __init__(
-        self, host, username, password, queue="rasa_core_events", loglevel=logging.INFO
-    ):
+    def __init__(self, host, username, password,
+                 queue='rasa_core_events',
+                 loglevel=logging.INFO):
         import pika
 
-        logging.getLogger("pika").setLevel(loglevel)
+        logging.getLogger('pika').setLevel(loglevel)
 
         self.queue = queue
         self.host = host
         self.credentials = pika.PlainCredentials(username, password)
 
     @classmethod
-    def from_endpoint_config(
-        cls, broker_config: Optional["EndpointConfig"]
-    ) -> Optional["PikaProducer"]:
+    def from_endpoint_config(cls, broker_config: Optional['EndpointConfig']
+                             ) -> Optional['PikaProducer']:
         if broker_config is None:
             return None
 
@@ -85,22 +80,18 @@ class PikaProducer(EventChannel):
     def _open_connection(self):
         import pika
 
-        parameters = pika.ConnectionParameters(
-            self.host,
-            credentials=self.credentials,
-            connection_attempts=20,
-            retry_delay=5,
-        )
+        parameters = pika.ConnectionParameters(self.host,
+                                               credentials=self.credentials,
+                                               connection_attempts=20,
+                                               retry_delay=5)
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
         self.channel.queue_declare(self.queue, durable=True)
 
     def _publish(self, body):
-        self.channel.basic_publish("", self.queue, body)
-        logger.debug(
-            "Published pika events to queue {} at "
-            "{}:\n{}".format(self.queue, self.host, body)
-        )
+        self.channel.basic_publish('', self.queue, body)
+        logger.debug('Published pika events to queue {} at '
+                     '{}:\n{}'.format(self.queue, self.host, body))
 
     def _close(self):
         self.connection.close()
@@ -118,9 +109,8 @@ class FileProducer(EventChannel):
         self.event_logger = self._event_logger()
 
     @classmethod
-    def from_endpoint_config(
-        cls, broker_config: Optional["EndpointConfig"]
-    ) -> Optional["FileProducer"]:
+    def from_endpoint_config(cls, broker_config: Optional['EndpointConfig']
+                             ) -> Optional['FileProducer']:
         if broker_config is None:
             return None
 
@@ -132,10 +122,10 @@ class FileProducer(EventChannel):
 
         logger_file = self.path
         # noinspection PyTypeChecker
-        query_logger = logging.getLogger("event-logger")
+        query_logger = logging.getLogger('event-logger')
         query_logger.setLevel(logging.INFO)
         handler = logging.FileHandler(logger_file)
-        handler.setFormatter(logging.Formatter("%(message)s"))
+        handler.setFormatter(logging.Formatter('%(message)s'))
         query_logger.propagate = False
         query_logger.addHandler(handler)
 
@@ -151,19 +141,16 @@ class FileProducer(EventChannel):
 
 
 class KafkaProducer(EventChannel):
-    def __init__(
-        self,
-        host,
-        sasl_username=None,
-        sasl_password=None,
-        ssl_cafile=None,
-        ssl_certfile=None,
-        ssl_keyfile=None,
-        ssl_check_hostname=False,
-        topic="rasa_core_events",
-        security_protocol="SASL_PLAINTEXT",
-        loglevel=logging.ERROR,
-    ):
+    def __init__(self, host,
+                 sasl_username=None,
+                 sasl_password=None,
+                 ssl_cafile=None,
+                 ssl_certfile=None,
+                 ssl_keyfile=None,
+                 ssl_check_hostname=False,
+                 topic='rasa_core_events',
+                 security_protocol='SASL_PLAINTEXT',
+                 loglevel=logging.ERROR):
 
         self.host = host
         self.topic = topic
@@ -175,10 +162,10 @@ class KafkaProducer(EventChannel):
         self.ssl_keyfile = ssl_keyfile
         self.ssl_check_hostname = ssl_check_hostname
 
-        logging.getLogger("kafka").setLevel(loglevel)
+        logging.getLogger('kafka').setLevel(loglevel)
 
     @classmethod
-    def from_endpoint_config(cls, broker_config) -> Optional["KafkaProducer"]:
+    def from_endpoint_config(cls, broker_config) -> Optional['KafkaProducer']:
         if broker_config is None:
             return None
 
@@ -192,25 +179,23 @@ class KafkaProducer(EventChannel):
     def _create_producer(self):
         import kafka
 
-        if self.security_protocol == "SASL_PLAINTEXT":
+        if self.security_protocol == 'SASL_PLAINTEXT':
             self.producer = kafka.KafkaProducer(
                 bootstrap_servers=[self.host],
-                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 sasl_plain_username=self.sasl_username,
                 sasl_plain_password=self.sasl_password,
-                sasl_mechanism="PLAIN",
-                security_protocol=self.security_protocol,
-            )
-        elif self.security_protocol == "SSL":
+                sasl_mechanism='PLAIN',
+                security_protocol=self.security_protocol)
+        elif self.security_protocol == 'SSL':
             self.producer = kafka.KafkaProducer(
                 bootstrap_servers=[self.host],
-                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 ssl_cafile=self.ssl_cafile,
                 ssl_certfile=self.ssl_certfile,
                 ssl_keyfile=self.ssl_keyfile,
                 ssl_check_hostname=False,
-                security_protocol=self.security_protocol,
-            )
+                security_protocol=self.security_protocol)
 
     def _publish(self, event):
         self.producer.send(self.topic, event)

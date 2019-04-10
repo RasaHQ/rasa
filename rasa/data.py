@@ -36,7 +36,8 @@ def get_nlu_directory(directories: Union[Text, List[Text]]) -> Text:
     return _copy_files_to_new_dir(nlu_files)
 
 
-def get_core_nlu_directories(directories: Union[Text, List[Text]]) -> Tuple[Text, Text]:
+def get_core_nlu_directories(directories: Union[Text, List[Text]]
+                             ) -> Tuple[Text, Text]:
     """Recursively collects all training files from a list of directories.
 
     Args:
@@ -54,9 +55,8 @@ def get_core_nlu_directories(directories: Union[Text, List[Text]]) -> Tuple[Text
     return story_directory, nlu_directory
 
 
-def _get_core_nlu_files(
-    directories: Union[Text, List[Text]]
-) -> Tuple[Set[Text], Set[Text]]:
+def _get_core_nlu_files(directories: Union[Text, List[Text]]
+                        ) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
 
@@ -68,8 +68,7 @@ def _get_core_nlu_files(
             continue
 
         new_story_files, new_nlu_data_files = _find_core_nlu_files_in_directory(
-            directory
-        )
+            directory)
 
         story_files.update(new_story_files)
         nlu_data_files.update(new_nlu_data_files)
@@ -77,7 +76,8 @@ def _get_core_nlu_files(
     return story_files, nlu_data_files
 
 
-def _find_core_nlu_files_in_directory(directory: Text) -> Tuple[Set[Text], Set[Text]]:
+def _find_core_nlu_files_in_directory(directory: Text
+                                      ) -> Tuple[Set[Text], Set[Text]]:
     story_files = set()
     nlu_data_files = set()
     for root, _, files in os.walk(directory):

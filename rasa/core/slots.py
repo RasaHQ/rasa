@@ -8,9 +8,10 @@ logger = logging.getLogger(__name__)
 class Slot(object):
     type_name = None
 
-    def __init__(
-        self, name, initial_value=None, value_reset_delay=None, auto_fill=True
-    ):
+    def __init__(self, name,
+                 initial_value=None,
+                 value_reset_delay=None,
+                 auto_fill=True):
         self.name = name
         self.value = initial_value
         self.initial_value = initial_value
@@ -36,26 +37,28 @@ class Slot(object):
         return self._value_reset_delay
 
     def as_feature(self):
-        raise NotImplementedError(
-            "Each slot type needs to specify how its "
-            "value can be converted to a feature. Slot "
-            "'{}' is a generic slot that can not be used "
-            "for predictions. Make sure you add this "
-            "slot to your domain definition, specifying "
-            "the type of the slot. If you implemented "
-            "a custom slot type class, make sure to "
-            "implement `.as_feature()`."
-            "".format(self.name)
-        )
+        raise NotImplementedError("Each slot type needs to specify how its "
+                                  "value can be converted to a feature. Slot "
+                                  "'{}' is a generic slot that can not be used "
+                                  "for predictions. Make sure you add this "
+                                  "slot to your domain definition, specifying "
+                                  "the type of the slot. If you implemented "
+                                  "a custom slot type class, make sure to "
+                                  "implement `.as_feature()`."
+                                  "".format(self.name))
 
     def reset(self):
         self.value = self.initial_value
 
     def __str__(self):
-        return "{}({}: {})".format(self.__class__.__name__, self.name, self.value)
+        return "{}({}: {})".format(self.__class__.__name__,
+                                   self.name,
+                                   self.value)
 
     def __repr__(self):
-        return "<{}({}: {})>".format(self.__class__.__name__, self.name, self.value)
+        return "<{}({}: {})>".format(self.__class__.__name__,
+                                     self.name,
+                                     self.value)
 
     @staticmethod
     def resolve_by_type(type_name):
@@ -65,36 +68,31 @@ class Slot(object):
                 return cls
         try:
             return utils.class_from_module_path(type_name)
-        except (ImportError, AttributeError):
+        except(ImportError, AttributeError):
             raise ValueError(
                 "Failed to find slot type, '{}' is neither a known type nor "
                 "user-defined. If you are creating your own slot type, make "
-                "sure its module path is correct.".format(type_name)
-            )
+                "sure its module path is correct.".format(type_name))
 
     def persistence_info(self):
-        return {
-            "type": utils.module_path_from_instance(self),
-            "initial_value": self.initial_value,
-            "auto_fill": self.auto_fill,
-        }
+        return {"type": utils.module_path_from_instance(self),
+                "initial_value": self.initial_value,
+                "auto_fill": self.auto_fill}
 
 
 class FloatSlot(Slot):
     type_name = "float"
 
-    def __init__(
-        self,
-        name,
-        initial_value=None,
-        value_reset_delay=None,
-        auto_fill=True,
-        max_value=1.0,
-        min_value=0.0,
-    ):
-        super(FloatSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+    def __init__(self, name,
+                 initial_value=None,
+                 value_reset_delay=None,
+                 auto_fill=True,
+                 max_value=1.0,
+                 min_value=0.0):
+        super(FloatSlot, self).__init__(name,
+                                        initial_value,
+                                        value_reset_delay,
+                                        auto_fill)
         self.max_value = max_value
         self.min_value = min_value
 
@@ -103,19 +101,19 @@ class FloatSlot(Slot):
                 "Float slot ('{}') created with an invalid range "
                 "using min ({}) and max ({}) values. Make sure "
                 "min is smaller than max."
-                "".format(self.name, self.min_value, self.max_value)
-            )
+                "".format(self.name, self.min_value, self.max_value))
 
-        if initial_value is not None and not (min_value <= initial_value <= max_value):
-            logger.warning(
-                "Float slot ('{}') created with an initial value {}"
-                "outside of configured min ({}) and max ({}) values."
-                "".format(self.name, self.value, self.min_value, self.max_value)
-            )
+        if (initial_value is not None and
+                not (min_value <= initial_value <= max_value)):
+            logger.warning("Float slot ('{}') created with an initial value {}"
+                           "outside of configured min ({}) and max ({}) values."
+                           "".format(self.name, self.value, self.min_value,
+                                     self.max_value))
 
     def as_feature(self):
         try:
-            capped_value = max(self.min_value, min(self.max_value, float(self.value)))
+            capped_value = max(self.min_value,
+                               min(self.max_value, float(self.value)))
             if abs(self.max_value - self.min_value) > 0:
                 covered_range = abs(self.max_value - self.min_value)
             else:
@@ -182,17 +180,15 @@ class UnfeaturizedSlot(Slot):
 class CategoricalSlot(Slot):
     type_name = "categorical"
 
-    def __init__(
-        self,
-        name,
-        values=None,
-        initial_value=None,
-        value_reset_delay=None,
-        auto_fill=True,
-    ):
-        super(CategoricalSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+    def __init__(self, name,
+                 values=None,
+                 initial_value=None,
+                 value_reset_delay=None,
+                 auto_fill=True):
+        super(CategoricalSlot, self).__init__(name,
+                                              initial_value,
+                                              value_reset_delay,
+                                              auto_fill)
         self.values = [str(v).lower() for v in values] if values else []
 
     def persistence_info(self):
@@ -217,8 +213,7 @@ class CategoricalSlot(Slot):
                         "behave as if no value is set. "
                         "Make sure to add all values a categorical "
                         "slot should store to the domain."
-                        "".format(self.name, self.value)
-                    )
+                        "".format(self.name, self.value))
         except (TypeError, ValueError):
             logger.exception("Failed to featurize categorical slot.")
             return r
@@ -229,13 +224,15 @@ class CategoricalSlot(Slot):
 
 
 class DataSlot(Slot):
-    def __init__(self, name, initial_value=None, value_reset_delay=1, auto_fill=True):
-        super(DataSlot, self).__init__(
-            name, initial_value, value_reset_delay, auto_fill
-        )
+    def __init__(self, name,
+                 initial_value=None,
+                 value_reset_delay=1,
+                 auto_fill=True):
+        super(DataSlot, self).__init__(name,
+                                       initial_value,
+                                       value_reset_delay,
+                                       auto_fill)
 
     def as_feature(self):
-        raise NotImplementedError(
-            "Each slot type needs to specify how its "
-            "value can be converted to a feature."
-        )
+        raise NotImplementedError("Each slot type needs to specify how its "
+                                  "value can be converted to a feature.")

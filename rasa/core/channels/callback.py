@@ -1,13 +1,16 @@
 import logging
 from sanic import Blueprint, response
 
-from rasa.core.channels import CollectingOutputChannel, UserMessage, RestInput
+from rasa.core.channels import (
+    CollectingOutputChannel,
+    UserMessage, RestInput)
 from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 
 logger = logging.getLogger(__name__)
 
 
 class CallbackOutput(CollectingOutputChannel):
+
     @classmethod
     def name(cls):
         return "callback"
@@ -22,14 +25,13 @@ class CallbackOutput(CollectingOutputChannel):
 
         try:
             await self.callback_endpoint.request(
-                "post", content_type="application/json", json=message
-            )
+                "post",
+                content_type="application/json",
+                json=message)
         except ClientResponseError as e:
-            logger.error(
-                "Failed to send output message to callback. "
-                "Status: {} Response: {}"
-                "".format(e.status, e.text)
-            )
+            logger.error("Failed to send output message to callback. "
+                         "Status: {} Response: {}"
+                         "".format(e.status, e.text))
 
 
 class CallbackInput(RestInput):
@@ -50,21 +52,20 @@ class CallbackInput(RestInput):
         self.callback_endpoint = endpoint
 
     def blueprint(self, on_new_message):
-        callback_webhook = Blueprint("callback_webhook", __name__)
+        callback_webhook = Blueprint('callback_webhook', __name__)
 
-        @callback_webhook.route("/", methods=["GET"])
+        @callback_webhook.route("/", methods=['GET'])
         async def health(request):
             return response.json({"status": "ok"})
 
-        @callback_webhook.route("/webhook", methods=["POST"])
+        @callback_webhook.route("/webhook", methods=['POST'])
         async def webhook(request):
             sender_id = self._extract_sender(request)
             text = self._extract_message(request)
 
             collector = CallbackOutput(self.callback_endpoint)
-            await on_new_message(
-                UserMessage(text, collector, sender_id, input_channel=self.name())
-            )
+            await on_new_message(UserMessage(text, collector, sender_id,
+                                             input_channel=self.name()))
             return response.text("success")
 
         return callback_webhook

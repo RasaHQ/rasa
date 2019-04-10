@@ -17,26 +17,23 @@ DEFAULT_SANIC_WORKERS = 1
 def create_argument_parser():
     """Parse all the command line arguments for the nlg server script."""
 
-    parser = argparse.ArgumentParser(description="starts the nlg endpoint")
+    parser = argparse.ArgumentParser(
+        description='starts the nlg endpoint')
     parser.add_argument(
-        "-p",
-        "--port",
+        '-p', '--port',
         default=DEFAULT_SERVER_PORT,
         type=int,
-        help="port to run the server at",
-    )
+        help="port to run the server at")
     parser.add_argument(
-        "--workers",
+        '--workers',
         default=DEFAULT_SANIC_WORKERS,
         type=int,
-        help="Number of processes to spin up",
-    )
+        help="Number of processes to spin up")
     parser.add_argument(
-        "-d",
-        "--domain",
+        '-d', '--domain',
         type=str,
         default=None,
-        help="path of the domain file to load utterances from",
+        help="path of the domain file to load utterances from"
     )
 
     return parser
@@ -51,18 +48,18 @@ async def generate_response(nlg_call, domain):
     template = nlg_call.get("template")
     sender_id = nlg_call.get("tracker", {}).get("sender_id")
     events = nlg_call.get("tracker", {}).get("events")
-    tracker = DialogueStateTracker.from_dict(sender_id, events, domain.slots)
+    tracker = DialogueStateTracker.from_dict(
+        sender_id, events, domain.slots)
     channel_name = nlg_call.get("channel")
 
     return await TemplatedNaturalLanguageGenerator(domain.templates).generate(
-        template, tracker, channel_name, **kwargs
-    )
+        template, tracker, channel_name, **kwargs)
 
 
 def run_server(domain, port, workers):
     app = Sanic(__name__)
 
-    @app.route("/nlg", methods=["POST", "OPTIONS"])
+    @app.route("/nlg", methods=['POST', 'OPTIONS'])
     async def nlg(request):
         """Endpoint which processes the Core request for a bot response."""
         nlg_call = request.json
@@ -70,10 +67,12 @@ def run_server(domain, port, workers):
 
         return response.json(bot_response)
 
-    app.run(host="0.0.0.0", port=port, workers=workers)
+    app.run(host='0.0.0.0',
+            port=port,
+            workers=workers)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     # Running as standalone python application

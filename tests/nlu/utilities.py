@@ -20,16 +20,17 @@ def base_test_conf(pipeline_template):
 
 
 def write_file_config(file_config):
-    with tempfile.NamedTemporaryFile(
-        "w+", suffix="_tmp_config_file.yml", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile("w+",
+                                     suffix="_tmp_config_file.yml",
+                                     delete=False) as f:
         f.write(yaml.safe_dump(file_config))
         f.flush()
         return f
 
 
 def interpreter_for(component_builder, data, path, config):
-    (trained, _, path) = train(config, data, path, component_builder=component_builder)
+    (trained, _, path) = train(config, data, path,
+                               component_builder=component_builder)
     interpreter = Interpreter.load(path, component_builder)
     return interpreter
 

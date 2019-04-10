@@ -9,7 +9,9 @@ class WitEmulator(NoEmulator):
         super(WitEmulator, self).__init__()
         self.name = "wit"
 
-    def normalise_response_json(self, data: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+    def normalise_response_json(self,
+                                data: Dict[Text, Any]
+                                ) -> List[Dict[Text, Any]]:
         """Transform data to wit.ai format."""
 
         entities = {}
@@ -19,14 +21,14 @@ class WitEmulator(NoEmulator):
                 "type": "value",
                 "value": entity["value"],
                 "start": entity["start"],
-                "end": entity["end"],
+                "end": entity["end"]
             }
 
         return [
             {
                 "_text": data["text"],
-                "confidence": data["intent"]["confidence"],
-                "intent": data["intent"]["name"],
-                "entities": entities,
+                "confidence": data["intent"]['confidence'],
+                "intent": data["intent"]['name'],
+                "entities": entities
             }
         ]

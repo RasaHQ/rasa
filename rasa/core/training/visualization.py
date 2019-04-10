@@ -21,7 +21,7 @@ START_NODE_ID = 0
 END_NODE_ID = -1
 TMP_NODE_ID = -2
 
-VISUALIZATION_TEMPLATE_PATH = "/visualization.html"
+VISUALIZATION_TEMPLATE_PATH = '/visualization.html'
 
 
 class UserMessageGenerator(object):
@@ -45,9 +45,8 @@ class UserMessageGenerator(object):
 
     @staticmethod
     def _contains_same_entity(entities, e):
-        return entities.get(e.get("entity")) is None or entities.get(
-            e.get("entity")
-        ) != e.get("value")
+        return (entities.get(e.get("entity")) is None or
+                entities.get(e.get("entity")) != e.get("value"))
 
     def message_for_data(self, structured_info):
         """Find a data sample with the same intent and entities.
@@ -60,9 +59,8 @@ class UserMessageGenerator(object):
             usable_examples = self.mapping.get(intent_name, [])[:]
             random.shuffle(usable_examples)
             for example in usable_examples:
-                entities = {
-                    e.get("entity"): e.get("value") for e in example.get("entities", [])
-                }
+                entities = {e.get("entity"): e.get("value")
+                            for e in example.get("entities", [])}
                 for e in structured_info.get("entities", []):
                     if self._contains_same_entity(entities, e):
                         break
@@ -107,18 +105,19 @@ def _fingerprint_node(graph, node, max_history):
             empty = False
         if empty:
             continuations.append(candidate)
-    return {
-        " - ".join([graph.node[node]["label"] for node in continuation])
-        for continuation in continuations
-    }
+    return {" - ".join([graph.node[node]["label"]
+                        for node in continuation])
+            for continuation in continuations}
 
 
 def _incoming_edges(graph, node):
-    return {(prev_node, k) for prev_node, _, k in graph.in_edges(node, keys=True)}
+    return {(prev_node, k)
+            for prev_node, _, k in graph.in_edges(node, keys=True)}
 
 
 def _outgoing_edges(graph, node):
-    return {(succ_node, k) for _, succ_node, k in graph.out_edges(node, keys=True)}
+    return {(succ_node, k)
+            for _, succ_node, k in graph.out_edges(node, keys=True)}
 
 
 def _outgoing_edges_are_similar(graph, node_a, node_b):
@@ -129,27 +128,20 @@ def _outgoing_edges_are_similar(graph, node_a, node_b):
     the same nodes anyways."""
 
     ignored = {node_b, node_a}
-    a_edges = {
-        (target, k)
-        for target, k in _outgoing_edges(graph, node_a)
-        if target not in ignored
-    }
-    b_edges = {
-        (target, k)
-        for target, k in _outgoing_edges(graph, node_b)
-        if target not in ignored
-    }
+    a_edges = {(target, k) for target, k in _outgoing_edges(graph, node_a) if
+               target not in ignored}
+    b_edges = {(target, k) for target, k in _outgoing_edges(graph, node_b) if
+               target not in ignored}
     return a_edges == b_edges or not a_edges or not b_edges
 
 
 def _nodes_are_equivalent(graph, node_a, node_b, max_history):
     """Decides if two nodes are equivalent based on their fingerprints."""
-    return graph.node[node_a]["label"] == graph.node[node_b]["label"] and (
-        _outgoing_edges_are_similar(graph, node_a, node_b)
-        or _incoming_edges(graph, node_a) == _incoming_edges(graph, node_b)
-        or _fingerprint_node(graph, node_a, max_history)
-        == _fingerprint_node(graph, node_b, max_history)
-    )
+    return (graph.node[node_a]["label"] == graph.node[node_b]["label"] and
+            (_outgoing_edges_are_similar(graph, node_a, node_b) or
+             _incoming_edges(graph, node_a) == _incoming_edges(graph, node_b) or
+             _fingerprint_node(graph, node_a, max_history) ==
+             _fingerprint_node(graph, node_b, max_history)))
 
 
 def _add_edge(graph, u, v, key, label=None, **kwargs):
@@ -202,48 +194,35 @@ def _merge_equivalent_nodes(graph, max_history):
         for idx, i in enumerate(remaining_node_ids):
             if graph.has_node(i):
                 # assumes node equivalence is cumulative
-                for j in remaining_node_ids[idx + 1 :]:
-                    if graph.has_node(j) and _nodes_are_equivalent(
-                        graph, i, j, max_history
-                    ):
+                for j in remaining_node_ids[idx + 1:]:
+                    if (graph.has_node(j) and
+                            _nodes_are_equivalent(graph, i, j, max_history)):
                         # make sure we keep special styles
-                        _transfer_style(
-                            graph.nodes(data=True)[j], graph.nodes(data=True)[i]
-                        )
+                        _transfer_style(graph.nodes(data=True)[j],
+                                        graph.nodes(data=True)[i])
 
                         changed = True
                         # moves all outgoing edges to the other node
-                        j_outgoing_edges = list(
-                            graph.out_edges(j, keys=True, data=True)
-                        )
+                        j_outgoing_edges = list(graph.out_edges(j, keys=True,
+                                                                data=True))
                         for _, succ_node, k, d in j_outgoing_edges:
-                            _add_edge(
-                                graph,
-                                i,
-                                succ_node,
-                                k,
-                                d.get("label"),
-                                **{"class": d.get("class", "")}
-                            )
+                            _add_edge(graph, i, succ_node, k, d.get("label"),
+                                      **{"class": d.get("class", "")})
                             graph.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
-                        j_incoming_edges = list(graph.in_edges(j, keys=True, data=True))
+                        j_incoming_edges = list(graph.in_edges(j, keys=True,
+                                                               data=True))
                         for prev_node, _, k, d in j_incoming_edges:
-                            _add_edge(
-                                graph,
-                                prev_node,
-                                i,
-                                k,
-                                d.get("label"),
-                                **{"class": d.get("class", "")}
-                            )
+                            _add_edge(graph, prev_node, i, k, d.get("label"),
+                                      **{"class": d.get("class", "")})
                             graph.remove_edge(prev_node, j)
                         graph.remove_node(j)
 
 
-async def _replace_edge_labels_with_nodes(
-    graph, next_id, interpreter, nlu_training_data
-):
+async def _replace_edge_labels_with_nodes(graph,
+                                          next_id,
+                                          interpreter,
+                                          nlu_training_data):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
 
@@ -267,22 +246,20 @@ async def _replace_edge_labels_with_nodes(
                 label = d.get("label", k)
             next_id += 1
             graph.remove_edge(s, e, k)
-            graph.add_node(
-                next_id,
-                label=label,
-                shape="rect",
-                style="filled",
-                fillcolor="lightblue",
-                **_transfer_style(d, {"class": "intent"})
-            )
+            graph.add_node(next_id,
+                           label=label,
+                           shape="rect",
+                           style="filled",
+                           fillcolor="lightblue",
+                           **_transfer_style(d, {"class": "intent"}))
             graph.add_edge(s, next_id, **{"class": d.get("class", "")})
             graph.add_edge(next_id, e, **{"class": d.get("class", "")})
 
 
 def visualization_html_path():
     import pkg_resources
-
-    return pkg_resources.resource_filename(__name__, VISUALIZATION_TEMPLATE_PATH)
+    return pkg_resources.resource_filename(__name__,
+                                           VISUALIZATION_TEMPLATE_PATH)
 
 
 def persist_graph(graph, output_file):
@@ -291,20 +268,20 @@ def persist_graph(graph, output_file):
 
     expg = nx.nx_pydot.to_pydot(graph)
 
-    with open(visualization_html_path(), "r") as file:
+    with open(visualization_html_path(), 'r') as file:
         template = file.read()
 
     # customize content of template by replacing tags
-    template = template.replace("// { is-client }", "isClient = true", 1)
-    template = template.replace(
-        "// { graph-content }", "graph = `{}`".format(expg.to_string()), 1
-    )
+    template = template.replace('// { is-client }', 'isClient = true', 1)
+    template = template.replace('// { graph-content }', "graph = `{}`"
+                                .format(expg.to_string()), 1)
 
-    with open(output_file, "w") as file:
+    with open(output_file, 'w') as file:
         file.write(template)
 
 
-def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> int:
+def _length_of_common_action_prefix(this: List[Event],
+                                    other: List[Event]) -> int:
     """Calculate number of actions that two conversations have in common."""
 
     num_common_actions = 0
@@ -316,44 +293,37 @@ def _length_of_common_action_prefix(this: List[Event], other: List[Event]) -> in
             break
         elif e.type_name == "user" and o_cleaned[i].type_name == "user":
             continue
-        elif (
-            e.type_name == "action"
-            and o_cleaned[i].type_name == "action"
-            and o_cleaned[i].action_name == e.action_name
-        ):
+        elif (e.type_name == "action" and
+                o_cleaned[i].type_name == "action" and
+                o_cleaned[i].action_name == e.action_name):
             num_common_actions += 1
         else:
             break
     return num_common_actions
 
 
-def _add_default_nodes(graph: "networkx.MultiDiGraph", fontsize: int = 12) -> None:
+def _add_default_nodes(graph: 'networkx.MultiDiGraph',
+                       fontsize: int = 12) -> None:
     """Add the standard nodes we need."""
 
-    graph.add_node(
-        START_NODE_ID,
-        label="START",
-        fillcolor="green",
-        style="filled",
-        fontsize=fontsize,
-        **{"class": "start active"}
-    )
-    graph.add_node(
-        END_NODE_ID,
-        label="END",
-        fillcolor="red",
-        style="filled",
-        fontsize=fontsize,
-        **{"class": "end"}
-    )
-    graph.add_node(TMP_NODE_ID, label="TMP", style="invis", **{"class": "invisible"})
+    graph.add_node(START_NODE_ID,
+                   label="START",
+                   fillcolor="green", style="filled", fontsize=fontsize,
+                   **{"class": "start active"})
+    graph.add_node(END_NODE_ID,
+                   label="END",
+                   fillcolor="red", style="filled", fontsize=fontsize,
+                   **{"class": "end"})
+    graph.add_node(TMP_NODE_ID,
+                   label="TMP",
+                   style="invis",
+                   **{"class": "invisible"})
 
 
-def _create_graph(fontsize: int = 12) -> "networkx.MultiDiGraph":
+def _create_graph(fontsize: int = 12) -> 'networkx.MultiDiGraph':
     """Create a graph and adds the default nodes."""
 
     import networkx as nx
-
     graph = nx.MultiDiGraph()
     _add_default_nodes(graph, fontsize)
     return graph
@@ -366,13 +336,12 @@ def sanitize(s):
         return s
 
 
-def _add_message_edge(
-    graph: "networkx.MultiDiGraph",
-    message: Dict[Text, Any],
-    current_node: int,
-    next_node_idx: int,
-    is_current: bool,
-):
+def _add_message_edge(graph: 'networkx.MultiDiGraph',
+                      message: Dict[Text, Any],
+                      current_node: int,
+                      next_node_idx: int,
+                      is_current: bool
+                      ):
     """Create an edge based on the user message."""
 
     if message:
@@ -382,14 +351,9 @@ def _add_message_edge(
         message_key = None
         message_label = None
 
-    _add_edge(
-        graph,
-        current_node,
-        next_node_idx,
-        message_key,
-        message_label,
-        **{"class": "active" if is_current else ""}
-    )
+    _add_edge(graph, current_node, next_node_idx, message_key,
+              message_label,
+              **{"class": "active" if is_current else ""})
 
 
 async def visualize_neighborhood(
@@ -401,7 +365,7 @@ async def visualize_neighborhood(
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     max_distance: int = 1,
-    fontsize: int = 12,
+    fontsize: int = 12
 ):
     """Given a set of event lists, visualizing the flows."""
 
@@ -432,20 +396,16 @@ async def visualize_neighborhood(
                     message = await interpreter.parse(el.text)
                 else:
                     message = el.parse_data
-            elif (
-                isinstance(el, ActionExecuted) and el.action_name != ACTION_LISTEN_NAME
-            ):
+            elif (isinstance(el, ActionExecuted) and
+                  el.action_name != ACTION_LISTEN_NAME):
                 next_node_idx += 1
-                graph.add_node(
-                    next_node_idx,
-                    label=el.action_name,
-                    fontsize=fontsize,
-                    **{"class": "active" if is_current else ""}
-                )
+                graph.add_node(next_node_idx,
+                               label=el.action_name,
+                               fontsize=fontsize,
+                               **{"class": "active" if is_current else ""})
 
-                _add_message_edge(
-                    graph, message, current_node, next_node_idx, is_current
-                )
+                _add_message_edge(graph, message, current_node, next_node_idx,
+                                  is_current)
                 current_node = next_node_idx
 
                 message = None
@@ -455,17 +415,13 @@ async def visualize_neighborhood(
         # this can either be an ellipsis "...", the conversation end node
         # "END" or a "TMP" node if this is the active conversation
         if is_current:
-            if (
-                isinstance(events[idx], ActionExecuted)
-                and events[idx].action_name == ACTION_LISTEN_NAME
-            ):
+            if (isinstance(events[idx], ActionExecuted) and
+                    events[idx].action_name == ACTION_LISTEN_NAME):
                 next_node_idx += 1
-                graph.add_node(
-                    next_node_idx,
-                    label=message or "  ?  ",
-                    shape="rect",
-                    **{"class": "intent dashed active"}
-                )
+                graph.add_node(next_node_idx,
+                               label=message or "  ?  ",
+                               shape="rect",
+                               **{"class": "intent dashed active"})
                 target = next_node_idx
             elif current_node:
                 d = graph.nodes(data=True)[current_node]
@@ -476,7 +432,8 @@ async def visualize_neighborhood(
         elif idx == len(events) - 1:
             target = END_NODE_ID
         elif current_node and current_node not in path_ellipsis_ends:
-            graph.add_node(special_node_idx, label="...", **{"class": "ellipsis"})
+            graph.add_node(special_node_idx, label="...",
+                           **{"class": "ellipsis"})
             target = special_node_idx
             path_ellipsis_ends.add(current_node)
             special_node_idx -= 1
@@ -487,9 +444,8 @@ async def visualize_neighborhood(
 
     if should_merge_nodes:
         _merge_equivalent_nodes(graph, max_history)
-    await _replace_edge_labels_with_nodes(
-        graph, next_node_idx, interpreter, nlu_training_data
-    )
+    await _replace_edge_labels_with_nodes(graph, next_node_idx, interpreter,
+                                          nlu_training_data)
 
     _remove_auxiliary_nodes(graph, special_node_idx)
 
@@ -498,9 +454,8 @@ async def visualize_neighborhood(
     return graph
 
 
-def _remove_auxiliary_nodes(
-    graph: "networkx.MultiDiGraph", special_node_idx: int
-) -> None:
+def _remove_auxiliary_nodes(graph: 'networkx.MultiDiGraph',
+                            special_node_idx: int) -> None:
     """Remove any temporary or unused nodes."""
 
     graph.remove_node(TMP_NODE_ID)
@@ -527,7 +482,7 @@ async def visualize_stories(
     nlu_training_data: Optional["TrainingData"] = None,
     should_merge_nodes: bool = True,
     fontsize: int = 12,
-    silent: bool = False,
+    silent: bool = False
 ):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
@@ -559,25 +514,20 @@ async def visualize_stories(
 
     story_graph = StoryGraph(story_steps)
 
-    g = TrainingDataGenerator(
-        story_graph,
-        domain,
-        use_story_concatenation=False,
-        tracker_limit=100,
-        augmentation_factor=0,
-    )
+    g = TrainingDataGenerator(story_graph, domain,
+                              use_story_concatenation=False,
+                              tracker_limit=100,
+                              augmentation_factor=0)
     completed_trackers = g.generate(silent)
     event_sequences = [t.events for t in completed_trackers]
 
-    graph = await visualize_neighborhood(
-        None,
-        event_sequences,
-        output_file,
-        max_history,
-        interpreter,
-        nlu_training_data,
-        should_merge_nodes,
-        max_distance=1,
-        fontsize=fontsize,
-    )
+    graph = await visualize_neighborhood(None,
+                                         event_sequences,
+                                         output_file,
+                                         max_history,
+                                         interpreter,
+                                         nlu_training_data,
+                                         should_merge_nodes,
+                                         max_distance=1,
+                                         fontsize=fontsize)
     return graph

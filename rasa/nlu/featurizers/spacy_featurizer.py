@@ -11,12 +11,12 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 
-def ndim(spacy_nlp: "Language") -> int:
+def ndim(spacy_nlp: 'Language') -> int:
     """Number of features used to represent a document / sentence."""
     return spacy_nlp.vocab.vectors_length
 
 
-def features_for_doc(doc: "Doc") -> np.ndarray:
+def features_for_doc(doc: 'Doc') -> np.ndarray:
     """Feature vector for a single document / sentence."""
     return doc.vector
 
@@ -27,9 +27,10 @@ class SpacyFeaturizer(Featurizer):
 
     requires = ["spacy_doc"]
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         for example in training_data.intent_examples:
             self._set_spacy_features(example)

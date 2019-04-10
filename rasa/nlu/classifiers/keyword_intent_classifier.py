@@ -15,7 +15,8 @@ class KeywordIntentClassifier(Component):
     def process(self, message: Message, **kwargs: Any) -> None:
 
         intent = {"name": self.parse(message.text), "confidence": 1.0}
-        message.set("intent", intent, add_to_output=True)
+        message.set("intent", intent,
+                    add_to_output=True)
 
     def parse(self, text: Text) -> Optional[Text]:
 

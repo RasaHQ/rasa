@@ -23,7 +23,9 @@ class JiebaTokenizer(Tokenizer, Component):
 
     language_list = ["zh"]
 
-    defaults = {"dictionary_path": None}  # default don't load custom dictionary
+    defaults = {
+        "dictionary_path": None  # default don't load custom dictionary
+    }
 
     def __init__(self, component_config: Dict[Text, Any] = None) -> None:
         """Construct a new intent classifier using the MITIE framework."""
@@ -31,7 +33,7 @@ class JiebaTokenizer(Tokenizer, Component):
         super(JiebaTokenizer, self).__init__(component_config)
 
         # path to dictionary file or None
-        self.dictionary_path = self.component_config.get("dictionary_path")
+        self.dictionary_path = self.component_config.get('dictionary_path')
 
         # load dictionary
         if self.dictionary_path is not None:
@@ -53,12 +55,14 @@ class JiebaTokenizer(Tokenizer, Component):
 
         jieba_userdicts = glob.glob("{}/*".format(path))
         for jieba_userdict in jieba_userdicts:
-            logger.info("Loading Jieba User Dictionary at " "{}".format(jieba_userdict))
+            logger.info("Loading Jieba User Dictionary at "
+                        "{}".format(jieba_userdict))
             jieba.load_userdict(jieba_userdict)
 
-    def train(
-        self, training_data: TrainingData, config: RasaNLUModelConfig, **kwargs: Any
-    ) -> None:
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 
@@ -74,14 +78,13 @@ class JiebaTokenizer(Tokenizer, Component):
         return tokens
 
     @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional[Component] = None,
-        **kwargs: Any
-    ) -> "JiebaTokenizer":
+    def load(cls,
+             meta: Dict[Text, Any],
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional[Component] = None,
+             **kwargs: Any
+             ) -> 'JiebaTokenizer':
 
         relative_dictionary_path = meta.get("dictionary_path")
 
@@ -103,13 +106,16 @@ class JiebaTokenizer(Tokenizer, Component):
         for target_file in target_file_list:
             shutil.copy2(target_file, output_dir)
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
         # copy custom dictionaries to model dir, if any
         if self.dictionary_path is not None:
             target_dictionary_path = os.path.join(model_dir, file_name)
-            self.copy_files_dir_to_dir(self.dictionary_path, target_dictionary_path)
+            self.copy_files_dir_to_dir(self.dictionary_path,
+                                       target_dictionary_path)
 
             return {"dictionary_path": file_name}
         else:

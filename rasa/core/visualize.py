@@ -19,19 +19,12 @@ def add_arguments(parser: argparse.ArgumentParser):
     rasa.core.cli.arguments.add_config_arg(parser, nargs=1)
     rasa.core.cli.arguments.add_domain_arg(parser)
     rasa.core.cli.arguments.add_model_and_story_group(
-        parser, allow_pretrained_model=False
-    )
+        parser, allow_pretrained_model=False)
     return parser
 
 
-async def visualize(
-    config_path: Text,
-    domain_path: Text,
-    stories_path: Text,
-    nlu_data_path: Text,
-    output_path: Text,
-    max_history: int,
-):
+async def visualize(config_path: Text, domain_path: Text, stories_path: Text,
+                    nlu_data_path: Text, output_path: Text, max_history: int):
     from rasa.core.agent import Agent
     from rasa.core import config
 
@@ -50,21 +43,18 @@ async def visualize(
         nlu_data_path = None
 
     logger.info("Starting to visualize stories...")
-    await agent.visualize(
-        stories_path, output_path, max_history, nlu_training_data=nlu_data_path
-    )
+    await agent.visualize(stories_path, output_path,
+                          max_history,
+                          nlu_training_data=nlu_data_path)
 
     full_output_path = "file://{}".format(os.path.abspath(output_path))
-    logger.info("Finished graph creation. Saved into {}".format(full_output_path))
+    logger.info("Finished graph creation. Saved into {}".format(
+        full_output_path))
 
     import webbrowser
-
     webbrowser.open(full_output_path)
 
-
-if __name__ == "__main__":
-    raise RuntimeError(
-        "Calling `rasa.core.visualize` directly is "
-        "no longer supported. "
-        "Please use `rasa show` instead."
-    )
+if __name__ == '__main__':
+    raise RuntimeError("Calling `rasa.core.visualize` directly is "
+                       "no longer supported. "
+                       "Please use `rasa show` instead.")

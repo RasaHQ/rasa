@@ -1,12 +1,10 @@
 from typing import Text, Dict, List
 
 from rasa.core.channels.channel import (
-    InputChannel,
-    OutputChannel,
+    InputChannel, OutputChannel,
     UserMessage,
     CollectingOutputChannel,
-    RestInput,
-)
+    RestInput)
 
 # this prevents IDE's from optimizing the imports - we need to import the
 # above first, otherwise we will run into import cycles
@@ -27,22 +25,12 @@ from rasa.core.channels.twilio import TwilioInput  # nopep8
 from rasa.core.channels.webexteams import WebexTeamsInput  # nopep8
 
 input_channel_classes = [
-    CmdlineInput,
-    FacebookInput,
-    SlackInput,
-    TelegramInput,
-    MattermostInput,
-    TwilioInput,
-    RasaChatInput,
-    BotFrameworkInput,
-    RocketChatInput,
-    CallbackInput,
-    RestInput,
-    SocketIOInput,
-    WebexTeamsInput,
+    CmdlineInput, FacebookInput, SlackInput, TelegramInput, MattermostInput,
+    TwilioInput, RasaChatInput, BotFrameworkInput, RocketChatInput,
+    CallbackInput, RestInput, SocketIOInput, WebexTeamsInput
 ]  # type: List[InputChannel]
 
 # Mapping from a input channel name to its class to allow name based lookup.
 BUILTIN_CHANNELS = {
-    c.name(): c for c in input_channel_classes
-}  # type: Dict[Text, InputChannel]
+    c.name(): c
+    for c in input_channel_classes}  # type: Dict[Text, InputChannel]

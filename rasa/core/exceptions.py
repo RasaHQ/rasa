@@ -1,3 +1,4 @@
+
 class RasaCoreException(Exception):
     """Basic exception for errors raised by Rasa Core."""
 

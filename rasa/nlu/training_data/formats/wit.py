@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class WitReader(JsonTrainingDataReader):
+
     def read_from_json(self, js: Dict[Text, Any], **kwargs: Any):
         """Loads training data stored in the WIT.ai data format."""
         from rasa.nlu.training_data import Message, TrainingData
@@ -22,17 +23,16 @@ class WitReader(JsonTrainingDataReader):
             if entities is None:
                 continue
             text = s.get("text")
-            intents = [e["value"] for e in entities if e["entity"] == "intent"]
-            intent = intents[0].strip('"') if intents else None
+            intents = [e["value"] for e in entities if e["entity"] == 'intent']
+            intent = intents[0].strip("\"") if intents else None
 
-            entities = [
-                e
-                for e in entities
-                if ("start" in e and "end" in e and e["entity"] != "intent")
-            ]
+            entities = [e
+                        for e in entities
+                        if ("start" in e and "end" in e and
+                            e["entity"] != 'intent')]
             for e in entities:
                 # for some reason wit adds additional quotes around entities
-                e["value"] = e["value"].strip('"')
+                e["value"] = e["value"].strip("\"")
 
             data = {}
             if intent:

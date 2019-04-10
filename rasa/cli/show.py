@@ -5,33 +5,28 @@ from typing import List
 
 from rasa import data
 from rasa.cli.default_arguments import (
-    add_config_param,
-    add_domain_param,
-    add_stories_param,
-)
+    add_config_param, add_domain_param,
+    add_stories_param)
 from rasa.constants import DEFAULT_DATA_PATH
 
 
 # noinspection PyProtectedMember
-def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
-):
+def add_subparser(subparsers: argparse._SubParsersAction,
+                  parents: List[argparse.ArgumentParser]):
     show_parser = subparsers.add_parser(
         "show",
         parents=parents,
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Visualize Rasa Stack data",
-    )
+        help="Visualize Rasa Stack data")
 
     show_subparsers = show_parser.add_subparsers()
     show_stories_subparser = show_subparsers.add_parser(
         "stories",
-        conflict_handler="resolve",
+        conflict_handler='resolve',
         parents=parents,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Show Rasa Core stories",
-    )
+        help="Show Rasa Core stories")
 
     add_core_visualization_params(show_stories_subparser)
     add_config_param(show_stories_subparser)
@@ -60,12 +55,6 @@ def show_stories(args: argparse.Namespace):
         args.nlu_data = data.get_nlu_directory(DEFAULT_DATA_PATH)
 
     loop.run_until_complete(
-        rasa.core.visualize(
-            args.config,
-            args.domain,
-            args.stories,
-            args.nlu_data,
-            args.output,
-            args.max_history,
-        )
-    )
+        rasa.core.visualize(args.config, args.domain,
+                            args.stories, args.nlu_data,
+                            args.output, args.max_history))

@@ -21,6 +21,7 @@ def test_list_projects_in_cloud_method():
     def mocked_data_router_init(self, *args, **kwargs):
         self.config = None
 
-    with mock.patch.object(persistor, "get_persistor", mocked_get_persistor):
+    with mock.patch.object(persistor, 'get_persistor',
+                           mocked_get_persistor):
         return_value = data_router.DataRouter()._list_projects_in_cloud()
     assert isinstance(return_value[0], UniqueValue)

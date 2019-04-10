@@ -63,20 +63,21 @@ class MyComponent(Component):
         of components previous to this one."""
         pass
 
-    def persist(self, file_name: Text, model_dir: Text) -> Optional[Dict[Text, Any]]:
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this component to disk for future loading."""
 
         pass
 
     @classmethod
-    def load(
-        cls,
-        meta: Dict[Text, Any],
-        model_dir: Optional[Text] = None,
-        model_metadata: Optional["Metadata"] = None,
-        cached_component: Optional["Component"] = None,
-        **kwargs: Any
-    ) -> "Component":
+    def load(cls,
+             meta: Dict[Text, Any],
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional['Component'] = None,
+             **kwargs: Any
+             ) -> 'Component':
         """Load this component from file."""
 
         if cached_component:

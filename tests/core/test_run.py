@@ -8,15 +8,10 @@ def test_create_http_input_channels():
     assert len(channels) == 7
 
     # ensure correct order
-    assert {c.name() for c in channels} == {
-        "twilio",
-        "slack",
-        "telegram",
-        "mattermost",
-        "facebook",
-        "webexteams",
-        "rocketchat",
-    }
+    assert {c.name() for c in channels} == {"twilio", "slack",
+                                            "telegram", "mattermost",
+                                            "facebook", "webexteams",
+                                            "rocketchat"}
 
 
 def test_create_single_input_channels():
@@ -27,15 +22,13 @@ def test_create_single_input_channels():
 
 def test_create_single_input_channels_by_class():
     channels = run.create_http_input_channels(
-        "rasa.core.channels.channel.RestInput", CREDENTIALS_FILE
-    )
+        "rasa.core.channels.channel.RestInput", CREDENTIALS_FILE)
     assert len(channels) == 1
     assert channels[0].name() == "rest"
 
 
 def test_create_single_input_channels_by_class_wo_credentials():
     channels = run.create_http_input_channels(
-        "rasa.core.channels.channel.RestInput", credentials_file=None
-    )
+        "rasa.core.channels.channel.RestInput", credentials_file=None)
     assert len(channels) == 1
     assert channels[0].name() == "rest"
