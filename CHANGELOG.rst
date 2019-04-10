@@ -15,11 +15,12 @@ Added
 Changed
 -------
 - changed removing punctuation logic in ``WhitespaceTokenizer``
+- ``training_processes`` in the Rasa NLU data router have been renamed to ``pool_processes``
 
 Removed
 -------
 
 Fixed
 -----
-- the ``/evaluate`` route for the rasa nlu server now runs evaluation
+- the ``/evaluate`` route for the Rasa NLU server now runs evaluation
   in a parallel process, which prevents the currently loaded model unloading
