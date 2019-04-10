@@ -9,7 +9,8 @@
 
 # from typing import Any, Text, Dict, List
 #
-# from rasa_core_sdk import Action, CollectingDispatcher, Tracker
+# from rasa_core_sdk import Action, Tracker
+# from rasa_core_sdk.executor import CollectingDispatcher
 #
 #
 # class ActionHelloWorld(Action):

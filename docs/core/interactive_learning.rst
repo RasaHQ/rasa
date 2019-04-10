@@ -28,24 +28,22 @@ Run the following command to start interactive learning:
 
    python3 -m rasa_core_sdk.endpoint --actions actions&
 
-   python3 -m rasa.core.train \
-     interactive -o models/dialogue \
-     -d domain.yml -c policy_config.yml \
-     -s data/stories.md \
-     --nlu models/current/nlu \
+   rasa interactive \
+     -o models \
+     -d domain.yml \
+     -c policy_config.yml \
      --endpoints endpoints.yml
 
 The first command starts the action server (see :ref:`customactions`).
 
 The second command trains the bot from your stories and then starts it
 in interactive mode.  Alternatively, you can load an existing core
-model with the ``--core`` flag like so:
+model with the ``-m`` flag like so:
 
 .. code-block:: bash
 
-   python3 -m rasa.core.train \
-     interactive --core models/dialogue \
-     --nlu models/current/nlu \
+   rasa interactive \
+     -m models \
      --endpoints endpoints.yml
 
 In interactive mode, the bot will ask you to confirm every prediction

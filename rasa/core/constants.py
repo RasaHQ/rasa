@@ -14,7 +14,7 @@ DEFAULT_FALLBACK_ACTION = "action_default_fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
-REQUESTED_SLOT = 'requested_slot'
+REQUESTED_SLOT = "requested_slot"
 
 # start of special user message section
 INTENT_MESSAGE_PREFIX = "/"
@@ -23,6 +23,6 @@ USER_INTENT_RESTART = "restart"
 
 USER_INTENT_BACK = "back"
 
-USER_INTENT_OUT_OF_SCOPE = 'out_of_scope'
+USER_INTENT_OUT_OF_SCOPE = "out_of_scope"
 
 ACTION_NAME_SENDER_ID_CONNECTOR_STR = "__sender_id:"
