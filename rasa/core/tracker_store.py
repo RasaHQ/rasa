@@ -43,7 +43,6 @@ class TrackerStore(object):
                                      **store.kwargs)
         elif store.type.lower() == 'sql':
             return SQLTrackerStore(domain=domain,
-                                   host=store.url,
                                    event_broker=event_broker,
                                    **store.kwargs)
         else:
