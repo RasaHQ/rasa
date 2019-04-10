@@ -1,13 +1,14 @@
 import copy
 import logging
 import tensorflow as tf
-from typing import (
-    Any, List, Optional, Text, Dict, Callable)
+from typing import Any, List, Optional, Text, Dict, Callable
 
 import rasa.utils.common
 from rasa.core.domain import Domain
 from rasa.core.featurizers import (
-    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer)
+    MaxHistoryTrackerFeaturizer,
+    BinarySingleStateFeaturizer,
+)
 from rasa.core.featurizers import TrackerFeaturizer
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.data import DialogueTrainingData
@@ -37,10 +38,11 @@ class Policy(object):
         else:
             return None
 
-    def __init__(self,
-                 featurizer: Optional[TrackerFeaturizer] = None,
-                 priority: Optional[int] = 1
-                 ) -> None:
+    def __init__(
+        self,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        priority: Optional[int] = 1,
+    ) -> None:
         self.__featurizer = self._create_featurizer(featurizer)
         self.priority = priority
 
@@ -53,13 +55,13 @@ class Policy(object):
         # filter out kwargs that cannot be passed to func
         valid_keys = rasa.utils.common.arguments_of(func)
 
-        params = {key: kwargs.get(key)
-                  for key in valid_keys if kwargs.get(key)}
-        ignored_params = {key: kwargs.get(key)
-                          for key in kwargs.keys()
-                          if not params.get(key)}
-        logger.debug("Parameters ignored by `model.fit(...)`: {}"
-                     "".format(ignored_params))
+        params = {key: kwargs.get(key) for key in valid_keys if kwargs.get(key)}
+        ignored_params = {
+            key: kwargs.get(key) for key in kwargs.keys() if not params.get(key)
+        }
+        logger.debug(
+            "Parameters ignored by `model.fit(...)`: {}" "".format(ignored_params)
+        )
         return params
 
     def featurize_for_training(
@@ -72,32 +74,33 @@ class Policy(object):
         The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
 
-        training_data = self.featurizer.featurize_trackers(training_trackers,
-                                                           domain)
+        training_data = self.featurizer.featurize_trackers(training_trackers, domain)
 
-        max_training_samples = kwargs.get('max_training_samples')
+        max_training_samples = kwargs.get("max_training_samples")
         if max_training_samples is not None:
-            logger.debug("Limit training data to {} training samples."
-                         "".format(max_training_samples))
+            logger.debug(
+                "Limit training data to {} training samples."
+                "".format(max_training_samples)
+            )
             training_data.limit_training_data_to(max_training_samples)
 
         return training_data
 
-    def train(self,
-              training_trackers: List[DialogueStateTracker],
-              domain: Domain,
-              **kwargs: Any
-              ) -> None:
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
         """Trains the policy on given training trackers."""
 
-        raise NotImplementedError("Policy must have the capacity "
-                                  "to train.")
+        raise NotImplementedError("Policy must have the capacity " "to train.")
 
     def _training_data_for_continue_training(
         self,
         batch_size: int,
         training_trackers: List[DialogueStateTracker],
-        domain: Domain
+        domain: Domain,
     ) -> DialogueTrainingData:
         """Creates training_data for `continue_training` by
             taking the new labelled example training_trackers[-1:]
@@ -108,18 +111,20 @@ class Policy(object):
         num_samples = batch_size - 1
         num_prev_examples = len(training_trackers) - 1
 
-        sampled_idx = np.random.choice(range(num_prev_examples),
-                                       replace=False,
-                                       size=min(num_samples,
-                                                num_prev_examples))
-        trackers = [training_trackers[i]
-                    for i in sampled_idx] + training_trackers[-1:]
+        sampled_idx = np.random.choice(
+            range(num_prev_examples),
+            replace=False,
+            size=min(num_samples, num_prev_examples),
+        )
+        trackers = [training_trackers[i] for i in sampled_idx] + training_trackers[-1:]
         return self.featurize_for_training(trackers, domain)
 
-    def continue_training(self,
-                          training_trackers: List[DialogueStateTracker],
-                          domain: Domain,
-                          **kwargs: Any) -> None:
+    def continue_training(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
         """Continues training an already trained policy.
 
         This doesn't need to be supported by every policy. If it is supported,
@@ -128,28 +133,25 @@ class Policy(object):
 
         pass
 
-    def predict_action_probabilities(self,
-                                     tracker: DialogueStateTracker,
-                                     domain: Domain) -> List[float]:
+    def predict_action_probabilities(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> List[float]:
         """Predicts the next action the bot should take
         after seeing the tracker.
 
         Returns the list of probabilities for the next actions"""
 
-        raise NotImplementedError("Policy must have the capacity "
-                                  "to predict.")
+        raise NotImplementedError("Policy must have the capacity " "to predict.")
 
     def persist(self, path: Text) -> None:
         """Persists the policy to a storage."""
-        raise NotImplementedError("Policy must have the capacity "
-                                  "to persist itself.")
+        raise NotImplementedError("Policy must have the capacity " "to persist itself.")
 
     @classmethod
-    def load(cls, path: Text) -> 'Policy':
+    def load(cls, path: Text) -> "Policy":
         """Loads a policy from the storage.
             Needs to load its featurizer"""
-        raise NotImplementedError("Policy must have the capacity "
-                                  "to load itself.")
+        raise NotImplementedError("Policy must have the capacity " "to load itself.")
 
 
 def confidence_scores_for(action_name, value, domain):

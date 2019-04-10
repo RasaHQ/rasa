@@ -2,8 +2,13 @@ import asyncio
 import logging
 from sanic import Blueprint, response
 from telegram import (
-    Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
-    KeyboardButton, ReplyKeyboardMarkup)
+    Bot,
+    InlineKeyboardButton,
+    Update,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 
 from rasa.core import constants, utils
 from rasa.core.channels import InputChannel
@@ -30,8 +35,9 @@ class TelegramOutput(Bot, OutputChannel):
     async def send_image_url(self, recipient_id, image_url):
         self.send_photo(recipient_id, image_url)
 
-    async def send_text_with_buttons(self, recipient_id, text,
-                                     buttons, button_type="inline", **kwargs):
+    async def send_text_with_buttons(
+        self, recipient_id, text, buttons, button_type="inline", **kwargs
+    ):
         """Sends a message with keyboard.
 
         For more information: https://core.telegram.org/bots#keyboards
@@ -43,31 +49,36 @@ class TelegramOutput(Bot, OutputChannel):
         :button_type custom: custom keyboard
         """
         if button_type == "inline":
-            button_list = [[InlineKeyboardButton(s["title"],
-                                                 callback_data=s["payload"])
-                            for s in buttons]]
+            button_list = [
+                [
+                    InlineKeyboardButton(s["title"], callback_data=s["payload"])
+                    for s in buttons
+                ]
+            ]
             reply_markup = InlineKeyboardMarkup(button_list)
 
         elif button_type == "vertical":
-            button_list = [[InlineKeyboardButton(s["title"],
-                                                 callback_data=s["payload"])]
-                           for s in buttons]
+            button_list = [
+                [InlineKeyboardButton(s["title"], callback_data=s["payload"])]
+                for s in buttons
+            ]
             reply_markup = InlineKeyboardMarkup(button_list)
 
         elif button_type == "custom":
             button_list = []
             for bttn in buttons:
                 if isinstance(bttn, list):
-                    button_list.append([KeyboardButton(s['title'])
-                                        for s in bttn])
+                    button_list.append([KeyboardButton(s["title"]) for s in bttn])
                 else:
                     button_list.append([KeyboardButton(bttn["title"])])
-            reply_markup = ReplyKeyboardMarkup(button_list,
-                                               resize_keyboard=True,
-                                               one_time_keyboard=True)
+            reply_markup = ReplyKeyboardMarkup(
+                button_list, resize_keyboard=True, one_time_keyboard=True
+            )
         else:
-            logger.error('Trying to send text with buttons for unknown '
-                         'button type {}'.format(button_type))
+            logger.error(
+                "Trying to send text with buttons for unknown "
+                "button type {}".format(button_type)
+            )
             return
 
         self.send_message(recipient_id, text, reply_markup=reply_markup)
@@ -85,9 +96,11 @@ class TelegramInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("access_token"),
-                   credentials.get("verify"),
-                   credentials.get("webhook_url"))
+        return cls(
+            credentials.get("access_token"),
+            credentials.get("verify"),
+            credentials.get("webhook_url"),
+        )
 
     def __init__(self, access_token, verify, webhook_url, debug_mode=True):
         self.access_token = access_token
@@ -108,14 +121,14 @@ class TelegramInput(InputChannel):
         return update.callback_query
 
     def blueprint(self, on_new_message):
-        telegram_webhook = Blueprint('telegram_webhook', __name__)
+        telegram_webhook = Blueprint("telegram_webhook", __name__)
         out_channel = TelegramOutput(self.access_token)
 
-        @telegram_webhook.route("/", methods=['GET'])
+        @telegram_webhook.route("/", methods=["GET"])
         async def health(request):
             return response.json({"status": "ok"})
 
-        @telegram_webhook.route("/set_webhook", methods=['GET', 'POST'])
+        @telegram_webhook.route("/set_webhook", methods=["GET", "POST"])
         async def set_webhook(request):
             s = out_channel.setWebhook(self.webhook_url)
             if s:
@@ -125,13 +138,12 @@ class TelegramInput(InputChannel):
                 logger.warning("Webhook Setup Failed")
                 return response.text("Invalid webhook")
 
-        @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
+        @telegram_webhook.route("/webhook", methods=["GET", "POST"])
         async def message(request):
-            if request.method == 'POST':
+            if request.method == "POST":
 
-                if not out_channel.get_me()['username'] == self.verify:
-                    logger.debug("Invalid access token, check it "
-                                 "matches Telegram")
+                if not out_channel.get_me()["username"] == self.verify:
+                    logger.debug("Invalid access token, check it " "matches Telegram")
                     return response.text("failed")
 
                 update = Update.de_json(request.json, out_channel)
@@ -141,29 +153,39 @@ class TelegramInput(InputChannel):
                 else:
                     msg = update.message
                     if self._is_user_message(msg):
-                        text = msg.text.replace('/bot', '')
+                        text = msg.text.replace("/bot", "")
                     elif self._is_location(msg):
-                        text = ('{{"lng":{0}, "lat":{1}}}'
-                                ''.format(msg.location.longitude,
-                                          msg.location.latitude))
+                        text = '{{"lng":{0}, "lat":{1}}}' "".format(
+                            msg.location.longitude, msg.location.latitude
+                        )
                     else:
                         return response.text("success")
                 sender_id = msg.chat.id
                 try:
                     if text == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
-                        await on_new_message(UserMessage(
-                            text, out_channel, sender_id,
-                            input_channel=self.name()))
-                        await on_new_message(UserMessage(
-                            '/start', out_channel, sender_id,
-                            input_channel=self.name()))
+                        await on_new_message(
+                            UserMessage(
+                                text, out_channel, sender_id, input_channel=self.name()
+                            )
+                        )
+                        await on_new_message(
+                            UserMessage(
+                                "/start",
+                                out_channel,
+                                sender_id,
+                                input_channel=self.name(),
+                            )
+                        )
                     else:
-                        await on_new_message(UserMessage(
-                            text, out_channel, sender_id,
-                            input_channel=self.name()))
+                        await on_new_message(
+                            UserMessage(
+                                text, out_channel, sender_id, input_channel=self.name()
+                            )
+                        )
                 except Exception as e:
-                    logger.error("Exception when trying to handle "
-                                 "message.{0}".format(e))
+                    logger.error(
+                        "Exception when trying to handle " "message.{0}".format(e)
+                    )
                     logger.debug(e, exc_info=True)
                     if self.debug_mode:
                         raise

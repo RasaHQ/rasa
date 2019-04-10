@@ -16,8 +16,10 @@ logger = logging.getLogger(__name__)
 
 def extract_value(match):
     if match["value"].get("type") == "interval":
-        value = {"to": match["value"].get("to", {}).get("value"),
-                 "from": match["value"].get("from", {}).get("value")}
+        value = {
+            "to": match["value"].get("to", {}).get("value"),
+            "from": match["value"].get("from", {}).get("value"),
+        }
     else:
         value = match["value"].get("value")
 
@@ -29,13 +31,15 @@ def convert_duckling_format_to_rasa(matches):
 
     for match in matches:
         value = extract_value(match)
-        entity = {"start": match["start"],
-                  "end": match["end"],
-                  "text": match.get("body", match.get("text", None)),
-                  "value": value,
-                  "confidence": 1.0,
-                  "additional_info": match["value"],
-                  "entity": match["dim"]}
+        entity = {
+            "start": match["start"],
+            "end": match["end"],
+            "text": match.get("body", match.get("text", None)),
+            "value": value,
+            "confidence": 1.0,
+            "additional_info": match["value"],
+            "entity": match["dim"],
+        }
 
         extracted.append(entity)
 
@@ -52,30 +56,28 @@ class DucklingHTTPExtractor(EntityExtractor):
         # dimensions can be configured to contain an array of strings
         # with the names of the dimensions to filter for
         "dimensions": None,
-
         # http url of the running duckling server
         "url": None,
-
         # locale - if not set, we will use the language of the model
         "locale": None,
-
         # timezone like Europe/Berlin
         # if not set the default timezone of Duckling is going to be used
-        "timezone": None
+        "timezone": None,
     }
 
-    def __init__(self,
-                 component_config: Optional[Dict[Text, Any]] = None,
-                 language: Optional[List[Text]] = None) -> None:
+    def __init__(
+        self,
+        component_config: Optional[Dict[Text, Any]] = None,
+        language: Optional[List[Text]] = None,
+    ) -> None:
 
         super(DucklingHTTPExtractor, self).__init__(component_config)
         self.language = language
 
     @classmethod
-    def create(cls,
-               component_config: Dict[Text, Any],
-               config: RasaNLUModelConfig
-               ) -> 'DucklingHTTPExtractor':
+    def create(
+        cls, component_config: Dict[Text, Any], config: RasaNLUModelConfig
+    ) -> "DucklingHTTPExtractor":
 
         return cls(component_config, config.language)
 
@@ -99,7 +101,7 @@ class DucklingHTTPExtractor(EntityExtractor):
             "text": text,
             "locale": self._locale(),
             "tz": self.component_config.get("timezone"),
-            "reftime": reference_time
+            "reftime": reference_time,
         }
 
     def _duckling_parse(self, text, reference_time):
@@ -107,26 +109,31 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         try:
             payload = self._payload(text, reference_time)
-            headers = {"Content-Type": "application/x-www-form-urlencoded; "
-                                       "charset=UTF-8"}
-            response = requests.post(self._url() + "/parse",
-                                     data=payload,
-                                     headers=headers)
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded; " "charset=UTF-8"
+            }
+            response = requests.post(
+                self._url() + "/parse", data=payload, headers=headers
+            )
             if response.status_code == 200:
                 return simplejson.loads(response.text)
             else:
-                logger.error("Failed to get a proper response from remote "
-                             "duckling. Status Code: {}. Response: {}"
-                             "".format(response.status_code, response.text))
+                logger.error(
+                    "Failed to get a proper response from remote "
+                    "duckling. Status Code: {}. Response: {}"
+                    "".format(response.status_code, response.text)
+                )
                 return []
         except requests.exceptions.ConnectionError as e:
-            logger.error("Failed to connect to duckling http server. Make sure "
-                         "the duckling server is running and the proper host "
-                         "and port are set in the configuration. More "
-                         "information on how to run the server can be found on "
-                         "github: "
-                         "https://github.com/facebook/duckling#quickstart "
-                         "Error: {}".format(e))
+            logger.error(
+                "Failed to connect to duckling http server. Make sure "
+                "the duckling server is running and the proper host "
+                "and port are set in the configuration. More "
+                "information on how to run the server can be found on "
+                "github: "
+                "https://github.com/facebook/duckling#quickstart "
+                "Error: {}".format(e)
+            )
             return []
 
     @staticmethod
@@ -135,9 +142,11 @@ class DucklingHTTPExtractor(EntityExtractor):
             try:
                 return int(message.time) * 1000
             except ValueError as e:
-                logging.warning("Could not parse timestamp {}. Instead "
-                                "current UTC time will be passed to "
-                                "duckling. Error: {}".format(message.time, e))
+                logging.warning(
+                    "Could not parse timestamp {}. Instead "
+                    "current UTC time will be passed to "
+                    "duckling. Error: {}".format(message.time, e)
+                )
         # fallbacks to current time, multiplied by 1000 because duckling
         # requires the reftime in miliseconds
         return int(time.time()) * 1000
@@ -150,26 +159,30 @@ class DucklingHTTPExtractor(EntityExtractor):
             all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
             extracted = DucklingHTTPExtractor.filter_irrelevant_entities(
-                all_extracted, dimensions)
+                all_extracted, dimensions
+            )
         else:
             extracted = []
-            logger.warning("Duckling HTTP component in pipeline, but no "
-                           "`url` configuration in the config "
-                           "file nor is `RASA_DUCKLING_HTTP_URL` "
-                           "set as an environment variable.")
+            logger.warning(
+                "Duckling HTTP component in pipeline, but no "
+                "`url` configuration in the config "
+                "file nor is `RASA_DUCKLING_HTTP_URL` "
+                "set as an environment variable."
+            )
 
         extracted = self.add_extractor_name(extracted)
-        message.set("entities",
-                    message.get("entities", []) + extracted,
-                    add_to_output=True)
+        message.set(
+            "entities", message.get("entities", []) + extracted, add_to_output=True
+        )
 
     @classmethod
-    def load(cls,
-             meta: Dict[Text, Any],
-             model_dir: Text = None,
-             model_metadata: Metadata = None,
-             cached_component: Optional['DucklingHTTPExtractor'] = None,
-             **kwargs: Any
-             ) -> 'DucklingHTTPExtractor':
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Text = None,
+        model_metadata: Metadata = None,
+        cached_component: Optional["DucklingHTTPExtractor"] = None,
+        **kwargs: Any
+    ) -> "DucklingHTTPExtractor":
 
         return cls(meta, model_metadata.get("language"))

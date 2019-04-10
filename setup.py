@@ -86,9 +86,9 @@ install_requires = [
 ]
 
 extras_requires = {
-    'test': tests_requires,
-    'spacy': ["spacy<=2.0.18,>2.0"],
-    'mitie': ["mitie"],
+    "test": tests_requires,
+    "spacy": ["spacy<=2.0.18,>2.0"],
+    "mitie": ["mitie"],
 }
 
 setup(
@@ -104,16 +104,14 @@ setup(
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
-    entry_points={
-        'console_scripts': ['rasa=rasa.__main__:main'],
-    },
+    entry_points={"console_scripts": ["rasa=rasa.__main__:main"]},
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
     description="Machine learning based dialogue engine "
-                "for conversational software.",
+    "for conversational software.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Rasa Technologies GmbH",
@@ -122,11 +120,11 @@ setup(
     maintainer_email="tom@rasa.com",
     license="Apache 2.0",
     keywords="nlp machine-learning machine-learning-library bot bots "
-             "botkit rasa conversational-agents conversational-ai chatbot"
-             "chatbot-framework bot-framework",
+    "botkit rasa conversational-agents conversational-ai chatbot"
+    "chatbot-framework bot-framework",
     url="https://rasa.com",
     download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz"
-                 "".format(__version__),
+    "".format(__version__),
     project_urls={
         "Bug Reports": "https://github.com/rasahq/rasa_nlu/issues",
         "Source": "https://github.com/rasahq/rasa_nlu",
@@ -134,6 +132,5 @@ setup(
 )
 
 print("\nWelcome to Rasa!")
-print("If any questions please visit documentation "
-      "page https://rasa.com/docs")
+print("If any questions please visit documentation " "page https://rasa.com/docs")
 print("or join the community discussions on https://forum.rasa.com")

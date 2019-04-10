@@ -67,9 +67,10 @@ def mocked_cmd_input(package, text):
 
 
 def user_uttered(text: Text, confidence: float) -> UserUttered:
-    parse_data = {'intent': {'name': text, 'confidence': confidence}}
-    return UserUttered(text='Random', intent=parse_data['intent'],
-                       parse_data=parse_data)
+    parse_data = {"intent": {"name": text, "confidence": confidence}}
+    return UserUttered(
+        text="Random", intent=parse_data["intent"], parse_data=parse_data
+    )
 
 
 def get_tracker(events: List[Event]) -> DialogueStateTracker:
