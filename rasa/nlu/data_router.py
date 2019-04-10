@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 DEFERRED_RUN_IN_REACTOR_THREAD = True
 
 
-class MaxPoolProcessError(Exception):
+class MaxWorkerProcessError(Exception):
     """Raised when training or evaluation is requested and the server has
         reached the max count of pool processes.
 
@@ -85,15 +85,15 @@ def deferred_from_future(future):
 class DataRouter(object):
     def __init__(self,
                  project_dir=None,
-                 max_pool_processes=1,
+                 max_worker_processes=1,
                  response_log=None,
                  emulation_mode=None,
                  remote_storage=None,
                  component_builder=None,
                  model_server=None,
                  wait_time_between_pulls=None):
-        self._pool_processes = max(max_pool_processes, 1)
-        self._current_pool_processes = 0
+        self._worker_processes = max(max_worker_processes, 1)
+        self._current_worker_processes = 0
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
         self.emulator = self._create_emulator(emulation_mode)
@@ -120,7 +120,7 @@ class DataRouter(object):
         # -258934405
         multiprocessing.set_start_method('spawn', force=True)
 
-        self.pool = ProcessPool(self._pool_processes)
+        self.pool = ProcessPool(self._worker_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -298,8 +298,8 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
-            "max_pool_processes": self._pool_processes,
-            "current_pool_processes": self._current_pool_processes,
+            "max_worker_processes": self._worker_processes,
+            "current_worker_processes": self._current_worker_processes,
             "available_projects": {
                 name: project.as_dict()
                 for name, project in self.project_store.items()
@@ -317,8 +317,8 @@ class DataRouter(object):
         if not project:
             raise InvalidProjectError("Missing project name to train")
 
-        if self._pool_processes <= self._current_pool_processes:
-            raise MaxPoolProcessError
+        if self._worker_processes <= self._current_worker_processes:
+            raise MaxWorkerProcessError
 
         if project in self.project_store:
             self.project_store[project].status = STATUS_TRAINING
@@ -331,10 +331,10 @@ class DataRouter(object):
         def training_callback(model_path):
             model_dir = os.path.basename(os.path.normpath(model_path))
             self.project_store[project].update(model_dir)
-            self._current_pool_processes -= 1
-            self.project_store[project].current_pool_processes -= 1
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
             if (self.project_store[project].status == STATUS_TRAINING and
-                    self.project_store[project].current_pool_processes ==
+                    self.project_store[project].current_worker_processes ==
                     0):
                 self.project_store[project].status = STATUS_READY
             return model_path
@@ -342,8 +342,8 @@ class DataRouter(object):
         def training_errback(failure):
             logger.warning(failure)
 
-            self._current_pool_processes -= 1
-            self.project_store[project].current_pool_processes -= 1
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
             self.project_store[project].status = STATUS_FAILED
             self.project_store[project].error_message = str(failure)
 
@@ -351,8 +351,8 @@ class DataRouter(object):
 
         logger.debug("New training queued")
 
-        self._current_pool_processes += 1
-        self.project_store[project].current_pool_processes += 1
+        self._current_worker_processes += 1
+        self.project_store[project].current_worker_processes += 1
 
         result = self.pool.submit(do_train_in_worker,
                                   train_config,
@@ -377,8 +377,8 @@ class DataRouter(object):
         logger.debug("Evaluation request received for "
                      "project '{}' and model '{}'.".format(project, model))
 
-        if self._pool_processes <= self._current_pool_processes:
-            raise MaxPoolProcessError
+        if self._worker_processes <= self._current_worker_processes:
+            raise MaxWorkerProcessError
 
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
         data_path = utils.create_temporary_file(data, "_training_data")
@@ -398,23 +398,23 @@ class DataRouter(object):
         def evaluation_callback(result):
             logger.debug("Evaluation was successful")
 
-            self._current_pool_processes -= 1
-            self.project_store[project].current_pool_processes -= 1
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
 
             return result
 
         def evaluation_errback(failure):
             logger.warning(failure)
 
-            self._current_pool_processes -= 1
-            self.project_store[project].current_pool_processes -= 1
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
 
             return failure
 
         logger.debug("New evaluation queued.")
 
-        self._current_pool_processes += 1
-        self.project_store[project].current_pool_processes += 1
+        self._current_worker_processes += 1
+        self.project_store[project].current_worker_processes += 1
 
         result = self.pool.submit(run_evaluation,
                                   data_path,
