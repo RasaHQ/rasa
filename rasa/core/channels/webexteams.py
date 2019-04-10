@@ -46,8 +46,7 @@ class WebexTeamsInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("access_token"),
-                   credentials.get("room"))
+        return cls(credentials.get("access_token"), credentials.get("room"))
 
     def __init__(self, access_token: Text, room: Optional[Text] = None) -> None:
         """Create a Cisco Webex Teams input channel.
@@ -67,22 +66,22 @@ class WebexTeamsInput(InputChannel):
 
         try:
             out_channel = WebexTeamsBot(self.token, self.room)
-            user_msg = UserMessage(text, out_channel, sender_id,
-                                   input_channel=self.name())
+            user_msg = UserMessage(
+                text, out_channel, sender_id, input_channel=self.name()
+            )
             await on_new_message(user_msg)
         except Exception as e:
-            logger.error("Exception when trying to handle "
-                         "message.{0}".format(e))
+            logger.error("Exception when trying to handle message.{0}".format(e))
             logger.error(str(e), exc_info=True)
 
     def blueprint(self, on_new_message):
-        webexteams_webhook = Blueprint('webexteams_webhook', __name__)
+        webexteams_webhook = Blueprint("webexteams_webhook", __name__)
 
-        @webexteams_webhook.route("/", methods=['GET'])
+        @webexteams_webhook.route("/", methods=["GET"])
         async def health(request):
             return response.json({"status": "ok"})
 
-        @webexteams_webhook.route("/webhook", methods=['POST'])
+        @webexteams_webhook.route("/webhook", methods=["POST"])
         async def webhook(request):
             """Respond to inbound webhook HTTP POST from Webex Teams."""
 
@@ -101,13 +100,12 @@ class WebexTeamsInput(InputChannel):
             me = self.api.people.me()
             if message.personId == me.id:
                 # Message was sent by me (bot); do not respond.
-                return response.text('OK')
+                return response.text("OK")
 
             else:
                 await self.process_message(
-                    on_new_message,
-                    text=message.text,
-                    sender_id=message.personId)
+                    on_new_message, text=message.text, sender_id=message.personId
+                )
                 return response.text("")
 
         return webexteams_webhook
