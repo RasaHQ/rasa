@@ -10,34 +10,44 @@ from typing import Optional, List, Text, Set, Dict, Tuple
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import (
-    ActionExecuted, UserUttered,
-    ActionReverted, UserUtteranceReverted, Restarted, Event)
+    ActionExecuted,
+    UserUttered,
+    ActionReverted,
+    UserUtteranceReverted,
+    Restarted,
+    Event,
+)
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core.training.structures import (
-    StoryGraph, STORY_START, StoryStep,
-    GENERATED_CHECKPOINT_PREFIX)
+    StoryGraph,
+    STORY_START,
+    StoryStep,
+    GENERATED_CHECKPOINT_PREFIX,
+)
 
 logger = logging.getLogger(__name__)
 
-ExtractorConfig = namedtuple("ExtractorConfig",
-                             "remove_duplicates "
-                             "unique_last_num_states "
-                             "augmentation_factor "
-                             "max_number_of_augmented_trackers "
-                             "tracker_limit "
-                             "use_story_concatenation "
-                             "rand")
+ExtractorConfig = namedtuple(
+    "ExtractorConfig",
+    "remove_duplicates "
+    "unique_last_num_states "
+    "augmentation_factor "
+    "max_number_of_augmented_trackers "
+    "tracker_limit "
+    "use_story_concatenation "
+    "rand",
+)
 
 
 class TrackerWithCachedStates(DialogueStateTracker):
     """A tracker wrapper that caches the state creation of the tracker."""
 
-    def __init__(self, sender_id, slots,
-                 max_event_history=None,
-                 domain=None,
-                 is_augmented=False):
+    def __init__(
+        self, sender_id, slots, max_event_history=None, domain=None, is_augmented=False
+    ):
         super(TrackerWithCachedStates, self).__init__(
-            sender_id, slots, max_event_history)
+            sender_id, slots, max_event_history
+        )
         self._states = None
         self.domain = domain
         # T/F property to filter augmented stories
@@ -54,8 +64,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # if don't have it cached, we use the domain to calculate the states
         # from the events
         if self._states is None:
-            self._states = super(TrackerWithCachedStates, self).past_states(
-                domain)
+            self._states = super(TrackerWithCachedStates, self).past_states(domain)
 
         return self._states
 
@@ -63,14 +72,17 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Reset the states."""
         self._states = None
 
-    def init_copy(self) -> 'TrackerWithCachedStates':
+    def init_copy(self) -> "TrackerWithCachedStates":
         """Create a new state tracker with the same initial values."""
-        return type(self)("",
-                          self.slots.values(),
-                          self._max_event_history,
-                          self.domain, self.is_augmented)
+        return type(self)(
+            "",
+            self.slots.values(),
+            self._max_event_history,
+            self.domain,
+            self.is_augmented,
+        )
 
-    def copy(self, sender_id: Text = "") -> 'TrackerWithCachedStates':
+    def copy(self, sender_id: Text = "") -> "TrackerWithCachedStates":
         """Creates a duplicate of this tracker.
 
         A new tracker will be created and all events
@@ -126,11 +138,9 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = Dict[Optional[Text],
-                         List[TrackerWithCachedStates]]
+TrackerLookupDict = Dict[Optional[Text], List[TrackerWithCachedStates]]
 
-TrackersTuple = Tuple[List[TrackerWithCachedStates],
-                      List[TrackerWithCachedStates]]
+TrackersTuple = Tuple[List[TrackerWithCachedStates], List[TrackerWithCachedStates]]
 
 
 class TrainingDataGenerator(object):
@@ -143,7 +153,7 @@ class TrainingDataGenerator(object):
         augmentation_factor: int = 20,
         tracker_limit: Optional[int] = None,
         use_story_concatenation: bool = True,
-        debug_plots: bool = False
+        debug_plots: bool = False,
     ):
         """Given a set of story parts, generates all stories that are possible.
 
@@ -154,7 +164,7 @@ class TrainingDataGenerator(object):
 
         self.story_graph = story_graph.with_cycles_removed()
         if debug_plots:
-            self.story_graph.visualize('story_blocks_connections.html')
+            self.story_graph.visualize("story_blocks_connections.html")
 
         self.domain = domain
 
@@ -168,7 +178,7 @@ class TrainingDataGenerator(object):
             max_number_of_augmented_trackers=max_number_of_augmented_trackers,
             tracker_limit=tracker_limit,
             use_story_concatenation=use_story_concatenation,
-            rand=random.Random(42)
+            rand=random.Random(42),
         )
         # hashed featurization of all finished trackers
         self.hashed_featurizations = set()
@@ -181,11 +191,12 @@ class TrainingDataGenerator(object):
             return "data generation round {}".format(phase)
 
     def generate(self, silent: bool = False) -> List[TrackerWithCachedStates]:
-        if (self.config.remove_duplicates and
-                self.config.unique_last_num_states):
-            logger.debug("Generated trackers will be deduplicated "
-                         "based on their unique last {} states."
-                         "".format(self.config.unique_last_num_states))
+        if self.config.remove_duplicates and self.config.unique_last_num_states:
+            logger.debug(
+                "Generated trackers will be deduplicated "
+                "based on their unique last {} states."
+                "".format(self.config.unique_last_num_states)
+            )
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
@@ -195,7 +206,7 @@ class TrainingDataGenerator(object):
             "",
             self.domain.slots,
             max_event_history=self.config.tracker_limit,
-            domain=self.domain
+            domain=self.domain,
         )
         active_trackers[STORY_START].append(init_tracker)
 
@@ -206,8 +217,7 @@ class TrainingDataGenerator(object):
 
         phase = 0  # one phase is one traversal of all story steps.
         min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
-        logger.debug("Number of augmentation rounds is {}"
-                     "".format(min_num_aug_phases))
+        logger.debug("Number of augmentation rounds is {}".format(min_num_aug_phases))
 
         # placeholder to track gluing process of checkpoints
         used_checkpoints = set()
@@ -218,27 +228,28 @@ class TrainingDataGenerator(object):
         # checkpoints that seem to be reachable. This is a heuristic,
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
-        while (not everything_reachable_is_reached or
-               phase < min_num_aug_phases):
-            phase_name = self._phase_name(everything_reachable_is_reached,
-                                          phase)
+        while not everything_reachable_is_reached or phase < min_num_aug_phases:
+            phase_name = self._phase_name(everything_reachable_is_reached, phase)
 
             num_active_trackers = self._count_trackers(active_trackers)
 
             if num_active_trackers:
-                logger.debug("Starting {} ... (with {} trackers)"
-                             "".format(phase_name, num_active_trackers))
+                logger.debug(
+                    "Starting {} ... (with {} trackers)"
+                    "".format(phase_name, num_active_trackers)
+                )
             else:
-                logger.debug("There are no trackers for {}"
-                             "".format(phase_name))
+                logger.debug("There are no trackers for {}".format(phase_name))
                 break
 
             # track unused checkpoints for this phase
             unused_checkpoints = set()  # type: Set[Text]
 
-            pbar = tqdm(self.story_graph.ordered_steps(),
-                        desc="Processed Story Blocks",
-                        disable=silent)
+            pbar = tqdm(
+                self.story_graph.ordered_steps(),
+                desc="Processed Story Blocks",
+                disable=silent,
+            )
             for step in pbar:
                 incoming_trackers = []  # type: List[TrackerWithCachedStates]
                 for start in step.start_checkpoints:
@@ -261,23 +272,22 @@ class TrainingDataGenerator(object):
                 # step and that need to handle all events of the step
 
                 if self.config.remove_duplicates:
-                    incoming_trackers, end_trackers = \
-                        self._remove_duplicate_trackers(incoming_trackers)
+                    incoming_trackers, end_trackers = self._remove_duplicate_trackers(
+                        incoming_trackers
+                    )
                     # append end trackers to finished trackers
                     finished_trackers.extend(end_trackers)
 
                 if everything_reachable_is_reached:
                     # augmentation round
                     incoming_trackers = self._subsample_trackers(
-                        incoming_trackers,
-                        self.config.max_number_of_augmented_trackers)
+                        incoming_trackers, self.config.max_number_of_augmented_trackers
+                    )
 
                 # update progress bar
-                pbar.set_postfix({"# trackers": "{:d}".format(
-                    len(incoming_trackers))})
+                pbar.set_postfix({"# trackers": "{:d}".format(len(incoming_trackers))})
 
-                trackers, end_trackers = self._process_step(step,
-                                                            incoming_trackers)
+                trackers, end_trackers = self._process_step(step, incoming_trackers)
                 # add end trackers to finished trackers
                 finished_trackers.extend(end_trackers)
 
@@ -299,13 +309,13 @@ class TrainingDataGenerator(object):
                         unused_checkpoints.add(start_name)
 
                 if not step.end_checkpoints:
-                    unique_ends = self._remove_duplicate_story_end_trackers(
-                        trackers)
+                    unique_ends = self._remove_duplicate_story_end_trackers(trackers)
                     story_end_trackers.extend(unique_ends)
 
             num_finished = len(finished_trackers) + len(story_end_trackers)
-            logger.debug("Finished phase ({} training samples found)."
-                         "".format(num_finished))
+            logger.debug(
+                "Finished phase ({} training samples found).".format(num_finished)
+            )
 
             # prepare next round
             phase += 1
@@ -317,19 +327,16 @@ class TrainingDataGenerator(object):
                 # something left to reach and we continue
 
                 unused_checkpoints = self._add_unused_end_checkpoints(
-                    set(active_trackers.keys()),
-                    unused_checkpoints,
-                    used_checkpoints
+                    set(active_trackers.keys()), unused_checkpoints, used_checkpoints
                 )
                 active_trackers = self._filter_active_trackers(
-                    active_trackers,
-                    unused_checkpoints
+                    active_trackers, unused_checkpoints
                 )
                 num_active_trackers = self._count_trackers(active_trackers)
 
                 everything_reachable_is_reached = (
-                    unused_checkpoints == previous_unused or
-                    num_active_trackers == 0)
+                    unused_checkpoints == previous_unused or num_active_trackers == 0
+                )
                 previous_unused = unused_checkpoints
 
                 if everything_reachable_is_reached:
@@ -342,16 +349,21 @@ class TrainingDataGenerator(object):
                         finished_trackers.extend(active_trackers[start_name])
 
                     logger.debug("Data generation rounds finished.")
-                    logger.debug("Found {} unused checkpoints"
-                                 "".format(len(previous_unused)))
+                    logger.debug(
+                        "Found {} unused checkpoints".format(len(previous_unused))
+                    )
                     phase = 0
                 else:
-                    logger.debug("Found {} unused checkpoints "
-                                 "in current phase."
-                                 "".format(len(unused_checkpoints)))
-                    logger.debug("Found {} active trackers "
-                                 "for these checkpoints."
-                                 "".format(num_active_trackers))
+                    logger.debug(
+                        "Found {} unused checkpoints "
+                        "in current phase."
+                        "".format(len(unused_checkpoints))
+                    )
+                    logger.debug(
+                        "Found {} active trackers "
+                        "for these checkpoints."
+                        "".format(num_active_trackers)
+                    )
 
             if everything_reachable_is_reached:
                 # augmentation round, so we process only
@@ -360,14 +372,13 @@ class TrainingDataGenerator(object):
                 used_checkpoints = set()  # type: Set[Text]
 
                 # generate active trackers for augmentation
-                active_trackers = \
-                    self._create_start_trackers_for_augmentation(
-                        story_end_trackers)
+                active_trackers = self._create_start_trackers_for_augmentation(
+                    story_end_trackers
+                )
 
         finished_trackers.extend(story_end_trackers)
         self._issue_unused_checkpoint_notification(previous_unused)
-        logger.debug("Found {} training trackers."
-                     "".format(len(finished_trackers)))
+        logger.debug("Found {} training trackers.".format(len(finished_trackers)))
 
         if self.config.augmentation_factor > 0:
             augmented_trackers, original_trackers = [], []
@@ -377,12 +388,15 @@ class TrainingDataGenerator(object):
                 else:
                     original_trackers.append(t)
             augmented_trackers = self._subsample_trackers(
-                augmented_trackers,
-                self.config.max_number_of_augmented_trackers)
-            logger.debug("Subsampled to {} augmented training trackers."
-                         "".format(len(augmented_trackers)))
-            logger.debug("There are {} original trackers."
-                         "".format(len(original_trackers)))
+                augmented_trackers, self.config.max_number_of_augmented_trackers
+            )
+            logger.debug(
+                "Subsampled to {} augmented training trackers."
+                "".format(len(augmented_trackers))
+            )
+            logger.debug(
+                "There are {} original trackers.".format(len(original_trackers))
+            )
             finished_trackers = original_trackers + augmented_trackers
 
         return finished_trackers
@@ -395,7 +409,7 @@ class TrainingDataGenerator(object):
     def _subsample_trackers(
         self,
         incoming_trackers: List[TrackerWithCachedStates],
-        max_number_of_trackers: int
+        max_number_of_trackers: int,
     ) -> List[TrackerWithCachedStates]:
         """Subsample the list of trackers to retrieve a random subset."""
 
@@ -403,9 +417,9 @@ class TrainingDataGenerator(object):
         # get into trouble by collecting too many trackers
         # hence the sub sampling
         if max_number_of_trackers is not None:
-            return utils.subsample_array(incoming_trackers,
-                                         max_number_of_trackers,
-                                         rand=self.config.rand)
+            return utils.subsample_array(
+                incoming_trackers, max_number_of_trackers, rand=self.config.rand
+            )
         else:
             return incoming_trackers
 
@@ -414,24 +428,27 @@ class TrainingDataGenerator(object):
         return self.story_graph.story_end_checkpoints.get(end_name, end_name)
 
     @staticmethod
-    def _add_unused_end_checkpoints(start_checkpoints: Set[Text],
-                                    unused_checkpoints: Set[Text],
-                                    used_checkpoints: Set[Text]
-                                    ) -> Set[Text]:
+    def _add_unused_end_checkpoints(
+        start_checkpoints: Set[Text],
+        unused_checkpoints: Set[Text],
+        used_checkpoints: Set[Text],
+    ) -> Set[Text]:
         """Add unused end checkpoints
             if they were never encountered as start checkpoints
         """
 
         return unused_checkpoints.union(
-            set(start_name
+            set(
+                start_name
                 for start_name in start_checkpoints
-                if start_name not in used_checkpoints)
+                if start_name not in used_checkpoints
+            )
         )
 
     @staticmethod
-    def _filter_active_trackers(active_trackers: TrackerLookupDict,
-                                unused_checkpoints: Set[Text]
-                                ) -> TrackerLookupDict:
+    def _filter_active_trackers(
+        active_trackers: TrackerLookupDict, unused_checkpoints: Set[Text]
+    ) -> TrackerLookupDict:
         """Filter active trackers that ended with unused checkpoint
             or are parts of loops."""
         next_active_trackers = defaultdict(list)
@@ -440,14 +457,12 @@ class TrainingDataGenerator(object):
             # process trackers ended with unused checkpoints further
             if start_name != STORY_START:
                 # there is no point to process STORY_START checkpoint again
-                next_active_trackers[start_name] = \
-                    active_trackers.get(start_name, [])
+                next_active_trackers[start_name] = active_trackers.get(start_name, [])
 
         return next_active_trackers
 
     def _create_start_trackers_for_augmentation(
-        self,
-        story_end_trackers: List[TrackerWithCachedStates]
+        self, story_end_trackers: List[TrackerWithCachedStates]
     ) -> TrackerLookupDict:
         """This is where the augmentation magic happens.
 
@@ -466,7 +481,7 @@ class TrainingDataGenerator(object):
             ending_trackers = utils.subsample_array(
                 story_end_trackers,
                 self.config.augmentation_factor,
-                rand=self.config.rand
+                rand=self.config.rand,
             )
             for t in ending_trackers:
                 # this is a nasty thing - all stories end and
@@ -485,9 +500,7 @@ class TrainingDataGenerator(object):
         return next_active_trackers
 
     def _process_step(
-        self,
-        step: StoryStep,
-        incoming_trackers: List[TrackerWithCachedStates]
+        self, step: StoryStep, incoming_trackers: List[TrackerWithCachedStates]
     ) -> TrackersTuple:
         """Processes a steps events with all trackers.
 
@@ -511,8 +524,7 @@ class TrainingDataGenerator(object):
                 # contribute to the trackers events
                 if tracker.sender_id:
                     if step.block_name not in tracker.sender_id.split(" > "):
-                        new_sender = (tracker.sender_id +
-                                      " > " + step.block_name)
+                        new_sender = tracker.sender_id + " > " + step.block_name
                     else:
                         new_sender = tracker.sender_id
                 else:
@@ -522,9 +534,9 @@ class TrainingDataGenerator(object):
         end_trackers = []
         for event in events:
             for tracker in trackers:
-                if isinstance(event, (ActionReverted,
-                                      UserUtteranceReverted,
-                                      Restarted)):
+                if isinstance(
+                    event, (ActionReverted, UserUtteranceReverted, Restarted)
+                ):
                     end_trackers.append(tracker.copy(tracker.sender_id))
                 tracker.update(event)
 
@@ -532,9 +544,9 @@ class TrainingDataGenerator(object):
         # to avoid using them for augmentation
         return trackers, end_trackers
 
-    def _remove_duplicate_trackers(self,
-                                   trackers: List[TrackerWithCachedStates]
-                                   ) -> TrackersTuple:
+    def _remove_duplicate_trackers(
+        self, trackers: List[TrackerWithCachedStates]
+    ) -> TrackersTuple:
         """Removes trackers that create equal featurizations
             for current story step.
 
@@ -558,14 +570,16 @@ class TrainingDataGenerator(object):
             # hashed_featurization we haven't observed
             if hashed not in step_hashed_featurizations:
                 if self.config.unique_last_num_states:
-                    last_states = states[-self.config.unique_last_num_states:]
+                    last_states = states[-self.config.unique_last_num_states :]
                     last_hashed = hash(last_states)
 
                     if last_hashed not in step_hashed_featurizations:
                         step_hashed_featurizations.add(last_hashed)
                         unique_trackers.append(tracker)
-                    elif (len(states) > len(last_states) and
-                          hashed not in self.hashed_featurizations):
+                    elif (
+                        len(states) > len(last_states)
+                        and hashed not in self.hashed_featurizations
+                    ):
                         self.hashed_featurizations.add(hashed)
                         end_trackers.append(tracker)
                 else:
@@ -576,8 +590,7 @@ class TrainingDataGenerator(object):
         return unique_trackers, end_trackers
 
     def _remove_duplicate_story_end_trackers(
-        self,
-        trackers: List[TrackerWithCachedStates]
+        self, trackers: List[TrackerWithCachedStates]
     ) -> List[TrackerWithCachedStates]:
         """Removes trackers that reached story end and
             created equal featurizations."""
@@ -635,8 +648,7 @@ class TrainingDataGenerator(object):
                         break
 
     def _issue_unused_checkpoint_notification(
-        self,
-        unused_checkpoints: Set[Text]
+        self, unused_checkpoints: Set[Text]
     ) -> None:
         """Warns about unused story blocks.
 
@@ -644,11 +656,13 @@ class TrainingDataGenerator(object):
         that no one provided."""
 
         if STORY_START in unused_checkpoints:
-            logger.warning("There is no starting story block "
-                           "in the training data. "
-                           "All your story blocks start with some checkpoint. "
-                           "There should be at least one story block "
-                           "that starts without any checkpoint.")
+            logger.warning(
+                "There is no starting story block "
+                "in the training data. "
+                "All your story blocks start with some checkpoint. "
+                "There should be at least one story block "
+                "that starts without any checkpoint."
+            )
 
         # running through the steps first will result in only one warning
         # per block (as one block might have multiple steps)
@@ -669,16 +683,20 @@ class TrainingDataGenerator(object):
 
         for cp, block_name in collected_start:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                logger.warning("Unsatisfied start checkpoint '{}' "
-                               "in block '{}'. "
-                               "Remove this checkpoint or add "
-                               "story blocks that end "
-                               "with this checkpoint.".format(cp, block_name))
+                logger.warning(
+                    "Unsatisfied start checkpoint '{}' "
+                    "in block '{}'. "
+                    "Remove this checkpoint or add "
+                    "story blocks that end "
+                    "with this checkpoint.".format(cp, block_name)
+                )
 
         for cp, block_name in collected_end:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                logger.warning("Unsatisfied end checkpoint '{}' "
-                               "in block '{}'. "
-                               "Remove this checkpoint or add "
-                               "story blocks that start "
-                               "with this checkpoint.".format(cp, block_name))
+                logger.warning(
+                    "Unsatisfied end checkpoint '{}' "
+                    "in block '{}'. "
+                    "Remove this checkpoint or add "
+                    "story blocks that start "
+                    "with this checkpoint.".format(cp, block_name)
+                )

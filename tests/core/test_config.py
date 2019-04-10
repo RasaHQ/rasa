@@ -8,12 +8,13 @@ from rasa.core.policies.keras_policy import KerasPolicy
 from rasa.core.policies.fallback import FallbackPolicy
 from rasa.core.policies.form_policy import FormPolicy
 from rasa.core.policies.ensemble import PolicyEnsemble
-from rasa.core.featurizers import BinarySingleStateFeaturizer, \
-    MaxHistoryTrackerFeaturizer
+from rasa.core.featurizers import (
+    BinarySingleStateFeaturizer,
+    MaxHistoryTrackerFeaturizer,
+)
 
 
-@pytest.mark.parametrize("filename", glob.glob(
-    "data/test_config/example_config.yaml"))
+@pytest.mark.parametrize("filename", glob.glob("data/test_config/example_config.yaml"))
 def test_load_config(filename):
     loaded = load(filename)
     assert len(loaded) == 2
@@ -39,7 +40,7 @@ def test_ensemble_from_dict():
         assert p.priority == 4
 
     def check_fallback(p):
-        assert p.fallback_action_name == 'action_default_fallback'
+        assert p.fallback_action_name == "action_default_fallback"
         assert p.nlu_threshold == 0.7
         assert p.core_threshold == 0.7
         assert p.priority == 2
@@ -47,23 +48,42 @@ def test_ensemble_from_dict():
     def check_form(p):
         assert p.priority == 1
 
-    ensemble_dict = {'policies': [
-        {'epochs': 50, 'name': 'KerasPolicy', 'priority': 4, 'featurizer': [
-            {'max_history': 5, 'name': 'MaxHistoryTrackerFeaturizer',
-             'state_featurizer': [
-                 {'name': 'BinarySingleStateFeaturizer'}]}]},
-        {'max_history': 5, 'priority': 3, 'name': 'MemoizationPolicy'},
-        {'core_threshold': 0.7, 'priority': 2, 'name': 'FallbackPolicy',
-         'nlu_threshold': 0.7,
-         'fallback_action_name': 'action_default_fallback'},
-        {'name': 'FormPolicy', 'priority': 1}]}
+    ensemble_dict = {
+        "policies": [
+            {
+                "epochs": 50,
+                "name": "KerasPolicy",
+                "priority": 4,
+                "featurizer": [
+                    {
+                        "max_history": 5,
+                        "name": "MaxHistoryTrackerFeaturizer",
+                        "state_featurizer": [{"name": "BinarySingleStateFeaturizer"}],
+                    }
+                ],
+            },
+            {"max_history": 5, "priority": 3, "name": "MemoizationPolicy"},
+            {
+                "core_threshold": 0.7,
+                "priority": 2,
+                "name": "FallbackPolicy",
+                "nlu_threshold": 0.7,
+                "fallback_action_name": "action_default_fallback",
+            },
+            {"name": "FormPolicy", "priority": 1},
+        ]
+    }
     ensemble = PolicyEnsemble.from_dict(ensemble_dict)
 
     # Check if all policies are present
     assert len(ensemble) == 4
     # MemoizationPolicy is parent of FormPolicy
-    assert any([isinstance(p, MemoizationPolicy) and
-                not isinstance(p, FormPolicy) for p in ensemble])
+    assert any(
+        [
+            isinstance(p, MemoizationPolicy) and not isinstance(p, FormPolicy)
+            for p in ensemble
+        ]
+    )
     assert any([isinstance(p, KerasPolicy) for p in ensemble])
     assert any([isinstance(p, FallbackPolicy) for p in ensemble])
     assert any([isinstance(p, FormPolicy) for p in ensemble])

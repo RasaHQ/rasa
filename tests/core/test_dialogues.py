@@ -32,7 +32,7 @@ def test_inmemory_tracker_store(pair):
 
 def test_tracker_restaurant():
     domain = Domain.load("examples/restaurantbot/domain.yml")
-    filename = 'data/test_dialogues/restaurantbot.json'
+    filename = "data/test_dialogues/restaurantbot.json"
     tracker = tracker_from_dialogue_file(filename, domain)
     assert tracker.get_slot("price") == "lo"
     assert tracker.get_slot("name") is None  # slot doesn't exist!
