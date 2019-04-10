@@ -26,7 +26,7 @@ async def scheduler() -> AsyncIOScheduler:
                         "defaulting to utc. This is probably because "
                         "your system timezone is not set. "
                         "Set it with e.g. echo \"Europe/Berlin\" > "
-                        "/etc/timezone") from e
+                        "/etc/timezone")
             __scheduler = AsyncIOScheduler(event_loop=asyncio.get_event_loop(),
                                            timezone=utc)
             __scheduler.start()
