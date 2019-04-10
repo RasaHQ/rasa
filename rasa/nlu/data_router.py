@@ -165,12 +165,6 @@ class DataRouter(object):
 
         return project_store
 
-    def _pre_load(self, projects: List[Text]) -> None:
-        logger.debug("loading %s", projects)
-        for project in self.project_store:
-            if project in projects:
-                self.project_store[project].load_model()
-
     def _list_projects_in_cloud(self) -> List[Text]:
         # noinspection PyBroadException
         try:

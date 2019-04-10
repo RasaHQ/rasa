@@ -343,8 +343,6 @@ def get_token(_clitoken: str) -> str:
 
 
 def main(args):
-    pre_load = args.pre_load
-
     _endpoints = read_endpoints(args.endpoints)
 
     router = DataRouter(
@@ -355,12 +353,6 @@ def main(args):
         args.storage,
         model_server=_endpoints.model,
         wait_time_between_pulls=args.wait_time_between_pulls)
-
-    if pre_load:
-        logger.debug('Preloading....')
-        if 'all' in pre_load:
-            pre_load = router.project_store.keys()
-        router._pre_load(pre_load)
 
     rasa = create_app(
         router,
