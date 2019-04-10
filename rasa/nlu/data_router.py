@@ -82,7 +82,7 @@ class DataRouter(object):
         if loop.is_closed():
             loop = asyncio.new_event_loop()
         loop.run_until_complete(
-            self._create_project(self.model_dir))
+            self._load_model(self.model_dir))
         loop.close()
 
         # tensorflow sessions are not fork-safe,
@@ -129,17 +129,7 @@ class DataRouter(object):
                         "(No 'request_log' directory configured)")
             return None
 
-    def _collect_projects(self, project_dir: Text) -> List[Text]:
-        if project_dir and os.path.isdir(project_dir):
-            logger.debug("Listing projects in '{}'".format(project_dir))
-            projects = os.listdir(project_dir)
-        else:
-            projects = []
-
-        projects.extend(self._list_projects_in_cloud())
-        return projects
-
-    async def _create_project(
+    async def _load_model(
             self,
             model_dir: Text
     ):
@@ -148,39 +138,13 @@ class DataRouter(object):
             return
 
         if os.path.exists(model_dir):
-            self.model_name, self.interpreter = self.load_local_model(model_dir)
+            self.model_name, self.interpreter = self._load_local_model(model_dir)
 
         elif self.model_server is not None:
-            self.model_name, self.interpreter = self.load_from_server()
+            self.model_name, self.interpreter = self._load_from_server()
 
         elif self.remote_storage is not None:
-            self.model_name, self.interpreter = self.load_from_remote_storage()
-
-    def load_local_model(self, model_dir):
-        """
-        Load model from local storage. If model_dir directly points to the tar.gz file
-        unpack it and load the interpreter. Otherwise, use the latest tar.gz file in
-        the given directory.
-        :param model_dir: the model directory or the model tar.gz file
-        :return: model name and the interpreter
-        """
-        if os.path.isfile(model_dir):
-            model_archive = model_dir
-        else:
-            model_archive = get_latest_model(model_dir)
-
-        if model_archive is None:
-            logger.warning("Could not load local model in '{}'".format(model_dir))
-            return None, None
-
-        working_directory = tempfile.mkdtemp()
-        unpacked_model = model.unpack_model(model_archive, working_directory)
-        _, nlu_model = model.get_model_subdirectories(unpacked_model)
-
-        model_name = os.path.basename(model_archive)
-        interpreter = self._interpreter_for_model(nlu_model)
-
-        return model_name, interpreter
+            self.model_name, self.interpreter = self._load_from_remote_storage()
 
     def _list_projects_in_cloud(self) -> List[Text]:
         # noinspection PyBroadException
@@ -217,13 +181,6 @@ class DataRouter(object):
         else:
             raise ValueError("unknown mode : {0}".format(mode))
 
-    @staticmethod
-    def _tf_in_pipeline(model_config: RasaNLUModelConfig) -> bool:
-        from rasa.nlu.classifiers.embedding_intent_classifier import \
-            EmbeddingIntentClassifier
-        return any(EmbeddingIntentClassifier.name in c.values()
-                   for c in model_config.pipeline)
-
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)
 
@@ -242,15 +199,9 @@ class DataRouter(object):
             self.responses.info('', user_input=response, project=project,
                                 model=response.get('model'))
 
-        return self.format_response(response)
+        return self._format_response(response)
 
-    @staticmethod
-    def _list_projects(path: Text) -> List[Text]:
-        """List the projects in the path, ignoring hidden directories."""
-        return [os.path.basename(fn)
-                for fn in utils.list_subdirectories(path)]
-
-    def format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
+    def _format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_response_json(data)
 
     def get_status(self) -> Dict[Text, Any]:
@@ -266,117 +217,99 @@ class DataRouter(object):
 
     async def start_train_process(self,
                                   data_file: Text,
-                                  project: Text,
                                   train_config: RasaNLUModelConfig,
                                   model_name: Optional[Text] = None
                                   ):
         """Start a model training."""
-
-        if not project:
-            raise InvalidProjectError("Missing project name to train")
-
         if self._training_processes <= self._current_training_processes:
             raise MaxTrainingError
-
-        if project in self.project_store:
-            self.project_store[project].status = STATUS_TRAINING
-        elif project not in self.project_store:
-            self.project_store[project] = Project(
-                self.component_builder, project,
-                self.model_dir, self.remote_storage)
-            self.project_store[project].status = STATUS_TRAINING
 
         loop = asyncio.get_event_loop()
 
         logger.debug("New training queued")
 
         self._current_training_processes += 1
-        self.project_store[project].current_training_processes += 1
 
         task = loop.run_in_executor(self.pool,
                                     do_train_in_worker,
                                     train_config,
                                     data_file,
                                     self.model_dir,
-                                    project,
                                     model_name,
                                     self.remote_storage)
 
         try:
-            model_path = await task
-            model_dir = os.path.basename(os.path.normpath(model_path))
-            self.project_store[project].update(model_dir)
-
-            if (self.project_store[project].current_training_processes == 1 and
-                    self.project_store[project].status == STATUS_TRAINING):
-                self.project_store[project].status = STATUS_READY
-            return model_path
+            return await task
         except Exception as e:
             logger.warning(e)
-            self.project_store[project].status = STATUS_FAILED
-            self.project_store[project].error_message = str(e)
 
             raise
         finally:
             self._current_training_processes -= 1
-            self.project_store[project].current_training_processes -= 1
 
     # noinspection PyProtectedMember
-    async def evaluate(self,
+    def evaluate(self,
                        data: Text,
-                       project: Optional[Text] = None,
                        model: Optional[Text] = None) -> Dict[Text, Any]:
         """Perform a model evaluation."""
+        if self.interpreter is None:
+            logger.warning("Currently, no model is loaded. Cannot evaluate.")
+            return {}
 
-        project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-        model = model or None
+        if model is not None and model != self.model_name:
+            logger.warning("The given model '{}' is not loaded. Currently, the model "
+                           "'{}' is loaded".format(model, self.model_name))
+
         file_name = utils.create_temporary_file(data, "_training_data")
-
-        if project not in self.project_store:
-            raise InvalidProjectError("Project {} could not "
-                                      "be found".format(project))
-
-        model_name = self.project_store[project]._dynamic_load_model(model)
-
-        self.project_store[project]._loader_lock.acquire()
-        try:
-            if not self.project_store[project]._models.get(model_name):
-                interpreter = self.project_store[project]. \
-                    _interpreter_for_model(model_name)
-                self.project_store[project]._models[model_name] = interpreter
-        finally:
-            self.project_store[project]._loader_lock.release()
 
         return run_evaluation(
             data_path=file_name,
-            model=self.project_store[project]._models[model_name],
+            model=self.interpreter,
             errors_filename=None
         )
 
-    async def unload_model(self,
-                           project: Optional[Text],
-                           model: Text) -> Dict[Text, Any]:
+    def unload_model(self, model: Text):
         """Unload a model from server memory."""
+        if model is not None and model != self.model_name:
+            logger.warning("The passed model '{}' is currently not loaded. Currently, "
+                           "the model '{}' is loaded.".format(model, self.model_name))
+            return
 
-        if project is None:
-            raise InvalidProjectError("No project specified")
-        elif project not in self.project_store:
-            raise InvalidProjectError("Project {} could not "
-                                      "be found".format(project))
-
-        try:
-            unloaded_model = self.project_store[project].unload(model)
-            return unloaded_model
-        except KeyError:
-            raise InvalidProjectError("Failed to unload model {} "
-                                      "for project {}.".format(model, project))
+        self.model_name = None
+        self.interpreter = None
 
     def _interpreter_for_model(self, model_path):
         metadata = Metadata.load(model_path)
         return Interpreter.create(metadata, self.component_builder)
 
-    def load_from_remote_storage(self):
+    def _load_from_remote_storage(self):
         return None, None
 
-    def load_from_server(self):
+    def _load_from_server(self):
         return None, None
+
+    def _load_local_model(self, model_dir):
+        """
+        Load model from local storage. If model_dir directly points to the tar.gz file
+        unpack it and load the interpreter. Otherwise, use the latest tar.gz file in
+        the given directory.
+        :param model_dir: the model directory or the model tar.gz file
+        :return: model name and the interpreter
+        """
+        if os.path.isfile(model_dir):
+            model_archive = model_dir
+        else:
+            model_archive = get_latest_model(model_dir)
+
+        if model_archive is None:
+            logger.warning("Could not load local model in '{}'".format(model_dir))
+            return None, None
+
+        working_directory = tempfile.mkdtemp()
+        unpacked_model = model.unpack_model(model_archive, working_directory)
+        _, nlu_model = model.get_model_subdirectories(unpacked_model)
+
+        model_name = os.path.basename(model_archive)
+        interpreter = self._interpreter_for_model(nlu_model)
+
+        return model_name, interpreter

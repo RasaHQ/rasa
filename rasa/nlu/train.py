@@ -98,7 +98,6 @@ def create_persistor(persistor: Optional[Text]):
 def do_train_in_worker(cfg: RasaNLUModelConfig,
                        data: Text,
                        path: Text,
-                       project: Optional[Text] = None,
                        fixed_model_name: Optional[Text] = None,
                        storage: Text = None,
                        component_builder: Optional[ComponentBuilder] = None
@@ -107,19 +106,18 @@ def do_train_in_worker(cfg: RasaNLUModelConfig,
     """Loads the trainer and the data and runs the training in a worker."""
 
     try:
-        _, _, persisted_path = train(cfg, data, path, project,
+        _, _, persisted_path = train(cfg, data, path,
                                      fixed_model_name, storage,
                                      component_builder)
         return persisted_path
     except BaseException as e:
-        logger.exception("Failed to train project '{}'.".format(project))
-        raise TrainingException(project, e)
+        logger.exception("Failed to train on data '{}'.".format(data))
+        raise TrainingException(path, e)
 
 
 def train(nlu_config: Union[Text, RasaNLUModelConfig],
           data: Text,
           path: Optional[Text] = None,
-          project: Optional[Text] = None,
           fixed_model_name: Optional[Text] = None,
           storage: Optional[Text] = None,
           component_builder: Optional[ComponentBuilder] = None,
@@ -146,7 +144,6 @@ def train(nlu_config: Union[Text, RasaNLUModelConfig],
     if path:
         persisted_path = trainer.persist(path,
                                          persistor,
-                                         project,
                                          fixed_model_name)
     else:
         persisted_path = None

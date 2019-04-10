@@ -202,7 +202,6 @@ class Trainer(object):
     def persist(self,
                 path: Text,
                 persistor: Optional[Persistor] = None,
-                project_name: Text = None,
                 fixed_model_name: Text = None) -> Text:
         """Persist all components of the pipeline to the passed path.
 
@@ -214,16 +213,13 @@ class Trainer(object):
             "pipeline": [],
         }
 
-        if project_name is None:
-            project_name = "default"
-
         if fixed_model_name:
             model_name = fixed_model_name
         else:
             model_name = "model_" + timestamp
 
         path = make_path_absolute(path)
-        dir_name = os.path.join(path, project_name, model_name)
+        dir_name = os.path.join(path, model_name)
 
         create_dir(dir_name)
 
@@ -243,7 +239,7 @@ class Trainer(object):
         Metadata(metadata, dir_name).persist(dir_name)
 
         if persistor is not None:
-            persistor.persist(dir_name, model_name, project_name)
+            persistor.persist(dir_name, model_name)
         logger.info("Successfully saved model into "
                     "'{}'".format(os.path.abspath(dir_name)))
         return dir_name

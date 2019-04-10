@@ -270,8 +270,6 @@ def create_app(data_router,
     @requires_auth(app, token)
     async def train(request):
 
-        # if not set will use the default project name, e.g. "default"
-        project = request.raw_args.get("project", None)
         # if set will not generate a model name but use the passed one
         model_name = request.raw_args.get("model", None)
 
@@ -284,7 +282,7 @@ def create_app(data_router,
 
         try:
             path_to_model = await data_router.start_train_process(
-                data_file, project,
+                data_file,
                 RasaNLUModelConfig(model_config), model_name)
             zipped_path = utils.zip_folder(path_to_model)
             return await response.file(zipped_path)
@@ -313,12 +311,10 @@ def create_app(data_router,
     @requires_auth(app, token)
     async def unload_model(request):
         try:
-            payload = await data_router.unload_model(
-                request.raw_args.get('project',
-                                     RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
+            await data_router.unload_model(
                 request.raw_args.get('model')
             )
-            return response.json(payload)
+            return response.STATUS_CODES.get(204)
         except Exception as e:
             logger.exception(e)
             return response.json({"error": "{}".format(e)}, status=500)
