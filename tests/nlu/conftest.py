@@ -65,8 +65,7 @@ def zipped_nlu_model():
     td = training_data.load_data(DEFAULT_DATA_PATH)
 
     trainer.train(td)
-    trainer.persist("test_models",
-                    project_name="test_model_pretrained_embeddings")
+    trainer.persist("test_models")
 
     model_dir_list = os.listdir(TEST_MODEL_PATH)
 

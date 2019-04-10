@@ -14,7 +14,7 @@ import rasa
 import rasa.utils.io
 import rasa.utils.utils
 import rasa.utils.endpoints
-from rasa import model
+from rasa import model, data
 from rasa.cli.utils import create_output_path
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import config, utils, constants
@@ -275,28 +275,36 @@ def create_app(data_router,
 
         # if set will not generate a model name but use the passed one
         model_name = request.raw_args.get("model", None)
+        # TODO: is the user allowed to set a name?
 
         try:
-            model_config, data = extract_data_and_config(request)
+            model_config, data_dict = extract_data_and_config(request)
         except Exception as e:
             return response.json({"error": "{}".format(e)}, status=400)
 
-        data_file = dump_to_data_file(data)
+        data_file = dump_to_data_file(data_dict)
+        config_file = dump_to_data_file(model_config)
 
         try:
             path_to_model = await data_router.start_train_process(
                 data_file,
-                RasaNLUModelConfig(model_config), model_name)
+                RasaNLUModelConfig(model_config),
+                model_name
+            )
 
+            # store trained model as tar.gz file
             nlu_data = data.get_nlu_directory(data_file)
-            output_path = create_output_path(path_to_model, prefix="nlu-")
-            new_fingerprint = model.model_fingerprint(model_config, nlu_data=nlu_data)
+            parent_dir = os.path.abspath(os.path.join(path_to_model, os.pardir))
+            output_path = create_output_path(parent_dir, prefix="nlu-")
+            new_fingerprint = model.model_fingerprint(config_file, nlu_data=nlu_data)
             model.create_package_rasa(path_to_model, output_path, new_fingerprint)
             logger.info("Your Rasa NLU model is trained and saved at '{}'.".format(
                 output_path))
 
-            zipped_path = utils.zip_folder(path_to_model)
-            return await response.file(zipped_path)
+            if not os.path.exists(output_path):
+                logger.error("FILE DOES NOT EXISTS")
+
+            return await response.file(output_path)
         except MaxTrainingError as e:
             return response.json({"error": "{}".format(e)}, status=403)
         except InvalidProjectError as e:

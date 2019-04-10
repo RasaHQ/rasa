@@ -284,9 +284,11 @@ class DataRouter(object):
         return Interpreter.create(metadata, self.component_builder)
 
     def _load_from_remote_storage(self):
+        # TODO
         return None, None
 
     def _load_from_server(self):
+        # TODO
         return None, None
 
     def _load_local_model(self, model_dir):

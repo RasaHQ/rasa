@@ -4,6 +4,7 @@ import io
 import json
 import os
 import shutil
+import tarfile
 import tempfile
 import time
 
@@ -13,6 +14,7 @@ import tempfile
 
 from rasa import data, model
 from rasa.cli.utils import create_output_path
+from rasa.model import unpack_model
 from rasa.nlu import config
 from rasa.nlu.data_router import DataRouter
 from rasa.nlu.model import Trainer
@@ -149,24 +151,15 @@ def test_post_parse(app, response_test):
 
 
 @utilities.slowtest
-def test_post_train(app, rasa_default_train_data):
-    _, response = app.post("/train", json=rasa_default_train_data)
-    rjs = response.json
-    assert response.status == 404, "A project name to train must be specified"
-    assert "error" in rjs
-
-
-@utilities.slowtest
 def test_post_train_success(app, rasa_default_train_data):
-    import zipfile
-    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
+    import tarfile
+    request = {"language": "en", "pipeline": "pretrained_embeddings_spacy", "data": rasa_default_train_data}
 
-    _, response = app.post("/train?model=test",
-                           json=model_config)
+    _, response = app.post("/train", json=request)
 
     content = response.body
     assert response.status == 200
-    assert zipfile.ZipFile(io.BytesIO(content)).testzip() is None
+    # TODO check response
 
 
 @utilities.slowtest
@@ -182,9 +175,10 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     query = "/parse?q=hello&model=not-existing"
     _, response = app.get(query)
     assert response.status == 404, "Project should not exist yet"
+
     train_u = "/train"
-    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
-    model_str = yaml.safe_dump(model_config, default_flow_style=False,
+    request = {"language": "en", "pipeline": "pretrained_embeddings_spacy", "data": rasa_default_train_data}
+    model_str = yaml.safe_dump(request, default_flow_style=False,
                                allow_unicode=True)
     _, response = app.post(train_u,
                            headers={"Content-Type": "application/x-yml"},
@@ -193,10 +187,10 @@ def test_model_hot_reloading(app, rasa_default_train_data):
 
     _, response = app.post(train_u,
                            headers={"Content-Type": "application/json"},
-                           data=json.dumps(model_config))
+                           data=json.dumps(request))
     assert response.status == 200, "Training should end successfully"
 
-    _, response = app.get(query)
+    _, response = app.get("/parse?q=hello")
     assert response.status == 200, "Project should now exist " \
                                    "after it got trained"
 
