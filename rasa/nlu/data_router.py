@@ -3,15 +3,18 @@ import datetime
 import logging
 import multiprocessing
 import os
+import tempfile
 from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Dict, List, Optional, Text
 
+from rasa import model
+from rasa.model import get_latest_model
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.emulators import NoEmulator
 from rasa.nlu.test import run_evaluation
-from rasa.nlu.model import InvalidProjectError
+from rasa.nlu.model import InvalidProjectError, Interpreter, Metadata
 from rasa.nlu.project import (
     Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server)
 from rasa.nlu.train import do_train_in_worker
@@ -48,7 +51,7 @@ class MaxTrainingError(Exception):
 
 class DataRouter(object):
     def __init__(self,
-                 project_dir=None,
+                 model_dir=None,
                  max_training_processes=1,
                  response_log=None,
                  emulation_mode=None,
@@ -56,14 +59,18 @@ class DataRouter(object):
                  component_builder=None,
                  model_server=None,
                  wait_time_between_pulls=None):
+
         self._training_processes = max(max_training_processes, 1)
         self._current_training_processes = 0
         self.responses = self._create_query_logger(response_log)
-        self.project_dir = config.make_path_absolute(project_dir)
+        self.model_dir = config.make_path_absolute(model_dir)
         self.emulator = self._create_emulator(emulation_mode)
         self.remote_storage = remote_storage
         self.model_server = model_server
         self.wait_time_between_pulls = wait_time_between_pulls
+
+        self.model_name = None
+        self.interpreter = None
 
         if component_builder:
             self.component_builder = component_builder
@@ -74,8 +81,8 @@ class DataRouter(object):
         loop = asyncio.get_event_loop()
         if loop.is_closed():
             loop = asyncio.new_event_loop()
-        self.project = loop.run_until_complete(
-            self._create_project(self.project_dir))
+        loop.run_until_complete(
+            self._create_project(self.model_dir))
         loop.close()
 
         # tensorflow sessions are not fork-safe,
@@ -132,38 +139,48 @@ class DataRouter(object):
         projects.extend(self._list_projects_in_cloud())
         return projects
 
-    async def _create_project(self,
-                              project_dir: Text) -> Project:
-        default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
+    async def _create_project(
+            self,
+            model_dir: Text
+    ):
+        if model_dir is None:
+            logger.info("Starting NLU server without any model.")
+            return
 
-        projects = self._collect_projects(project_dir)
+        if os.path.exists(model_dir):
+            self.model_name, self.interpreter = self.load_local_model(model_dir)
 
-        project_store = {}
+        elif self.model_server is not None:
+            self.model_name, self.interpreter = self.load_from_server()
 
-        if self.model_server is not None:
-            return await load_from_server(
-                self.component_builder,
-                default_project,
-                self.project_dir,
-                self.remote_storage,
-                self.model_server,
-                self.wait_time_between_pulls
-            )
+        elif self.remote_storage is not None:
+            self.model_name, self.interpreter = self.load_from_remote_storage()
+
+    def load_local_model(self, model_dir):
+        """
+        Load model from local storage. If model_dir directly points to the tar.gz file
+        unpack it and load the interpreter. Otherwise, use the latest tar.gz file in
+        the given directory.
+        :param model_dir: the model directory or the model tar.gz file
+        :return: model name and the interpreter
+        """
+        if os.path.isfile(model_dir):
+            model_archive = model_dir
         else:
-            for project in projects:
-                project_store[project] = Project(self.component_builder,
-                                                 project,
-                                                 self.project_dir,
-                                                 self.remote_storage)
+            model_archive = get_latest_model(model_dir)
 
-            if not project_store:
-                project_store[default_project] = Project(
-                    project=default_project,
-                    project_dir=self.project_dir,
-                    remote_storage=self.remote_storage
-                )
+        if model_archive is None:
+            logger.warning("Could not load local model in '{}'".format(model_dir))
+            return None, None
 
-        return project_store
+        working_directory = tempfile.mkdtemp()
+        unpacked_model = model.unpack_model(model_archive, working_directory)
+        _, nlu_model = model.get_model_subdirectories(unpacked_model)
+
+        model_name = os.path.basename(model_archive)
+        interpreter = self._interpreter_for_model(nlu_model)
+
+        return model_name, interpreter
 
     def _list_projects_in_cloud(self) -> List[Text]:
         # noinspection PyBroadException
@@ -214,28 +231,12 @@ class DataRouter(object):
         project = data.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME)
         model = data.get("model")
 
-        if project not in self.project_store:
-            projects = self._list_projects(self.project_dir)
+        if model is not None and model != self.model_name:
+            logger.warning("The given model '{}' is not loaded. Currently, the model "
+                           "'{}' is loaded".format(model, self.model_name))
 
-            cloud_provided_projects = self._list_projects_in_cloud()
-            projects.extend(cloud_provided_projects)
-
-            if project not in projects:
-                raise InvalidProjectError(
-                    "No project found with name '{}'.".format(project))
-            else:
-                try:
-                    self.project_store[project] = Project(
-                        self.component_builder, project,
-                        self.project_dir, self.remote_storage)
-                except Exception as e:
-                    raise InvalidProjectError(
-                        "Unable to load project '{}'. "
-                        "Error: {}".format(project, e))
-
-        time = data.get('time')
-        response = self.project_store[project].parse(data['text'], time,
-                                                     model)
+        response = self.interpreter.parse(data['text'], data.get('time'))
+        response['model'] = self.model_name
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
@@ -260,10 +261,7 @@ class DataRouter(object):
         return {
             "max_training_processes": self._training_processes,
             "current_training_processes": self._current_training_processes,
-            "available_projects": {
-                name: project.as_dict()
-                for name, project in self.project_store.items()
-            }
+            "loaded_model": self.model_name,
         }
 
     async def start_train_process(self,
@@ -285,7 +283,7 @@ class DataRouter(object):
         elif project not in self.project_store:
             self.project_store[project] = Project(
                 self.component_builder, project,
-                self.project_dir, self.remote_storage)
+                self.model_dir, self.remote_storage)
             self.project_store[project].status = STATUS_TRAINING
 
         loop = asyncio.get_event_loop()
@@ -299,7 +297,7 @@ class DataRouter(object):
                                     do_train_in_worker,
                                     train_config,
                                     data_file,
-                                    self.project_dir,
+                                    self.model_dir,
                                     project,
                                     model_name,
                                     self.remote_storage)
@@ -372,3 +370,13 @@ class DataRouter(object):
         except KeyError:
             raise InvalidProjectError("Failed to unload model {} "
                                       "for project {}.".format(model, project))
+
+    def _interpreter_for_model(self, model_path):
+        metadata = Metadata.load(model_path)
+        return Interpreter.create(metadata, self.component_builder)
+
+    def load_from_remote_storage(self):
+        return None, None
+
+    def load_from_server(self):
+        return None, None

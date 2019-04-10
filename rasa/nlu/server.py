@@ -346,7 +346,7 @@ def main(args):
     _endpoints = read_endpoints(args.endpoints)
 
     router = DataRouter(
-        args.path,
+        args.model,
         args.max_training_processes,
         args.response_log,
         args.emulate,
