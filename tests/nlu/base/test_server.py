@@ -282,7 +282,7 @@ def test_unload_model_error(app):
     response = yield app.delete(project_err)
     rjs = yield response.json()
     assert response.code == 500, "Project not found"
-    assert rjs['error'] == ("Project {} could " 
+    assert rjs['error'] == ("Project {} could "
                             "not be found".format(FAKE_PROJECT))
 
     model_err = ("http://dummy-uri/models?project={}"
