@@ -2,8 +2,4 @@ DEFAULT_SERVER_PORT = 5000
 
 DEFAULT_SERVER_FORMAT = "http://localhost:{}"
 
-DEFAULT_SERVER_URL = DEFAULT_SERVER_FORMAT.format(DEFAULT_SERVER_PORT)
-
-MINIMUM_COMPATIBLE_VERSION = "0.15.0a2"
-
-DOCS_BASE_URL = "https://rasa.com/docs/core"
+DOCS_BASE_URL = "https://rasa.com/docs/nlu"

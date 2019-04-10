@@ -13,8 +13,11 @@ def pprint(object: Any):
     pretty_print.pprint(object, indent=2)
 
 
-def chat(model_path: Text = None, agent: 'Agent' = None,
-         interpreter: NaturalLanguageInterpreter = None) -> None:
+def chat(
+    model_path: Text = None,
+    agent: "Agent" = None,
+    interpreter: NaturalLanguageInterpreter = None,
+) -> None:
     """Chat to the bot within a Jupyter notebook.
 
     Args:
@@ -26,25 +29,28 @@ def chat(model_path: Text = None, agent: 'Agent' = None,
 
     if model_path:
         from rasa.run import create_agent
+
         unpacked = model.get_model(model_path)
         agent = create_agent(unpacked)
 
     elif agent and interpreter:
         # HACK: this skips loading the interpreter and directly
         # sets it afterwards
-        nlu_interpreter = RasaNLUInterpreter("skip this and use given "
-                                             "interpreter", lazy_init=True)
+        nlu_interpreter = RasaNLUInterpreter(
+            "skip this and use given interpreter", lazy_init=True
+        )
         nlu_interpreter.interpreter = interpreter
         agent.interpreter = interpreter
     else:
-        print_error("You either have to define a model path or an agent and "
-                    "an interpreter.")
+        print_error(
+            "You either have to define a model path or an agent and an interpreter."
+        )
 
-    print("Your bot is ready to talk! Type your messages here or send '/stop'.")
+    print ("Your bot is ready to talk! Type your messages here or send '/stop'.")
     loop = asyncio.get_event_loop()
     while True:
         message = input()
-        if message == '/stop':
+        if message == "/stop":
             break
 
         responses = loop.run_until_complete(agent.handle_text(message))
@@ -56,9 +62,9 @@ def _display_bot_response(response: Dict):
     from IPython.display import Image, display
 
     for response_type, value in response.items():
-        if response_type == 'text':
+        if response_type == "text":
             print_success(value)
 
-        if response_type == 'image':
+        if response_type == "image":
             image = Image(url=value)
-            display(image, )
+            display(image)

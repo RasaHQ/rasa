@@ -9,14 +9,13 @@ from typing import Any, Dict, List, Optional, Text
 
 from rasa import model
 from rasa.model import get_latest_model
+
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.emulators import NoEmulator
 from rasa.nlu.test import run_evaluation
 from rasa.nlu.model import InvalidProjectError, Interpreter, Metadata
-from rasa.nlu.project import (
-    Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server)
 from rasa.nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
@@ -43,22 +42,24 @@ class MaxTrainingError(Exception):
     """
 
     def __init__(self):
-        self.message = 'The server can\'t train more models right now!'
+        self.message = "The server can't train more models right now!"
 
     def __str__(self):
         return self.message
 
 
 class DataRouter(object):
-    def __init__(self,
-                 model_dir=None,
-                 max_training_processes=1,
-                 response_log=None,
-                 emulation_mode=None,
-                 remote_storage=None,
-                 component_builder=None,
-                 model_server=None,
-                 wait_time_between_pulls=None):
+    def __init__(
+        self,
+        model_dir=None,
+        max_training_processes=1,
+        response_log=None,
+        emulation_mode=None,
+        remote_storage=None,
+        component_builder=None,
+        model_server=None,
+        wait_time_between_pulls=None,
+    ):
 
         self._training_processes = max(max_training_processes, 1)
         self._current_training_processes = 0
@@ -81,18 +82,16 @@ class DataRouter(object):
         loop = asyncio.get_event_loop()
         if loop.is_closed():
             loop = asyncio.new_event_loop()
-        loop.run_until_complete(
-            self._load_model(self.model_dir))
+        loop.run_until_complete(self._load_model(self.model_dir))
         loop.close()
 
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
         # https://github.com/tensorflow/tensorflow/issues/5448#issuecomment
         # -258934405
-        multiprocessing.set_start_method('spawn', force=True)
+        multiprocessing.set_start_method("spawn", force=True)
 
-        self.pool = ProcessPoolExecutor(
-            max_workers=self._training_processes)
+        self.pool = ProcessPoolExecutor(max_workers=self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -107,32 +106,30 @@ class DataRouter(object):
         if response_log:
             # We need to generate a unique file name,
             # even in multiprocess environments
-            timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-            log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp,
-                                                            os.getpid())
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
             response_logfile = os.path.join(response_log, log_file_name)
             # Instantiate a standard python logger,
             # which we are going to use to log requests
             utils.create_dir_for_file(response_logfile)
             # noinspection PyTypeChecker
-            query_logger = logging.getLogger('query-logger')
+            query_logger = logging.getLogger("query-logger")
             query_logger.setLevel(logging.INFO)
             ch = logging.FileHandler(response_logfile)
-            ch.setFormatter(logging.Formatter('%(message)s'))
+            ch.setFormatter(logging.Formatter("%(message)s"))
             query_logger.propagate = False
             query_logger.addHandler(ch)
             logger.info("Logging requests to '{}'.".format(response_logfile))
             return query_logger
         else:
             # If the user didn't provide a logging directory, we wont log!
-            logger.info("Logging of requests is disabled. "
-                        "(No 'request_log' directory configured)")
+            logger.info(
+                "Logging of requests is disabled. "
+                "(No 'request_log' directory configured)"
+            )
             return None
 
-    async def _load_model(
-            self,
-            model_dir: Text
-    ):
+    async def _load_model(self, model_dir: Text):
         if model_dir is None:
             logger.info("Starting NLU server without any model.")
             return
@@ -150,15 +147,18 @@ class DataRouter(object):
         # noinspection PyBroadException
         try:
             from rasa.nlu.persistor import get_persistor
+
             p = get_persistor(self.remote_storage)
             if p is not None:
                 return p.list_projects()
             else:
                 return []
         except Exception:
-            logger.exception("Failed to list projects. Make sure you have "
-                             "correctly configured your cloud storage "
-                             "settings.")
+            logger.exception(
+                "Failed to list projects. Make sure you have "
+                "correctly configured your cloud storage "
+                "settings."
+            )
             return []
 
     @staticmethod
@@ -169,14 +169,17 @@ class DataRouter(object):
 
         if mode is None:
             return NoEmulator()
-        elif mode.lower() == 'wit':
+        elif mode.lower() == "wit":
             from rasa.nlu.emulators.wit import WitEmulator
+
             return WitEmulator()
-        elif mode.lower() == 'luis':
+        elif mode.lower() == "luis":
             from rasa.nlu.emulators.luis import LUISEmulator
+
             return LUISEmulator()
-        elif mode.lower() == 'dialogflow':
+        elif mode.lower() == "dialogflow":
             from rasa.nlu.emulators.dialogflow import DialogflowEmulator
+
             return DialogflowEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
@@ -191,16 +194,17 @@ class DataRouter(object):
             raise InvalidProjectError("No model loaded.")
 
         if model is not None and model != self.model_name:
-            logger.warning("The given model '{}' is not loaded. Currently, the model "
-                           "'{}' is loaded".format(model, self.model_name))
+            logger.warning(
+                "The given model '{}' is not loaded. Currently, the model "
+                "'{}' is loaded".format(model, self.model_name)
+            )
             raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
-        response = self.interpreter.parse(data['text'], data.get('time'))
-        response['model'] = self.model_name
+        response = self.interpreter.parse(data["text"], data.get("time"))
+        response["model"] = self.model_name
 
         if self.responses:
-            self.responses.info('', user_input=response,
-                                model=response.get('model'))
+            self.responses.info("", user_input=response, model=response.get("model"))
 
         return self._format_response(response)
 
@@ -218,11 +222,12 @@ class DataRouter(object):
             "loaded_model": self.model_name,
         }
 
-    async def start_train_process(self,
-                                  data_file: Text,
-                                  train_config: RasaNLUModelConfig,
-                                  model_name: Optional[Text] = None
-                                  ):
+    async def start_train_process(
+        self,
+        data_file: Text,
+        train_config: RasaNLUModelConfig,
+        model_name: Optional[Text] = None,
+    ):
         """Start a model training."""
         if self._training_processes <= self._current_training_processes:
             raise MaxTrainingError
@@ -233,20 +238,20 @@ class DataRouter(object):
 
         self._current_training_processes += 1
 
-        task = loop.run_in_executor(self.pool,
-                                    do_train_in_worker,
-                                    train_config,
-                                    data_file,
-                                    self.model_dir,
-                                    model_name,
-                                    self.remote_storage)
+        task = loop.run_in_executor(
+            self.pool,
+            do_train_in_worker,
+            train_config,
+            data_file,
+            self.model_dir,
+            model_name,
+            self.remote_storage,
+        )
 
         try:
             return await task
         except Exception as e:
             logger.warning(e)
-
-            raise
         finally:
             self._current_training_processes -= 1
 
@@ -257,23 +262,25 @@ class DataRouter(object):
             raise InvalidProjectError("No model loaded.".format(model))
 
         if model is not None and model != self.model_name:
-            logger.warning("The given model '{}' is not loaded. Currently, the model "
-                           "'{}' is loaded".format(model, self.model_name))
+            logger.warning(
+                "The given model '{}' is not loaded. Currently, the model "
+                "'{}' is loaded".format(model, self.model_name)
+            )
             raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         file_name = utils.create_temporary_file(data, "_training_data")
 
         return run_evaluation(
-            data_path=file_name,
-            model=self.interpreter,
-            errors_filename=None
+            data_path=file_name, model=self.interpreter, errors_filename=None
         )
 
     def unload_model(self, model: Text):
         """Unload a model from server memory."""
         if model is not None and model != self.model_name:
-            logger.warning("The passed model '{}' is currently not loaded. Currently, "
-                           "the model '{}' is loaded.".format(model, self.model_name))
+            logger.warning(
+                "The passed model '{}' is currently not loaded. Currently, "
+                "the model '{}' is loaded.".format(model, self.model_name)
+            )
             raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         self.model_name = None

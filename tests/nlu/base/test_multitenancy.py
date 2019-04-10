@@ -23,8 +23,9 @@ def router(component_builder):
     else:
         root_dir = os.getcwd()
 
-    train_models(component_builder,
-                 os.path.join(root_dir, "data/examples/rasa/demo-rasa.json"))
+    train_models(
+        component_builder, os.path.join(root_dir, "data/examples/rasa/demo-rasa.json")
+    )
 
     router = DataRouter(os.path.join(root_dir, "test_projects/test_project_mitie"))
     return router
@@ -34,42 +35,44 @@ def router(component_builder):
 def app(router):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    rasa = create_app(
-        router,
-        logfile=nlu_log_file)
+    rasa = create_app(router, logfile=nlu_log_file)
 
     return rasa.test_client
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "/parse?q=food",
-        {"entities": [], "intent": "affirm", "text": "food"}
-    ),
-    ResponseTest(
-        "/parse?q=food",
-        {"entities": [], "intent": "restaurant_search", "text": "food"}
-    ),
-    ResponseTest(
-        "/parse?q=food",
-        {"entities": [], "intent": "restaurant_search", "text": "food"}
-    ),
-])
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse?q=food", {"entities": [], "intent": "affirm", "text": "food"}
+        ),
+        ResponseTest(
+            "/parse?q=food",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+        ),
+        ResponseTest(
+            "/parse?q=food",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+        ),
+    ],
+)
 def test_get_parse(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
 
     assert response.status == 200
-    assert all(prop in rjs
-               for prop in ['entities', 'intent', 'text'])
+    assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "/parse?q=food&model=default",
-        {"error": "No model loaded with name 'default'."}
-    )
-])
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse?q=food&model=default",
+            {"error": "No model loaded with name 'default'."},
+        )
+    ],
+)
 def test_get_parse_invalid_model(app, response_test):
     _, response = app.get(response_test.endpoint)
     rjs = response.json
@@ -77,29 +80,31 @@ def test_get_parse_invalid_model(app, response_test):
     assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "/parse",
-        {"entities": [], "intent": "affirm", "text": "food"},
-        payload={"q": "food", "project": "test_project_mitie"}
-    ),
-    ResponseTest(
-        "/parse",
-        {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "project": "test_project_mitie_2"}
-    ),
-    ResponseTest(
-        "/parse",
-        {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "project": "test_project_spacy"}
-    ),
-])
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse",
+            {"entities": [], "intent": "affirm", "text": "food"},
+            payload={"q": "food", "project": "test_project_mitie"},
+        ),
+        ResponseTest(
+            "/parse",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+            payload={"q": "food", "project": "test_project_mitie_2"},
+        ),
+        ResponseTest(
+            "/parse",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+            payload={"q": "food", "project": "test_project_spacy"},
+        ),
+    ],
+)
 def test_post_parse(app, response_test):
-    _, response = app.post(response_test.endpoint,
-                           json=response_test.payload)
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 200
-    assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
+    assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
 def test_post_parse_specific_model(app):
@@ -107,10 +112,11 @@ def test_post_parse_specific_model(app):
     sjs = status.json
     model = sjs["loaded_model"]
 
-    query = ResponseTest("/parse",
-                         {"entities": [], "intent": "affirm", "text": "food"},
-                         payload={"q": "food",
-                                  "model": model})
+    query = ResponseTest(
+        "/parse",
+        {"entities": [], "intent": "affirm", "text": "food"},
+        payload={"q": "food", "model": model},
+    )
 
     _, response = app.post(query.endpoint, json=query.payload)
     assert response.status == 200
@@ -121,16 +127,18 @@ def test_post_parse_specific_model(app):
     assert model == sjs["loaded_model"]
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "/parse",
-        {"error": "No model loaded with name 'default'."},
-        payload={"q": "food", "model": "default"}
-    )
-])
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse",
+            {"error": "No model loaded with name 'default'."},
+            payload={"q": "food", "model": "default"},
+        )
+    ],
+)
 def test_post_parse_invalid_model(app, response_test):
-    _, response = app.post(response_test.endpoint,
-                           json=response_test.payload)
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
     rjs = response.json
     assert response.status == 404
     assert rjs.get("error").startswith(response_test.expected_response["error"])
@@ -158,9 +166,9 @@ def train_models(component_builder, data_path):
     if os.path.exists("test_projects"):
         shutil.rmtree("test_projects")
 
-    train("sample_configs/config_pretrained_embeddings_spacy.yml",
-          "test_project_spacy")
-    train("sample_configs/config_pretrained_embeddings_mitie.yml",
-          "test_project_mitie")
-    train("sample_configs/config_pretrained_embeddings_mitie_2.yml",
-          "test_project_mitie_2")
+    train("sample_configs/config_pretrained_embeddings_spacy.yml", "test_project_spacy")
+    train("sample_configs/config_pretrained_embeddings_mitie.yml", "test_project_mitie")
+    train(
+        "sample_configs/config_pretrained_embeddings_mitie_2.yml",
+        "test_project_mitie_2",
+    )
