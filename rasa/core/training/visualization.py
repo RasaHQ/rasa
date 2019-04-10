@@ -462,7 +462,9 @@ async def visualize_neighborhood(
                 next_node_idx += 1
                 graph.add_node(
                     next_node_idx,
-                    label=message or "  ?  ",
+                    label="  ?  "
+                    if not message
+                    else sanitize(message.get("intent", {})).get("name", "  ?  "),
                     shape="rect",
                     **{"class": "intent dashed active"}
                 )
