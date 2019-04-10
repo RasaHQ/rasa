@@ -259,7 +259,7 @@ def create_app(
 
         else:
             raise Exception(
-                "Content-Type must be 'application/x-yml' " "or 'application/json'"
+                "Content-Type must be 'application/x-yml' or 'application/json'"
             )
 
         return model_config, data

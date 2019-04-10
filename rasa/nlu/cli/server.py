@@ -54,13 +54,13 @@ def add_server_arguments(parser):
         "recommended to keep the default value.",
     )
     parser.add_argument(
-        "--endpoints", help="Configuration file for the model server " "as a yaml file"
+        "--endpoints", help="Configuration file for the model server as a yaml file"
     )
     parser.add_argument(
         "--wait_time_between_pulls",
         type=int,
         default=10,
-        help="Wait time in seconds between NLU model server" "queries.",
+        help="Wait time in seconds between NLU model server queries.",
     )
     parser.add_argument(
         "--response_log",
@@ -76,5 +76,5 @@ def add_server_arguments(parser):
         "on disk in the configured `path`.",
     )
     parser.add_argument(
-        "-c", "--config", help="Default model configuration file used for " "training."
+        "-c", "--config", help="Default model configuration file used for training."
     )
