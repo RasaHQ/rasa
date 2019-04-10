@@ -1,7 +1,6 @@
 import itertools
 import json
 import logging
-import os
 import pickle
 # noinspection PyPep8Naming
 from time import sleep
@@ -283,18 +282,24 @@ class SQLTrackerStore(TrackerStore):
     def __init__(self,
                  domain: Optional[Domain] = None,
                  dialect: Text = 'sqlite',
-                 host: Text = None,
-                 port: int = 5432,
+                 url: Optional[Text] = None,
+                 host: Optional[Text] = None,
+                 port: Optional[int] = None,
                  db: Text = 'rasa.db',
                  username: Text = None,
                  password: Text = None,
-                 event_broker: Optional[EventChannel] = None) -> None:
+                 event_broker: Optional[EventChannel] = None,
+                 login_db: Optional[Text] = None) -> None:
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
-        engine_url = URL(dialect, username, password, host, port,
-                         database="rasa")
+        if url is not None:
+            engine_url = URL(dialect, username, password, url,
+                             database=login_db if login_db else db)
+        else:
+            engine_url = URL(dialect, username, password, host, port,
+                             database=login_db if login_db else db)
 
         logger.debug('Attempting to connect to database '
                      'via "{}"'.format(engine_url.__to_string__()))
@@ -304,14 +309,13 @@ class SQLTrackerStore(TrackerStore):
             try:
                 self.engine = create_engine(engine_url)
 
-                if os.environ.get("CREATE_DATABASE"):
+                if login_db:
                     self._create_database_and_update_engine(db, engine_url)
 
-                if os.environ.get("CREATE_TABLES"):
-                    try:
-                        self.Base.metadata.create_all(self.engine)
-                    except sqlalchemy.exc.OperationalError:
-                        pass
+                try:
+                    self.Base.metadata.create_all(self.engine)
+                except sqlalchemy.exc.OperationalError:
+                    pass
 
                 self.session = sessionmaker(bind=self.engine)()
                 break
