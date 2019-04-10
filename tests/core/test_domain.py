@@ -13,11 +13,13 @@ from tests.core.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 async def test_create_train_data_no_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0)
+        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
+    )
 
     assert len(training_trackers) == 3
     (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain)
+        training_trackers, default_domain
+    )
 
     # decoded needs to be sorted
     hashed = []
@@ -26,34 +28,31 @@ async def test_create_train_data_no_history(default_domain):
     hashed = sorted(hashed, reverse=True)
 
     assert hashed == [
-        '[{}]',
+        "[{}]",
         '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
         '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
         '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
         '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
         '[{"intent_default": 1.0, "prev_utter_default": 1.0}]',
-        '[{"intent_default": 1.0, "prev_utter_default": 1.0, '
-        '"slot_name_0": 1.0}]',
+        '[{"intent_default": 1.0, "prev_utter_default": 1.0, ' '"slot_name_0": 1.0}]',
         '[{"intent_default": 1.0, "prev_action_listen": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1.0, '
-        '"slot_name_0": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1.0, ' '"slot_name_0": 1.0}]',
         '[{"entity_name": 1.0, "intent_greet": 1.0, '
         '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
         '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]'
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
     ]
 
 
 async def test_create_train_data_with_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = await training.load_data(
-        DEFAULT_STORIES_FILE,
-        default_domain,
-        augmentation_factor=0
+        DEFAULT_STORIES_FILE, default_domain, augmentation_factor=0
     )
     assert len(training_trackers) == 3
     (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain)
+        training_trackers, default_domain
+    )
 
     # decoded needs to be sorted
     hashed = []
@@ -62,18 +61,17 @@ async def test_create_train_data_with_history(default_domain):
     hashed = sorted(hashed)
 
     assert hashed == [
-        '[null, null, null, {}]',
-        '[null, null, {}, '
+        "[null, null, null, {}]",
+        "[null, null, {}, "
         '{"entity_name": 1.0, "intent_greet": 1.0, '
         '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
-        '[null, null, {}, '
-        '{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
-        '[null, {}, '
+        "[null, null, {}, " '{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
+        "[null, {}, "
         '{"entity_name": 1.0, "intent_greet": 1.0, '
         '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
         '{"entity_name": 1.0, "intent_greet": 1.0, '
         '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
-        '[null, {}, '
+        "[null, {}, "
         '{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
         '{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
         '[{"entity_name": 1.0, "intent_greet": 1.0, '
@@ -104,7 +102,7 @@ async def test_create_train_data_with_history(default_domain):
         '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
         '[{}, {"intent_greet": 1.0, "prev_action_listen": 1.0}, '
         '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1.0}]'
+        '{"intent_default": 1.0, "prev_action_listen": 1.0}]',
     ]
 
 
@@ -120,8 +118,10 @@ def test_utter_templates():
     domain = Domain.load(domain_file)
     expected_template = {
         "text": "Hey! How are you?",
-        "buttons": [{"title": "great", "payload": "great"},
-                    {"title": "super sad", "payload": "super sad"}]
+        "buttons": [
+            {"title": "great", "payload": "great"},
+            {"title": "super sad", "payload": "super sad"},
+        ],
     }
     assert domain.random_template_for("utter_greet") == expected_template
 
@@ -129,11 +129,15 @@ def test_utter_templates():
 def test_restaurant_domain_is_valid():
     # should raise no exception
     Domain.validate_domain_yaml(
-        rasa.utils.io.read_file('examples/restaurantbot/domain.yml'))
+        rasa.utils.io.read_file("examples/restaurantbot/domain.yml")
+    )
 
 
 def test_custom_slot_type(tmpdir):
-    domain_path = utilities.write_text_to_file(tmpdir, "domain.yml", """
+    domain_path = utilities.write_text_to_file(
+        tmpdir,
+        "domain.yml",
+        """
        slots:
          custom:
            type: tests.core.conftest.CustomSlot
@@ -143,12 +147,15 @@ def test_custom_slot_type(tmpdir):
            - hey there!
 
        actions:
-         - utter_greet """)
+         - utter_greet """,
+    )
     Domain.load(domain_path)
 
 
-@pytest.mark.parametrize("domain_unkown_slot_type", [
-    """
+@pytest.mark.parametrize(
+    "domain_unkown_slot_type",
+    [
+        """
     slots:
         custom:
          type: tests.core.conftest.Unknown
@@ -159,7 +166,7 @@ def test_custom_slot_type(tmpdir):
 
     actions:
         - utter_greet""",
-    """
+        """
     slots:
         custom:
          type: blubblubblub
@@ -169,11 +176,13 @@ def test_custom_slot_type(tmpdir):
          - hey there!
 
     actions:
-        - utter_greet"""])
-def test_domain_fails_on_unknown_custom_slot_type(tmpdir,
-                                                  domain_unkown_slot_type):
-    domain_path = utilities.write_text_to_file(tmpdir, "domain.yml",
-                                               domain_unkown_slot_type)
+        - utter_greet""",
+    ],
+)
+def test_domain_fails_on_unknown_custom_slot_type(tmpdir, domain_unkown_slot_type):
+    domain_path = utilities.write_text_to_file(
+        tmpdir, "domain.yml", domain_unkown_slot_type
+    )
     with pytest.raises(ValueError):
         Domain.load(domain_path)
 
@@ -238,8 +247,7 @@ templates:
     assert domain.entities == ["cuisine"]
     assert isinstance(domain.slots[0], TextSlot)
     assert domain.slots[0].name == "cuisine"
-    assert sorted(domain.user_actions) == sorted(["utter_greet",
-                                                  "utter_goodbye"])
+    assert sorted(domain.user_actions) == sorted(["utter_greet", "utter_goodbye"])
 
     domain = domain_1.merge(domain_2, override=True)
     # single attribute should be taken from domain_2
@@ -248,18 +256,35 @@ templates:
     assert domain.templates == {"utter_greet": [{"text": "hey you!"}]}
 
 
-@pytest.mark.parametrize('intent_list, intent_properties', [
-    (['greet', 'goodbye'], {'greet': {'use_entities': True},
-                            'goodbye': {'use_entities': True}}),
-    ([{'greet': {'use_entities': False}}, 'goodbye'],
-     {'greet': {'use_entities': False},
-      'goodbye': {'use_entities': True}}),
-    ([{'greet': {'maps_to': 'utter_goodbye'}}, 'goodbye'],
-     {'greet': {'use_entities': True, 'maps_to': 'utter_goodbye'},
-      'goodbye': {'use_entities': True}}),
-    ([{'greet': {'maps_to': 'utter_goodbye', 'use_entities': False}},
-      {'goodbye': {'use_entities': False}}],
-     {'greet': {'use_entities': False, 'maps_to': 'utter_goodbye'},
-      'goodbye': {'use_entities': False}})])
+@pytest.mark.parametrize(
+    "intent_list, intent_properties",
+    [
+        (
+            ["greet", "goodbye"],
+            {"greet": {"use_entities": True}, "goodbye": {"use_entities": True}},
+        ),
+        (
+            [{"greet": {"use_entities": False}}, "goodbye"],
+            {"greet": {"use_entities": False}, "goodbye": {"use_entities": True}},
+        ),
+        (
+            [{"greet": {"maps_to": "utter_goodbye"}}, "goodbye"],
+            {
+                "greet": {"use_entities": True, "maps_to": "utter_goodbye"},
+                "goodbye": {"use_entities": True},
+            },
+        ),
+        (
+            [
+                {"greet": {"maps_to": "utter_goodbye", "use_entities": False}},
+                {"goodbye": {"use_entities": False}},
+            ],
+            {
+                "greet": {"use_entities": False, "maps_to": "utter_goodbye"},
+                "goodbye": {"use_entities": False},
+            },
+        ),
+    ],
+)
 def test_collect_intent_properties(intent_list, intent_properties):
     assert Domain.collect_intent_properties(intent_list) == intent_properties

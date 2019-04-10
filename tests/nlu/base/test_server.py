@@ -45,8 +45,9 @@ def app(tmpdir_factory, trained_nlu_model):
 
 @pytest.fixture
 def rasa_default_train_data():
-    with io.open('data/examples/rasa/demo-rasa.json',
-                 encoding='utf-8-sig') as train_file:
+    with io.open(
+        "data/examples/rasa/demo-rasa.json", encoding="utf-8-sig"
+    ) as train_file:
         return json.loads(train_file.read())
 
 
@@ -153,14 +154,13 @@ def test_get_parse(app, response_test):
 ])
 @pytest.inlineCallbacks
 def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint,
-                              json=response_test.payload)
+    response = yield app.post(response_test.endpoint, json=response_test.payload)
     rjs = yield response.json()
     assert response.code == 200
     assert rjs == response_test.expected_response
-    assert all(prop in rjs for prop in
-               ['project', 'entities', 'intent',
-                'text', 'model'])
+    assert all(
+        prop in rjs for prop in ["project", "entities", "intent", "text", "model"]
+    )
 
 
 @utilities.slowtest
@@ -180,10 +180,12 @@ def test_post_train(app, rasa_default_train_data):
 @pytest.inlineCallbacks
 def test_post_train_success(app, rasa_default_train_data):
     import zipfile
+
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
 
-    response = app.post("http://dummy-uri/train?project=test&model=test",
-                        json=model_config)
+    response = app.post(
+        "http://dummy-uri/train?project=test&model=test", json=model_config
+    )
     time.sleep(3)
     app.flush()
     response = yield response
@@ -195,8 +197,10 @@ def test_post_train_success(app, rasa_default_train_data):
 @utilities.slowtest
 @pytest.inlineCallbacks
 def test_post_train_internal_error(app, rasa_default_train_data):
-    response = app.post("http://dummy-uri/train?project=test",
-                        json={"data": "dummy_data_for_triggering_an_error"})
+    response = app.post(
+        "http://dummy-uri/train?project=test",
+        json={"data": "dummy_data_for_triggering_an_error"},
+    )
     time.sleep(3)
     app.flush()
     response = yield response
@@ -212,19 +216,22 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     assert response.code == 404, "Project should not exist yet"
     train_u = "http://dummy-uri/train?project=my_keyword_model"
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
-    model_str = yaml.safe_dump(model_config, default_flow_style=False,
-                               allow_unicode=True)
-    response = app.post(train_u,
-                        headers={b"Content-Type": b"application/x-yml"},
-                        data=model_str)
+    model_str = yaml.safe_dump(
+        model_config, default_flow_style=False, allow_unicode=True
+    )
+    response = app.post(
+        train_u, headers={b"Content-Type": b"application/x-yml"}, data=model_str
+    )
     time.sleep(3)
     app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
 
-    response = app.post(train_u,
-                        headers={b"Content-Type": b"application/json"},
-                        data=json.dumps(model_config))
+    response = app.post(
+        train_u,
+        headers={b"Content-Type": b"application/json"},
+        data=json.dumps(model_config),
+    )
     time.sleep(3)
     app.flush()
     response = yield response
@@ -237,9 +244,11 @@ def test_model_hot_reloading(app, rasa_default_train_data):
 
 @pytest.inlineCallbacks
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
-    response = app.post("http://dummy-uri/evaluate",
-                        json=rasa_default_train_data,
-                        params={"project": "project123"})
+    response = app.post(
+        "http://dummy-uri/evaluate",
+        json=rasa_default_train_data,
+        params={"project": "project123"},
+    )
     time.sleep(3)
     app.flush()
     response = yield response

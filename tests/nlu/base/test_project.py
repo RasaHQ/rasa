@@ -8,7 +8,7 @@ from rasa.utils.endpoints import EndpointConfig
 
 
 def test_dynamic_load_model_with_exists_model():
-    MODEL_NAME = 'model_name'
+    MODEL_NAME = "model_name"
 
     def mocked_init(*args, **kwargs):
         return None
@@ -26,7 +26,7 @@ def test_dynamic_load_model_with_exists_model():
 
 
 def test_dynamic_load_model_with_refresh_exists_model():
-    MODEL_NAME = 'model_name'
+    MODEL_NAME = "model_name"
 
     def mocked_init(*args, **kwargs):
         return None
@@ -35,8 +35,7 @@ def test_dynamic_load_model_with_refresh_exists_model():
         self._models = (MODEL_NAME,)
 
     with mock.patch.object(Project, "__init__", mocked_init):
-        with mock.patch.object(Project, '_search_for_models',
-                               mocked_search_for_models):
+        with mock.patch.object(Project, "_search_for_models", mocked_search_for_models):
             project = Project()
 
             project._models = ()
@@ -49,7 +48,7 @@ def test_dynamic_load_model_with_refresh_exists_model():
 
 
 def test_dynamic_load_model_with_refresh_not_exists_model():
-    LATEST_MODEL_NAME = 'latest_model_name'
+    LATEST_MODEL_NAME = "latest_model_name"
 
     def mocked_init(*args, **kwargs):
         return None
@@ -61,23 +60,23 @@ def test_dynamic_load_model_with_refresh_not_exists_model():
         return LATEST_MODEL_NAME
 
     with mock.patch.object(Project, "__init__", mocked_init):
-        with mock.patch.object(Project, "_search_for_models",
-                               mocked_search_for_models):
-            with mock.patch.object(Project, "_latest_project_model",
-                                   mocked_latest_project_model):
+        with mock.patch.object(Project, "_search_for_models", mocked_search_for_models):
+            with mock.patch.object(
+                Project, "_latest_project_model", mocked_latest_project_model
+            ):
                 project = Project()
 
                 project._models = ()
 
                 project.pull_models = None
 
-                result = project._dynamic_load_model('model_name')
+                result = project._dynamic_load_model("model_name")
 
                 assert result == LATEST_MODEL_NAME
 
 
 def test_dynamic_load_model_with_model_is_none():
-    LATEST_MODEL_NAME = 'latest_model_name'
+    LATEST_MODEL_NAME = "latest_model_name"
 
     def mocked_init(*args, **kwargs):
         return None
@@ -89,10 +88,10 @@ def test_dynamic_load_model_with_model_is_none():
         return LATEST_MODEL_NAME
 
     with mock.patch.object(Project, "__init__", mocked_init):
-        with mock.patch.object(Project, "_search_for_models",
-                               mocked_search_for_models):
-            with mock.patch.object(Project, "_latest_project_model",
-                                   mocked_latest_project_model):
+        with mock.patch.object(Project, "_search_for_models", mocked_search_for_models):
+            with mock.patch.object(
+                Project, "_latest_project_model", mocked_latest_project_model
+            ):
                 project = Project()
 
                 project._models = ()
