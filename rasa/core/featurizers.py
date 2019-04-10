@@ -6,6 +6,7 @@ import os
 from tqdm import tqdm
 from typing import Tuple, List, Optional, Dict, Text, Any
 
+import rasa.utils.io
 from rasa.core import utils
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.domain import PREV_PREFIX, Domain
@@ -411,7 +412,7 @@ class TrackerFeaturizer(object):
     def load(path):
         featurizer_file = os.path.join(path, "featurizer.json")
         if os.path.isfile(featurizer_file):
-            return jsonpickle.decode(utils.read_file(featurizer_file))
+            return jsonpickle.decode(rasa.utils.io.read_file(featurizer_file))
         else:
             logger.error("Couldn't load featurizer for policy. "
                          "File '{}' doesn't exist.".format(featurizer_file))
@@ -531,8 +532,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
     @staticmethod
     def slice_state_history(
-        states: List[Dict[Text, float]],
-        slice_length: int
+            states: List[Dict[Text, float]],
+            slice_length: int
     ) -> List[Optional[Dict[Text, float]]]:
         """Slices states from the trackers history.
 

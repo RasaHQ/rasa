@@ -28,9 +28,15 @@ def run(model: Text, endpoints: Text, connector: Text = None,
 
     """
     import rasa.core.run
+    import rasa.nlu.run
     from rasa.core.utils import AvailableEndpoints
 
     model_path = get_model(model)
+    if not model_path:
+        logger.error("No model found. Train a model before running the "
+                     "server using `rasa train`.")
+        return
+
     core_path, nlu_path = get_model_subdirectories(model_path)
     _endpoints = AvailableEndpoints.read_endpoints(endpoints)
 
@@ -42,13 +48,19 @@ def run(model: Text, endpoints: Text, connector: Text = None,
     else:
         channel = connector
 
-    kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
-    rasa.core.run.serve_application(core_path,
-                                    nlu_path,
-                                    channel=channel,
-                                    credentials_file=credentials,
-                                    endpoints=_endpoints,
-                                    **kwargs)
+    if os.path.exists(core_path):
+        kwargs = minimal_kwargs(kwargs, rasa.core.run.serve_application)
+        rasa.core.run.serve_application(core_path,
+                                        nlu_path,
+                                        channel=channel,
+                                        credentials_file=credentials,
+                                        endpoints=_endpoints,
+                                        **kwargs)
+
+    # TODO: No core model was found, run only nlu server for now
+    elif os.path.exists(nlu_path):
+        rasa.nlu.run.run_cmdline(nlu_path)
+
     shutil.rmtree(model_path)
 
 

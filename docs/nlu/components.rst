@@ -706,5 +706,9 @@ DucklingHTTPExtractor
           # needed to calculate dates from relative expressions like "tomorrow"
           timezone: "Europe/Berlin"
 
+    In addition to setting the default ``url`` of your duckling server in the
+    configuration, you can also change the url of your duckling server (without
+    needing to re-train your model) by setting the ``RASA_DUCKLING_HTTP_URL``
+    environment variable.
 
 .. include:: feedback.inc

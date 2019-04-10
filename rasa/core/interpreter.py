@@ -8,8 +8,8 @@ import os
 from typing import Text, List, Dict, Any
 
 from rasa.core import constants
-from rasa.core.utils import EndpointConfig
 from rasa.core.constants import INTENT_MESSAGE_PREFIX
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,12 @@ class NaturalLanguageInterpreter(object):
                                "from '{}', which is not possible."
                                "Using RegexInterpreter instead."
                                "".format(obj))
+            return RegexInterpreter()  # default interpreter
+
+        if not os.path.exists(obj):
+            logger.warning("No NLU model found."
+                           "Using RegexInterpreter instead."
+                           "".format(obj))
             return RegexInterpreter()  # default interpreter
 
         if not endpoint:

@@ -8,7 +8,8 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.model import Interpreter, Trainer
 from rasa.nlu.training_data import load_data
 from rasa.nlu.training_data.loading import load_data_from_endpoint
-from rasa.nlu.utils import EndpointConfig, read_endpoints
+from rasa.nlu.utils import read_endpoints
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -154,21 +155,6 @@ def train(nlu_config: Union[Text, RasaNLUModelConfig],
 
 
 if __name__ == '__main__':
-    cmdline_args = create_argument_parser().parse_args()
-
-    utils.configure_colored_logging(cmdline_args.loglevel)
-
-    if cmdline_args.url:
-        data_endpoint = EndpointConfig(cmdline_args.url)
-    else:
-        data_endpoint = read_endpoints(cmdline_args.endpoints).data
-
-    train(cmdline_args.config,
-          cmdline_args.data,
-          cmdline_args.path,
-          cmdline_args.project,
-          cmdline_args.fixed_model_name,
-          cmdline_args.storage,
-          training_data_endpoint=data_endpoint,
-          num_threads=cmdline_args.num_threads)
-    logger.info("Finished training")
+    raise RuntimeError("Calling `rasa.nlu.train` directly is "
+                       "no longer supported. "
+                       "Please use `rasa train nlu` instead.")

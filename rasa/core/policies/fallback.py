@@ -5,6 +5,8 @@ from typing import Any, List, Text
 
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 
+import rasa.utils.io
+
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.policies.policy import Policy
@@ -138,6 +140,6 @@ class FallbackPolicy(Policy):
         if os.path.exists(path):
             meta_path = os.path.join(path, "fallback_policy.json")
             if os.path.isfile(meta_path):
-                meta = json.loads(utils.read_file(meta_path))
+                meta = json.loads(rasa.utils.io.read_file(meta_path))
 
         return cls(**meta)
