@@ -105,13 +105,19 @@ def run_nlu(args: argparse.Namespace):
     args.model = get_validated_path(args.path, "path", DEFAULT_MODELS_PATH)
 
     model_archive = get_latest_model(args.model)
-    working_directory = tempfile.mkdtemp()
-    unpacked_model = model.unpack_model(model_archive, working_directory)
-    args.path = os.path.dirname(unpacked_model)
+    unpacked_model = None
+
+    if model_archive is None:
+        logger.debug("No local model file in '{}' found.".format(args.model))
+    else:
+        working_directory = tempfile.mkdtemp()
+        unpacked_model = model.unpack_model(model_archive, working_directory)
+        args.path = os.path.dirname(unpacked_model)
 
     rasa.nlu.server.main(args)
 
-    shutil.rmtree(unpacked_model)
+    if unpacked_model is not None:
+        shutil.rmtree(unpacked_model)
 
 
 def run_actions(args: argparse.Namespace):
