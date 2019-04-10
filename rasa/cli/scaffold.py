@@ -29,13 +29,14 @@ def print_train_or_instructions(args: argparse.Namespace,
                                 path: Text) -> None:
     import questionary
 
-    print_success("Your bot is ready to go!")
+    print_success("Finished creating project structure.")
 
     if not args.no_prompt:
         should_train = questionary.confirm(
             "Do you want me to train an initial "
             "model for the bot? 💪🏽").ask()
     else:
+        print_success("Training an initial model...")
         should_train = True
 
     if should_train:
