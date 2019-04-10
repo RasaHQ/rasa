@@ -1,6 +1,4 @@
 import asyncio
-import multiprocessing
-from asyncio import Task
 
 import datetime
 import logging
@@ -8,10 +6,6 @@ import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Dict, List, Optional, Text
-
-from twisted.internet import reactor
-from twisted.internet.defer import Deferred
-from twisted.logger import Logger, jsonFileLogObserver
 
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder

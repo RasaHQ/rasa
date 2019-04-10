@@ -14,15 +14,13 @@ import rasa
 import rasa.utils.io
 import rasa.utils.common
 import rasa.utils.endpoints
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxTrainingError
-from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxTrainingError
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
-from rasa.nlu.utils import read_endpoints, json_to_string
+from rasa.nlu.utils import read_endpoints
 
 logger = logging.getLogger(__name__)
 
