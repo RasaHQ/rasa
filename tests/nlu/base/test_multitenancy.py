@@ -68,22 +68,6 @@ def test_get_parse(app, response_test):
     "response_test",
     [
         ResponseTest(
-            "/parse?q=food&model=default",
-            {"error": "Model with name 'default' is not loaded."},
-        )
-    ],
-)
-def test_get_parse_invalid_model(app, response_test):
-    _, response = app.get(response_test.endpoint)
-    rjs = response.json
-    assert response.status == 404
-    assert rjs.get("error").startswith(response_test.expected_response["error"])
-
-
-@pytest.mark.parametrize(
-    "response_test",
-    [
-        ResponseTest(
             "/parse",
             {"entities": [], "intent": "affirm", "text": "food"},
             payload={"q": "food", "project": "test_project_mitie"},
@@ -125,23 +109,6 @@ def test_post_parse_specific_model(app):
     _, status = app.get("/status")
     sjs = status.json
     assert model == sjs["loaded_model"]
-
-
-@pytest.mark.parametrize(
-    "response_test",
-    [
-        ResponseTest(
-            "/parse",
-            {"error": "Model with name 'default' is not loaded."},
-            payload={"q": "food", "model": "default"},
-        )
-    ],
-)
-def test_post_parse_invalid_model(app, response_test):
-    _, response = app.post(response_test.endpoint, json=response_test.payload)
-    rjs = response.json
-    assert response.status == 404
-    assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
 def train_models(component_builder, data_path):

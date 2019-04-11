@@ -204,8 +204,12 @@ class NLUModel(object):
         if self.interpreter is None:
             return False
 
-        if model_name is not None and self.name != model_name:
-            return False
+        if model_name is not None:
+            given_name = model_name.replace(".tar.gz", "")
+            set_name = self.name.replace(".tar.gz", "")
+
+            if given_name != set_name:
+                return False
 
         return True
 

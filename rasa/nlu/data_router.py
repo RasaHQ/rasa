@@ -69,7 +69,7 @@ class DataRouter(object):
         loop = asyncio.get_event_loop()
         if loop.is_closed():
             loop = asyncio.new_event_loop()
-        loop.run_until_complete(self._load_model(self.model_dir))
+        loop.run_until_complete(self.load_model(self.model_dir))
         loop.close()
 
         # tensorflow sessions are not fork-safe,
@@ -116,7 +116,7 @@ class DataRouter(object):
             )
             return None
 
-    async def _load_model(self, model_dir: Text):
+    async def load_model(self, model_dir: Text):
         if model_dir is None:
             logger.info("Could not load any model. Use fallback model.")
             self.nlu_model = NLUModel.fallback_model(self.component_builder)
@@ -136,6 +136,8 @@ class DataRouter(object):
             self.nlu_model = NLUModel.load_from_remote_storage(
                 self.remote_storage, self.component_builder, model_dir
             )
+
+        logger.debug("Loaded model '{}'".format(self.nlu_model.name))
 
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)
@@ -197,8 +199,6 @@ class DataRouter(object):
 
         try:
             return await task
-        except Exception as e:
-            logger.warning(e)
         finally:
             self._current_training_processes -= 1
 
@@ -220,10 +220,6 @@ class DataRouter(object):
             raise InvalidModelError("Model with name '{}' is not loaded.".format(model))
 
         self.nlu_model.unload()
-
-    def load_model(self):
-        # TODO
-        pass
 
     @staticmethod
     def _create_emulator(mode: Optional[Text]) -> NoEmulator:

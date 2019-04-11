@@ -209,7 +209,7 @@ def test_post_parse(app, response_test):
             },
         ),
         ResponseTest(
-            "/parse?q=&model=",
+            "/parse?q=&model=abc",
             {
                 "entities": [],
                 "model": "fallback",
@@ -303,12 +303,11 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     rjs = response.json
     assert rjs["model"] == "fallback"
 
-    train_u = "/train"
+    train_u = "/train?model=test-model"
     request = {
         "language": "en",
         "pipeline": "pretrained_embeddings_spacy",
         "data": rasa_default_train_data,
-        "model": "test-model",
     }
     model_str = yaml.safe_dump(request, default_flow_style=False, allow_unicode=True)
     _, response = app.post(
@@ -321,12 +320,10 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     )
     assert response.status == 200, "Training should end successfully"
 
-    # TODO Change model
-
     _, response = app.get("/parse?q=hello&model=test-model")
     assert response.status == 200
     rjs = response.json
-    assert rjs["model"] == "test-model"
+    assert "test-model" in rjs["model"]
 
 
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):

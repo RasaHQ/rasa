@@ -220,7 +220,6 @@ def create_app(
     @requires_auth(app, token)
     async def version(request):
         """Returns the Rasa server's version"""
-
         return response.json(
             {
                 "version": rasa.__version__,
@@ -269,6 +268,11 @@ def create_app(
     @app.post("/train")
     @requires_auth(app, token)
     async def train(request):
+        """
+        Trains a new NLU model and sets the currently loaded model to the new trained
+        model.
+        """
+
         # if set will not generate a model name but use the passed one
         model_name = request.raw_args.get("model", None)
 
@@ -286,17 +290,16 @@ def create_app(
             )
 
             # store trained model as tar.gz file
+            output_path = await create_model_path(model_name, path_to_model)
+
             nlu_data = data.get_nlu_directory(data_file)
-            parent_dir = os.path.abspath(os.path.join(path_to_model, os.pardir))
-            output_path = create_output_path(parent_dir, prefix="nlu-")
             new_fingerprint = model.model_fingerprint(config_file, nlu_data=nlu_data)
             model.create_package_rasa(path_to_model, output_path, new_fingerprint)
             logger.info(
                 "Your Rasa NLU model is trained and saved at '{}'.".format(output_path)
             )
 
-            if not os.path.exists(output_path):
-                logger.error("FILE DOES NOT EXISTS")
+            await data_router.load_model(output_path)
 
             return await response.file(output_path)
         except MaxTrainingError as e:
@@ -305,6 +308,13 @@ def create_app(
             return response.json({"error": "{}".format(e)}, status=404)
         except TrainingException as e:
             return response.json({"error": "{}".format(e)}, status=500)
+
+    async def create_model_path(model_name, path_to_model):
+        parent_dir = os.path.abspath(os.path.join(path_to_model, os.pardir))
+        if model_name is not None:
+            parent_dir = os.path.join(parent_dir, model_name + ".tar.gz")
+        output_path = create_output_path(parent_dir, prefix="nlu-")
+        return output_path
 
     @app.post("/evaluate")
     @requires_auth(app, token)
@@ -322,6 +332,16 @@ def create_app(
     async def unload_model(request):
         try:
             data_router.unload_model(request.raw_args.get("model"))
+            return response.json(None, status=204)
+        except Exception as e:
+            logger.exception(e)
+            return response.json({"error": "{}".format(e)}, status=500)
+
+    @app.put("/models")
+    @requires_auth(app, token)
+    async def unload_model(request):
+        try:
+            await data_router.load_model(request.raw_args.get("model"))
             return response.json(None, status=204)
         except Exception as e:
             logger.exception(e)
