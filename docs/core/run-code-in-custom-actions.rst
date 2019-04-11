@@ -2,6 +2,7 @@
        Stack to integrate your contextual Assistant in your processes and databases. 
 
 .. _actions:
+
 Actions
 =======
 
