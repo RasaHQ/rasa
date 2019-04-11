@@ -133,7 +133,7 @@ class DataRouter(object):
 
     def _collect_projects(self, project_dir: Text) -> List[Text]:
         if project_dir and os.path.isdir(project_dir):
-            logger.debug("Listing projects in '{}'".format(project_dir))
+            logger.debug("Listing projects in '{}'.".format(project_dir))
             projects = os.listdir(project_dir)
         else:
             projects = []
@@ -297,7 +297,7 @@ class DataRouter(object):
         project: Text,
         train_config: RasaNLUModelConfig,
         model_name: Optional[Text] = None,
-    ):
+    ) -> Text:
         """Start a model training."""
 
         if not project:
@@ -356,7 +356,6 @@ class DataRouter(object):
     async def evaluate(
         self, data: Text, project: Optional[Text] = None, model: Optional[Text] = None
     ) -> Dict[Text, Any]:
-
         """Perform a model evaluation."""
 
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME

@@ -7,7 +7,7 @@ from inspect import isawaitable
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
-from typing import Any, Callable, Optional, Text
+from typing import Any, Callable, Optional, Text, Dict
 import simplejson
 
 import rasa
@@ -26,7 +26,14 @@ logger = logging.getLogger(__name__)
 
 
 class ErrorResponse(Exception):
-    def __init__(self, status, reason, message, details=None, help_url=None):
+    def __init__(
+        self,
+        status: int,
+        reason: Text,
+        message: Text,
+        details: Dict = None,
+        help_url: Text = None,
+    ):
         self.error_info = {
             "version": rasa.__version__,
             "status": "failure",
@@ -85,7 +92,6 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
         @wraps(f)
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
-
             provided = rasa.utils.endpoints.default_arg(request, "token", None)
             # noinspection PyProtectedMember
             if token is not None and provided == token:
@@ -139,7 +145,7 @@ def _configure_logging(loglevel, logfile):
     logging.captureWarnings(True)
 
 
-def _load_default_config(path):
+def _load_default_config(path: Text) -> Dict:
     if path:
         return config.load(path).as_dict()
     else:
@@ -153,15 +159,14 @@ async def configure_logging():
 
 
 def create_app(
-    data_router,
-    loglevel="INFO",
-    logfile=None,
-    token=None,
-    cors_origins=None,
-    default_config_path=None,
+    data_router: DataRouter,
+    loglevel: Text = "INFO",
+    logfile: Text = None,
+    token: Text = None,
+    cors_origins: Text = None,
+    default_config_path: Text = None,
 ):
-    """Class representing Rasa NLU http server"""
-
+    """Class representing Rasa NLU http server."""
     app = Sanic(__name__)
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
@@ -173,8 +178,8 @@ def create_app(
 
     @app.get("/")
     async def hello(request):
-        """Main Rasa route to check if the server is online"""
-        return response.text("hello from Rasa NLU: " + rasa.__version__)
+        """Main Rasa route to check if the server is online."""
+        return response.text("Hello from Rasa NLU: " + rasa.__version__)
 
     async def parse_response(request_params):
         data = data_router.extract(request_params)
@@ -189,12 +194,11 @@ def create_app(
     @app.get("/parse")
     @requires_auth(app, token)
     async def parse(request):
-        request_params = request.raw_args
+        request_params = request.args
 
-        if "query" in request_params:
-            request_params["q"] = request_params.pop("query")
         if "q" not in request_params:
-            request_params["q"] = ""
+            request_params["q"] = request_params.pop("query", "")
+
         return await parse_response(request_params)
 
     @app.post("/parse")
@@ -266,9 +270,9 @@ def create_app(
     @requires_auth(app, token)
     async def train(request):
         # if not set will use the default project name, e.g. "default"
-        project = request.raw_args.get("project", None)
+        project = request.args.get("project", None)
         # if set will not generate a model name but use the passed one
-        model_name = request.raw_args.get("model", None)
+        model_name = request.args.get("model", None)
 
         try:
             model_config, data = extract_data_and_config(request)
@@ -298,9 +302,7 @@ def create_app(
 
         try:
             payload = await data_router.evaluate(
-                data_string,
-                request.raw_args.get("project"),
-                request.raw_args.get("model"),
+                data_string, request.args.get("project"), request.args.get("model")
             )
             return response.json(payload)
         except Exception as e:
@@ -311,10 +313,8 @@ def create_app(
     async def unload_model(request):
         try:
             payload = await data_router.unload_model(
-                request.raw_args.get(
-                    "project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-                ),
-                request.raw_args.get("model"),
+                request.args.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
+                request.args.get("model"),
             )
             return response.json(payload)
         except Exception as e:

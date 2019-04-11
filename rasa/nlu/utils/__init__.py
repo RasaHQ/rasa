@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, List, Optional, Text, Type
 
 import simplejson
 
-
 import rasa.utils.io
 
 from rasa.utils.endpoints import read_endpoint_config

@@ -1,6 +1,5 @@
 ## Setup py requirements
 cloudpickle==0.6.1
-klein==17.10.0
 boto3==1.5.20
 typing==3.6.6
 requests==2.20.0
