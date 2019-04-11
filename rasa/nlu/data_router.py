@@ -39,7 +39,7 @@ DEFERRED_RUN_IN_REACTOR_THREAD = True
 
 class MaxWorkerProcessError(Exception):
     """Raised when training or evaluation is requested and the server has
-        reached the max count of pool processes.
+        reached the max count of worker processes.
 
     Attributes:
         message -- explanation of why the request is invalid

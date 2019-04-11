@@ -15,7 +15,7 @@ Added
 Changed
 -------
 - changed removing punctuation logic in ``WhitespaceTokenizer``
-- ``training_processes`` in the Rasa NLU data router have been renamed to ``pool_processes``
+- ``training_processes`` in the Rasa NLU data router have been renamed to ``worker_processes``
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 
 Removed
