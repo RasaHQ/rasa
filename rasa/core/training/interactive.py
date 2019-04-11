@@ -187,7 +187,8 @@ async def send_action(
                     "but the new utterance will be saved to your domain file "
                     "when you exit and save this session. "
                     "You do not need to do anything further. "
-                    "".format(action_name, [*NEW_TEMPLATES[action_name]][0]))
+                    "".format(action_name, [*NEW_TEMPLATES[action_name]][0])
+                )
 
                 await _ask_questions(warning_questions, sender_id, endpoint)
                 payload = ActionExecuted(action_name).as_dict()
@@ -201,7 +202,8 @@ async def send_action(
                     "If this is a custom action which returns events, "
                     "you are recommended to implement this action "
                     "in your action server and try again."
-                    "".format(action_name))
+                    "".format(action_name)
+                )
                 await _ask_questions(warning_questions, sender_id, endpoint)
 
             payload = ActionExecuted(action_name).as_dict()
@@ -345,12 +347,11 @@ async def _request_free_text_action(sender_id: Text, endpoint: EndpointConfig) -
 
 
 async def _request_free_text_utterance(
-    sender_id: Text,
-    endpoint: EndpointConfig,
-    action: Text
+    sender_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
-    question = questionary.text("Please type the message for your "
-                                "new action {}".format(action))
+    question = questionary.text(
+        "Please type the message for your " "new action {}".format(action)
+    )
     return await _ask_questions(question, sender_id, endpoint)
 
 
@@ -615,8 +616,11 @@ async def _request_action_from_user(
     session_actions_all = [a["name"] for a in _collect_actions(evts)]
     session_actions_unique = list(set(session_actions_all))
     old_actions = [action["value"] for action in choices]
-    new_actions = [{"name": action, "value": OTHER_ACTION + action} for action
-                   in session_actions_unique if action not in old_actions]
+    new_actions = [
+        {"name": action, "value": OTHER_ACTION + action}
+        for action in session_actions_unique
+        if action not in old_actions
+    ]
     choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
     question = questionary.select("What is the next action of the bot?", choices)
 
@@ -628,7 +632,8 @@ async def _request_action_from_user(
         action_name = await _request_free_text_action(sender_id, endpoint)
         if "utter_" in action_name:
             utter_message = await _request_free_text_utterance(
-                sender_id, endpoint, action_name)
+                sender_id, endpoint, action_name
+            )
             NEW_TEMPLATES[action_name] = {utter_message: utter_message}
 
     elif action_name[:32] == OTHER_ACTION:
@@ -636,7 +641,7 @@ async def _request_action_from_user(
         is_new_action = True
         action_name = action_name[32:]
 
-    print("Thanks! The bot will now run {}.\n".format(action_name))
+    print ("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name, is_new_action
 
 
