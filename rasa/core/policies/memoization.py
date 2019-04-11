@@ -7,11 +7,12 @@ import os
 from tqdm import tqdm
 from typing import Optional, Any, Dict, List, Text
 
+import rasa.utils.io
+
 from rasa.core import utils
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
-from rasa.core.featurizers import (
-    TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
+from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 
@@ -49,16 +50,19 @@ class MemoizationPolicy(Policy):
     def _standard_featurizer(max_history=None):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
-        return MaxHistoryTrackerFeaturizer(state_featurizer=None,
-                                           max_history=max_history,
-                                           use_intent_probabilities=False)
+        return MaxHistoryTrackerFeaturizer(
+            state_featurizer=None,
+            max_history=max_history,
+            use_intent_probabilities=False,
+        )
 
-    def __init__(self,
-                 featurizer: Optional[TrackerFeaturizer] = None,
-                 priority: int = 2,
-                 max_history: Optional[int] = None,
-                 lookup: Optional[Dict] = None
-                 ) -> None:
+    def __init__(
+        self,
+        featurizer: Optional[TrackerFeaturizer] = None,
+        priority: int = 2,
+        max_history: Optional[int] = None,
+        lookup: Optional[Dict] = None,
+    ) -> None:
 
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
@@ -72,24 +76,30 @@ class MemoizationPolicy(Policy):
     def toggle(self, activate: bool) -> None:
         self.is_enabled = activate
 
-    def _add_states_to_lookup(self, trackers_as_states, trackers_as_actions,
-                              domain, online=False):
+    def _add_states_to_lookup(
+        self, trackers_as_states, trackers_as_actions, domain, online=False
+    ):
         """Add states to lookup dict"""
         if not trackers_as_states:
             return
 
-        assert len(trackers_as_states[0]) == self.max_history, \
-            ("Trying to mem featurized data with {} historic turns. Expected: "
-             "{}".format(len(trackers_as_states[0]), self.max_history))
+        assert len(trackers_as_states[0]) == self.max_history, (
+            "Trying to mem featurized data with {} historic turns. Expected: "
+            "{}".format(len(trackers_as_states[0]), self.max_history)
+        )
 
-        assert len(trackers_as_actions[0]) == 1, \
-            ("The second dimension of trackers_as_action should be 1, "
-             "instead of {}".format(len(trackers_as_actions[0])))
+        assert len(trackers_as_actions[0]) == 1, (
+            "The second dimension of trackers_as_action should be 1, "
+            "instead of {}".format(len(trackers_as_actions[0]))
+        )
 
         ambiguous_feature_keys = set()
 
-        pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
-                    desc="Processed actions", disable=online)
+        pbar = tqdm(
+            zip(trackers_as_states, trackers_as_actions),
+            desc="Processed actions",
+            disable=online,
+        )
         for states, actions in pbar:
             action = actions[0]
 
@@ -100,13 +110,15 @@ class MemoizationPolicy(Policy):
                 if feature_key in self.lookup.keys():
                     if self.lookup[feature_key] != feature_item:
                         if online:
-                            logger.info("Original stories are "
-                                        "different for {} -- {}\n"
-                                        "Memorized the new ones for "
-                                        "now. Delete contradicting "
-                                        "examples after exporting "
-                                        "the new stories."
-                                        "".format(states, action))
+                            logger.info(
+                                "Original stories are "
+                                "different for {} -- {}\n"
+                                "Memorized the new ones for "
+                                "now. Delete contradicting "
+                                "examples after exporting "
+                                "the new stories."
+                                "".format(states, action)
+                            )
                             self.lookup[feature_key] = feature_item
                         else:
                             # delete contradicting example created by
@@ -115,65 +127,69 @@ class MemoizationPolicy(Policy):
                             del self.lookup[feature_key]
                 else:
                     self.lookup[feature_key] = feature_item
-            pbar.set_postfix({"# examples": "{:d}".format(
-                len(self.lookup))})
+            pbar.set_postfix({"# examples": "{:d}".format(len(self.lookup))})
 
     def _create_feature_key(self, states):
-        feature_str = json.dumps(states, sort_keys=True).replace("\"", "")
+        feature_str = json.dumps(states, sort_keys=True).replace('"', "")
         if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(bytes(feature_str, "utf-8"))
             return base64.b64encode(compressed).decode("utf-8")
         else:
             return feature_str
 
-    def train(self,
-              training_trackers: List[DialogueStateTracker],
-              domain: Domain,
-              **kwargs: Any
-              ) -> None:
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
         """Trains the policy on given training trackers."""
         self.lookup = {}
         # only considers original trackers (no augmented ones)
         training_trackers = [
             t
             for t in training_trackers
-            if not hasattr(t, 'is_augmented') or not t.is_augmented
+            if not hasattr(t, "is_augmented") or not t.is_augmented
         ]
-        (trackers_as_states,
-         trackers_as_actions) = self.featurizer.training_states_and_actions(
-            training_trackers, domain)
-        self._add_states_to_lookup(trackers_as_states, trackers_as_actions,
-                                   domain)
-        logger.debug("Memorized {} unique examples."
-                     "".format(len(self.lookup)))
+        (
+            trackers_as_states,
+            trackers_as_actions,
+        ) = self.featurizer.training_states_and_actions(training_trackers, domain)
+        self._add_states_to_lookup(trackers_as_states, trackers_as_actions, domain)
+        logger.debug("Memorized {} unique examples.".format(len(self.lookup)))
 
-    def continue_training(self,
-                          training_trackers: List[DialogueStateTracker],
-                          domain: Domain,
-                          **kwargs: Any) -> None:
+    def continue_training(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
 
         # add only the last tracker, because it is the only new one
-        (trackers_as_states,
-         trackers_as_actions) = self.featurizer.training_states_and_actions(
-            training_trackers[-1:], domain)
-        self._add_states_to_lookup(trackers_as_states, trackers_as_actions,
-                                   domain, online=True)
+        (
+            trackers_as_states,
+            trackers_as_actions,
+        ) = self.featurizer.training_states_and_actions(training_trackers[-1:], domain)
+        self._add_states_to_lookup(
+            trackers_as_states, trackers_as_actions, domain, online=True
+        )
 
     def _recall_states(self, states: List[Dict[Text, float]]) -> Optional[int]:
 
         return self.lookup.get(self._create_feature_key(states))
 
-    def recall(self,
-               states: List[Dict[Text, float]],
-               tracker: DialogueStateTracker,
-               domain: Domain
-               ) -> Optional[int]:
+    def recall(
+        self,
+        states: List[Dict[Text, float]],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+    ) -> Optional[int]:
 
         return self._recall_states(states)
 
-    def predict_action_probabilities(self,
-                                     tracker: DialogueStateTracker,
-                                     domain: Domain) -> List[float]:
+    def predict_action_probabilities(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> List[float]:
         """Predicts the next action the bot should take
             after seeing the tracker.
 
@@ -185,14 +201,12 @@ class MemoizationPolicy(Policy):
         if not self.is_enabled:
             return result
 
-        tracker_as_states = self.featurizer.prediction_states(
-            [tracker], domain)
+        tracker_as_states = self.featurizer.prediction_states([tracker], domain)
         states = tracker_as_states[0]
         logger.debug("Current tracker state {}".format(states))
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug("There is a memorised next action '{}'"
-                         "".format(recalled))
+            logger.debug("There is a memorised next action '{}'".format(recalled))
 
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
                 # the memoization will use the confidence of NLU on the latest
@@ -211,28 +225,31 @@ class MemoizationPolicy(Policy):
 
         self.featurizer.persist(path)
 
-        memorized_file = os.path.join(path, 'memorized_turns.json')
+        memorized_file = os.path.join(path, "memorized_turns.json")
         data = {
             "priority": self.priority,
             "max_history": self.max_history,
-            "lookup": self.lookup
+            "lookup": self.lookup,
         }
         utils.create_dir_for_file(memorized_file)
         utils.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
-    def load(cls, path: Text) -> 'MemoizationPolicy':
+    def load(cls, path: Text) -> "MemoizationPolicy":
 
         featurizer = TrackerFeaturizer.load(path)
-        memorized_file = os.path.join(path, 'memorized_turns.json')
+        memorized_file = os.path.join(path, "memorized_turns.json")
         if os.path.isfile(memorized_file):
-            data = json.loads(utils.read_file(memorized_file))
-            return cls(featurizer=featurizer, priority=data["priority"],
-                       lookup=data["lookup"])
+            data = json.loads(rasa.utils.io.read_file(memorized_file))
+            return cls(
+                featurizer=featurizer, priority=data["priority"], lookup=data["lookup"]
+            )
         else:
-            logger.info("Couldn't load memoization for policy. "
-                        "File '{}' doesn't exist. Falling back to empty "
-                        "turn memory.".format(memorized_file))
+            logger.info(
+                "Couldn't load memoization for policy. "
+                "File '{}' doesn't exist. Falling back to empty "
+                "turn memory.".format(memorized_file)
+            )
             return cls()
 
 
@@ -292,7 +309,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         mcfly_tracker = self._back_to_the_future_again(tracker)
         while mcfly_tracker is not None:
             tracker_as_states = self.featurizer.prediction_states(
-                [mcfly_tracker], domain)
+                [mcfly_tracker], domain
+            )
             states = tracker_as_states[0]
 
             if old_states != states:
@@ -310,11 +328,12 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         logger.debug("Current tracker state {}".format(old_states))
         return None
 
-    def recall(self,
-               states: List[Dict[Text, float]],
-               tracker: DialogueStateTracker,
-               domain: Domain
-               ) -> Optional[int]:
+    def recall(
+        self,
+        states: List[Dict[Text, float]],
+        tracker: DialogueStateTracker,
+        domain: Domain,
+    ) -> Optional[int]:
 
         recalled = self._recall_states(states)
         if recalled is None:
