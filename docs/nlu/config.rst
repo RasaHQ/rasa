@@ -111,11 +111,11 @@ There are a number of parameters you can pass when running the server.
 
 .. code-block:: console
 
-    $ python -m rasa.nlu.server
+    $ rasa run nlu
 
 Here is a quick overview:
 
-.. program-output:: python -m rasa.nlu.server --help
+.. program-output:: rasa run nlu --help
 
 
 .. _section_auth:

@@ -199,12 +199,12 @@ so these aren't in the example domain.
 The next step is to train a neural network on our example stories.
 To do this, run the command below. If you are running this on your machine,
 leave out the ``!`` at the start. This will train the dialogue model and store it
-into ``models/dialogue``.
+into ``models``.
 
 .. runnable::
    :description: core-train-core
 
-   !python3 -m rasa.core.train -d domain.yml -s stories.md -o models/dialogue
+   !rasa core train -d domain.yml -s stories.md -o models
 
    print("Finished training!")
 
@@ -225,7 +225,7 @@ If you are running these commands locally, run:
 
 .. code-block:: bash
 
-   python3 -m rasa.core.run -d models/dialogue
+   rasa run core -m models
 
 If you are running the cells here in the docs, run this cell:
 
@@ -358,12 +358,10 @@ Let's run
 .. runnable::
    :description: core-train-nlu
 
-   !python3 -m rasa.nlu.train -c nlu_config.yml --data nlu.md -o models --fixed_model_name nlu --project current --verbose
+   !rasa train nlu -c nlu_config.yml -o models --verbose
 
-
-to train our NLU model. A new directory ``models/current/nlu`` should have been
-created containing the NLU model. Note that ``current`` stands for project name,
-since this is specified in the train command.
+to train our NLU model. A new zip file in ``models`` should have been
+created containing the NLU model.
 
 .. note::
 
@@ -381,7 +379,7 @@ If you are running these commands locally, run:
 
 .. code-block:: bash
 
-   python3 -m rasa.core.run -d models/dialogue -u models/current/nlu
+   rasa run core -m models
 
 If you are running the cells here in the docs, run this cell:
 
@@ -461,8 +459,7 @@ After setting that up, we can now run the bot using:
 
 .. code-block:: bash
 
-   python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-      --port 5002--credentials credentials.yml
+   rasa run core -m models --port 5002--credentials credentials.yml
 
 and it will now handle messages users send to the Facebook page.
 

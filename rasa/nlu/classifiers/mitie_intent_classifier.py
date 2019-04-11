@@ -17,10 +17,9 @@ class MitieIntentClassifier(Component):
 
     requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
-    def __init__(self,
-                 component_config: Optional[Dict[Text, Any]] = None,
-                 clf=None
-                 ) -> None:
+    def __init__(
+        self, component_config: Optional[Dict[Text, Any]] = None, clf=None
+    ) -> None:
         """Construct a new intent classifier using the MITIE framework."""
 
         super(MitieIntentClassifier, self).__init__(component_config)
@@ -31,15 +30,18 @@ class MitieIntentClassifier(Component):
     def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
-    def train(self, training_data: TrainingData, cfg: RasaNLUModelConfig,
-              **kwargs: Any) -> None:
+    def train(
+        self, training_data: TrainingData, cfg: RasaNLUModelConfig, **kwargs: Any
+    ) -> None:
         import mitie
 
         model_file = kwargs.get("mitie_file")
         if not model_file:
-            raise Exception("Can not run MITIE entity extractor without a "
-                            "language model. Make sure this component is "
-                            "preceeded by the 'MitieNLP' component.")
+            raise Exception(
+                "Can not run MITIE entity extractor without a "
+                "language model. Make sure this component is "
+                "preceeded by the 'MitieNLP' component."
+            )
 
         trainer = mitie.text_categorizer_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
@@ -56,8 +58,10 @@ class MitieIntentClassifier(Component):
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception("Failed to train 'MitieFeaturizer'. "
-                            "Missing a proper MITIE feature extractor.")
+            raise Exception(
+                "Failed to train 'MitieFeaturizer'. "
+                "Missing a proper MITIE feature extractor."
+            )
 
         if self.clf:
             token_strs = self._tokens_of_message(message)
@@ -68,21 +72,23 @@ class MitieIntentClassifier(Component):
             intent = None
             confidence = 0.0
 
-        message.set("intent", {"name": intent, "confidence": confidence},
-                    add_to_output=True)
+        message.set(
+            "intent", {"name": intent, "confidence": confidence}, add_to_output=True
+        )
 
     @staticmethod
     def _tokens_of_message(message):
         return [token.text for token in message.get("tokens", [])]
 
     @classmethod
-    def load(cls,
-             meta: Dict[Text, Any],
-             model_dir: Optional[Text] = None,
-             model_metadata: Optional[Metadata] = None,
-             cached_component: Optional['MitieIntentClassifier'] = None,
-             **kwargs: Any
-             ) -> 'MitieIntentClassifier':
+    def load(
+        cls,
+        meta: Dict[Text, Any],
+        model_dir: Optional[Text] = None,
+        model_metadata: Optional[Metadata] = None,
+        cached_component: Optional["MitieIntentClassifier"] = None,
+        **kwargs: Any
+    ) -> "MitieIntentClassifier":
         import mitie
 
         file_name = meta.get("file")
@@ -96,9 +102,7 @@ class MitieIntentClassifier(Component):
         else:
             return cls(meta)
 
-    def persist(self,
-                file_name: Text,
-                model_dir: Text) -> Dict[Text, Any]:
+    def persist(self, file_name: Text, model_dir: Text) -> Dict[Text, Any]:
 
         if self.clf:
             file_name = file_name + ".dat"
