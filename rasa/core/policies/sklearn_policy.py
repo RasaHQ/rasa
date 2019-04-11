@@ -9,6 +9,7 @@ from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
+
 # noinspection PyProtectedMember
 from sklearn.utils import shuffle as sklearn_shuffle
 from typing import Optional, Any, List, Text, Dict, Callable
@@ -16,8 +17,7 @@ from typing import Optional, Any, List, Text, Dict, Callable
 import rasa.utils.io
 from rasa.core import utils
 from rasa.core.domain import Domain
-from rasa.core.featurizers import (
-    TrackerFeaturizer, MaxHistoryTrackerFeaturizer)
+from rasa.core.featurizers import TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa.core.policies.policy import Policy
 from rasa.core.trackers import DialogueStateTracker
 
@@ -34,10 +34,10 @@ class SklearnPolicy(Policy):
         self,
         featurizer: Optional[MaxHistoryTrackerFeaturizer] = None,
         priority: int = 1,
-        model: Optional['sklearn.base.BaseEstimator'] = None,
+        model: Optional["sklearn.base.BaseEstimator"] = None,
         param_grid: Optional[Dict[Text, List] or List[Dict]] = None,
         cv: Optional[int] = None,
-        scoring: Optional[Text or List or Dict or Callable] = 'accuracy',
+        scoring: Optional[Text or List or Dict or Callable] = "accuracy",
         label_encoder: LabelEncoder = LabelEncoder(),
         shuffle: bool = True,
         **kwargs: Any
@@ -62,9 +62,11 @@ class SklearnPolicy(Policy):
 
         if featurizer:
             if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
-                raise TypeError("Passed featurizer of type {}, should be "
-                                "MaxHistoryTrackerFeaturizer."
-                                "".format(type(featurizer).__name__))
+                raise TypeError(
+                    "Passed featurizer of type {}, should be "
+                    "MaxHistoryTrackerFeaturizer."
+                    "".format(type(featurizer).__name__)
+                )
         super(SklearnPolicy, self).__init__(featurizer, priority)
 
         self.model = model or self._default_model()
@@ -75,14 +77,12 @@ class SklearnPolicy(Policy):
         self.shuffle = shuffle
 
         # attributes that need to be restored after loading
-        self._pickle_params = [
-            'model', 'cv', 'param_grid', 'scoring', 'label_encoder']
+        self._pickle_params = ["model", "cv", "param_grid", "scoring", "label_encoder"]
         self._train_params = kwargs
 
     @staticmethod
     def _default_model():
-        return LogisticRegression(solver="liblinear",
-                                  multi_class="auto")
+        return LogisticRegression(solver="liblinear", multi_class="auto")
 
     @property
     def _state(self):
@@ -90,8 +90,9 @@ class SklearnPolicy(Policy):
 
     def model_architecture(self):
         # filter out kwargs that cannot be passed to model
-        self._train_params = self._get_valid_params(self.model.__init__,
-                                                    **self._train_params)
+        self._train_params = self._get_valid_params(
+            self.model.__init__, **self._train_params
+        )
         return self.model.set_params(**self._train_params)
 
     def _extract_training_data(self, training_data):
@@ -111,25 +112,20 @@ class SklearnPolicy(Policy):
 
     def _search_and_score(self, model, X, y, param_grid):
         search = GridSearchCV(
-            model,
-            param_grid=param_grid,
-            cv=self.cv,
-            scoring='accuracy',
-            verbose=1,
+            model, param_grid=param_grid, cv=self.cv, scoring="accuracy", verbose=1
         )
         search.fit(X, y)
-        print("Best params:", search.best_params_)
+        print ("Best params:", search.best_params_)
         return search.best_estimator_, search.best_score_
 
-    def train(self,
-              training_trackers: List[DialogueStateTracker],
-              domain: Domain,
-              **kwargs: Any
-              ) -> None:
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
 
-        training_data = self.featurize_for_training(training_trackers,
-                                                    domain,
-                                                    **kwargs)
+        training_data = self.featurize_for_training(training_trackers, domain, **kwargs)
 
         X, y = self._extract_training_data(training_data)
         model = self.model_architecture(**kwargs)
@@ -143,8 +139,7 @@ class SklearnPolicy(Policy):
             model = clone(model).fit(Xt, yt)
         else:
             param_grid = self.param_grid or {}
-            model, score = self._search_and_score(
-                model, Xt, yt, param_grid)
+            model, score = self._search_and_score(model, Xt, yt, param_grid)
 
         self.model = model
         logger.info("Done fitting sklearn policy model")
@@ -164,9 +159,9 @@ class SklearnPolicy(Policy):
 
         return y_filled
 
-    def predict_action_probabilities(self,
-                                     tracker: DialogueStateTracker,
-                                     domain: Domain) -> List[float]:
+    def predict_action_probabilities(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> List[float]:
         X = self.featurizer.create_X([tracker], domain)
         Xt = self._preprocess_data(X)
         y_proba = self.model.predict_proba(Xt)
@@ -179,33 +174,38 @@ class SklearnPolicy(Policy):
 
             meta = {"priority": self.priority}
 
-            meta_file = os.path.join(path, 'sklearn_policy.json')
+            meta_file = os.path.join(path, "sklearn_policy.json")
             utils.dump_obj_as_json_to_file(meta_file, meta)
 
-            filename = os.path.join(path, 'sklearn_model.pkl')
-            with open(filename, 'wb') as f:
+            filename = os.path.join(path, "sklearn_model.pkl")
+            with open(filename, "wb") as f:
                 pickle.dump(self._state, f)
         else:
-            warnings.warn("Persist called without a trained model present. "
-                          "Nothing to persist then!")
+            warnings.warn(
+                "Persist called without a trained model present. "
+                "Nothing to persist then!"
+            )
 
     @classmethod
     def load(cls, path: Text) -> Policy:
-        filename = os.path.join(path, 'sklearn_model.pkl')
+        filename = os.path.join(path, "sklearn_model.pkl")
         if not os.path.exists(path):
-            raise OSError("Failed to load dialogue model. Path {} "
-                          "doesn't exist".format(os.path.abspath(filename)))
+            raise OSError(
+                "Failed to load dialogue model. Path {} "
+                "doesn't exist".format(os.path.abspath(filename))
+            )
 
         featurizer = TrackerFeaturizer.load(path)
-        assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
-            ("Loaded featurizer of type {}, should be "
-             "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
+        assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), (
+            "Loaded featurizer of type {}, should be "
+            "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__)
+        )
 
         meta_file = os.path.join(path, "sklearn_policy.json")
         meta = json.loads(rasa.utils.io.read_file(meta_file))
         policy = cls(featurizer=featurizer, priority=meta["priority"])
 
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             state = pickle.load(f)
         vars(policy).update(state)
 
