@@ -27,6 +27,7 @@ from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
 from rasa.core.utils import LockCounter
 from rasa.nlu.utils import is_url
+import rasa
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,7 @@ async def _pull_model_and_fingerprint(
                     )
                     return None
 
-                utils.unarchive(await resp.read(), model_directory)
+                rasa.utils.io.unarchive(await resp.read(), model_directory)
                 logger.debug(
                     "Unzipped model to '{}'".format(os.path.abspath(model_directory))
                 )

@@ -3,34 +3,20 @@ import datetime
 import logging
 import multiprocessing
 import os
-import tempfile
 from concurrent.futures import ProcessPoolExecutor
-from typing import Any, Dict, List, Optional, Text
-
-from rasa import model
-from rasa.model import get_latest_model
+from typing import Any, Dict, Optional, Text
 
 from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.emulators import NoEmulator
+from rasa.nlu.model_loader import NLUModel, load_from_server
 from rasa.nlu.test import run_evaluation
-from rasa.nlu.model import InvalidProjectError, Interpreter, Metadata
+from rasa.nlu.model import InvalidProjectError
 from rasa.nlu.train import do_train_in_worker
 
-logger = logging.getLogger(__name__)
 
-# in some execution environments `reactor.callFromThread`
-# can not be called as it will result in a deadlock as
-# the `callFromThread` queues the function to be called
-# by the reactor which only happens after the call to `yield`.
-# Unfortunately, the test is blocked there because `app.flush()`
-# needs to be called to allow the fake server to
-# respond and change the status of the Deferred on which
-# the client is yielding. Solution: during tests we will set
-# this Flag to `False` to directly run the calls instead
-# of wrapping them in `callFromThread`.
-DEFERRED_RUN_IN_REACTOR_THREAD = True
+logger = logging.getLogger(__name__)
 
 
 class MaxTrainingError(Exception):
@@ -64,19 +50,20 @@ class DataRouter(object):
         self._training_processes = max(max_training_processes, 1)
         self._current_training_processes = 0
         self.responses = self._create_query_logger(response_log)
+
         self.model_dir = config.make_path_absolute(model_dir)
+
         self.emulator = self._create_emulator(emulation_mode)
         self.remote_storage = remote_storage
         self.model_server = model_server
         self.wait_time_between_pulls = wait_time_between_pulls
 
-        self.model_name = None
-        self.interpreter = None
-
         if component_builder:
             self.component_builder = component_builder
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
+
+        self.nlu_model: NLUModel = NLUModel.fallback_model(self.component_builder)
 
         # TODO: Should be moved to separate method
         loop = asyncio.get_event_loop()
@@ -131,17 +118,24 @@ class DataRouter(object):
 
     async def _load_model(self, model_dir: Text):
         if model_dir is None:
-            logger.info("Starting NLU server without any model.")
+            logger.info("Could not load any model. Use fallback model.")
+            self.nlu_model = NLUModel.fallback_model(self.component_builder)
             return
 
         if os.path.exists(model_dir):
-            self.model_name, self.interpreter = self._load_local_model(model_dir)
+            self.nlu_model = NLUModel.load_local_model(
+                model_dir, self.component_builder
+            )
 
         elif self.model_server is not None:
-            self.model_name, self.interpreter = self._load_from_server()
+            self.nlu_model = await load_from_server(
+                self.component_builder, self.model_server, self.wait_time_between_pulls
+            )
 
         elif self.remote_storage is not None:
-            self.model_name, self.interpreter = self._load_from_remote_storage()
+            self.nlu_model = NLUModel.load_from_remote_storage(
+                self.remote_storage, self.component_builder, model_dir
+            )
 
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)
@@ -149,16 +143,16 @@ class DataRouter(object):
     def parse(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         model = data.get("model")
 
-        if not self._is_model_loaded(model):
+        if not self.nlu_model.is_loaded(model):
             raise InvalidProjectError(
                 "Model with name '{}' is not loaded.".format(model)
             )
 
-        response = self.interpreter.parse(data["text"], data.get("time"))
-        response["model"] = self.model_name
+        response = self.nlu_model.parse(data["text"], data.get("time"))
+        response["model"] = self.nlu_model.name
 
         if self.responses:
-            self.responses.info("", user_input=response, model=response.get("model"))
+            self.responses.info(response)
 
         return self._format_response(response)
 
@@ -170,7 +164,7 @@ class DataRouter(object):
         return {
             "max_training_processes": self._training_processes,
             "current_training_processes": self._current_training_processes,
-            "loaded_model": self.model_name,
+            "loaded_model": self.nlu_model.name,
         }
 
     async def start_train_process(
@@ -209,7 +203,7 @@ class DataRouter(object):
     # noinspection PyProtectedMember
     def evaluate(self, data: Text, model: Optional[Text] = None) -> Dict[Text, Any]:
         """Perform a model evaluation."""
-        if not self._is_model_loaded(model):
+        if not self.nlu_model.is_loaded(model):
             raise InvalidProjectError(
                 "Model with name '{}' is not loaded.".format(model)
             )
@@ -217,45 +211,25 @@ class DataRouter(object):
         file_name = utils.create_temporary_file(data, "_training_data")
 
         return run_evaluation(
-            data_path=file_name, model=self.interpreter, errors_filename=None
+            data_path=file_name, model=self.nlu_model.interpreter, errors_filename=None
         )
 
     def unload_model(self, model: Text):
         """Unload a model from server memory."""
-        if not self._is_model_loaded(model):
+        if not self.nlu_model.is_loaded(model):
             raise InvalidProjectError(
                 "Model with name '{}' is not loaded.".format(model)
             )
 
-        self.model_name = None
-        self.interpreter = None
+        self.nlu_model.unload()
 
     def load_model(self):
         # TODO
         pass
 
-    def _list_projects_in_cloud(self) -> List[Text]:
-        # noinspection PyBroadException
-        try:
-            from rasa.nlu.persistor import get_persistor
-
-            p = get_persistor(self.remote_storage)
-            if p is not None:
-                return p.list_projects()
-            else:
-                return []
-        except Exception:
-            logger.exception(
-                "Failed to list projects. Make sure you have "
-                "correctly configured your cloud storage "
-                "settings."
-            )
-            return []
-
     @staticmethod
     def _create_emulator(mode: Optional[Text]) -> NoEmulator:
         """Create emulator for specified mode.
-
         If no emulator is specified, we will use the Rasa NLU format."""
 
         if mode is None:
@@ -274,75 +248,6 @@ class DataRouter(object):
             return DialogflowEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
-
-    def _interpreter_for_model(self, model_path):
-        metadata = Metadata.load(model_path)
-        return Interpreter.create(metadata, self.component_builder)
-
-    def _load_from_remote_storage(self, model_name):
-        try:
-            from rasa.nlu.persistor import get_persistor
-
-            p = get_persistor(self.remote_storage)
-            if p is not None:
-                target_path = tempfile.mkdtemp()
-                p.retrieve(model_name, target_path)
-                interpreter = self._interpreter_for_model(target_path)
-
-                return model_name, interpreter
-            else:
-                raise RuntimeError("Unable to initialize persistor")
-        except Exception as e:
-            logger.warning(
-                "Using default interpreter, couldn't fetch model: {}".format(e)
-            )
-            raise  # re-raise this exception because nothing we can do now
-
-    def _load_from_server(self):
-        # TODO
-        return None, None
-
-    def _load_local_model(self, model_dir):
-        """
-        Load model from local storage. If model_dir directly points to the tar.gz file
-        unpack it and load the interpreter. Otherwise, use the latest tar.gz file in
-        the given directory.
-        :param model_dir: the model directory or the model tar.gz file
-        :return: model name and the interpreter
-        """
-        if os.path.isfile(model_dir):
-            model_archive = model_dir
-        else:
-            model_archive = get_latest_model(model_dir)
-
-        if model_archive is None:
-            logger.warning("Could not load local model in '{}'".format(model_dir))
-            return None, None
-
-        working_directory = tempfile.mkdtemp()
-        unpacked_model = model.unpack_model(model_archive, working_directory)
-        _, nlu_model = model.get_model_subdirectories(unpacked_model)
-
-        model_path = nlu_model if os.path.exists(nlu_model) else unpacked_model
-
-        model_name = os.path.basename(model_archive)
-        interpreter = self._interpreter_for_model(model_path)
-
-        return model_name, interpreter
-
-    def _is_model_loaded(self, model_name) -> bool:
-        if self.interpreter is None:
-            logger.warning("Currently, no model is loaded.")
-            return False
-
-        if model_name is not None and model_name != self.model_name:
-            logger.warning(
-                "Model with name '{}' is not loaded. Currently, the model "
-                "'{}' is loaded".format(model_name, self.model_name)
-            )
-            return False
-
-        return True
 
     def _format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_response_json(data)

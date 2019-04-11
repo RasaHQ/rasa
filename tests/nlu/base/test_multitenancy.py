@@ -27,7 +27,7 @@ def router(component_builder):
         component_builder, os.path.join(root_dir, "data/examples/rasa/demo-rasa.json")
     )
 
-    router = DataRouter(os.path.join(root_dir, "test_projects/test_project_mitie"))
+    router = DataRouter(os.path.join(root_dir, "test_projects/test_project_spacy"))
     return router
 
 

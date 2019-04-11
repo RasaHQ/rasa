@@ -329,23 +329,6 @@ def zip_folder(folder):
     return shutil.make_archive(zipped_path.name, str("zip"), folder)
 
 
-def unarchive(byte_array: bytes, directory: Text) -> Text:
-    """Tries to unpack a byte array interpreting it as an archive.
-
-    Tries to use tar first to unpack, if that fails, zip will be used."""
-
-    try:
-        tar = tarfile.open(fileobj=IOReader(byte_array))
-        tar.extractall(directory)
-        tar.close()
-        return directory
-    except tarfile.TarError:
-        zip_ref = zipfile.ZipFile(IOReader(byte_array))
-        zip_ref.extractall(directory)
-        zip_ref.close()
-        return directory
-
-
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 
