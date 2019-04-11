@@ -94,7 +94,7 @@ To build & edit the docs, first install all necessary dependencies:
 
 ```
 brew install sphinx
-pip3 install -r dev-requirements.txt
+pip3 install -r requirements-dev.txt
 ```
 
 After the installation has finished, you can run and view the documentation
@@ -130,6 +130,21 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git checkout -b 0.7.x
     git push origin 0.7.x
     ```
+
+### Code Style
+
+To ensure a standardized code style we use the formatter [black](https://github.com/ambv/black).
+If your code is not formatted properly, travis will fail to build.
+
+If you want to automatically format your code on every commit, you can use [pre-commit](https://pre-commit.com/).
+Just install it via `pip install pre-commit` and execute `pre-commit install` in the root folder.
+This will add a hook to the repository, which reformats files on every commit.
+
+If you want to set it up manually, install black via `pip install black`.
+To reformat files execute
+```
+black .
+```
 
 ## License
 Licensed under the Apache License, Version 2.0.

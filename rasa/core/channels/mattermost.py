@@ -28,8 +28,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
 
     async def send_text_message(self, recipient_id, message):
         for message_part in message.split("\n\n"):
-            super(MattermostBot, self).post_channel(self.bot_channel,
-                                                    message_part)
+            super(MattermostBot, self).post_channel(self.bot_channel, message_part)
 
 
 class MattermostInput(InputChannel):
@@ -44,10 +43,12 @@ class MattermostInput(InputChannel):
         if not credentials:
             cls.raise_missing_credentials_exception()
 
-        return cls(credentials.get("url"),
-                   credentials.get("team"),
-                   credentials.get("user"),
-                   credentials.get("pw"))
+        return cls(
+            credentials.get("url"),
+            credentials.get("team"),
+            credentials.get("user"),
+            credentials.get("pw"),
+        )
 
     def __init__(self, url: Text, team: Text, user: Text, pw: Text) -> None:
         """Create a Mattermost input channel.
@@ -67,34 +68,34 @@ class MattermostInput(InputChannel):
         self.pw = pw
 
     def blueprint(self, on_new_message):
-        mattermost_webhook = Blueprint('mattermost_webhook', __name__)
+        mattermost_webhook = Blueprint("mattermost_webhook", __name__)
 
-        @mattermost_webhook.route("/", methods=['GET'])
+        @mattermost_webhook.route("/", methods=["GET"])
         async def health(request):
             return response.json({"status": "ok"})
 
-        @mattermost_webhook.route("/webhook", methods=['POST'])
+        @mattermost_webhook.route("/webhook", methods=["POST"])
         async def webhook(request):
             output = request.json
             if output:
                 # splitting to get rid of the @botmention
                 # trigger we are using for this
-                text = output['text'].split(" ", 1)
+                text = output["text"].split(" ", 1)
                 text = text[1]
-                sender_id = output['user_id']
-                self.bot_channel = output['channel_id']
+                sender_id = output["user_id"]
+                self.bot_channel = output["channel_id"]
                 try:
-                    out_channel = MattermostBot(self.url,
-                                                self.team,
-                                                self.user,
-                                                self.pw,
-                                                self.bot_channel)
-                    user_msg = UserMessage(text, out_channel, sender_id,
-                                           input_channel=self.name())
+                    out_channel = MattermostBot(
+                        self.url, self.team, self.user, self.pw, self.bot_channel
+                    )
+                    user_msg = UserMessage(
+                        text, out_channel, sender_id, input_channel=self.name()
+                    )
                     await on_new_message(user_msg)
                 except Exception as e:
-                    logger.error("Exception when trying to handle "
-                                 "message.{0}".format(e))
+                    logger.error(
+                        "Exception when trying to handle message.{0}".format(e)
+                    )
                     logger.debug(e, exc_info=True)
                     pass
             return response.text("")
