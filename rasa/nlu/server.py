@@ -17,7 +17,12 @@ import rasa.utils.endpoints
 from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxTrainingError
+from rasa.nlu.data_router import (
+    DataRouter,
+    InvalidProjectError,
+    MaxWorkerProcessError,
+    UnsupportedModelError,
+)
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import read_endpoints
@@ -288,7 +293,7 @@ def create_app(
             zipped_path = utils.zip_folder(path_to_model)
             return await response.file(zipped_path)
 
-        except MaxTrainingError as e:
+        except MaxWorkerProcessError as e:
             return response.json({"error": "{}".format(e)}, status=403)
         except InvalidProjectError as e:
             return response.json({"error": "{}".format(e)}, status=404)
@@ -305,6 +310,9 @@ def create_app(
                 data_string, request.args.get("project"), request.args.get("model")
             )
             return response.json(payload)
+
+        except MaxWorkerProcessError as e:
+            return response.json({"error": "{}".format(e)}, status=403)
         except Exception as e:
             return response.json({"error": "{}".format(e)}, status=500)
 

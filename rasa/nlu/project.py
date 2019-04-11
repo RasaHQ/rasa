@@ -174,7 +174,7 @@ class Project(object):
         self._component_builder = component_builder
         self._models = {}
         self.status = STATUS_READY
-        self.current_training_processes = 0
+        self.current_worker_processes = 0
         self._reader_lock = Lock()
         self._loader_lock = Lock()
         self._writer_lock = Lock()
@@ -417,7 +417,7 @@ class Project(object):
         return {
             "status": status,
             "error_message": error_message,
-            "current_training_processes": self.current_training_processes,
+            "current_worker_processes": self.current_worker_processes,
             "available_models": list(self._models.keys()),
             "loaded_models": self._list_loaded_models(),
         }

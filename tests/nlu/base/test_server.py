@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import io
+import os
 import json
 import tempfile
+import shutil
 import time
 
 import pytest
@@ -18,14 +20,12 @@ from tests.nlu.utilities import ResponseTest
 
 @pytest.fixture
 def app(tmpdir_factory):
-    """Use IResource interface of Klein to mock Rasa HTTP server.
-    """
-
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
 
     rasa = create_app(router, logfile=nlu_log_file)
+
     return rasa.test_client
 
 
@@ -40,15 +40,15 @@ def rasa_default_train_data():
 def test_root(app):
     _, response = app.get("/")
     content = response.text
-    assert response.status == 200 and content.startswith("hello")
+    assert response.status == 200 and content.startswith("Hello")
 
 
 def test_status(app):
     _, response = app.get("/status")
     rjs = response.json
     assert response.status == 200 and "available_projects" in rjs
-    assert "current_training_processes" in rjs
-    assert "max_training_processes" in rjs
+    assert "current_worker_processes" in rjs
+    assert "max_worker_processes" in rjs
     assert "default" in rjs["available_projects"]
 
 
@@ -73,7 +73,7 @@ def test_version(app):
             },
         ),
         ResponseTest(
-            "/parse?query=hello",
+            "/parse?q=hello",
             {
                 "project": "default",
                 "entities": [],
@@ -126,7 +126,7 @@ def test_get_parse(app, response_test):
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
-            payload={"q": "hello"},
+            payload={"q": "hello", "project": "default", "model": "fallback"},
         ),
         ResponseTest(
             "/parse",
@@ -137,7 +137,7 @@ def test_get_parse(app, response_test):
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
-            payload={"query": "hello"},
+            payload={"query": "hello", "project": "default", "model": "fallback"},
         ),
         ResponseTest(
             "/parse",
@@ -148,7 +148,7 @@ def test_get_parse(app, response_test):
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello ńöñàśçií",
             },
-            payload={"q": "hello ńöñàśçií"},
+            payload={"q": "hello ńöñàśçií", "project": "default", "model": "fallback"},
         ),
     ],
 )
@@ -215,7 +215,7 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     assert response.status == 200, "Training should end successfully"
 
     _, response = app.get(query)
-    assert response.status == 200, "Project should now exist " "after it got trained"
+    assert response.status == 200, "Project should now exist after it got trained"
 
 
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
@@ -227,7 +227,7 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
     assert response.status == 500, "The project cannot be found"
 
     assert "error" in rjs
-    assert rjs["error"] == "Project project123 could not be found"
+    assert rjs["error"] == "Project 'project123' could not be found."
 
 
 def test_evaluate_internal_error(app, rasa_default_train_data):
@@ -235,10 +235,7 @@ def test_evaluate_internal_error(app, rasa_default_train_data):
         "/evaluate", json={"data": "dummy_data_for_triggering_an_error"}
     )
 
-    rjs = response.json
     assert response.status == 500, "The training data format is not valid"
-    assert "error" in rjs
-    assert "Unknown data format for file" in rjs["error"]
 
 
 def test_evaluate(app, rasa_default_train_data):
@@ -265,7 +262,7 @@ def test_unload_model_error(app):
     _, response = app.delete(model_err)
     rjs = response.json
     assert response.status == 500, "Model not found"
-    assert rjs["error"] == ("Failed to unload model my_model for project " "default.")
+    assert rjs["error"] == ("Failed to unload model my_model for project default.")
 
 
 def test_unload_fallback(app):
