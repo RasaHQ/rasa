@@ -115,7 +115,7 @@ class SklearnPolicy(Policy):
             model, param_grid=param_grid, cv=self.cv, scoring="accuracy", verbose=1
         )
         search.fit(X, y)
-        print("Best params:", search.best_params_)
+        print ("Best params:", search.best_params_)
         return search.best_estimator_, search.best_score_
 
     def train(
