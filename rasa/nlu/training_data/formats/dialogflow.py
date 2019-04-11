@@ -83,7 +83,7 @@ class DialogflowReader(TrainingDataReader):
             text = chunk["text"]
             end = start + len(text)
             entity_type = chunk.get("alias", chunk["meta"])
-            if entity_type != u"@sys.ignore":
+            if entity_type != "@sys.ignore":
                 entity = utils.build_entity(start, end, text, entity_type)
 
         return entity

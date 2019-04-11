@@ -49,6 +49,7 @@ tmp_training_data.json
 models/
 projects/
 test_models/model_*
+test_models/test_model_keyword
 test_models/test_model_pretrained_embeddings
 test_projects/test_project_*
 .mypy_cache/
