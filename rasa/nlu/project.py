@@ -62,34 +62,6 @@ async def load_from_server(
     logger.debug("No model found at URL {}".format(model_server.url))
 
 
-async def load_from_cloud_storage(
-    component_builder: Optional[ComponentBuilder],
-    project_dir: Optional[Text],
-    remote_storage: Optional[Text],
-    model_name: Optional[Text] = None,
-) -> (str, Interpreter):
-
-    # TODO
-    # check if model name given - yes, download that model - no, use latest model
-    try:
-        from rasa.nlu.persistor import get_persistor
-
-        p = get_persistor(remote_storage)
-        if p is not None:
-            p.retrieve(model_name, "", project_dir)
-        else:
-            raise RuntimeError("Unable to initialize persistor")
-
-    except Exception as e:
-        logger.warning(
-            "Using default interpreter, couldn't fetch " "model: {}".format(e)
-        )
-        raise  # re-raise this exception because nothing we can do now
-
-    interpreter = interpreter_for_model(component_builder, project_dir)
-    return model_name, interpreter
-
-
 def _get_remote_model_name(filename: Optional[Text]) -> Text:
     """Get the name to save a model under that was fetched from a
     remote server."""

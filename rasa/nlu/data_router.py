@@ -143,62 +143,16 @@ class DataRouter(object):
         elif self.remote_storage is not None:
             self.model_name, self.interpreter = self._load_from_remote_storage()
 
-    def _list_projects_in_cloud(self) -> List[Text]:
-        # noinspection PyBroadException
-        try:
-            from rasa.nlu.persistor import get_persistor
-
-            p = get_persistor(self.remote_storage)
-            if p is not None:
-                return p.list_projects()
-            else:
-                return []
-        except Exception:
-            logger.exception(
-                "Failed to list projects. Make sure you have "
-                "correctly configured your cloud storage "
-                "settings."
-            )
-            return []
-
-    @staticmethod
-    def _create_emulator(mode: Optional[Text]) -> NoEmulator:
-        """Create emulator for specified mode.
-
-        If no emulator is specified, we will use the Rasa NLU format."""
-
-        if mode is None:
-            return NoEmulator()
-        elif mode.lower() == "wit":
-            from rasa.nlu.emulators.wit import WitEmulator
-
-            return WitEmulator()
-        elif mode.lower() == "luis":
-            from rasa.nlu.emulators.luis import LUISEmulator
-
-            return LUISEmulator()
-        elif mode.lower() == "dialogflow":
-            from rasa.nlu.emulators.dialogflow import DialogflowEmulator
-
-            return DialogflowEmulator()
-        else:
-            raise ValueError("unknown mode : {0}".format(mode))
-
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)
 
-    async def parse(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
+    def parse(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         model = data.get("model")
 
-        if self.interpreter is None:
-            raise InvalidProjectError("No model loaded.")
-
-        if model is not None and model != self.model_name:
-            logger.warning(
-                "The given model '{}' is not loaded. Currently, the model "
-                "'{}' is loaded".format(model, self.model_name)
+        if not self._is_model_loaded(model):
+            raise InvalidProjectError(
+                "Model with name '{}' is not loaded.".format(model)
             )
-            raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         response = self.interpreter.parse(data["text"], data.get("time"))
         response["model"] = self.model_name
@@ -207,9 +161,6 @@ class DataRouter(object):
             self.responses.info("", user_input=response, model=response.get("model"))
 
         return self._format_response(response)
-
-    def _format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
-        return self.emulator.normalise_response_json(data)
 
     def get_status(self) -> Dict[Text, Any]:
         # This will only count the trainings started from this
@@ -258,15 +209,10 @@ class DataRouter(object):
     # noinspection PyProtectedMember
     def evaluate(self, data: Text, model: Optional[Text] = None) -> Dict[Text, Any]:
         """Perform a model evaluation."""
-        if self.interpreter is None:
-            raise InvalidProjectError("No model loaded.".format(model))
-
-        if model is not None and model != self.model_name:
-            logger.warning(
-                "The given model '{}' is not loaded. Currently, the model "
-                "'{}' is loaded".format(model, self.model_name)
+        if not self._is_model_loaded(model):
+            raise InvalidProjectError(
+                "Model with name '{}' is not loaded.".format(model)
             )
-            raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         file_name = utils.create_temporary_file(data, "_training_data")
 
@@ -276,23 +222,81 @@ class DataRouter(object):
 
     def unload_model(self, model: Text):
         """Unload a model from server memory."""
-        if model is not None and model != self.model_name:
-            logger.warning(
-                "The passed model '{}' is currently not loaded. Currently, "
-                "the model '{}' is loaded.".format(model, self.model_name)
+        if not self._is_model_loaded(model):
+            raise InvalidProjectError(
+                "Model with name '{}' is not loaded.".format(model)
             )
-            raise InvalidProjectError("No model loaded with name '{}'.".format(model))
 
         self.model_name = None
         self.interpreter = None
+
+    def load_model(self):
+        # TODO
+        pass
+
+    def _list_projects_in_cloud(self) -> List[Text]:
+        # noinspection PyBroadException
+        try:
+            from rasa.nlu.persistor import get_persistor
+
+            p = get_persistor(self.remote_storage)
+            if p is not None:
+                return p.list_projects()
+            else:
+                return []
+        except Exception:
+            logger.exception(
+                "Failed to list projects. Make sure you have "
+                "correctly configured your cloud storage "
+                "settings."
+            )
+            return []
+
+    @staticmethod
+    def _create_emulator(mode: Optional[Text]) -> NoEmulator:
+        """Create emulator for specified mode.
+
+        If no emulator is specified, we will use the Rasa NLU format."""
+
+        if mode is None:
+            return NoEmulator()
+        elif mode.lower() == "wit":
+            from rasa.nlu.emulators.wit import WitEmulator
+
+            return WitEmulator()
+        elif mode.lower() == "luis":
+            from rasa.nlu.emulators.luis import LUISEmulator
+
+            return LUISEmulator()
+        elif mode.lower() == "dialogflow":
+            from rasa.nlu.emulators.dialogflow import DialogflowEmulator
+
+            return DialogflowEmulator()
+        else:
+            raise ValueError("unknown mode : {0}".format(mode))
 
     def _interpreter_for_model(self, model_path):
         metadata = Metadata.load(model_path)
         return Interpreter.create(metadata, self.component_builder)
 
-    def _load_from_remote_storage(self):
-        # TODO
-        return None, None
+    def _load_from_remote_storage(self, model_name):
+        try:
+            from rasa.nlu.persistor import get_persistor
+
+            p = get_persistor(self.remote_storage)
+            if p is not None:
+                target_path = tempfile.mkdtemp()
+                p.retrieve(model_name, target_path)
+                interpreter = self._interpreter_for_model(target_path)
+
+                return model_name, interpreter
+            else:
+                raise RuntimeError("Unable to initialize persistor")
+        except Exception as e:
+            logger.warning(
+                "Using default interpreter, couldn't fetch model: {}".format(e)
+            )
+            raise  # re-raise this exception because nothing we can do now
 
     def _load_from_server(self):
         # TODO
@@ -325,3 +329,20 @@ class DataRouter(object):
         interpreter = self._interpreter_for_model(model_path)
 
         return model_name, interpreter
+
+    def _is_model_loaded(self, model_name) -> bool:
+        if self.interpreter is None:
+            logger.warning("Currently, no model is loaded.")
+            return False
+
+        if model_name is not None and model_name != self.model_name:
+            logger.warning(
+                "Model with name '{}' is not loaded. Currently, the model "
+                "'{}' is loaded".format(model_name, self.model_name)
+            )
+            return False
+
+        return True
+
+    def _format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
+        return self.emulator.normalise_response_json(data)

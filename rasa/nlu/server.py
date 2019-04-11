@@ -182,7 +182,7 @@ def create_app(
     async def parse_response(request_params):
         data = data_router.extract(request_params)
         try:
-            return response.json(await data_router.parse(data), status=200)
+            return response.json(data_router.parse(data), status=200)
         except InvalidProjectError as e:
             return response.json({"error": "{}".format(e)}, status=404)
         except Exception as e:

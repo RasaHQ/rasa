@@ -69,7 +69,7 @@ def test_get_parse(app, response_test):
     [
         ResponseTest(
             "/parse?q=food&model=default",
-            {"error": "No model loaded with name 'default'."},
+            {"error": "Model with name 'default' is not loaded."},
         )
     ],
 )
@@ -132,7 +132,7 @@ def test_post_parse_specific_model(app):
     [
         ResponseTest(
             "/parse",
-            {"error": "No model loaded with name 'default'."},
+            {"error": "Model with name 'default' is not loaded."},
             payload={"q": "food", "model": "default"},
         )
     ],
