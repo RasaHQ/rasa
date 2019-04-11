@@ -29,7 +29,7 @@ def run_cmdline(model_path, component_builder=None):
     while True:
         text = input().strip()
         r = interpreter.parse(text)
-        print (json.dumps(r, indent=2))
+        print(json.dumps(r, indent=2))
         logger.info("Next message:")
 
 

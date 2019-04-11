@@ -135,7 +135,7 @@ def wrap_with_color(text: Text, color: Text):
 
 
 def print_color(text: Text, color: Text):
-    print (wrap_with_color(text, color))
+    print(wrap_with_color(text, color))
 
 
 def print_warning(text: Text):

@@ -182,7 +182,7 @@ if __name__ == "__main__":
     rasa.utils.io.configure_colored_logging(cmdline_args.loglevel)
     _endpoints = AvailableEndpoints.read_endpoints(cmdline_args.endpoints)
 
-    print (
+    print(
         cliutils.wrap_with_color(
             "We'll recreate the dialogue state. After that you can chat "
             "with the bot, continuing the input conversation.",

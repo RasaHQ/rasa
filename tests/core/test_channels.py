@@ -79,7 +79,7 @@ def test_facebook_channel():
         # the above marker marks the end of the code snipped included
         # in the docs
         routes_list = utils.list_routes(s)
-        print (routes_list)
+        print(routes_list)
         assert routes_list.get("fb_webhook.health").startswith("/webhooks/facebook")
         assert routes_list.get("fb_webhook.webhook").startswith(
             "/webhooks/facebook/webhook"

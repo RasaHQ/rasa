@@ -16,7 +16,11 @@ from rasa.nlu import config, utils
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.data_router import (
-    DataRouter, InvalidProjectError, MaxWorkerProcessError, UnsupportedModelError)
+    DataRouter,
+    InvalidProjectError,
+    MaxWorkerProcessError,
+    UnsupportedModelError,
+)
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import json_to_string, read_endpoints

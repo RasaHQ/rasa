@@ -23,7 +23,7 @@ from rasa.nlu.project import (
     STATUS_READY,
     STATUS_TRAINING,
     load_from_server,
-    FALLBACK_MODEL_NAME
+    FALLBACK_MODEL_NAME,
 )
 from rasa.nlu.train import do_train_in_worker
 
@@ -51,9 +51,11 @@ class MaxWorkerProcessError(Exception):
     """
 
     def __init__(self):
-        self.message = ("The server has reached its limit on process pool "
-                        "workers, it can\'t train or evaluate new models "
-                        "right now")
+        self.message = (
+            "The server has reached its limit on process pool "
+            "workers, it can't train or evaluate new models "
+            "right now"
+        )
 
     def __str__(self):
         return self.message
@@ -88,15 +90,17 @@ def deferred_from_future(future):
 
 
 class DataRouter(object):
-    def __init__(self,
-                 project_dir=None,
-                 max_worker_processes=1,
-                 response_log=None,
-                 emulation_mode=None,
-                 remote_storage=None,
-                 component_builder=None,
-                 model_server=None,
-                 wait_time_between_pulls=None):
+    def __init__(
+        self,
+        project_dir=None,
+        max_worker_processes=1,
+        response_log=None,
+        emulation_mode=None,
+        remote_storage=None,
+        component_builder=None,
+        model_server=None,
+        wait_time_between_pulls=None,
+    ):
         self._worker_processes = max(max_worker_processes, 1)
         self._current_worker_processes = 0
         self.responses = self._create_query_logger(response_log)
@@ -354,8 +358,10 @@ class DataRouter(object):
             self.project_store[project].update(model_dir)
             self._current_worker_processes -= 1
             self.project_store[project].current_worker_processes -= 1
-            if (self.project_store[project].status == STATUS_TRAINING and
-                    self.project_store[project].current_worker_processes == 0):
+            if (
+                self.project_store[project].status == STATUS_TRAINING
+                and self.project_store[project].current_worker_processes == 0
+            ):
                 self.project_store[project].status = STATUS_READY
             return model_path
 
@@ -390,14 +396,15 @@ class DataRouter(object):
         return result
 
     # noinspection PyProtectedMember
-    def evaluate(self,
-                 data: Text,
-                 project: Optional[Text] = None,
-                 model: Optional[Text] = None) -> Deferred:
+    def evaluate(
+        self, data: Text, project: Optional[Text] = None, model: Optional[Text] = None
+    ) -> Deferred:
         """Perform a model evaluation."""
 
-        logger.debug("Evaluation request received for "
-                     "project '{}' and model '{}'.".format(project, model))
+        logger.debug(
+            "Evaluation request received for "
+            "project '{}' and model '{}'.".format(project, model)
+        )
 
         if self._worker_processes <= self._current_worker_processes:
             raise MaxWorkerProcessError
@@ -406,14 +413,16 @@ class DataRouter(object):
         data_path = utils.create_temporary_file(data, "_training_data")
 
         if project not in self.project_store:
-            raise InvalidProjectError("Project '{}' could not "
-                                      "be found.".format(project))
+            raise InvalidProjectError(
+                "Project '{}' could not " "be found.".format(project)
+            )
 
         model = model or self.project_store[project]._dynamic_load_model(model)
 
         if model == FALLBACK_MODEL_NAME:
-            raise UnsupportedModelError("No model in project '{}' to "
-                                        "evaluate.".format(project))
+            raise UnsupportedModelError(
+                "No model in project '{}' to " "evaluate.".format(project)
+            )
 
         model_path = os.path.join(self.project_store[project]._path, model)
 
@@ -438,10 +447,9 @@ class DataRouter(object):
         self._current_worker_processes += 1
         self.project_store[project].current_worker_processes += 1
 
-        result = self.pool.submit(run_evaluation,
-                                  data_path,
-                                  model_path,
-                                  errors_filename=None)
+        result = self.pool.submit(
+            run_evaluation, data_path, model_path, errors_filename=None
+        )
 
         result = deferred_from_future(result)
         result.addCallback(evaluation_callback)

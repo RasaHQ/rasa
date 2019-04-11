@@ -70,7 +70,7 @@ async def train_async(
     if force_training or retrain_core:
         await train_core_async(domain, config, story_directory, output, train_path)
     else:
-        print (
+        print(
             "Dialogue data / configuration did not change. "
             "No need to retrain dialogue model."
         )
@@ -78,19 +78,19 @@ async def train_async(
     if force_training or retrain_nlu:
         train_nlu(config, nlu_data_directory, output, train_path)
     else:
-        print ("NLU data / configuration did not change. No need to retrain NLU model.")
+        print("NLU data / configuration did not change. No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
         output = create_output_path(output)
         model.create_package_rasa(train_path, output, new_fingerprint)
 
-        print ("Train path: '{}'.".format(train_path))
+        print("Train path: '{}'.".format(train_path))
 
         print_success("Your bot is trained and ready to take for a spin!")
 
         return output
     else:
-        print (
+        print(
             "Nothing changed. You can use the old model stored at {}"
             "".format(os.path.abspath(old_model))
         )

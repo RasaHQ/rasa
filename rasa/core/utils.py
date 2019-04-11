@@ -174,7 +174,7 @@ def generate_id(prefix="", max_chars=None):
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
-        print (
+        print(
             "Invalid answer, only {}{} allowed\n".format(
                 ", ".join(valid_values[:max_suggested]),
                 ",..." if len(valid_values) > max_suggested else "",

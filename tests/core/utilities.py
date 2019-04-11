@@ -56,7 +56,7 @@ def mocked_cmd_input(package, text):
 
     def mocked_input(*args, **kwargs):
         value = next(text_generator)
-        print ("wrote '{}' to input".format(value))
+        print("wrote '{}' to input".format(value))
         return value
 
     package.get_cmd_input = mocked_input
