@@ -70,8 +70,9 @@ def _add_arguments(parser):
     )
 
     # todo: make the two different modes two subparsers
-    parser.add_argument('-c', '--config',
-                        help="model configuration file (crossvalidation only)")
+    parser.add_argument(
+        "-c", "--config", help="model configuration file (crossvalidation only)"
+    )
 
     parser.add_argument(
         "-m", "--model", required=False, help="path to model (evaluation only)"
