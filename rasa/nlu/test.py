@@ -70,46 +70,64 @@ def _add_arguments(parser):
     )
 
     # todo: make the two different modes two subparsers
-<<<<<<< HEAD
     parser.add_argument('-c', '--config',
                         help="model configuration file (crossvalidation only)")
 
-    parser.add_argument('-m', '--model', required=False,
-                        help="path to model (evaluation only)")
+    parser.add_argument(
+        "-m", "--model", required=False, help="path to model (evaluation only)"
+    )
 
-    parser.add_argument('-f', '--folds', required=False, default=10,
-                        help="number of CV folds (crossvalidation only)")
+    parser.add_argument(
+        "-f",
+        "--folds",
+        required=False,
+        default=10,
+        help="number of CV folds (crossvalidation only)",
+    )
 
-    parser.add_argument('--report', required=False, nargs='?',
-                        const="reports", default=False,
-                        help="output path to save the intent/entity"
-                             "metrics report")
+    parser.add_argument(
+        "--report",
+        required=False,
+        nargs="?",
+        const="reports",
+        default=False,
+        help="output path to save the intent/entity metrics report",
+    )
 
-    parser.add_argument('--successes', required=False, nargs='?',
-                        const="successes.json", default=False,
-                        help="output path to save successful predictions")
+    parser.add_argument(
+        "--successes",
+        required=False,
+        nargs="?",
+        const="successes.json",
+        default=False,
+        help="output path to save successful predictions",
+    )
 
-    parser.add_argument('--errors', required=False, default="errors.json",
-                        help="output path to save model errors")
+    parser.add_argument(
+        "--errors",
+        required=False,
+        default="errors.json",
+        help="output path to save model errors",
+    )
 
-    parser.add_argument('--histogram', required=False, default="hist.png",
-                        help="output path for the confidence histogram")
+    parser.add_argument(
+        "--histogram",
+        required=False,
+        default="hist.png",
+        help="output path for the confidence histogram",
+    )
 
-    parser.add_argument('--ner', required=False, default="entity_results.txt",
-                        help="output path for the entity mentions")
+    parser.add_argument(
+        "--confmat",
+        required=False,
+        default="confmat.png",
+        help="output path for the confusion matrix plot",
+    )
 
-    parser.add_argument('--confmat', required=False, default="confmat.png",
-                        help="output path for the confusion matrix plot")
 
-
-def plot_confusion_matrix(cm,
-                          classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=None,
-                          zmin=1,
-                          out=None) -> None:  # pragma: no cover
-
+def plot_confusion_matrix(
+    cm, classes, normalize=False, title="Confusion matrix", cmap=None, zmin=1, out=None
+) -> None:  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
     Normalization can be applied by setting `normalize=True`."""
     import matplotlib.pyplot as plt
@@ -423,81 +441,9 @@ def substitute_labels(labels, old, new):
     return [new if label == old else label for label in labels]
 
 
-<<<<<<< HEAD
-def collect_ner_results(utterance_targets,
-                        utterance_predictions,
-                        ner_filename):
-    """Log messages which result in both successful and
-       unsuccessful entity predictions and save them to file"""
-
-    # there should be a finite number of utterances
-    if (utterance_targets is None or utterance_predictions is None or
-            len(utterance_targets) != len(utterance_predictions)):
-        logger.debug("Utterance mismatch.  Cannot report on entities")
-        return
-
-    # list of pairs.  The first is the expected.  The second is predicted.
-    # None is present if one of the two is not relevant
-    tps = []
-    fps = []
-    fns = []
-
-    logger.info("Iterating through utterances for entity mentions")
-    for te, pe in zip(utterance_targets, utterance_predictions):
-        target_count = 0
-        predicted_count = 0
-        while (target_count < len(te) or
-               predicted_count < len(pe)):
-            target_entity = (
-                None if target_count == len(te)
-                else te[target_count])
-            predicted_entity = (
-                None if predicted_count == len(pe)
-                else pe[predicted_count])
-            if (predicted_entity is None or
-                (target_entity is not None and
-                 target_entity['start'] < predicted_entity['start'])):
-                fns.append((target_entity, None))
-                target_count += 1
-            elif (target_entity is None or
-                  (predicted_entity is not None and
-                   predicted_entity['start'] < target_entity['start'])):
-                fps.append((None, predicted_entity))
-                predicted_count += 1
-            else:
-                target_type = target_entity['entity']
-                predicted_type = predicted_entity['entity']
-                if (predicted_type == target_type and
-                        predicted_entity['end'] == target_entity['end']):
-                    tps.append((target_entity, predicted_entity))
-                else:
-                    fps.append((target_entity, predicted_entity))
-                    fns.append((target_entity, predicted_entity))
-                target_count += 1
-                predicted_count += 1
-
-    logger.info("Writing entity mentions to file")
-    ner_dict = {'TP': [], 'FP': [], 'FN': []}
-    for tp in tps:
-        ner_dict['TP'].append({'Expected': tp[0], 'Predicted': tp[1]})
-    for fp in fps:
-        ner_dict['FP'].append({'Expected': fp[0], 'Predicted': fp[1]})
-    for fn in fns:
-        ner_dict['FN'].append({'Expected': fn[0], 'Predicted': fn[1]})
-    save_json(ner_dict, ner_filename)
-
-
-def evaluate_entities(targets,
-                      predictions,
-                      tokens,
-                      extractors,
-                      report_folder,
-                      ner_filename):  # pragma: no cover
-=======
 def evaluate_entities(
     targets, predictions, tokens, extractors, report_folder
 ):  # pragma: no cover
->>>>>>> d98e4852167345f76324dde24160bfe229bb6ba5
     """Creates summary statistics for each entity extractor.
     Logs precision, recall, and F1 per entity type for each extractor."""
 
@@ -506,6 +452,7 @@ def evaluate_entities(
     )
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
+
     result = {}
 
     for extractor in extractors:
@@ -531,10 +478,6 @@ def evaluate_entities(
                 merged_targets, merged_predictions
             )
             log_evaluation_table(report, precision, f1, accuracy)
-
-        if 'ner_crf' == extractor:
-            # save classified samples to file for debugging
-            collect_ner_results(targets, predictions, ner_filename)
 
         result[extractor] = {
             "report": report,
@@ -836,16 +779,6 @@ def remove_duckling_entities(entity_predictions):
     return patched_entity_predictions
 
 
-<<<<<<< HEAD
-def run_evaluation(data_path, model,
-                   report_folder=None,
-                   successes_filename=None,
-                   errors_filename='errors.json',
-                   confmat_filename=None,
-                   intent_hist_filename=None,
-                   ner_filename=None,
-                   component_builder=None):  # pragma: no cover
-=======
 def run_evaluation(
     data_path,
     model,
@@ -856,7 +789,6 @@ def run_evaluation(
     intent_hist_filename=None,
     component_builder=None,
 ):  # pragma: no cover
->>>>>>> d98e4852167345f76324dde24160bfe229bb6ba5
     """Evaluate intent classification and entity extraction."""
 
     # get the metadata config from the package data
@@ -902,18 +834,9 @@ def run_evaluation(
         entity_targets = get_entity_targets(test_data)
 
         logger.info("Entity evaluation results:")
-<<<<<<< HEAD
-        result['entity_evaluation'] = evaluate_entities(entity_targets,
-                                                        entity_predictions,
-                                                        tokens,
-                                                        extractors,
-                                                        report_folder,
-                                                        ner_filename)
-=======
         result["entity_evaluation"] = evaluate_entities(
             entity_targets, entity_predictions, tokens, extractors, report_folder
         )
->>>>>>> d98e4852167345f76324dde24160bfe229bb6ba5
 
     return result
 
@@ -1139,16 +1062,6 @@ def main():
             return_entity_results(entity_results.test, "test")
 
     elif cmdline_args.mode == "evaluation":
-<<<<<<< HEAD
-        run_evaluation(cmdline_args.data,
-                       cmdline_args.model,
-                       cmdline_args.report,
-                       cmdline_args.successes,
-                       cmdline_args.errors,
-                       cmdline_args.confmat,
-                       cmdline_args.histogram,
-                       cmdline_args.ner)
-=======
         run_evaluation(
             cmdline_args.data,
             cmdline_args.model,
@@ -1158,7 +1071,6 @@ def main():
             cmdline_args.confmat,
             cmdline_args.histogram,
         )
->>>>>>> d98e4852167345f76324dde24160bfe229bb6ba5
 
     logger.info("Finished evaluation")
 
