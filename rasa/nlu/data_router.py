@@ -395,9 +395,7 @@ class DataRouter(object):
 
         loop = asyncio.get_event_loop()
 
-        task = loop.run_in_executor(
-            self.pool, run_evaluation, data_path, model_path, errors_filename=None
-        )
+        task = loop.run_in_executor(self.pool, run_evaluation, data_path, model_path)
 
         try:
             return await task

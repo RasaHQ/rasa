@@ -18,11 +18,27 @@ from tests.nlu import utilities
 from tests.nlu.utilities import ResponseTest
 
 
+KEYWORD_PROJECT_NAME = "keywordproject"
+KEYWORD_MODEL_NAME = "keywordmodel"
+
+
 @pytest.fixture
-def app(tmpdir_factory):
+def app(tmpdir_factory, trained_nlu_model):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
+    temp_path = tmpdir_factory.mktemp("projects")
+    try:
+        shutil.copytree(
+            trained_nlu_model,
+            os.path.join(
+                temp_path.strpath,
+                "{}/{}".format(KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME),
+            ),
+        )
+    except FileExistsError:
+        pass
+
+    router = DataRouter(temp_path.strpath)
 
     rasa = create_app(router, logfile=nlu_log_file)
 
@@ -49,7 +65,7 @@ def test_status(app):
     assert response.status == 200 and "available_projects" in rjs
     assert "current_worker_processes" in rjs
     assert "max_worker_processes" in rjs
-    assert "default" in rjs["available_projects"]
+    assert KEYWORD_PROJECT_NAME in rjs["available_projects"]
 
 
 def test_version(app):
@@ -63,41 +79,49 @@ def test_version(app):
     "response_test",
     [
         ResponseTest(
-            "/parse?q=hello",
+            "/parse?q=hello&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
-                "project": "default",
+                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": "fallback",
+                "model": KEYWORD_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
         ),
         ResponseTest(
-            "/parse?q=hello",
+            "/parse?q=hello&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
-                "project": "default",
+                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": "fallback",
+                "model": KEYWORD_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
         ),
         ResponseTest(
-            "/parse?q=hello ńöñàśçií",
+            "/parse?q=hello ńöñàśçií&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
-                "project": "default",
+                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": "fallback",
+                "model": KEYWORD_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello ńöñàśçií",
             },
         ),
         ResponseTest(
-            "/parse?q=",
+            "/parse?q=&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
-                "project": "default",
+                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": "fallback",
+                "model": KEYWORD_MODEL_NAME,
                 "intent": {"confidence": 0.0, "name": None},
                 "text": "",
             },
@@ -120,35 +144,47 @@ def test_get_parse(app, response_test):
         ResponseTest(
             "/parse",
             {
-                "project": "default",
+                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": "fallback",
+                "model": KEYWORD_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
-            payload={"q": "hello", "project": "default", "model": "fallback"},
+            payload={
+                "q": "hello",
+                "project": KEYWORD_PROJECT_NAME,
+                "model": KEYWORD_MODEL_NAME,
+            },
         ),
         ResponseTest(
             "/parse",
             {
-                "project": "default",
+                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": "fallback",
+                "model": KEYWORD_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
-            payload={"query": "hello", "project": "default", "model": "fallback"},
+            payload={
+                "query": "hello",
+                "project": KEYWORD_PROJECT_NAME,
+                "model": KEYWORD_MODEL_NAME,
+            },
         ),
         ResponseTest(
             "/parse",
             {
-                "project": "default",
+                "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
-                "model": "fallback",
+                "model": KEYWORD_MODEL_NAME,
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello ńöñàśçií",
             },
-            payload={"q": "hello ńöñàśçií", "project": "default", "model": "fallback"},
+            payload={
+                "q": "hello ńöñàśçií",
+                "project": KEYWORD_PROJECT_NAME,
+                "model": KEYWORD_MODEL_NAME,
+            },
         ),
     ],
 )
@@ -239,7 +275,12 @@ def test_evaluate_internal_error(app, rasa_default_train_data):
 
 
 def test_evaluate(app, rasa_default_train_data):
-    _, response = app.post("/evaluate", json=rasa_default_train_data)
+    _, response = app.post(
+        "/evaluate?project={}&model={}".format(
+            KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME
+        ),
+        json=rasa_default_train_data,
+    )
 
     rjs = response.json
     assert response.status == 200, "Evaluation should start"
@@ -258,16 +299,12 @@ def test_unload_model_error(app):
     assert response.status == 500, "Project not found"
     assert rjs["error"] == "Project my_project could not be found"
 
-    model_err = "/models?model=my_model"
-    _, response = app.delete(model_err)
-    rjs = response.json
-    assert response.status == 500, "Model not found"
-    assert rjs["error"] == ("Failed to unload model my_model for project default.")
 
-
-def test_unload_fallback(app):
-    unload = "/models?model=fallback"
+def test_unload_model(app):
+    unload = "/models?model={}&project={}".format(
+        KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+    )
     _, response = app.delete(unload)
     rjs = response.json
     assert response.status == 200, "Fallback model unloaded"
-    assert rjs == "fallback"
+    assert rjs == KEYWORD_MODEL_NAME
