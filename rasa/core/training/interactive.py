@@ -412,15 +412,15 @@ async def _print_history(sender_id: Text, endpoint: EndpointConfig) -> None:
     table = _chat_history_table(evts)
     slot_strs = _slot_history(tracker_dump)
 
-    print("------")
-    print("Chat History\n")
-    print(table)
+    print ("------")
+    print ("Chat History\n")
+    print (table)
 
     if slot_strs:
-        print("\n")
-        print("Current slots: \n\t{}\n".format(", ".join(slot_strs)))
+        print ("\n")
+        print ("Current slots: \n\t{}\n".format(", ".join(slot_strs)))
 
-    print("------")
+    print ("------")
 
 
 def _chat_history_table(evts: List[Dict[Text, Any]]) -> Text:
@@ -592,7 +592,7 @@ async def _request_action_from_user(
 
     if is_new_action:
         action_name = await _request_free_text_action(sender_id, endpoint)
-    print("Thanks! The bot will now run {}.\n".format(action_name))
+    print ("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name, is_new_action
 
 
@@ -1031,7 +1031,7 @@ async def _validate_user_text(
         )
 
     if intent is None:
-        print("The NLU classification for '{}' returned '{}'".format(text, intent))
+        print ("The NLU classification for '{}' returned '{}'".format(text, intent))
         return False
     else:
         question = questionary.confirm(message)

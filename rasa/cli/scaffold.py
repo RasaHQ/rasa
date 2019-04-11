@@ -78,7 +78,7 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
 def init_project(args: argparse.Namespace, path: Text) -> None:
     _create_initial_project(path)
-    print("Created project directory at '{}'.".format(os.path.abspath(path)))
+    print ("Created project directory at '{}'.".format(os.path.abspath(path)))
     print_train_or_instructions(args, path)
 
 
@@ -131,7 +131,7 @@ def run(args: argparse.Namespace) -> None:
     import questionary
 
     print_success("Welcome to Rasa! 🤖\n")
-    print(
+    print (
         "To get started quickly, I can assist you to create an "
         "initial project.\n"
         "If you need some help to get from this template to a "
