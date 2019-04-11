@@ -263,6 +263,9 @@ class MessageProcessor(object):
         for e in self.domain.slots_for_entities(parse_data["entities"]):
             tracker.update(e)
 
+        if parse_data["entities"]:
+            self._log_slots(tracker)
+
         logger.debug("Logged UserUtterance - "
                      "tracker now has {} events".format(len(tracker.events)))
 
