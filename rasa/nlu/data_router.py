@@ -12,7 +12,7 @@ from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.emulators import NoEmulator
 from rasa.nlu.model_loader import NLUModel, load_from_server
 from rasa.nlu.test import run_evaluation
-from rasa.nlu.model import InvalidProjectError
+from rasa.nlu.model import InvalidModelError
 from rasa.nlu.train import do_train_in_worker
 
 
@@ -143,13 +143,15 @@ class DataRouter(object):
     def parse(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         model = data.get("model")
 
+        nlu_model = self.nlu_model
         if not self.nlu_model.is_loaded(model):
-            raise InvalidProjectError(
-                "Model with name '{}' is not loaded.".format(model)
+            logger.warning(
+                "Model with name '{}' is not loaded. Use default model.".format(model)
             )
+            nlu_model = NLUModel.fallback_model(self.component_builder)
 
-        response = self.nlu_model.parse(data["text"], data.get("time"))
-        response["model"] = self.nlu_model.name
+        response = nlu_model.parse(data["text"], data.get("time"))
+        response["model"] = nlu_model.name
 
         if self.responses:
             self.responses.info(response)
@@ -204,9 +206,7 @@ class DataRouter(object):
     def evaluate(self, data: Text, model: Optional[Text] = None) -> Dict[Text, Any]:
         """Perform a model evaluation."""
         if not self.nlu_model.is_loaded(model):
-            raise InvalidProjectError(
-                "Model with name '{}' is not loaded.".format(model)
-            )
+            raise InvalidModelError("Model with name '{}' is not loaded.".format(model))
 
         file_name = utils.create_temporary_file(data, "_training_data")
 
@@ -217,9 +217,7 @@ class DataRouter(object):
     def unload_model(self, model: Text):
         """Unload a model from server memory."""
         if not self.nlu_model.is_loaded(model):
-            raise InvalidProjectError(
-                "Model with name '{}' is not loaded.".format(model)
-            )
+            raise InvalidModelError("Model with name '{}' is not loaded.".format(model))
 
         self.nlu_model.unload()
 

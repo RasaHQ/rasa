@@ -24,7 +24,7 @@ from rasa.nlu.utils import create_dir, write_json_to_file
 logger = logging.getLogger(__name__)
 
 
-class InvalidProjectError(Exception):
+class InvalidModelError(Exception):
     """Raised when a model failed to load.
 
     Attributes:
@@ -70,7 +70,7 @@ class Metadata(object):
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, "metadata.json"))
-            raise InvalidProjectError(
+            raise InvalidModelError(
                 "Failed to load model metadata from '{}'. {}".format(abspath, e)
             )
 
@@ -218,7 +218,7 @@ class Trainer(object):
         if fixed_model_name:
             model_name = fixed_model_name
         else:
-            model_name = "model_" + timestamp
+            model_name = "nlu_" + timestamp
 
         path = make_path_absolute(path)
         dir_name = os.path.join(path, model_name)

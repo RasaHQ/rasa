@@ -20,7 +20,7 @@ from rasa.cli.utils import create_output_path
 from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxTrainingError
+from rasa.nlu.data_router import DataRouter, InvalidModelError, MaxTrainingError
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import read_endpoints
@@ -128,13 +128,13 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
     return decorator
 
 
-def dump_to_data_file(data):
+def dump_to_data_file(data, suffix="_training_data"):
     if isinstance(data, str):
         data_string = data
     else:
         data_string = utils.json_to_string(data)
 
-    return utils.create_temporary_file(data_string, "_training_data")
+    return utils.create_temporary_file(data_string, suffix)
 
 
 def _configure_logging(loglevel, logfile):
@@ -183,7 +183,7 @@ def create_app(
         data = data_router.extract(request_params)
         try:
             return response.json(data_router.parse(data), status=200)
-        except InvalidProjectError as e:
+        except InvalidModelError as e:
             return response.json({"error": "{}".format(e)}, status=404)
         except Exception as e:
             logger.exception(e)
@@ -271,7 +271,6 @@ def create_app(
     async def train(request):
         # if set will not generate a model name but use the passed one
         model_name = request.raw_args.get("model", None)
-        # TODO: is the user allowed to set a name?
 
         try:
             model_config, data_dict = extract_data_and_config(request)
@@ -279,7 +278,7 @@ def create_app(
             return response.json({"error": "{}".format(e)}, status=400)
 
         data_file = dump_to_data_file(data_dict)
-        config_file = dump_to_data_file(model_config)
+        config_file = dump_to_data_file(model_config, "_config")
 
         try:
             path_to_model = await data_router.start_train_process(
@@ -302,7 +301,7 @@ def create_app(
             return await response.file(output_path)
         except MaxTrainingError as e:
             return response.json({"error": "{}".format(e)}, status=403)
-        except InvalidProjectError as e:
+        except InvalidModelError as e:
             return response.json({"error": "{}".format(e)}, status=404)
         except TrainingException as e:
             return response.json({"error": "{}".format(e)}, status=500)

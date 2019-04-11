@@ -36,8 +36,13 @@ def router(component_builder):
         component_builder, os.path.join(root_dir, "data/examples/rasa/demo-rasa.json")
     )
 
-    router = DataRouter(os.path.join(root_dir, "test_projects/test_project_spacy"))
-    return router
+    return DataRouter(os.path.join(root_dir, "test_projects/test_project_spacy"))
+
+
+@pytest.fixture(scope="module")
+def router_without_model(component_builder):
+    """Test sanic server."""
+    return DataRouter("not-existing-dir")
 
 
 @pytest.fixture
@@ -45,6 +50,15 @@ def app(router):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     rasa = create_app(router, logfile=nlu_log_file)
+
+    return rasa.test_client
+
+
+@pytest.fixture
+def app_without_model(router_without_model):
+    _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
+
+    rasa = create_app(router_without_model, logfile=nlu_log_file)
 
     return rasa.test_client
 
@@ -86,7 +100,6 @@ def test_version(app):
             "/parse?q=hello",
             {
                 "entities": [],
-                "model": "fallback",
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
@@ -95,7 +108,6 @@ def test_version(app):
             "/parse?query=hello",
             {
                 "entities": [],
-                "model": "fallback",
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello",
             },
@@ -104,19 +116,13 @@ def test_version(app):
             "/parse?q=hello ńöñàśçií",
             {
                 "entities": [],
-                "model": "fallback",
                 "intent": {"confidence": 1.0, "name": "greet"},
                 "text": "hello ńöñàśçií",
             },
         ),
         ResponseTest(
             "/parse?q=",
-            {
-                "entities": [],
-                "model": "fallback",
-                "intent": {"confidence": 0.0, "name": None},
-                "text": "",
-            },
+            {"entities": [], "intent": {"confidence": 0.0, "name": None}, "text": ""},
         ),
     ],
 )
@@ -172,21 +178,112 @@ def test_post_parse(app, response_test):
     assert rjs["text"] == response_test.expected_response["text"]
 
 
-@utilities.slowtest
-def test_post_train_success(app, rasa_default_train_data):
-    import tarfile
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse?q=hello&model=some-model",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+        ),
+        ResponseTest(
+            "/parse?query=hello&model=some-model",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+        ),
+        ResponseTest(
+            "/parse?q=hello ńöñàśçií&model=some-model",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+        ),
+        ResponseTest(
+            "/parse?q=&model=",
+            {
+                "entities": [],
+                "model": "fallback",
+                "intent": {"confidence": 0.0, "name": None},
+                "text": "",
+            },
+        ),
+    ],
+)
+def test_get_parse_use_fallback_model(app_without_model, response_test):
+    _, response = app_without_model.get(response_test.endpoint)
+    rjs = response.json
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["model"] == "fallback"
+    assert rjs["text"] == response_test.expected_response["text"]
 
+
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"q": "hello", "model": "some-model"},
+        ),
+        ResponseTest(
+            "/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello",
+            },
+            payload={"query": "hello", "model": "some-model"},
+        ),
+        ResponseTest(
+            "/parse",
+            {
+                "entities": [],
+                "intent": {"confidence": 1.0, "name": "greet"},
+                "text": "hello ńöñàśçií",
+            },
+            payload={"q": "hello ńöñàśçií", "model": "some-model"},
+        ),
+    ],
+)
+def test_post_parse_using_fallback_model(app, response_test):
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
+    rjs = response.json
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
+    assert rjs["entities"] == response_test.expected_response["entities"]
+    assert rjs["model"] == "fallback"
+    assert rjs["text"] == response_test.expected_response["text"]
+    assert rjs["intent"]["name"] == response_test.expected_response["intent"]["name"]
+
+
+@utilities.slowtest
+def test_post_train_success(app_without_model, rasa_default_train_data):
     request = {
         "language": "en",
         "pipeline": "pretrained_embeddings_spacy",
         "data": rasa_default_train_data,
     }
 
-    _, response = app.post("/train", json=request)
+    _, response = app_without_model.post("/train", json=request)
 
-    content = response.body
     assert response.status == 200
-    # TODO check response
+    assert response.content is not None
 
 
 @utilities.slowtest
@@ -196,20 +293,22 @@ def test_post_train_internal_error(app, rasa_default_train_data):
     )
     rjs = response.json
     assert response.status == 500, "The training data format is not valid"
-    # TODO
-    # assert "error" in rjs
+    assert "error" in rjs
 
 
 def test_model_hot_reloading(app, rasa_default_train_data):
-    query = "/parse?q=hello&model=not-existing"
+    query = "/parse?q=hello&model=test-model"
     _, response = app.get(query)
-    assert response.status == 404, "Project should not exist yet"
+    assert response.status == 200
+    rjs = response.json
+    assert rjs["model"] == "fallback"
 
     train_u = "/train"
     request = {
         "language": "en",
         "pipeline": "pretrained_embeddings_spacy",
         "data": rasa_default_train_data,
+        "model": "test-model",
     }
     model_str = yaml.safe_dump(request, default_flow_style=False, allow_unicode=True)
     _, response = app.post(
@@ -222,16 +321,19 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     )
     assert response.status == 200, "Training should end successfully"
 
-    _, response = app.get("/parse?q=hello")
-    assert response.status == 200, "Project should now exist " "after it got trained"
+    # TODO Change model
+
+    _, response = app.get("/parse?q=hello&model=test-model")
+    assert response.status == 200
+    rjs = response.json
+    assert rjs["model"] == "test-model"
 
 
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
     _, response = app.post("/evaluate?model=not-existing", json=rasa_default_train_data)
 
     rjs = response.json
-    assert response.status == 500, "The project cannot be found"
-
+    assert response.status == 500
     assert "error" in rjs
     assert rjs["error"] == "Model with name 'not-existing' is not loaded."
 
@@ -264,7 +366,9 @@ def test_unload_model_error(app):
     project_err = "/models?model=my_model"
     _, response = app.delete(project_err)
     rjs = response.json
-    assert response.status == 500, "Project not found"
+    assert (
+        response.status == 500
+    ), "Model is not loaded and can therefore not be unloaded."
     assert rjs["error"] == "Model with name 'my_model' is not loaded."
 
 
