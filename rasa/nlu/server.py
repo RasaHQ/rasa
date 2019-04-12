@@ -160,7 +160,6 @@ def create_app(
     logfile: Text = None,
     token: Text = None,
     cors_origins: Text = None,
-    default_config_path: Text = None,
 ):
     """Class representing Rasa NLU http server."""
     app = Sanic(__name__)
@@ -418,12 +417,7 @@ def main(args):
     loop.close()
 
     rasa = create_app(
-        router,
-        args.loglevel,
-        args.write,
-        get_token(args.token),
-        args.cors,
-        default_config_path=args.config,
+        router, args.loglevel, args.write, get_token(args.token), args.cors
     )
     rasa.add_task(configure_logging)
 

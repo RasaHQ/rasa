@@ -12,26 +12,19 @@ help:
 
 
 train-core:
-	rasa train core -s data/stories.md -d domain.yml -o models/dialogue --debug
+	rasa train core -s data/stories.md -d domain.yml -o models --debug
 
 run-core:
-	rasa shell -m models --verbose --endpoints endpoints.yml
+	rasa run core -m models --verbose --endpoints endpoints.yml
 
 run-actions:
 	python -m rasa_core_sdk.endpoint --actions actions
 
 run:
-	make run-actions&
-	make run-core
+	rasa shell core -m models --verbose --endpoints endpoints.yml
 
 train-interactive:
-	python -m rasa.core.train interactive -s data/stories.md --nlu models/nlu/current -d domain.yml -o models/dialogue --verbose --endpoints endpoints.yml
+	rasa interactive core -d domain.yml -m models -c config.yml --data data --verbose --endpoints endpoints.yml
 
 visualize:
-	rasa show
-
-train-nlu:
-	rasa train nlu -c config.yml --fixed_model_name current --data data/nlu.md -o models --verbose
-
-evaluate-core:
-	rasa test core -m models -s data/stories.md --fail_on_prediction_errors
+	rasa show stories

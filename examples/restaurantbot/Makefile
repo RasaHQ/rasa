@@ -9,19 +9,23 @@ help:
 	@echo "        Train the natural language understanding using Rasa NLU."
 	@echo "    train-core"
 	@echo "        Train a dialogue model using Rasa core."
+	@echo "    train"
+	@echo "        Train a stacked model using Rasa core & NLU."
 
 run:
-	make run-actions&
-	make run-core
+	rasa shell -m models --endpoints endpoints.yml
 
 run-actions:
 	python -m rasa_core_sdk.endpoint --actions actions
 
 run-core:
-	rasa shell -m models --endpoints endpoints.yml
+	rasa run -m models --endpoints endpoints.yml
 
 train-nlu:
-	python bot.py train-nlu
+	rasa train nlu -u data/nlu.md
 
 train-core:
-	python bot.py train-dialogue
+	rasa train core -s data/stories.md
+
+train:
+	rasa train -d data

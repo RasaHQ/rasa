@@ -1,1 +1,6 @@
 pipeline: "pretrained_embeddings_spacy"
+language: en
+
+policies:
+  - name: MemoizationPolicy
+  - name: KerasPolicy

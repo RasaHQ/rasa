@@ -16,7 +16,7 @@ run:
 	rasa shell -m models --endpoints endpoints.yml
 
 run-core:
-	rasa run -m models --endpoints endpoints.yml
+	rasa run core -m models --endpoints endpoints.yml
 
 run-actions:
 	python -m rasa_core_sdk.endpoint --actions actions
