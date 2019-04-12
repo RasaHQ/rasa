@@ -144,11 +144,9 @@ def test_post_parse_specific_model(app):
         ),
     ],
 )
-def test_post_parse_invalid_model(app, response_test):
+def test_post_parse_invalid_project(app, response_test):
     _, response = app.post(response_test.endpoint, json=response_test.payload)
-    rjs = response.json
     assert response.status == 404
-    assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
 def train_models(component_builder, data):
