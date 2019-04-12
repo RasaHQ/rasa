@@ -76,9 +76,8 @@ def test_get_parse(app, response_test):
 )
 def test_get_parse_invalid_model(app, response_test):
     _, response = app.get(response_test.endpoint)
-    rjs = response.json
+
     assert response.status == 404
-    assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
 @pytest.mark.parametrize(

@@ -203,7 +203,7 @@ def test_post_train(app, rasa_default_train_data):
     _, response = app.post("/train", json=rasa_default_train_data)
     rjs = response.json
     assert response.status == 404, "A project name to train must be specified"
-    assert "error" in rjs
+    assert "details" in rjs
 
 
 @utilities.slowtest
@@ -226,7 +226,6 @@ def test_post_train_internal_error(app, rasa_default_train_data):
     )
     rjs = response.json
     assert response.status == 500, "The training data format is not valid"
-    assert "error" in rjs
 
 
 def test_model_hot_reloading(app, rasa_default_train_data):
@@ -261,9 +260,8 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
 
     rjs = response.json
     assert response.status == 500, "The project cannot be found"
-
-    assert "error" in rjs
-    assert rjs["error"] == "Project 'project123' could not be found."
+    assert "details" in rjs
+    assert rjs["details"]["error"] == "Project 'project123' could not be found."
 
 
 def test_evaluate_internal_error(app, rasa_default_train_data):
@@ -297,7 +295,7 @@ def test_unload_model_error(app):
     _, response = app.delete(project_err)
     rjs = response.json
     assert response.status == 500, "Project not found"
-    assert rjs["error"] == "Project my_project could not be found"
+    assert rjs["details"]["error"] == "Project my_project could not be found"
 
 
 def test_unload_model(app):

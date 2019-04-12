@@ -181,6 +181,10 @@ def create_app(
 
     default_model_config = _load_default_config(default_config_path)
 
+    @app.exception(ErrorResponse)
+    async def handle_error_response(request: Request, exception: ErrorResponse):
+        return response.json(exception.error_info, status=exception.status)
+
     @app.get("/")
     async def hello(request):
         """Main Rasa route to check if the server is online."""
@@ -191,10 +195,17 @@ def create_app(
         try:
             return response.json(await data_router.parse(data), status=200)
         except InvalidProjectError as e:
-            return response.json({"error": "{}".format(e)}, status=404)
+            raise ErrorResponse(
+                404, "Not Found", "Project is invalid.", details={"error": str(e)}
+            )
         except Exception as e:
             logger.exception(e)
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     @app.get("/parse")
     @requires_auth(app, token)
@@ -215,9 +226,7 @@ def create_app(
             request_params["q"] = request_params.pop("query")
 
         if "q" not in request_params:
-            return response.json(
-                {"error": "Invalid parse parameter specified"}, status=404
-            )
+            raise ErrorResponse(404, "Not Found", "Invalid parse parameter specified.")
         else:
             return await parse_response(request_params)
 
@@ -282,7 +291,12 @@ def create_app(
         try:
             model_config, data = extract_data_and_config(request)
         except Exception as e:
-            return response.json({"error": "{}".format(e)}, status=400)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
         data_file = dump_to_data_file(data)
 
@@ -294,11 +308,23 @@ def create_app(
             return await response.file(zipped_path)
 
         except MaxWorkerProcessError as e:
-            return response.json({"error": "{}".format(e)}, status=403)
+            raise ErrorResponse(
+                403,
+                "Forbidden",
+                "No process available for training.",
+                details={"error": str(e)},
+            )
         except InvalidProjectError as e:
-            return response.json({"error": "{}".format(e)}, status=404)
+            raise ErrorResponse(
+                404, "Not Found", "No project found.", details={"error": str(e)}
+            )
         except TrainingException as e:
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     @app.post("/evaluate")
     @requires_auth(app, token)
@@ -312,9 +338,19 @@ def create_app(
             return response.json(payload)
 
         except MaxWorkerProcessError as e:
-            return response.json({"error": "{}".format(e)}, status=403)
+            raise ErrorResponse(
+                403,
+                "Forbidden",
+                "No process available for training.",
+                details={"error": str(e)},
+            )
         except Exception as e:
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     @app.delete("/models")
     @requires_auth(app, token)
@@ -327,7 +363,12 @@ def create_app(
             return response.json(payload)
         except Exception as e:
             logger.exception(e)
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     return app
 
