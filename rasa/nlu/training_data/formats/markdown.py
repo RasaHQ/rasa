@@ -186,7 +186,7 @@ class MarkdownReader(TrainingDataReader):
 class MarkdownWriter(TrainingDataWriter):
     def dumps(self, training_data):
         """Transforms a TrainingData object into a markdown string."""
-        md = u""
+        md = ""
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)
         md += self._generate_regex_features_md(training_data)
@@ -200,7 +200,7 @@ class MarkdownWriter(TrainingDataWriter):
             [e.as_dict() for e in training_data.training_examples],
             key=lambda k: k["intent"],
         )
-        md = u""
+        md = ""
         for i, example in enumerate(training_examples):
             intent = training_examples[i - 1]["intent"]
             if i == 0 or intent != example["intent"]:
@@ -217,7 +217,7 @@ class MarkdownWriter(TrainingDataWriter):
         entity_synonyms = sorted(
             training_data.entity_synonyms.items(), key=lambda x: x[1]
         )
-        md = u""
+        md = ""
         for i, synonym in enumerate(entity_synonyms):
             if i == 0 or entity_synonyms[i - 1][1] != synonym[1]:
                 md += self._generate_section_header_md(SYNONYM, synonym[1])
@@ -228,7 +228,7 @@ class MarkdownWriter(TrainingDataWriter):
 
     def _generate_regex_features_md(self, training_data):
         """generates markdown for regex features."""
-        md = u""
+        md = ""
         # regex features are already sorted
         regex_features = training_data.regex_features
         for i, regex_feature in enumerate(regex_features):
@@ -241,7 +241,7 @@ class MarkdownWriter(TrainingDataWriter):
 
     def _generate_lookup_tables_md(self, training_data):
         """generates markdown for regex features."""
-        md = u""
+        md = ""
         # regex features are already sorted
         lookup_tables = training_data.lookup_tables
         for i, lookup_table in enumerate(lookup_tables):

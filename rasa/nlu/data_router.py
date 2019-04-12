@@ -10,25 +10,29 @@ from rasa.nlu import config, utils
 from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.emulators import NoEmulator
-from rasa.nlu.model_loader import NLUModel, load_from_server
+from rasa.nlu.model_loader import NLUModel, load_from_server, FALLBACK_MODEL_NAME
 from rasa.nlu.test import run_evaluation
-from rasa.nlu.model import InvalidModelError
+from rasa.nlu.model import InvalidModelError, UnsupportedModelError
 from rasa.nlu.train import do_train_in_worker
 
 
 logger = logging.getLogger(__name__)
 
 
-class MaxTrainingError(Exception):
-    """Raised when a training is requested and the server has
-        reached the max count of training processes.
+class MaxWorkerProcessError(Exception):
+    """Raised when training or evaluation is requested and the server has
+        reached the max count of worker processes.
 
     Attributes:
         message -- explanation of why the request is invalid
     """
 
     def __init__(self):
-        self.message = "The server can't train more models right now!"
+        self.message = (
+            "The server has reached its limit on process pool "
+            "workers, it can't train or evaluate new models "
+            "right now"
+        )
 
     def __str__(self):
         return self.message
@@ -38,7 +42,7 @@ class DataRouter(object):
     def __init__(
         self,
         model_dir=None,
-        max_training_processes=1,
+        max_worker_processes=1,
         response_log=None,
         emulation_mode=None,
         remote_storage=None,
@@ -46,9 +50,8 @@ class DataRouter(object):
         model_server=None,
         wait_time_between_pulls=None,
     ):
-
-        self._training_processes = max(max_training_processes, 1)
-        self._current_training_processes = 0
+        self._worker_processes = max(max_worker_processes, 1)
+        self._current_worker_processes = 0
         self.responses = self._create_query_logger(response_log)
 
         self.model_dir = config.make_path_absolute(model_dir)
@@ -78,11 +81,33 @@ class DataRouter(object):
         # -258934405
         multiprocessing.set_start_method("spawn", force=True)
 
-        self.pool = ProcessPoolExecutor(max_workers=self._training_processes)
+        self.pool = ProcessPoolExecutor(max_workers=self._worker_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
         self.pool.shutdown()
+
+    @staticmethod
+    def _create_emulator(mode: Optional[Text]) -> NoEmulator:
+        """Create emulator for specified mode.
+        If no emulator is specified, we will use the Rasa NLU format."""
+
+        if mode is None:
+            return NoEmulator()
+        elif mode.lower() == "wit":
+            from rasa.nlu.emulators.wit import WitEmulator
+
+            return WitEmulator()
+        elif mode.lower() == "luis":
+            from rasa.nlu.emulators.luis import LUISEmulator
+
+            return LUISEmulator()
+        elif mode.lower() == "dialogflow":
+            from rasa.nlu.emulators.dialogflow import DialogflowEmulator
+
+            return DialogflowEmulator()
+        else:
+            raise ValueError("unknown mode : {0}".format(mode))
 
     @staticmethod
     def _create_query_logger(response_log):
@@ -166,8 +191,8 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
-            "max_training_processes": self._training_processes,
-            "current_training_processes": self._current_training_processes,
+            "max_worker_processes": self._worker_processes,
+            "current_worker_processes": self._current_worker_processes,
             "loaded_model": self.nlu_model.name,
         }
 
@@ -176,16 +201,16 @@ class DataRouter(object):
         data_file: Text,
         train_config: RasaNLUModelConfig,
         model_name: Optional[Text] = None,
-    ):
+    ) -> Text:
         """Start a model training."""
-        if self._training_processes <= self._current_training_processes:
-            raise MaxTrainingError
+        if self._worker_processes <= self._current_worker_processes:
+            raise MaxWorkerProcessError
 
         loop = asyncio.get_event_loop()
 
         logger.debug("New training queued")
 
-        self._current_training_processes += 1
+        self._current_worker_processes += 1
 
         task = loop.run_in_executor(
             self.pool,
@@ -200,19 +225,7 @@ class DataRouter(object):
         try:
             return await task
         finally:
-            self._current_training_processes -= 1
-
-    # noinspection PyProtectedMember
-    def evaluate(self, data: Text, model: Optional[Text] = None) -> Dict[Text, Any]:
-        """Perform a model evaluation."""
-        if not self.nlu_model.is_loaded(model):
-            raise InvalidModelError("Model with name '{}' is not loaded.".format(model))
-
-        file_name = utils.create_temporary_file(data, "_training_data")
-
-        return run_evaluation(
-            data_path=file_name, model=self.nlu_model.interpreter, errors_filename=None
-        )
+            self._current_worker_processes -= 1
 
     def unload_model(self, model: Text):
         """Unload a model from server memory."""
@@ -221,27 +234,40 @@ class DataRouter(object):
 
         self.nlu_model.unload()
 
-    @staticmethod
-    def _create_emulator(mode: Optional[Text]) -> NoEmulator:
-        """Create emulator for specified mode.
-        If no emulator is specified, we will use the Rasa NLU format."""
+    # noinspection PyProtectedMember
+    async def evaluate(
+        self, data: Text, model: Optional[Text] = None
+    ) -> Dict[Text, Any]:
+        """Perform a model evaluation."""
+        if not self.nlu_model.is_loaded(model):
+            raise InvalidModelError("Model with name '{}' is not loaded.".format(model))
 
-        if mode is None:
-            return NoEmulator()
-        elif mode.lower() == "wit":
-            from rasa.nlu.emulators.wit import WitEmulator
+        logger.debug("Evaluation request received for model '{}'.".format(model))
 
-            return WitEmulator()
-        elif mode.lower() == "luis":
-            from rasa.nlu.emulators.luis import LUISEmulator
+        if self._worker_processes <= self._current_worker_processes:
+            raise MaxWorkerProcessError
 
-            return LUISEmulator()
-        elif mode.lower() == "dialogflow":
-            from rasa.nlu.emulators.dialogflow import DialogflowEmulator
+        data_path = utils.create_temporary_file(data, "_training_data")
 
-            return DialogflowEmulator()
-        else:
-            raise ValueError("unknown mode : {0}".format(mode))
+        if self.nlu_model.name == FALLBACK_MODEL_NAME:
+            raise UnsupportedModelError("No model in loaded to evaluate.")
+
+        logger.debug("New evaluation queued.")
+
+        self._current_worker_processes += 1
+
+        loop = asyncio.get_event_loop()
+        task = loop.run_in_executor(
+            self.pool, run_evaluation, data_path, self.nlu_model.interpreter
+        )
+
+        try:
+            return await task
+        except Exception as e:
+            logger.warning(e)
+            raise
+        finally:
+            self._current_worker_processes -= 1
 
     def _format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_response_json(data)

@@ -260,8 +260,8 @@ async def test_default_action(default_dispatcher_collecting, default_domain):
     channel = default_dispatcher_collecting.output_channel
     assert channel.messages == [
         {
-            u"text": u"sorry, I didn't get that, can you rephrase it?",
-            u"recipient_id": u"my-sender",
+            "text": "sorry, I didn't get that, can you rephrase it?",
+            "recipient_id": "my-sender",
         }
     ]
     assert events == [UserUtteranceReverted()]

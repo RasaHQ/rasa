@@ -12,7 +12,7 @@ def default_arg(request: Request, key: Text, default: Any = None) -> Optional[An
 
     Checks the `name` parameter of the request if it contains a value.
     If not, `default` is returned."""
-    found = request.raw_args.get(key)
+    found = request.args.get(key)
     if found is not None:
         return found
     else:

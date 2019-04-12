@@ -7,8 +7,7 @@ from inspect import isawaitable
 from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
-from typing import Any, Callable, Optional, Text
-import simplejson
+from typing import Any, Callable, Optional, Text, Dict
 
 import rasa
 import rasa.utils.io
@@ -20,8 +19,9 @@ from rasa.cli.utils import create_output_path
 from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import DataRouter, InvalidModelError, MaxTrainingError
+from rasa.nlu.data_router import DataRouter, MaxWorkerProcessError
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.nlu.model import InvalidModelError
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import read_endpoints
 
@@ -29,7 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 class ErrorResponse(Exception):
-    def __init__(self, status, reason, message, details=None, help_url=None):
+    def __init__(
+        self,
+        status: int,
+        reason: Text,
+        message: Text,
+        details: Optional[Dict] = None,
+        help_url: Optional[Text] = None,
+    ):
         self.error_info = {
             "version": rasa.__version__,
             "status": "failure",
@@ -88,7 +95,6 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
         @wraps(f)
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
-
             provided = rasa.utils.endpoints.default_arg(request, "token", None)
             # noinspection PyProtectedMember
             if token is not None and provided == token:
@@ -142,13 +148,6 @@ def _configure_logging(loglevel, logfile):
     logging.captureWarnings(True)
 
 
-def _load_default_config(path):
-    if path:
-        return config.load(path).as_dict()
-    else:
-        return {}
-
-
 # configure async loop logging
 async def configure_logging():
     if logger.isEnabledFor(logging.DEBUG):
@@ -156,15 +155,14 @@ async def configure_logging():
 
 
 def create_app(
-    data_router,
-    loglevel="INFO",
-    logfile=None,
-    token=None,
-    cors_origins=None,
-    default_config_path=None,
+    data_router: DataRouter,
+    loglevel: Text = "INFO",
+    logfile: Text = None,
+    token: Text = None,
+    cors_origins: Text = None,
+    default_config_path: Text = None,
 ):
-    """Class representing Rasa NLU http server"""
-
+    """Class representing Rasa NLU http server."""
     app = Sanic(__name__)
     CORS(
         app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
@@ -172,33 +170,41 @@ def create_app(
 
     _configure_logging(loglevel, logfile)
 
-    default_model_config = _load_default_config(default_config_path)
+    @app.exception(ErrorResponse)
+    async def handle_error_response(request: Request, exception: ErrorResponse):
+        return response.json(exception.error_info, status=exception.status)
 
     @app.get("/")
     async def hello(request):
-        """Main Rasa route to check if the server is online"""
-        return response.text("hello from Rasa NLU: " + rasa.__version__)
+        """Main Rasa route to check if the server is online."""
+        return response.text("Hello from Rasa NLU: " + rasa.__version__)
 
-    async def parse_response(request_params):
+    def parse_response(request_params):
         data = data_router.extract(request_params)
         try:
             return response.json(data_router.parse(data), status=200)
         except InvalidModelError as e:
-            return response.json({"error": "{}".format(e)}, status=404)
+            raise ErrorResponse(
+                404, "Not Found", "Project is invalid.", details={"error": str(e)}
+            )
         except Exception as e:
             logger.exception(e)
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     @app.get("/parse")
     @requires_auth(app, token)
     async def parse(request):
-        request_params = request.raw_args
+        request_params = request.args
 
-        if "query" in request_params:
-            request_params["q"] = request_params.pop("query")
         if "q" not in request_params:
-            request_params["q"] = ""
-        return await parse_response(request_params)
+            request_params["q"] = request_params.pop("query", "")
+
+        return parse_response(request_params)
 
     @app.post("/parse")
     @requires_auth(app, token)
@@ -209,12 +215,10 @@ def create_app(
             request_params["q"] = request_params.pop("query")
 
         if "q" not in request_params:
-            return response.json(
-                {"error": "Invalid parse parameter specified"}, status=404
-            )
+            raise ErrorResponse(404, "Not Found", "Invalid parse parameter specified.")
         else:
 
-            return await parse_response(request_params)
+            return parse_response(request_params)
 
     @app.get("/version")
     @requires_auth(app, token)
@@ -232,18 +236,6 @@ def create_app(
     async def status(request):
         return response.json(data_router.get_status())
 
-    def extract_json(content):
-        # test if json has config structure
-        json_config = simplejson.loads(content).get("data")
-
-        # if it does then this results in correct format.
-        if json_config:
-            return simplejson.loads(content), json_config
-
-        # otherwise use defaults.
-        else:
-            return default_model_config, content
-
     def extract_data_and_config(request):
 
         request_content = request.body.decode("utf-8", "strict")
@@ -256,7 +248,8 @@ def create_app(
             data = model_config.get("data")
 
         elif "json" in request.content_type:
-            model_config, data = extract_json(request_content)
+            model_config = request.json
+            data = model_config.get("data")
 
         else:
             raise Exception(
@@ -268,18 +261,18 @@ def create_app(
     @app.post("/train")
     @requires_auth(app, token)
     async def train(request):
-        """
-        Trains a new NLU model and sets the currently loaded model to the new trained
-        model.
-        """
-
         # if set will not generate a model name but use the passed one
-        model_name = request.raw_args.get("model", None)
+        model_name = request.args.get("model", None)
 
         try:
             model_config, data_dict = extract_data_and_config(request)
         except Exception as e:
-            return response.json({"error": "{}".format(e)}, status=400)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
         data_file = dump_to_data_file(data_dict)
         config_file = dump_to_data_file(model_config, "_config")
@@ -302,12 +295,24 @@ def create_app(
             await data_router.load_model(output_path)
 
             return await response.file(output_path)
-        except MaxTrainingError as e:
-            return response.json({"error": "{}".format(e)}, status=403)
+        except MaxWorkerProcessError as e:
+            raise ErrorResponse(
+                403,
+                "Forbidden",
+                "No process available for training.",
+                details={"error": str(e)},
+            )
         except InvalidModelError as e:
-            return response.json({"error": "{}".format(e)}, status=404)
+            raise ErrorResponse(
+                404, "Not Found", "No project found.", details={"error": str(e)}
+            )
         except TrainingException as e:
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     async def create_model_path(model_name, path_to_model):
         parent_dir = os.path.abspath(os.path.join(path_to_model, os.pardir))
@@ -322,30 +327,53 @@ def create_app(
         data_string = request.body.decode("utf-8", "strict")
 
         try:
-            payload = data_router.evaluate(data_string, request.raw_args.get("model"))
+            payload = await data_router.evaluate(data_string, request.args.get("model"))
             return response.json(payload)
+
+        except MaxWorkerProcessError as e:
+            raise ErrorResponse(
+                403,
+                "Forbidden",
+                "No process available for training.",
+                details={"error": str(e)},
+            )
         except Exception as e:
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     @app.delete("/models")
     @requires_auth(app, token)
     async def unload_model(request):
         try:
-            data_router.unload_model(request.raw_args.get("model"))
+            data_router.unload_model(request.args.get("model"))
             return response.json(None, status=204)
         except Exception as e:
             logger.exception(e)
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     @app.put("/models")
     @requires_auth(app, token)
     async def unload_model(request):
         try:
-            await data_router.load_model(request.raw_args.get("model"))
+            await data_router.load_model(request.args.get("model"))
             return response.json(None, status=204)
         except Exception as e:
             logger.exception(e)
-            return response.json({"error": "{}".format(e)}, status=500)
+            raise ErrorResponse(
+                500,
+                "Server Error",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
     return app
 

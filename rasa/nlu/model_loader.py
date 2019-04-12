@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 MODEL_NAME_PREFIX = "nlu_"
+FALLBACK_MODEL_NAME = "fallback"
 
 DEFAULT_REQUEST_TIMEOUT = 60 * 5  # 5 minutes
 
@@ -296,4 +297,4 @@ class NLUModel(object):
         )
         interpreter = Interpreter.create(meta, component_builder)
 
-        return NLUModel("fallback", interpreter)
+        return NLUModel(FALLBACK_MODEL_NAME, interpreter)

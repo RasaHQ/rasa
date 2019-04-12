@@ -51,8 +51,8 @@ def fix_yaml_loader() -> None:
         # to always return unicode objects
         return self.construct_scalar(node)
 
-    yaml.Loader.add_constructor(u"tag:yaml.org,2002:str", construct_yaml_str)
-    yaml.SafeLoader.add_constructor(u"tag:yaml.org,2002:str", construct_yaml_str)
+    yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
+    yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
 
 
 def replace_environment_variables():
@@ -77,7 +77,7 @@ def replace_environment_variables():
             )
         return expanded_vars
 
-    yaml.SafeConstructor.add_constructor(u"!env_var", env_var_constructor)
+    yaml.SafeConstructor.add_constructor("!env_var", env_var_constructor)
 
 
 def read_yaml(content: Text) -> Dict[Text, Any]:

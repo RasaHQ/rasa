@@ -1,4 +1,5 @@
 import io
+from rasa.nlu.utils import zip_folder
 
 import mock
 import responses
@@ -9,12 +10,14 @@ from rasa.utils.endpoints import EndpointConfig
 
 
 @responses.activate
-async def test_project_with_model_server(zipped_nlu_model):
+async def test_project_with_model_server(trained_nlu_model):
     fingerprint = "somehash"
     model_endpoint = EndpointConfig("http://server.com/models/nlu/tags/latest")
 
+    zip_path = zip_folder(trained_nlu_model)
+
     # mock a response that returns a zipped model
-    with io.open(zipped_nlu_model, "rb") as f:
+    with io.open(zip_path, "rb") as f:
         responses.add(
             responses.GET,
             model_endpoint.url,

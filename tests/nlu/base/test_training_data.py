@@ -292,7 +292,7 @@ def test_nonascii_entities():
 
 
 def test_entities_synonyms():
-    data = u"""
+    data = """
 {
   "rasa_nlu_data": {
     "entity_synonyms": [
@@ -426,7 +426,7 @@ def test_training_data_conversion(
 
 
 def test_url_data_format():
-    data = u"""
+    data = """
     {
       "rasa_nlu_data": {
         "entity_synonyms": [
