@@ -442,49 +442,114 @@ def substitute_labels(labels, old, new):
     return [new if label == old else label for label in labels]
 
 
-def evaluate_entities(
-    targets, predictions, tokens, extractors, report_folder
-):  # pragma: no cover
+def collect_ner_results(utterance_targets,
+                        utterance_predictions,
+                        ner_filename):
+    """Log messages which result in both successful and
+       unsuccessful entity predictions and save them to file"""
+
+    # there should be a finite number of utterances
+    if (utterance_targets is None or utterance_predictions is None or
+            len(utterance_targets) != len(utterance_predictions)):
+        logger.debug("Utterance mismatch.  Cannot report on entities")
+        return
+
+    # list of pairs.  The first is the expected.  The second is predicted.
+    # None is present if one of the two is not relevant
+    tps = []
+    fps = []
+    fns = []
+
+    logger.info("Iterating through utterances for entity mentions")
+    for te, pe in zip(utterance_targets, utterance_predictions):
+        target_count = 0
+        predicted_count = 0
+        while (target_count < len(te) or
+               predicted_count < len(pe)):
+            target_entity = (
+                None if target_count == len(te)
+                else te[target_count])
+            predicted_entity = (
+                None if predicted_count == len(pe)
+                else pe[predicted_count])
+            if (predicted_entity is None or
+                (target_entity is not None and
+                 target_entity['start'] < predicted_entity['start'])):
+                fns.append((target_entity, None))
+                target_count += 1
+            elif (target_entity is None or
+                  (predicted_entity is not None and
+                   predicted_entity['start'] < target_entity['start'])):
+                fps.append((None, predicted_entity))
+                predicted_count += 1
+            else:
+                target_type = target_entity['entity']
+                predicted_type = predicted_entity['entity']
+                if (predicted_type == target_type and
+                        predicted_entity['end'] == target_entity['end']):
+                    tps.append((target_entity, predicted_entity))
+                else:
+                    fps.append((target_entity, predicted_entity))
+                    fns.append((target_entity, predicted_entity))
+                target_count += 1
+                predicted_count += 1
+
+    logger.info("Writing entity mentions to file")
+    ner_dict = {'TP': [], 'FP': [], 'FN': []}
+    for tp in tps:
+        ner_dict['TP'].append({'Expected': tp[0], 'Predicted': tp[1]})
+    for fp in fps:
+        ner_dict['FP'].append({'Expected': fp[0], 'Predicted': fp[1]})
+    for fn in fns:
+        ner_dict['FN'].append({'Expected': fn[0], 'Predicted': fn[1]})
+    save_json(ner_dict, ner_filename)
+
+
+def evaluate_entities(targets,
+                      predictions,
+                      tokens,
+                      extractors,
+                      report_folder,
+                      ner_filename):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
     Logs precision, recall, and F1 per entity type for each extractor."""
 
-    aligned_predictions = align_all_entity_predictions(
-        targets, predictions, tokens, extractors
-    )
+    aligned_predictions = align_all_entity_predictions(targets, predictions,
+                                                       tokens, extractors)
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
-
     result = {}
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        merged_predictions = substitute_labels(
+            merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         if report_folder:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions, output_dict=True
-            )
+                merged_targets, merged_predictions, output_dict=True)
 
             report_filename = extractor + "_report.json"
             extractor_report = os.path.join(report_folder, report_filename)
 
             save_json(report, extractor_report)
-            logger.info(
-                "Classification report for '{}' saved to '{}'."
-                "".format(extractor, extractor_report)
-            )
+            logger.info("Classification report for '{}' saved to '{}'."
+                        "".format(extractor, extractor_report))
 
         else:
             report, precision, f1, accuracy = get_evaluation_metrics(
-                merged_targets, merged_predictions
-            )
+                merged_targets, merged_predictions)
             log_evaluation_table(report, precision, f1, accuracy)
+
+        if 'ner_crf' == extractor:
+            # save classified samples to file for debugging
+            collect_ner_results(targets, predictions, ner_filename)
 
         result[extractor] = {
             "report": report,
             "precision": precision,
             "f1_score": f1,
-            "accuracy": accuracy,
+            "accuracy": accuracy
         }
 
     return result

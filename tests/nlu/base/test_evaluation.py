@@ -24,6 +24,7 @@ from rasa.nlu.test import (
     IntentEvaluationResult,
     evaluate_intents,
     evaluate_entities,
+    collect_ner_results
 )
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
