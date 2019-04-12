@@ -243,7 +243,7 @@ class Trainer(object):
         if persistor is not None:
             persistor.persist(dir_name, model_name)
         logger.info(
-            "Successfully saved model into " "'{}'".format(os.path.abspath(dir_name))
+            "Successfully saved model into '{}'".format(os.path.abspath(dir_name))
         )
         return dir_name
 

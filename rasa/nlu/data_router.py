@@ -250,7 +250,7 @@ class DataRouter(object):
         data_path = utils.create_temporary_file(data, "_training_data")
 
         if self.nlu_model.name == FALLBACK_MODEL_NAME:
-            raise UnsupportedModelError("No model in loaded to evaluate.")
+            raise UnsupportedModelError("No model is loaded. Cannot evaluate.")
 
         logger.debug("New evaluation queued.")
 

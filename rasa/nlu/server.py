@@ -283,7 +283,7 @@ def create_app(
             )
 
             # store trained model as tar.gz file
-            output_path = await create_model_path(model_name, path_to_model)
+            output_path = create_model_path(model_name, path_to_model)
 
             nlu_data = data.get_nlu_directory(data_file)
             new_fingerprint = model.model_fingerprint(config_file, nlu_data=nlu_data)
@@ -314,10 +314,12 @@ def create_app(
                 details={"error": str(e)},
             )
 
-    async def create_model_path(model_name, path_to_model):
+    def create_model_path(model_name, path_to_model):
         parent_dir = os.path.abspath(os.path.join(path_to_model, os.pardir))
         if model_name is not None:
-            parent_dir = os.path.join(parent_dir, model_name + ".tar.gz")
+            if not model_name.endswith(".tar.gz"):
+                model_name += ".tar.gz"
+            parent_dir = os.path.join(parent_dir, model_name)
         output_path = create_output_path(parent_dir, prefix="nlu-")
         return output_path
 
