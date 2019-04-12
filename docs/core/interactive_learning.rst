@@ -158,7 +158,7 @@ in order to create a template action we use the prefix ``utter_`` and name the
 action for example ``utter_compliment``. Now we get a new prompt asking for the
 text that the template for our new action should store to send back to the user.
 
-If we choose to create a new action which should return an event (e.g. set a slot)
+If we choose to create a new custom action which should return an event (e.g. set a slot)
 this behaviour won't be reflected in interactive learning unless we implement it first.
 The action needs to be implemented in our action server as :ref:`customactions`.
 We can still add the action name in interactive learning and continue the session,
