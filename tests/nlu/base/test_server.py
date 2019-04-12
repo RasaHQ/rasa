@@ -27,7 +27,7 @@ def app_without_model():
 
 
 @pytest.fixture
-def app(tmpdir_factory, trained_nlu_model):
+async def app(tmpdir_factory, trained_nlu_model):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     if "TRAVIS_BUILD_DIR" in os.environ:
@@ -35,15 +35,7 @@ def app(tmpdir_factory, trained_nlu_model):
     else:
         root_dir = os.getcwd()
 
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        loop = asyncio.new_event_loop()
-
-    router = loop.run_until_complete(
-        create_data_router(os.path.join(root_dir, NLU_MODEL_PATH))
-    )
-
-    loop.close()
+    router = await create_data_router(os.path.join(root_dir, NLU_MODEL_PATH))
 
     rasa = create_app(router, logfile=nlu_log_file)
 

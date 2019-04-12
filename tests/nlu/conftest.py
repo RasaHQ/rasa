@@ -77,7 +77,7 @@ def default_config():
     return config.load(CONFIG_DEFAULTS_PATH)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def trained_nlu_model():
     cfg = RasaNLUModelConfig({"pipeline": "keyword"})
     trainer = Trainer(cfg)

@@ -98,15 +98,3 @@ async def test_formbot_example():
         responses = await agent.handle_text("/chitchat")
 
         assert responses[0]["text"] == "chitchat"
-
-
-async def test_concertbot_training():
-    from examples.concertbot.train import train_dialogue
-
-    r = await train_dialogue(
-        domain_file="examples/concertbot/domain.yml",
-        stories_file="examples/concertbot/data/stories.md",
-        model_path="examples/concertbot/models/dialogue",
-        policy_config="examples/concertbot/config.yml",
-    )
-    assert r is not None
