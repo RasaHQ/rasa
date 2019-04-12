@@ -11,14 +11,9 @@ class Object(object):
     pass
 
 
-def test_if_persistor_class_has_list_projects_method():
-    with pytest.raises(NotImplementedError):
-        persistor.Persistor().list_projects()
-
-
 # noinspection PyPep8Naming
 @mock_s3
-def test_list_projects_method_in_AWSPersistor(component_builder, tmpdir):
+def test_list_method_method_in_AWSPersistor(component_builder, tmpdir):
     # artificially create a persisted model
     _config = utilities.base_test_conf("keyword")
     os.environ["BUCKET_NAME"] = "rasa-test"
@@ -35,27 +30,29 @@ def test_list_projects_method_in_AWSPersistor(component_builder, tmpdir):
     # We need to create the bucket since this is all in Moto's 'virtual' AWS
     # account
     awspersistor = persistor.AWSPersistor(os.environ["BUCKET_NAME"])
-    result = awspersistor.list_projects()
+    result = awspersistor.list_models()
 
     assert len(result) == 1
 
 
 # noinspection PyPep8Naming
 @mock_s3
-def test_list_projects_method_raise_exeception_in_AWSPersistor():
+def test_list_models_method_raise_exeception_in_AWSPersistor():
     os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
     awspersistor = persistor.AWSPersistor("rasa-test")
-    result = awspersistor.list_projects()
+    result = awspersistor.list_models()
 
     assert result == []
 
 
 # noinspection PyPep8Naming
-def test_list_projects_method_in_GCSPersistor():
+def test_list_models_method_in_GCSPersistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
-        self._project_and_model_from_filename = lambda x: {"blob_name": ("project",)}[x]
+        self._model_dir_and_model_from_filename = lambda x: {
+            "blob_name": ("project", "model_name")
+        }[x]
         self.bucket = Object()
 
         def mocked_list_blobs():
@@ -66,16 +63,18 @@ def test_list_projects_method_in_GCSPersistor():
         self.bucket.list_blobs = mocked_list_blobs
 
     with mock.patch.object(persistor.GCSPersistor, "__init__", mocked_init):
-        result = persistor.GCSPersistor("").list_projects()
+        result = persistor.GCSPersistor("").list_models()
 
-    assert result == ["project"]
+    assert result == ["model_name"]
 
 
 # noinspection PyPep8Naming
-def test_list_projects_method_raise_exeception_in_GCSPersistor():
+def test_list_models_method_raise_exeception_in_GCSPersistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
-        self._project_and_model_from_filename = lambda x: {"blob_name": ("project",)}[x]
+        self._model_dir_and_model_from_filename = lambda x: {
+            "blob_name": ("project", "model_name")
+        }[x]
         self.bucket = Object()
 
         def mocked_list_blobs():
@@ -84,16 +83,18 @@ def test_list_projects_method_raise_exeception_in_GCSPersistor():
         self.bucket.list_blobs = mocked_list_blobs
 
     with mock.patch.object(persistor.GCSPersistor, "__init__", mocked_init):
-        result = persistor.GCSPersistor("").list_projects()
+        result = persistor.GCSPersistor("").list_models()
 
     assert result == []
 
 
 # noinspection PyPep8Naming
-def test_list_projects_method_in_AzurePersistor():
+def test_list_models_method_in_AzurePersistor():
     # noinspection PyUnusedLocal
     def mocked_init(self, *args, **kwargs):
-        self._project_and_model_from_filename = lambda x: {"blob_name": ("project",)}[x]
+        self._model_dir_and_model_from_filename = lambda x: {
+            "blob_name": ("project", "model_name")
+        }[x]
         self.blob_client = Object()
         self.container_name = "test"
 
@@ -106,15 +107,17 @@ def test_list_projects_method_in_AzurePersistor():
         self.blob_client.list_blobs = mocked_list_blobs
 
     with mock.patch.object(persistor.AzurePersistor, "__init__", mocked_init):
-        result = persistor.AzurePersistor("").list_projects()
+        result = persistor.AzurePersistor("").list_models()
 
-    assert result == ["project"]
+    assert result == ["model_name"]
 
 
 # noinspection PyPep8Naming
-def test_list_projects_method_raise_exeception_in_AzurePersistor():
+def test_list_models_method_raise_exeception_in_AzurePersistor():
     def mocked_init(self, *args, **kwargs):
-        self._project_and_model_from_filename = lambda x: {"blob_name": ("project",)}[x]
+        self._model_dir_and_model_from_filename = lambda x: {"blob_name": ("project",)}[
+            x
+        ]
         self.blob_client = Object()
 
         # noinspection PyUnusedLocal
@@ -124,6 +127,6 @@ def test_list_projects_method_raise_exeception_in_AzurePersistor():
         self.blob_client.list_blobs = mocked_list_blobs
 
     with mock.patch.object(persistor.AzurePersistor, "__init__", mocked_init):
-        result = persistor.AzurePersistor("").list_projects()
+        result = persistor.AzurePersistor("").list_models()
 
     assert result == []

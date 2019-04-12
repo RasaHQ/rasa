@@ -368,8 +368,8 @@ def test_evaluate(app, rasa_default_train_data):
 
 
 def test_unload_model_error(app):
-    project_err = "/models?model=my_model"
-    _, response = app.delete(project_err)
+    request = "/models?model=my_model"
+    _, response = app.delete(request)
     rjs = response.json
     assert (
         response.status == 500

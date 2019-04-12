@@ -81,8 +81,6 @@ def component_config_from_pipeline(
 
 
 class RasaNLUModelConfig(object):
-    DEFAULT_PROJECT_NAME = "default"
-
     def __init__(self, configuration_values=None):
         """Create a model configuration, optionally overridding
         defaults with a dictionary ``configuration_values``.
