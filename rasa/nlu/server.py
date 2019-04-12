@@ -36,8 +36,8 @@ class ErrorResponse(Exception):
         status: int,
         reason: Text,
         message: Text,
-        details: Dict = None,
-        help_url: Text = None,
+        details: Optional[Dict] = None,
+        help_url: Optional[Text] = None,
     ):
         self.error_info = {
             "version": rasa.__version__,
