@@ -8,7 +8,6 @@ from sanic import Sanic, response
 from sanic.request import Request
 from sanic_cors import CORS
 from typing import Any, Callable, Optional, Text, Dict
-import simplejson
 
 import rasa
 import rasa.utils.io
@@ -17,12 +16,7 @@ import rasa.utils.endpoints
 from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import (
-    DataRouter,
-    InvalidProjectError,
-    MaxWorkerProcessError,
-    UnsupportedModelError,
-)
+from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxWorkerProcessError
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import read_endpoints
@@ -247,18 +241,6 @@ def create_app(
     async def status(request):
         return response.json(data_router.get_status())
 
-    def extract_json(content):
-        # test if json has config structure
-        json_config = simplejson.loads(content).get("data")
-
-        # if it does then this results in correct format.
-        if json_config:
-            return simplejson.loads(content), json_config
-
-        # otherwise use defaults.
-        else:
-            return default_model_config, content
-
     def extract_data_and_config(request):
 
         request_content = request.body.decode("utf-8", "strict")
@@ -271,7 +253,8 @@ def create_app(
             data = model_config.get("data")
 
         elif "json" in request.content_type:
-            model_config, data = extract_json(request_content)
+            model_config = request.json
+            data = model_config.get("data")
 
         else:
             raise Exception(
