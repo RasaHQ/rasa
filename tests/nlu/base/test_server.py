@@ -1,25 +1,14 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import io
-import os
 import json
 import os
-import shutil
-import tarfile
-import tempfile
-import shutil
-import time
 
 import pytest
 import ruamel.yaml as yaml
 import tempfile
 
-from rasa import data, model
-from rasa.cli.utils import create_output_path
-from rasa.model import unpack_model
-from rasa.nlu import config
-from rasa.nlu.data_router import DataRouter
-from rasa.nlu.model import Trainer
+from rasa.nlu.data_router import DataRouter, create_data_router
 from rasa.nlu.model_loader import FALLBACK_MODEL_NAME
 from rasa.nlu.server import create_app
 from tests.nlu import utilities
@@ -31,7 +20,8 @@ from tests.nlu.utilities import ResponseTest
 def app_without_model():
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    rasa = create_app(DataRouter("not-existing-dir"), logfile=nlu_log_file)
+    router = DataRouter()
+    rasa = create_app(router, logfile=nlu_log_file)
 
     return rasa.test_client
 
@@ -45,7 +35,15 @@ def app(tmpdir_factory, trained_nlu_model):
     else:
         root_dir = os.getcwd()
 
-    router = DataRouter(os.path.join(root_dir, NLU_MODEL_PATH))
+    loop = asyncio.get_event_loop()
+    if loop.is_closed():
+        loop = asyncio.new_event_loop()
+
+    router = loop.run_until_complete(
+        create_data_router(os.path.join(root_dir, NLU_MODEL_PATH))
+    )
+
+    loop.close()
 
     rasa = create_app(router, logfile=nlu_log_file)
 
@@ -267,7 +265,7 @@ def test_post_parse_using_fallback_model(app, response_test):
     assert response.status == 200
     assert all(prop in rjs for prop in ["entities", "intent", "text", "model"])
     assert rjs["entities"] == response_test.expected_response["entities"]
-    assert rjs["model"] == "fallback"
+    assert rjs["model"] == FALLBACK_MODEL_NAME
     assert rjs["text"] == response_test.expected_response["text"]
     assert rjs["intent"]["name"] == response_test.expected_response["intent"]["name"]
 
@@ -296,11 +294,14 @@ def test_post_train_internal_error(app, rasa_default_train_data):
 
 def test_model_hot_reloading(app, rasa_default_train_data):
     query = "/parse?q=hello&model=test-model"
+
+    # Model could not be found, fallback model was used instead
     _, response = app.get(query)
     assert response.status == 200
     rjs = response.json
-    assert rjs["model"] == "fallback"
+    assert rjs["model"] == FALLBACK_MODEL_NAME
 
+    # Train a new model - model will be loaded automatically
     train_u = "/train?model=test-model"
     request = {
         "language": "en",
@@ -318,8 +319,9 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     )
     assert response.status == 200, "Training should end successfully"
 
+    # Model should be there now
     _, response = app.get(query)
-    assert response.status == 200, "Project should now exist after it got trained"
+    assert response.status == 200, "Model should now exist after it got trained"
     rjs = response.json
     assert "test-model" in rjs["model"]
 
@@ -331,6 +333,15 @@ def test_evaluate_invalid_model_error(app, rasa_default_train_data):
     assert response.status == 500
     assert "details" in rjs
     assert rjs["details"]["error"] == "Model with name 'not-existing' is not loaded."
+
+
+def test_evaluate_unsupported_model_error(app_without_model, rasa_default_train_data):
+    _, response = app_without_model.post("/evaluate", json=rasa_default_train_data)
+
+    rjs = response.json
+    assert response.status == 500
+    assert "details" in rjs
+    assert rjs["details"]["error"] == "No model is loaded. Cannot evaluate."
 
 
 def test_evaluate_internal_error(app, rasa_default_train_data):

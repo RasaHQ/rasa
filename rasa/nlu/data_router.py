@@ -3,6 +3,7 @@ import datetime
 import logging
 import multiprocessing
 import os
+import tempfile
 from concurrent.futures import ProcessPoolExecutor
 from typing import Any, Dict, Optional, Text
 
@@ -14,7 +15,7 @@ from rasa.nlu.model_loader import NLUModel, load_from_server, FALLBACK_MODEL_NAM
 from rasa.nlu.test import run_evaluation
 from rasa.nlu.model import InvalidModelError, UnsupportedModelError
 from rasa.nlu.train import do_train_in_worker
-
+from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -38,22 +39,51 @@ class MaxWorkerProcessError(Exception):
         return self.message
 
 
+async def create_data_router(
+    model_dir: Text = None,
+    max_worker_processes: int = 1,
+    response_log: Text = None,
+    emulation_mode: Text = None,
+    remote_storage: Text = None,
+    component_builder: ComponentBuilder = None,
+    model_server: EndpointConfig = None,
+    wait_time_between_pulls: int = None,
+) -> "DataRouter":
+    router = DataRouter(
+        model_dir,
+        max_worker_processes,
+        response_log,
+        emulation_mode,
+        remote_storage,
+        component_builder,
+        model_server,
+        wait_time_between_pulls,
+    )
+
+    model_dir = config.make_path_absolute(model_dir)
+    await router.load_model(model_dir)
+
+    return router
+
+
 class DataRouter(object):
     def __init__(
         self,
-        model_dir=None,
-        max_worker_processes=1,
-        response_log=None,
-        emulation_mode=None,
-        remote_storage=None,
-        component_builder=None,
-        model_server=None,
-        wait_time_between_pulls=None,
+        model_dir: Text = None,
+        max_worker_processes: int = 1,
+        response_log: Text = None,
+        emulation_mode: Text = None,
+        remote_storage: Text = None,
+        component_builder: ComponentBuilder = None,
+        model_server: EndpointConfig = None,
+        wait_time_between_pulls: int = None,
     ):
         self._worker_processes = max(max_worker_processes, 1)
         self._current_worker_processes = 0
         self.responses = self._create_query_logger(response_log)
 
+        if model_dir is None:
+            model_dir = tempfile.gettempdir()
         self.model_dir = config.make_path_absolute(model_dir)
 
         self.emulator = self._create_emulator(emulation_mode)
@@ -67,13 +97,6 @@ class DataRouter(object):
             self.component_builder = ComponentBuilder(use_cache=True)
 
         self.nlu_model: NLUModel = NLUModel.fallback_model(self.component_builder)
-
-        # TODO: Should be moved to separate method
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-        loop.run_until_complete(self.load_model(self.model_dir))
-        loop.close()
 
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
