@@ -24,7 +24,7 @@ from rasa.nlu.test import (
     IntentEvaluationResult,
     evaluate_intents,
     evaluate_entities,
-    collect_ner_results
+    collect_ner_results,
 )
 from rasa.nlu.test import does_token_cross_borders
 from rasa.nlu.test import align_entity_predictions
@@ -301,7 +301,12 @@ def test_entity_evaluation_report(tmpdir_factory):
     utils.create_dir(report_folder)
 
     result = evaluate_entities(
-        [EN_targets], [EN_predicted], [EN_tokens], mock_extractors, report_folder
+        [EN_targets],
+        [EN_predicted],
+        [EN_tokens],
+        mock_extractors,
+        report_folder,
+        ner_filename,
     )
 
     report_a = json.loads(rasa.utils.io.read_file(report_filename_a))
