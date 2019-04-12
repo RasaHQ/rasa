@@ -22,7 +22,7 @@ DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
 NLU_MODEL_NAME = "nlu_model.tar.gz"
 
-TEST_MODEL_DIR = "test_models"
+TEST_MODEL_DIR = "test_projects"
 
 NLU_MODEL_PATH = os.path.join(TEST_MODEL_DIR, "nlu")
 
@@ -103,4 +103,4 @@ def trained_nlu_model(request):
 
     request.addfinalizer(fin)
 
-    yield model_path
+    return output_path

@@ -60,8 +60,7 @@ async def create_data_router(
         wait_time_between_pulls,
     )
 
-    model_dir = config.make_path_absolute(model_dir)
-    await router.load_model(model_dir)
+    await router.load_model(router.model_dir)
 
     return router
 
@@ -175,7 +174,6 @@ class DataRouter(object):
                 self.nlu_model = NLUModel.load_local_model(
                     model_dir, self.component_builder
                 )
-                return
 
             elif self.model_server is not None:
                 self.nlu_model = await load_from_server(

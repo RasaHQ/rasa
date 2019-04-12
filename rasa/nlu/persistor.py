@@ -181,7 +181,7 @@ class GCSPersistor(Persistor):
             ]
         except Exception as e:
             logger.warning(
-                "Failed to list models in " "google cloud storage. {}".format(e)
+                "Failed to list models in google cloud storage. {}".format(e)
             )
             return []
 
@@ -241,7 +241,7 @@ class AzurePersistor(Persistor):
                 for b in blob_iterator
             ]
         except Exception as e:
-            logger.warning("Failed to list models " "azure blob storage. {}".format(e))
+            logger.warning("Failed to list models azure blob storage. {}".format(e))
             return []
 
     def _persist_tar(self, file_key: Text, tar_path: Text) -> None:
