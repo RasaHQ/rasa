@@ -30,12 +30,7 @@ def app_without_model():
 async def app(tmpdir_factory, trained_nlu_model):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    if "TRAVIS_BUILD_DIR" in os.environ:
-        root_dir = os.environ["TRAVIS_BUILD_DIR"]
-    else:
-        root_dir = os.getcwd()
-
-    router = await create_data_router(os.path.join(root_dir, NLU_MODEL_PATH))
+    router = await create_data_router(NLU_MODEL_PATH)
 
     rasa = create_app(router, logfile=nlu_log_file)
 
