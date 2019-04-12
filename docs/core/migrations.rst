@@ -184,7 +184,7 @@ General
   them. If your actions are written in python (in a file called actions.py) you
   can do this by running ``python -m rasa_core_sdk.endpoint --actions actions``
   and specifying the action endpoint in the ``endpoints.yml``
-  For more information please read :ref:`actions`.
+  For more information please read :ref:`customactions`.
 - For your custom actions, the imports have changed from
   ``from rasa_core.actions import Action`` to ``from rasa_core_sdk import Action`` and
   from ``from rasa_core.events import *`` to ``from rasa_core_sdk.events import *``
@@ -201,7 +201,7 @@ HTTP Server endpoints
   for these two, as the flow of information has been changed: Instead of you
   calling Rasa Core to update the tracker and receive the next action to be
   executed, Rasa Core will call your action server once it predicted an action.
-  More information can be found in the updated docs for :ref:`actions`.
+  More information can be found in the updated docs for :ref:`customactions`.
 
 
 Webhooks

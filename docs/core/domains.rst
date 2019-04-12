@@ -74,7 +74,7 @@ a class ``MyAwesomeAction``, and module ``my_slots`` containing
 
 The ``name`` function of ``MyAwesomeAction`` needs to return
 ``my_custom_action`` in this example (for more details,
-see :ref:`actions`).
+see :ref:`customactions`).
 
 .. _utter_templates:
 

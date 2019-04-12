@@ -189,10 +189,7 @@ async def send_action(
                     "You do not need to do anything further. "
                     "".format(action_name, [*NEW_TEMPLATES[action_name]][0])
                 )
-
                 await _ask_questions(warning_questions, sender_id, endpoint)
-                payload = ActionExecuted(action_name).as_dict()
-                return await send_event(endpoint, sender_id, payload)
             else:
                 warning_questions = questionary.confirm(
                     "WARNING: You have created a new action: '{}', "
@@ -337,12 +334,12 @@ def _selection_choices_from_intent_prediction(
 
 
 async def _request_free_text_intent(sender_id: Text, endpoint: EndpointConfig) -> Text:
-    question = questionary.text("Please type the intent name")
+    question = questionary.text("Please type the intent name:")
     return await _ask_questions(question, sender_id, endpoint)
 
 
 async def _request_free_text_action(sender_id: Text, endpoint: EndpointConfig) -> Text:
-    question = questionary.text("Please type the action name")
+    question = questionary.text("Please type the action name:")
     return await _ask_questions(question, sender_id, endpoint)
 
 
@@ -350,7 +347,7 @@ async def _request_free_text_utterance(
     sender_id: Text, endpoint: EndpointConfig, action: Text
 ) -> Text:
     question = questionary.text(
-        "Please type the message for your " "new action {}".format(action)
+        "Please type the message for your new utter_template '{}':".format(action)
     )
     return await _ask_questions(question, sender_id, endpoint)
 
@@ -621,7 +618,9 @@ async def _request_action_from_user(
         for action in session_actions_unique
         if action not in old_actions
     ]
-    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
+    choices = (
+        [{"name": "<create new action>", "value": OTHER_ACTION}] + new_actions + choices
+    )
     question = questionary.select("What is the next action of the bot?", choices)
 
     action_name = await _ask_questions(question, sender_id, endpoint)

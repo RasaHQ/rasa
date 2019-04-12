@@ -150,7 +150,7 @@ In this case, the bot should execute ``action_show_concert_reviews``
 At this point we can also choose to create a new action, if the correct action
 is not yet implemented. There are two types of new actions that can be created
 1) create an ``utter_{}`` action which uses :ref:`utter_templates` or
-2) create a custom action.
+2) create :ref:`customactions`.
 
 Only the first type is fully implemented by interactive learning.
 After choosing ``<create new action>`` we are prompted to type the action name,
