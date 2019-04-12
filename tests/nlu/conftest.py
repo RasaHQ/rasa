@@ -78,7 +78,7 @@ def default_config():
 
 
 @pytest.fixture()
-def trained_nlu_model():
+def trained_nlu_model(request):
     cfg = RasaNLUModelConfig({"pipeline": "keyword"})
     trainer = Trainer(cfg)
     td = training_data.load_data(DEFAULT_DATA_PATH)
@@ -96,10 +96,13 @@ def trained_nlu_model():
 
     model_path = trainer.persist(NLU_MODEL_PATH)
 
+    def fin():
+        if os.path.exists(NLU_MODEL_PATH):
+            shutil.rmtree(NLU_MODEL_PATH)
+
+        if os.path.exists(output_path):
+            shutil.rmtree(output_path)
+
+    request.addfinalizer(fin)
+
     yield model_path
-
-    if os.path.exists(NLU_MODEL_PATH):
-        shutil.rmtree(NLU_MODEL_PATH)
-
-    if os.path.exists(output_path):
-        shutil.rmtree(output_path)
