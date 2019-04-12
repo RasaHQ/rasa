@@ -39,32 +39,6 @@ class MaxWorkerProcessError(Exception):
         return self.message
 
 
-async def create_data_router(
-    model_dir: Text = None,
-    max_worker_processes: int = 1,
-    response_log: Text = None,
-    emulation_mode: Text = None,
-    remote_storage: Text = None,
-    component_builder: ComponentBuilder = None,
-    model_server: EndpointConfig = None,
-    wait_time_between_pulls: int = None,
-) -> "DataRouter":
-    router = DataRouter(
-        model_dir,
-        max_worker_processes,
-        response_log,
-        emulation_mode,
-        remote_storage,
-        component_builder,
-        model_server,
-        wait_time_between_pulls,
-    )
-
-    await router.load_model(router.model_dir)
-
-    return router
-
-
 class DataRouter(object):
     def __init__(
         self,
@@ -96,6 +70,12 @@ class DataRouter(object):
             self.component_builder = ComponentBuilder(use_cache=True)
 
         self.nlu_model = NLUModel.fallback_model(self.component_builder)
+
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+        loop.run_until_complete(self.load_model(self.model_dir))
+        loop.close()
 
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See
