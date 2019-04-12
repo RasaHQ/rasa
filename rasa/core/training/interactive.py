@@ -613,7 +613,7 @@ async def _request_action_from_user(
     tracker = await retrieve_tracker(endpoint, sender_id)
     events = tracker.get("events", [])
 
-    session_actions_all = [a["name"] for a in _collect_actions(evts)]
+    session_actions_all = [a["name"] for a in _collect_actions(events)]
     session_actions_unique = list(set(session_actions_all))
     old_actions = [action["value"] for action in choices]
     new_actions = [
