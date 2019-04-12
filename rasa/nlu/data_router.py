@@ -96,7 +96,7 @@ class DataRouter(object):
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
 
-        self.nlu_model: NLUModel = NLUModel.fallback_model(self.component_builder)
+        self.nlu_model = NLUModel.fallback_model(self.component_builder)
 
         # tensorflow sessions are not fork-safe,
         # and training processes have to be spawned instead of forked. See

@@ -12,10 +12,10 @@ help:
 
 
 train-core:
-	python -m rasa.core.train -s data/stories.md -d domain.yml -o models/dialogue --debug
+	rasa train core -s data/stories.md -d domain.yml -o models/dialogue --debug
 
 run-core:
-	python -m rasa.core.run --core models/dialogue --nlu models/nlu/current --verbose --endpoints endpoints.yml
+	rasa shell -m models --verbose --endpoints endpoints.yml
 
 run-actions:
 	python -m rasa_core_sdk.endpoint --actions actions
@@ -28,10 +28,10 @@ train-interactive:
 	python -m rasa.core.train interactive -s data/stories.md --nlu models/nlu/current -d domain.yml -o models/dialogue --verbose --endpoints endpoints.yml
 
 visualize:
-	python -m rasa.core.visualize -s data/stories.md -d domain.yml -o story_graph.html
+	rasa show
 
 train-nlu:
-	python -m rasa.nlu.train -c config.yml --fixed_model_name current --data data/nlu.md -o models --project nlu --verbose
+	rasa train nlu -c config.yml --fixed_model_name current --data data/nlu.md -o models --verbose
 
 evaluate-core:
-	python -m rasa.core.test --core models/dialogue -s data/stories.md --fail_on_prediction_errors
+	rasa test core -m models -s data/stories.md --fail_on_prediction_errors

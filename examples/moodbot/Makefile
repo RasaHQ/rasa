@@ -11,41 +11,41 @@ help:
 	@echo "        Show your stories as a graph."
 
 train-nlu:
-	python -m rasa.nlu.train -c config.yml --fixed_model_name current \
-	       --data ./data/nlu.md --path models/ --project nlu
+	rasa train nlu -c config.yml --fixed_model_name current \
+	       --data ./data/nlu.md --path models/
 
 train-core:
-	python -m rasa.core.train -s data/stories.md -d domain.yml -o models/dialogue
+	rasa train core -s data/stories.md -d domain.yml -o models
 
 train-interactive:
-	python -m rasa.core.train interactive -s data/stories.md --nlu models/nlu/current -d domain.yml -o models/dialogue
+	rasa interactive -s data/stories.md -m models -d domain.yml
 
 run-fb:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials credentials.yml
+	rasa shell core -m models -p 5002 -c facebook --credentials credentials.yml
 
 run-slack:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c slack --credentials credentials.yml
+	rasa shell core -m models -p 5002 -c slack --credentials credentials.yml
 
 run-telegram:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c telegram --credentials credentials.yml
+	rasa shell core -m models -p 5002 -c telegram --credentials credentials.yml
 
 run-rocketchat:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c rocketchat --credentials credentials.yml
+	rasa shell core -m models -p 5002 -c rocketchat --credentials credentials.yml
 
 run-mattermost:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c mattermost --credentials credentials.yml
+	rasa shell core -m models -p 5002 -c mattermost --credentials credentials.yml
 
 run-twilio:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c twilio --credentials credentials.yml
+	rasa shell core -m models -p 5002 -c twilio --credentials credentials.yml
 
 run-webexteams:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current -p 5002 -c webexteams --credentials credentials.yml
+	rasa shell core -m models -p 5002 -c webexteams --credentials credentials.yml
 
 run-cmdline:
-	python -m rasa.core.run -d models/dialogue -u models/nlu/current
+	rasa shell core -m models
 
 evaluate-nlu:
-	python -m rasa.nlu.test  --model models/nlu/current --data ./data/nlu.md
+	rasa test nlu -m models --data ./data/nlu.md
 
 visualize:
-	python -m rasa.core.visualize -s data/stories.md -d domain.yml -o story_graph.html
+	rasa show
