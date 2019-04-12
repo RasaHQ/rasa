@@ -11,7 +11,7 @@ from tests.nlu.conftest import NLU_MODEL_PATH
 
 
 @responses.activate
-async def test_nlu_server_with_model_server(trained_nlu_model):
+async def test_load_model_from_server(trained_nlu_model):
     fingerprint = "somehash"
     model_endpoint = EndpointConfig("http://server.com/models/nlu/tags/latest")
 

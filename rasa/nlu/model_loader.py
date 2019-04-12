@@ -256,9 +256,13 @@ class NLUModel(object):
             logger.warning("Could not load local model in '{}'".format(dir))
             return NLUModel.fallback_model(component_builder)
 
+        print ("#" * 100)
+
         working_directory = tempfile.mkdtemp()
         unpacked_model = model.unpack_model(model_archive, working_directory)
         _, nlu_model = model.get_model_subdirectories(unpacked_model)
+
+        print ("#" * 100)
 
         model_path = nlu_model if os.path.exists(nlu_model) else unpacked_model
 

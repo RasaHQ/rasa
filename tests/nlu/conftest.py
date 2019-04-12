@@ -94,8 +94,6 @@ def trained_nlu_model(request):
     )
     model.create_package_rasa(model_path, output_path, new_fingerprint)
 
-    model_path = trainer.persist(NLU_MODEL_PATH)
-
     def fin():
         if os.path.exists(NLU_MODEL_PATH):
             shutil.rmtree(NLU_MODEL_PATH)
