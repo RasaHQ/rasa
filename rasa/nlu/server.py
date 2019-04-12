@@ -19,7 +19,7 @@ from rasa.cli.utils import create_output_path
 from rasa.nlu import utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import DataRouter, MaxWorkerProcessError
+from rasa.nlu.data_router import DataRouter, MaxWorkerProcessError, create_data_router
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.model import InvalidModelError
 from rasa.nlu.train import TrainingException
@@ -398,14 +398,23 @@ def get_token(_clitoken: str) -> str:
 def main(args):
     _endpoints = read_endpoints(args.endpoints)
 
-    router = DataRouter(
-        args.max_training_processes,
-        args.response_log,
-        args.emulate,
-        args.storage,
-        model_server=_endpoints.model,
-        wait_time_between_pulls=args.wait_time_between_pulls,
+    loop = asyncio.get_event_loop()
+    if loop.is_closed():
+        loop = asyncio.new_event_loop()
+
+    router = loop.run_until_complete(
+        create_data_router(
+            args.model,
+            args.max_training_processes,
+            args.response_log,
+            args.emulate,
+            args.storage,
+            model_server=_endpoints.model,
+            wait_time_between_pulls=args.wait_time_between_pulls,
+        )
     )
+
+    loop.close()
 
     rasa = create_app(
         router, args.loglevel, args.write, get_token(args.token), args.cors

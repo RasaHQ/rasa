@@ -9,7 +9,7 @@ import pytest
 import ruamel.yaml as yaml
 import tempfile
 
-from rasa.nlu.data_router import DataRouter
+from rasa.nlu.data_router import DataRouter, create_data_router
 from rasa.nlu.model_loader import FALLBACK_MODEL_NAME
 from rasa.nlu.server import create_app
 from tests.nlu import utilities
@@ -28,7 +28,7 @@ def app_without_model():
 
 
 @pytest.fixture
-def app(tmpdir_factory, trained_nlu_model):
+async def app(tmpdir_factory, trained_nlu_model):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     temp_path = tmpdir_factory.mktemp("nlu")
@@ -37,7 +37,7 @@ def app(tmpdir_factory, trained_nlu_model):
     except FileExistsError:
         pass
 
-    router = DataRouter(temp_path.strpath)
+    router = await create_data_router(temp_path.strpath)
 
     rasa = create_app(router, logfile=nlu_log_file)
 
