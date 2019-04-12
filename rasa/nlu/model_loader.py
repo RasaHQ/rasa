@@ -54,7 +54,9 @@ async def load_from_server(
 
 
 async def _update_model_from_server(
-    model_server: EndpointConfig, nlu_model: "NLUModel", component_builder
+    model_server: EndpointConfig,
+    nlu_model: "NLUModel",
+    component_builder: ComponentBuilder,
 ) -> None:
     """Load a tar.gz Rasa NLU model from a URL and update the passed
     nlu model."""
@@ -146,7 +148,7 @@ async def _run_model_pulling_worker(
 
 
 def start_model_pulling_in_worker(
-    component_builder,
+    component_builder: ComponentBuilder,
     model_server: Optional[EndpointConfig],
     wait_time_between_pulls: int,
     nlu_model: "NLUModel",
@@ -161,7 +163,12 @@ def start_model_pulling_in_worker(
 
 class NLUModel(object):
     def __init__(
-        self, model_name, interpreter, model_path=None, model_dir=None, fingerprint=None
+        self,
+        model_name: Text,
+        interpreter: Interpreter,
+        model_path: Optional[Text] = None,
+        model_dir: Optional[Text] = None,
+        fingerprint: Optional[Text] = None,
     ):
         self.name = model_name
         self.path = model_path
@@ -201,7 +208,7 @@ class NLUModel(object):
         finally:
             self._writer_lock.release()
 
-    def is_loaded(self, model_name: Text = None) -> bool:
+    def is_loaded(self, model_name: Optional[Text] = None) -> bool:
         if self.interpreter is None:
             return False
 
@@ -215,7 +222,7 @@ class NLUModel(object):
         return True
 
     def update_model(
-        self, component_builder, model_dir: Text, model_name: Text
+        self, component_builder: ComponentBuilder, model_dir: Text, model_name: Text
     ) -> bool:
         # unload current model
         self.unload()
@@ -239,7 +246,7 @@ class NLUModel(object):
         return status
 
     @staticmethod
-    def load_local_model(dir, component_builder) -> "NLUModel":
+    def load_local_model(dir: Text, component_builder: ComponentBuilder) -> "NLUModel":
         if os.path.isfile(dir):
             model_archive = dir
         else:
@@ -261,27 +268,23 @@ class NLUModel(object):
         return NLUModel(name, interpreter, dir, model_path)
 
     @staticmethod
-    def load_from_remote_storage(remote_storage, component_builder, model_name):
-        try:
-            from rasa.nlu.persistor import get_persistor
+    def load_from_remote_storage(
+        remote_storage: Text, component_builder: ComponentBuilder, model_name: Text
+    ) -> "NLUModel":
+        from rasa.nlu.persistor import get_persistor
 
-            p = get_persistor(remote_storage)
-            if p is not None:
-                target_path = tempfile.mkdtemp()
-                p.retrieve(model_name, target_path)
-                interpreter = interpreter_for_model(component_builder, target_path)
+        p = get_persistor(remote_storage)
+        if p is not None:
+            target_path = tempfile.mkdtemp()
+            p.retrieve(model_name, target_path)
+            interpreter = interpreter_for_model(component_builder, target_path)
 
-                return NLUModel(model_name, interpreter)
-            else:
-                raise RuntimeError("Unable to initialize persistor")
-        except Exception as e:
-            logger.warning(
-                "Using default interpreter, couldn't fetch model: {}".format(e)
-            )
-            raise  # re-raise this exception because nothing we can do now
+            return NLUModel(model_name, interpreter)
+        else:
+            raise RuntimeError("Unable to initialize persistor")
 
     @staticmethod
-    def fallback_model(component_builder):
+    def fallback_model(component_builder: ComponentBuilder):
         meta = Metadata(
             {
                 "pipeline": [

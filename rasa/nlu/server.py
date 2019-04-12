@@ -16,7 +16,7 @@ import rasa.utils.endpoints
 from rasa import model, data
 from rasa.cli.utils import create_output_path
 
-from rasa.nlu import config, utils, constants
+from rasa.nlu import utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.data_router import DataRouter, MaxWorkerProcessError, create_data_router

@@ -170,22 +170,30 @@ class DataRouter(object):
             self.nlu_model = NLUModel.fallback_model(self.component_builder)
             return
 
-        if os.path.exists(model_dir):
-            self.nlu_model = NLUModel.load_local_model(
-                model_dir, self.component_builder
-            )
+        try:
+            if os.path.exists(model_dir):
+                self.nlu_model = NLUModel.load_local_model(
+                    model_dir, self.component_builder
+                )
+                return
 
-        elif self.model_server is not None:
-            self.nlu_model = await load_from_server(
-                self.component_builder, self.model_server, self.wait_time_between_pulls
-            )
+            elif self.model_server is not None:
+                self.nlu_model = await load_from_server(
+                    self.component_builder,
+                    self.model_server,
+                    self.wait_time_between_pulls,
+                )
 
-        elif self.remote_storage is not None:
-            self.nlu_model = NLUModel.load_from_remote_storage(
-                self.remote_storage, self.component_builder, model_dir
-            )
+            elif self.remote_storage is not None:
+                self.nlu_model = NLUModel.load_from_remote_storage(
+                    self.remote_storage, self.component_builder, model_dir
+                )
 
-        logger.debug("Loaded model '{}'".format(self.nlu_model.name))
+            logger.debug("Loaded model '{}'".format(self.nlu_model.name))
+
+        except Exception as e:
+            logger.error("Could not load model due to {}.".format(e))
+            raise
 
     def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)

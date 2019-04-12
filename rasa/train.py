@@ -171,7 +171,7 @@ def train_nlu(
 
     _train_path = train_path or tempfile.mkdtemp()
     _, nlu_model, _ = rasa.nlu.train(
-        config, nlu_data, _train_path, project="", fixed_model_name="nlu"
+        config, nlu_data, _train_path, fixed_model_name="nlu"
     )
 
     if not train_path:

@@ -37,7 +37,6 @@ def test_list_projects_method_in_AWSPersistor(component_builder, tmpdir):
     awspersistor = persistor.AWSPersistor(os.environ["BUCKET_NAME"])
     result = awspersistor.list_projects()
 
-    # TODO check name
     assert len(result) == 1
 
 
