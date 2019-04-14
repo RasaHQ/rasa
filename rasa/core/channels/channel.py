@@ -1,16 +1,15 @@
 import asyncio
-from asyncio import Queue, CancelledError
-
 import inspect
 import json
 import logging
-from sanic import Sanic, Blueprint, response
+import uuid
+from asyncio import Queue, CancelledError
 from typing import (
     Text, List, Dict, Any, Optional, Callable, Iterable,
     Awaitable)
-import uuid
 
-from rasa.cli.utils import print_success
+from sanic import Sanic, Blueprint, response
+
 from rasa.core import utils
 from rasa.core.constants import DOCS_BASE_URL
 

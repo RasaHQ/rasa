@@ -1,10 +1,10 @@
-import aiohttp
 import copy
 import json
-
 import logging
 import typing
 from typing import List, Text, Optional, Dict, Any
+
+import aiohttp
 
 import rasa.core
 from rasa.core import events
@@ -198,7 +198,6 @@ class ActionRestart(Action):
 
     async def run(self, dispatcher, tracker, domain):
         from rasa.core.events import Restarted
-
         # only utter the template if it is available
         await dispatcher.utter_template("utter_restart", tracker,
                                         silent_fail=True)

@@ -1,10 +1,8 @@
-from collections import deque, defaultdict
-
-import io
-import sys
 import json
 import logging
+import sys
 import uuid
+from collections import deque, defaultdict
 from typing import List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa.core import utils
@@ -404,7 +402,7 @@ class StoryGraph(object):
         return [self.get(step_id) for step_id in self.ordered_ids]
 
     def cyclic_edges(
-        self
+            self
     ) -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]:
         """Returns the story steps ordered by topological order of the DAG."""
 
@@ -514,8 +512,8 @@ class StoryGraph(object):
 
     @staticmethod
     def _checkpoint_difference(
-        cps: List[Checkpoint],
-        cp_name_to_ignore: Set[Text]
+            cps: List[Checkpoint],
+            cp_name_to_ignore: Set[Text]
     ) -> List[Checkpoint]:
         """Finds checkpoints which names are
             different form names of checkpoints to ignore"""
@@ -523,10 +521,10 @@ class StoryGraph(object):
         return [cp for cp in cps if cp.name not in cp_name_to_ignore]
 
     def _remove_unused_generated_cps(
-        self,
-        story_steps: Dict[Text, StoryStep],
-        overlapping_cps: Set[Text],
-        story_end_checkpoints: Dict[Text, Text]
+            self,
+            story_steps: Dict[Text, StoryStep],
+            overlapping_cps: Set[Text],
+            story_end_checkpoints: Dict[Text, Text]
     ) -> None:
         """Finds unused generated checkpoints
             and remove them from story steps."""
@@ -577,8 +575,8 @@ class StoryGraph(object):
 
     @staticmethod
     def _find_unused_checkpoints(
-        story_steps: ValuesView[StoryStep],
-        story_end_checkpoints: Dict[Text, Text]
+            story_steps: ValuesView[StoryStep],
+            story_end_checkpoints: Dict[Text, Text]
     ) -> Set[Text]:
         """Finds all unused checkpoints."""
 
@@ -609,7 +607,7 @@ class StoryGraph(object):
 
     @staticmethod
     def order_steps(
-        story_steps: List[StoryStep]
+            story_steps: List[StoryStep]
     ) -> Tuple[deque, Set[Tuple[Text, Text]]]:
         """Topological sort of the steps returning the ids of the steps."""
 
@@ -622,7 +620,7 @@ class StoryGraph(object):
 
     @staticmethod
     def _group_by_start_checkpoint(
-        story_steps: List[StoryStep]
+            story_steps: List[StoryStep]
     ) -> Dict[Text, List[StoryStep]]:
         """Returns all the start checkpoint of the steps"""
 
@@ -634,7 +632,7 @@ class StoryGraph(object):
 
     @staticmethod
     def topological_sort(
-        graph: Dict[Text, Set[Text]]
+            graph: Dict[Text, Set[Text]]
     ) -> Tuple[deque, Set[Tuple[Text, Text]]]:
         """Creates a top sort of a directed graph. This is an unstable sorting!
 

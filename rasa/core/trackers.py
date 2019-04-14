@@ -223,11 +223,11 @@ class DialogueStateTracker(object):
 
         If the conversation has not been restarted, ``0`` is returned."""
 
-        idx = 0
-        for i, event in enumerate(self.events):
+        for i, event in enumerate(reversed(self.events)):
             if isinstance(event, Restarted):
-                idx = i + 1
-        return idx
+                return len(self.events) - (i + 1)
+
+        return 0
 
     def events_after_latest_restart(self):
         # type: () -> List[Event]

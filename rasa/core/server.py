@@ -327,7 +327,6 @@ def create_app(agent=None,
         tracker = app.agent.tracker_store.get_or_create_tracker(sender_id)
         verbosity = event_verbosity_parameter(request,
                                               EventVerbosity.AFTER_RESTART)
-
         if evt:
             tracker.update(evt)
             app.agent.tracker_store.save(tracker)
@@ -357,7 +356,8 @@ def create_app(agent=None,
 
         stream_events = \
             request.raw_args.get("stream_events", "true").lower() == "true"
-        print_success("Stream events {} req args {}".format(stream_events, request.raw_args))
+        print_success(
+            "Stream events {} req args {}".format(stream_events, request.raw_args))
         # will override an existing tracker with the same id!
         app.agent.tracker_store.save(tracker, stream_events)
         return response.json(tracker.current_state(verbosity))
@@ -401,7 +401,6 @@ def create_app(agent=None,
 
         verbosity = event_verbosity_parameter(request,
                                               default_verbosity)
-
         # retrieve tracker and set to requested state
         tracker = app.agent.tracker_store.get_or_create_tracker(sender_id)
         if not tracker:
@@ -598,18 +597,18 @@ def create_app(agent=None,
 
         if len(nlu_files) == 1:
             data_path = os.path.abspath(nlu_files[0])
-            try:
-                evaluation = run_evaluation(data_path, model_path)
-                return response.json(evaluation)
-            except ValueError as e:
-                return ErrorResponse(400, "FailedIntentEvaluation",
-                                     "Evaluation could not be created. "
-                                     "Error: {}".format(e))
+            # try:
+            evaluation = run_evaluation(data_path, model_path)
+            return response.json(evaluation)
+            # except ValueError as e:
+            #     raise ErrorResponse(400, "FailedIntentEvaluation",
+            #                         "Evaluation could not be created. "
+            #                         "Error: {}".format(e))
         else:
-            return ErrorResponse(400, "FailedIntentEvaluation",
-                                 "NLU evaluation file could not be found. "
-                                 "This endpoint requires a single file ending "
-                                 "on `.md` or `.json`.")
+            raise ErrorResponse(400, "FailedIntentEvaluation",
+                                "NLU evaluation file could not be found. "
+                                "This endpoint requires a single file ending "
+                                "on `.md` or `.json`.")
 
     @app.post("/jobs")
     @requires_auth(app, auth_token)

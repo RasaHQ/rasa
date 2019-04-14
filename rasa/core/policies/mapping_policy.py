@@ -49,7 +49,7 @@ class MappingPolicy(Policy):
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    logger.warning("MappingPolicy tried to predict unkown "
+                    logger.warning("MappingPolicy tried to predict unknown "
                                    "action '{}'.".format(action))
                 else:
                     prediction[idx] = 1

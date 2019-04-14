@@ -55,13 +55,13 @@ class EvaluationStore(object):
     """Class storing action, intent and entity predictions and targets."""
 
     def __init__(
-        self,
-        action_predictions: Optional[List[str]] = None,
-        action_targets: Optional[List[str]] = None,
-        intent_predictions: Optional[List[str]] = None,
-        intent_targets: Optional[List[str]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None
+            self,
+            action_predictions: Optional[List[str]] = None,
+            action_targets: Optional[List[str]] = None,
+            intent_predictions: Optional[List[str]] = None,
+            intent_targets: Optional[List[str]] = None,
+            entity_predictions: Optional[List[Dict[Text, Any]]] = None,
+            entity_targets: Optional[List[Dict[Text, Any]]] = None
     ) -> None:
         self.action_predictions = action_predictions or []
         self.action_targets = action_targets or []
@@ -71,13 +71,13 @@ class EvaluationStore(object):
         self.entity_targets = entity_targets or []
 
     def add_to_store(
-        self,
-        action_predictions: Optional[List[str]] = None,
-        action_targets: Optional[List[str]] = None,
-        intent_predictions: Optional[List[str]] = None,
-        intent_targets: Optional[List[str]] = None,
-        entity_predictions: Optional[List[Dict[Text, Any]]] = None,
-        entity_targets: Optional[List[Dict[Text, Any]]] = None
+            self,
+            action_predictions: Optional[List[str]] = None,
+            action_targets: Optional[List[str]] = None,
+            intent_predictions: Optional[List[str]] = None,
+            intent_targets: Optional[List[str]] = None,
+            entity_predictions: Optional[List[Dict[Text, Any]]] = None,
+            entity_targets: Optional[List[Dict[Text, Any]]] = None
     ) -> None:
         """Add items or lists of items to the store"""
         for k, v in locals().items():
@@ -312,7 +312,7 @@ def _collect_action_executed_predictions(processor, partial_tracker, event,
     action, policy, confidence = processor.predict_next_action(partial_tracker)
     predicted = action.name()
 
-    if predicted != gold and FormPolicy.__name__ in policy:
+    if policy and predicted != gold and FormPolicy.__name__ in policy:
         # FormPolicy predicted wrong action
         # but it might be Ok if form action is rejected
         _emulate_form_rejection(processor, partial_tracker)
@@ -402,10 +402,10 @@ def _in_training_data_fraction(action_list):
 
 
 def collect_story_predictions(
-    completed_trackers: List['DialogueStateTracker'],
-    agent: 'Agent',
-    fail_on_prediction_errors: bool = False,
-    use_e2e: bool = False
+        completed_trackers: List['DialogueStateTracker'],
+        agent: 'Agent',
+        fail_on_prediction_errors: bool = False,
+        use_e2e: bool = False
 ) -> Tuple[StoryEvalution, int]:
     """Test the stories from a file, running them through the stored model."""
     from rasa.nlu.test import get_evaluation_metrics

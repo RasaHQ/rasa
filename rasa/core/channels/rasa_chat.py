@@ -48,6 +48,7 @@ class RasaChatInput(RestInput):
 
         if req.headers.get("Authorization"):
             user = await self._check_token(req.headers.get("Authorization"))
+
             if user:
                 return user["username"]
 

@@ -103,9 +103,7 @@ class TrackerStore(object):
         offset = len(old_tracker.events) if old_tracker else 0
         evts = tracker.events
         for evt in list(itertools.islice(evts, offset, len(evts))):
-            body = {
-                "sender_id": tracker.sender_id,
-            }
+            body = {"sender_id": tracker.sender_id}
             body.update(evt.as_dict())
             self.event_broker.publish(body)
 
@@ -313,7 +311,8 @@ class SQLTrackerStore(TrackerStore):
 
                 try:
                     self.Base.metadata.create_all(self.engine)
-                except sqlalchemy.exc.OperationalError:
+                except (sqlalchemy.exc.OperationalError,
+                        sqlalchemy.exc.ProgrammingError):
                     pass
 
                 self.session = sessionmaker(bind=self.engine)()
@@ -365,7 +364,7 @@ class SQLTrackerStore(TrackerStore):
         query = self.session.query(self.SQLEvent)
         result = query.filter_by(sender_id=sender_id).all()
         events = [json.loads(event.data) for event in result]
-
+        print("retrieved", sender_id, events)
         if self.domain and len(events) > 0:
             logger.debug("Recreating tracker "
                          "from sender id '{}'".format(sender_id))
@@ -399,6 +398,7 @@ class SQLTrackerStore(TrackerStore):
                                            intent_name=intent,
                                            action_name=action,
                                            data=json.dumps(data)))
+
         self.session.commit()
 
         logger.debug("Tracker with sender_id '{}' "

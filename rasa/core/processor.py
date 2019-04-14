@@ -1,16 +1,16 @@
 import json
 import logging
+import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
-import time
 
 from rasa.core import jobs
 from rasa.core.actions import Action
 from rasa.core.actions.action import (
     ACTION_LISTEN_NAME,
-    ActionExecutionRejection)
+    ActionExecutionRejection, ACTION_RESTART_NAME)
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.constants import (
     ACTION_NAME_SENDER_ID_CONNECTOR_STR,
@@ -58,7 +58,7 @@ class MessageProcessor(object):
     async def handle_message(self,
                              message: UserMessage) -> Optional[List[Text]]:
         """Handle a single message with this processor."""
-
+        print("handling message", message.text)
         # preprocess message if necessary
         tracker = await self.log_message(message)
         if not tracker:
@@ -67,7 +67,7 @@ class MessageProcessor(object):
         await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
-
+        print("saved tracker", tracker.current_state())
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
         else:
@@ -447,10 +447,8 @@ class MessageProcessor(object):
             tracker.update(e)
 
     def _get_tracker(self, sender_id: Text) -> Optional[DialogueStateTracker]:
-
         sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
-        tracker = self.tracker_store.get_or_create_tracker(sender_id)
-        return tracker
+        return self.tracker_store.get_or_create_tracker(sender_id)
 
     def _save_tracker(self, tracker):
         self.tracker_store.save(tracker)
@@ -484,6 +482,9 @@ class MessageProcessor(object):
                     "Trying to run unknown follow up action '{}'!"
                     "Instead of running that, we will ignore the action "
                     "and predict the next action.".format(followup_action))
+
+        if tracker.latest_message.intent.get("name") == USER_INTENT_RESTART:
+            return self._prob_array_for_action(ACTION_RESTART_NAME)
 
         return self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain)
