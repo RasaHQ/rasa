@@ -32,20 +32,6 @@ async def test_moodbot_example(trained_moodbot_path):
     assert len(responses) == 4
 
 
-async def test_restaurantbot_example():
-    sys.path.append("examples/restaurantbot/")
-    from bot import train_dialogue
-
-    p = "examples/restaurantbot/"
-    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    agent = await train_dialogue(
-        os.path.join(p, "domain.yml"), os.path.join(p, "models", "dialogue"), stories
-    )
-
-    responses = await agent.handle_text("/greet")
-    assert responses[0]["text"] == "how can I help you?"
-
-
 async def test_formbot_example():
     sys.path.append("examples/formbot/")
 
@@ -98,15 +84,3 @@ async def test_formbot_example():
         responses = await agent.handle_text("/chitchat")
 
         assert responses[0]["text"] == "chitchat"
-
-
-async def test_concertbot_training():
-    from examples.concertbot.train import train_dialogue
-
-    r = await train_dialogue(
-        domain_file="examples/concertbot/domain.yml",
-        stories_file="examples/concertbot/data/stories.md",
-        model_path="examples/concertbot/models/dialogue",
-        policy_config="examples/concertbot/config.yml",
-    )
-    assert r is not None
