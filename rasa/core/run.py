@@ -33,7 +33,7 @@ def create_argument_parser():
 
 
 def create_http_input_channels(
-        channel: Optional[Text], credentials_file: Optional[Text]
+    channel: Optional[Text], credentials_file: Optional[Text]
 ) -> List["InputChannel"]:
     """Instantiate the chosen input channel."""
 
@@ -69,14 +69,14 @@ def _create_single_channel(channel, credentials):
 
 
 def configure_app(
-        input_channels=None,
-        cors=None,
-        auth_token=None,
-        enable_api=True,
-        jwt_secret=None,
-        jwt_method=None,
-        route="/webhooks/",
-        port=None,
+    input_channels=None,
+    cors=None,
+    auth_token=None,
+    enable_api=True,
+    jwt_secret=None,
+    jwt_method=None,
+    route="/webhooks/",
+    port=None,
 ):
     """Run the agent."""
     from rasa.core import server
@@ -108,6 +108,7 @@ def configure_app(
     app.add_task(configure_logging)
 
     if "cmdline" in {c.name() for c in input_channels}:
+
         async def run_cmdline_io(running_app: Sanic):
             """Small wrapper to shut down the server once cmd io is done."""
             await asyncio.sleep(1)  # allow server to start
@@ -124,17 +125,17 @@ def configure_app(
 
 
 def serve_application(
-        core_model=None,
-        nlu_model=None,
-        channel=None,
-        port=constants.DEFAULT_SERVER_PORT,
-        credentials=None,
-        cors=None,
-        auth_token=None,
-        enable_api=True,
-        jwt_secret=None,
-        jwt_method=None,
-        endpoints=None,
+    core_model=None,
+    nlu_model=None,
+    channel=None,
+    port=constants.DEFAULT_SERVER_PORT,
+    credentials=None,
+    cors=None,
+    auth_token=None,
+    enable_api=True,
+    jwt_secret=None,
+    jwt_method=None,
+    endpoints=None,
 ):
     if not channel and not credentials:
         channel = "cmdline"

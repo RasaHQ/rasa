@@ -129,7 +129,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
                     result = await result
                 return result
             elif app.config.get("USE_JWT") and request.app.auth.is_authenticated(
-                    request
+                request
             ):
                 if sufficient_scope(request, *args, **kwargs):
                     result = f(request, *args, **kwargs)
@@ -178,7 +178,7 @@ def event_verbosity_parameter(request, default_verbosity):
 
 
 async def nlu_model_and_evaluation_files_from_archive(
-        zipped_model_path: Text, directory: Text
+    zipped_model_path: Text, directory: Text
 ) -> Tuple[Text, List[Text]]:
     """Extract NLU model path and intent evaluation files zipped model.
 
@@ -224,11 +224,11 @@ async def authenticate(request):
 
 
 def create_app(
-        agent=None,
-        cors_origins: Union[Text, List[Text]] = "*",
-        auth_token: Optional[Text] = None,
-        jwt_secret: Optional[Text] = None,
-        jwt_method: Text = "HS256",
+    agent=None,
+    cors_origins: Union[Text, List[Text]] = "*",
+    auth_token: Optional[Text] = None,
+    jwt_secret: Optional[Text] = None,
+    jwt_method: Text = "HS256",
 ):
     """Class representing a Rasa Core HTTP server."""
 
@@ -624,14 +624,19 @@ def create_app(
                 evaluation = run_evaluation(data_path, model_path)
                 return response.json(evaluation)
             except ValueError as e:
-                raise ErrorResponse(400, "FailedIntentEvaluation",
-                                    "Evaluation could not be created. "
-                                    "Error: {}".format(e))
+                raise ErrorResponse(
+                    400,
+                    "FailedIntentEvaluation",
+                    "Evaluation could not be created. " "Error: {}".format(e),
+                )
         else:
-            raise ErrorResponse(400, "FailedIntentEvaluation",
-                                "NLU evaluation file could not be found. "
-                                "This endpoint requires a single file ending "
-                                "on `.md` or `.json`.")
+            raise ErrorResponse(
+                400,
+                "FailedIntentEvaluation",
+                "NLU evaluation file could not be found. "
+                "This endpoint requires a single file ending "
+                "on `.md` or `.json`.",
+            )
 
     @app.post("/jobs")
     @requires_auth(app, auth_token)

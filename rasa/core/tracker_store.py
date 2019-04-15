@@ -31,22 +31,6 @@ class TrackerStore(object):
     def find_tracker_store(domain, store=None, event_broker=None):
         if store is None or store.type is None:
             return InMemoryTrackerStore(domain, event_broker=event_broker)
-<<<<<<< HEAD
-        elif store.type == 'redis':
-            return RedisTrackerStore(domain=domain,
-                                     host=store.url,
-                                     event_broker=event_broker,
-                                     **store.kwargs)
-        elif store.type == 'mongod':
-            return MongoTrackerStore(domain=domain,
-                                     host=store.url,
-                                     event_broker=event_broker,
-                                     **store.kwargs)
-        elif store.type.lower() == 'sql':
-            return SQLTrackerStore(domain=domain,
-                                   event_broker=event_broker,
-                                   **store.kwargs)
-=======
         elif store.type == "redis":
             return RedisTrackerStore(
                 domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
@@ -57,9 +41,8 @@ class TrackerStore(object):
             )
         elif store.type.lower() == "sql":
             return SQLTrackerStore(
-                domain=domain, url=store.url, event_broker=event_broker, **store.kwargs
+                domain=domain, event_broker=event_broker, **store.kwargs
             )
->>>>>>> master
         else:
             return TrackerStore.load_tracker_from_module_string(domain, store)
 
@@ -143,8 +126,7 @@ class InMemoryTrackerStore(TrackerStore):
         self.store = {}
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
-    def save(self, tracker: DialogueStateTracker,
-             should_stream_events=True) -> None:
+    def save(self, tracker: DialogueStateTracker, should_stream_events=True) -> None:
         if should_stream_events and self.event_broker:
             self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
@@ -301,40 +283,36 @@ class SQLTrackerStore(TrackerStore):
         action_name = Column(String)
         data = Column(String)
 
-<<<<<<< HEAD
-    def __init__(self,
-                 domain: Optional[Domain] = None,
-                 dialect: Text = 'sqlite',
-                 url: Optional[Text] = None,
-                 host: Optional[Text] = None,
-                 port: Optional[int] = None,
-                 db: Text = 'rasa.db',
-                 username: Text = None,
-                 password: Text = None,
-                 event_broker: Optional[EventChannel] = None,
-                 login_db: Optional[Text] = None) -> None:
-=======
     def __init__(
         self,
         domain: Optional[Domain] = None,
         dialect: Text = "sqlite",
-        url: Text = None,
+        url: Optional[Text] = None,
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
         db: Text = "rasa.db",
         username: Text = None,
         password: Text = None,
         event_broker: Optional[EventChannel] = None,
+        login_db: Optional[Text] = None,
     ) -> None:
->>>>>>> master
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
         if url is not None:
-            engine_url = URL(dialect, username, password, url,
-                             database=login_db if login_db else db)
+            engine_url = URL(
+                dialect, username, password, url, database=login_db if login_db else db
+            )
         else:
-            engine_url = URL(dialect, username, password, host, port,
-                             database=login_db if login_db else db)
+            engine_url = URL(
+                dialect,
+                username,
+                password,
+                host,
+                port,
+                database=login_db if login_db else db,
+            )
 
         logger.debug(
             "Attempting to connect to database "
@@ -351,14 +329,18 @@ class SQLTrackerStore(TrackerStore):
 
                 try:
                     self.Base.metadata.create_all(self.engine)
-                except (sqlalchemy.exc.OperationalError,
-                        sqlalchemy.exc.ProgrammingError):
+                except (
+                    sqlalchemy.exc.OperationalError,
+                    sqlalchemy.exc.ProgrammingError,
+                ):
                     pass
 
                 self.session = sessionmaker(bind=self.engine)()
                 break
-            except (sqlalchemy.exc.OperationalError,
-                    sqlalchemy.exc.IntegrityError) as e:
+            except (
+                sqlalchemy.exc.OperationalError,
+                sqlalchemy.exc.IntegrityError,
+            ) as e:
                 logger.warning(e)
                 sleep(5)
 
@@ -380,12 +362,15 @@ class SQLTrackerStore(TrackerStore):
         cursor = conn.connection.cursor()
         cursor.execute("COMMIT")
         cursor.execute(
-            ("SELECT 1 FROM pg_catalog.pg_database "
-             "WHERE datname = '{}'".format(db_name)))
+            (
+                "SELECT 1 FROM pg_catalog.pg_database "
+                "WHERE datname = '{}'".format(db_name)
+            )
+        )
         exists = cursor.fetchone()
         if not exists:
             try:
-                cursor.execute('CREATE DATABASE {}'.format(db_name))
+                cursor.execute("CREATE DATABASE {}".format(db_name))
             except psycopg2.IntegrityError:
                 pass
 
@@ -431,15 +416,6 @@ class SQLTrackerStore(TrackerStore):
             timestamp = data.get("timestamp")
 
             # noinspection PyArgumentList
-<<<<<<< HEAD
-            self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
-                                           type_name=event.type_name,
-                                           timestamp=timestamp,
-                                           intent_name=intent,
-                                           action_name=action,
-                                           data=json.dumps(data)))
-
-=======
             self.session.add(
                 self.SQLEvent(
                     sender_id=tracker.sender_id,
@@ -450,7 +426,6 @@ class SQLTrackerStore(TrackerStore):
                     data=json.dumps(data),
                 )
             )
->>>>>>> master
         self.session.commit()
 
         logger.debug(

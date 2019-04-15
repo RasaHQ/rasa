@@ -13,11 +13,11 @@ if typing.TYPE_CHECKING:
 
 
 def train(
-        domain: Text,
-        config: Text,
-        training_files: Union[Text, List[Text]],
-        output: Text = DEFAULT_MODELS_PATH,
-        force_training: bool = False,
+    domain: Text,
+    config: Text,
+    training_files: Union[Text, List[Text]],
+    output: Text = DEFAULT_MODELS_PATH,
+    force_training: bool = False,
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
@@ -26,11 +26,11 @@ def train(
 
 
 async def train_async(
-        domain: Text,
-        config: Text,
-        training_files: Union[Text, List[Text]],
-        output: Text = DEFAULT_MODELS_PATH,
-        force_training: bool = False,
+    domain: Text,
+    config: Text,
+    training_files: Union[Text, List[Text]],
+    output: Text = DEFAULT_MODELS_PATH,
+    force_training: bool = False,
 ) -> Optional[Text]:
     """Trains a Rasa model (Core and NLU).
 
@@ -71,7 +71,7 @@ async def train_async(
     if force_training or retrain_core:
         await train_core_async(domain, config, story_directory, output, train_path)
     else:
-        print(
+        print (
             "Dialogue data / configuration did not change. "
             "No need to retrain dialogue model."
         )
@@ -79,19 +79,19 @@ async def train_async(
     if force_training or retrain_nlu:
         train_nlu(config, nlu_data_directory, output, train_path)
     else:
-        print("NLU data / configuration did not change. No need to retrain NLU model.")
+        print ("NLU data / configuration did not change. No need to retrain NLU model.")
 
     if retrain_core or retrain_nlu:
         output = create_output_path(output)
         model.create_package_rasa(train_path, output, new_fingerprint)
 
-        print("Train path: '{}'.".format(train_path))
+        print ("Train path: '{}'.".format(train_path))
 
         print_success("Your bot is trained and ready to take for a spin!")
 
         return output
     else:
-        print(
+        print (
             "Nothing changed. You can use the old model stored at {}"
             "".format(os.path.abspath(old_model))
         )
@@ -100,8 +100,7 @@ async def train_async(
 
 
 def train_core(
-        domain: Text, config: Text, stories: Text, output: Text,
-        train_path: Optional[Text]
+    domain: Text, config: Text, stories: Text, output: Text, train_path: Optional[Text]
 ) -> Optional[Text]:
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(
@@ -110,8 +109,7 @@ def train_core(
 
 
 async def train_core_async(
-        domain: Text, config: Text, stories: Text, output: Text,
-        train_path: Optional[Text]
+    domain: Text, config: Text, stories: Text, output: Text, train_path: Optional[Text]
 ) -> Optional[Text]:
     """Trains a Core model.
 
@@ -154,7 +152,7 @@ async def train_core_async(
 
 
 def train_nlu(
-        config: Text, nlu_data: Text, output: Text, train_path: Optional[Text]
+    config: Text, nlu_data: Text, output: Text, train_path: Optional[Text]
 ) -> Optional["Interpreter"]:
     """Trains a NLU model.
 

@@ -134,8 +134,10 @@ class bcolors(object):
 def wrap_with_color(*args: Any, color: Text):
     return color + " ".join(str(s) for s in args) + bcolors.ENDC
 
+
 def print_color(*args: Any, color: Text):
-    print(wrap_with_color(*args, color=color))
+    print (wrap_with_color(*args, color=color))
+
 
 def print_warning(*args: Any):
     print_color(*args, color=bcolors.WARNING)
@@ -146,5 +148,5 @@ def print_error(*args: Any):
 
 
 def signal_handler(sig, frame):
-    print("Goodbye 👋")
+    print ("Goodbye 👋")
     sys.exit(0)

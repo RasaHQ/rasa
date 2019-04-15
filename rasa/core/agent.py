@@ -326,10 +326,10 @@ class Agent(object):
         )
 
     async def handle_message(
-            self,
-            message: UserMessage,
-            message_preprocessor: Optional[Callable[[Text], Text]] = None,
-            **kwargs
+        self,
+        message: UserMessage,
+        message_preprocessor: Optional[Callable[[Text], Text]] = None,
+        **kwargs
     ) -> Optional[List[Text]]:
         """Handle a single message."""
 
@@ -390,10 +390,10 @@ class Agent(object):
 
     # noinspection PyUnusedLocal
     async def log_message(
-            self,
-            message: UserMessage,
-            message_preprocessor: Optional[Callable[[Text], Text]] = None,
-            **kwargs: Any
+        self,
+        message: UserMessage,
+        message_preprocessor: Optional[Callable[[Text], Text]] = None,
+        **kwargs: Any
     ) -> DialogueStateTracker:
         """Append a message to a dialogue - does not predict actions."""
 
@@ -768,7 +768,7 @@ class Agent(object):
 
     @staticmethod
     def _create_ensemble(
-            policies: Union[List[Policy], PolicyEnsemble, None]
+        policies: Union[List[Policy], PolicyEnsemble, None]
     ) -> Optional[PolicyEnsemble]:
         if policies is None:
             return None
