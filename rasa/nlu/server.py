@@ -184,7 +184,7 @@ def create_app(
             return response.json(data_router.parse(data), status=200)
         except InvalidModelError as e:
             raise ErrorResponse(
-                404, "NotFound", "Model is invalid.", details={"error": str(e)}
+                404, "InvalidModel", "Model is invalid.", details={"error": str(e)}
             )
         except Exception as e:
             logger.exception(e)

@@ -39,6 +39,7 @@ Removed
 
 Fixed
 -----
+- evaluating core stories with two stage fallback gave an error, trying to handle None for a policy
 - the ``/evaluate`` route for the Rasa NLU server now runs evaluation
   in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
