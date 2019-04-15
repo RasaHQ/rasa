@@ -411,7 +411,7 @@ def _in_training_data_fraction(action_list):
     in_training_data = [
         a["action"]
         for a in action_list
-        if not SimplePolicyEnsemble.is_not_memo_policy(a["policy"])
+        if a["policy"] and not SimplePolicyEnsemble.is_not_memo_policy(a["policy"])
     ]
 
     return len(in_training_data) / len(action_list)
