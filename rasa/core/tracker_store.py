@@ -364,7 +364,7 @@ class SQLTrackerStore(TrackerStore):
         query = self.session.query(self.SQLEvent)
         result = query.filter_by(sender_id=sender_id).all()
         events = [json.loads(event.data) for event in result]
-        print("retrieved", sender_id, events)
+
         if self.domain and len(events) > 0:
             logger.debug("Recreating tracker "
                          "from sender id '{}'".format(sender_id))

@@ -58,7 +58,7 @@ class MessageProcessor(object):
     async def handle_message(self,
                              message: UserMessage) -> Optional[List[Text]]:
         """Handle a single message with this processor."""
-        print("handling message", message.text)
+
         # preprocess message if necessary
         tracker = await self.log_message(message)
         if not tracker:
@@ -67,7 +67,7 @@ class MessageProcessor(object):
         await self._predict_and_execute_next_action(message, tracker)
         # save tracker state to continue conversation from this state
         self._save_tracker(tracker)
-        print("saved tracker", tracker.current_state())
+
         if isinstance(message.output_channel, CollectingOutputChannel):
             return message.output_channel.messages
         else:
