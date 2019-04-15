@@ -5,6 +5,8 @@
 pytest==3.5.1
 pytest-pycodestyle==1.4.0
 pytest-cov==2.5.1
+pytest-twisted==1.6
+pytest_localserver==0.4.1
 pytest_sanic==0.1.12
 treq==17.8.0
 responses==0.9.0

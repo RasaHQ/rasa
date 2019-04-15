@@ -19,6 +19,7 @@ tests_requires = [
     "pytest-pycodestyle~=1.4",
     "pytest-cov~=2.5",
     "pytest_sanic~=0.1.0",
+    "pytest_localserver~=0.4.1",
     "treq~=17.8",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
