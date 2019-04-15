@@ -90,8 +90,8 @@ async def test_dispatcher_utter_buttons(default_dispatcher_collecting):
     assert len(collected) == 1
     assert collected[0]["text"] == "my message"
     assert collected[0]["buttons"] == [
-        {"payload": u"/btn1", "title": u"Btn1"},
-        {"payload": u"/btn2", "title": u"Btn2"},
+        {"payload": "/btn1", "title": "Btn1"},
+        {"payload": "/btn2", "title": "Btn2"},
     ]
 
 
@@ -134,11 +134,11 @@ async def test_dispatcher_utter_custom_message(default_dispatcher_collecting):
     assert len(collected) == 2
     assert collected[0]["text"] == "hey there : welcome"
     assert collected[0]["buttons"] == [
-        {"payload": u"/btn1", "title": u"Btn1"},
-        {"payload": u"/btn2", "title": u"Btn2"},
+        {"payload": "/btn1", "title": "Btn1"},
+        {"payload": "/btn2", "title": "Btn2"},
     ]
     assert collected[1]["text"] == "another title : another subtitle"
     assert collected[1]["buttons"] == [
-        {"payload": u"/btn3", "title": u"Btn3"},
-        {"payload": u"/btn4", "title": u"Btn4"},
+        {"payload": "/btn3", "title": "Btn3"},
+        {"payload": "/btn4", "title": "Btn4"},
     ]

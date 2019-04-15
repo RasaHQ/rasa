@@ -15,7 +15,12 @@ import rasa.utils.io
 from rasa.nlu import config, utils
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxTrainingError
+from rasa.nlu.data_router import (
+    DataRouter,
+    InvalidProjectError,
+    MaxWorkerProcessError,
+    UnsupportedModelError,
+)
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
 from rasa.nlu.utils import json_to_string, read_endpoints
@@ -295,7 +300,7 @@ class RasaNLU(object):
             zip_content = io.open(zipped_path, "r+b").read()
             return returnValue(zip_content)
 
-        except MaxTrainingError as e:
+        except MaxWorkerProcessError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
         except InvalidProjectError as e:
@@ -324,6 +329,15 @@ class RasaNLU(object):
                 data_string, params.get("project"), params.get("model")
             )
             returnValue(json_to_string(response))
+        except MaxWorkerProcessError as e:
+            request.setResponseCode(403)
+            returnValue(json_to_string({"error": "{}".format(e)}))
+        except InvalidProjectError as e:
+            request.setResponseCode(500)
+            returnValue(json_to_string({"error": "{}".format(e)}))
+        except UnsupportedModelError as e:
+            request.setResponseCode(500)
+            returnValue(json_to_string({"error": "{}".format(e)}))
         except Exception as e:
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))

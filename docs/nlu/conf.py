@@ -63,9 +63,9 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"Rasa NLU"
-copyright = u"2019, Rasa Technologies GmbH"
-author = u"Alan Nichol"
+project = "Rasa NLU"
+copyright = "2019, Rasa Technologies GmbH"
+author = "Alan Nichol"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -150,7 +150,7 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-html_title = u""
+html_title = ""
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
@@ -251,7 +251,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "rasa_nlu.tex", u"rasa\\_nlu Documentation", u"Alan Nichol", "manual")
+    (master_doc, "rasa_nlu.tex", "rasa\\_nlu Documentation", "Alan Nichol", "manual")
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -279,7 +279,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "rasa_nlu", u"rasa_nlu Documentation", [author], 1)]
+man_pages = [(master_doc, "rasa_nlu", "rasa_nlu Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -294,7 +294,7 @@ texinfo_documents = [
     (
         master_doc,
         "rasa_nlu",
-        u"rasa_nlu Documentation",
+        "rasa_nlu Documentation",
         author,
         "rasa_nlu",
         "One line description of project.",

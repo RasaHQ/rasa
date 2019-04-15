@@ -84,7 +84,7 @@ def test_crf_json_from_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
-    sentence = u"I need a home cleaning close-by"
+    sentence = "I need a home cleaning close-by"
     doc = {"spacy_doc": spacy_nlp(sentence)}
     r = ext._from_crf_to_json(
         Message(sentence, doc),
@@ -115,7 +115,7 @@ def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
 
     ner_crf_pos_feature_config.update({"BILOU_flag": False})
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
-    sentence = u"I need a home cleaning close-by"
+    sentence = "I need a home cleaning close-by"
     doc = {"spacy_doc": spacy_nlp(sentence)}
     rs = ext._from_crf_to_json(
         Message(sentence, doc),

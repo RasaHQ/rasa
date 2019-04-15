@@ -149,8 +149,8 @@ class SlackInput(InputChannel):
         return (
             slack_event.get("event")
             and (
-                slack_event.get("event").get("type") == u"message"
-                or slack_event.get("event").get("type") == u"app_mention"
+                slack_event.get("event").get("type") == "message"
+                or slack_event.get("event").get("type") == "app_mention"
             )
             and slack_event.get("event").get("text")
             and not slack_event.get("event").get("bot_id")

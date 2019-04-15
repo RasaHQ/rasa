@@ -28,10 +28,11 @@ clean:
 	rm -rf docs/nlu/_build
 
 lint:
-	py.test --pep8 -m pep8
+	black .
 
 test: clean
-	py.test tests --verbose --pep8 --color=yes $(TEST_PATH)
+	py.test tests --verbose --color=yes $(TEST_PATH)
+	black --check .
 
 doctest: clean
 	cd docs/core && make doctest
