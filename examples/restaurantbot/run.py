@@ -18,7 +18,7 @@ async def parse(
     text: Text, core_model_path: Text, nlu_model_path: Optional[Text] = None
 ):
     if nlu_model_path:
-        interpreter = RasaNLUInterpreter(nlu_model_path, config_file="config.yml")
+        interpreter = RasaNLUInterpreter(nlu_model_path)
     else:
         interpreter = None
 
@@ -82,31 +82,34 @@ def train_nlu(
 if __name__ == "__main__":
     rasa.utils.io.configure_colored_logging(loglevel="INFO")
 
-    parser = argparse.ArgumentParser(description="Start the bot.")
+    parser = argparse.ArgumentParser(description="Restaurant Bot")
 
-    parser.add_argument(
-        "--nlu-model-path", default="models/nlu/default", help="Path to the nlu model."
-    )
-    parser.add_argument(
-        "--core-model-path", default="models/core", help="Path to the core model."
-    )
-    parser.add_argument("--text", default="hello", help="Text to parse.")
+    subparser = parser.add_subparsers(dest="subparser_name")
+    train_parser = subparser.add_parser("train", help="train a core or nlu model")
+    parse_parser = subparser.add_parser("parse", help="parse any text")
 
-    parser.add_argument(
-        "task",
-        choices=["train-nlu", "train-core", "parse"],
-        help="What the bot should do - e.g. train or parse text?",
+    parse_parser.add_argument(
+        "--nlu-model", default="models/nlu", help="Path to the nlu model."
+    )
+    parse_parser.add_argument(
+        "--core-model", default="models/core", help="Path to the core model."
+    )
+    parse_parser.add_argument("--text", default="hello", help="Text to parse.")
+
+    train_parser.add_argument(
+        "model",
+        choices=["nlu", "core"],
+        help="Do you want to train a NLU or Core model?",
     )
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
 
     # decide what to do based on first parameter of the script
-    if args.task == "train-nlu":
-        train_nlu()
-    elif args.task == "train-core":
-        loop.run_until_complete(train_core())
-    elif args.task == "parse":
-        loop.run_until_complete(
-            parse(args.text, args.core_model_path, args.nlu_model_path)
-        )
+    if args.subparser_name == "train":
+        if args.model == "nlu":
+            train_nlu()
+        elif args.model == "core":
+            loop.run_until_complete(train_core())
+    elif args.subparser_name == "parse":
+        loop.run_until_complete(parse(args.text, args.core_model, args.nlu_model))
