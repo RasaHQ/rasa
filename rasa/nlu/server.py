@@ -187,7 +187,7 @@ def create_app(
             return response.json(await data_router.parse(data), status=200)
         except InvalidProjectError as e:
             raise ErrorResponse(
-                404, "NotFound", "Project is invalid.", details={"error": str(e)}
+                404, "InvalidProject", "Project is invalid.", details={"error": str(e)}
             )
         except Exception as e:
             logger.exception(e)
