@@ -40,11 +40,11 @@ class MaxWorkerProcessError(Exception):
 
 
 async def create_data_router(
-    model_dir: Text = None,
+    model_dir: Optional[Text] = None,
     max_worker_processes: int = 1,
-    response_log: Text = None,
-    emulation_mode: Text = None,
-    remote_storage: Text = None,
+    response_log: Optional[Text] = None,
+    emulation_mode: Optional[Text] = None,
+    remote_storage: Optional[Text] = None,
     component_builder: ComponentBuilder = None,
     model_server: EndpointConfig = None,
     wait_time_between_pulls: int = None,
@@ -68,11 +68,11 @@ async def create_data_router(
 class DataRouter(object):
     def __init__(
         self,
-        model_dir: Text = None,
+        model_dir: Optional[Text] = None,
         max_worker_processes: int = 1,
-        response_log: Text = None,
-        emulation_mode: Text = None,
-        remote_storage: Text = None,
+        response_log: Optional[Text] = None,
+        emulation_mode: Optional[Text] = None,
+        remote_storage: Optional[Text] = None,
         component_builder: ComponentBuilder = None,
         model_server: EndpointConfig = None,
         wait_time_between_pulls: int = None,

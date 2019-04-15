@@ -339,7 +339,7 @@ def create_app(
         except MaxWorkerProcessError as e:
             raise ErrorResponse(
                 403,
-                "Forbidden",
+                "NoFreeProcess",
                 "No process available for training.",
                 details={"error": str(e)},
             )
@@ -361,7 +361,7 @@ def create_app(
             logger.exception(e)
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
