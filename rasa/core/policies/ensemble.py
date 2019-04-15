@@ -21,9 +21,7 @@ from rasa.core.exceptions import UnsupportedDialogueModelError
 from rasa.core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa.core.policies import Policy
 from rasa.core.policies.fallback import FallbackPolicy
-from rasa.core.policies.memoization import (
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy)
+from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa.core.trackers import DialogueStateTracker
 from rasa.core import registry
 
@@ -33,9 +31,9 @@ logger = logging.getLogger(__name__)
 class PolicyEnsemble(object):
     versioned_packages = ["rasa", "tensorflow", "sklearn"]
 
-    def __init__(self,
-                 policies: List[Policy],
-                 action_fingerprints: Optional[Dict] = None) -> None:
+    def __init__(
+        self, policies: List[Policy], action_fingerprints: Optional[Dict] = None
+    ) -> None:
         self.policies = policies
         self.training_trackers = None
         self.date_trained = None
@@ -70,29 +68,34 @@ class PolicyEnsemble(object):
 
         for k, v in priority_dict.items():
             if len(v) > 1:
-                logger.warning(("Found policies {} with same priority {} "
-                                "in PolicyEnsemble. When personalizing "
-                                "priorities, be sure to give all policies "
-                                "different priorities. More information: "
-                                "https://rasa.com/docs/core/"
-                                "policies/").format(v, k))
+                logger.warning(
+                    (
+                        "Found policies {} with same priority {} "
+                        "in PolicyEnsemble. When personalizing "
+                        "priorities, be sure to give all policies "
+                        "different priorities. More information: "
+                        "https://rasa.com/docs/core/"
+                        "policies/"
+                    ).format(v, k)
+                )
 
-    def train(self,
-              training_trackers: List[DialogueStateTracker],
-              domain: Domain, **kwargs: Any) -> None:
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
         if training_trackers:
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
         else:
-            logger.info("Skipped training, because there are no "
-                        "training samples.")
+            logger.info("Skipped training, because there are no training samples.")
         self.training_trackers = training_trackers
-        self.date_trained = datetime.now().strftime('%Y%m%d-%H%M%S')
+        self.date_trained = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    def probabilities_using_best_policy(self,
-                                        tracker: DialogueStateTracker,
-                                        domain: Domain
-                                        ) -> Tuple[List[float], Text]:
+    def probabilities_using_best_policy(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Tuple[List[float], Text]:
         raise NotImplementedError
 
     def _max_histories(self):
@@ -132,21 +135,19 @@ class PolicyEnsemble(object):
             except ImportError:
                 pass
 
-    def _persist_metadata(self,
-                          path: Text,
-                          dump_flattened_stories: bool = False) -> None:
+    def _persist_metadata(
+        self, path: Text, dump_flattened_stories: bool = False
+    ) -> None:
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist exists
-        domain_spec_path = os.path.join(path, 'metadata.json')
-        training_data_path = os.path.join(path, 'stories.md')
+        domain_spec_path = os.path.join(path, "metadata.json")
+        training_data_path = os.path.join(path, "stories.md")
         utils.create_dir_for_file(domain_spec_path)
 
-        policy_names = [utils.module_path_from_instance(p)
-                        for p in self.policies]
+        policy_names = [utils.module_path_from_instance(p) for p in self.policies]
 
-        training_events = self._training_events_from_trackers(
-            self.training_trackers)
+        training_events = self._training_events_from_trackers(self.training_trackers)
 
         action_fingerprints = self._create_action_fingerprints(training_events)
 
@@ -156,7 +157,7 @@ class PolicyEnsemble(object):
             "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names,
-            "trained_at": self.date_trained
+            "trained_at": self.date_trained,
         }
 
         self._add_package_version_info(metadata)
@@ -168,22 +169,20 @@ class PolicyEnsemble(object):
         if dump_flattened_stories:
             training.persist_data(self.training_trackers, training_data_path)
 
-    def persist(self, path: Text,
-                dump_flattened_stories: bool = False) -> None:
+    def persist(self, path: Text, dump_flattened_stories: bool = False) -> None:
         """Persists the policy to storage."""
 
         self._persist_metadata(path, dump_flattened_stories)
 
         for i, policy in enumerate(self.policies):
-            dir_name = 'policy_{}_{}'.format(i, type(policy).__name__)
+            dir_name = "policy_{}_{}".format(i, type(policy).__name__)
             policy_path = os.path.join(path, dir_name)
             policy.persist(policy_path)
 
     @classmethod
     def load_metadata(cls, path):
-        metadata_path = os.path.join(path, 'metadata.json')
-        metadata = json.loads(rasa.utils.io.read_file(os.path.abspath(
-            metadata_path)))
+        metadata_path = os.path.join(path, "metadata.json")
+        metadata = json.loads(rasa.utils.io.read_file(os.path.abspath(metadata_path)))
         return metadata
 
     @staticmethod
@@ -202,24 +201,25 @@ class PolicyEnsemble(object):
                 "an older version. "
                 "Model version: {} Instance version: {} "
                 "Minimal compatible version: {}"
-                "".format(model_version, rasa.__version__,
-                          version_to_check),
-                model_version)
+                "".format(model_version, rasa.__version__, version_to_check),
+                model_version,
+            )
 
     @classmethod
     def _ensure_loaded_policy(cls, policy, policy_cls, policy_name: Text):
         if policy is None:
             raise Exception(
-                "Failed to load policy {}: "
-                "load returned None".format(policy_name))
+                "Failed to load policy {}: load returned None".format(policy_name)
+            )
         elif not isinstance(policy, policy_cls):
             raise Exception(
                 "Failed to load policy {}: "
                 "load returned object that is not instance of its own class"
-                "".format(policy_name))
+                "".format(policy_name)
+            )
 
     @classmethod
-    def load(cls, path: Text) -> 'PolicyEnsemble':
+    def load(cls, path: Text) -> "PolicyEnsemble":
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
@@ -227,7 +227,7 @@ class PolicyEnsemble(object):
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = registry.policy_from_module_path(policy_name)
-            dir_name = 'policy_{}_{}'.format(i, policy_cls.__name__)
+            dir_name = "policy_{}_{}".format(i, policy_cls.__name__)
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             cls._ensure_loaded_policy(policy, policy_cls, policy_name)
@@ -239,58 +239,63 @@ class PolicyEnsemble(object):
 
     @classmethod
     def from_dict(cls, dictionary: Dict[Text, Any]) -> List[Policy]:
-        policies = dictionary.get('policies') or dictionary.get('policy')
+        policies = dictionary.get("policies") or dictionary.get("policy")
         if policies is None:
-            raise InvalidPolicyConfig("You didn't define any policies. "
-                                      "Please define them under 'policies:' "
-                                      "in your policy configuration file.")
+            raise InvalidPolicyConfig(
+                "You didn't define any policies. "
+                "Please define them under 'policies:' "
+                "in your policy configuration file."
+            )
         if len(policies) == 0:
-            raise InvalidPolicyConfig("The policy configuration file has to "
-                                      "include at least one policy.")
+            raise InvalidPolicyConfig(
+                "The policy configuration file has to include at least one policy."
+            )
 
         parsed_policies = []
 
         for policy in policies:
 
-            policy_name = policy.pop('name')
-            if policy.get('featurizer'):
-                featurizer_func, featurizer_config = \
-                    cls.get_featurizer_from_dict(policy)
+            policy_name = policy.pop("name")
+            if policy.get("featurizer"):
+                featurizer_func, featurizer_config = cls.get_featurizer_from_dict(
+                    policy
+                )
 
-                if featurizer_config.get('state_featurizer'):
-                    state_featurizer_func, state_featurizer_config = \
-                        cls.get_state_featurizer_from_dict(
-                            featurizer_config)
+                if featurizer_config.get("state_featurizer"):
+                    state_featurizer_func, state_featurizer_config = cls.get_state_featurizer_from_dict(
+                        featurizer_config
+                    )
 
                     # override featurizer's state_featurizer
                     # with real state_featurizer class
-                    featurizer_config['state_featurizer'] = (
-                        state_featurizer_func(**state_featurizer_config)
+                    featurizer_config["state_featurizer"] = state_featurizer_func(
+                        **state_featurizer_config
                     )
 
                 # override policy's featurizer with real featurizer class
-                policy['featurizer'] = featurizer_func(**featurizer_config)
+                policy["featurizer"] = featurizer_func(**featurizer_config)
 
             try:
                 constr_func = registry.policy_from_module_path(policy_name)
                 policy_object = constr_func(**policy)
                 parsed_policies.append(policy_object)
-            except(ImportError, AttributeError):
-                raise InvalidPolicyConfig("Module for policy '{}' could not "
-                                          "be loaded. Please make sure the "
-                                          "name is a valid policy."
-                                          "".format(policy_name))
+            except (ImportError, AttributeError):
+                raise InvalidPolicyConfig(
+                    "Module for policy '{}' could not "
+                    "be loaded. Please make sure the "
+                    "name is a valid policy."
+                    "".format(policy_name)
+                )
 
         return parsed_policies
 
     @classmethod
     def get_featurizer_from_dict(cls, policy):
         # policy can have only 1 featurizer
-        if len(policy['featurizer']) > 1:
-            raise InvalidPolicyConfig(
-                "policy can have only 1 featurizer")
-        featurizer_config = policy['featurizer'][0]
-        featurizer_name = featurizer_config.pop('name')
+        if len(policy["featurizer"]) > 1:
+            raise InvalidPolicyConfig("policy can have only 1 featurizer")
+        featurizer_config = policy["featurizer"][0]
+        featurizer_name = featurizer_config.pop("name")
         featurizer_func = registry.featurizer_from_module_path(featurizer_name)
 
         return featurizer_func, featurizer_config
@@ -298,22 +303,19 @@ class PolicyEnsemble(object):
     @classmethod
     def get_state_featurizer_from_dict(cls, featurizer_config):
         # featurizer can have only 1 state featurizer
-        if len(featurizer_config['state_featurizer']) > 1:
-            raise InvalidPolicyConfig(
-                "featurizer can have only 1 state featurizer")
-        state_featurizer_config = (
-            featurizer_config['state_featurizer'][0]
-        )
-        state_featurizer_name = state_featurizer_config.pop('name')
+        if len(featurizer_config["state_featurizer"]) > 1:
+            raise InvalidPolicyConfig("featurizer can have only 1 state featurizer")
+        state_featurizer_config = featurizer_config["state_featurizer"][0]
+        state_featurizer_name = state_featurizer_config.pop("name")
         state_featurizer_func = registry.featurizer_from_module_path(
-            state_featurizer_name)
+            state_featurizer_name
+        )
 
         return state_featurizer_func, state_featurizer_config
 
-    def continue_training(self,
-                          trackers: List[DialogueStateTracker],
-                          domain: Domain,
-                          **kwargs: Any) -> None:
+    def continue_training(
+        self, trackers: List[DialogueStateTracker], domain: Domain, **kwargs: Any
+    ) -> None:
 
         self.training_trackers.extend(trackers)
         for p in self.policies:
@@ -321,19 +323,17 @@ class PolicyEnsemble(object):
 
 
 class SimplePolicyEnsemble(PolicyEnsemble):
-
     @staticmethod
     def is_not_memo_policy(best_policy_name):
-        is_memo = best_policy_name.endswith(
-            "_" + MemoizationPolicy.__name__)
+        is_memo = best_policy_name.endswith("_" + MemoizationPolicy.__name__)
         is_augmented = best_policy_name.endswith(
-            "_" + AugmentedMemoizationPolicy.__name__)
+            "_" + AugmentedMemoizationPolicy.__name__
+        )
         return not (is_memo or is_augmented)
 
-    def probabilities_using_best_policy(self,
-                                        tracker: DialogueStateTracker,
-                                        domain: Domain
-                                        ) -> Tuple[List[float], Text]:
+    def probabilities_using_best_policy(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> Tuple[List[float], Text]:
         result = None
         max_confidence = -1
         best_policy_name = None
@@ -343,21 +343,22 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             probabilities = p.predict_action_probabilities(tracker, domain)
 
             if isinstance(tracker.events[-1], ActionExecutionRejected):
-                probabilities[domain.index_for_action(
-                    tracker.events[-1].action_name)] = 0.0
+                probabilities[
+                    domain.index_for_action(tracker.events[-1].action_name)
+                ] = 0.0
             confidence = np.max(probabilities)
 
-            if (confidence, p.priority) > (max_confidence,
-                                           best_policy_priority):
+            if (confidence, p.priority) > (max_confidence, best_policy_priority):
                 max_confidence = confidence
                 result = probabilities
-                best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
+                best_policy_name = "policy_{}_{}".format(i, type(p).__name__)
                 best_policy_priority = p.priority
 
-        if (result.index(max_confidence) ==
-                domain.index_for_action(ACTION_LISTEN_NAME) and
-                tracker.latest_action_name == ACTION_LISTEN_NAME and
-                self.is_not_memo_policy(best_policy_name)):
+        if (
+            result.index(max_confidence) == domain.index_for_action(ACTION_LISTEN_NAME)
+            and tracker.latest_action_name == ACTION_LISTEN_NAME
+            and self.is_not_memo_policy(best_policy_name)
+        ):
             # Trigger the fallback policy when ActionListen is predicted after
             # a user utterance. This is done on the condition that:
             # - a fallback policy is present,
@@ -365,32 +366,36 @@ class SimplePolicyEnsemble(PolicyEnsemble):
             #   action is action_listen by a policy
             #   other than the MemoizationPolicy
 
-            fallback_idx_policy = [(i, p) for i, p in enumerate(self.policies)
-                                   if isinstance(p, FallbackPolicy)]
+            fallback_idx_policy = [
+                (i, p)
+                for i, p in enumerate(self.policies)
+                if isinstance(p, FallbackPolicy)
+            ]
 
             if fallback_idx_policy:
                 fallback_idx, fallback_policy = fallback_idx_policy[0]
 
-                logger.debug("Action 'action_listen' was predicted after "
-                             "a user message using {}. "
-                             "Predicting fallback action: {}"
-                             "".format(best_policy_name,
-                                       fallback_policy.fallback_action_name))
+                logger.debug(
+                    "Action 'action_listen' was predicted after "
+                    "a user message using {}. "
+                    "Predicting fallback action: {}"
+                    "".format(best_policy_name, fallback_policy.fallback_action_name)
+                )
 
                 result = fallback_policy.fallback_scores(domain)
-                best_policy_name = 'policy_{}_{}'.format(
-                    fallback_idx,
-                    type(fallback_policy).__name__)
+                best_policy_name = "policy_{}_{}".format(
+                    fallback_idx, type(fallback_policy).__name__
+                )
 
         # normalize probabilities
         if np.sum(result) != 0:
             result = result / np.nansum(result)
 
-        logger.debug("Predicted next action using {}"
-                     "".format(best_policy_name))
+        logger.debug("Predicted next action using {}".format(best_policy_name))
         return result, best_policy_name
 
 
 class InvalidPolicyConfig(Exception):
     """Exception that can be raised when policy config is not valid."""
+
     pass
