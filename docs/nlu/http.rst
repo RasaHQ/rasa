@@ -68,7 +68,7 @@ to start the training:
 
 .. note::
 
-    The request should always be sent as application/x-yml regardless of wether you use json or md for the data format. Do not send json as application/json for example.
+    The request should always be sent as application/x-yml regardless of whether you use json or md for the data format. Do not send json as application/json for example.
 
 .. note::
 

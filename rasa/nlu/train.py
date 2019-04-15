@@ -15,54 +15,67 @@ logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
-    parser = argparse.ArgumentParser(
-        description='train a custom language parser')
+    parser = argparse.ArgumentParser(description="train a custom language parser")
 
-    parser.add_argument('-o', '--path',
-                        default="models/nlu/",
-                        help="Path where model files will be saved")
+    parser.add_argument(
+        "-o",
+        "--path",
+        default="models/nlu/",
+        help="Path where model files will be saved",
+    )
 
     group = parser.add_mutually_exclusive_group(required=True)
 
-    group.add_argument('-d', '--data',
-                       default=None,
-                       help="Location of the training data. For JSON and "
-                            "markdown data, this can either be a single file "
-                            "or a directory containing multiple training "
-                            "data files.")
+    group.add_argument(
+        "-d",
+        "--data",
+        default=None,
+        help="Location of the training data. For JSON and "
+        "markdown data, this can either be a single file "
+        "or a directory containing multiple training "
+        "data files.",
+    )
 
-    group.add_argument('-u', '--url',
-                       default=None,
-                       help="URL from which to retrieve training data.")
+    group.add_argument(
+        "-u", "--url", default=None, help="URL from which to retrieve training data."
+    )
 
-    group.add_argument('--endpoints',
-                       default=None,
-                       help="EndpointConfig defining the server from which "
-                            "pull training data.")
+    group.add_argument(
+        "--endpoints",
+        default=None,
+        help="EndpointConfig defining the server from which pull training data.",
+    )
 
-    parser.add_argument('-c', '--config',
-                        required=True,
-                        help="Rasa NLU configuration file")
+    parser.add_argument(
+        "-c", "--config", required=True, help="Rasa NLU configuration file"
+    )
 
-    parser.add_argument('-t', '--num_threads',
-                        default=1,
-                        type=int,
-                        help="Number of threads to use during model training")
+    parser.add_argument(
+        "-t",
+        "--num_threads",
+        default=1,
+        type=int,
+        help="Number of threads to use during model training",
+    )
 
-    parser.add_argument('--project',
-                        default=None,
-                        help="Project this model belongs to.")
+    parser.add_argument(
+        "--project", default=None, help="Project this model belongs to."
+    )
 
-    parser.add_argument('--fixed_model_name',
-                        help="If present, a model will always be persisted "
-                             "in the specified directory instead of creating "
-                             "a folder like 'model_20171020-160213'")
+    parser.add_argument(
+        "--fixed_model_name",
+        help="If present, a model will always be persisted "
+        "in the specified directory instead of creating "
+        "a folder like 'model_20171020-160213'",
+    )
 
-    parser.add_argument('--storage',
-                        help='Set the remote location where models are stored. '
-                             'E.g. on AWS. If nothing is configured, the '
-                             'server will only serve the models that are '
-                             'on disk in the configured `path`.')
+    parser.add_argument(
+        "--storage",
+        help="Set the remote location where models are stored. "
+        "E.g. on AWS. If nothing is configured, the "
+        "server will only serve the models that are "
+        "on disk in the configured `path`.",
+    )
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -90,42 +103,44 @@ def create_persistor(persistor: Optional[Text]):
 
     if persistor is not None:
         from rasa.nlu.persistor import get_persistor
+
         return get_persistor(persistor)
     else:
         return None
 
 
-def do_train_in_worker(cfg: RasaNLUModelConfig,
-                       data: Text,
-                       path: Text,
-                       project: Optional[Text] = None,
-                       fixed_model_name: Optional[Text] = None,
-                       storage: Text = None,
-                       component_builder: Optional[ComponentBuilder] = None
-
-                       ):
+def do_train_in_worker(
+    cfg: RasaNLUModelConfig,
+    data: Text,
+    path: Text,
+    project: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    storage: Text = None,
+    component_builder: Optional[ComponentBuilder] = None,
+):
     """Loads the trainer and the data and runs the training in a worker."""
 
     try:
-        _, _, persisted_path = train(cfg, data, path, project,
-                                     fixed_model_name, storage,
-                                     component_builder)
+        _, _, persisted_path = train(
+            cfg, data, path, project, fixed_model_name, storage, component_builder
+        )
         return persisted_path
     except BaseException as e:
         logger.exception("Failed to train project '{}'.".format(project))
         raise TrainingException(project, e)
 
 
-def train(nlu_config: Union[Text, RasaNLUModelConfig],
-          data: Text,
-          path: Optional[Text] = None,
-          project: Optional[Text] = None,
-          fixed_model_name: Optional[Text] = None,
-          storage: Optional[Text] = None,
-          component_builder: Optional[ComponentBuilder] = None,
-          training_data_endpoint: Optional[EndpointConfig] = None,
-          **kwargs: Any
-          ) -> Tuple[Trainer, Interpreter, Text]:
+def train(
+    nlu_config: Union[Text, RasaNLUModelConfig],
+    data: Text,
+    path: Optional[Text] = None,
+    project: Optional[Text] = None,
+    fixed_model_name: Optional[Text] = None,
+    storage: Optional[Text] = None,
+    component_builder: Optional[ComponentBuilder] = None,
+    training_data_endpoint: Optional[EndpointConfig] = None,
+    **kwargs: Any
+) -> Tuple[Trainer, Interpreter, Text]:
     """Loads the trainer and the data and runs the training of the model."""
 
     if isinstance(nlu_config, str):
@@ -137,39 +152,24 @@ def train(nlu_config: Union[Text, RasaNLUModelConfig],
     trainer = Trainer(nlu_config, component_builder)
     persistor = create_persistor(storage)
     if training_data_endpoint is not None:
-        training_data = load_data_from_endpoint(training_data_endpoint,
-                                                nlu_config.language)
+        training_data = load_data_from_endpoint(
+            training_data_endpoint, nlu_config.language
+        )
     else:
         training_data = load_data(data, nlu_config.language)
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
-        persisted_path = trainer.persist(path,
-                                         persistor,
-                                         project,
-                                         fixed_model_name)
+        persisted_path = trainer.persist(path, persistor, project, fixed_model_name)
     else:
         persisted_path = None
 
     return trainer, interpreter, persisted_path
 
 
-if __name__ == '__main__':
-    cmdline_args = create_argument_parser().parse_args()
-
-    utils.configure_colored_logging(cmdline_args.loglevel)
-
-    if cmdline_args.url:
-        data_endpoint = EndpointConfig(cmdline_args.url)
-    else:
-        data_endpoint = read_endpoints(cmdline_args.endpoints).data
-
-    train(cmdline_args.config,
-          cmdline_args.data,
-          cmdline_args.path,
-          cmdline_args.project,
-          cmdline_args.fixed_model_name,
-          cmdline_args.storage,
-          training_data_endpoint=data_endpoint,
-          num_threads=cmdline_args.num_threads)
-    logger.info("Finished training")
+if __name__ == "__main__":
+    raise RuntimeError(
+        "Calling `rasa.nlu.train` directly is "
+        "no longer supported. "
+        "Please use `rasa train nlu` instead."
+    )
