@@ -30,7 +30,7 @@ steps:
 This will train the Rasa NLU model and Rasa Core model.
 The models will be stored in the `/models` directory.
 
-4. Test the assistant by running:  
+2. Test the assistant by running:  
 ```make run```  
 This will load the assistant in your command line for you to chat.
 
