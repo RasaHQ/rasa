@@ -9,4 +9,10 @@ pipeline:
   url: http://localhost:8000
   dimensions:
   - number
+
 language: en
+
+policies:
+  - name: FallbackPolicy
+  - name: MemoizationPolicy
+  - name: FormPolicy

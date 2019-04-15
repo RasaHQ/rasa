@@ -6,3 +6,6 @@ policies:
   - name: FallbackPolicy
   - name: MemoizationPolicy
   - name: MappingPolicy
+
+language: en
+pipeline: supervised_embeddings

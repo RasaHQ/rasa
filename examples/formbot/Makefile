@@ -1,37 +1,20 @@
 help:
-	@echo "    train-core"
-	@echo "        Train a dialogue model using Rasa core."
-	@echo "    run-core"
-	@echo "        Spin up the core server on the command line"
-	@echo "    run-actions"
-	@echo "        Spin up the action server"
+	@echo "    train"
+	@echo "        Train a stacked model using Rasa core and NLU."
 	@echo "    run"
 	@echo "        Spin up both core and the action server"
 	@echo "    visualize"
 	@echo "        Show your stories as a graph"
 
 
-train-core:
-	python -m rasa.core.train -s data/stories.md -d domain.yml -o models/dialogue --debug
-
-run-core:
-	python -m rasa.core.run --core models/dialogue --nlu models/nlu/current --verbose --endpoints endpoints.yml
-
-run-actions:
-	python -m rasa_core_sdk.endpoint --actions actions
+train:
+	rasa train --debug
 
 run:
-	make run-actions&
-	make run-core
+	rasa shell core -m models --verbose --endpoints endpoints.yml
 
 train-interactive:
-	python -m rasa.core.train interactive -s data/stories.md --nlu models/nlu/current -d domain.yml -o models/dialogue --verbose --endpoints endpoints.yml
+	rasa interactive core -d domain.yml -m models -c config.yml --data data --verbose --endpoints endpoints.yml
 
 visualize:
-	python -m rasa.core.visualize -s data/stories.md -d domain.yml -o story_graph.html
-
-train-nlu:
-	python -m rasa.nlu.train -c config.yml --fixed_model_name current --data data/nlu.md -o models --project nlu --verbose
-
-evaluate-core:
-	python -m rasa.core.test --core models/dialogue -s data/stories.md --fail_on_prediction_errors
+	rasa show stories

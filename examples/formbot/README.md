@@ -25,15 +25,10 @@ Using this example you can build an actual assistant which demonstrates the
 functionality of the FormAction. You can use the example using the following 
 steps:
 
-1. Train the Rasa NLU model by running:  
-```make train-nlu```  
-This will train the Rasa NLU model and store it inside the `/models/nlu/current/`
-folder of your working directory.
-
-2. Train the Rasa Core model by running:  
-```make train-core```  
-This will train the Rasa Core model and store it inside the `/models/dialogue`
-folder of your working directory.
+1. Train the Rasa NLU and Rasa Core model by running:  
+```make train```  
+This will train the Rasa NLU model and Rasa Core model.
+The models will be stored in the `/models` directory.
 
 4. Test the assistant by running:  
 ```make run```  
