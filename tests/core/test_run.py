@@ -35,7 +35,7 @@ def test_create_single_input_channels_by_class():
 
 def test_create_single_input_channels_by_class_wo_credentials():
     channels = run.create_http_input_channels(
-        "rasa.core.channels.channel.RestInput", credentials=None
+        "rasa.core.channels.channel.RestInput", credentials_file=None
     )
 
     assert len(channels) == 1
