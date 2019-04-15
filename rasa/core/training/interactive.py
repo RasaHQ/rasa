@@ -1424,8 +1424,8 @@ def run_interactive_learning(
 
     server_args = server_args or {}
 
-    if server_args.get('data'):
-        PATHS['nlu'] = server_args['data']
+    if server_args.get('nlu_data'):
+        PATHS['nlu'] = server_args['nlu_data']
 
     if server_args.get('stories'):
         PATHS['stories'] = server_args['stories']
