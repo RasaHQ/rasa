@@ -217,7 +217,9 @@ def create_app(
             request_params["q"] = request_params.pop("query")
 
         if "q" not in request_params:
-            raise ErrorResponse(404, "Not Found", "Invalid parse parameter specified.")
+            raise ErrorResponse(
+                404, "Message Not Found", "Invalid parse parameter specified."
+            )
         else:
             return await parse_response(request_params)
 
@@ -290,13 +292,16 @@ def create_app(
         except MaxWorkerProcessError as e:
             raise ErrorResponse(
                 403,
-                "Forbidden",
+                "No Free Process",
                 "No process available for training.",
                 details={"error": str(e)},
             )
         except InvalidProjectError as e:
             raise ErrorResponse(
-                404, "Not Found", "No project found.", details={"error": str(e)}
+                404,
+                "Project Not Found",
+                "Project '{}' not found.".format(project),
+                details={"error": str(e)},
             )
         except TrainingException as e:
             raise ErrorResponse(
