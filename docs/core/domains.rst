@@ -48,7 +48,7 @@ For example, an ``action`` can:
 * make an external API call
 * query a database
 
-see :ref:`customactions`
+see :ref:`actions`
 
 For a more complete example domain, check the :doc:`quickstart`.
 
