@@ -25,7 +25,7 @@ def configure_colored_logging(loglevel):
 
 def enable_async_loop_debugging(event_loop: AbstractEventLoop) -> AbstractEventLoop:
     logging.info(
-        "Enabling coroutine debugging. Loop id {}".format(id(asyncio.get_event_loop()))
+        "Enabling coroutine debugging. Loop id {}.".format(id(asyncio.get_event_loop()))
     )
 
     # Enable debugging

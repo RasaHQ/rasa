@@ -360,7 +360,7 @@ class DataRouter(object):
     # noinspection PyProtectedMember
     async def evaluate(
         self, data: Text, project: Optional[Text] = None, model: Optional[Text] = None
-    ):
+    ) -> Dict:
         """Perform a model evaluation."""
 
         logger.debug(

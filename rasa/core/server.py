@@ -120,7 +120,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
         @wraps(f)
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
 
-            provided = rasa.utils.endpoints.default_arg(request, "token", None)
+            provided = request.args.get("token", None)
 
             # noinspection PyProtectedMember
             if token is not None and provided == token:

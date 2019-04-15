@@ -7,18 +7,6 @@ import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
 
 
-def default_arg(request: Request, key: Text, default: Any = None) -> Optional[Any]:
-    """Return an argument of the request or a default.
-
-    Checks the `name` parameter of the request if it contains a value.
-    If not, `default` is returned."""
-    found = request.args.get(key)
-    if found is not None:
-        return found
-    else:
-        return default
-
-
 def read_endpoint_config(
     filename: Text, endpoint_type: Text
 ) -> Optional["EndpointConfig"]:

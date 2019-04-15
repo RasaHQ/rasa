@@ -13,8 +13,6 @@ from tests.nlu.utilities import ResponseTest
 
 @pytest.fixture(scope="module")
 def router(component_builder):
-    """Test sanic server."""
-
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
@@ -30,6 +28,8 @@ def router(component_builder):
 
 @pytest.fixture
 def app(router):
+    """Test client for the http server."""
+
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     rasa = create_app(router, logfile=nlu_log_file)

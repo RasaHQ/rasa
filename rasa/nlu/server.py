@@ -91,7 +91,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
         @wraps(f)
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
-            provided = rasa.utils.endpoints.default_arg(request, "token", None)
+            provided = request.args.get("token", None)
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 result = f(request, *args, **kwargs)
@@ -144,7 +144,7 @@ def _configure_logging(loglevel, logfile):
     logging.captureWarnings(True)
 
 
-def _load_default_config(path: Text) -> Dict:
+def _load_default_config(path: Optional[Text]) -> Dict:
     if path:
         return config.load(path).as_dict()
     else:
@@ -160,10 +160,9 @@ async def configure_logging():
 def create_app(
     data_router: DataRouter,
     loglevel: Text = "INFO",
-    logfile: Text = None,
-    token: Text = None,
-    cors_origins: Text = None,
-    default_config_path: Text = None,
+    logfile: Optional[Text] = None,
+    token: Optional[Text] = None,
+    cors_origins: Optional[Text] = None,
 ):
     """Class representing Rasa NLU http server."""
     app = Sanic(__name__)
@@ -172,8 +171,6 @@ def create_app(
     )
 
     _configure_logging(loglevel, logfile)
-
-    default_model_config = _load_default_config(default_config_path)
 
     @app.exception(ErrorResponse)
     async def handle_error_response(request: Request, exception: ErrorResponse):
@@ -394,12 +391,7 @@ def main(args):
         router._pre_load(pre_load)
 
     rasa = create_app(
-        router,
-        args.loglevel,
-        args.write,
-        get_token(args.token),
-        args.cors,
-        default_config_path=args.config,
+        router, args.loglevel, args.write, get_token(args.token), args.cors
     )
     rasa.add_task(configure_logging)
 
