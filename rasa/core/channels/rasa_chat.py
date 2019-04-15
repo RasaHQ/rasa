@@ -29,18 +29,19 @@ class RasaChatInput(RestInput):
     async def _check_token(self, token):
         url = "{}/user".format(self.base_url)
         headers = {"Authorization": token}
-        logger.debug("Requesting user information from auth server {}."
-                     "".format(url))
+        logger.debug("Requesting user information from auth server {}.".format(url))
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(url,
-                                   headers=headers,
-                                   timeout=DEFAULT_REQUEST_TIMEOUT) as resp:
+            async with session.get(
+                url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT
+            ) as resp:
                 if resp.status == 200:
                     return await resp.json()
                 else:
-                    logger.info("Failed to check token: {}. "
-                                "Content: {}".format(token, await resp.text()))
+                    logger.info(
+                        "Failed to check token: {}. "
+                        "Content: {}".format(token, await resp.text())
+                    )
                     return None
 
     async def _extract_sender(self, req):
@@ -52,7 +53,7 @@ class RasaChatInput(RestInput):
             if user:
                 return user["username"]
 
-        user = await self._check_token(req.args.get('token', default=None))
+        user = await self._check_token(req.args.get("token", default=None))
         if user:
             return user["username"]
 

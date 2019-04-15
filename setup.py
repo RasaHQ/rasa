@@ -7,7 +7,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
 with open("rasa/version.py") as f:
-    exec(f.read())
+    exec (f.read())
 
 # Get the long description from the README file
 with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
@@ -17,9 +17,8 @@ tests_requires = [
     "pytest~=3.5",
     "pytest-pycodestyle~=1.4",
     "pytest-cov~=2.5",
-    "pytest-twisted<1.6",
-    "pytest_localserver~=0.4.0",
     "pytest_sanic~=0.1.0",
+    "pytest_localserver~=0.4.1",
     "treq~=17.8",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
@@ -32,7 +31,7 @@ tests_requires = [
 
 install_requires = [
     "cloudpickle~=0.6.1",
-    "klein~=17.10",
+    "gevent~=1.2",
     "boto3~=1.5",
     "typing~=3.6",
     "requests~=2.20",
@@ -52,6 +51,7 @@ install_requires = [
     "fbmessenger~=5.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
+    "scikit-learn~=0.20.2",
     "ruamel.yaml~=0.15.0",
     "scikit-learn~=0.20.0",
     "slackclient~=1.0",
@@ -87,9 +87,9 @@ install_requires = [
 ]
 
 extras_requires = {
-    'test': tests_requires,
-    'spacy': ["spacy<=2.0.18,>2.0"],
-    'mitie': ["mitie"],
+    "test": tests_requires,
+    "spacy": ["spacy<=2.0.18,>2.0"],
+    "mitie": ["mitie"],
 }
 
 setup(
@@ -105,16 +105,14 @@ setup(
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
-    entry_points={
-        'console_scripts': ['rasa=rasa.__main__:main'],
-    },
+    entry_points={"console_scripts": ["rasa=rasa.__main__:main"]},
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
     description="Machine learning based dialogue engine "
-                "for conversational software.",
+    "for conversational software.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Rasa Technologies GmbH",
@@ -123,18 +121,17 @@ setup(
     maintainer_email="tom@rasa.com",
     license="Apache 2.0",
     keywords="nlp machine-learning machine-learning-library bot bots "
-             "botkit rasa conversational-agents conversational-ai chatbot"
-             "chatbot-framework bot-framework",
+    "botkit rasa conversational-agents conversational-ai chatbot"
+    "chatbot-framework bot-framework",
     url="https://rasa.com",
     download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz"
-                 "".format(__version__),
+    "".format(__version__),
     project_urls={
         "Bug Reports": "https://github.com/rasahq/rasa_nlu/issues",
         "Source": "https://github.com/rasahq/rasa_nlu",
     },
 )
 
-print("\nWelcome to Rasa!")
-print("If any questions please visit documentation "
-      "page https://rasa.com/docs")
-print("or join the community discussions on https://forum.rasa.com")
+print ("\nWelcome to Rasa!")
+print ("If any questions please visit documentation page https://rasa.com/docs")
+print ("or join the community discussions on https://forum.rasa.com")

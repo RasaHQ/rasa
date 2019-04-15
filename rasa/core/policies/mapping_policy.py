@@ -2,7 +2,10 @@ import logging
 from typing import Any, List, Text
 
 from rasa.core.actions.action import (
-    ACTION_BACK_NAME, ACTION_LISTEN_NAME, ACTION_RESTART_NAME)
+    ACTION_BACK_NAME,
+    ACTION_LISTEN_NAME,
+    ACTION_RESTART_NAME,
+)
 from rasa.core.constants import USER_INTENT_BACK, USER_INTENT_RESTART
 from rasa.core.domain import Domain
 from rasa.core.events import ActionExecuted
@@ -24,18 +27,19 @@ class MappingPolicy(Policy):
 
         super(MappingPolicy, self).__init__(priority=priority)
 
-    def train(self,
-              training_trackers: List[DialogueStateTracker],
-              domain: Domain,
-              **kwargs: Any
-              ) -> None:
+    def train(
+        self,
+        training_trackers: List[DialogueStateTracker],
+        domain: Domain,
+        **kwargs: Any
+    ) -> None:
         """Does nothing. This policy is deterministic."""
 
         pass
 
-    def predict_action_probabilities(self,
-                                     tracker: DialogueStateTracker,
-                                     domain: Domain) -> List[float]:
+    def predict_action_probabilities(
+        self, tracker: DialogueStateTracker, domain: Domain
+    ) -> List[float]:
         """Predicts the assigned action.
 
         If the current intent is assigned to an action that action will be
@@ -43,14 +47,16 @@ class MappingPolicy(Policy):
         the policy will predict zero for every action."""
 
         prediction = [0.0] * domain.num_actions
-        intent = tracker.latest_message.intent.get('name')
-        action = domain.intent_properties.get(intent, {}).get('triggers')
+        intent = tracker.latest_message.intent.get("name")
+        action = domain.intent_properties.get(intent, {}).get("triggers")
         if tracker.latest_action_name == ACTION_LISTEN_NAME:
             if action:
                 idx = domain.index_for_action(action)
                 if idx is None:
-                    logger.warning("MappingPolicy tried to predict unknown "
-                                   "action '{}'.".format(action))
+                    logger.warning(
+                        "MappingPolicy tried to predict unkown "
+                        "action '{}'.".format(action)
+                    )
                 else:
                     prediction[idx] = 1
             elif intent == USER_INTENT_RESTART:
@@ -76,7 +82,7 @@ class MappingPolicy(Policy):
         pass
 
     @classmethod
-    def load(cls, path: Text) -> 'MappingPolicy':
+    def load(cls, path: Text) -> "MappingPolicy":
         """Just returns the class since there is no data to be loaded."""
 
         return cls()

@@ -1,12 +1,15 @@
 import aiohttp
 from typing import Any, Optional, Text, Dict
 
+from sanic.request import Request
+
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
 
 
-def read_endpoint_config(filename: Text,
-                         endpoint_type: Text) -> Optional['EndpointConfig']:
+def read_endpoint_config(
+    filename: Text, endpoint_type: Text
+) -> Optional["EndpointConfig"]:
     """Read an endpoint configuration file from disk and extract one
 
     config. """
@@ -24,21 +27,23 @@ def read_endpoint_config(filename: Text,
 class EndpointConfig(object):
     """Configuration for an external HTTP endpoint."""
 
-    def __init__(self,
-                 url: Text = None,
-                 params: Dict[Text, Any] = None,
-                 headers: Dict[Text, Any] = None,
-                 basic_auth: Dict[Text, Text] = None,
-                 token: Optional[Text] = None,
-                 token_name: Text = "token",
-                 **kwargs):
+    def __init__(
+        self,
+        url: Text = None,
+        params: Dict[Text, Any] = None,
+        headers: Dict[Text, Any] = None,
+        basic_auth: Dict[Text, Text] = None,
+        token: Optional[Text] = None,
+        token_name: Text = "token",
+        **kwargs
+    ):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
         self.basic_auth = basic_auth
         self.token = token
         self.token_name = token_name
-        self.type = kwargs.pop('store_type', kwargs.pop('type', None))
+        self.type = kwargs.pop("store_type", kwargs.pop("type", None))
         self.kwargs = kwargs
 
     @staticmethod
@@ -63,8 +68,9 @@ class EndpointConfig(object):
     def session(self):
         # create authentication parameters
         if self.basic_auth:
-            auth = aiohttp.BasicAuth(self.basic_auth["username"],
-                                     self.basic_auth["password"])
+            auth = aiohttp.BasicAuth(
+                self.basic_auth["username"], self.basic_auth["password"]
+            )
         else:
             auth = None
 
@@ -87,12 +93,13 @@ class EndpointConfig(object):
             del kwargs["params"]
         return params
 
-    async def request(self,
-                      method: Text = "post",
-                      subpath: Optional[Text] = None,
-                      content_type: Optional[Text] = "application/json",
-                      **kwargs: Any
-                      ):
+    async def request(
+        self,
+        method: Text = "post",
+        subpath: Optional[Text] = None,
+        content_type: Optional[Text] = "application/json",
+        **kwargs: Any
+    ):
         """Send a HTTP request to the endpoint.
 
         All additional arguments will get passed through
@@ -110,15 +117,16 @@ class EndpointConfig(object):
         url = self._concat_url(self.url, subpath)
         async with self.session() as session:
             async with session.request(
-                    method,
-                    url,
-                    headers=headers,
-                    params=self.combine_parameters(kwargs),
-                    **kwargs) as resp:
+                method,
+                url,
+                headers=headers,
+                params=self.combine_parameters(kwargs),
+                **kwargs
+            ) as resp:
                 if resp.status >= 400:
-                    raise ClientResponseError(resp.status,
-                                              resp.reason,
-                                              await resp.content.read())
+                    raise ClientResponseError(
+                        resp.status, resp.reason, await resp.content.read()
+                    )
                 return await resp.json()
 
     @classmethod
@@ -127,12 +135,14 @@ class EndpointConfig(object):
 
     def __eq__(self, other):
         if isinstance(self, type(other)):
-            return (other.url == self.url and
-                    other.params == self.params and
-                    other.headers == self.headers and
-                    other.basic_auth == self.basic_auth and
-                    other.token == self.token and
-                    other.token_name == self.token_name)
+            return (
+                other.url == self.url
+                and other.params == self.params
+                and other.headers == self.headers
+                and other.basic_auth == self.basic_auth
+                and other.token == self.token
+                and other.token_name == self.token_name
+            )
         else:
             return False
 

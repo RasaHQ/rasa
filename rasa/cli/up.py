@@ -17,8 +17,9 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 # noinspection PyProtectedMember
-def add_subparser(subparsers: argparse._SubParsersAction,
-                  parents: List[argparse.ArgumentParser]):
+def add_subparser(
+    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+):
     shell_parser = subparsers.add_parser(
         "up",
         parents=parents,
@@ -75,6 +76,10 @@ def add_subparser(subparsers: argparse._SubParsersAction,
 
     cli.arguments.add_logging_option_arguments(shell_parser)
 
+def start_event_service():
+    from rasa_platform.services.event_service import main
+
+    main("rasa_event.log")
 
 def start_core(args: argparse.Namespace,
                endpoints: AvailableEndpoints = None):

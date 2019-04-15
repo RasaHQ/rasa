@@ -28,24 +28,22 @@ Run the following command to start interactive learning:
 
    python3 -m rasa_core_sdk.endpoint --actions actions&
 
-   python3 -m rasa.core.train \
-     interactive -o models/dialogue \
-     -d domain.yml -c policy_config.yml \
-     -s data/stories.md \
-     --nlu models/current/nlu \
+   rasa interactive \
+     -o models \
+     -d domain.yml \
+     -c policy_config.yml \
      --endpoints endpoints.yml
 
 The first command starts the action server (see :ref:`customactions`).
 
 The second command trains the bot from your stories and then starts it
 in interactive mode.  Alternatively, you can load an existing core
-model with the ``--core`` flag like so:
+model with the ``-m`` flag like so:
 
 .. code-block:: bash
 
-   python3 -m rasa.core.train \
-     interactive --core models/dialogue \
-     --nlu models/current/nlu \
+   rasa interactive \
+     -m models \
      --endpoints endpoints.yml
 
 In interactive mode, the bot will ask you to confirm every prediction
@@ -131,7 +129,8 @@ model has assigned to each of the actions:
 .. code-block:: text
 
     ? What is the next action of the bot?  (Use arrow keys)
-     ❯ 0.53 action_show_venue_reviews
+     ❯ <create new action>
+       0.53 action_show_venue_reviews
        0.46 action_show_concert_reviews
        0.00 utter_goodbye
        0.00 action_search_concerts
@@ -145,17 +144,38 @@ model has assigned to each of the actions:
 
 
 
-In this case, the bot should ``action_show_concert_reviews`` (rather than venue
-reviews!) so we select that action.
+In this case, the bot should execute ``action_show_concert_reviews``
+(rather than venue reviews!) so we select that action.
+
+At this point we can also choose to create a new action, if the correct action
+is not yet implemented. There are two types of new actions that can be created
+1) create an ``utter_{}`` action which uses :ref:`utter_templates` or
+2) create :ref:`customactions`.
+
+Only the first type is fully implemented by interactive learning.
+After choosing ``<create new action>`` we are prompted to type the action name,
+in order to create a template action we use the prefix ``utter_`` and name the
+action for example ``utter_compliment``. Now we get a new prompt asking for the
+text that the template for our new action should store to send back to the user.
+
+If we choose to create a new custom action which should return an event (e.g. set a slot)
+this behaviour won't be reflected in interactive learning unless we implement it first.
+The action needs to be implemented in our action server as :ref:`customactions`.
+We can still add the action name in interactive learning and continue the session,
+but no events will be returned.
 
 Now we can keep talking to the bot for as long as we like to create a longer
 conversation. At any point you can press ``Ctrl-C`` and the bot will
 provide you with exit options. You can write your newly-created stories and NLU
 data to files. You can also go back a step if you made a mistake when providing
-feedback.
+feedback, start fresh or fork from a previous point in the story line.
+When starting fresh or forking the story line a new additional story will be
+created.
 
-Make sure to combine the dumped stories and NLU examples with your original
-training data for the next training.
+If you choose your current file names to store data, the new data is merged
+with existing data, so that no old data is lost.
+If you choose to save the files separately, make sure to combine the dumped
+stories and NLU examples with your original training data for the next training.
 
 Visualization of conversations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
