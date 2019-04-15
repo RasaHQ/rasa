@@ -540,7 +540,9 @@ def _slot_history(tracker_dump: Dict[Text, Any]) -> List[Text]:
 
     slot_strs = []
     for k, s in tracker_dump.get("slots").items():
-        colored_value = cliutils.wrap_with_color(str(s), rasa.cli.utils.bcolors.WARNING)
+        colored_value = cliutils.wrap_with_color(
+            str(s), color=rasa.cli.utils.bcolors.WARNING
+        )
         slot_strs.append("{}: {}".format(k, colored_value))
     return slot_strs
 

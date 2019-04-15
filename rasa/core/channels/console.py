@@ -20,28 +20,30 @@ logger = logging.getLogger(__name__)
 
 def print_bot_output(message, color=rasa.cli.utils.bcolors.OKBLUE):
     if "text" in message:
-        rasa.cli.utils.print_color(message.get("text"), color)
+        rasa.cli.utils.print_color(message.get("text"), color=color)
 
     if "image" in message:
-        rasa.cli.utils.print_color("Image: " + message.get("image"), color)
+        rasa.cli.utils.print_color("Image: " + message.get("image"), color=color)
 
     if "attachment" in message:
-        rasa.cli.utils.print_color("Attachment: " + message.get("attachment"), color)
+        rasa.cli.utils.print_color(
+            "Attachment: " + message.get("attachment"), color=color
+        )
 
     if "buttons" in message:
-        rasa.cli.utils.print_color("Buttons:", color)
+        rasa.cli.utils.print_color("Buttons:", color=color)
         for idx, button in enumerate(message.get("buttons")):
-            rasa.cli.utils.print_color(button_to_string(button, idx), color)
+            rasa.cli.utils.print_color(button_to_string(button, idx), color=color)
 
     if "elements" in message:
         for idx, element in enumerate(message.get("elements")):
             element_str = "Elements:\n" + element_to_string(element, idx)
-            rasa.cli.utils.print_color(element_str, color)
+            rasa.cli.utils.print_color(element_str, color=color)
 
     if "quick_replies" in message:
         for idx, element in enumerate(message.get("quick_replies")):
             element_str = "Quick Replies:\n" + button_to_string(element, idx)
-            rasa.cli.utils.print_color(element_str, color)
+            rasa.cli.utils.print_color(element_str, color=color)
 
 
 def get_cmd_input():
