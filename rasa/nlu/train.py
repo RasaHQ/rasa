@@ -114,7 +114,7 @@ def do_train_in_worker(
     data: Text,
     path: Text,
     fixed_model_name: Optional[Text] = None,
-    storage: Text = None,
+    storage: Optional[Text] = None,
     component_builder: Optional[ComponentBuilder] = None,
 ) -> Text:
     """Loads the trainer and the data and runs the training in a worker."""

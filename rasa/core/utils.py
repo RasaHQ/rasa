@@ -356,9 +356,7 @@ def bool_arg(request: Request, name: Text, default: bool = True) -> bool:
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
 
-    return (
-        rasa.utils.endpoints.default_arg(request, name, str(default)).lower() == "true"
-    )
+    return request.args.get(name, str(default)).lower() == "true"
 
 
 def float_arg(
@@ -369,7 +367,7 @@ def float_arg(
     Checks the `name` parameter of the request if it contains a valid
     float value. If not, `None` is returned."""
 
-    arg = rasa.utils.endpoints.default_arg(request, key, default)
+    arg = request.args.get(key, default)
 
     if arg is default:
         return arg

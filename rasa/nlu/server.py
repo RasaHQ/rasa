@@ -95,7 +95,7 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
         @wraps(f)
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
-            provided = rasa.utils.endpoints.default_arg(request, "token", None)
+            provided = request.args.get("token", None)
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 result = f(request, *args, **kwargs)
@@ -157,9 +157,9 @@ async def configure_logging():
 def create_app(
     data_router: DataRouter,
     loglevel: Text = "INFO",
-    logfile: Text = None,
-    token: Text = None,
-    cors_origins: Text = None,
+    logfile: Optional[Text] = None,
+    token: Optional[Text] = None,
+    cors_origins: Optional[Text] = None,
 ):
     """Class representing Rasa NLU http server."""
     app = Sanic(__name__)
@@ -184,13 +184,13 @@ def create_app(
             return response.json(data_router.parse(data), status=200)
         except InvalidModelError as e:
             raise ErrorResponse(
-                404, "Not Found", "Project is invalid.", details={"error": str(e)}
+                404, "NotFound", "Model is invalid.", details={"error": str(e)}
             )
         except Exception as e:
             logger.exception(e)
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -214,7 +214,9 @@ def create_app(
             request_params["q"] = request_params.pop("query")
 
         if "q" not in request_params:
-            raise ErrorResponse(404, "Not Found", "Invalid parse parameter specified.")
+            raise ErrorResponse(
+                404, "MessageNotFound", "Invalid parse parameter specified."
+            )
         else:
 
             return parse_response(request_params)
@@ -268,7 +270,7 @@ def create_app(
         except Exception as e:
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -297,18 +299,21 @@ def create_app(
         except MaxWorkerProcessError as e:
             raise ErrorResponse(
                 403,
-                "Forbidden",
+                "NoFreeProcess",
                 "No process available for training.",
                 details={"error": str(e)},
             )
         except InvalidModelError as e:
             raise ErrorResponse(
-                404, "Not Found", "No project found.", details={"error": str(e)}
+                404,
+                "ModelNotFound",
+                "Model '{}' not found.".format(model_name),
+                details={"error": str(e)},
             )
         except TrainingException as e:
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -341,7 +346,7 @@ def create_app(
         except Exception as e:
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -371,7 +376,7 @@ def create_app(
             logger.exception(e)
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
