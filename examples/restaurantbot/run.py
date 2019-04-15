@@ -14,8 +14,13 @@ from rasa.core.policies.mapping_policy import MappingPolicy
 logger = logging.getLogger(__name__)
 
 
-async def parse(core_model_path, nlu_model_path, text):
-    interpreter = RasaNLUInterpreter(nlu_model_path, config_file="config.yml")
+async def parse(
+    text: Text, core_model_path: Text, nlu_model_path: Optional[Text] = None
+):
+    if nlu_model_path:
+        interpreter = RasaNLUInterpreter(nlu_model_path, config_file="config.yml")
+    else:
+        interpreter = None
 
     agent = Agent.load(core_model_path, interpreter=interpreter)
 
@@ -103,5 +108,5 @@ if __name__ == "__main__":
         loop.run_until_complete(train_core())
     elif args.task == "parse":
         loop.run_until_complete(
-            parse(args.core_model_path, args.nlu_model_path, args.text)
+            parse(args.text, args.core_model_path, args.nlu_model_path)
         )

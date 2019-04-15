@@ -84,3 +84,18 @@ async def test_formbot_example():
         responses = await agent.handle_text("/chitchat")
 
         assert responses[0]["text"] == "chitchat"
+
+
+async def test_restaurantbot_example():
+    sys.path.append("examples/restaurantbot/")
+    from run import train_core, parse
+
+    p = "examples/restaurantbot/"
+    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
+    core_model_path = await train_core(
+        os.path.join(p, "domain.yml"), os.path.join(p, "models", "core"), stories
+    )
+
+    responses = await parse("/greet", core_model_path)
+
+    assert responses[0]["text"] == "how can I help you?"
