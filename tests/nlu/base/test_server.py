@@ -352,13 +352,13 @@ def test_evaluate(app, rasa_default_train_data):
     )
 
     rjs = response.json
-    assert response.status == 200, "Evaluation should start"
     assert "intent_evaluation" in rjs
     assert "entity_evaluation" in rjs
     assert all(
         prop in rjs["intent_evaluation"]
         for prop in ["report", "predictions", "precision", "f1_score", "accuracy"]
     )
+    assert response.status == 200, "Evaluation should start"
 
 
 def test_unload_model_error(app):

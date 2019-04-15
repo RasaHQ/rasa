@@ -21,32 +21,22 @@ you can do this with
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"hello there"}'
 
-By default, when the project is not specified in the query, the
-``"default"`` one will be used.
-You can (should) specify the project you want to use in your query :
+By default the currently loaded model is used to parse the request.
+You can also query against a specific model:
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot"}'
-
-By default the latest trained model for the project will be loaded.
-You can also query against a specific model for a project :
-
-.. code-block:: console
-
-    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot", "model": "<model_XXXXXX>"}'
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "model": "<model_XXXXXX>"}'
 
 
 ``POST /train``
 ^^^^^^^^^^^^^^^
 
-You can post your training data to this endpoint to train a new model for a project.
+You can post your training data to this endpoint to train a new model.
 This request will wait for the server answer: either the model
 was trained successfully or the training exited with an error. If the model
 is trained successfully a zip file is returned with the trained model.
-Using the HTTP server, you must specify the project you want to train a
-new model for to be able to use it during parse requests later on :
-``/train?project=my_project``. The configuration of the model should be
+The configuration of the model should be
 posted as the content of the request:
 
 **Using training data in json format**:
@@ -63,7 +53,7 @@ to start the training:
 
 .. code-block:: bash
 
-    $ curl -XPOST -H "Content-Type: application/x-yml" localhost:5000/train?project=my_project \
+    $ curl -XPOST -H "Content-Type: application/x-yml" localhost:5000/train \
         -d @sample_configs/config_train_server_md.yml
 
 .. note::
@@ -72,22 +62,17 @@ to start the training:
 
 .. note::
 
-    You cannot send a training request for a project
-    already training a new model (see below).
-
-.. note::
-
     The server will automatically generate a name for the trained model. If
     you want to set the name yourself, call the endpoint using
-    ``localhost:5000/train?project=my_project&model=my_model_name``
+    ``localhost:5000/train?model=my_model_name``
 
 ``POST /evaluate``
 ^^^^^^^^^^^^^^^^^^
 
 You can use this endpoint to evaluate data on a model. The query string
-takes the ``project`` (required) and a ``model`` (optional). You must
-specify the project in which the model is located. N.b. if you don't specify
-a model, the latest one will be selected. This endpoint returns some common
+takes a ``model`` (optional). N.b. if you don't specify
+a model, the currently loaded model will be selected. If you specify a model, the model should match the currently
+loaded one. This endpoint returns some common
 sklearn  evaluation metrics (`accuracy <http://scikit-learn
 .org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn
 .metrics.accuracy_score>`_, `f1 score <http://scikit-learn
@@ -98,7 +83,7 @@ a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
 
 .. code-block:: bash
 
-    $ curl -XPOST localhost:5000/evaluate?project=my_project&model=model_XXXXXX -d @data/examples/rasa/demo-rasa.json | python -mjson.tool
+    $ curl -XPOST localhost:5000/evaluate?&model=model_XXXXXX -d @data/examples/rasa/demo-rasa.json | python -mjson.tool
 
     {
         "intent_evaluation": {
@@ -130,23 +115,16 @@ a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
 ``GET /status``
 ^^^^^^^^^^^^^^^
 
-This returns all the currently available projects, their status (``training`` or ``ready``) and their models loaded in memory.
-also returns a list of available projects the server can use to fulfill ``/parse`` requests.
+This returns the name of the currently loaded model and some information about the worker processes.
 
 .. code-block:: bash
 
     $ curl localhost:5000/status | python -mjson.tool
 
     {
-      "available_projects": {
-        "my_restaurant_search_bot" : {
-          "status" : "ready",
-          "available_models" : [
-            <model_XXXXXX>,
-            <model_XXXXXX>
-          ]
-        }
-      }
+        "max_worker_processes": 2,
+        "current_worker_processes": 1,
+        "loaded_model": "restaurant_bot.tar.gz",
     }
 
 ``GET /version``
@@ -169,7 +147,17 @@ This will unload a model from the server memory
 
 .. code-block:: bash
 
-    $ curl -X DELETE localhost:5000/models?project=my_restaurant_search_bot&model=model_XXXXXX
+    $ curl -X DELETE localhost:5000/models?model=model_XXXXXX
+    }
+
+``PUT /models``
+^^^^^^^^^^^^^^^^^^
+
+This will load a model
+
+.. code-block:: bash
+
+    $ curl -X PUT localhost:5000/models?model=model_XXXXXX
 
 
 .. include:: feedback.inc
