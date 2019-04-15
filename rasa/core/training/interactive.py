@@ -633,7 +633,7 @@ async def _request_action_from_user(
             utter_message = await _request_free_text_utterance(
                 sender_id, endpoint, action_name
             )
-            NEW_TEMPLATES[action_name] = {utter_message: utter_message}
+            NEW_TEMPLATES[action_name] = {utter_message: ""}
 
     elif action_name[:32] == OTHER_ACTION:
         # action was newly created in the session, but not this turn
