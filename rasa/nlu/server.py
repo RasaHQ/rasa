@@ -187,13 +187,13 @@ def create_app(
             return response.json(await data_router.parse(data), status=200)
         except InvalidProjectError as e:
             raise ErrorResponse(
-                404, "Not Found", "Project is invalid.", details={"error": str(e)}
+                404, "NotFound", "Project is invalid.", details={"error": str(e)}
             )
         except Exception as e:
             logger.exception(e)
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -218,7 +218,7 @@ def create_app(
 
         if "q" not in request_params:
             raise ErrorResponse(
-                404, "Message Not Found", "Invalid parse parameter specified."
+                404, "MessageNotFound", "Invalid parse parameter specified."
             )
         else:
             return await parse_response(request_params)
@@ -275,7 +275,7 @@ def create_app(
         except Exception as e:
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -292,21 +292,21 @@ def create_app(
         except MaxWorkerProcessError as e:
             raise ErrorResponse(
                 403,
-                "No Free Process",
+                "NoFreeProcess",
                 "No process available for training.",
                 details={"error": str(e)},
             )
         except InvalidProjectError as e:
             raise ErrorResponse(
                 404,
-                "Project Not Found",
+                "ProjectNotFound",
                 "Project '{}' not found.".format(project),
                 details={"error": str(e)},
             )
         except TrainingException as e:
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -332,7 +332,7 @@ def create_app(
         except Exception as e:
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
@@ -350,7 +350,7 @@ def create_app(
             logger.exception(e)
             raise ErrorResponse(
                 500,
-                "Server Error",
+                "ServerError",
                 "An unexpected error occurred.",
                 details={"error": str(e)},
             )
