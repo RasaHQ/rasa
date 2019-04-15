@@ -21,6 +21,7 @@ in ``interactive learning``
 Changed
 -------
 - changed removing punctuation logic in ``WhitespaceTokenizer``
+- ``training_processes`` in the Rasa NLU data router have been renamed to ``worker_processes``
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
 
 Removed
@@ -31,6 +32,8 @@ Removed
 
 Fixed
 -----
+- the ``/evaluate`` route for the Rasa NLU server now runs evaluation
+  in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
   Store
 

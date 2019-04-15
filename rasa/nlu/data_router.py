@@ -16,13 +16,14 @@ from rasa.nlu.components import ComponentBuilder
 from rasa.nlu.config import RasaNLUModelConfig
 from rasa.nlu.emulators import NoEmulator
 from rasa.nlu.test import run_evaluation
-from rasa.nlu.model import InvalidProjectError
+from rasa.nlu.model import InvalidProjectError, UnsupportedModelError
 from rasa.nlu.project import (
     Project,
     STATUS_FAILED,
     STATUS_READY,
     STATUS_TRAINING,
     load_from_server,
+    FALLBACK_MODEL_NAME,
 )
 from rasa.nlu.train import do_train_in_worker
 
@@ -41,16 +42,20 @@ logger = logging.getLogger(__name__)
 DEFERRED_RUN_IN_REACTOR_THREAD = True
 
 
-class MaxTrainingError(Exception):
-    """Raised when a training is requested and the server has
-        reached the max count of training processes.
+class MaxWorkerProcessError(Exception):
+    """Raised when training or evaluation is requested and the server has
+        reached the max count of worker processes.
 
     Attributes:
         message -- explanation of why the request is invalid
     """
 
     def __init__(self):
-        self.message = "The server can't train more models right now!"
+        self.message = (
+            "The server has reached its limit on process pool "
+            "workers, it can't train or evaluate new models "
+            "right now"
+        )
 
     def __str__(self):
         return self.message
@@ -88,7 +93,7 @@ class DataRouter(object):
     def __init__(
         self,
         project_dir=None,
-        max_training_processes=1,
+        max_worker_processes=1,
         response_log=None,
         emulation_mode=None,
         remote_storage=None,
@@ -96,8 +101,8 @@ class DataRouter(object):
         model_server=None,
         wait_time_between_pulls=None,
     ):
-        self._training_processes = max(max_training_processes, 1)
-        self._current_training_processes = 0
+        self._worker_processes = max(max_worker_processes, 1)
+        self._current_worker_processes = 0
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
         self.emulator = self._create_emulator(emulation_mode)
@@ -125,7 +130,7 @@ class DataRouter(object):
         # -258934405
         multiprocessing.set_start_method("spawn", force=True)
 
-        self.pool = ProcessPool(self._training_processes)
+        self.pool = ProcessPool(self._worker_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -318,8 +323,8 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
-            "max_training_processes": self._training_processes,
-            "current_training_processes": self._current_training_processes,
+            "max_worker_processes": self._worker_processes,
+            "current_worker_processes": self._current_worker_processes,
             "available_projects": {
                 name: project.as_dict() for name, project in self.project_store.items()
             },
@@ -337,8 +342,8 @@ class DataRouter(object):
         if not project:
             raise InvalidProjectError("Missing project name to train")
 
-        if self._training_processes <= self._current_training_processes:
-            raise MaxTrainingError
+        if self._worker_processes <= self._current_worker_processes:
+            raise MaxWorkerProcessError
 
         if project in self.project_store:
             self.project_store[project].status = STATUS_TRAINING
@@ -351,11 +356,11 @@ class DataRouter(object):
         def training_callback(model_path):
             model_dir = os.path.basename(os.path.normpath(model_path))
             self.project_store[project].update(model_dir)
-            self._current_training_processes -= 1
-            self.project_store[project].current_training_processes -= 1
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
             if (
                 self.project_store[project].status == STATUS_TRAINING
-                and self.project_store[project].current_training_processes == 0
+                and self.project_store[project].current_worker_processes == 0
             ):
                 self.project_store[project].status = STATUS_READY
             return model_path
@@ -363,8 +368,8 @@ class DataRouter(object):
         def training_errback(failure):
             logger.warning(failure)
 
-            self._current_training_processes -= 1
-            self.project_store[project].current_training_processes -= 1
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
             self.project_store[project].status = STATUS_FAILED
             self.project_store[project].error_message = str(failure)
 
@@ -372,8 +377,8 @@ class DataRouter(object):
 
         logger.debug("New training queued")
 
-        self._current_training_processes += 1
-        self.project_store[project].current_training_processes += 1
+        self._current_worker_processes += 1
+        self.project_store[project].current_worker_processes += 1
 
         result = self.pool.submit(
             do_train_in_worker,
@@ -393,33 +398,64 @@ class DataRouter(object):
     # noinspection PyProtectedMember
     def evaluate(
         self, data: Text, project: Optional[Text] = None, model: Optional[Text] = None
-    ) -> Dict[Text, Any]:
+    ) -> Deferred:
         """Perform a model evaluation."""
 
+        logger.debug(
+            "Evaluation request received for "
+            "project '{}' and model '{}'.".format(project, model)
+        )
+
+        if self._worker_processes <= self._current_worker_processes:
+            raise MaxWorkerProcessError
+
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-        model = model or None
-        file_name = utils.create_temporary_file(data, "_training_data")
+        data_path = utils.create_temporary_file(data, "_training_data")
 
         if project not in self.project_store:
-            raise InvalidProjectError("Project {} could not be found".format(project))
+            raise InvalidProjectError(
+                "Project '{}' could not " "be found.".format(project)
+            )
 
-        model_name = self.project_store[project]._dynamic_load_model(model)
+        model = model or self.project_store[project]._dynamic_load_model(model)
 
-        self.project_store[project]._loader_lock.acquire()
-        try:
-            if not self.project_store[project]._models.get(model_name):
-                interpreter = self.project_store[project]._interpreter_for_model(
-                    model_name
-                )
-                self.project_store[project]._models[model_name] = interpreter
-        finally:
-            self.project_store[project]._loader_lock.release()
+        if model == FALLBACK_MODEL_NAME:
+            raise UnsupportedModelError(
+                "No model in project '{}' to " "evaluate.".format(project)
+            )
 
-        return run_evaluation(
-            data_path=file_name,
-            model=self.project_store[project]._models[model_name],
-            errors_filename=None,
+        model_path = os.path.join(self.project_store[project]._path, model)
+
+        def evaluation_callback(result):
+            logger.debug("Evaluation was successful")
+
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
+
+            return result
+
+        def evaluation_errback(failure):
+            logger.warning(failure)
+
+            self._current_worker_processes -= 1
+            self.project_store[project].current_worker_processes -= 1
+
+            return failure
+
+        logger.debug("New evaluation queued.")
+
+        self._current_worker_processes += 1
+        self.project_store[project].current_worker_processes += 1
+
+        result = self.pool.submit(
+            run_evaluation, data_path, model_path, errors_filename=None
         )
+
+        result = deferred_from_future(result)
+        result.addCallback(evaluation_callback)
+        result.addErrback(evaluation_errback)
+
+        return result
 
     def unload_model(self, project: Optional[Text], model: Text) -> Dict[Text, Any]:
         """Unload a model from server memory."""
