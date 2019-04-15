@@ -5,7 +5,7 @@ import os
 import pytest
 from aioresponses import aioresponses
 
-from rasa.core import utils
+import rasa.utils.io
 from rasa.core.agent import Agent
 from rasa.core.train import train
 from rasa.core.utils import AvailableEndpoints
@@ -16,7 +16,7 @@ from rasa.utils.endpoints import EndpointConfig, ClientResponseError
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
 
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 async def test_moodbot_example(trained_moodbot_path):

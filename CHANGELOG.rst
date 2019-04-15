@@ -23,6 +23,8 @@ Changed
 - changed removing punctuation logic in ``WhitespaceTokenizer``
 - ``training_processes`` in the Rasa NLU data router have been renamed to ``worker_processes``
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
+- removed ``--num_threads`` from run command (server will be asyncronous but
+  running in a single thread)
 
 Removed
 -------
@@ -37,4 +39,3 @@ Fixed
   in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
   Store
-

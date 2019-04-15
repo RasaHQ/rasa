@@ -1,6 +1,7 @@
 import pytest
 
-from rasa.core import restore, utils
+import rasa.utils.io
+from rasa.core import restore
 from rasa.core.agent import Agent
 
 
@@ -8,7 +9,7 @@ from rasa.core.agent import Agent
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
 
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 async def test_restoring_tracker(trained_moodbot_path, recwarn):

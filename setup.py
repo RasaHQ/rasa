@@ -18,9 +18,8 @@ tests_requires = [
     "pytest~=3.5",
     "pytest-pycodestyle~=1.4",
     "pytest-cov~=2.5",
-    "pytest-twisted<1.6",
-    "pytest_localserver~=0.4.0",
     "pytest_sanic~=0.1.0",
+    "pytest_localserver~=0.4.1",
     "treq~=17.8",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
@@ -33,7 +32,7 @@ tests_requires = [
 
 install_requires = [
     "cloudpickle~=0.6.1",
-    "klein~=17.10",
+    "gevent~=1.2",
     "boto3~=1.5",
     "typing~=3.6",
     "requests~=2.20",
@@ -53,6 +52,7 @@ install_requires = [
     "fbmessenger~=5.0",
     "pykwalify~=1.7.0",
     "coloredlogs~=10.0",
+    "scikit-learn~=0.20.2",
     "ruamel.yaml~=0.15.0",
     "scikit-learn~=0.20.0",
     "slackclient~=1.0",
