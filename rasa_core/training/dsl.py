@@ -8,6 +8,7 @@ import warnings
 from typing import Optional, List, Text, Any, Dict, AnyStr, TYPE_CHECKING
 
 from rasa_core import utils
+from rasa_core.constants import INTENT_MESSAGE_PREFIX
 from rasa_core.events import (
     ActionExecuted, UserUttered, Event, SlotSet)
 from rasa_core.exceptions import StoryParseError
@@ -330,7 +331,10 @@ class StoryFileReader(object):
         self.current_step_builder.add_checkpoint(name, conditions)
 
     def _parse_message(self, message, line_num):
-        parse_data = self.interpreter.parse(message)
+        if message.startswith(INTENT_MESSAGE_PREFIX):
+            parse_data = RegexInterpreter().parse(message)
+        else:
+            parse_data = self.interpreter.parse(message)
         utterance = UserUttered(message,
                                 parse_data.get("intent"),
                                 parse_data.get("entities"),

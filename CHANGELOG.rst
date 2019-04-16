@@ -56,6 +56,36 @@ Fixed
 - When a ``fork`` is used in interactive learning, every forked storyline 
   is saved (not just the last)
 
+[0.13.8] - 2019-04-16
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Message parse data no longer passed to graph node label in interactive
+  learning visualization
+
+[0.13.7] - 2019-04-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process form actions in end-to-end evaluations
+
+[0.13.6] - 2019-03-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process intent messages in end-to-end evaluations
+
+[0.13.4] - 2019-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- properly tag docker image as ``stable`` (instead of tagging alpha tags)
+
+
 [0.13.3] - 2019-03-04
 ^^^^^^^^^^^^^^^^^^^^^
 

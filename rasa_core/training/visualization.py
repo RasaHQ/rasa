@@ -420,7 +420,9 @@ def visualize_neighborhood(
                     events[idx].action_name == ACTION_LISTEN_NAME):
                 next_node_idx += 1
                 graph.add_node(next_node_idx,
-                               label=message or "  ?  ",
+                               label="  ?  " if not message else
+                                     sanitize(message.get("intent", {}))
+                                     .get("name", "  ?  "),
                                shape="rect",
                                **{"class": "intent dashed active"})
                 target = next_node_idx
