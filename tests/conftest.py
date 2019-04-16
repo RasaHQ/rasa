@@ -37,6 +37,16 @@ MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
 DEFAULT_ENDPOINTS_FILE = "data/test_endpoints/example_endpoints.yml"
 
+TEST_DIALOGUES = ['data/test_dialogues/default.json',
+                  'data/test_dialogues/formbot.json',
+                  'data/test_dialogues/moodbot.json',
+                  'data/test_dialogues/restaurantbot.json']
+
+EXAMPLE_DOMAINS = [DEFAULT_DOMAIN_PATH,
+                   "examples/formbot/domain.yml",
+                   "examples/moodbot/domain.yml",
+                   "examples/restaurantbot/restaurant_domain.yml"]
+
 
 class CustomSlot(Slot):
     def as_feature(self):
@@ -96,7 +106,7 @@ def default_processor(default_domain, default_nlg):
 
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
-    train.train_dialogue_model(
+    train(
         domain_file="examples/moodbot/domain.yml",
         stories_file="examples/moodbot/data/stories.md",
         output_path=MOODBOT_MODEL_PATH,
@@ -111,7 +121,7 @@ def trained_moodbot_path():
 @pytest.fixture(scope="session")
 def zipped_moodbot_model():
     # train moodbot if necessary
-    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'policy_metadata.json')
+    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'metadata.json')
     if not os.path.isfile(policy_file):
         trained_moodbot_path()
 

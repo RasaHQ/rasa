@@ -1,4 +1,5 @@
-:desc: Upgrading your Rasa Core Project
+:desc: Information about changes between major versions of chatbot framework
+       Rasa Core and how you can migrate from one version to another.
 
 .. _migration:
 
@@ -6,6 +7,20 @@ Migration Guide
 ===============
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
+
+
+.. _migration-to-0-14-0:
+
+0.13.x to 0.14.0
+----------------
+
+Function Naming
+~~~~~~~~~~~~~~~
+- renamed ``train_dialogue_model`` to ``train``. Please use ``train`` from
+  now on.
+- renamed ``rasa_core.evaluate`` to ``rasa_core.test``. Please use ``test``
+  from now on.
+
 
 .. _migration-to-0-13-0:
 

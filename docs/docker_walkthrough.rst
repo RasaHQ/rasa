@@ -1,4 +1,5 @@
-:desc: Building Rasa with Docker
+:desc: Setup open source Rasa Core with Docker in your own infrastructure for on
+       premise contextual AI assistants and chatbots. 
 
 .. _docker_walkthrough:
 
@@ -654,7 +655,7 @@ configuration ``config/endpoints.yml``:
 .. code-block:: yaml
 
   tracker_store:
-    store_type: mongod
+    type: mongod
     url: mongodb://mongo:27017
     username: rasa
     password: example
@@ -677,7 +678,7 @@ configuration ``config/endpoints.yml``:
 .. code-block:: yaml
 
   tracker_store:
-    store_type: redis
+    type: redis
     url: redis
 
 5.3 Using a Custom Tracker Store Implementation

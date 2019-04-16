@@ -81,8 +81,6 @@ def test_requesting_non_existent_tracker(app):
     assert content["slots"] == {"location": None, "cuisine": None}
     assert content["sender_id"] == "madeupid"
     assert content["events"] == [{"event": "action",
-                                  "policy": None,
-                                  "confidence": None,
                                   "name": "action_listen",
                                   "policy": None,
                                   "confidence": None,
@@ -101,6 +99,21 @@ def test_respond(app):
     assert content == [{'text': 'hey there!', 'recipient_id': 'myid'}]
 
 
+def test_parse(app):
+    data = json.dumps({"q": """/greet{"name": "Rasa"}"""})
+    response = app.post("http://dummy/parse",
+                        data=data, content_type='application/json')
+    content = response.get_json()
+    assert response.status_code == 200
+    assert content == {
+        'entities': [
+            {'end': 22, 'entity': 'name', 'start': 6, 'value': 'Rasa'}],
+        'intent': {'confidence': 1.0, 'name': 'greet'},
+        'intent_ranking': [{'confidence': 1.0, 'name': 'greet'}],
+        'text': '/greet{"name": "Rasa"}'
+    }
+
+
 @pytest.mark.parametrize("event", test_events)
 def test_pushing_event(app, event):
     cid = str(uuid.uuid1())
@@ -108,13 +121,11 @@ def test_pushing_event(app, event):
     data = json.dumps({"query": "/greet"})
     response = app.post("{}/respond".format(conversation),
                         data=data, content_type='application/json')
-    content = response.get_json()
     assert response.status_code == 200
 
     data = json.dumps(event.as_dict())
     response = app.post("{}/tracker/events".format(conversation),
                         data=data, content_type='application/json')
-    content = response.get_json()
     assert response.status_code == 200
 
     tracker_response = app.get("http://dummy/conversations/{}/tracker"
@@ -148,7 +159,6 @@ def test_list_conversations(app):
     data = json.dumps({"query": "/greet"})
     response = app.post("http://dummy/conversations/myid/respond",
                         data=data, content_type='application/json')
-    content = response.get_json()
     assert response.status_code == 200
 
     response = app.get("http://dummy/conversations")
@@ -205,6 +215,18 @@ def test_predict(http_app, app):
     response = app.post('/predict',
                         json=event_dicts)
     assert response.status_code == 200
+
+
+def test_sorted_predict(http_app, app):
+    client = RasaCoreClient(EndpointConfig(http_app))
+    cid = str(uuid.uuid1())
+    for event in test_events[:3]:
+        client.append_event_to_tracker(cid, event)
+    response = app.post("http://dummy/conversations/{}/predict".format(cid))
+    content = response.get_json()
+    scores = content["scores"]
+    sorted_scores = sorted(scores, key=lambda k: (-k['score'], k['action']))
+    assert scores == sorted_scores
 
 
 def test_evaluate(app):

@@ -1,3 +1,7 @@
+:desc: Choose Facebook, Slack or Telegram as your channel for contextual
+       Assistants and chatbots or build new ones for your own app or website
+       using open source Rasa Stack. 
+
 .. _connectors:
 
 Chat & Voice platforms
@@ -234,7 +238,7 @@ you need to supply a ``credentials.yml`` with the following content:
 
    slack:
      slack_token: "xoxb-286425452756-safjasdf7sl38KLls"
-     slack_channel: "@my_channel"
+     slack_channel: "#my_channel" <!-- or "@my_app" -->
 
 
 The endpoint for receiving slack messages is

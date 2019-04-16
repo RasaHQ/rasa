@@ -1,4 +1,5 @@
 import copy
+import io
 import json
 import logging
 import os
@@ -14,6 +15,11 @@ from rasa_core.featurizers import (
 from rasa_core.featurizers import TrackerFeaturizer
 from rasa_core.policies.policy import Policy
 from rasa_core.trackers import DialogueStateTracker
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +44,7 @@ class KerasPolicy(Policy):
 
     def __init__(self,
                  featurizer: Optional[TrackerFeaturizer] = None,
+                 priority: int = 1,
                  model: Optional[tf.keras.models.Sequential] = None,
                  graph: Optional[tf.Graph] = None,
                  session: Optional[tf.Session] = None,
@@ -47,7 +54,7 @@ class KerasPolicy(Policy):
                  ) -> None:
         if not featurizer:
             featurizer = self._standard_featurizer(max_history)
-        super(KerasPolicy, self).__init__(featurizer)
+        super(KerasPolicy, self).__init__(featurizer, priority)
 
         self._load_params(**kwargs)
         self.model = model
@@ -63,6 +70,7 @@ class KerasPolicy(Policy):
         config.update(kwargs)
 
         # filter out kwargs that are used explicitly
+        self._tf_config = self._load_tf_config(config)
         self.rnn_size = config.pop('rnn_size')
         self.epochs = config.pop('epochs')
         self.batch_size = config.pop('batch_size')
@@ -155,7 +163,8 @@ class KerasPolicy(Policy):
         with self.graph.as_default():
             # set random seed in tf
             tf.set_random_seed(self.random_seed)
-            self.session = tf.Session()
+            self.session = tf.Session(config=self._tf_config)
+
             with self.session.as_default():
                 if self.model is None:
                     self.model = self.model_architecture(shuffled_X.shape[1:],
@@ -228,17 +237,23 @@ class KerasPolicy(Policy):
         if self.model:
             self.featurizer.persist(path)
 
-            meta = {"model": "keras_model.h5",
+            meta = {"priority": self.priority,
+                    "model": "keras_model.h5",
                     "epochs": self.current_epoch}
 
-            config_file = os.path.join(path, 'keras_policy.json')
-            utils.dump_obj_as_json_to_file(config_file, meta)
+            meta_file = os.path.join(path, 'keras_policy.json')
+            utils.dump_obj_as_json_to_file(meta_file, meta)
 
             model_file = os.path.join(path, meta['model'])
             # makes sure the model directory exists
             utils.create_dir_for_file(model_file)
             with self.graph.as_default(), self.session.as_default():
                 self.model.save(model_file, overwrite=True)
+
+            tf_config_file = os.path.join(
+                path, "keras_policy.tf_config.pkl")
+            with io.open(tf_config_file, 'wb') as f:
+                pickle.dump(self._tf_config, f)
         else:
             warnings.warn("Persist called without a trained model present. "
                           "Nothing to persist then!")
@@ -249,19 +264,25 @@ class KerasPolicy(Policy):
 
         if os.path.exists(path):
             featurizer = TrackerFeaturizer.load(path)
-            meta_path = os.path.join(path, "keras_policy.json")
-            if os.path.isfile(meta_path):
-                meta = json.loads(utils.read_file(meta_path))
+            meta_file = os.path.join(path, "keras_policy.json")
+            if os.path.isfile(meta_file):
+                meta = json.loads(utils.read_file(meta_file))
+
+                tf_config_file = os.path.join(
+                    path, "keras_policy.tf_config.pkl")
+                with io.open(tf_config_file, 'rb') as f:
+                    _tf_config = pickle.load(f)
 
                 model_file = os.path.join(path, meta["model"])
 
                 graph = tf.Graph()
                 with graph.as_default():
-                    session = tf.Session()
+                    session = tf.Session(config=_tf_config)
                     with session.as_default():
                         model = load_model(model_file)
 
                 return cls(featurizer=featurizer,
+                           priority=meta["priority"],
                            model=model,
                            graph=graph,
                            session=session,
