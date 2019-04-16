@@ -4,8 +4,8 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[Unreleased 0.13.a8]
-^^^^^^^^^^^^^^^^^^^^
+[0.13.8] - 2019-04-16
+^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
