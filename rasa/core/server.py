@@ -367,7 +367,7 @@ def create_app(
         )
 
         # will override an existing tracker with the same id!
-        app.agent.tracker_store.save(tracker, stream_events)
+        app.agent.tracker_store.save(tracker)
         return response.json(tracker.current_state(verbosity))
 
     @app.get("/conversations")
