@@ -292,9 +292,6 @@ class DataRouter(object):
 
         try:
             return await task
-        except Exception as e:
-            logger.warning(e)
-            raise
         finally:
             self._current_worker_processes -= 1
 

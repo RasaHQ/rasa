@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import traceback
 from functools import wraps
 from inspect import isawaitable
 from sanic import Sanic, response
@@ -187,7 +188,7 @@ def create_app(
                 404, "InvalidModel", "Model is invalid.", details={"error": str(e)}
             )
         except Exception as e:
-            logger.exception(e)
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -268,6 +269,7 @@ def create_app(
         try:
             model_config, data_dict = extract_data_and_config(request)
         except Exception as e:
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -311,6 +313,7 @@ def create_app(
                 details={"error": str(e)},
             )
         except TrainingException as e:
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -361,7 +364,7 @@ def create_app(
             data_router.unload_model(request.args.get("model"))
             return response.json(None, status=204)
         except Exception as e:
-            logger.exception(e)
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
@@ -376,7 +379,7 @@ def create_app(
             await data_router.load_model(request.args.get("model"))
             return response.json(None, status=204)
         except Exception as e:
-            logger.exception(e)
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
