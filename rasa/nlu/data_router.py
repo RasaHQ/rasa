@@ -265,7 +265,7 @@ class DataRouter(object):
 
     # noinspection PyProtectedMember
     async def evaluate(
-        self, data: Text, model: Optional[Text] = None
+        self, data_file: Text, model: Optional[Text] = None
     ) -> Dict[Text, Any]:
         """Perform a model evaluation."""
         if not self.nlu_model.is_loaded(model):
@@ -276,18 +276,13 @@ class DataRouter(object):
         if self._worker_processes <= self._current_worker_processes:
             raise MaxWorkerProcessError
 
-        data_path = utils.create_temporary_file(data, "_training_data")
-
         if self.nlu_model.name == FALLBACK_MODEL_NAME:
             raise UnsupportedModelError("No model is loaded. Cannot evaluate.")
 
-        logger.debug("New evaluation queued.")
-
-        self._current_worker_processes += 1
-
         loop = asyncio.get_event_loop()
+        self._current_worker_processes += 1
         task = loop.run_in_executor(
-            self.pool, run_evaluation, data_path, self.nlu_model.interpreter
+            self.pool, run_evaluation, data_file, self.nlu_model.interpreter
         )
 
         try:

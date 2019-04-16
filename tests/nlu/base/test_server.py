@@ -336,7 +336,6 @@ def test_evaluate_internal_error(app, rasa_default_train_data):
     _, response = app.post(
         "/evaluate", json={"data": "dummy_data_for_triggering_an_error"}
     )
-
     assert response.status == 500, "The training data format is not valid"
 
 

@@ -336,9 +336,10 @@ def create_app(
         import traceback
 
         data_string = request.body.decode("utf-8", "strict")
+        data_file = dump_to_data_file(data_string)
 
         try:
-            payload = await data_router.evaluate(data_string, request.args.get("model"))
+            payload = await data_router.evaluate(data_file, request.args.get("model"))
             return response.json(payload)
 
         except MaxWorkerProcessError as e:
