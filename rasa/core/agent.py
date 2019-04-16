@@ -176,7 +176,7 @@ async def _pull_model_and_fingerprint(
                 # get the new fingerprint
                 return resp.headers.get("ETag")
 
-        except aiohttp.ClientResponseError as e:
+        except aiohttp.ClientError as e:
             logger.warning(
                 "Tried to fetch model from server, but "
                 "couldn't reach server. We'll retry later... "

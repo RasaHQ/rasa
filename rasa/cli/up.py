@@ -77,7 +77,7 @@ def add_subparser(
 def start_event_service():
     from rasa_platform.services.event_service import main
 
-    main("rasa_event.log")
+    main()
 
 
 def start_core(args: argparse.Namespace, endpoints: AvailableEndpoints = None):
@@ -151,7 +151,6 @@ def up(args: argparse.Namespace):
     else:
         try:
             from rasa_platform import config
-            from rasa_platform.services.event_service import main
             from rasa_platform.api.local import main_local
         except ImportError as e:
             print_error(
@@ -163,7 +162,7 @@ def up(args: argparse.Namespace):
 
         print_success("Starting Rasa 🚀")
 
-        p = Process(target=main)
+        p = Process(target=start_event_service)
         p.start()
 
         start_core_for_local_platform(args, config.platform_token)
