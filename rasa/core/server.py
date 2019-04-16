@@ -16,7 +16,7 @@ from sanic_jwt import Initialize, exceptions
 import rasa
 import rasa.utils.common
 import rasa.utils.endpoints
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION, DEFAULT_MODELS_PATH
 from rasa.core import constants, utils
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.domain import Domain
@@ -678,8 +678,8 @@ def create_app(
             model_path = await train_async(
                 domain=domain_path,
                 config=config_path,
-                training_files=[nlu_path, stories_path],
-                output=rjs.get("out", temp_dir),
+                training_files=temp_dir,
+                output=rjs.get("out", DEFAULT_MODELS_PATH),
                 force_training=rjs.get("force", False),
             )
 

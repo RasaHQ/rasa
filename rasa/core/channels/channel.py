@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import json
 import logging
-from asyncio import Queue
+from asyncio import Queue, CancelledError
 
 from sanic import Sanic, Blueprint, response
 from typing import Text, List, Dict, Any, Optional, Callable, Iterable, Awaitable

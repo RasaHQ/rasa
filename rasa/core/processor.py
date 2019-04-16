@@ -1,14 +1,18 @@
 import json
 import logging
-import time
 from types import LambdaType
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 import numpy as np
+import time
 
 from rasa.core import jobs
 from rasa.core.actions import Action
-from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
+from rasa.core.actions.action import (
+    ACTION_LISTEN_NAME,
+    ActionExecutionRejection,
+    ACTION_RESTART_NAME,
+)
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
 from rasa.core.dispatcher import Dispatcher
