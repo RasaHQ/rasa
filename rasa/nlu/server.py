@@ -330,6 +330,8 @@ def create_app(
     @app.post("/evaluate")
     @requires_auth(app, token)
     async def evaluate(request):
+        import traceback
+
         data_string = request.body.decode("utf-8", "strict")
 
         try:
@@ -344,6 +346,7 @@ def create_app(
                 details={"error": str(e)},
             )
         except Exception as e:
+            logger.debug(traceback.format_exc())
             raise ErrorResponse(
                 500,
                 "ServerError",
