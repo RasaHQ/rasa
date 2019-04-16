@@ -12,13 +12,19 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 Added
 -----
 - added arguments to set the file paths for interactive training
+- option to create template for new utterance action in ``interactive learning``
+- you can now choose actions previously created in the same session
+in ``interactive learning``
 - add formatter 'black'
+
 
 Changed
 -------
 - changed removing punctuation logic in ``WhitespaceTokenizer``
 - ``training_processes`` in the Rasa NLU data router have been renamed to ``worker_processes``
 - created a common utils package ``rasa.utils`` for nlu and core, common methods like ``read_yaml`` moved there
+- removed ``--num_threads`` from run command (server will be asyncronous but
+  running in a single thread)
 
 Removed
 -------
@@ -28,8 +34,8 @@ Removed
 
 Fixed
 -----
+- evaluating core stories with two stage fallback gave an error, trying to handle None for a policy
 - the ``/evaluate`` route for the Rasa NLU server now runs evaluation
   in a parallel process, which prevents the currently loaded model unloading
 - added missing implementation of the ``keys()`` function for the Redis Tracker
   Store
-

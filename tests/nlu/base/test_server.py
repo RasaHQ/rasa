@@ -9,22 +9,21 @@ import time
 
 import pytest
 import ruamel.yaml as yaml
-from treq.testing import StubTreq
+import tempfile
+
 
 from rasa.nlu.data_router import DataRouter
-from rasa.nlu.server import RasaNLU
+from rasa.nlu.server import create_app
 from tests.nlu import utilities
 from tests.nlu.utilities import ResponseTest
 
-KEYWORD_MODEL_NAME = "keywordmodel"
 
 KEYWORD_PROJECT_NAME = "keywordproject"
+KEYWORD_MODEL_NAME = "keywordmodel"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def app(tmpdir_factory, trained_nlu_model):
-    """Use IResource interface of Klein to mock Rasa HTTP server"""
-
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     temp_path = tmpdir_factory.mktemp("projects")
@@ -40,8 +39,10 @@ def app(tmpdir_factory, trained_nlu_model):
         pass
 
     router = DataRouter(temp_path.strpath)
-    rasa = RasaNLU(router, logfile=nlu_log_file, testing=True)
-    return StubTreq(rasa.app.resource())
+
+    rasa = create_app(router, logfile=nlu_log_file)
+
+    return rasa.test_client
 
 
 @pytest.fixture
@@ -52,28 +53,25 @@ def rasa_default_train_data():
         return json.loads(train_file.read())
 
 
-@pytest.inlineCallbacks
 def test_root(app):
-    response = yield app.get("http://dummy-uri/")
-    content = yield response.text()
-    assert response.code == 200 and content.startswith("hello")
+    _, response = app.get("/")
+    content = response.text
+    assert response.status == 200 and content.startswith("Hello")
 
 
-@pytest.inlineCallbacks
 def test_status(app):
-    response = yield app.get("http://dummy-uri/status")
-    rjs = yield response.json()
-    assert response.code == 200 and "available_projects" in rjs
+    _, response = app.get("/status")
+    rjs = response.json
+    assert response.status == 200 and "available_projects" in rjs
     assert "current_worker_processes" in rjs
     assert "max_worker_processes" in rjs
     assert KEYWORD_PROJECT_NAME in rjs["available_projects"]
 
 
-@pytest.inlineCallbacks
 def test_version(app):
-    response = yield app.get("http://dummy-uri/version")
-    rjs = yield response.json()
-    assert response.code == 200
+    _, response = app.get("/version")
+    rjs = response.json
+    assert response.status == 200
     assert set(rjs.keys()) == {"version", "minimum_compatible_version"}
 
 
@@ -81,8 +79,9 @@ def test_version(app):
     "response_test",
     [
         ResponseTest(
-            "http://dummy-uri/parse?project={}&model={}"
-            "&q=hello".format(KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME),
+            "/parse?q=hello&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
                 "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
@@ -92,8 +91,9 @@ def test_version(app):
             },
         ),
         ResponseTest(
-            "http://dummy-uri/parse?project={}&model={}"
-            "&query=hello".format(KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME),
+            "/parse?q=hello&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
                 "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
@@ -103,8 +103,9 @@ def test_version(app):
             },
         ),
         ResponseTest(
-            "http://dummy-uri/parse?project={}&model={}"
-            "&q=hello ńöñàśçií".format(KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME),
+            "/parse?q=hello ńöñàśçií&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
                 "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
@@ -114,8 +115,9 @@ def test_version(app):
             },
         ),
         ResponseTest(
-            "http://dummy-uri/parse?project={}&model={}"
-            "&q=".format(KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME),
+            "/parse?q=&model={}&project={}".format(
+                KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+            ),
             {
                 "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
@@ -126,11 +128,10 @@ def test_version(app):
         ),
     ],
 )
-@pytest.inlineCallbacks
 def test_get_parse(app, response_test):
-    response = yield app.get(response_test.endpoint)
-    rjs = yield response.json()
-    assert response.code == 200
+    _, response = app.get(response_test.endpoint)
+    rjs = response.json
+    assert response.status == 200
     assert rjs == response_test.expected_response
     assert all(
         prop in rjs for prop in ["project", "entities", "intent", "text", "model"]
@@ -141,7 +142,7 @@ def test_get_parse(app, response_test):
     "response_test",
     [
         ResponseTest(
-            "http://dummy-uri/parse",
+            "/parse",
             {
                 "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
@@ -156,7 +157,7 @@ def test_get_parse(app, response_test):
             },
         ),
         ResponseTest(
-            "http://dummy-uri/parse",
+            "/parse",
             {
                 "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
@@ -171,7 +172,7 @@ def test_get_parse(app, response_test):
             },
         ),
         ResponseTest(
-            "http://dummy-uri/parse",
+            "/parse",
             {
                 "project": KEYWORD_PROJECT_NAME,
                 "entities": [],
@@ -187,11 +188,10 @@ def test_get_parse(app, response_test):
         ),
     ],
 )
-@pytest.inlineCallbacks
 def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint, json=response_test.payload)
-    rjs = yield response.json()
-    assert response.code == 200
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
+    rjs = response.json
+    assert response.status == 200
     assert rjs == response_test.expected_response
     assert all(
         prop in rjs for prop in ["project", "entities", "intent", "text", "model"]
@@ -199,172 +199,110 @@ def test_post_parse(app, response_test):
 
 
 @utilities.slowtest
-@pytest.inlineCallbacks
 def test_post_train(app, rasa_default_train_data):
-    response = app.post("http://dummy-uri/train", json=rasa_default_train_data)
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    rjs = yield response.json()
-    assert response.code == 404, "A project name to train must be specified"
-    assert "error" in rjs
+    _, response = app.post("/train", json=rasa_default_train_data)
+    rjs = response.json
+    assert response.status == 404, "A project name to train must be specified"
+    assert "details" in rjs
 
 
 @utilities.slowtest
-@pytest.inlineCallbacks
 def test_post_train_success(app, rasa_default_train_data):
     import zipfile
 
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
 
-    response = app.post(
-        "http://dummy-uri/train?project=test&model=test", json=model_config
-    )
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    content = yield response.content()
-    assert response.code == 200
+    _, response = app.post("/train?project=test&model=test", json=model_config)
+
+    content = response.body
+    assert response.status == 200
     assert zipfile.ZipFile(io.BytesIO(content)).testzip() is None
 
 
 @utilities.slowtest
-@pytest.inlineCallbacks
 def test_post_train_internal_error(app, rasa_default_train_data):
-    response = app.post(
-        "http://dummy-uri/train?project=test",
-        json={"data": "dummy_data_for_triggering_an_error"},
+    _, response = app.post(
+        "/train?project=test", json={"data": "dummy_data_for_triggering_an_error"}
     )
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    rjs = yield response.json()
-    assert response.code == 500, "The training data format is not valid"
-    assert "error" in rjs
+    rjs = response.json
+    assert response.status == 500, "The training data format is not valid"
 
 
-@pytest.inlineCallbacks
 def test_model_hot_reloading(app, rasa_default_train_data):
-    query = "http://dummy-uri/parse?q=hello&project=my_keyword_model"
-    response = yield app.get(query)
-    assert response.code == 404, "Project should not exist yet"
-    train_u = "http://dummy-uri/train?project=my_keyword_model"
+    query = "/parse?q=hello&project=my_keyword_model"
+    _, response = app.get(query)
+    assert response.status == 404, "Project should not exist yet"
+    train_u = "/train?project=my_keyword_model"
     model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
     model_str = yaml.safe_dump(
         model_config, default_flow_style=False, allow_unicode=True
     )
-    response = app.post(
-        train_u, headers={b"Content-Type": b"application/x-yml"}, data=model_str
+    _, response = app.post(
+        train_u, headers={"Content-Type": "application/x-yml"}, data=model_str
     )
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    assert response.code == 200, "Training should end successfully"
+    assert response.status == 200, "Training should end successfully"
 
-    response = app.post(
+    _, response = app.post(
         train_u,
-        headers={b"Content-Type": b"application/json"},
+        headers={"Content-Type": "application/json"},
         data=json.dumps(model_config),
     )
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    assert response.code == 200, "Training should end successfully"
+    assert response.status == 200, "Training should end successfully"
 
-    response = yield app.get(query)
-    assert response.code == 200, "Project should now exist " "after it got trained"
+    _, response = app.get(query)
+    assert response.status == 200, "Project should now exist after it got trained"
 
 
-@pytest.inlineCallbacks
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
-    response = app.post(
-        "http://dummy-uri/evaluate",
-        json=rasa_default_train_data,
-        params={"project": "project123"},
+    _, response = app.post(
+        "/evaluate", json=rasa_default_train_data, params={"project": "project123"}
     )
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    rjs = yield response.json()
-    assert response.code == 500, "The project cannot be found"
-    assert "error" in rjs
-    assert rjs["error"] == "Project 'project123' could not be found."
+
+    rjs = response.json
+    assert response.status == 500, "The project cannot be found"
+    assert "details" in rjs
+    assert rjs["details"]["error"] == "Project 'project123' could not be found."
 
 
-@pytest.inlineCallbacks
-def test_evaluate_no_model(app):
-    response = app.post("http://dummy-uri/evaluate")
-    time.sleep(2)
-    app.flush()
-    response = yield response
-    rjs = yield response.json()
-    assert response.code == 500, "No model in project 'default' to evaluate"
-    assert "error" in rjs
-
-
-@pytest.inlineCallbacks
 def test_evaluate_internal_error(app, rasa_default_train_data):
-    response = app.post(
-        "http://dummy-uri/evaluate", json={"data": "dummy_data_for_triggering_an_error"}
-    )
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    rjs = yield response.json()
-    assert response.code == 500, "The training data format is not valid"
-
-
-@pytest.inlineCallbacks
-def test_unload_model_error(app):
-    FAKE_PROJECT = "fakeproject"
-    NON_EXISTING_MODEL_NAME = "fakemodel"
-
-    project_err = "http://dummy-uri/models" "?project={}&model={}".format(
-        FAKE_PROJECT, NON_EXISTING_MODEL_NAME
-    )
-    response = yield app.delete(project_err)
-    rjs = yield response.json()
-    assert response.code == 500, "Project not found"
-    assert rjs["error"] == ("Project {} could " "not be found".format(FAKE_PROJECT))
-
-    model_err = "http://dummy-uri/models?project={}" "&model={}".format(
-        KEYWORD_PROJECT_NAME, NON_EXISTING_MODEL_NAME
-    )
-    response = yield app.delete(model_err)
-    rjs = yield response.json()
-    assert response.code == 500, "Model not found"
-    assert rjs["error"] == (
-        "Failed to unload model {} for project "
-        "{}.".format(NON_EXISTING_MODEL_NAME, KEYWORD_PROJECT_NAME)
+    _, response = app.post(
+        "/evaluate", json={"data": "dummy_data_for_triggering_an_error"}
     )
 
-
-@pytest.inlineCallbacks
-def test_unload(app):
-    unload = "http://dummy-uri/models?project={}" "&model={}".format(
-        KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME
-    )
-    response = yield app.delete(unload)
-    rjs = yield response.json()
-    assert response.code == 200, "Fallback model unloaded"
-    assert rjs == KEYWORD_MODEL_NAME
+    assert response.status == 500, "The training data format is not valid"
 
 
-@pytest.inlineCallbacks
 def test_evaluate(app, rasa_default_train_data):
-    response = app.post(
-        "http://dummy-uri/evaluate"
-        "?project={}&model={}".format(KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME),
+    _, response = app.post(
+        "/evaluate?project={}&model={}".format(
+            KEYWORD_PROJECT_NAME, KEYWORD_MODEL_NAME
+        ),
         json=rasa_default_train_data,
     )
-    time.sleep(3)
-    app.flush()
-    response = yield response
-    rjs = yield response.json()
-    assert response.code == 200, "Evaluation should start"
+
+    rjs = response.json
+    assert response.status == 200, "Evaluation should start"
     assert "intent_evaluation" in rjs
     assert "entity_evaluation" in rjs
     assert all(
         prop in rjs["intent_evaluation"]
         for prop in ["report", "predictions", "precision", "f1_score", "accuracy"]
     )
+
+
+def test_unload_model_error(app):
+    project_err = "/models?project=my_project&model=my_model"
+    _, response = app.delete(project_err)
+    rjs = response.json
+    assert response.status == 500, "Project not found"
+    assert rjs["details"]["error"] == "Project my_project could not be found"
+
+
+def test_unload_model(app):
+    unload = "/models?model={}&project={}".format(
+        KEYWORD_MODEL_NAME, KEYWORD_PROJECT_NAME
+    )
+    _, response = app.delete(unload)
+    rjs = response.json
+    assert response.status == 200, "Fallback model unloaded"
+    assert rjs == KEYWORD_MODEL_NAME

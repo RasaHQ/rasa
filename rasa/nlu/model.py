@@ -9,7 +9,8 @@ from typing import Optional
 from typing import Text
 
 import rasa.nlu
-from rasa.nlu import components, utils
+from rasa.constants import MINIMUM_COMPATIBLE_VERSION
+from rasa.nlu import components, utils, constants
 from rasa.nlu.components import Component, ComponentBuilder
 from rasa.nlu.config import (
     RasaNLUModelConfig,
@@ -19,7 +20,6 @@ from rasa.nlu.config import (
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.utils import create_dir, write_json_to_file
-from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 
 logger = logging.getLogger(__name__)
 

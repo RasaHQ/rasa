@@ -54,12 +54,6 @@ def add_server_arguments(parser):
         "recommended to keep the default value.",
     )
     parser.add_argument(
-        "--num_threads",
-        type=int,
-        default=1,
-        help="Number of parallel threads to use for handling parse requests.",
-    )
-    parser.add_argument(
         "--endpoints", help="Configuration file for the model server as a yaml file"
     )
     parser.add_argument(
