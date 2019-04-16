@@ -42,7 +42,7 @@ extensions = [
     'rasabaster.button',
     'rasabaster.card',
     'rasabaster.copyable',
-    'rasabaster.runnable'
+    'rasabaster.runnable',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

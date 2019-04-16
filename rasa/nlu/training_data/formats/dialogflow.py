@@ -1,7 +1,7 @@
 import logging
 import os
 import typing
-from typing import Any, Text
+from typing import Any, Text, Optional
 
 from rasa.nlu import utils
 from rasa.nlu.training_data.formats.readerwriter import TrainingDataReader
@@ -41,7 +41,7 @@ class DialogflowReader(TrainingDataReader):
             return TrainingData()
         elif fformat == DIALOGFLOW_INTENT:
             return self._read_intent(root_js, examples_js)
-        elif fformat == DIALOGFLOW_ENTITIES:
+        else:   # path for DIALOGFLOW_ENTITIES
             return self._read_entities(root_js, examples_js)
 
     def _read_intent(self, intent_js, examples_js):
@@ -104,7 +104,7 @@ class DialogflowReader(TrainingDataReader):
         }]
 
     @staticmethod
-    def _read_entities(entity_js, examples_js):
+    def _read_entities(entity_js, examples_js) -> 'TrainingData':
         from rasa.nlu.training_data import TrainingData
 
         entity_synonyms = transform_entity_synonyms(examples_js)
@@ -115,7 +115,7 @@ class DialogflowReader(TrainingDataReader):
         return TrainingData([], entity_synonyms, [], lookup_tables)
 
     @staticmethod
-    def _read_examples_js(fn, language, fformat):
+    def _read_examples_js(fn: Text, language: Text, fformat: Text) -> Optional[Text]:
         """Infer and load the example file based on the root
         filename and root format."""
 
