@@ -1,21 +1,13 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import copy
 import logging
 import os
-
-import six
 import ruamel.yaml as yaml
-from builtins import object
-# Describes where to search for the config file if no location is specified
-from typing import Text, Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.utils import json_to_string
 
+# Describes where to search for the config file if no location is specified
 DEFAULT_CONFIG_LOCATION = "config.yml"
 
 DEFAULT_CONFIG = {
@@ -30,12 +22,12 @@ logger = logging.getLogger(__name__)
 class InvalidConfigError(ValueError):
     """Raised if an invalid configuration is encountered."""
 
-    def __init__(self, message):
-        # type: (Text) -> None
+    def __init__(self, message: Text) -> None:
         super(InvalidConfigError, self).__init__(message)
 
 
-def load(filename=None, **kwargs):
+def load(filename: Optional[Text] = None,
+         **kwargs: Any) -> 'RasaNLUModelConfig':
     if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
         filename = DEFAULT_CONFIG_LOCATION
 
@@ -53,11 +45,9 @@ def load(filename=None, **kwargs):
         return RasaNLUModelConfig(kwargs)
 
 
-def override_defaults(
-        defaults,  # type: Optional[Dict[Text, Any]]
-        custom  # type: Optional[Dict[Text, Any]]
-):
-    # type: (...) -> Dict[Text, Any]
+def override_defaults(defaults: Optional[Dict[Text, Any]],
+                      custom: Optional[Dict[Text, Any]]
+                      ) -> Dict[Text, Any]:
     if defaults:
         cfg = copy.deepcopy(defaults)
     else:
@@ -68,8 +58,7 @@ def override_defaults(
     return cfg
 
 
-def make_path_absolute(path):
-    # type: (Text) -> Text
+def make_path_absolute(path: Text) -> Text:
     if path and not os.path.isabs(path):
         return os.path.join(os.getcwd(), path)
     else:
@@ -77,32 +66,19 @@ def make_path_absolute(path):
 
 
 def component_config_from_pipeline(
-        name,  # type: Text
-        pipeline,  # type: List[Dict[Text, Any]]
-        defaults=None  # type: Optional[Dict[Text, Any]]
-):
-    # type: (...) -> Dict[Text, Any]
-    from rasa_nlu.registry import registered_components
-    for c in pipeline:
-        c_name = c.get("name")
-        if c_name not in registered_components:
-            c_name = get_custom_name(c)
-
-        if c_name == name:
-            return override_defaults(defaults, c)
-
-    return override_defaults(defaults, {})
-
-
-def get_custom_name(
-    component,  # type: Dict[Text, Any]
-):
-    """Checks whether there is a separate "class" attribute or just a name
-    and returns the name in either case"""
-    if "class" in component:
-        return component.get("name")
-    else:
-        return utils.class_from_module_path(component.get("name")).name
+        index: int,
+        pipeline: List[Dict[Text, Any]],
+        defaults: Optional[Dict[Text, Any]] = None
+) -> Dict[Text, Any]:
+    try:
+        c = pipeline[index]
+        return override_defaults(defaults, c)
+    except IndexError:
+        logger.warning("Tried to get configuration value for component "
+                       "number {} which is not part of the pipeline. "
+                       "Returning `defaults`."
+                       "".format(index))
+        return override_defaults(defaults, {})
 
 
 class RasaNLUModelConfig(object):
@@ -118,10 +94,24 @@ class RasaNLUModelConfig(object):
         self.override(DEFAULT_CONFIG)
         self.override(configuration_values)
 
-        if isinstance(self.__dict__['pipeline'], six.string_types):
+        if self.__dict__['pipeline'] is None:
+            # replaces None with empty list
+            self.__dict__['pipeline'] = []
+        elif isinstance(self.__dict__['pipeline'], str):
             from rasa_nlu import registry
 
             template_name = self.__dict__['pipeline']
+            new_names = {"spacy_sklearn": "pretrained_embeddings_spacy",
+                         "tensorflow_embedding": "supervised_embeddings"}
+            if template_name in new_names:
+                logger.warning("You have specified the pipeline template "
+                               "'{}' which has been renamed to '{}'. "
+                               "Please update your code as it will no "
+                               "longer work with future versions of "
+                               "Rasa NLU.".format(template_name,
+                                                  new_names[template_name]))
+                template_name = new_names[template_name]
+
             pipeline = registry.pipeline_template(template_name)
 
             if pipeline:
@@ -129,7 +119,7 @@ class RasaNLUModelConfig(object):
                 self.__dict__['pipeline'] = pipeline
             else:
                 known_templates = ", ".join(
-                        registry.registered_pipeline_templates.keys())
+                    registry.registered_pipeline_templates.keys())
 
                 raise InvalidConfigError("No pipeline specified and unknown "
                                          "pipeline template '{}' passed. Known "
@@ -173,8 +163,8 @@ class RasaNLUModelConfig(object):
     def view(self):
         return json_to_string(self.__dict__, indent=4)
 
-    def for_component(self, name, defaults=None):
-        return component_config_from_pipeline(name, self.pipeline, defaults)
+    def for_component(self, index, defaults=None):
+        return component_config_from_pipeline(index, self.pipeline, defaults)
 
     @property
     def component_names(self):
@@ -183,13 +173,13 @@ class RasaNLUModelConfig(object):
         else:
             return []
 
-    def set_component_attr(self, name, **kwargs):
-        for c in self.pipeline:
-            if c.get("name") == name:
-                c.update(kwargs)
-        else:
-            logger.warn("Tried to set configuration value for component '{}' "
-                        "which is not part of the pipeline.".format(name))
+    def set_component_attr(self, index, **kwargs):
+        try:
+            self.pipeline[index].update(kwargs)
+        except IndexError:
+            logger.warning("Tried to set configuration value for component "
+                           "number {} which is not part of the pipeline."
+                           "".format(index))
 
     def override(self, config):
         if config:

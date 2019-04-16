@@ -1,17 +1,11 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import tempfile
 
 import pytest
 import ruamel.yaml as yaml
-from builtins import object
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
-from rasa_nlu.train import do_train
+from rasa_nlu.train import train
 
 slowtest = pytest.mark.slowtest
 
@@ -35,8 +29,8 @@ def write_file_config(file_config):
 
 
 def interpreter_for(component_builder, data, path, config):
-    (trained, _, path) = do_train(config, data, path,
-                                  component_builder=component_builder)
+    (trained, _, path) = train(config, data, path,
+                               component_builder=component_builder)
     interpreter = Interpreter.load(path, component_builder)
     return interpreter
 

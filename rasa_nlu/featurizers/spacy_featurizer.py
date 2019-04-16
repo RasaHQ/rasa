@@ -1,48 +1,41 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import numpy as np
 import typing
 from typing import Any
 
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     from spacy.tokens import Doc
 
 
-def ndim(spacy_nlp):
+def ndim(spacy_nlp: 'Language') -> int:
     """Number of features used to represent a document / sentence."""
-    # type: Language -> int
     return spacy_nlp.vocab.vectors_length
 
 
-def features_for_doc(doc):
+def features_for_doc(doc: 'Doc') -> np.ndarray:
     """Feature vector for a single document / sentence."""
-    # type: Doc -> np.ndarray
     return doc.vector
 
 
 class SpacyFeaturizer(Featurizer):
-    name = "intent_featurizer_spacy"
 
     provides = ["text_features"]
 
     requires = ["spacy_doc"]
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
 
         for example in training_data.intent_examples:
             self._set_spacy_features(example)
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         self._set_spacy_features(message)
 

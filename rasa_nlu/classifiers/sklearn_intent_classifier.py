@@ -1,44 +1,27 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
 import logging
-import typing
-from builtins import zip
-import os
-import io
-from future.utils import PY3
-from typing import Any, Optional
-from typing import Dict
-from typing import List
-from typing import Text
-from typing import Tuple
-
 import numpy as np
+import os
+import typing
+from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa_nlu import utils
 from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import sklearn
 
-SKLEARN_MODEL_FILE_NAME = "intent_classifier_sklearn.pkl"
-
 
 def _sklearn_numpy_warning_fix():
     """Fixes unecessary warnings emitted by sklearns use of numpy.
 
     Sklearn will fix the warnings in their next release in ~ August 2018.
-
-    based on https://stackoverflow.com/questions/49545947/sklearn-deprecationwarning-truth-value-of-an-array"""
+    based on https://stackoverflow.com/a/49668081"""
     import warnings
 
     warnings.filterwarnings(module='sklearn*', action='ignore',
@@ -47,8 +30,6 @@ def _sklearn_numpy_warning_fix():
 
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
-
-    name = "intent_classifier_sklearn"
 
     provides = ["intent", "intent_ranking"]
 
@@ -75,11 +56,10 @@ class SklearnIntentClassifier(Component):
     }
 
     def __init__(self,
-                 component_config=None,  # type: Dict[Text, Any]
-                 clf=None,  # type: sklearn.model_selection.GridSearchCV
-                 le=None  # type: sklearn.preprocessing.LabelEncoder
-                 ):
-        # type: (...) -> None
+                 component_config: Dict[Text, Any] = None,
+                 clf: 'sklearn.model_selection.GridSearchCV' = None,
+                 le: Optional['sklearn.preprocessing.LabelEncoder'] = None
+                 ) -> None:
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
@@ -94,28 +74,27 @@ class SklearnIntentClassifier(Component):
         _sklearn_numpy_warning_fix()
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["sklearn"]
 
-    def transform_labels_str2num(self, labels):
-        # type: (List[Text]) -> np.ndarray
+    def transform_labels_str2num(self, labels: List[Text]) -> np.ndarray:
         """Transforms a list of strings into numeric label representation.
 
         :param labels: List of labels to convert to numeric representation"""
 
         return self.le.fit_transform(labels)
 
-    def transform_labels_num2str(self, y):
-        # type: (np.ndarray) -> np.ndarray
+    def transform_labels_num2str(self, y: np.ndarray) -> np.ndarray:
         """Transforms a list of strings into numeric label representation.
 
         :param y: List of labels to convert to numeric representation"""
 
         return self.le.inverse_transform(y)
 
-    def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+    def train(self,
+              training_data: TrainingData,
+              cfg: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
         """Train the intent classifier on a data set."""
 
         num_threads = kwargs.get("num_threads", 1)
@@ -124,9 +103,9 @@ class SklearnIntentClassifier(Component):
                   for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            logger.warn("Can not train an intent classifier. "
-                        "Need at least 2 different classes. "
-                        "Skipping training of intent classifier.")
+            logger.warning("Can not train an intent classifier. "
+                           "Need at least 2 different classes. "
+                           "Skipping training of intent classifier.")
         else:
             y = self.transform_labels_str2num(labels)
             X = np.stack([example.get("text_features")
@@ -166,8 +145,7 @@ class SklearnIntentClassifier(Component):
                             scoring=self.component_config['scoring_function'],
                             verbose=1)
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
         """Return the most likely intent and its probability for a message."""
 
         if not self.clf:
@@ -198,8 +176,7 @@ class SklearnIntentClassifier(Component):
         message.set("intent", intent, add_to_output=True)
         message.set("intent_ranking", intent_ranking, add_to_output=True)
 
-    def predict_prob(self, X):
-        # type: (np.ndarray) -> np.ndarray
+    def predict_prob(self, X: np.ndarray) -> np.ndarray:
         """Given a bow vector of an input text, predict the intent label.
 
         Return probabilities for all labels.
@@ -209,8 +186,7 @@ class SklearnIntentClassifier(Component):
 
         return self.clf.predict_proba(X)
 
-    def predict(self, X):
-        # type: (np.ndarray) -> Tuple[np.ndarray, np.ndarray]
+    def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Given a bow vector of an input text, predict most probable label.
 
         Return only the most likely label.
@@ -227,15 +203,14 @@ class SklearnIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Optional[Text]
-             model_metadata=None,  # type: Optional[Metadata]
-             cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> SklearnIntentClassifier
+             meta: Dict[Text, Any],
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional[Metadata] = None,
+             cached_component: Optional['SklearnIntentClassifier'] = None,
+             **kwargs: Any
+             ) -> 'SklearnIntentClassifier':
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("classifier_file", SKLEARN_MODEL_FILE_NAME)
+        file_name = meta.get("file")
         classifier_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(classifier_file):
@@ -243,10 +218,12 @@ class SklearnIntentClassifier(Component):
         else:
             return cls(meta)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Optional[Dict[Text, Any]]
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
-        classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
+        file_name = file_name + ".pkl"
+        classifier_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(classifier_file, self)
-        return {"classifier_file": SKLEARN_MODEL_FILE_NAME}
+        return {"file": file_name}

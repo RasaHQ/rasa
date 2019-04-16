@@ -1,10 +1,11 @@
-:desc: How to use Rasa NLU in a Python project
+:desc: Configure the Python API for serverless NLP using open source
+       chatbot framework Rasa Stack.
 .. _section_python:
 
 Python API
 ==========
 Apart from running Rasa NLU as a HTTP server you can use it directly in your python program.
-Rasa NLU supports both Python 2 and 3.
+Rasa NLU supports python 3.5 and 3.6 (supported for python 2.7 up until version 0.14).
 
 Training a Model
 ----------------
@@ -18,7 +19,7 @@ Or, you can train directly in python with a script like the following (using spa
     from rasa_nlu import config
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(config.load("sample_configs/config_spacy.yml"))
+    trainer = Trainer(config.load("sample_configs/config_pretrained_embeddings_spacy.yml"))
     trainer.train(training_data)
     model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
@@ -48,7 +49,7 @@ Reducing Memory Use When Loading Multiple Models
 ------------------------------------------------
 
 If multiple models are created, it is reasonable to share components between the different models. E.g.
-the ``'nlp_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
+the ``'SpacyNLP'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
 can be cached to avoid storing the large word vectors more than once in main memory. To use the caching,
 a ``ComponentBuilder`` should be passed when loading and training models.
 
@@ -66,7 +67,7 @@ To train a model:
     builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(config.load("sample_configs/config_spacy.yml"), builder)
+    trainer = Trainer(config.load("sample_configs/config_pretrained_embeddings_spacy.yml"), builder)
     trainer.train(training_data)
     model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
@@ -129,5 +130,3 @@ ComponentBuilder
 
 
 .. include:: feedback.inc
-   
-

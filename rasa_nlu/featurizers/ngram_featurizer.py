@@ -1,37 +1,26 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import time
+from collections import Counter
 
 import logging
-import os
-import time
-import warnings
-from collections import Counter
-from string import punctuation
-
 import numpy as np
+import os
 import typing
-from builtins import map
-from builtins import range
+import warnings
+from string import punctuation
 from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
 
-NGRAM_MODEL_FILE_NAME = "ngram_featurizer.pkl"
-
 
 class NGramFeaturizer(Featurizer):
-    name = "intent_featurizer_ngrams"
 
     provides = ["text_features"]
 
@@ -65,12 +54,11 @@ class NGramFeaturizer(Featurizer):
         self.all_ngrams = None
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["spacy", "sklearn", "cloudpickle"]
 
-    def train(self, training_data, cfg, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+    def train(self, training_data: TrainingData, cfg: RasaNLUModelConfig,
+              **kwargs: Any):
 
         start = time.time()
         self.train_on_sentences(training_data.intent_examples)
@@ -82,8 +70,7 @@ class NGramFeaturizer(Featurizer):
                                                       self.best_num_ngrams)
             example.set("text_features", updated)
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any):
 
         updated = self._text_features_with_ngrams(message, self.best_num_ngrams)
         message.set("text_features", updated)
@@ -100,15 +87,14 @@ class NGramFeaturizer(Featurizer):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Optional[Text]
-             model_metadata=None,  # type: Optional[Metadata]
-             cached_component=None,  # type: Optional[NGramFeaturizer]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> NGramFeaturizer
+             meta: Dict[Text, Any],
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional['NGramFeaturizer'] = None,
+             **kwargs: Any
+             ) -> 'NGramFeaturizer':
 
-        meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("featurizer_file", NGRAM_MODEL_FILE_NAME)
+        file_name = meta.get("file")
         featurizer_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(featurizer_file):
@@ -116,13 +102,15 @@ class NGramFeaturizer(Featurizer):
         else:
             return NGramFeaturizer(meta)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Optional[Dict[Text, Any]]
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory."""
 
-        featurizer_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
+        file_name = file_name + ".pkl"
+        featurizer_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(featurizer_file, self)
-        return {"featurizer_file": NGRAM_MODEL_FILE_NAME}
+        return {"file": file_name}
 
     def train_on_sentences(self, examples):
         labels = [e.get("intent") for e in examples]
@@ -142,7 +130,7 @@ class NGramFeaturizer(Featurizer):
 
         oov_strings = self._remove_in_vocab_words(examples)
         ngrams = self._generate_all_ngrams(
-                oov_strings, self.component_config["ngram_min_length"])
+            oov_strings, self.component_config["ngram_min_length"])
         return self._sort_applicable_ngrams(ngrams, examples, labels)
 
     def _remove_in_vocab_words(self, examples):
@@ -160,9 +148,9 @@ class NGramFeaturizer(Featurizer):
 
         Excludes every word with digits in them, hyperlinks or
         an assigned word vector."""
-        return (not token.has_vector and not token.like_url
-                and not token.like_num and not token.like_email
-                and not token.is_punct)
+        return (not token.has_vector and not token.like_url and not
+                token.like_num and not token.like_email and not
+                token.is_punct)
 
     def _remove_in_vocab_words_from_sentence(self, example):
         """Filter for words that do not have a word vector."""
@@ -233,7 +221,7 @@ class NGramFeaturizer(Featurizer):
                 labels = np.array(labels)[mask]
 
                 return self._rank_ngrams_using_cv(
-                        examples, labels, ngrams_list)
+                    examples, labels, ngrams_list)
             except ValueError as e:
                 if "needs samples of at least 2 classes" in str(e):
                     # we got unlucky during the random
@@ -306,11 +294,11 @@ class NGramFeaturizer(Featurizer):
                     begin = can[:-1]
                     end = can[1:]
                     if n >= ngram_min_length:
-                        if (counters[n - 1][begin] == counters[n][can]
-                                and begin in features[n - 1]):
+                        if (counters[n - 1][begin] == counters[n][can] and
+                                begin in features[n - 1]):
                             features[n - 1].remove(begin)
-                        if (counters[n - 1][end] == counters[n][can]
-                                and end in features[n - 1]):
+                        if (counters[n - 1][end] == counters[n][can] and
+                                end in features[n - 1]):
                             features[n - 1].remove(end)
 
         return [item for sublist in list(features.values()) for item in sublist]
@@ -361,7 +349,7 @@ class NGramFeaturizer(Featurizer):
         clf = LogisticRegression(class_weight='balanced')
 
         no_ngrams_X = self._append_ngram_features(
-                examples, existing_text_features, max_ngrams)
+            examples, existing_text_features, max_ngrams)
         return np.mean(cross_val_score(clf, no_ngrams_X, y, cv=cv_splits))
 
     @staticmethod

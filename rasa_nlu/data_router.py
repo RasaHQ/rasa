@@ -1,30 +1,24 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import datetime
 import io
 import logging
 import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
-from typing import Text, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Text
 
-import six
-from builtins import object
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
-from twisted.logger import jsonFileLogObserver, Logger
+from twisted.logger import Logger, jsonFileLogObserver
 
-from rasa_nlu import utils, config
+from rasa_nlu import config, utils
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.evaluate import run_evaluation
+from rasa_nlu.emulators import NoEmulator
+from rasa_nlu.test import run_evaluation
 from rasa_nlu.model import InvalidProjectError
-from rasa_nlu.project import Project, load_from_server, \
-        STATUS_READY, STATUS_TRAINING, STATUS_FAILED
-from rasa_nlu.train import do_train_in_worker, TrainingException
+from rasa_nlu.project import (
+    Project, STATUS_FAILED, STATUS_READY, STATUS_TRAINING, load_from_server)
+from rasa_nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +60,7 @@ def deferred_from_future(future):
 
     d = Deferred()
 
+    # noinspection PyUnresolvedReferences
     def callback(future):
         e = future.exception()
         if e:
@@ -109,11 +104,11 @@ class DataRouter(object):
 
         self.project_store = self._create_project_store(project_dir)
 
-        if six.PY3:
-            # tensorflow sessions are not fork-safe,
-            # and training processes have to be spawned instead of forked.
-            # See https://github.com/tensorflow/tensorflow/issues/5448#issuecomment-258934405
-            multiprocessing.set_start_method('spawn', force=True)
+        # tensorflow sessions are not fork-safe,
+        # and training processes have to be spawned instead of forked. See
+        # https://github.com/tensorflow/tensorflow/issues/5448#issuecomment
+        # -258934405
+        multiprocessing.set_start_method('spawn', force=True)
 
         self.pool = ProcessPool(self._training_processes)
 
@@ -138,9 +133,10 @@ class DataRouter(object):
             # which we are going to use to log requests
             utils.create_dir_for_file(response_logfile)
             out_file = io.open(response_logfile, 'a', encoding='utf8')
+            # noinspection PyTypeChecker
             query_logger = Logger(
-                    observer=jsonFileLogObserver(out_file, recordSeparator=''),
-                    namespace='query-logger')
+                observer=jsonFileLogObserver(out_file, recordSeparator=''),
+                namespace='query-logger')
             # Prevents queries getting logged with parent logger
             # --> might log them to stdout
             logger.info("Logging requests to '{}'.".format(response_logfile))
@@ -151,7 +147,7 @@ class DataRouter(object):
                         "(No 'request_log' directory configured)")
             return None
 
-    def _collect_projects(self, project_dir):
+    def _collect_projects(self, project_dir: Text) -> List[Text]:
         if project_dir and os.path.isdir(project_dir):
             projects = os.listdir(project_dir)
         else:
@@ -161,7 +157,7 @@ class DataRouter(object):
         return projects
 
     def _create_project_store(self,
-                              project_dir):
+                              project_dir: Text) -> Dict[Text, Any]:
         default_project = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
 
         projects = self._collect_projects(project_dir)
@@ -170,12 +166,12 @@ class DataRouter(object):
 
         if self.model_server is not None:
             project_store[default_project] = load_from_server(
-                    self.component_builder,
-                    default_project,
-                    self.project_dir,
-                    self.remote_storage,
-                    self.model_server,
-                    self.wait_time_between_pulls
+                self.component_builder,
+                default_project,
+                self.project_dir,
+                self.remote_storage,
+                self.model_server,
+                self.wait_time_between_pulls
             )
         else:
             for project in projects:
@@ -186,20 +182,21 @@ class DataRouter(object):
 
             if not project_store:
                 project_store[default_project] = Project(
-                        project=default_project,
-                        project_dir=self.project_dir,
-                        remote_storage=self.remote_storage
+                    project=default_project,
+                    project_dir=self.project_dir,
+                    remote_storage=self.remote_storage
                 )
 
         return project_store
 
-    def _pre_load(self, projects):
+    def _pre_load(self, projects: List[Text]) -> None:
         logger.debug("loading %s", projects)
         for project in self.project_store:
             if project in projects:
                 self.project_store[project].load_model()
 
-    def _list_projects_in_cloud(self):
+    def _list_projects_in_cloud(self) -> List[Text]:
+        # noinspection PyBroadException
         try:
             from rasa_nlu.persistor import get_persistor
             p = get_persistor(self.remote_storage)
@@ -214,13 +211,12 @@ class DataRouter(object):
             return []
 
     @staticmethod
-    def _create_emulator(mode):
+    def _create_emulator(mode: Optional[Text]) -> NoEmulator:
         """Create emulator for specified mode.
 
         If no emulator is specified, we will use the Rasa NLU format."""
 
         if mode is None:
-            from rasa_nlu.emulators import NoEmulator
             return NoEmulator()
         elif mode.lower() == 'wit':
             from rasa_nlu.emulators.wit import WitEmulator
@@ -235,16 +231,16 @@ class DataRouter(object):
             raise ValueError("unknown mode : {0}".format(mode))
 
     @staticmethod
-    def _tf_in_pipeline(model_config):
-        # type: (RasaNLUModelConfig) -> bool
+    def _tf_in_pipeline(model_config: RasaNLUModelConfig) -> bool:
         from rasa_nlu.classifiers.embedding_intent_classifier import \
             EmbeddingIntentClassifier
-        return EmbeddingIntentClassifier.name in model_config.component_names
+        return any(EmbeddingIntentClassifier.name in c.values()
+                   for c in model_config.pipeline)
 
-    def extract(self, data):
+    def extract(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_request_json(data)
 
-    def parse(self, data):
+    def parse(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         project = data.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME)
         model = data.get("model")
 
@@ -256,16 +252,16 @@ class DataRouter(object):
 
             if project not in projects:
                 raise InvalidProjectError(
-                        "No project found with name '{}'.".format(project))
+                    "No project found with name '{}'.".format(project))
             else:
                 try:
                     self.project_store[project] = Project(
-                            self.component_builder, project,
-                            self.project_dir, self.remote_storage)
+                        self.component_builder, project,
+                        self.project_dir, self.remote_storage)
                 except Exception as e:
                     raise InvalidProjectError(
-                            "Unable to load project '{}'. "
-                            "Error: {}".format(project, e))
+                        "Unable to load project '{}'. "
+                        "Error: {}".format(project, e))
 
         time = data.get('time')
         response = self.project_store[project].parse(data['text'], time,
@@ -278,15 +274,15 @@ class DataRouter(object):
         return self.format_response(response)
 
     @staticmethod
-    def _list_projects(path):
+    def _list_projects(path: Text) -> List[Text]:
         """List the projects in the path, ignoring hidden directories."""
         return [os.path.basename(fn)
                 for fn in utils.list_subdirectories(path)]
 
-    def format_response(self, data):
+    def format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_response_json(data)
 
-    def get_status(self):
+    def get_status(self) -> Dict[Text, Any]:
         # This will only count the trainings started from this
         # process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
@@ -301,12 +297,11 @@ class DataRouter(object):
         }
 
     def start_train_process(self,
-                            data_file,  # type: Text
-                            project,  # type: Text
-                            train_config,  # type: RasaNLUModelConfig
-                            model_name=None  # type: Optional[Text]
-                            ):
-        # type: (...) -> Deferred
+                            data_file: Text,
+                            project: Text,
+                            train_config: RasaNLUModelConfig,
+                            model_name: Optional[Text] = None
+                            ) -> Deferred:
         """Start a model training."""
 
         if not project:
@@ -319,8 +314,8 @@ class DataRouter(object):
             self.project_store[project].status = STATUS_TRAINING
         elif project not in self.project_store:
             self.project_store[project] = Project(
-                    self.component_builder, project,
-                    self.project_dir, self.remote_storage)
+                self.component_builder, project,
+                self.project_dir, self.remote_storage)
             self.project_store[project].status = STATUS_TRAINING
 
         def training_callback(model_path):
@@ -332,7 +327,7 @@ class DataRouter(object):
                     self.project_store[project].current_training_processes ==
                     0):
                 self.project_store[project].status = STATUS_READY
-            return model_dir
+            return model_path
 
         def training_errback(failure):
             logger.warning(failure)
@@ -349,46 +344,24 @@ class DataRouter(object):
         self._current_training_processes += 1
         self.project_store[project].current_training_processes += 1
 
-        # tensorflow training is not executed in a separate thread on python 2,
-        # as this may cause training to freeze
-        if six.PY2 and self._tf_in_pipeline(train_config):
-            try:
-                logger.warning("Training a pipeline with a tensorflow "
-                               "component. This blocks the server during "
-                               "training.")
-                model_path = do_train_in_worker(
-                        train_config,
-                        data_file,
-                        path=self.project_dir,
-                        project=project,
-                        fixed_model_name=model_name,
-                        storage=self.remote_storage)
-                model_dir = os.path.basename(os.path.normpath(model_path))
-                training_callback(model_dir)
-                return model_dir
-            except TrainingException as e:
-                logger.warning(e)
-                target_project = self.project_store.get(
-                        e.failed_target_project)
-                if target_project:
-                    target_project.status = STATUS_READY
-                raise e
-        else:
-            result = self.pool.submit(do_train_in_worker,
-                                      train_config,
-                                      data_file,
-                                      path=self.project_dir,
-                                      project=project,
-                                      fixed_model_name=model_name,
-                                      storage=self.remote_storage)
-            result = deferred_from_future(result)
-            result.addCallback(training_callback)
-            result.addErrback(training_errback)
+        result = self.pool.submit(do_train_in_worker,
+                                  train_config,
+                                  data_file,
+                                  path=self.project_dir,
+                                  project=project,
+                                  fixed_model_name=model_name,
+                                  storage=self.remote_storage)
+        result = deferred_from_future(result)
+        result.addCallback(training_callback)
+        result.addErrback(training_errback)
 
-            return result
+        return result
 
-    def evaluate(self, data, project=None, model=None):
-        # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]
+    # noinspection PyProtectedMember
+    def evaluate(self,
+                 data: Text,
+                 project: Optional[Text] = None,
+                 model: Optional[Text] = None) -> Dict[Text, Any]:
         """Perform a model evaluation."""
 
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
@@ -411,13 +384,14 @@ class DataRouter(object):
             self.project_store[project]._loader_lock.release()
 
         return run_evaluation(
-                data_path=file_name,
-                model=self.project_store[project]._models[model_name],
-                errors_filename=None
+            data_path=file_name,
+            model=self.project_store[project]._models[model_name],
+            errors_filename=None
         )
 
-    def unload_model(self, project, model):
-        # type: (Text, Text) -> Dict[Text]
+    def unload_model(self,
+                     project: Optional[Text],
+                     model: Text) -> Dict[Text, Any]:
         """Unload a model from server memory."""
 
         if project is None:

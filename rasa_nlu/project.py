@@ -1,31 +1,21 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import time
 
 import datetime
 import logging
 import os
 import tempfile
 import zipfile
-from threading import Lock, Thread
-from typing import Text, List
-
-import six
-import time
-from builtins import object
+from io import BytesIO as IOReader
 from requests.exceptions import InvalidURL, RequestException
+from threading import Lock, Thread
+from typing import List, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
-from rasa_nlu.model import Metadata, Interpreter
-from rasa_nlu.utils import is_url, EndpointConfig
-
-if six.PY2:
-    from StringIO import StringIO as IOReader
-else:
-    from io import BytesIO as IOReader
+from rasa_nlu.components import ComponentBuilder
+from rasa_nlu.model import Interpreter, Metadata
+from rasa_nlu.utils import EndpointConfig, is_url
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +30,13 @@ STATUS_TRAINING = 1
 STATUS_FAILED = -1
 
 
-def load_from_server(component_builder=None,  # type: Optional[Text]
-                     project=None,  # type: Optional[Text]
-                     project_dir=None,  # type: Optional[Text]
-                     remote_storage=None,  # type: Optional[Text]
-                     model_server=None,  # type: Optional[EndpointConfig]
-                     wait_time_between_pulls=None,  # type: Optional[int]
-                     ):
-    # type: (...) -> Project
+def load_from_server(component_builder: Optional[ComponentBuilder] = None,
+                     project: Optional[Text] = None,
+                     project_dir: Optional[Text] = None,
+                     remote_storage: Optional[Text] = None,
+                     model_server: Optional[EndpointConfig] = None,
+                     wait_time_between_pulls: Optional[int] = None,
+                     ) -> 'Project':
     """Load a persisted model from a server."""
 
     project = Project(component_builder=component_builder,
@@ -66,8 +55,8 @@ def load_from_server(component_builder=None,  # type: Optional[Text]
     return project
 
 
-def _update_model_from_server(model_server, project):
-    # type: (EndpointConfig, Project) -> None
+def _update_model_from_server(model_server: EndpointConfig,
+                              project: 'Project') -> None:
     """Load a zipped Rasa NLU model from a URL and update the passed
 
     project."""
@@ -77,7 +66,7 @@ def _update_model_from_server(model_server, project):
     model_directory = tempfile.mkdtemp()
 
     new_model_fingerprint, filename = _pull_model_and_fingerprint(
-            model_server, model_directory, project.fingerprint)
+        model_server, model_directory, project.fingerprint)
     if new_model_fingerprint:
         model_name = _get_remote_model_name(filename)
         project.fingerprint = new_model_fingerprint
@@ -87,8 +76,7 @@ def _update_model_from_server(model_server, project):
         logger.debug("No new model found at URL {}".format(model_server.url))
 
 
-def _get_remote_model_name(filename):
-    # type: (Optional[Text]) -> Text
+def _get_remote_model_name(filename: Optional[Text]) -> Text:
     """Get the name to save a model under that was fetched from a
 
     remote server."""
@@ -99,8 +87,10 @@ def _get_remote_model_name(filename):
         return MODEL_NAME_PREFIX + timestamp
 
 
-def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
-    # type: (EndpointConfig, Text, Optional[Text]) -> (Optional[Text], Optional[Text])
+def _pull_model_and_fingerprint(model_server: EndpointConfig,
+                                model_directory: Text,
+                                fingerprint: Optional[Text]
+                                ) -> (Optional[Text], Optional[Text]):
     """Queries the model server and returns a tuple of containing the
 
     response's <ETag> header which contains the model hash, and the
@@ -129,9 +119,9 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
                      "and tag combination yet.")
         return None, None
     elif response.status_code != 200:
-        logger.warn("Tried to fetch model from server, but server response "
-                    "status code is {}. We'll retry later..."
-                    "".format(response.status_code))
+        logger.warning("Tried to fetch model from server, but server response "
+                       "status code is {}. We'll retry later..."
+                       "".format(response.status_code))
         return None, None
 
     zip_ref = zipfile.ZipFile(IOReader(response.content))
@@ -143,17 +133,17 @@ def _pull_model_and_fingerprint(model_server, model_directory, fingerprint):
     return response.headers.get("ETag"), response.headers.get("filename")
 
 
-def _run_model_pulling_worker(model_server, wait_time_between_pulls, project):
-    # type: (Text, int, Project) -> None
+def _run_model_pulling_worker(model_server: EndpointConfig,
+                              wait_time_between_pulls: int,
+                              project: 'Project') -> None:
     while True:
         _update_model_from_server(model_server, project)
         time.sleep(wait_time_between_pulls)
 
 
-def start_model_pulling_in_worker(model_server, wait_time_between_pulls,
-                                  project):
-    # type: (Text, int, Project) -> None
-
+def start_model_pulling_in_worker(model_server: Optional[EndpointConfig],
+                                  wait_time_between_pulls: int,
+                                  project: 'Project') -> None:
     worker = Thread(target=_run_model_pulling_worker,
                     args=(model_server, wait_time_between_pulls, project))
     worker.setDaemon(True)
@@ -181,6 +171,7 @@ class Project(object):
         self.remote_storage = remote_storage
         self.fingerprint = fingerprint
         self.pull_models = pull_models
+        self.error_message = None
 
         if project and project_dir:
             self._path = os.path.join(project_dir, project)
@@ -221,8 +212,7 @@ class Project(object):
 
         return None  # local model loading failed!
 
-    def _dynamic_load_model(self, requested_model_name=None):
-        # type: (Text) -> Text
+    def _dynamic_load_model(self, requested_model_name: Text = None):
 
         # If the Project was configured to pull models from a
         # server, only one model is in memory at a time.
@@ -251,10 +241,10 @@ class Project(object):
             return local_model
 
         # still not found user specified model
-        logger.warn("Invalid model requested. Using default")
+        logger.warning("Invalid model requested. Using default")
         return self._latest_project_model()
 
-    def parse(self, text, time=None, requested_model_name=None):
+    def parse(self, text, parsing_time=None, requested_model_name=None):
         self._begin_read()
 
         model_name = self._dynamic_load_model(requested_model_name)
@@ -267,7 +257,7 @@ class Project(object):
         finally:
             self._loader_lock.release()
 
-        response = self._models[model_name].parse(text, time)
+        response = self._models[model_name].parse(text, parsing_time)
         response['project'] = self._project
         response['model'] = model_name
 
@@ -295,23 +285,24 @@ class Project(object):
         return status
 
     def update_model_from_dir_and_unload_others(self,
-                                                model_dir,  # type: Text
-                                                model_name  # type: Text
-                                                ):
+                                                model_dir: Text,
+                                                model_name: Text
+                                                ) -> bool:
         # unload all loaded models
         for model in self._list_loaded_models():
             self.unload(model)
 
         self._begin_read()
+        # noinspection PyUnusedLocal
         status = False
 
-        logger.debug('Loading model {} from directory {}'.format(
-                model_name, model_dir))
+        logger.debug("Loading model '{}' from directory '{}'.".format(
+            model_name, model_dir))
 
         self._loader_lock.acquire()
         try:
             interpreter = self._interpreter_for_model(
-                    model_name, model_dir)
+                model_name, model_dir)
             self._models[model_name] = interpreter
             status = True
         finally:
@@ -342,15 +333,15 @@ class Project(object):
                   for model in self._models.keys()
                   if model.startswith(MODEL_NAME_PREFIX)}
         if models:
-            time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S')
-                         for time, model in models.items()]
+            time_list = [datetime.datetime.strptime(parse_time, '%Y%m%d-%H%M%S')
+                         for parse_time, model in models.items()]
             return models[max(time_list).strftime('%Y%m%d-%H%M%S')]
         else:
             return FALLBACK_MODEL_NAME
 
     def _fallback_model(self):
         meta = Metadata({"pipeline": [{
-            "name": "intent_classifier_keyword",
+            "name": "KeywordIntentClassifier",
             "class": utils.module_path_from_object(KeywordIntentClassifier())
         }]}, "")
         return Interpreter.create(meta, self._component_builder)
@@ -389,17 +380,21 @@ class Project(object):
             return Metadata.load(path)
 
     def as_dict(self):
-        result = {}
-        result["status"] = 'ready'
+        status = "ready"
+        error_message = None
         if self.status == STATUS_TRAINING:
-            result["status"] = 'training'
+            status = 'training'
         elif self.status == STATUS_FAILED:
-            result["status"] = 'failed'
-            result["error_message"] = self.error_message
-        result["current_training_processes"] = self.current_training_processes
-        result["available_models"] = list(self._models.keys())
-        result["loaded_models"] = self._list_loaded_models()
-        return result
+            status = 'failed'
+            error_message = self.error_message
+
+        return {
+            "status": status,
+            "error_message": error_message,
+            "current_training_processes": self.current_training_processes,
+            "available_models": list(self._models.keys()),
+            "loaded_models": self._list_loaded_models()
+        }
 
     def _list_loaded_models(self):
         models = []
@@ -408,8 +403,7 @@ class Project(object):
                 models.append(model)
         return models
 
-    def _list_models_in_cloud(self):
-        # type: () -> List[Text]
+    def _list_models_in_cloud(self) -> List[Text]:
 
         try:
             from rasa_nlu.persistor import get_persistor
@@ -419,8 +413,8 @@ class Project(object):
             else:
                 return []
         except Exception as e:
-            logger.warn("Failed to list models of project {}. "
-                        "{}".format(self._project, e))
+            logger.warning("Failed to list models of project {}. "
+                           "{}".format(self._project, e))
             return []
 
     def _load_model_from_cloud(self, model_name, target_path):
@@ -432,8 +426,8 @@ class Project(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logger.warn("Using default interpreter, couldn't fetch "
-                        "model: {}".format(e))
+            logger.warning("Using default interpreter, couldn't fetch "
+                           "model: {}".format(e))
             raise  # re-raise this exception because nothing we can do now
 
     @staticmethod

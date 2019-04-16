@@ -1,11 +1,4 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from builtins import map
-from typing import Any
-from typing import Dict
-from typing import Text
+from typing import Any, Optional, Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import Message
@@ -13,23 +6,19 @@ from rasa_nlu.training_data import Message
 
 class KeywordIntentClassifier(Component):
 
-    name = "intent_classifier_keyword"
-
     provides = ["intent"]
 
     his = ["hello", "hi", "hey"]
 
     byes = ["bye", "goodbye"]
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         intent = {"name": self.parse(message.text), "confidence": 1.0}
         message.set("intent", intent,
                     add_to_output=True)
 
-    def parse(self, text):
-        # type: (Text) -> Text
+    def parse(self, text: Text) -> Optional[Text]:
 
         _text = text.lower()
 

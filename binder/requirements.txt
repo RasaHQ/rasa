@@ -1,9 +1,8 @@
-# Minimum Instal Requirements
+# Minimum Install Requirements
 -r ../alt_requirements/requirements_bare.txt
 
 # Spacy Requirements
--r ../alt_requirements/requirements_spacy_sklearn.txt
+-r ../alt_requirements/requirements_pretrained_embeddings_spacy.txt
 
 # Tensorflow Requirements
--r ../alt_requirements/requirements_tensorflow_sklearn.txt
-
+-r ../alt_requirements/requirements_supervised_embeddings.txt

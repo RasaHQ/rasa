@@ -1,20 +1,13 @@
-from __future__ import division
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import absolute_import
-
 import logging
 import os
 import re
 from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
-from rasa_nlu.featurizers import Featurizer
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.model import Metadata
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +24,6 @@ class CountVectorsFeaturizer(Featurizer):
     to use the idea of Subword Semantic Hashing
     from https://arxiv.org/abs/1810.07150.
     """
-
-    name = "intent_featurizer_count_vectors"
 
     provides = ["text_features"]
 
@@ -84,8 +75,7 @@ class CountVectorsFeaturizer(Featurizer):
     }
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["sklearn"]
 
     def _load_count_vect_params(self):
@@ -212,8 +202,10 @@ class CountVectorsFeaturizer(Featurizer):
                            "will be ignored during prediction."
                            "".format(self.OOV_token))
 
-    def train(self, training_data, cfg=None, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, Any) -> None
+    def train(self,
+              training_data: TrainingData,
+              cfg: RasaNLUModelConfig = None,
+              **kwargs: Any) -> None:
         """Train the featurizer.
 
         Take parameters from config and
@@ -259,8 +251,7 @@ class CountVectorsFeaturizer(Featurizer):
                         self._combine_with_existing_text_features(example,
                                                                   X[i]))
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
         if self.vect is None:
             logger.error("There is no trained CountVectorizer: "
                          "component is either not trained or "
@@ -273,30 +264,30 @@ class CountVectorsFeaturizer(Featurizer):
                         self._combine_with_existing_text_features(message,
                                                                   bag))
 
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again.
         """
 
-        featurizer_file = os.path.join(model_dir, self.name + ".pkl")
+        file_name = file_name + ".pkl"
+        featurizer_file = os.path.join(model_dir, file_name)
         utils.pycloud_pickle(featurizer_file, self)
-        return {"featurizer_file": self.name + ".pkl"}
+        return {"file": file_name}
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Text
-             model_metadata=None,  # type: Metadata
-             cached_component=None,  # type: Optional[Component]
-             **kwargs  # type: Any
-             ):
-        # type: (...) -> CountVectorsFeaturizer
+             meta: Dict[Text, Any],
+             model_dir: Text = None,
+             model_metadata: Metadata = None,
+             cached_component: Optional['CountVectorsFeaturizer'] = None,
+             **kwargs: Any
+             ) -> 'CountVectorsFeaturizer':
 
-        meta = model_metadata.for_component(cls.name)
-
-        if model_dir and meta.get("featurizer_file"):
-            file_name = meta.get("featurizer_file")
+        if model_dir and meta.get("file"):
+            file_name = meta.get("file")
             featurizer_file = os.path.join(model_dir, file_name)
             return utils.pycloud_unpickle(featurizer_file)
         else:
