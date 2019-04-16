@@ -164,10 +164,10 @@ you can do this by writing ``validate_{slot}()`` method.
 Here is an example which checks if the extracted cuisine slot belongs to a
 list of supported cuisines.
 
-.. literalinclude:: ../../examples/formbot/actions.py
+.. literalinclude:: ../examples/formbot/actions.py
    :pyobject: RestaurantForm.cuisine_db
 
-.. literalinclude:: ../../examples/formbot/actions.py
+.. literalinclude:: ../examples/formbot/actions.py
    :pyobject: RestaurantForm.validate_cuisine
 
 
