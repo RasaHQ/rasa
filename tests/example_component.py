@@ -1,19 +1,13 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from rasa_nlu.components import Component
+import typing
+from typing import Any, Optional, Text, Dict
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.model import Metadata
 
 
 class MyComponent(Component):
     """A new component"""
-
-    # Name of the component to be used when integrating it in a
-    # pipeline. E.g. ``[ComponentA, ComponentB]``
-    # will be a proper pipeline definition where ``ComponentA``
-    # is the name of the first component of the pipeline.
-    name = ""
 
     # Defines what attributes the pipeline component will
     # provide when called. The listed attributes
@@ -69,18 +63,24 @@ class MyComponent(Component):
         of components previous to this one."""
         pass
 
-    def persist(self, model_dir):
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
         """Persist this component to disk for future loading."""
 
         pass
 
     @classmethod
-    def load(cls, model_dir=None, model_metadata=None, cached_component=None,
-             **kwargs):
+    def load(cls,
+             meta: Dict[Text, Any],
+             model_dir: Optional[Text] = None,
+             model_metadata: Optional['Metadata'] = None,
+             cached_component: Optional['Component'] = None,
+             **kwargs: Any
+             ) -> 'Component':
         """Load this component from file."""
 
         if cached_component:
             return cached_component
         else:
-            component_config = model_metadata.for_component(cls.name)
-            return cls(component_config)
+            return cls(meta)

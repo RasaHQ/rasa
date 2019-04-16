@@ -4,6 +4,54 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
+
+=======
+[Unreleased 0.15.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Added a detailed warning showing which entities are overlapping
+- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
+- `SpacyEntityExtractor` supports same entity filtering as `DucklingHTTPExtractor`
+
+Changed
+-------
+- validate training data only if used for training
+- applied spacy guidelines on how to disable pipeline components
+- starter packs now also tested when attempting to merge a branch to master
+- new consistent naming scheme for pipelines:
+  - ``tensorflow_embedding`` pipeline template renamed to ``supervised_embeddings``
+  - ``spacy_sklearn`` pipeline template renamed to ``pretrained_embeddings_spacy``
+  - requirements files, sample configs, and dockerfiles renamed accordingly
+- ``/train`` endpoint now returns a zipfile of the trained model.
+- pipeline components in the config file should be provided
+  with their class name
+- persisted components file name changed
+- replace pep8 with pycodestyle
+- ``Component.name`` property returns component's class name
+- Components ``load(...)``, ``create(...)`` and ``cache_key(...)`` methods
+  additionally take component's meta/config dicts
+- Components ``persist(...)`` method additionally takes file name prefix
+- renamed ``rasa_nlu.evaluate`` to ``rasa_nlu.test``
+- renamed ``rasa_nlu.test.run_cv_evaluation`` to
+  ``rasa_nlu.test.cross_validate``
+- renamed ``rasa_nlu.train.do_train()`` to ``rasa_nlu.train.train()``
+- train command can now also load config from file
+
+Removed
+-------
+- **removed python 2.7 support**
+
+Fixed
+-----
+- ``RegexFeaturizer`` detects all regex in user message (not just first)
+- do_extractors_support_overlap now correctly throws an exception only if no extractors are
+  passed or if extractors that do not support overlapping entities are used.
+- Docs entry for pretrained embeddings pipeline is now consistent with the
+  code in ``registry.py``
+
+
 [0.14.6] - 2019-03-20
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -35,7 +83,7 @@ Changed
 - pinned ``coloredlogs``, ``future`` and ``packaging``
 
 [0.14.2] - 2019-01-29
-^^^^^^^^^^^^^^^^^^^^^ 
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -82,6 +130,8 @@ Changed
 - updated TensorFlow version to 1.12.0
 - updated scikit-learn version to 0.20.2
 - updated cloudpickle version to 0.6.1
+- updated requirements to match Core and SDK
+- pinned keras dependecies
 
 Removed
 -------
@@ -792,7 +842,6 @@ Added
 - multithreading support of build in REST server (e.g. using gunicorn)
 - multitenancy implementation to allow loading multiple models which
   share the same backend
-
 Fixed
 -----
 - error propagation on failed vector model loading (spacy)

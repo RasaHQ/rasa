@@ -1,8 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import logging
 import os
 
@@ -19,7 +14,7 @@ CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 
 DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
 
-TEST_MODEL_PATH = "test_models/test_model_spacy_sklearn"
+TEST_MODEL_PATH = "test_models/test_model_pretrained_embeddings"
 
 # see `rasa_nlu.data_router` for details. avoids deadlock in
 # `deferred_from_future` function during tests
@@ -33,7 +28,9 @@ def component_builder():
 
 @pytest.fixture(scope="session")
 def spacy_nlp(component_builder, default_config):
-    return component_builder.create_component("nlp_spacy", default_config).nlp
+    spacy_nlp_config = {'name': 'SpacyNLP'}
+    return component_builder.create_component(spacy_nlp_config,
+                                              default_config).nlp
 
 
 @pytest.fixture(scope="session")
@@ -49,7 +46,8 @@ def ner_crf_pos_feature_config():
 
 @pytest.fixture(scope="session")
 def mitie_feature_extractor(component_builder, default_config):
-    return component_builder.create_component("nlp_mitie",
+    mitie_nlp_config = {'name': 'MitieNLP'}
+    return component_builder.create_component(mitie_nlp_config,
                                               default_config).extractor
 
 
@@ -60,14 +58,15 @@ def default_config():
 
 @pytest.fixture(scope="session")
 def zipped_nlu_model():
-    spacy_config_path = "sample_configs/config_spacy.yml"
+    spacy_config_path = "sample_configs/config_pretrained_embeddings_spacy.yml"
 
     cfg = config.load(spacy_config_path)
     trainer = Trainer(cfg)
     td = training_data.load_data(DEFAULT_DATA_PATH)
 
     trainer.train(td)
-    trainer.persist("test_models", project_name="test_model_spacy_sklearn")
+    trainer.persist("test_models",
+                    project_name="test_model_pretrained_embeddings")
 
     model_dir_list = os.listdir(TEST_MODEL_PATH)
 

@@ -1,24 +1,19 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import json
 import logging
-
 import requests
-from typing import Text, Optional
+import typing
+from typing import Optional, Text
 
 from rasa_nlu import utils
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.formats import (
-    MarkdownReader, WitReader, LuisReader,
-    RasaReader, DialogflowReader)
 from rasa_nlu.training_data.formats import markdown
 from rasa_nlu.training_data.formats.dialogflow import (
-    DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT,
-    DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES)
+    DIALOGFLOW_AGENT, DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES,
+    DIALOGFLOW_INTENT, DIALOGFLOW_INTENT_EXAMPLES, DIALOGFLOW_PACKAGE)
 from rasa_nlu.utils import EndpointConfig
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import TrainingData
+    from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +40,12 @@ _json_format_heuristics = {
 }
 
 
-def load_data(resource_name, language='en'):
-    # type: (Text, Optional[Text]) -> TrainingData
+def load_data(resource_name: Text,
+              language: Optional[Text] = 'en') -> 'TrainingData':
     """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
+    from rasa_nlu.training_data import TrainingData
 
     files = utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
@@ -61,12 +57,11 @@ def load_data(resource_name, language='en'):
     else:
         training_data = data_sets[0].merge(*data_sets[1:])
 
-    training_data.validate()
     return training_data
 
 
-def load_data_from_endpoint(data_endpoint, language='en'):
-    # type: (EndpointConfig, Optional[Text]) -> TrainingData
+def load_data_from_endpoint(data_endpoint: EndpointConfig,
+                            language: Optional[Text] = 'en') -> 'TrainingData':
     """Load training data from a URL."""
 
     if not utils.is_url(data_endpoint.url):
@@ -77,7 +72,6 @@ def load_data_from_endpoint(data_endpoint, language='en'):
         temp_data_file = utils.create_temporary_file(response.content,
                                                      mode="w+b")
         training_data = _load(temp_data_file, language)
-        training_data.validate()
 
         return training_data
     except Exception as e:
@@ -85,8 +79,12 @@ def load_data_from_endpoint(data_endpoint, language='en'):
                        "from URL:\n{}".format(e))
 
 
-def _reader_factory(fformat):
+def _reader_factory(fformat: Text) -> Optional['TrainingDataReader']:
     """Generates the appropriate reader class based on the file format."""
+    from rasa_nlu.training_data.formats import (
+        MarkdownReader, WitReader, LuisReader,
+        RasaReader, DialogflowReader)
+
     reader = None
     if fformat == LUIS:
         reader = LuisReader()
@@ -101,7 +99,8 @@ def _reader_factory(fformat):
     return reader
 
 
-def _load(filename, language='en'):
+def _load(filename: Text, language: Optional[Text] = 'en'
+          ) -> Optional['TrainingData']:
     """Loads a single training data file from disk."""
 
     fformat = _guess_format(filename)
@@ -117,8 +116,7 @@ def _load(filename, language='en'):
         return None
 
 
-def _guess_format(filename):
-    # type: (Text) -> Text
+def _guess_format(filename: Text) -> Text:
     """Applies heuristics to guess the data format of a file."""
     guess = UNK
     content = utils.read_file(filename)

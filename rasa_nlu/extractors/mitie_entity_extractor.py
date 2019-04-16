@@ -1,53 +1,36 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-
-from builtins import range, str
 import logging
 import os
-
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.training_data import Message, TrainingData
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import mitie
 
-MITIE_ENTITY_MODEL_FILE_NAME = "entity_extractor.dat"
-
 
 class MitieEntityExtractor(EntityExtractor):
-    name = "ner_mitie"
 
     provides = ["entities"]
 
     requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self,
-                 component_config=None,  # type: Dict[Text, Any]
+                 component_config: Dict[Text, Any] = None,
                  ner=None
                  ):
-        # type: (...) -> None
         """Construct a new intent classifier using the sklearn framework."""
 
         super(MitieEntityExtractor, self).__init__(component_config)
         self.ner = ner
 
     @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
+    def required_packages(cls) -> List[Text]:
         return ["mitie"]
 
     def extract_entities(self, text, tokens, feature_extractor):
@@ -71,15 +54,17 @@ class MitieEntityExtractor(EntityExtractor):
 
         return ents
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig) -> None
+    def train(self,
+              training_data: TrainingData,
+              config: RasaNLUModelConfig,
+              **kwargs: Any) -> None:
         import mitie
 
         model_file = kwargs.get("mitie_file")
         if not model_file:
             raise Exception("Can not run MITIE entity extractor without a "
                             "language model. Make sure this component is "
-                            "preceeded by the 'nlp_mitie' component.")
+                            "preceeded by the 'MitieNLP' component.")
 
         trainer = mitie.ner_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
@@ -87,7 +72,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         # filter out pre-trained entity examples
         filtered_entity_examples = self.filter_trainable_entities(
-                training_data.training_examples)
+            training_data.training_examples)
 
         for example in filtered_entity_examples:
             sample = self._prepare_mitie_sample(example)
@@ -109,7 +94,7 @@ class MitieEntityExtractor(EntityExtractor):
             try:
                 # if the token is not aligned an exception will be raised
                 start, end = MitieEntityExtractor.find_entity(
-                        ent, text, tokens)
+                    ent, text, tokens)
             except ValueError as e:
                 logger.warning("Example skipped: {}".format(str(e)))
                 continue
@@ -124,12 +109,11 @@ class MitieEntityExtractor(EntityExtractor):
                 continue
         return sample
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
         if not mitie_feature_extractor:
-            raise Exception("Failed to train 'intent_featurizer_mitie'. "
+            raise Exception("Failed to train 'MitieFeaturizer'. "
                             "Missing a proper MITIE feature extractor.")
 
         ents = self.extract_entities(message.text, message.get("tokens"),
@@ -140,17 +124,15 @@ class MitieEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Text
-             model_metadata=None,  # type: Metadata
-             cached_component=None,  # type: Optional[MitieEntityExtractor]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> MitieEntityExtractor
+             meta: Dict[Text, Any],
+             model_dir: Text = None,
+             model_metadata: Metadata = None,
+             cached_component: Optional['MitieEntityExtractor'] = None,
+             **kwargs: Any
+             ) -> 'MitieEntityExtractor':
         import mitie
 
-        meta = model_metadata.for_component(cls.name)
-
-        file_name = meta.get("classifier_file", MITIE_ENTITY_MODEL_FILE_NAME)
+        file_name = meta.get("file")
 
         if not file_name:
             return cls(meta)
@@ -162,13 +144,14 @@ class MitieEntityExtractor(EntityExtractor):
         else:
             return cls(meta)
 
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+    def persist(self,
+                file_name: Text,
+                model_dir: Text) -> Optional[Dict[Text, Any]]:
 
         if self.ner:
-            entity_extractor_file = os.path.join(model_dir,
-                                                 MITIE_ENTITY_MODEL_FILE_NAME)
+            file_name = file_name + ".dat"
+            entity_extractor_file = os.path.join(model_dir, file_name)
             self.ner.save_to_disk(entity_extractor_file, pure_model=True)
-            return {"classifier_file": MITIE_ENTITY_MODEL_FILE_NAME}
+            return {"file": file_name}
         else:
-            return {"classifier_file": None}
+            return {"file": None}

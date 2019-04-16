@@ -1,18 +1,10 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+import time
 
 import logging
 import os
-import time
-
 import requests
 import simplejson
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, List, Optional, Text, Dict
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
@@ -30,17 +22,6 @@ def extract_value(match):
         value = match["value"].get("value")
 
     return value
-
-
-def filter_irrelevant_matches(matches, requested_dimensions):
-    """Only return dimensions the user configured"""
-
-    if requested_dimensions:
-        return [match
-                for match in matches
-                if match["dim"] in requested_dimensions]
-    else:
-        return matches
 
 
 def convert_duckling_format_to_rasa(matches):
@@ -64,8 +45,6 @@ def convert_duckling_format_to_rasa(matches):
 class DucklingHTTPExtractor(EntityExtractor):
     """Searches for structured entites, e.g. dates, using a duckling server."""
 
-    name = "ner_duckling_http"
-
     provides = ["entities"]
 
     defaults = {
@@ -85,19 +64,20 @@ class DucklingHTTPExtractor(EntityExtractor):
         "timezone": None
     }
 
-    def __init__(self, component_config=None, language=None):
-        # type: (Text, Optional[List[Text]]) -> None
+    def __init__(self,
+                 component_config: Optional[Dict[Text, Any]] = None,
+                 language: Optional[List[Text]] = None) -> None:
 
         super(DucklingHTTPExtractor, self).__init__(component_config)
         self.language = language
 
     @classmethod
-    def create(cls, config):
-        # type: (RasaNLUModelConfig) -> DucklingHTTPExtractor
+    def create(cls,
+               component_config: Dict[Text, Any],
+               config: RasaNLUModelConfig
+               ) -> 'DucklingHTTPExtractor':
 
-        return cls(config.for_component(cls.name,
-                                        cls.defaults),
-                   config.language)
+        return cls(component_config, config.language)
 
     def _locale(self):
         if not self.component_config.get("locale"):
@@ -162,15 +142,15 @@ class DucklingHTTPExtractor(EntityExtractor):
         # requires the reftime in miliseconds
         return int(time.time()) * 1000
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
+    def process(self, message: Message, **kwargs: Any) -> None:
 
         if self._url() is not None:
             reference_time = self._reference_time_from_message(message)
             matches = self._duckling_parse(message.text, reference_time)
+            all_extracted = convert_duckling_format_to_rasa(matches)
             dimensions = self.component_config["dimensions"]
-            relevant_matches = filter_irrelevant_matches(matches, dimensions)
-            extracted = convert_duckling_format_to_rasa(relevant_matches)
+            extracted = DucklingHTTPExtractor.filter_irrelevant_entities(
+                all_extracted, dimensions)
         else:
             extracted = []
             logger.warning("Duckling HTTP component in pipeline, but no "
@@ -185,12 +165,11 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             model_dir=None,  # type: Text
-             model_metadata=None,  # type: Metadata
-             cached_component=None,  # type: Optional[DucklingHTTPExtractor]
-             **kwargs  # type: **Any
-             ):
-        # type: (...) -> DucklingHTTPExtractor
+             meta: Dict[Text, Any],
+             model_dir: Text = None,
+             model_metadata: Metadata = None,
+             cached_component: Optional['DucklingHTTPExtractor'] = None,
+             **kwargs: Any
+             ) -> 'DucklingHTTPExtractor':
 
-        component_config = model_metadata.for_component(cls.name)
-        return cls(component_config, model_metadata.get("language"))
+        return cls(meta, model_metadata.get("language"))
