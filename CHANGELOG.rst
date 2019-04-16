@@ -17,7 +17,14 @@ Fixed
 Fixed
 -----
 - properly tag ``stable`` docker image (instead of alpha)
-  
+
+[0.14.4] - 2019-02-26
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed training from url
+
 [0.14.3] - 2019-02-01
 ^^^^^^^^^^^^^^^^^^^^^
 
