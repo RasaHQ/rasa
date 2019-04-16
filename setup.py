@@ -25,7 +25,7 @@ tests_requires = [
 
 install_requires = [
     "cloudpickle~=0.6.1",
-    "gevent~=1.2",
+    "gevent~=1.3",
     "klein~=17.10",
     "boto3~=1.5",
     "packaging~=18.0",
@@ -50,7 +50,7 @@ extras_requires = {
               ],
     'tensorflow': ["sklearn-crfsuite~=0.3.6",
                    "scipy~=1.1",
-                   "tensorflow~=1.12.0",
+                   "tensorflow~=1.13.0",
                    "keras-applications==1.0.6",
                    "keras-preprocessing==1.0.5"
                    ],
@@ -68,6 +68,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
     version=__version__,

@@ -1,5 +1,6 @@
 language: python
 sudo: enabled
+dist: xenial
 cache:
   directories:
   - $HOME/.cache/pip
@@ -7,6 +8,7 @@ cache:
 python:
   - '3.5'
   - '3.6'
+  - '3.7'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
@@ -21,7 +23,7 @@ install:
   - python -m spacy link en_core_web_md en
   - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > jnk
   - python -m spacy link de_core_news_sm de
-  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then 
+  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then
     travis_wait wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
     fi
   - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
@@ -29,7 +31,7 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script: 
+script:
   - py.test --codestyle -m codestyle
   - py.test tests/base --cov rasa_nlu -v --cov-append
   - py.test tests/training --cov rasa_nlu -v --cov-append
