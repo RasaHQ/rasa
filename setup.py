@@ -34,7 +34,7 @@ install_requires = [
     "scipy~=1.2",
     "typing~=3.0",
     "requests~=2.20",
-    "tensorflow~=1.12.0",
+    "tensorflow~=1.13.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.2",
@@ -65,9 +65,7 @@ install_requires = [
     "questionary>=1.0.1",
     "flask-jwt-simple~=0.0.3",
     "python-socketio~=3.0",
-    "pydot~=1.4",
-    "keras-applications==1.0.6",
-    "keras-preprocessing==1.0.5"
+    "pydot~=1.4"
 ]
 
 extras_requires = {
@@ -84,6 +82,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools"]),

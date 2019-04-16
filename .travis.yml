@@ -1,5 +1,6 @@
 language: python
 sudo: required
+dist: xenial
 cache:
   directories:
   - "$HOME/.cache/pip"
@@ -7,6 +8,7 @@ cache:
 python:
 - '3.5'
 - '3.6'
+- '3.7'
 install:
 - sudo apt-get install graphviz graphviz-dev
 - pip install -r dev-requirements.txt
