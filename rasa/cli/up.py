@@ -5,21 +5,13 @@ import sys
 from multiprocessing import Process
 from typing import List, Text
 
-import rasa.cli.run
-from rasa.cli.utils import print_success, signal_handler, print_error
-from rasa.core import utils, cli
-from rasa.core.run import serve_application
-from rasa.core.utils import AvailableEndpoints
-from rasa.utils.endpoints import EndpointConfig
-from rasa.utils.io import configure_colored_logging
-
-signal.signal(signal.SIGINT, signal_handler)
-
 
 # noinspection PyProtectedMember
 def add_subparser(
-    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+        subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
+    from rasa.core import cli
+    import rasa
     shell_parser = subparsers.add_parser(
         "up",
         parents=parents,
@@ -61,7 +53,7 @@ def add_subparser(
         type=str,
         default="data",
         help="Path to the directory containing Rasa NLU training data "
-        "and Rasa Core stories",
+             "and Rasa Core stories",
     )
     shell_parser.add_argument(
         "--vvvv", default=False, action="store_true", help="Verbose mode"
@@ -80,10 +72,12 @@ def start_event_service():
     main()
 
 
-def start_core(args: argparse.Namespace, endpoints: AvailableEndpoints = None):
+def start_core(args: argparse.Namespace, endpoints: 'AvailableEndpoints' = None):
     """Starts the Rasa Core application."""
+    from rasa.core.run import serve_application
 
     if endpoints is None:
+        from rasa.core.utils import AvailableEndpoints
         endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
 
     serve_application(
@@ -100,6 +94,9 @@ def start_core(args: argparse.Namespace, endpoints: AvailableEndpoints = None):
 
 def start_core_for_local_platform(args: argparse.Namespace, platform_token: Text):
     """Starts the Rasa API with Rasa Core as a background process."""
+
+    from rasa.core.utils import AvailableEndpoints
+    from rasa.utils.endpoints import EndpointConfig
 
     endpoints = AvailableEndpoints(
         model=EndpointConfig(
@@ -126,6 +123,12 @@ def start_core_for_local_platform(args: argparse.Namespace, platform_token: Text
 
 
 def up(args: argparse.Namespace):
+    from rasa.cli.utils import print_success, print_error, signal_handler
+    from rasa.core.utils import configure_file_logging
+    from rasa.utils.io import configure_colored_logging
+
+    signal.signal(signal.SIGINT, signal_handler)
+
     logging.getLogger("werkzeug").setLevel(logging.WARN)
     logging.getLogger("engineio").setLevel(logging.WARN)
     logging.getLogger("socketio").setLevel(logging.ERROR)
@@ -143,7 +146,7 @@ def up(args: argparse.Namespace):
         logging.getLogger("apscheduler").setLevel(logging.ERROR)
 
     configure_colored_logging(args.loglevel)
-    utils.configure_file_logging(args.loglevel, args.log_file)
+    configure_file_logging(args.loglevel, args.log_file)
 
     if args.production:
         print_success("Starting Rasa Core")
