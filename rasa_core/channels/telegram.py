@@ -151,8 +151,7 @@ class TelegramInput(InputChannel):
                         return "success"
                 sender_id = msg.chat.id
                 try:
-                    if (text == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART) or
-                            text == constants.USER_INTENT_RESTART):
+                    if text == (INTENT_MESSAGE_PREFIX + USER_INTENT_RESTART):
 
                         on_new_message(UserMessage(
                             text, out_channel, sender_id,
