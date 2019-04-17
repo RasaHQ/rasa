@@ -4,11 +4,14 @@ help:
 	@echo "    train-core"
 	@echo "        Train a dialogue model using Rasa core."
 	@echo "    train"
-	@echo "        Train a stack model using Rasa core & NLU."
+	@echo "        Train a stacked model using Rasa core & NLU."
 	@echo "    run-{channel}"
 	@echo "        Spin up a server that uses the connector for {channel}."
 	@echo "    visualize"
 	@echo "        Show your stories as a graph."
+	@echo "        Spin up a server that uses the connector for {channel}."
+	@echo "    evaluate"
+	@echo "        Test the latest stacked model located in /models."
 
 train-nlu:
 	rasa train nlu -c config.yml -u data/nlu.md
@@ -45,6 +48,9 @@ run-webexteams:
 
 run-cmdline:
 	rasa shell -m models
+
+evaluate:
+	rasa test -m models
 
 visualize:
 	rasa show stories
