@@ -4,12 +4,12 @@ info:
   version: "0.0.0"
   description: >-
     The Rasa server provides endpoints to retrieve trackers of
-    conversations as well as endpoints to modify them. Additionally, 
+    conversations as well as endpoints to modify them. Additionally,
     enpoints for training and evaluating models are provided.
 servers:
   - url: "http://localhost:5005"
     description: "Local development server"
-    
+
 x-reuse:
   tracker:
     &tracker-example
@@ -54,7 +54,7 @@ paths:
   /:
     get:
       tags:
-      - Meta Information
+      - Server Information
       summary: Health endpoint of Rasa Server
       description: >-
         This URL can be used as an endpoint to run
@@ -73,11 +73,14 @@ paths:
 
   /version:
     get:
+      security:
+      - TokenAuth: []
+      - JWT: []
       tags:
-      - Meta Information
-      summary: Meta Info about Rasa Server
+      - Server Information
+      summary: Version of Rasa
       description: >-
-        Metadata about the running instance.
+        Returns the version of Rasa.
       responses:
         200:
           description: Version of Rasa
@@ -98,6 +101,10 @@ paths:
               example:
                 version: 0.12.0
                 minimum_compatible_version: 0.12.0
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
   /status:
     get:
@@ -105,10 +112,10 @@ paths:
       - TokenAuth: []
       - JWT: []
       tags:
-      - Meta Information
-      summary: Status of the currently loaded agent and data router
+      - Server Information
+      summary: Status of the currently loaded Rasa Core & NLU models
       description: >-
-        Information about the currently loaded agent and data router.
+        Information about the currently loaded Rasa Core & NLU models.
       responses:
         200:
           description: Success
@@ -124,8 +131,12 @@ paths:
                     max_worker_processes: 5
                     current_worker_processes: 1
                     loaded_model: restaurant_bot
-                  
-                
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+
+
   /conversations/{sender_id}/tracker:
     get:
       security:
@@ -142,27 +153,86 @@ paths:
       parameters:
       - $ref: '#/components/parameters/sender_id'
       - $ref: '#/components/parameters/include_events'
+      - $ref: '#/components/parameters/until'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
         404:
-          description: Invalid event verbosity format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                version: "0.12.0"
-                status: "failure"
-                message: >-
-                  Invalid parameter value for 'include_events'.
-                  Should be one of ALL, AFTER_RESTART, APPLIED, NONE
-                reason: "InvalidParameter"
-                code: 400
+          $ref: '#/components/responses/404InvalidParameter'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
         403:
-          $ref: '#/components/responses/403Permissions'
+          $ref: '#/components/responses/403NotAuthorized'
         503:
-          $ref: '#/components/responses/503Tracker'
+          $ref: '#/components/responses/503ServiceUnavailable'
+
+  /conversations/{sender_id}/tracker/events:
+    post:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Tracker
+      summary: Append an event to a tracker
+      description: >-
+        Append a new event to the tracker state of the conversation.
+        Any existing events will be kept and the new events will be
+        appended, updating the existing state.
+      parameters:
+      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/include_events'
+      requestBody:
+        $ref: '#/components/requestBodies/Event'
+      responses:
+        200:
+          $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400InvalidRequestBody'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        404:
+          $ref: '#/components/responses/404InvalidParameter'
+
+    put:
+      security:
+      - TokenAuth: []
+      - JWT: []
+      tags:
+      - Tracker
+      summary: Replace a trackers events
+      description: >-
+        Replace all events of a tracker with the passed
+        list of events. This endpoint should not be used to
+        modify trackers in a production setup, but rather
+        for creating training data.
+      parameters:
+      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/include_events'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Event'
+            examples:
+              Events:
+                $ref: '#/components/examples/Events'
+
+      responses:
+        200:
+          $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400InvalidRequestBody'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
+        404:
+          $ref: '#/components/responses/404InvalidParameter'
 
   /conversations/{sender_id}/story:
     get:
@@ -178,13 +248,16 @@ paths:
         as a test.
       parameters:
       - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/until'
       responses:
         200:
           $ref: '#/components/responses/200Story'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
         403:
-          $ref: '#/components/responses/403Permissions'
+          $ref: '#/components/responses/403NotAuthorized'
         503:
-          $ref: '#/components/responses/503Tracker'
+          $ref: '#/components/responses/503ServiceUnavailable'
 
   /conversations/{sender_id}/execute:
     post:
@@ -195,7 +268,7 @@ paths:
       - Tracker
       summary: Run an action in a conversation.
       description: >-
-        Runs the action, calling the action server if necessary
+        Runs the action, calling the action server if necessary.
         Any responses sent by the executed action will be returned as
         part of the endpoints result, they will not be sent over a
         connected output channel.
@@ -211,7 +284,7 @@ paths:
               properties:
                 name:
                   description: >-
-                    Name of the action to be executed
+                    Name of the action to be executed.
                   type: string
                 policy:
                   description: >-
@@ -238,12 +311,14 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/BotMessage'
-        400:
-          $ref: '#/components/responses/400InvalidRequest'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
         403:
-          $ref: '#/components/responses/403Permissions'
+          $ref: '#/components/responses/403NotAuthorized'
+        404:
+          $ref: '#/components/responses/404InvalidParameter'
         500:
-          $ref: '#/components/responses/500Action'
+          $ref: '#/components/responses/500ServerError'
 
   /conversations/{sender_id}/predict:
     post:
@@ -261,7 +336,6 @@ paths:
         The state of the tracker is not modified.
       parameters:
       - $ref: '#/components/parameters/sender_id'
-      - $ref: '#/components/parameters/include_events'
       responses:
         200:
           description: Success
@@ -272,68 +346,13 @@ paths:
               examples:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
         403:
-          $ref: '#/components/responses/403Permissions'
+          $ref: '#/components/responses/403NotAuthorized'
         500:
-          $ref: '#/components/responses/500Action'
+          $ref: '#/components/responses/500ServerError'
 
-  /conversations/{sender_id}/tracker/events:
-    post:
-      security:
-      - TokenAuth: []
-      - JWT: []
-      tags:
-      - Tracker
-      summary: Append an event to a tracker
-      description: >-
-        Append a new event to the tracker state of the conversation.
-        Any existing events will be kept and the new events will be
-        appended, updating the existing state.
-      parameters:
-      - $ref: '#/components/parameters/sender_id'
-      - $ref: '#/components/parameters/include_events'
-      requestBody:
-        $ref: '#/components/requestBodies/Event'
-      responses:
-        200:
-          $ref: '#/components/responses/200Tracker'
-        403:
-          $ref: '#/components/responses/403Permissions'
-
-    put:
-      security:
-      - TokenAuth: []
-      - JWT: []
-      tags:
-      - Tracker
-      summary: Replace a trackers events
-      description: >-
-        Replace all of the events of a tracker with the passed
-        list of events. This endpoint should not be used to
-        modify trackers in a production setup, but rather
-        for creating training data.
-      parameters:
-      - $ref: '#/components/parameters/sender_id'
-      - $ref: '#/components/parameters/include_events'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Event'
-            examples:
-              Events:
-                $ref: '#/components/examples/Events'
-
-      responses:
-        200:
-          $ref: '#/components/responses/200Tracker'
-        400:
-          $ref: '#/components/responses/400Events'
-        403:
-          $ref: '#/components/responses/403Permissions'
 
   /conversations/{sender_id}/messages:
     post:
@@ -389,21 +408,14 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
         403:
-          $ref: '#/components/responses/403Permissions'
+          $ref: '#/components/responses/403NotAuthorized'
+        404:
+          $ref: '#/components/responses/404InvalidParameter'
         500:
-          description: Message Exception
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                version: "0.12.0"
-                status: "failure"
-                message: >-
-                  An exception occurred while logging the message
-                reason: "MessageException"
-                code: 500
+          $ref: '#/components/responses/500ServerError'
 
   /models/train:
     post:
@@ -434,6 +446,10 @@ paths:
                 $ref: '#/components/schemas/StackTrainingResult'
         400:
           $ref: '#/components/responses/400Training'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
   /models/nlu/train:
     post:
@@ -465,6 +481,10 @@ paths:
                 $ref: '#/components/schemas/StackTrainingResult'
         400:
           $ref: '#/components/responses/400Training'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
   /models/finetune:
     post:
@@ -498,6 +518,10 @@ paths:
           description: Model was successfully finetuned.
         400:
           $ref: '#/components/responses/400Events'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
         500:
           $ref: '#/components/responses/500Action'
 
@@ -539,6 +563,10 @@ paths:
                   $ref: '#/components/examples/EvaluationResult'
         400:
           $ref: '#/components/responses/400Evaluation'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
   /models/evaluate/intents:
     post:
@@ -571,6 +599,10 @@ paths:
                   $ref: '#/components/examples/IntentEvaluationResult'
         400:
           $ref: '#/components/responses/400IntentEvaluation'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
   /models/predict:
     post:
@@ -617,8 +649,12 @@ paths:
               examples:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
         403:
-          $ref: '#/components/responses/403Permissions'
+          $ref: '#/components/responses/403NotAuthorized'
+        404:
+          $ref: '#/components/responses/404InvalidParameter'
         500:
           $ref: '#/components/responses/500Action'
 
@@ -659,8 +695,10 @@ paths:
                 $ref: '#/components/schemas/ParseData'
         404:
           $ref: '#/components/responses/404InvalidModel'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
         403:
-          $ref: '#/components/responses/403Permissions'
+          $ref: '#/components/responses/403NotAuthorized'
         500:
           $ref: '#/components/responses/500ServerError'
 
@@ -703,6 +741,10 @@ paths:
                   No agent loaded.
                 reason: "NoAgent"
                 code: 400
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
     delete:
       security:
@@ -714,6 +756,7 @@ paths:
       description: >-
         Unload a trained model from the server.
       parameters:
+      - $ref: '#/components/parameters/model_type'
       - $ref: '#/components/parameters/model_name'
       responses:
         204:
@@ -731,6 +774,10 @@ paths:
                   No agent loaded.
                 reason: "NoAgent"
                 code: 400
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
   /domain:
     get:
@@ -754,6 +801,10 @@ paths:
             application/yaml:
               schema:
                 $ref: '#/components/schemas/Domain'
+        401:
+          $ref: '#/components/responses/401NotAuthenticated'
+        403:
+          $ref: '#/components/responses/403NotAuthorized'
 
 
 components:
@@ -833,10 +884,20 @@ components:
         type: string
         default: AFTER_RESTART
         enum:
+          - AFTER_RESTART
           - ALL
           - APPLIED
-          - AFTER_RESTART
-          - NONE
+          - AFTER_R
+    until:
+      in: query
+      name: until
+      description: >-
+        All events previous to the passed timestamp will be replayed.
+        Events that occur exactly at the target time will be included.
+      schema:
+        type: number
+        default: None
+      required: false
 
 
   requestBodies:
@@ -902,6 +963,19 @@ components:
             [Indian](cuisine) restaurant for [two](people) people
              - utter_on_it
              - utter_ask_location
+    400InvalidRequestBody:
+      description: Invalid Request Body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Could not extract a proper event from the request body.
+            reason: "InvalidRequestBody"
+            code: 400
     400Events:
       description: Invalid Events
       content:
@@ -913,19 +987,6 @@ components:
             status: "failure"
             message: >-
               Supplied events are not valid.
-            reason: "InvalidParameter"
-            code: 400
-    400InvalidRequest:
-      description: Invalid request format
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "failure"
-            message: >-
-              Invalid Request format.
             reason: "InvalidParameter"
             code: 400
     400Evaluation:
@@ -967,7 +1028,20 @@ components:
               Rasa Stack model could not be trained.
             reason: "TrainingError"
             code: 400
-    403Permissions:
+    401NotAuthenticated:
+      description: User is not authenticated.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            reason: "NotAuthenticated"
+            message: >-
+              User is not authenticated to access resource.
+            code: 403
+    403NotAuthorized:
       description: User has insufficient permission.
       content:
         application/json:
@@ -976,6 +1050,7 @@ components:
           example:
             version: "0.12.0"
             status: "failure"
+            reason: "NotAuthorized"
             message: >-
               User has insufficient permission to access resource.
             code: 403
@@ -991,6 +1066,20 @@ components:
             message: >-
               Provided model is invalid.
             code: 404
+    404InvalidParameter:
+      description: Invalid request parameter
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            version: "0.12.0"
+            status: "failure"
+            message: >-
+              Invalid parameter value for 'include_events'.
+              Should be one of ALL, AFTER_RESTART, APPLIED, NONE
+            reason: "InvalidParameter"
+            code: 400
     500Action:
       description: Action Exception
       content:
@@ -1005,7 +1094,7 @@ components:
             reason: "ActionException"
             code: 500
     500ServerError:
-      description: Tracker store is unavailable
+      description: An unexpected error occurred.
       content:
         application/json:
           schema:
@@ -1016,8 +1105,8 @@ components:
             message: >-
               An unexpected error occurred.
             code: 500
-    503Tracker:
-      description: Tracker store is unavailable
+    503ServiceUnavailable:
+      description: Service is unavailable
       content:
         application/json:
           schema:
@@ -1216,7 +1305,7 @@ components:
       properties:
         version:
           type: string
-          description: Core version
+          description: Rasa version
         status:
           type: string
           enum: ["failure"]
