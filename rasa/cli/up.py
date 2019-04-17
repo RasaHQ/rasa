@@ -8,10 +8,11 @@ from typing import List, Text
 
 # noinspection PyProtectedMember
 def add_subparser(
-        subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
+    subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
     from rasa.core import cli
     import rasa
+
     shell_parser = subparsers.add_parser(
         "up",
         parents=parents,
@@ -53,7 +54,7 @@ def add_subparser(
         type=str,
         default="data",
         help="Path to the directory containing Rasa NLU training data "
-             "and Rasa Core stories",
+        "and Rasa Core stories",
     )
     shell_parser.add_argument(
         "--vvvv", default=False, action="store_true", help="Verbose mode"
@@ -72,12 +73,13 @@ def start_event_service():
     main()
 
 
-def start_core(args: argparse.Namespace, endpoints: 'AvailableEndpoints' = None):
+def start_core(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
     """Starts the Rasa Core application."""
     from rasa.core.run import serve_application
 
     if endpoints is None:
         from rasa.core.utils import AvailableEndpoints
+
         endpoints = AvailableEndpoints.read_endpoints(args.endpoints)
 
     serve_application(
