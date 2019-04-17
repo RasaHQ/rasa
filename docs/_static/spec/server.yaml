@@ -209,17 +209,7 @@ paths:
       - $ref: '#/components/parameters/sender_id'
       - $ref: '#/components/parameters/include_events'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Event'
-            examples:
-              Events:
-                $ref: '#/components/examples/Events'
-
+        $ref: '#/components/requestBodies/EventList'
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
@@ -339,7 +329,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PredictResult'
-              examples:
+              example:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
         401:
@@ -430,7 +420,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StackTrainingRequest'
-            examples:
+            example:
               StackTrainingRequest:
                 $ref: '#/components/examples/StackTrainingRequest'
       responses:
@@ -467,7 +457,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NLUTrainingRequest'
-            examples:
+            example:
               StackTrainingRequest:
                 $ref: '#/components/examples/NLUTrainingRequest'
       responses:
@@ -505,16 +495,7 @@ paths:
       - $ref: '#/components/parameters/epochs'
       - $ref: '#/components/parameters/batch_size'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Event'
-            examples:
-              Events:
-                $ref: '#/components/examples/Events'
+        $ref: '#/components/requestBodies/EventList'
       responses:
         204:
           description: Model was successfully finetuned.
@@ -560,7 +541,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EvaluationResult'
-              examples:
+              example:
                 PredictResult:
                   $ref: '#/components/examples/EvaluationResult'
         400:
@@ -598,7 +579,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IntentEvaluationResult'
-              examples:
+              example:
                 IntentEvaluation:
                   $ref: '#/components/examples/IntentEvaluationResult'
         400:
@@ -627,24 +608,7 @@ paths:
       parameters:
       - $ref: '#/components/parameters/include_events'
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Event'
-            example:
-              - event: action
-                name: action_listen
-              - event: user
-                parse_data:
-                  entities: []
-                  intent:
-                    confidence: 0.57
-                    name: greet
-                  text: hello
-                text: hello
+        $ref: '#/components/requestBodies/EventList'
       responses:
         200:
           description: Success
@@ -652,7 +616,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PredictResult'
-              examples:
+              example:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
         400:
@@ -733,7 +697,7 @@ paths:
                   format: binary
       responses:
         204:
-          description: Success
+          description: Could successfully replace model.
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -757,7 +721,7 @@ paths:
       - $ref: '#/components/parameters/model_name'
       responses:
         204:
-          description: Success
+          description: Could sucessfully unload model.
         400:
           $ref: '#/components/responses/400BadRequest'
         401:
@@ -767,7 +731,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  domain:
+  /domain:
     get:
       security:
       - TokenAuth: []
@@ -780,7 +744,7 @@ paths:
         stacked model is using.
       responses:
         200:
-          description: Success
+          description: Domain was successfully retrieved.
           content:
             application/json:
               schema:
@@ -895,36 +859,19 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Event'
-          examples:
-            action:
-              $ref: '#/components/examples/ActionExecuted'
-            agent:
-              $ref: '#/components/examples/AgentUttered'
-            bot:
-              $ref: '#/components/examples/BotUttered'
-            export:
-              $ref: '#/components/examples/StoryExported'
-            followup:
-              $ref: '#/components/examples/FollowupAction'
-            pause:
-              $ref: '#/components/examples/ConversationPaused'
-            reminder:
-              $ref: '#/components/examples/ReminderScheduled'
-            reset_slots:
-              $ref: '#/components/examples/AllSlotsReset'
-            restart:
-              $ref: '#/components/examples/Restarted'
-            resume:
-              $ref: '#/components/examples/ConversationResumed'
-            rewind:
-              $ref: '#/components/examples/UserUtteranceReverted'
-            slot:
-              $ref: '#/components/examples/SlotSet'
-            undo:
-              $ref: '#/components/examples/ActionReverted'
-            user:
-              $ref: '#/components/examples/UserUttered'
-
+          example:
+            $ref: '#/components/examples/Event'
+    EventList:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Event'
+          example:
+            Events:
+              $ref: '#/components/examples/Events'
 
   responses:
 
@@ -934,7 +881,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Tracker'
-          examples:
+          example:
             Tracker:
               $ref: '#/components/examples/Tracker'
     200Story:
@@ -1427,6 +1374,10 @@ components:
     Tracker:
       value:
         <<: *tracker-example
+    Event:
+      value:
+        event: action
+        name: action_listen
     Events:
       value:
       - event: action
@@ -1439,69 +1390,6 @@ components:
             confidence: 0.57
             name: greet
           text: hello
-    ActionExecuted:
-      value:
-        event: action
-        name: utter_greet
-    ActionReverted:
-      value:
-        event: undo
-    AgentUttered:
-      value:
-        event: agent
-        text: Hello
-    AllSlotsReset:
-      value:
-        event: rewind
-    BotUttered:
-      value:
-        event: bot
-        text: Hello there
-    ConversationPaused:
-      value:
-        event: pause
-    ConversationResumed:
-      value:
-        event: resume
-    FollowupAction:
-      value:
-        event: followup
-        name: utter_greet
-    ReminderScheduled:
-      value:
-        event: reminder
-        action: utter_greet
-        date_time: "2018-09-22T20:57:39.835946"
-        name: my_reminder
-        kill_on_user_msg: true
-    Restarted:
-      value:
-        event: restart
-    SlotSet:
-      value:
-        event: slot
-        name: cuisine
-        value: italian
-    StoryExported:
-      value:
-        event: export
-    UserUtteranceReverted:
-      value:
-        event: rewind
-    UserUttered:
-      value:
-        event: user
-        text: I like mexican food
-        parse_data:
-          text: I like mexican food
-          intent:
-            name: restaurant_search
-            confidence: 0.85
-          entities:
-          - start: 7
-            end: 14
-            value: mexican
-            entity: cuisine
     PredictResult:
       value:
         scores:
