@@ -14,10 +14,17 @@ how you can migrate from one version to another.
 0.13.x to 0.14.0
 ----------------
 
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  ``action_restart`` will not work with your old models, as this is now
+  part of the ``MappingPolicy``. Please make sure to retrain a
+  model before trying to use it with this improved version.
+
 General
 ~~~~~~~
 
--The `MappingPolicy` is now included in `default_config.yml`. If you are using
+- The `MappingPolicy` is now included in `default_config.yml`. If you are using
   a custom policy configuration make sure to update it appropriately.
 
 Function Naming
