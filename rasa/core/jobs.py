@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pytz import UnknownTimeZoneError, utc
+from pytz import UnknownTimeZoneError
 
 __scheduler = None
 

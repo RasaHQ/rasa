@@ -1,9 +1,7 @@
+import copy
+import logging
 import typing
 from collections import deque
-
-import copy
-import io
-import logging
 from enum import Enum
 from typing import Generator, Dict, Text, Any, Optional, Iterator, Type
 from typing import List
@@ -235,7 +233,7 @@ class DialogueStateTracker(object):
 
         for i, event in enumerate(reversed(self.events)):
             if isinstance(event, Restarted):
-                return len(self.events) - (i + 1)
+                return len(self.events) - i
 
         return 0
 

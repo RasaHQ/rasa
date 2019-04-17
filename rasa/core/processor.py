@@ -8,11 +8,7 @@ import time
 
 from rasa.core import jobs
 from rasa.core.actions import Action
-from rasa.core.actions.action import (
-    ACTION_LISTEN_NAME,
-    ActionExecutionRejection,
-    ACTION_RESTART_NAME,
-)
+from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
 from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
 from rasa.core.dispatcher import Dispatcher
@@ -531,9 +527,6 @@ class MessageProcessor(object):
                     "Instead of running that, we will ignore the action "
                     "and predict the next action.".format(followup_action)
                 )
-
-        if tracker.latest_message.intent.get("name") == USER_INTENT_RESTART:
-            return self._prob_array_for_action(ACTION_RESTART_NAME)
 
         return self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain
