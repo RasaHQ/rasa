@@ -20,7 +20,7 @@ from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import (
     ActionExecuted, ActionExecutionRejected,
-    BotUttered, Event, ReminderCancelled, ReminderScheduled, SlotSet,
+    BotUttered, Event, ReminderScheduled, SlotSet,
     UserUttered)
 from rasa_core.interpreter import (
     INTENT_MESSAGE_PREFIX,
