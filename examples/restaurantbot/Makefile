@@ -9,7 +9,8 @@ help:
 	@echo "        Runs the core server."
 
 run:
-	rasa shell -m models --endpoints endpoints.yml
+	make run-actions&
+	make run-core
 
 run-actions:
 	rasa run actions

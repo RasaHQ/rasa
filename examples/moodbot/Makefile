@@ -1,5 +1,4 @@
 help:
-
 	@echo "    train"
 	@echo "        Train a stacked model using Rasa core & NLU."
 	@echo "    run-{channel}"

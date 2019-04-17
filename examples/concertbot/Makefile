@@ -13,7 +13,8 @@ help:
 	@echo "        Show your stories as a graph."
 
 run:
-	rasa shell -m models --endpoints endpoints.yml
+	make run-actions&
+	make run-core
 
 run-core:
 	rasa run -m models --endpoints endpoints.yml
