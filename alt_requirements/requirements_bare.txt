@@ -5,7 +5,7 @@ typing==3.6.2
 future==0.17.1
 six==1.11.0
 jsonschema==2.6.0
-matplotlib==2.1.0
+matplotlib==2.2.4
 requests==2.20.0
 tqdm==4.19.5
 numpy==1.14.5
