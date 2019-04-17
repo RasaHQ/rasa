@@ -39,16 +39,6 @@ after_success:
   - coveralls
 jobs:
   include:
-  - stage: test
-    if: fork = false
-    name: Check Dependency Licenses
-    before_script:
-    - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
-    script:
-    - pip freeze > requirements.txt
-    - fossa init
-    - fossa analyze
-    - fossa test
   - stage: docs
     if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
