@@ -7,7 +7,7 @@ import rasa.utils.io
 import rasa.train
 from examples.restaurantbot.policy import RestaurantPolicy
 from rasa.core.agent import Agent
-from rasa.core.interpreter import RasaNLUInterpreter
+from rasa.core.interpreter import RasaNLUInterpreter, RegexInterpreter
 from rasa.core.policies.memoization import MemoizationPolicy
 from rasa.core.policies.mapping_policy import MappingPolicy
 
@@ -20,7 +20,8 @@ async def parse(
     if nlu_model_path:
         interpreter = RasaNLUInterpreter(nlu_model_path)
     else:
-        interpreter = None
+        logger.warning("No NLU model passed, parsing messages using RegexInterpreter.")
+        interpreter = RegexInterpreter()
 
     agent = Agent.load(core_model_path, interpreter=interpreter)
 
@@ -74,7 +75,7 @@ def train_nlu(
     # The folder itself is not zipped.
     model_directory = trainer.persist(model_path)
 
-    logger.info("Model trained. Stored in '{}'.".format(model_path))
+    logger.info("Model trained. Stored in '{}'.".format(model_directory))
 
     return model_directory
 

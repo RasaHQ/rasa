@@ -1,8 +1,4 @@
 help:
-	@echo "    train-nlu"
-	@echo "        Train the natural language understanding using Rasa NLU."
-	@echo "    train-core"
-	@echo "        Train a dialogue model using Rasa core."
 	@echo "    train"
 	@echo "        Train a stacked model using Rasa core & NLU."
 	@echo "    run-{channel}"
@@ -13,38 +9,32 @@ help:
 	@echo "    evaluate"
 	@echo "        Test the latest stacked model located in /models."
 
-train-nlu:
-	rasa train nlu -c config.yml -u data/nlu.md
-
-train-core:
-	rasa train core -s data/stories.md -d domain.yml -o models
-
 train:
 	rasa train -d domain.yml -c config.yml -o models
 
 train-interactive:
-	rasa interactive core -d domain.yml -m models -c config.yml --data data
+	rasa interactive -d domain.yml -m models -c config.yml --data data
 
 run-fb:
-	rasa run core -m models -p 5002 -c facebook --credentials credentials.yml
+	rasa run -m models -p 5002 -c facebook --credentials credentials.yml
 
 run-slack:
-	rasa run core -m models -p 5002 -c slack --credentials credentials.yml
+	rasa run -m models -p 5002 -c slack --credentials credentials.yml
 
 run-telegram:
-	rasa run core -m models -p 5002 -c telegram --credentials credentials.yml
+	rasa run -m models -p 5002 -c telegram --credentials credentials.yml
 
 run-rocketchat:
-	rasa run core -m models -p 5002 -c rocketchat --credentials credentials.yml
+	rasa run -m models -p 5002 -c rocketchat --credentials credentials.yml
 
 run-mattermost:
-	rasa run core -m models -p 5002 -c mattermost --credentials credentials.yml
+	rasa run -m models -p 5002 -c mattermost --credentials credentials.yml
 
 run-twilio:
-	rasa run core -m models -p 5002 -c twilio --credentials credentials.yml
+	rasa run -m models -p 5002 -c twilio --credentials credentials.yml
 
 run-webexteams:
-	rasa run core -m models -p 5002 -c webexteams --credentials credentials.yml
+	rasa run -m models -p 5002 -c webexteams --credentials credentials.yml
 
 run-cmdline:
 	rasa shell -m models

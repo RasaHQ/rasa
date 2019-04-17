@@ -1,8 +1,6 @@
 help:
 	@echo "    train"
-	@echo "        Train a stacked model using Rasa Ccore and NLU."
-	@echo "    train-core"
-	@echo "        Train a dialogue model using Rasa core."
+	@echo "        Train a stacked model using Rasa Core and NLU."
 	@echo "    run-core"
 	@echo "        Spin up the core server on the command line"
 	@echo "    run-actions"
@@ -17,16 +15,13 @@ run:
 	make run-core
 
 run-core:
-	rasa shell core -m models --verbose --endpoints endpoints.yml
+	rasa run -m models --verbose --endpoints endpoints.yml
 
 run-actions:
-	python -m rasa_core_sdk.endpoint --actions actions
+	rasa run actions
 
 train:
 	rasa train --debug
-
-train-core:
-	rasa train core -s data/stories.md --debug
 
 train-interactive:
 	rasa interactive -d domain.yml -m models -c config.yml --data data --verbose --endpoints endpoints.yml
