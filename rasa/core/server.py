@@ -14,6 +14,8 @@ from sanic_cors import CORS
 from sanic_jwt import Initialize, exceptions
 
 import rasa
+import rasa.utils.common
+import rasa.utils.endpoints
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.core import constants, utils
 from rasa.core.channels import CollectingOutputChannel, UserMessage
@@ -88,7 +90,8 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
 
     def decorator(f: Callable[[Any, Any, Any], Any]) -> Callable[[Any, Any], Any]:
         def sender_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
-            argnames = utils.arguments_of(f)
+            argnames = rasa.utils.common.arguments_of(f)
+
             try:
                 sender_id_arg_idx = argnames.index("sender_id")
                 if "sender_id" in kwargs:  # try to fetch from kwargs first
@@ -117,7 +120,8 @@ def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], A
         @wraps(f)
         async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
 
-            provided = utils.default_arg(request, "token", None)
+            provided = request.args.get("token", None)
+
             # noinspection PyProtectedMember
             if token is not None and provided == token:
                 result = f(request, *args, **kwargs)

@@ -66,6 +66,9 @@ PATHS = {
 # choose other intent, making sure this doesn't clash with an existing intent
 OTHER_INTENT = uuid.uuid4().hex
 OTHER_ACTION = uuid.uuid4().hex
+NEW_ACTION = uuid.uuid4().hex
+
+NEW_TEMPLATES = {}
 
 
 class RestartConversation(Exception):
@@ -176,20 +179,31 @@ async def send_action(
         return await endpoint.request(json=payload, method="post", subpath=subpath)
     except ClientError:
         if is_new_action:
-            warning_questions = questionary.confirm(
-                "WARNING: You have created a new action: '{}', "
-                "which was not successfully executed. "
-                "If this action does not return any events, "
-                "you do not need to do anything. "
-                "If this is a custom action which returns events, "
-                "you are recommended to implement this action "
-                "in your action server and try again."
-                "".format(action_name)
-            )
-            await _ask_questions(warning_questions, sender_id, endpoint)
+            if action_name in NEW_TEMPLATES:
+                warning_questions = questionary.confirm(
+                    "WARNING: You have created a new action: '{0}', "
+                    "with matching template: '{1}'. "
+                    "This action will not return its message in this session, "
+                    "but the new utterance will be saved to your domain file "
+                    "when you exit and save this session. "
+                    "You do not need to do anything further. "
+                    "".format(action_name, [*NEW_TEMPLATES[action_name]][0])
+                )
+                await _ask_questions(warning_questions, sender_id, endpoint)
+            else:
+                warning_questions = questionary.confirm(
+                    "WARNING: You have created a new action: '{}', "
+                    "which was not successfully executed. "
+                    "If this action does not return any events, "
+                    "you do not need to do anything. "
+                    "If this is a custom action which returns events, "
+                    "you are recommended to implement this action "
+                    "in your action server and try again."
+                    "".format(action_name)
+                )
+                await _ask_questions(warning_questions, sender_id, endpoint)
 
             payload = ActionExecuted(action_name).as_dict()
-
             return await send_event(endpoint, sender_id, payload)
         else:
             logger.error("failed to execute action!")
@@ -320,12 +334,21 @@ def _selection_choices_from_intent_prediction(
 
 
 async def _request_free_text_intent(sender_id: Text, endpoint: EndpointConfig) -> Text:
-    question = questionary.text("Please type the intent name")
+    question = questionary.text("Please type the intent name:")
     return await _ask_questions(question, sender_id, endpoint)
 
 
 async def _request_free_text_action(sender_id: Text, endpoint: EndpointConfig) -> Text:
-    question = questionary.text("Please type the action name")
+    question = questionary.text("Please type the action name:")
+    return await _ask_questions(question, sender_id, endpoint)
+
+
+async def _request_free_text_utterance(
+    sender_id: Text, endpoint: EndpointConfig, action: Text
+) -> Text:
+    question = questionary.text(
+        "Please type the message for your new utter_template '{}':".format(action)
+    )
     return await _ask_questions(question, sender_id, endpoint)
 
 
@@ -584,14 +607,39 @@ async def _request_action_from_user(
         for a in predictions
     ]
 
-    choices = [{"name": "<create new action>", "value": OTHER_ACTION}] + choices
+    tracker = await retrieve_tracker(endpoint, sender_id)
+    events = tracker.get("events", [])
+
+    session_actions_all = [a["name"] for a in _collect_actions(events)]
+    session_actions_unique = list(set(session_actions_all))
+    old_actions = [action["value"] for action in choices]
+    new_actions = [
+        {"name": action, "value": OTHER_ACTION + action}
+        for action in session_actions_unique
+        if action not in old_actions
+    ]
+    choices = (
+        [{"name": "<create new action>", "value": OTHER_ACTION}] + new_actions + choices
+    )
     question = questionary.select("What is the next action of the bot?", choices)
 
     action_name = await _ask_questions(question, sender_id, endpoint)
-    is_new_action = action_name == OTHER_ACTION
+    is_new_action = action_name == NEW_ACTION
 
     if is_new_action:
+        # create new action
         action_name = await _request_free_text_action(sender_id, endpoint)
+        if "utter_" in action_name:
+            utter_message = await _request_free_text_utterance(
+                sender_id, endpoint, action_name
+            )
+            NEW_TEMPLATES[action_name] = {utter_message: ""}
+
+    elif action_name[:32] == OTHER_ACTION:
+        # action was newly created in the session, but not this turn
+        is_new_action = True
+        action_name = action_name[32:]
+
     print ("Thanks! The bot will now run {}.\n".format(action_name))
     return action_name, is_new_action
 
@@ -770,6 +818,7 @@ async def _write_domain_to_file(
 
     messages = _collect_messages(evts)
     actions = _collect_actions(evts)
+    templates = NEW_TEMPLATES
 
     # TODO for now there is no way to distinguish between action and form
     intent_properties = Domain.collect_intent_properties(
@@ -784,7 +833,7 @@ async def _write_domain_to_file(
         intent_properties=intent_properties,
         entities=_entities_from_messages(messages),
         slots=[],
-        templates={},
+        templates=templates,
         action_names=collected_actions,
         form_names=[],
     )

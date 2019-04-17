@@ -105,7 +105,7 @@ def configure_app(
     # configure async loop logging
     async def configure_logging():
         if logger.isEnabledFor(logging.DEBUG):
-            utils.enable_async_loop_debugging(asyncio.get_event_loop())
+            rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
     app.add_task(configure_logging)
 

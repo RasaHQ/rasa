@@ -31,3 +31,11 @@ General
   ``rasa.nlu.server`` -> ``rasa run nlu``
   ``rasa.nlu.test`` -> ``rasa test nlu``
   ``rasa.nlu.train`` -> ``rasa train nlu``
+
+
+Script parameters
+~~~~~~~~~~~~~~~~~
+- the ``--num_threads`` parameter got removed from the ``run`` command. The
+  server will always run single threaded, but in an async way. If you want to
+  make use of multiple processes, feel free to check out the sanic server
+  documentation https://sanic.readthedocs.io/en/latest/sanic/deploying.html#running-via-gunicorn

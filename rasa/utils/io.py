@@ -1,4 +1,8 @@
+import asyncio
 import io
+import logging
+import warnings
+from asyncio import AbstractEventLoop
 from typing import Text, Any, Dict
 import ruamel.yaml as yaml
 
@@ -17,6 +21,23 @@ def configure_colored_logging(loglevel):
         level_styles=level_styles,
         field_styles=field_styles,
     )
+
+
+def enable_async_loop_debugging(event_loop: AbstractEventLoop) -> AbstractEventLoop:
+    logging.info(
+        "Enabling coroutine debugging. Loop id {}.".format(id(asyncio.get_event_loop()))
+    )
+
+    # Enable debugging
+    event_loop.set_debug(True)
+
+    # Make the threshold for "slow" tasks very very small for
+    # illustration. The default is 0.1 (= 100 milliseconds).
+    event_loop.slow_callback_duration = 0.001
+
+    # Report all mistakes managing asynchronous resources.
+    warnings.simplefilter("always", ResourceWarning)
+    return event_loop
 
 
 def fix_yaml_loader() -> None:
