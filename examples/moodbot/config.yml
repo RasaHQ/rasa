@@ -1,5 +1,6 @@
-pipeline: "pretrained_embeddings_spacy"
 language: en
+
+pipeline: "pretrained_embeddings_spacy"
 
 policies:
   - name: MemoizationPolicy

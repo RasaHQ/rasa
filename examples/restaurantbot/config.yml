@@ -1,3 +1,5 @@
+language: en
+
 pipeline:
   - name: "SpacyNLP"
   - name: "SpacyTokenizer"
@@ -7,12 +9,10 @@ pipeline:
   - name: "EntitySynonymMapper"
 
 policies:
-  - name: KerasPolicy
-    epochs: 200
-    batch_size: 50
-    max_training_samples: 300
-  - name: FallbackPolicy
-  - name: MemoizationPolicy
   - name: MappingPolicy
-
-language: en
+  - name: MemoizationPolicy
+    max_history: 3
+  - name: "examples.restaurantbot.policy.RestaurantPolicy"
+    batch_size: 100
+    epochs: 400
+    validation_split: 0.2

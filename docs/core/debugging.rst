@@ -85,12 +85,6 @@ This will run through the stories of the ``concertbot`` example in
 
 .. image:: _static/images/concert_stories.png
 
-We can also run the visualisation directly from code. For this example, we can
-create a ``visualize.py`` in ``examples/concertbot`` with the following code:
-
-.. literalinclude:: ../../examples/concertbot/visualize.py
-
-Which will create the same image as the previous command.
 The graph we show here is still very simple, graphs can quickly get very complex.
 
 You can make your graph a little easier to read by replacing the user messages

@@ -1,3 +1,7 @@
+language: en
+
+pipeline: supervised_embeddings
+
 policies:
   - name: KerasPolicy
     epochs: 200
@@ -6,6 +10,3 @@ policies:
   - name: FallbackPolicy
   - name: MemoizationPolicy
   - name: MappingPolicy
-
-language: en
-pipeline: supervised_embeddings
