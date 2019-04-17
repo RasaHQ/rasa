@@ -396,14 +396,6 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-Memoization Policy
-^^^^^^^^^^^^^^^^^^
-
-The ``MemoizationPolicy`` just memorizes the conversations in your
-training data. It predicts the next action with confidence ``1.0``
-if this exact conversation exists in the training data, otherwise it
-predicts ``None`` with confidence ``0.0``.
-
 
 Form Policy
 ^^^^^^^^^^^
