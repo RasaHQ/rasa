@@ -1,4 +1,4 @@
-# Rasa Stack (Rasa Core + Rasa NLU)
+# Rasa (Rasa Core + Rasa NLU)
 
 [![Join the chat on Rasa Community Forum](https://img.shields.io/badge/forum-join%20discussions-brightgreen.svg)](https://forum.rasa.com/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![PyPI version](https://badge.fury.io/py/rasa-nlu.svg)](https://badge.fury.io/py/rasa-nlu)
@@ -38,7 +38,7 @@ There's a lot more background information in this
 
 ---
 - **What do Rasa Core & NLU do? 🤔**
-  [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
+  [Read About the Rasa](https://rasa.com/products/rasa-stack/)
 
 - **I'd like to read the detailed docs 🤓**
   [Read The Docs](https://rasa.com/docs)
@@ -47,7 +47,7 @@ There's a lot more background information in this
   [Installation](https://rasa.com/docs/core/installation/)
 
 - **I'm ready to start building! 🤖**
-  [Rasa Stack starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
+  [Rasa starter-pack](https://github.com/RasaHQ/starter-pack-rasa-stack)
 
 - **I have a question ❓**
   [Rasa Community Forum](https://forum.rasa.com)
