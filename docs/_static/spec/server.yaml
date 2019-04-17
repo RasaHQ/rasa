@@ -157,8 +157,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
-        404:
-          $ref: '#/components/responses/404InvalidParameter'
+        400:
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -187,13 +187,11 @@ paths:
         200:
           $ref: '#/components/responses/200Tracker'
         400:
-          $ref: '#/components/responses/400InvalidRequestBody'
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        404:
-          $ref: '#/components/responses/404InvalidParameter'
 
     put:
       security:
@@ -226,13 +224,11 @@ paths:
         200:
           $ref: '#/components/responses/200Tracker'
         400:
-          $ref: '#/components/responses/400InvalidRequestBody'
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        404:
-          $ref: '#/components/responses/404InvalidParameter'
 
   /conversations/{sender_id}/story:
     get:
@@ -311,12 +307,12 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/BotMessage'
+        400:
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        404:
-          $ref: '#/components/responses/404InvalidParameter'
         500:
           $ref: '#/components/responses/500ServerError'
 
@@ -408,12 +404,12 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/200Tracker'
+        400:
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        404:
-          $ref: '#/components/responses/404InvalidParameter'
         500:
           $ref: '#/components/responses/500ServerError'
 
@@ -445,13 +441,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/StackTrainingResult'
         400:
-          $ref: '#/components/responses/400Training'
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
-  /models/nlu/train:
+  /models/train/nlu:
     post:
       security:
       - TokenAuth: []
@@ -460,7 +458,7 @@ paths:
       - Model
       summary: Train a Rasa NLU model
       description: >-
-        Trains a Rasa NLU model.
+        Train a Rasa NLU model.
       parameters:
       - $ref: '#/components/parameters/model_name'
       requestBody:
@@ -468,23 +466,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StackTrainingRequest'
+              $ref: '#/components/schemas/NLUTrainingRequest'
             examples:
               StackTrainingRequest:
-                $ref: '#/components/examples/StackTrainingRequest'
+                $ref: '#/components/examples/NLUTrainingRequest'
       responses:
         200:
           description: Zipped Rasa Stack model
           content:
             application/octet-stream:
               schema:
-                $ref: '#/components/schemas/StackTrainingResult'
+                $ref: '#/components/schemas/NLUTrainingResult'
         400:
-          $ref: '#/components/responses/400Training'
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
+
 
   /models/finetune:
     post:
@@ -495,7 +496,8 @@ paths:
       - Model
       summary: Fintune ML model
       description: >-
-        Continue the ML training of a model on the provided events.
+        Continue the ML training of a stacked model on the provided
+        events.
         **Fine tuning only works, if the model has been trained in
         memory before. It does not work if the model was persisted
         and loaded again.**
@@ -517,13 +519,13 @@ paths:
         204:
           description: Model was successfully finetuned.
         400:
-          $ref: '#/components/responses/400Events'
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
         500:
-          $ref: '#/components/responses/500Action'
+          $ref: '#/components/responses/500ServerError'
 
   /models/evaluate/stories:
     post:
@@ -534,8 +536,8 @@ paths:
       - Model
       summary: Evaluate stories
       description: >-
-        Evaluates one or multiple stories against the currently loaded stack model.
-      operationId: evaluateStories
+        Evaluates one or multiple stories against the currently
+        loaded stacked model.
       parameters:
       - $ref: '#/components/parameters/e2e'
       requestBody:
@@ -562,11 +564,13 @@ paths:
                 PredictResult:
                   $ref: '#/components/examples/EvaluationResult'
         400:
-          $ref: '#/components/responses/400Evaluation'
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
   /models/evaluate/intents:
     post:
@@ -598,11 +602,13 @@ paths:
                 IntentEvaluation:
                   $ref: '#/components/examples/IntentEvaluationResult'
         400:
-          $ref: '#/components/responses/400IntentEvaluation'
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
   /models/predict:
     post:
@@ -614,7 +620,7 @@ paths:
       summary: Predict an action on a temporary state
       description: >-
         Predicts the next action on the tracker state as it is
-        posted to this endpoint. Core will create a temporary
+        posted to this endpoint. Rasa will create a temporary
         tracker from the provided events and will use it to
         predict an action. No messages will be sent and no
         action will be run.
@@ -649,14 +655,14 @@ paths:
               examples:
                 PredictResult:
                   $ref: '#/components/examples/PredictResult'
+        400:
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
-        404:
-          $ref: '#/components/responses/404InvalidParameter'
         500:
-          $ref: '#/components/responses/500Action'
+          $ref: '#/components/responses/500ServerError'
 
   /models/parse:
     post:
@@ -665,7 +671,7 @@ paths:
       - JWT: []
       tags:
       - Model
-      summary: Parse a message using the loaded NLU model
+      summary: Parse a message using the stacked or NLU model.
       description: >-
         Predicts the intent and entities of the message
         posted to this endpoint. No messages will be stored
@@ -693,8 +699,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ParseData'
-        404:
-          $ref: '#/components/responses/404InvalidModel'
+        400:
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
@@ -712,8 +718,8 @@ paths:
       summary: Replace a trained model
       description: >-
         Upload a trained model to the server. The server
-        will unzip the uploaded file and try to load the model
-        this will replace the previously loaded model.
+        will unzip the uploaded file and try to load the model.
+        This will replace the previously loaded model.
       parameters:
       - $ref: '#/components/parameters/model_type'
       requestBody:
@@ -729,22 +735,13 @@ paths:
         204:
           description: Success
         400:
-          description: No Model
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                version: "0.12.0"
-                status: "failure"
-                message: >-
-                  No agent loaded.
-                reason: "NoAgent"
-                code: 400
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
     delete:
       security:
@@ -762,35 +759,25 @@ paths:
         204:
           description: Success
         400:
-          description: No Model
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                version: "0.12.0"
-                status: "failure"
-                message: >-
-                  No agent loaded.
-                reason: "NoAgent"
-                code: 400
+          $ref: '#/components/responses/400BadRequest'
         401:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
-  /domain:
+  domain:
     get:
       security:
       - TokenAuth: []
       - JWT: []
       tags:
       - Domain
-      summary: Retrieve the loaded domain
+      summary: Retrieve the loaded domain.
       description: >-
-        Return the domain specification the currently loaded model
-        is using.
-      operationId: getDomain
+        Return the domain specification the currently loaded
+        stacked model is using.
       responses:
         200:
           description: Success
@@ -805,6 +792,8 @@ paths:
           $ref: '#/components/responses/401NotAuthenticated'
         403:
           $ref: '#/components/responses/403NotAuthorized'
+        500:
+          $ref: '#/components/responses/500ServerError'
 
 
 components:
@@ -829,12 +818,10 @@ components:
       description: Type of model
       schema:
         type: string
-        default: NLU
         enum:
           - NLU
           - STACK
-          - CORE
-      required: false
+      required: true
     model_name:
       in: query
       name: model_name
@@ -963,8 +950,8 @@ components:
             [Indian](cuisine) restaurant for [two](people) people
              - utter_on_it
              - utter_ask_location
-    400InvalidRequestBody:
-      description: Invalid Request Body
+    400BadRequest:
+      description: Bad Request
       content:
         application/json:
           schema:
@@ -972,61 +959,7 @@ components:
           example:
             version: "0.12.0"
             status: "failure"
-            message: >-
-              Could not extract a proper event from the request body.
-            reason: "InvalidRequestBody"
-            code: 400
-    400Events:
-      description: Invalid Events
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "failure"
-            message: >-
-              Supplied events are not valid.
-            reason: "InvalidParameter"
-            code: 400
-    400Evaluation:
-      description: Failed Evaluation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "failure"
-            message: >-
-              Evaluation could not be created.
-            reason: "FailedEvaluation"
-            code: 400
-    400IntentEvaluation:
-      description: Failed intent evaluation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "failure"
-            message: >-
-              Evaluation could not be created.
-            reason: "FailedIntentEvaluation"
-            code: 400
-    400Training:
-      description: Failed Training
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "failure"
-            message: >-
-              Rasa Stack model could not be trained.
-            reason: "TrainingError"
+            reason: "BadRequest"
             code: 400
     401NotAuthenticated:
       description: User is not authenticated.
@@ -1054,45 +987,6 @@ components:
             message: >-
               User has insufficient permission to access resource.
             code: 403
-    404InvalidModel:
-      description: Invalid model provided.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "InvalidModel"
-            message: >-
-              Provided model is invalid.
-            code: 404
-    404InvalidParameter:
-      description: Invalid request parameter
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "failure"
-            message: >-
-              Invalid parameter value for 'include_events'.
-              Should be one of ALL, AFTER_RESTART, APPLIED, NONE
-            reason: "InvalidParameter"
-            code: 400
-    500Action:
-      description: Action Exception
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            version: "0.12.0"
-            status: "failure"
-            message: >-
-              An exception occurred while running the action
-            reason: "ActionException"
-            code: 500
     500ServerError:
       description: An unexpected error occurred.
       content:
@@ -1511,6 +1405,21 @@ components:
         properties:
           use_entities:
             type: boolean
+    NLUTrainingRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          description: Data for training
+        language:
+          type: string
+          description: Language of the data
+        pipeline:
+          type: string
+          description: Pipeline used for training
+    NLUTrainingResult:
+      type: string
+      format: binary
 
 
   examples:
@@ -1740,3 +1649,13 @@ components:
           * mood_unhappy
         out: models
         force: false
+    NLUTrainingRequest:
+      value:
+        language: "en"
+        pipeline: "spacy_sklearn"
+        data:
+          rasa_nlu_data:
+            common_examples:
+              text: hey
+              intent: greet
+              entities: []
