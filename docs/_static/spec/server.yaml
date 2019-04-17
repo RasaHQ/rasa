@@ -476,37 +476,6 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /models/finetune:
-    post:
-      security:
-      - TokenAuth: []
-      - JWT: []
-      tags:
-      - Model
-      summary: Fintune ML model
-      description: >-
-        Continue the ML training of a stacked model on the provided
-        events.
-        **Fine tuning only works, if the model has been trained in
-        memory before. It does not work if the model was persisted
-        and loaded again.**
-      parameters:
-      - $ref: '#/components/parameters/epochs'
-      - $ref: '#/components/parameters/batch_size'
-      requestBody:
-        $ref: '#/components/requestBodies/EventList'
-      responses:
-        204:
-          description: Model was successfully finetuned.
-        400:
-          $ref: '#/components/responses/400BadRequest'
-        401:
-          $ref: '#/components/responses/401NotAuthenticated'
-        403:
-          $ref: '#/components/responses/403NotAuthorized'
-        500:
-          $ref: '#/components/responses/500ServerError'
-
   /models/evaluate/stories:
     post:
       security:
