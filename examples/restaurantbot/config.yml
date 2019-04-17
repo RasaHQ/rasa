@@ -1,3 +1,5 @@
+language: en
+
 pipeline:
   - name: "SpacyNLP"
   - name: "SpacyTokenizer"
@@ -14,5 +16,3 @@ policies:
     batch_size: 100
     epochs: 400
     validation_split: 0.2
-
-language: en

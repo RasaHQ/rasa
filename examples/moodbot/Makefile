@@ -23,25 +23,25 @@ train-interactive:
 	rasa interactive core -d domain.yml -m models -c config.yml --data data
 
 run-fb:
-	rasa shell core -m models -p 5002 -c facebook --credentials credentials.yml
+	rasa run core -m models -p 5002 -c facebook --credentials credentials.yml
 
 run-slack:
-	rasa shell core -m models -p 5002 -c slack --credentials credentials.yml
+	rasa run core -m models -p 5002 -c slack --credentials credentials.yml
 
 run-telegram:
-	rasa shell core -m models -p 5002 -c telegram --credentials credentials.yml
+	rasa run core -m models -p 5002 -c telegram --credentials credentials.yml
 
 run-rocketchat:
-	rasa shell core -m models -p 5002 -c rocketchat --credentials credentials.yml
+	rasa run core -m models -p 5002 -c rocketchat --credentials credentials.yml
 
 run-mattermost:
-	rasa shell core -m models -p 5002 -c mattermost --credentials credentials.yml
+	rasa run core -m models -p 5002 -c mattermost --credentials credentials.yml
 
 run-twilio:
-	rasa shell core -m models -p 5002 -c twilio --credentials credentials.yml
+	rasa run core -m models -p 5002 -c twilio --credentials credentials.yml
 
 run-webexteams:
-	rasa shell core -m models -p 5002 -c webexteams --credentials credentials.yml
+	rasa run core -m models -p 5002 -c webexteams --credentials credentials.yml
 
 run-cmdline:
 	rasa shell -m models

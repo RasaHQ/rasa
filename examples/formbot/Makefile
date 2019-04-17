@@ -1,6 +1,6 @@
 help:
 	@echo "    train"
-	@echo "        Train a stacked model using Rasa core and NLU."
+	@echo "        Train a stacked model using Rasa Ccore and NLU."
 	@echo "    run"
 	@echo "        Spin up both core and the action server"
 	@echo "    visualize"
