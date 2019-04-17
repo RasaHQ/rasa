@@ -10,9 +10,6 @@ from tests.conftest import (
     DEFAULT_STORIES_FILE, E2E_STORY_FILE_UNKNOWN_ENTITY, END_TO_END_STORY_FILE)
 
 
-# from tests.conftest import E2E_STORY_FILE_UNKNOWN_ENTITY
-
-
 def test_evaluation_image_creation(tmpdir, default_agent):
     stories_path = os.path.join(tmpdir.strpath, "failed_stories.md")
     img_path = os.path.join(tmpdir.strpath, "story_confmat.pdf")

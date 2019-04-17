@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from httpretty import httpretty
 
@@ -574,14 +575,10 @@ def test_slackbot_init_two_parameter():
 
 
 # Use monkeypatch for sending attachments, images and plain text.
-<<<<<<< HEAD
-def test_slackbot_send_attachment_only():
-=======
 @pytest.mark.filterwarnings("ignore:"
                             "unclosed.*:"
                             "ResourceWarning")
-async def test_slackbot_send_attachment_only():
->>>>>>> a52310c176... ignore unecessary warnings
+def test_slackbot_send_attachment_only():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
@@ -622,14 +619,10 @@ async def test_slackbot_send_attachment_only():
                              'attachments': [attachment]}
 
 
-<<<<<<< HEAD
-def test_slackbot_send_attachment_withtext():
-=======
 @pytest.mark.filterwarnings("ignore:"
                             "unclosed.*:"
                             "ResourceWarning")
-async def test_slackbot_send_attachment_withtext():
->>>>>>> a52310c176... ignore unecessary warnings
+def test_slackbot_send_attachment_withtext():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
@@ -673,14 +666,10 @@ async def test_slackbot_send_attachment_withtext():
                              'attachments': [attachment]}
 
 
-<<<<<<< HEAD
-def test_slackbot_send_image_url():
-=======
 @pytest.mark.filterwarnings("ignore:"
                             "unclosed.*:"
                             "ResourceWarning")
-async def test_slackbot_send_image_url():
->>>>>>> a52310c176... ignore unecessary warnings
+def test_slackbot_send_image_url():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
@@ -705,14 +694,10 @@ async def test_slackbot_send_image_url():
            in r.parsed_body['attachments'][0]
 
 
-<<<<<<< HEAD
-def test_slackbot_send_text():
-=======
 @pytest.mark.filterwarnings("ignore:"
                             "unclosed.*:"
                             "ResourceWarning")
-async def test_slackbot_send_text():
->>>>>>> a52310c176... ignore unecessary warnings
+def test_slackbot_send_text():
     from rasa_core.channels.slack import SlackBot
 
     httpretty.register_uri(httpretty.POST,
