@@ -13,7 +13,7 @@ servers:
 x-reuse:
   tracker:
     &tracker-example
-    sender_id: default
+    conversation_id: default
     latest_event_time: 1537645578.314389
     latest_input_channel: rest
     paused: false
@@ -137,7 +137,7 @@ paths:
           $ref: '#/components/responses/403NotAuthorized'
 
 
-  /conversations/{sender_id}/tracker:
+  /conversations/{conversation_id}/tracker:
     get:
       security:
       - TokenAuth: []
@@ -151,7 +151,7 @@ paths:
         sequence of events, which modify the state. These
         events can optionally be included in the response.
       parameters:
-      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
       - $ref: '#/components/parameters/until'
       responses:
@@ -166,7 +166,7 @@ paths:
         503:
           $ref: '#/components/responses/503ServiceUnavailable'
 
-  /conversations/{sender_id}/tracker/events:
+  /conversations/{conversation_id}/tracker/events:
     post:
       security:
       - TokenAuth: []
@@ -179,7 +179,7 @@ paths:
         Any existing events will be kept and the new events will be
         appended, updating the existing state.
       parameters:
-      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
       requestBody:
         $ref: '#/components/requestBodies/Event'
@@ -206,7 +206,7 @@ paths:
         modify trackers in a production setup, but rather
         for creating training data.
       parameters:
-      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
       requestBody:
         $ref: '#/components/requestBodies/EventList'
@@ -220,7 +220,7 @@ paths:
         403:
           $ref: '#/components/responses/403NotAuthorized'
 
-  /conversations/{sender_id}/story:
+  /conversations/{conversation_id}/story:
     get:
       security:
       - TokenAuth: []
@@ -233,7 +233,7 @@ paths:
         format. This can be posted to the /evaluate endpoint and used
         as a test.
       parameters:
-      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/until'
       responses:
         200:
@@ -245,7 +245,7 @@ paths:
         503:
           $ref: '#/components/responses/503ServiceUnavailable'
 
-  /conversations/{sender_id}/execute:
+  /conversations/{conversation_id}/execute:
     post:
       security:
       - TokenAuth: []
@@ -259,7 +259,7 @@ paths:
         part of the endpoints result, they will not be sent over a
         connected output channel.
       parameters:
-      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
       requestBody:
         required: true
@@ -306,7 +306,7 @@ paths:
         500:
           $ref: '#/components/responses/500ServerError'
 
-  /conversations/{sender_id}/predict:
+  /conversations/{conversation_id}/predict:
     post:
       security:
       - TokenAuth: []
@@ -321,7 +321,7 @@ paths:
         'scores' array, sorted on their 'score' values.
         The state of the tracker is not modified.
       parameters:
-      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/conversation_id'
       responses:
         200:
           description: Success
@@ -340,7 +340,7 @@ paths:
           $ref: '#/components/responses/500ServerError'
 
 
-  /conversations/{sender_id}/messages:
+  /conversations/{conversation_id}/messages:
     post:
       security:
       - TokenAuth: []
@@ -355,7 +355,7 @@ paths:
         predicted or run. This is often used together with the
         predict endpoint.
       parameters:
-      - $ref: '#/components/parameters/sender_id'
+      - $ref: '#/components/parameters/conversation_id'
       - $ref: '#/components/parameters/include_events'
       requestBody:
         required: true
@@ -475,7 +475,6 @@ paths:
           $ref: '#/components/responses/403NotAuthorized'
         500:
           $ref: '#/components/responses/500ServerError'
-
 
   /models/finetune:
     post:
@@ -793,9 +792,9 @@ components:
       schema:
         type: string
       required: false
-    sender_id:
+    conversation_id:
       in: path
-      name: sender_id
+      name: conversation_id
       example: default
       description: Id of the conversation
       schema:
@@ -1104,7 +1103,7 @@ components:
       type: object
       description: Conversation tracker which stores the conversation state.
       properties:
-        sender_id:
+        conversation_id:
           type: string
           description: Id of the conversation
         slots:
