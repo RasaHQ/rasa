@@ -259,7 +259,6 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
 
 
 def test_unintentional_synonyms_capitalized(component_builder):
-
     _config = utilities.base_test_conf("pretrained_embeddings_spacy")
     ner_syn = component_builder.create_component(_config.for_component(5), _config)
     examples = [
@@ -291,13 +290,14 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
     _config = RasaNLUModelConfig({"pipeline": [{"name": "SpacyEntityExtractor"}]})
     ext = component_builder.create_component(_config.for_component(0), _config)
     example = Message(
-        "anywhere in the West",
+        "anywhere in the U.K.",
         {
             "intent": "restaurant_search",
             "entities": [],
             "spacy_doc": spacy_nlp("anywhere in the west"),
         },
     )
+
     ext.process(example, spacy_nlp=spacy_nlp)
 
     assert len(example.get("entities", [])) == 1
@@ -305,8 +305,8 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
         "start": 16,
         "extractor": "SpacyEntityExtractor",
         "end": 20,
-        "value": "West",
-        "entity": "LOC",
+        "value": "U.K.",
+        "entity": "GPE",
         "confidence": None,
     }
 
@@ -321,6 +321,7 @@ def test_spacy_ner_extractor(component_builder, spacy_nlp):
         },
     )
     _config = RasaNLUModelConfig({"pipeline": [{"name": "SpacyEntityExtractor"}]})
+
     _config.set_component_attr(0, dimensions=["PERSON"])
     ext = component_builder.create_component(_config.for_component(0), _config)
     ext.process(example, spacy_nlp=spacy_nlp)

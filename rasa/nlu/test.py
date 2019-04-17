@@ -6,7 +6,7 @@ import os
 import logging
 import numpy as np
 import shutil
-from typing import List, Optional, Text, Union
+from typing import List, Optional, Text, Union, Dict
 from tqdm import tqdm
 
 from rasa.nlu import config, training_data, utils
@@ -857,7 +857,7 @@ def run_evaluation(
     confmat_filename=None,
     intent_hist_filename=None,
     component_builder=None,
-):  # pragma: no cover
+) -> Dict:  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
 
     # get the metadata config from the package data
