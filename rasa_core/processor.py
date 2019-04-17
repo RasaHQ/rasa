@@ -15,7 +15,6 @@ from rasa_core.actions.action import (
     ActionExecutionRejection)
 from rasa_core.channels import CollectingOutputChannel, UserMessage
 from rasa_core.constants import (
-    ACTION_NAME_SENDER_ID_CONNECTOR_STR,
     USER_INTENT_RESTART)
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
