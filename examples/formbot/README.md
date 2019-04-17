@@ -25,13 +25,12 @@ Using this example you can build an actual assistant which demonstrates the
 functionality of the FormAction. You can use the example using the following 
 steps:
 
-1. Train the Rasa NLU and Rasa Core model by running:  
-```make train```  
-This will train the Rasa NLU model and Rasa Core model.
-The models will be stored in the `/models` directory.
+1. Train a stacked model containing the Rasa NLU and Rasa Core models by running:
+```make train```
+The model will be stored in the `/models` directory as a zipped file.
 
-2. Test the assistant by running:  
-```make run```  
+2. Test the assistant by running:
+```make run```
 This will load the assistant in your command line for you to chat.
 
 

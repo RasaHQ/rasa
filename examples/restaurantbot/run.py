@@ -89,7 +89,7 @@ if __name__ == "__main__":
     parse_parser = subparser.add_parser("parse", help="parse any text")
 
     parse_parser.add_argument(
-        "--nlu-model", default="models/nlu", help="Path to the nlu model."
+        "--nlu-model", default=None, help="Path to the nlu model."
     )
     parse_parser.add_argument(
         "--core-model", default="models/core", help="Path to the core model."

@@ -6,7 +6,7 @@ help:
 	@echo "    run-core"
 	@echo "        Runs the core server."
 	@echo "    train"
-	@echo "        Train a stacked model using Rasa core & NLU."
+	@echo "        Train a stacked model using Rasa Core & NLU."
 
 run:
 	make run-actions&
