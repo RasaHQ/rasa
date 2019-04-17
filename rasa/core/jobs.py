@@ -21,14 +21,17 @@ async def scheduler() -> AsyncIOScheduler:
             __scheduler = AsyncIOScheduler(event_loop=asyncio.get_event_loop())
             __scheduler.start()
             return __scheduler
-        except UnknownTimeZoneError as e:
-            logger.warn("apscheduler could not find a timezone and is "
-                        "defaulting to utc. This is probably because "
-                        "your system timezone is not set. "
-                        "Set it with e.g. echo \"Europe/Berlin\" > "
-                        "/etc/timezone") from e
-            __scheduler = AsyncIOScheduler(event_loop=asyncio.get_event_loop(),
-                                           timezone=utc)
+        except UnknownTimeZoneError:
+            logger.warning(
+                "apscheduler could not find a timezone and is "
+                "defaulting to utc. This is probably because "
+                "your system timezone is not set. "
+                'Set it with e.g. echo "Europe/Berlin" > '
+                "/etc/timezone"
+            )
+            __scheduler = AsyncIOScheduler(
+                event_loop=asyncio.get_event_loop(), timezone=utc
+            )
             __scheduler.start()
             return __scheduler
     else:
