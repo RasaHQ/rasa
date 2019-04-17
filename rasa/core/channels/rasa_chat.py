@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class RasaChatInput(RestInput):
-    """Chat input channel for Rasa Platform"""
+    """Chat input channel for Rasa X"""
 
     @classmethod
     def name(cls):
@@ -45,7 +45,7 @@ class RasaChatInput(RestInput):
                     return None
 
     async def _extract_sender(self, req):
-        """Fetch user from the Rasa Platform Admin API"""
+        """Fetch user from the Rasa X Admin API"""
 
         if req.headers.get("Authorization"):
             user = await self._check_token(req.headers.get("Authorization"))

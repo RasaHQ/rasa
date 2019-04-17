@@ -5,13 +5,14 @@ import sys
 from multiprocessing import Process
 from typing import List, Text
 
+import rasa.cli.run
+
 
 # noinspection PyProtectedMember
 def add_subparser(
     subparsers: argparse._SubParsersAction, parents: List[argparse.ArgumentParser]
 ):
     from rasa.core import cli
-    import rasa
 
     shell_parser = subparsers.add_parser(
         "up",
@@ -159,8 +160,8 @@ def up(args: argparse.Namespace):
             from rasa_platform.api.local import main_local
         except ImportError as e:
             print_error(
-                "Rasa Platform is not installed. The `rasa up` "
-                "command requires an installation of Rasa Platform."
+                "Rasa X is not installed. The `rasa up` "
+                "command requires an installation of Rasa X."
                 "Error:\n{}".format(e)
             )
             sys.exit()
