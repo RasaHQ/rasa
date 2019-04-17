@@ -26,6 +26,10 @@ Added
 - **support for python 3.7**
 - ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
   access to message triggering the form
+- ``MappingPolicy`` which can be used to directly map an intent to an action
+  by adding the `maps_to` keyword to an intent in the domain.
+- default action ``action_back``, which when triggered with ``/back`` allows
+  the user to undo their previous message
 
 Changed
 -------

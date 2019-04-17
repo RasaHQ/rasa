@@ -1,9 +1,10 @@
-import typing
-
 import collections
 import json
 import logging
 import os
+import typing
+from typing import Any, Dict, List, Optional, Text, Tuple
+
 import pkg_resources
 from pykwalify.errors import SchemaError
 
@@ -12,8 +13,7 @@ from rasa_core.actions import Action, action
 from rasa_core.constants import REQUESTED_SLOT
 from rasa_core.slots import Slot, UnfeaturizedSlot
 from rasa_core.trackers import SlotSet
-from rasa_core.utils import read_file, read_yaml_string, EndpointConfig
-from typing import Dict, Any, Tuple, List, Optional, Text
+from rasa_core.utils import EndpointConfig, read_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
 
@@ -37,37 +37,74 @@ def check_domain_sanity(domain):
 
     def get_duplicates(my_items):
         """Returns a list of duplicate items in my_items."""
+
         return [item
                 for item, count in collections.Counter(my_items).items()
                 if count > 1]
 
+    def check_mappings(intent_properties):
+        """Check whether intent-action mappings use proper action names."""
+
+        incorrect = list()
+        for intent, properties in intent_properties.items():
+            if 'triggers' in properties:
+                if properties.get('triggers') not in domain.action_names:
+                    incorrect.append((intent, properties['triggers']))
+        return incorrect
+
     def get_exception_message(
-        duplicates: List[Tuple[List[Text], Text]]
-    ) -> Text:
+            duplicates: Optional[List[Tuple[List[Text], Text]]] = None,
+            mappings: List[Tuple[Text, Text]] = None):
         """Return a message given a list of error locations."""
 
-        msg = ""
+        message = ""
+        if duplicates:
+            message += get_duplicate_exception_message(duplicates)
+        if mappings:
+            if message:
+                message += "\n"
+            message += get_mapping_exception_message(mappings)
+        return message
+
+    def get_mapping_exception_message(mappings: List[Tuple[Text, Text]]):
+        """Return a message given a list of duplicates."""
+
+        message = ""
+        for name, action_name in mappings:
+            if message:
+                message += "\n"
+            message += ("Intent '{}' is set to trigger action '{}', which is "
+                        "not defined in the domain.".format(name, action_name))
+        return message
+
+    def get_duplicate_exception_message(
+        duplicates: List[Tuple[List[Text], Text]]
+    ) -> Text:
+        """Return a message given a list of duplicates."""
+
+        message = ""
         for d, name in duplicates:
             if d:
-                if msg:
-                    msg += "\n"
-                msg += ("Duplicate {0} in domain. "
-                        "These {0} occur more than once in "
-                        "the domain: {1}".format(name, ", ".join(d)))
-        return msg
+                if message:
+                    message += "\n"
+                message += ("Duplicate {0} in domain. "
+                            "These {0} occur more than once in "
+                            "the domain: {1}".format(name, ", ".join(d)))
+        return message
 
-    duplicate_actions = get_duplicates(domain.action_names[:])
-    duplicate_intents = get_duplicates(domain.intents[:])
+    duplicate_actions = get_duplicates(domain.action_names)
+    duplicate_intents = get_duplicates(domain.intents)
     duplicate_slots = get_duplicates([s.name for s in domain.slots])
-    duplicate_entities = get_duplicates(domain.entities[:])
+    duplicate_entities = get_duplicates(domain.entities)
+    incorrect_mappings = check_mappings(domain.intent_properties)
 
-    if (duplicate_actions or duplicate_intents or
-            duplicate_slots or duplicate_entities):
+    if (duplicate_actions or duplicate_intents or duplicate_slots or
+            duplicate_entities or incorrect_mappings):
         raise InvalidDomain(get_exception_message([
             (duplicate_actions, "actions"),
             (duplicate_intents, "intents"),
             (duplicate_slots, "slots"),
-            (duplicate_entities, "entities")]))
+            (duplicate_entities, "entities")], incorrect_mappings))
 
 
 class Domain(object):
@@ -193,9 +230,13 @@ class Domain(object):
         intent_properties = {}
         for intent in intent_list:
             if isinstance(intent, dict):
+                for properties in intent.values():
+                    if 'use_entities' not in properties:
+                        properties['use_entities'] = True
                 intent_properties.update(intent)
             else:
-                intent_properties.update({intent: {'use_entities': True}})
+                intent = {intent: {'use_entities': True}}
+                intent_properties.update(intent)
         return intent_properties
 
     @staticmethod
@@ -228,8 +269,7 @@ class Domain(object):
                  templates: Dict[Text, Any],
                  action_names: List[Text],
                  form_names: List[Text],
-                 store_entities_as_slots: bool = True,
-                 restart_intent="restart"  # type: Text
+                 store_entities_as_slots: bool = True
                  ) -> None:
 
         self.intent_properties = intent_properties
@@ -244,7 +284,6 @@ class Domain(object):
         self.action_names = action.combine_user_with_default_actions(
             action_names) + form_names
         self.store_entities_as_slots = store_entities_as_slots
-        self.restart_intent = restart_intent
 
         action.ensure_action_name_uniqueness(self.action_names)
 

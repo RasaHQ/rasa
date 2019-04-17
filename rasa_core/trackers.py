@@ -423,7 +423,7 @@ class DialogueStateTracker(object):
     def get_last_event_for(self,
                            event_type: Type[Event],
                            action_names_to_exclude: List[Text] = None,
-                           skip: int = 0) -> Optional[Any]:
+                           skip: int = 0) -> Optional[Event]:
         """Gets the last event of a given type which was actually applied.
 
         Args:

@@ -1,14 +1,13 @@
 import os
 
-from rasa_core.test import (
-    test,
-    _generate_trackers,
-    collect_story_predictions)
-from tests.conftest import (DEFAULT_STORIES_FILE, END_TO_END_STORY_FILE,
-                            E2E_STORY_FILE_UNKNOWN_ENTITY)
+import pytest
+# we need this import to ignore the warning...
+# noinspection PyUnresolvedReferences
+from sklearn.exceptions import UndefinedMetricWarning
 
-
-# from tests.conftest import E2E_STORY_FILE_UNKNOWN_ENTITY
+from rasa_core.test import (_generate_trackers, collect_story_predictions, test)
+from tests.conftest import (
+    DEFAULT_STORIES_FILE, E2E_STORY_FILE_UNKNOWN_ENTITY, END_TO_END_STORY_FILE)
 
 
 def test_evaluation_image_creation(tmpdir, default_agent):

@@ -398,8 +398,12 @@ def collect_story_predictions(
             correct_dialogues.append(1)
 
     logger.info("Finished collecting predictions.")
-    report, precision, f1, accuracy = get_evaluation_metrics(
-        [1] * len(completed_trackers), correct_dialogues)
+    with warnings.catch_warnings():
+        from sklearn.exceptions import UndefinedMetricWarning
+
+        warnings.simplefilter("ignore", UndefinedMetricWarning)
+        report, precision, f1, accuracy = get_evaluation_metrics(
+            [1] * len(completed_trackers), correct_dialogues)
 
     in_training_data_fraction = _in_training_data_fraction(action_list)
 
