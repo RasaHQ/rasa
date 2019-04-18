@@ -610,11 +610,8 @@ class Agent(object):
         route: Text = "/webhooks/",
         cors=None,
     ) -> "Sanic":
-        """Start a webserver attaching the input channels and handling msgs.
+        """Start a webserver attaching the input channels and handling msgs."""
 
-        If ``serve_forever`` is set to ``True``, this call will be blocking.
-        Otherwise the webserver will be started, and the method will
-        return afterwards."""
         from rasa.core import run
 
         app = run.configure_app(channels, cors, None, enable_api=False, route=route)

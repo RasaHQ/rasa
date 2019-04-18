@@ -452,10 +452,9 @@ class MessageProcessor(object):
     ) -> None:
 
         if dispatcher.latest_bot_messages:
-            for m in dispatcher.latest_bot_messages:
-                bot_utterance = BotUttered(text=m.text, data=m.data)
-                logger.debug("Bot utterance '{}'".format(bot_utterance))
-                tracker.update(bot_utterance)
+            for message in dispatcher.latest_bot_messages:
+                logger.debug("Bot utterance '{}'".format(message))
+                tracker.update(message)
 
             dispatcher.latest_bot_messages = []
 

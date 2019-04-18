@@ -5,6 +5,7 @@ import typing
 from typing import Text, List, Dict, Any
 
 from rasa.core.channels import OutputChannel
+from rasa.core.events import BotUttered
 from rasa.core.nlg import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
@@ -22,10 +23,6 @@ class Element(dict):
         }
 
         super(Element, self).__init__(*args, **kwargs)
-
-
-# Makes a named tuple with entries text and data
-BotMessage = namedtuple("BotMessage", "text data")
 
 
 class Button(dict):
@@ -50,7 +47,7 @@ class Dispatcher(object):
     async def utter_response(self, message: Dict[Text, Any]) -> None:
         """Send a message to the client."""
 
-        bot_message = BotMessage(
+        bot_message = BotUttered(
             text=message.get("text"),
             data={
                 "elements": message.get("elements"),
@@ -65,7 +62,7 @@ class Dispatcher(object):
     async def utter_message(self, text: Text) -> None:
         """"Send a text to the output channel"""
         # Adding the text to the latest bot messages (with no data)
-        bot_message = BotMessage(text=text, data=None)
+        bot_message = BotUttered(text=text, data=None)
 
         self.latest_bot_messages.append(bot_message)
         await self.output_channel.send_text_message(self.sender_id, text)
@@ -73,7 +70,7 @@ class Dispatcher(object):
     async def utter_custom_message(self, *elements: Dict[Text, Any]) -> None:
         """Sends a message with custom elements to the output channel."""
 
-        bot_message = BotMessage(text=None, data={"elements": elements})
+        bot_message = BotUttered(text=None, data={"elements": elements})
 
         self.latest_bot_messages.append(bot_message)
         await self.output_channel.send_custom_message(self.sender_id, elements)
@@ -83,7 +80,7 @@ class Dispatcher(object):
     ) -> None:
         """Sends a message with buttons to the output channel."""
         # Adding the text and data (buttons) to the latest bot messages
-        bot_message = BotMessage(text=text, data={"buttons": buttons})
+        bot_message = BotUttered(text=text, data={"buttons": buttons})
 
         self.latest_bot_messages.append(bot_message)
         await self.output_channel.send_text_with_buttons(
@@ -92,7 +89,7 @@ class Dispatcher(object):
 
     async def utter_attachment(self, attachment: Text) -> None:
         """Send a message to the client with attachments."""
-        bot_message = BotMessage(text=None, data={"attachment": attachment})
+        bot_message = BotUttered(text=None, data={"attachment": attachment})
 
         self.latest_bot_messages.append(bot_message)
         await self.output_channel.send_image_url(self.sender_id, attachment)
