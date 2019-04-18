@@ -288,6 +288,9 @@ class MessageProcessor(object):
         for e in self.domain.slots_for_entities(parse_data["entities"]):
             tracker.update(e)
 
+        if parse_data["entities"]:
+            self._log_slots(tracker)
+
         logger.debug(
             "Logged UserUtterance - "
             "tracker now has {} events".format(len(tracker.events))
@@ -313,8 +316,6 @@ class MessageProcessor(object):
 
         # this will actually send the response to the user
         dispatcher = Dispatcher(message.sender_id, message.output_channel, self.nlg)
-
-        self._log_slots(tracker)
 
         # action loop. predicts actions until we hit action listen
         while (
@@ -411,6 +412,10 @@ class MessageProcessor(object):
             events = []
 
         self._log_action_on_tracker(tracker, action.name(), events, policy, confidence)
+
+        if action.name() != "action_listen" and "utter_" not in action.name():
+            self._log_slots(tracker)
+
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
 
         await self._schedule_reminders(events, tracker, dispatcher)

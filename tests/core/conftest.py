@@ -5,6 +5,7 @@ from typing import Text
 import matplotlib
 import pytest
 
+import rasa.utils.io
 from rasa.core import server, train, utils
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, channel
@@ -75,7 +76,7 @@ class ExamplePolicy(Policy):
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
 
-    return utils.enable_async_loop_debugging(next(sanic_loop()))
+    return rasa.utils.io.enable_async_loop_debugging(next(sanic_loop()))
 
 
 @pytest.fixture(scope="session")

@@ -1,6 +1,8 @@
 import aiohttp
 from typing import Any, Optional, Text, Dict
 
+from sanic.request import Request
+
 import rasa.utils.io
 from rasa.constants import DEFAULT_REQUEST_TIMEOUT
 
