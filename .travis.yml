@@ -82,16 +82,6 @@ jobs:
     after_success:
     - coveralls
   - stage: test
-    if: fork = false
-    name: Check Dependency Licenses
-    before_script:
-    - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
-    script:
-    - pip freeze > requirements.txt
-    - fossa init
-    - fossa analyze
-    - fossa test
-  - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "NLU starter pack (NLU only)"
     python: 3.6
