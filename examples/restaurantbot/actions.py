@@ -1,6 +1,10 @@
 from rasa_core_sdk import Action
 from rasa_core_sdk.events import SlotSet
-from bot import RestaurantAPI
+
+
+class RestaurantAPI(object):
+    def search(self, info):
+        return "papi's pizza place"
 
 
 class ActionSearchRestaurants(Action):
