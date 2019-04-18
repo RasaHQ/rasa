@@ -372,8 +372,7 @@ class SQLTrackerStore(TrackerStore):
             try:
                 cursor.execute("CREATE DATABASE {}".format(db_name))
             except psycopg2.IntegrityError as e:
-                logger.debug("Could not create database '{}': {}"
-                             "".format(db_name, e))
+                logger.debug("Could not create database '{}': {}" "".format(db_name, e))
 
         cursor.close()
         conn.close()
