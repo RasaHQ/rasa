@@ -7,21 +7,23 @@ class LUISEmulator(NoEmulator):
     def __init__(self) -> None:
 
         super(LUISEmulator, self).__init__()
-        self.name = 'luis'
+        self.name = "luis"
 
     def _top_intent(self, data):
         if data.get("intent"):
             return {
                 "intent": data["intent"]["name"],
-                "score": data["intent"]["confidence"]
+                "score": data["intent"]["confidence"],
             }
         else:
             return None
 
     def _ranking(self, data):
         if data.get("intent_ranking"):
-            return [{"intent": el["name"], "score": el["confidence"]}
-                    for el in data["intent_ranking"]]
+            return [
+                {"intent": el["name"], "score": el["confidence"]}
+                for el in data["intent_ranking"]
+            ]
         else:
             top = self._top_intent(data)
             return [top] if top else []
@@ -41,7 +43,10 @@ class LUISEmulator(NoEmulator):
                     "type": e["entity"],
                     "startIndex": e.get("start"),
                     "endIndex": (e["end"] - 1) if "end" in e else None,
-                    "score": e.get("confidence")
-                } for e in data["entities"]
-            ] if "entities" in data else []
+                    "score": e.get("confidence"),
+                }
+                for e in data["entities"]
+            ]
+            if "entities" in data
+            else [],
         }

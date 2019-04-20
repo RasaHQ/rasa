@@ -76,6 +76,27 @@ Fixed
 - Handles slot names which contain characters that are invalid as python
   variable name (e.g. dot) in a template
 - in interactive learning: only updates entity values if user changes annotation
+
+[Unreleased 0.13.8.aX]
+^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Message parse data no longer passed to graph node label in interactive
+  learning visualization
+
+[0.13.7] - 2019-04-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- correctly process form actions in end-to-end evaluations
+
+[0.13.6] - 2019-03-28
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
 - correctly process intent messages in end-to-end evaluations
 
 [0.13.4] - 2019-03-19
@@ -171,7 +192,7 @@ Fixed
   dispatched messages using ``dispatcher.utter_custom_message``
 - re-added missing ``python-engineio`` dependency
 - fixed not working examples in ``examples/``
-- strip newlins from messages so you don't have something like "\n/restart\n"
+- strip newlines from messages so you don't have something like "\n/restart\n"
 - properly reload domain when using ``/model`` endpoint to upload new model
 - updated documentation for custom channels to use the ``credentials.yml``
 

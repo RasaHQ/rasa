@@ -1,151 +1,152 @@
 # -*- coding: utf-8 -*-
 import os
+import pytest
 import tempfile
 
-import pytest
-from treq.testing import StubTreq
 
 from rasa.nlu import config
 from rasa.nlu.data_router import DataRouter
 from rasa.nlu.model import Trainer
-from rasa.nlu.server import RasaNLU
+from rasa.nlu.server import create_app
 from tests.nlu.utilities import ResponseTest
 
 
 @pytest.fixture(scope="module")
-def app(component_builder):
-    """Use IResource interface of Klein to mock Rasa HTTP server.
-
-    :param component_builder:
-    :return:
-    """
-
+def router(component_builder):
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
         root_dir = os.getcwd()
 
-    _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
-
-    train_models(component_builder,
-                 os.path.join(root_dir, "data/examples/rasa/demo-rasa.json"))
+    train_models(
+        component_builder, os.path.join(root_dir, "data/examples/rasa/demo-rasa.json")
+    )
 
     router = DataRouter(os.path.join(root_dir, "test_projects"))
-    rasa = RasaNLU(router, logfile=nlu_log_file, testing=True)
-
-    return StubTreq(rasa.app.resource())
+    return router
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "http://dummy-uri/parse?q=food&project=test_project_mitie",
-        {"entities": [], "intent": "affirm", "text": "food"}
-    ),
-    ResponseTest(
-        "http://dummy-uri/parse?q=food&project=test_project_mitie_2",
-        {"entities": [], "intent": "restaurant_search", "text": "food"}
-    ),
-    ResponseTest(
-        "http://dummy-uri/parse?q=food&project=test_project_spacy",
-        {"entities": [], "intent": "restaurant_search", "text": "food"}
-    ),
-])
-@pytest.inlineCallbacks
+@pytest.fixture
+def app(router):
+    """Test client for the http server."""
+
+    _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
+
+    rasa = create_app(router, logfile=nlu_log_file)
+
+    return rasa.test_client
+
+
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse?q=food&project=test_project_mitie",
+            {"entities": [], "intent": "affirm", "text": "food"},
+        ),
+        ResponseTest(
+            "/parse?q=food&project=test_project_mitie_2",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+        ),
+        ResponseTest(
+            "/parse?q=food&project=test_project_spacy",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+        ),
+    ],
+)
 def test_get_parse(app, response_test):
-    response = yield app.get(response_test.endpoint)
-    rjs = yield response.json()
+    _, response = app.get(response_test.endpoint)
+    rjs = response.json
 
-    assert response.code == 200
-    assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "http://dummy-uri/parse?q=food",
-        {"error": "No project found with name 'default'."}
-    ),
-    ResponseTest(
-        "http://dummy-uri/parse?q=food&project=umpalumpa",
-        {"error": "No project found with name 'umpalumpa'."}
-    )
-])
-@pytest.inlineCallbacks
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse?q=food", {"error": "No project found with name 'default'."}
+        ),
+        ResponseTest(
+            "/parse?q=food&project=umpalumpa",
+            {"error": "No project found with name 'umpalumpa'."},
+        ),
+    ],
+)
 def test_get_parse_invalid_model(app, response_test):
-    response = yield app.get(response_test.endpoint)
-    rjs = yield response.json()
-    assert response.code == 404
-    assert rjs.get("error").startswith(response_test.expected_response["error"])
+    _, response = app.get(response_test.endpoint)
+
+    assert response.status == 404
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "http://dummy-uri/parse",
-        {"entities": [], "intent": "affirm", "text": "food"},
-        payload={"q": "food", "project": "test_project_mitie"}
-    ),
-    ResponseTest(
-        "http://dummy-uri/parse",
-        {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "project": "test_project_mitie_2"}
-    ),
-    ResponseTest(
-        "http://dummy-uri/parse",
-        {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "project": "test_project_spacy"}
-    ),
-])
-@pytest.inlineCallbacks
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse",
+            {"entities": [], "intent": "affirm", "text": "food"},
+            payload={"q": "food", "project": "test_project_mitie"},
+        ),
+        ResponseTest(
+            "/parse",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+            payload={"q": "food", "project": "test_project_mitie_2"},
+        ),
+        ResponseTest(
+            "/parse",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+            payload={"q": "food", "project": "test_project_spacy"},
+        ),
+    ],
+)
 def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint,
-                              json=response_test.payload)
-    rjs = yield response.json()
-    assert response.code == 200
-    assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
+    rjs = response.json
+    assert response.status == 200
+    assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-@pytest.inlineCallbacks
 def test_post_parse_specific_model(app):
-    status = yield app.get("http://dummy-uri/status")
-    sjs = yield status.json()
-
+    _, status = app.get("/status")
+    sjs = status.json
     project = sjs["available_projects"]["test_project_spacy"]
     model = project["available_models"][-1]
 
-    query = ResponseTest("http://dummy-uri/parse",
-                         {"entities": [], "intent": "affirm", "text": "food"},
-                         payload={"q": "food",
-                                  "project": "test_project_spacy",
-                                  "model": model})
+    query = ResponseTest(
+        "/parse",
+        {"entities": [], "intent": "affirm", "text": "food"},
+        payload={"q": "food", "project": "test_project_spacy", "model": model},
+    )
 
-    response = yield app.post(query.endpoint, json=query.payload)
-    assert response.code == 200
+    _, response = app.post(query.endpoint, json=query.payload)
+    assert response.status == 200
 
     # check that that model now is loaded in the server
-    status = yield app.get("http://dummy-uri/status")
-    sjs = yield status.json()
+    _, status = app.get("/status")
+    sjs = status.json
     project = sjs["available_projects"]["test_project_spacy"]
     assert model in project["loaded_models"]
 
 
-@pytest.mark.parametrize("response_test", [
-    ResponseTest(
-        "http://dummy-uri/parse",
-        {"error": "No project found with name 'default'."},
-        payload={"q": "food"}
-    ),
-    ResponseTest(
-        "http://dummy-uri/parse",
-        {"error": "No project found with name 'umpalumpa'."},
-        payload={"q": "food", "project": "umpalumpa"}
-    ),
-])
-@pytest.inlineCallbacks
-def test_post_parse_invalid_model(app, response_test):
-    response = yield app.post(response_test.endpoint,
-                              json=response_test.payload)
-    rjs = yield response.json()
-    assert response.code == 404
-    assert rjs.get("error").startswith(response_test.expected_response["error"])
+@pytest.mark.parametrize(
+    "response_test",
+    [
+        ResponseTest(
+            "/parse",
+            {"error": "No project found with name 'default'."},
+            payload={"q": "food"},
+        ),
+        ResponseTest(
+            "/parse",
+            {"error": "No project found with name 'umpalumpa'."},
+            payload={"q": "food", "project": "umpalumpa"},
+        ),
+    ],
+)
+def test_post_parse_invalid_project(app, response_test):
+    _, response = app.post(response_test.endpoint, json=response_test.payload)
+    assert response.status == 404
 
 
 def train_models(component_builder, data):
@@ -160,9 +161,9 @@ def train_models(component_builder, data):
         trainer.train(training_data)
         trainer.persist("test_projects", project_name=project_name)
 
-    train("sample_configs/config_pretrained_embeddings_spacy.yml",
-          "test_project_spacy")
-    train("sample_configs/config_pretrained_embeddings_mitie.yml",
-          "test_project_mitie")
-    train("sample_configs/config_pretrained_embeddings_mitie_2.yml",
-          "test_project_mitie_2")
+    train("sample_configs/config_pretrained_embeddings_spacy.yml", "test_project_spacy")
+    train("sample_configs/config_pretrained_embeddings_mitie.yml", "test_project_mitie")
+    train(
+        "sample_configs/config_pretrained_embeddings_mitie_2.yml",
+        "test_project_mitie_2",
+    )

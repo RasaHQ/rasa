@@ -5,9 +5,12 @@ from typing import Any, Callable, Dict, Optional, Text
 from rasa.constants import DEFAULT_MODELS_PATH
 
 
-def get_validated_path(current: Optional[Text], parameter: Text,
-                       default: Optional[Text] = None,
-                       none_is_valid: bool = False) -> Optional[Text]:
+def get_validated_path(
+    current: Optional[Text],
+    parameter: Text,
+    default: Optional[Text] = None,
+    none_is_valid: bool = False,
+) -> Optional[Text]:
     """Check whether a file path or its default value is valid and returns it.
 
     Args:
@@ -22,12 +25,12 @@ def get_validated_path(current: Optional[Text], parameter: Text,
         argument if it is valid, else `None`.
     """
 
-    if (current is None or
-            current is not None and not os.path.exists(current)):
+    if current is None or current is not None and not os.path.exists(current):
         if default is not None and os.path.exists(default):
             print_warning(
                 "'{}' not found. Using default location '{}' instead."
-                "".format(current, default))
+                "".format(current, default)
+            )
             current = default
         elif none_is_valid:
             current = None
@@ -37,8 +40,9 @@ def get_validated_path(current: Optional[Text], parameter: Text,
     return current
 
 
-def cancel_cause_not_found(current: Optional[Text], parameter: Text,
-                           default: Optional[Text]) -> None:
+def cancel_cause_not_found(
+    current: Optional[Text], parameter: Text, default: Optional[Text]
+) -> None:
     """Exits with an error because the given path was not valid.
 
     Args:
@@ -50,11 +54,11 @@ def cancel_cause_not_found(current: Optional[Text], parameter: Text,
 
     default_clause = ""
     if default:
-        default_clause = ("use the default location ('{}') or "
-                          "".format(default))
+        default_clause = "use the default location ('{}') or ".format(default)
     print_error(
         "The path '{}' does not exist. Please make sure to {}specify it"
-        " with '--{}'.".format(current, default_clause, parameter))
+        " with '--{}'.".format(current, default_clause, parameter)
+    )
     exit(1)
 
 
@@ -62,16 +66,19 @@ def parse_last_positional_argument_as_model_path() -> None:
     """Fixes the parsing of a potential positional model path argument."""
     import sys
 
-    if (len(sys.argv) >= 2 and
-            sys.argv[1] in ["run", "test", "shell", "interactive"] and not
-            sys.argv[-2].startswith('-') and
-            os.path.exists(sys.argv[-1])):
+    if (
+        len(sys.argv) >= 2
+        and sys.argv[1] in ["run", "test", "shell", "interactive"]
+        and not sys.argv[-2].startswith("-")
+        and os.path.exists(sys.argv[-1])
+    ):
         sys.argv.append(sys.argv[-1])
         sys.argv[-2] = "--model"
 
 
-def create_output_path(output_path: Text = DEFAULT_MODELS_PATH,
-                       prefix: Text = "") -> Text:
+def create_output_path(
+    output_path: Text = DEFAULT_MODELS_PATH, prefix: Text = ""
+) -> Text:
     """Creates an output path which includes the current timestamp.
 
     Args:
@@ -102,7 +109,7 @@ def minimal_kwargs(kwargs: Dict[Text, Any], func: Callable) -> Dict[Text, Any]:
         Subset of kwargs which are accepted by `func`.
 
     """
-    from rasa.core.utils import arguments_of
+    from rasa.utils.common import arguments_of
 
     possible_arguments = arguments_of(func)
 
@@ -114,14 +121,14 @@ def print_success(*args: Any):
 
 
 class bcolors(object):
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
 
 
 def wrap_with_color(*args: Any, color: Text):
@@ -129,7 +136,7 @@ def wrap_with_color(*args: Any, color: Text):
 
 
 def print_color(*args: Any, color: Text):
-    print(wrap_with_color(*args, color=color))
+    print (wrap_with_color(*args, color=color))
 
 
 def print_warning(*args: Any):
@@ -141,5 +148,5 @@ def print_error(*args: Any):
 
 
 def signal_handler(sig, frame):
-    print("Goodbye 👋")
+    print ("Goodbye 👋")
     sys.exit(0)

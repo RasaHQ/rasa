@@ -2,6 +2,7 @@ import itertools
 import json
 import logging
 import pickle
+
 # noinspection PyPep8Naming
 from time import sleep
 from typing import Iterator, KeysView, List, Optional, Text
@@ -12,17 +13,16 @@ import sqlalchemy
 from rasa.core.actions.action import ACTION_LISTEN_NAME
 from rasa.core.broker import EventChannel
 from rasa.core.domain import Domain
-from rasa.core.trackers import (
-    ActionExecuted, DialogueStateTracker, EventVerbosity)
+from rasa.core.trackers import ActionExecuted, DialogueStateTracker, EventVerbosity
 from rasa.core.utils import class_from_module_path
 
 logger = logging.getLogger(__name__)
 
 
 class TrackerStore(object):
-    def __init__(self,
-                 domain: Optional[Domain],
-                 event_broker: Optional[EventChannel] = None) -> None:
+    def __init__(
+        self, domain: Optional[Domain], event_broker: Optional[EventChannel] = None
+    ) -> None:
         self.domain = domain
         self.event_broker = event_broker
         self.max_event_history = None
@@ -31,20 +31,18 @@ class TrackerStore(object):
     def find_tracker_store(domain, store=None, event_broker=None):
         if store is None or store.type is None:
             return InMemoryTrackerStore(domain, event_broker=event_broker)
-        elif store.type == 'redis':
-            return RedisTrackerStore(domain=domain,
-                                     host=store.url,
-                                     event_broker=event_broker,
-                                     **store.kwargs)
-        elif store.type == 'mongod':
-            return MongoTrackerStore(domain=domain,
-                                     host=store.url,
-                                     event_broker=event_broker,
-                                     **store.kwargs)
-        elif store.type.lower() == 'sql':
-            return SQLTrackerStore(domain=domain,
-                                   event_broker=event_broker,
-                                   **store.kwargs)
+        elif store.type == "redis":
+            return RedisTrackerStore(
+                domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
+            )
+        elif store.type == "mongod":
+            return MongoTrackerStore(
+                domain=domain, host=store.url, event_broker=event_broker, **store.kwargs
+            )
+        elif store.type.lower() == "sql":
+            return SQLTrackerStore(
+                domain=domain, event_broker=event_broker, **store.kwargs
+            )
         else:
             return TrackerStore.load_tracker_from_module_string(domain, store)
 
@@ -54,13 +52,13 @@ class TrackerStore(object):
         try:
             custom_tracker = class_from_module_path(store.type)
         except (AttributeError, ImportError):
-            logger.warning("Store type '{}' not found. "
-                           "Using InMemoryTrackerStore instead"
-                           .format(store.type))
+            logger.warning(
+                "Store type '{}' not found. "
+                "Using InMemoryTrackerStore instead".format(store.type)
+            )
 
         if custom_tracker:
-            return custom_tracker(domain=domain,
-                                  url=store.url, **store.kwargs)
+            return custom_tracker(domain=domain, url=store.url, **store.kwargs)
         else:
             return InMemoryTrackerStore(domain)
 
@@ -74,9 +72,8 @@ class TrackerStore(object):
     def init_tracker(self, sender_id):
         if self.domain:
             return DialogueStateTracker(
-                sender_id,
-                self.domain.slots,
-                max_event_history=self.max_event_history)
+                sender_id, self.domain.slots, max_event_history=self.max_event_history
+            )
         else:
             return None
 
@@ -103,9 +100,7 @@ class TrackerStore(object):
         offset = len(old_tracker.events) if old_tracker else 0
         evts = tracker.events
         for evt in list(itertools.islice(evts, offset, len(evts))):
-            body = {
-                "sender_id": tracker.sender_id,
-            }
+            body = {"sender_id": tracker.sender_id}
             body.update(evt.as_dict())
             self.event_broker.publish(body)
 
@@ -125,28 +120,24 @@ class TrackerStore(object):
 
 
 class InMemoryTrackerStore(TrackerStore):
-    def __init__(self,
-                 domain: Domain,
-                 event_broker: Optional[EventChannel] = None
-                 ) -> None:
+    def __init__(
+        self, domain: Domain, event_broker: Optional[EventChannel] = None
+    ) -> None:
         self.store = {}
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
-    def save(self, tracker: DialogueStateTracker,
-             should_stream_events=True) -> None:
-        if should_stream_events and self.event_broker:
+    def save(self, tracker: DialogueStateTracker) -> None:
+        if self.event_broker:
             self.stream_events(tracker)
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id: Text) -> Optional[DialogueStateTracker]:
         if sender_id in self.store:
-            logger.debug('Recreating tracker for '
-                         'id \'{}\''.format(sender_id))
+            logger.debug("Recreating tracker for id '{}'".format(sender_id))
             return self.deserialise_tracker(sender_id, self.store[sender_id])
         else:
-            logger.debug('Creating a new tracker for '
-                         'id \'{}\'.'.format(sender_id))
+            logger.debug("Creating a new tracker for id '{}'.".format(sender_id))
             return None
 
     def keys(self) -> KeysView[Text]:
@@ -157,13 +148,20 @@ class RedisTrackerStore(TrackerStore):
     def keys(self) -> List[Text]:
         return self.red.keys()
 
-    def __init__(self, domain, host='localhost',
-                 port=6379, db=0, password=None, event_broker=None,
-                 record_exp=None):
+    def __init__(
+        self,
+        domain,
+        host="localhost",
+        port=6379,
+        db=0,
+        password=None,
+        event_broker=None,
+        record_exp=None,
+    ):
+
         import redis
 
-        self.red = redis.StrictRedis(host=host, port=port, db=db,
-                                     password=password)
+        self.red = redis.StrictRedis(host=host, port=port, db=db, password=password)
         self.record_exp = record_exp
         super(RedisTrackerStore, self).__init__(domain, event_broker)
 
@@ -186,24 +184,28 @@ class RedisTrackerStore(TrackerStore):
 
 
 class MongoTrackerStore(TrackerStore):
-    def __init__(self,
-                 domain,
-                 host="mongodb://localhost:27017",
-                 db="rasa",
-                 username=None,
-                 password=None,
-                 auth_source="admin",
-                 collection="conversations",
-                 event_broker=None):
+    def __init__(
+        self,
+        domain,
+        host="mongodb://localhost:27017",
+        db="rasa",
+        username=None,
+        password=None,
+        auth_source="admin",
+        collection="conversations",
+        event_broker=None,
+    ):
         from pymongo.database import Database
         from pymongo import MongoClient
 
-        self.client = MongoClient(host,
-                                  username=username,
-                                  password=password,
-                                  authSource=auth_source,
-                                  # delay connect until process forking is done
-                                  connect=False)
+        self.client = MongoClient(
+            host,
+            username=username,
+            password=password,
+            authSource=auth_source,
+            # delay connect until process forking is done
+            connect=False,
+        )
 
         self.db = Database(self.client, db)
         self.collection = collection
@@ -225,9 +227,8 @@ class MongoTrackerStore(TrackerStore):
         state = tracker.current_state(EventVerbosity.ALL)
 
         self.conversations.update_one(
-            {"sender_id": tracker.sender_id},
-            {"$set": state},
-            upsert=True)
+            {"sender_id": tracker.sender_id}, {"$set": state}, upsert=True
+        )
 
     def retrieve(self, sender_id):
         stored = self.conversations.find_one({"sender_id": sender_id})
@@ -236,20 +237,24 @@ class MongoTrackerStore(TrackerStore):
         # and update them.
         if stored is None and sender_id.isdigit():
             from pymongo import ReturnDocument
+
             stored = self.conversations.find_one_and_update(
                 {"sender_id": int(sender_id)},
                 {"$set": {"sender_id": str(sender_id)}},
-                return_document=ReturnDocument.AFTER)
+                return_document=ReturnDocument.AFTER,
+            )
 
         if stored is not None:
             if self.domain:
-                return DialogueStateTracker.from_dict(sender_id,
-                                                      stored.get("events"),
-                                                      self.domain.slots)
+                return DialogueStateTracker.from_dict(
+                    sender_id, stored.get("events"), self.domain.slots
+                )
             else:
-                logger.warning("Can't recreate tracker from mongo storage "
-                               "because no domain is set. Returning `None` "
-                               "instead.")
+                logger.warning(
+                    "Can't recreate tracker from mongo storage "
+                    "because no domain is set. Returning `None` "
+                    "instead."
+                )
                 return None
         else:
             return None
@@ -268,7 +273,7 @@ class SQLTrackerStore(TrackerStore):
     class SQLEvent(Base):
         from sqlalchemy import Column, Integer, String, Float
 
-        __tablename__ = 'events'
+        __tablename__ = "events"
 
         id = Column(Integer, primary_key=True)
         sender_id = Column(String, nullable=False)
@@ -278,30 +283,41 @@ class SQLTrackerStore(TrackerStore):
         action_name = Column(String)
         data = Column(String)
 
-    def __init__(self,
-                 domain: Optional[Domain] = None,
-                 dialect: Text = 'sqlite',
-                 url: Optional[Text] = None,
-                 host: Optional[Text] = None,
-                 port: Optional[int] = None,
-                 db: Text = 'rasa.db',
-                 username: Text = None,
-                 password: Text = None,
-                 event_broker: Optional[EventChannel] = None,
-                 login_db: Optional[Text] = None) -> None:
+    def __init__(
+        self,
+        domain: Optional[Domain] = None,
+        dialect: Text = "sqlite",
+        url: Optional[Text] = None,
+        host: Optional[Text] = None,
+        port: Optional[int] = None,
+        db: Text = "rasa.db",
+        username: Text = None,
+        password: Text = None,
+        event_broker: Optional[EventChannel] = None,
+        login_db: Optional[Text] = None,
+    ) -> None:
         from sqlalchemy.orm import sessionmaker
         from sqlalchemy.engine.url import URL
         from sqlalchemy import create_engine
 
         if url is not None:
-            engine_url = URL(dialect, username, password, url,
-                             database=login_db if login_db else db)
+            engine_url = URL(
+                dialect, username, password, url, database=login_db if login_db else db
+            )
         else:
-            engine_url = URL(dialect, username, password, host, port,
-                             database=login_db if login_db else db)
+            engine_url = URL(
+                dialect,
+                username,
+                password,
+                host,
+                port,
+                database=login_db if login_db else db,
+            )
 
-        logger.debug('Attempting to connect to database '
-                     'via "{}"'.format(engine_url.__to_string__()))
+        logger.debug(
+            "Attempting to connect to database "
+            'via "{}"'.format(engine_url.__to_string__())
+        )
 
         # Database might take a while to come up
         while True:
@@ -313,18 +329,22 @@ class SQLTrackerStore(TrackerStore):
 
                 try:
                     self.Base.metadata.create_all(self.engine)
-                except sqlalchemy.exc.OperationalError:
+                except (
+                    sqlalchemy.exc.OperationalError,
+                    sqlalchemy.exc.ProgrammingError,
+                ):
                     pass
 
                 self.session = sessionmaker(bind=self.engine)()
                 break
-            except (sqlalchemy.exc.OperationalError,
-                    sqlalchemy.exc.IntegrityError) as e:
+            except (
+                sqlalchemy.exc.OperationalError,
+                sqlalchemy.exc.IntegrityError,
+            ) as e:
                 logger.warning(e)
                 sleep(5)
 
-        logger.debug("Connection to SQL database '{}' "
-                     "successful".format(db))
+        logger.debug("Connection to SQL database '{}' successful".format(db))
 
         super(SQLTrackerStore, self).__init__(domain, event_broker)
 
@@ -342,14 +362,17 @@ class SQLTrackerStore(TrackerStore):
         cursor = conn.connection.cursor()
         cursor.execute("COMMIT")
         cursor.execute(
-            ("SELECT 1 FROM pg_catalog.pg_database "
-             "WHERE datname = '{}'".format(db_name)))
+            (
+                "SELECT 1 FROM pg_catalog.pg_database "
+                "WHERE datname = '{}'".format(db_name)
+            )
+        )
         exists = cursor.fetchone()
         if not exists:
             try:
-                cursor.execute('CREATE DATABASE {}'.format(db_name))
-            except psycopg2.IntegrityError:
-                pass
+                cursor.execute("CREATE DATABASE {}".format(db_name))
+            except psycopg2.IntegrityError as e:
+                logger.debug("Could not create database '{}': {}" "".format(db_name, e))
 
         cursor.close()
         conn.close()
@@ -367,15 +390,15 @@ class SQLTrackerStore(TrackerStore):
         events = [json.loads(event.data) for event in result]
 
         if self.domain and len(events) > 0:
-            logger.debug("Recreating tracker "
-                         "from sender id '{}'".format(sender_id))
+            logger.debug("Recreating tracker from sender id '{}'".format(sender_id))
 
-            return DialogueStateTracker.from_dict(sender_id, events,
-                                                  self.domain.slots)
+            return DialogueStateTracker.from_dict(sender_id, events, self.domain.slots)
         else:
-            logger.debug("Can't retrieve tracker matching"
-                         "sender id '{}' from SQL storage.  "
-                         "Returning `None` instead.".format(sender_id))
+            logger.debug(
+                "Can't retrieve tracker matching"
+                "sender id '{}' from SQL storage.  "
+                "Returning `None` instead.".format(sender_id)
+            )
 
     def save(self, tracker: DialogueStateTracker) -> None:
         """Update database with events from the current conversation."""
@@ -393,21 +416,28 @@ class SQLTrackerStore(TrackerStore):
             timestamp = data.get("timestamp")
 
             # noinspection PyArgumentList
-            self.session.add(self.SQLEvent(sender_id=tracker.sender_id,
-                                           type_name=event.type_name,
-                                           timestamp=timestamp,
-                                           intent_name=intent,
-                                           action_name=action,
-                                           data=json.dumps(data)))
+            self.session.add(
+                self.SQLEvent(
+                    sender_id=tracker.sender_id,
+                    type_name=event.type_name,
+                    timestamp=timestamp,
+                    intent_name=intent,
+                    action_name=action,
+                    data=json.dumps(data),
+                )
+            )
         self.session.commit()
 
-        logger.debug("Tracker with sender_id '{}' "
-                     "stored to database".format(tracker.sender_id))
+        logger.debug(
+            "Tracker with sender_id '{}' "
+            "stored to database".format(tracker.sender_id)
+        )
 
     def _additional_events(self, tracker: DialogueStateTracker) -> Iterator:
         """Return events from the tracker which aren't currently stored."""
 
         from sqlalchemy import func
+
         query = self.session.query(func.max(self.SQLEvent.timestamp))
         max_timestamp = query.filter_by(sender_id=tracker.sender_id).scalar()
 
