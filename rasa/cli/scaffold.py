@@ -28,15 +28,12 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
     print_success("Finished creating project structure.")
 
-    if not args.no_prompt:
-        should_train = questionary.confirm(
-            "Do you want me to train an initial " "model for the bot? 💪🏽"
-        ).ask()
-    else:
-        print_success("Training an initial model...")
-        should_train = True
+    should_train = questionary.confirm(
+        "Do you want me to train an initial " "model for the bot? 💪🏽"
+    ).skip_if(args.no_prompt, default=True)
 
     if should_train:
+        print_success("Training an initial model...")
         config = os.path.join(path, DEFAULT_CONFIG_PATH)
         training_files = os.path.join(path, DEFAULT_DATA_PATH)
         domain = os.path.join(path, DEFAULT_DOMAIN_PATH)
@@ -58,12 +55,13 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
     from rasa.core import constants
     import questionary
 
-    if not args.no_prompt:
-        should_run = questionary.confirm(
+    should_run = (
+        questionary.confirm(
             "Do you want to speak to the trained bot " "on the command line? 🤖"
-        ).ask()
-    else:
-        should_run = False
+        )
+        .skip_if(args.no_prompt, default=False)
+        .ask()
+    )
 
     if should_run:
         # provide defaults for command line arguments
