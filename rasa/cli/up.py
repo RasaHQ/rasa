@@ -1,4 +1,5 @@
 import argparse
+import importlib.util
 import logging
 import signal
 import sys
@@ -143,13 +144,12 @@ def start_core_for_local_platform(args: argparse.Namespace, platform_token: Text
 
 
 def is_rasa_x_installed():
-    try:
-        # noinspection PyUnresolvedReferences
-        import rasa_platform.community
+    """Check if Rasa X is installed."""
 
-        return True
-    except ImportError:
-        return False
+    # we could also do something like checking if `import rasa_platform` works,
+    # the issue with that is that it actually does import the package and this
+    # takes some time that we don't want to spend when booting the CLI
+    return importlib.util.find_spec("rasa_platform") is not None
 
 
 def up(args: argparse.Namespace):
