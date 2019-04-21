@@ -154,17 +154,14 @@ def run(args: argparse.Namespace) -> None:
         "Now let's start! 👇🏽\n"
     )
 
-    if not args.no_prompt:
-        path = (
-            questionary.text(
-                "Please enter a folder path where I should create "
-                "the initial project [default: current directory]"
-            )
-            .skip_if(args.no_prompt, default=".")
-            .ask()
+    path = (
+        questionary.text(
+            "Please enter a folder path where I should create "
+            "the initial project [default: current directory]"
         )
-    else:
-        path = "."
+        .skip_if(args.no_prompt, default=".")
+        .ask()
+    )
 
     if not os.path.isdir(path):
         _ask_create_path(path)
