@@ -18,6 +18,7 @@ venv
 .pytype
 dist/
 data/*
+pip-wheel-metadata
 !data/examples
 !data/test
 !data/README.md

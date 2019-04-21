@@ -258,7 +258,7 @@ def create_app(
     @app.listener("after_server_start")
     async def warn_if_agent_is_unavailable(app, loop):
         if not app.agent or not app.agent.is_ready():
-            logger.warning(
+            logger.info(
                 "The loaded agent is not ready to be used yet "
                 "(e.g. only the NLU interpreter is configured, "
                 "but no Core model is loaded). This is NOT AN ISSUE "

@@ -177,7 +177,7 @@ async def _pull_model_and_fingerprint(
                 return resp.headers.get("ETag")
 
         except aiohttp.ClientError as e:
-            logger.warning(
+            logger.info(
                 "Tried to fetch model from server, but "
                 "couldn't reach server. We'll retry later... "
                 "Error: {}.".format(e)
@@ -189,18 +189,16 @@ async def _pull_model_and_fingerprint(
 async def _run_model_pulling_worker(
     model_server: EndpointConfig, wait_time_between_pulls: int, agent: "Agent"
 ) -> None:
-    while True:
-        # noinspection PyBroadException
-        try:
-            await asyncio.sleep(wait_time_between_pulls)
-            await _update_model_from_server(model_server, agent)
-        except CancelledError:
-            logger.warning("Stopping model pulling (cancelled).")
-        except Exception:
-            logger.exception(
-                "An exception was raised while fetching "
-                "a model. Continuing anyways..."
-            )
+    # noinspection PyBroadException
+    try:
+        await _update_model_from_server(model_server, agent)
+    except CancelledError:
+        logger.warning("Stopping model pulling (cancelled).")
+    except Exception:
+        logger.exception(
+            "An exception was raised while fetching "
+            "a model. Continuing anyways..."
+        )
 
 
 async def schedule_model_pulling(

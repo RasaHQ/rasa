@@ -2,7 +2,7 @@ import argparse
 import logging
 import signal
 import sys
-from multiprocessing import Process
+from multiprocessing import get_context
 from typing import List, Text
 
 import rasa.cli.run
@@ -14,13 +14,17 @@ def add_subparser(
 ):
     from rasa.core import cli
 
-    shell_parser = subparsers.add_parser(
-        "up",
-        parents=parents,
-        conflict_handler="resolve",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        help="Run the Rasa Interface",
-    )
+    up_parser_args ={
+        "parents": parents,
+        "conflict_handler": "resolve",
+        "formatter_class": argparse.ArgumentDefaultsHelpFormatter,
+    }
+
+    if is_rasa_x_installed():
+        # only if rasa x is installed, we show the command on the CLI
+        up_parser_args["help"] = "Start Rasa X and the Interface"
+
+    shell_parser = subparsers.add_parser("up", **up_parser_args)
 
     shell_parser.add_argument(
         "--production", action="store_true", help="Run Rasa in a production environment"
@@ -68,15 +72,27 @@ def add_subparser(
     cli.arguments.add_logging_option_arguments(shell_parser)
 
 
-def start_event_service():
-    from rasa_platform.services.event_service import main
+def _event_service():
+    # noinspection PyUnresolvedReferences
+    from rasa_platform.community.services.event_service import main
 
     main()
 
 
-def start_core(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
+def start_event_service():
+    ctx = get_context("spawn")
+    p = ctx.Process(target=_event_service)
+    p.start()
+
+
+def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = None):
     """Starts the Rasa Core application."""
     from rasa.core.run import serve_application
+    from rasa.nlu.utils import configure_colored_logging
+
+    configure_colored_logging(args.loglevel)
+    logging.getLogger("rasa.core.agent").setLevel(logging.ERROR)
+    logging.getLogger("apscheduler.executors.default").setLevel(logging.WARNING)
 
     if endpoints is None:
         from rasa.core.utils import AvailableEndpoints
@@ -121,8 +137,18 @@ def start_core_for_local_platform(args: argparse.Namespace, platform_token: Text
         )
     )
 
-    p = Process(target=start_core, args=(args, endpoints))
+    ctx = get_context("spawn")
+    p = ctx.Process(target=_core_service, args=(args, endpoints))
     p.start()
+
+
+def is_rasa_x_installed():
+    try:
+        # noinspection PyUnresolvedReferences
+        import rasa_platform.community
+        return True
+    except:
+        return False
 
 
 def up(args: argparse.Namespace):
@@ -132,8 +158,8 @@ def up(args: argparse.Namespace):
 
     signal.signal(signal.SIGINT, signal_handler)
 
-    logging.getLogger("werkzeug").setLevel(logging.WARN)
-    logging.getLogger("engineio").setLevel(logging.WARN)
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
+    logging.getLogger("engineio").setLevel(logging.WARNING)
     logging.getLogger("socketio").setLevel(logging.ERROR)
 
     if not args.vvvv:
@@ -152,25 +178,22 @@ def up(args: argparse.Namespace):
     configure_file_logging(args.loglevel, args.log_file)
 
     if args.production:
-        print_success("Starting Rasa Core")
-        start_core(args)
+        print_success("Starting Rasa X in production mode... 🚀")
+        _core_service(args)
     else:
+        print_success("Starting Rasa X in local mode... 🚀")
         try:
-            from rasa_platform import config
-            from rasa_platform.api.local import main_local
+            from rasa_platform.community import config
+            from rasa_platform.community.api.local import main_local
         except ImportError as e:
             print_error(
                 "Rasa X is not installed. The `rasa up` "
-                "command requires an installation of Rasa X."
+                "command requires an installation of Rasa X. "
                 "Error:\n{}".format(e)
             )
             sys.exit()
 
-        print_success("Starting Rasa 🚀")
-
-        p = Process(target=start_event_service)
-        p.start()
-
+        start_event_service()
         start_core_for_local_platform(args, config.platform_token)
 
         main_local(args.project_path, args.data_path)
