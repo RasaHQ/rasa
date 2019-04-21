@@ -183,16 +183,18 @@ def up(args: argparse.Namespace):
         _core_service(args)
     else:
         print_success("Starting Rasa X in local mode... 🚀")
-        try:
-            from rasa_platform.community import config
-            from rasa_platform.community.api.local import main_local
-        except ImportError as e:
+        if not is_rasa_x_installed():
             print_error(
                 "Rasa X is not installed. The `rasa up` "
-                "command requires an installation of Rasa X. "
-                "Error:\n{}".format(e)
+                "command requires an installation of Rasa X."
             )
             sys.exit()
+
+        # noinspection PyUnresolvedReferences
+        from rasa_platform.community import config
+
+        # noinspection PyUnresolvedReferences
+        from rasa_platform.community.api.local import main_local
 
         start_event_service()
         start_core_for_local_platform(args, config.platform_token)
