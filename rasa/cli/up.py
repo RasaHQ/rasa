@@ -14,7 +14,7 @@ def add_subparser(
 ):
     from rasa.core import cli
 
-    up_parser_args ={
+    up_parser_args = {
         "parents": parents,
         "conflict_handler": "resolve",
         "formatter_class": argparse.ArgumentDefaultsHelpFormatter,
@@ -146,6 +146,7 @@ def is_rasa_x_installed():
     try:
         # noinspection PyUnresolvedReferences
         import rasa_platform.community
+
         return True
     except:
         return False
