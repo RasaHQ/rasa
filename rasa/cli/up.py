@@ -148,7 +148,7 @@ def is_rasa_x_installed():
         import rasa_platform.community
 
         return True
-    except:
+    except ImportError:
         return False
 
 
