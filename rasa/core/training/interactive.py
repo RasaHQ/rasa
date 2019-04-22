@@ -619,7 +619,7 @@ async def _request_action_from_user(
         if action not in old_actions
     ]
     choices = (
-        [{"name": "<create new action>", "value": OTHER_ACTION}] + new_actions + choices
+        [{"name": "<create new action>", "value": NEW_ACTION}] + new_actions + choices
     )
     question = questionary.select("What is the next action of the bot?", choices)
 
