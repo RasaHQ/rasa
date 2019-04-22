@@ -32,11 +32,10 @@ tests_requires = [
 
 install_requires = [
     "cloudpickle~=0.6.1",
-    "gevent~=1.2",
-    "boto3~=1.5",
+    "boto3~=1.9",
     "typing~=3.6",
     "requests~=2.20",
-    "matplotlib~=2.0",
+    "matplotlib~=2.2",
     "simplejson~=3.13",
     "attrs>=18",
     "jsonpickle~=1.0",
@@ -102,6 +101,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools", "docs", "contrib"]),
