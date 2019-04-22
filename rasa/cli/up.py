@@ -4,7 +4,6 @@ import logging
 import signal
 import sys
 from multiprocessing import get_context
-from secrets import token_hex
 from typing import List, Text
 
 import rasa.cli.run
@@ -155,6 +154,17 @@ def is_rasa_x_installed():
     return importlib.util.find_spec("rasa_platform") is not None
 
 
+def generate_rasa_x_token(length=16):
+    """Generate a hexadecimal secret token used to access the Rasa X API.
+
+    A new token is generated on every `rasa up` command.
+    """
+
+    from secrets import token_hex
+
+    return token_hex(length)
+
+
 def up(args: argparse.Namespace):
     from rasa.cli.utils import print_success, print_error, signal_handler
     from rasa.core.utils import configure_file_logging
@@ -192,8 +202,7 @@ def up(args: argparse.Namespace):
 
         start_event_service()
 
-        # generate a token used to authenticate against the Rasa X API
-        rasa_x_token = token_hex(16)
+        rasa_x_token = generate_rasa_x_token()
 
         start_core_for_local_platform(args, rasa_x_token=rasa_x_token)
 
