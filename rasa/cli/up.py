@@ -4,7 +4,7 @@ import logging
 import signal
 import sys
 from multiprocessing import get_context
-from secrets import token_urlsafe, token_hex
+from secrets import token_hex
 from typing import List, Text
 
 import rasa.cli.run
@@ -31,7 +31,7 @@ def add_subparser(
     shell_parser.add_argument(
         "--production",
         action="store_true",
-        help="Run Rasa in a production " "environment",
+        help="Run Rasa X in a production environment",
     )
 
     shell_parser.add_argument("--auth_token", type=str, help="Rasa API auth token")
@@ -46,7 +46,7 @@ def add_subparser(
     shell_parser.add_argument(
         "--model_endpoint_url",
         type=str,
-        default=("http://localhost:5002/api/projects/default/models/tags/production"),
+        default="http://localhost:5002/api/projects/default/models/tags/production",
         help="Rasa model endpoint URL",
     )
 
@@ -60,8 +60,10 @@ def add_subparser(
         "--data_path",
         type=str,
         default="data",
-        help="Path to the directory containing Rasa NLU training data "
-        "and Rasa Core stories",
+        help=(
+            "Path to the directory containing Rasa NLU training data "
+            "and Rasa Core stories"
+        ),
     )
 
     rasa.cli.run.add_run_arguments(shell_parser)
