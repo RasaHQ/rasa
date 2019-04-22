@@ -18,7 +18,7 @@ def add_subparser(
     scaffold_parser.add_argument(
         "--no_prompt",
         action="store_true",
-        help="Automatic yes or default options to prompts and " "suppressed warnings",
+        help="Automatic yes or default options to prompts and uppressed warnings",
     )
     scaffold_parser.set_defaults(func=run)
 
@@ -29,7 +29,7 @@ def print_train_or_instructions(args: argparse.Namespace, path: Text) -> None:
     print_success("Finished creating project structure.")
 
     should_train = questionary.confirm(
-        "Do you want me to train an initial " "model for the bot? 💪🏽"
+        "Do you want me to train an initial model for the bot? 💪🏽"
     ).skip_if(args.no_prompt, default=True)
 
     if should_train:
@@ -57,7 +57,7 @@ def print_run_or_instructions(args: argparse.Namespace, path: Text) -> None:
 
     should_run = (
         questionary.confirm(
-            "Do you want to speak to the trained bot " "on the command line? 🤖"
+            "Do you want to speak to the trained bot on the command line? 🤖"
         )
         .skip_if(args.no_prompt, default=False)
         .ask()

@@ -196,7 +196,7 @@ async def _run_model_pulling_worker(
         logger.warning("Stopping model pulling (cancelled).")
     except Exception:
         logger.exception(
-            "An exception was raised while fetching " "a model. Continuing anyways..."
+            "An exception was raised while fetching a model. Continuing anyways..."
         )
 
 
