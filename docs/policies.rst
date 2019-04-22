@@ -396,7 +396,108 @@ It is recommended to use
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
-Two-stage Fallback Policy
+
+Form Policy
+^^^^^^^^^^^
+
+The ``FormPolicy`` is an extension of the ``MemoizationPolicy`` which
+handles the filling of forms. Once a ``FormAction`` is called, the
+``FormPolicy`` will continually predict the ``FormAction`` until all slots
+in the form are filled. For more information, see `Slot Filling
+<https://rasa.com/docs/core/slotfilling/>`_.
+
+
+Mapping Policy
+^^^^^^^^^^^^^^
+
+The ``MappingPolicy`` can be used to directly map intents to actions such that
+the mapped action will always be executed. The mappings are assigned by giving
+and intent the property `'triggers'`, e.g.:
+
+.. code-block:: yaml
+
+  intents:
+   - greet: {triggers: utter_goodbye}
+
+An intent can only be mapped to at most one action. The bot will run
+the action once it receives a message of the mapped intent. Afterwards,
+it will listen for the next message.
+
+.. note::
+
+  The mapping policy will predict the mapped action after the intent (e.g.
+  ``utter_goodbye`` in the above example) and afterwards it will wait for
+  the next user message (predicting ``action_listen``). With the next
+  user message normal prediction will resume.
+
+  You should have an example like
+
+  .. code-block:: story
+
+    * greet
+      - utter_goodbye
+
+  in your stories. Otherwise any machine learning policy might be confused
+  by the sudden appearance of the predicted ``action_greet`` in
+  the dialouge history.
+
+.. _fallback_policy:
+
+Fallback Policy
+^^^^^^^^^^^^^^^
+
+The ``FallbackPolicy`` invokes a `fallback action
+<https://rasa.com/docs/core/fallbacks/>`_ if the intent recognition
+has a confidence below ``nlu_threshold`` or if none of the dialogue
+policies predict an action with confidence higher than ``core_threshold``.
+
+**Configuration:**
+
+    The thresholds and fallback action can be adjusted in the policy configuration
+    file as parameters of the ``FallbackPolicy``:
+
+    .. code-block:: yaml
+
+      policies:
+        - name: "FallbackPolicy"
+          nlu_threshold: 0.3
+          core_threshold: 0.3
+          fallback_action_name: 'action_default_fallback'
+
+    +----------------------------+---------------------------------------------+
+    | ``nlu_threshold``          | Min confidence needed to accept an NLU      |
+    |                            | prediction                                  |
+    +----------------------------+---------------------------------------------+
+    | ``core_threshold``         | Min confidence needed to accept an action   |
+    |                            | prediction from Rasa Core                   |
+    +----------------------------+---------------------------------------------+
+    | ``fallback_action_name``   | Name of the `fallback action                |
+    |                            | <https://rasa.com/docs/core/fallbacks/>`_   |
+    |                            | to be called if the confidence of intent    |
+    |                            | or action is below the respective threshold |
+    +----------------------------+---------------------------------------------+
+
+    You can also configure the ``FallbackPolicy`` in your python code:
+
+    .. code-block:: python
+
+       from rasa_core.policies.fallback import FallbackPolicy
+       from rasa_core.policies.keras_policy import KerasPolicy
+       from rasa_core.agent import Agent
+
+       fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
+                                 core_threshold=0.3,
+                                 nlu_threshold=0.3)
+
+       agent = Agent("domain.yml", policies=[KerasPolicy(), fallback])
+
+    .. note::
+
+       You can include either the ``FallbackPolicy`` or the
+       ``TwoStageFallbackPolicy`` in your configuration, but not both.
+
+
+Two-Stage Fallback Policy
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This policy handles low NLU confidence in multiple stages.

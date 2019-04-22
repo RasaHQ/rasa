@@ -1,35 +1,32 @@
-import time
-
 import json
 import logging
 import numpy as np
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import UnknownTimeZoneError
 from types import LambdaType
-from typing import Optional, List, Dict, Any, Tuple
-from typing import Text
+from typing import Any, Dict, List, Optional, Text, Tuple
+
+import numpy as np
+import time
 
 from rasa_core.actions import Action
 from rasa_core.actions.action import (
     ACTION_LISTEN_NAME,
-    ACTION_RESTART_NAME,
     ActionExecutionRejection)
-from rasa_core.channels import CollectingOutputChannel
-from rasa_core.channels import UserMessage
+from rasa_core.channels import CollectingOutputChannel, UserMessage
+from rasa_core.constants import (
+    USER_INTENT_RESTART)
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
-from rasa_core.events import ReminderScheduled, Event
-from rasa_core.events import SlotSet
 from rasa_core.events import (
-    UserUttered,
-    ActionExecuted,
-    BotUttered,
-    ActionExecutionRejected)
+    ActionExecuted, ActionExecutionRejected,
+    BotUttered, Event, ReminderScheduled, SlotSet,
+    UserUttered)
 from rasa_core.interpreter import (
+    INTENT_MESSAGE_PREFIX,
     NaturalLanguageInterpreter,
     RasaNLUHttpInterpreter,
-    INTENT_MESSAGE_PREFIX)
-from rasa_core.interpreter import RegexInterpreter
+    RegexInterpreter)
 from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
@@ -275,10 +272,11 @@ class MessageProcessor(object):
         logger.debug("Logged UserUtterance - "
                      "tracker now has {} events".format(len(tracker.events)))
 
-    def _should_handle_message(self, tracker):
+    @staticmethod
+    def _should_handle_message(tracker):
         return (not tracker.is_paused() or
                 tracker.latest_message.intent.get("name") ==
-                self.domain.restart_intent)
+                USER_INTENT_RESTART)
 
     def _predict_and_execute_next_action(self, message, tracker):
         # this will actually send the response to the user
@@ -450,10 +448,12 @@ class MessageProcessor(object):
         else:
             return None, None
 
-    def _get_next_action_probabilities(
-        self,
-        tracker: DialogueStateTracker
-    ) -> Tuple[Optional[List[float]], Optional[Text]]:
+    def _get_next_action_probabilities(self,
+                                       tracker: DialogueStateTracker
+                                       ) -> Tuple[Optional[List[float]],
+                                                  Optional[Text]]:
+        """Collect predictions from ensemble and return action and predictions.
+        """
 
         followup_action = tracker.followup_action
         if followup_action:
@@ -467,8 +467,5 @@ class MessageProcessor(object):
                     "Instead of running that, we will ignore the action "
                     "and predict the next action.".format(followup_action))
 
-        if (tracker.latest_message.intent.get("name") ==
-                self.domain.restart_intent):
-            return self._prob_array_for_action(ACTION_RESTART_NAME)
         return self.policy_ensemble.probabilities_using_best_policy(
             tracker, self.domain)

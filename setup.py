@@ -20,7 +20,7 @@ tests_requires = [
     "treq~=17.0",
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
-    "matplotlib~=2.0",
+    "matplotlib~=2.2",
     "responses~=0.9.0",
     "httpretty~=0.9.0",
 ]
@@ -34,7 +34,7 @@ install_requires = [
     "scipy~=1.2",
     "typing~=3.0",
     "requests~=2.20",
-    "tensorflow~=1.12.0",
+    "tensorflow~=1.13.0",
     "apscheduler~=3.0",
     "tqdm~=4.0",
     "networkx~=2.2",
@@ -55,19 +55,17 @@ install_requires = [
     "pika~=0.12.0",
     "jsonschema~=2.6",
     "packaging~=18.0",
-    "gevent~=1.4",
+    "gevent~=1.3",
     "pytz~=2018.9",
     "python-dateutil~=2.7",
     "rasa_nlu~=0.15.0a1",
-    "rasa_core_sdk~=0.13.0a1",
+    "rasa_core_sdk~=0.13.1",
     "colorclass~=2.2",
     "terminaltables~=3.1",
     "questionary>=1.0.1",
     "flask-jwt-simple~=0.0.3",
     "python-socketio~=3.0",
-    "pydot~=1.4",
-    "keras-applications==1.0.6",
-    "keras-preprocessing==1.0.5"
+    "pydot~=1.4"
 ]
 
 extras_requires = {
@@ -84,6 +82,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
     packages=find_packages(exclude=["tests", "tools"]),

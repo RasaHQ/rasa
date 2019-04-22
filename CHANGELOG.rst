@@ -4,10 +4,8 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-.. _master-release:
-
-[Unreleased 0.14.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[0.14.0] - 2019-04-23
+^^^^^^^^^^^^^^^^^^^^^
 .. note:: This version is not yet released and is under active development.
 
 Added
@@ -23,8 +21,15 @@ Added
 - File based event store
 - ability to configure event store using the endpoints file
 - added ability to use multiple env vars per line in yaml files
-- added ``priority`` property of policies to influence best policy in 
+- added ``priority`` property of policies to influence best policy in
   the case of equal confidence
+- **support for python 3.7**
+- ``Tracker.active_form`` now includes ``trigger_message`` attribute to allow
+  access to message triggering the form
+- ``MappingPolicy`` which can be used to directly map an intent to an action
+  by adding the `maps_to` keyword to an intent in the domain.
+- default action ``action_back``, which when triggered with ``/back`` allows
+  the user to undo their previous message
 
 Changed
 -------
@@ -38,10 +43,13 @@ Changed
 - renamed ``policy_metadata.json`` to ``metadata.json`` for persisted models
 - ``scores`` array returned by the ``/conversations/{sender_id}/predict``
   endpoint is now sorted according to the actions' scores.
-- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst, 
+- now randomly created augmented stories are subsampled during training and marked,
+  so that memo policies can ignore them
+- changed payloads from "text" to "message" in files: server.yml, docs/connectors.rst,
   rasa_core/server.py, rasa_core/training/interactive.py, tests/test_interactive.py
 - dialogue files in ``/data/test_dialogues`` were updated with conversations
   from the bots in ``/examples``
+- updated to tensorflow 1.13
 
 Removed
 -------
@@ -51,9 +59,9 @@ Fixed
 -----
 - When a ``fork`` is used in interactive learning, every forked
   storyline is saved (not just the last)
-- Handles slot names which contain characters that are invalid as python 
+- Handles slot names which contain characters that are invalid as python
   variable name (e.g. dot) in a template
-- When a ``fork`` is used in interactive learning, every forked storyline 
+- When a ``fork`` is used in interactive learning, every forked storyline
   is saved (not just the last)
 
 [0.13.8] - 2019-04-16

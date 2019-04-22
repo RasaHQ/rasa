@@ -17,6 +17,7 @@ from rasa_core.events import SlotSet, ActionExecuted, ActionExecutionRejected
 from rasa_core.exceptions import UnsupportedDialogueModelError
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 from rasa_core.policies import Policy
+from rasa_core.policies.mapping_policy import MappingPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.memoization import (
     MemoizationPolicy,

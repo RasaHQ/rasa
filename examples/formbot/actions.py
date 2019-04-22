@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Dict, Text, Any, List, Union
+from typing import Dict, Text, Any, List, Union, Optional
 
 from rasa_core_sdk import ActionExecutionRejection
 from rasa_core_sdk import Tracker

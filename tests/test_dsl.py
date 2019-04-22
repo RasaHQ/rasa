@@ -133,7 +133,6 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
         default_domain,
         augmentation_factor=0
     )
-
     training_data = featurizer.featurize_trackers(training_trackers,
                                                   default_domain)
     y = training_data.y.argmax(axis=-1)
@@ -144,7 +143,8 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
 
     # if we have 4 trackers, there is going to be one example more for label 4
     num_threes = len(training_trackers) - 1
-    assert Counter(y) == {0: 6, 1: 2, 7: num_threes, 8: 1, 9: 3}
+    # if new default actions are added the keys of the actions will be changed
+    assert Counter(y) == {0: 6, 1: 2, 8: num_threes, 9: 1, 10: 3}
 
 
 def test_generate_training_data_with_unused_checkpoints(tmpdir,
@@ -157,6 +157,24 @@ def test_generate_training_data_with_unused_checkpoints(tmpdir,
     #   2 with unused end checkpoints -> training_trackers
     #   1 with unused start checkpoints -> ignored
     assert len(training_trackers) == 2
+
+
+def test_generate_training_data_original_and_augmented_trackers(
+        default_domain):
+    training_trackers = training.load_data(
+        "data/test_stories/stories_defaultdomain.md", default_domain,
+        augmentation_factor=3
+    )
+    # there are three original stories
+    # augmentation factor of 3 indicates max of 3*10 augmented stories generated
+    # maximum number of stories should be augmented+original = 33
+    original_trackers = [
+        t
+        for t in training_trackers if not
+        hasattr(t, 'is_augmented') or not t.is_augmented
+    ]
+    assert len(original_trackers) == 3
+    assert len(training_trackers) <= 33
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):
