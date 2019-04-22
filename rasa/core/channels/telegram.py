@@ -5,7 +5,7 @@ from telegram import (
     Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
     KeyboardButton, ReplyKeyboardMarkup)
 
-from rasa.core import constants, utils
+from rasa.core import constants
 from rasa.core.channels import InputChannel
 from rasa.core.channels.channel import UserMessage, OutputChannel
 from rasa.core.constants import INTENT_MESSAGE_PREFIX, USER_INTENT_RESTART
