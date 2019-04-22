@@ -318,6 +318,8 @@ class SQLTrackerStore(TrackerStore):
             try:
                 self.engine = create_engine(engine_url)
 
+                # if `login_db` has been provided, use current connection with
+                # that database to create working database `db`
                 if login_db:
                     self._create_database_and_update_engine(db, engine_url)
 
@@ -326,10 +328,11 @@ class SQLTrackerStore(TrackerStore):
                 except (
                     sqlalchemy.exc.OperationalError,
                     sqlalchemy.exc.ProgrammingError,
-                ):
+                ) as e:
                     # Several Rasa services started in parallel may attempt to
-                    # create tables at the same time
-                    pass
+                    # create tables at the same time. That is okay so long as
+                    # the first services finishes the table creation.
+                    logger.error("Could not create tables: {}".format(e))
 
                 self.session = sessionmaker(bind=self.engine)()
                 break
@@ -337,6 +340,7 @@ class SQLTrackerStore(TrackerStore):
                 sqlalchemy.exc.OperationalError,
                 sqlalchemy.exc.IntegrityError,
             ) as e:
+
                 logger.warning(e)
                 sleep(5)
 
