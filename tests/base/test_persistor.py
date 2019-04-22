@@ -22,7 +22,7 @@ def test_list_projects_method_in_AWSPersistor(component_builder, tmpdir):
     # artificially create a persisted model
     _config = utilities.base_test_conf("keyword")
     os.environ["BUCKET_NAME"] = 'rasa-test'
-    os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
+    os.environ["AWS_DEFAULT_REGION"] = 'us-west-1'
 
     (trained, _, persisted_path) = train(
         _config,

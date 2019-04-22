@@ -9,11 +9,11 @@ pytest-cov==2.5.1
 pytest-twisted==1.6
 pytest==3.3.2
 treq==17.8.0
-moto==1.2.0
+git+https://github.com/spulec/moto.git@734a39b3e46267fb4b8ffb4c1b69c2027218abf6#egg=moto
 mock==2.0.0
 responses==0.9.0
 httpretty==0.9.5
 # other
 google-cloud-storage==1.7.0
 azure-storage-blob==1.0.0
-boto3==1.5.20
+boto3==1.9.96

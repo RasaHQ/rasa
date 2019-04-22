@@ -82,7 +82,7 @@ including all the information needed to reproduce the problem.
 
 Does it run with python 3?
 --------------------------
-Yes it does, Rasa NLU supports python 3.5 and 3.6 (supported for python 2.7
+Yes it does, Rasa NLU supports python 3.5, 3.6 and 3.7 (supported for python 2.7
 up until version 0.14). If there are any issues with a specific python version,
 feel free to create an issue or directly provide a fix.
 

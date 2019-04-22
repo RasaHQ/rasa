@@ -25,17 +25,17 @@ tests_requires = [
 
 install_requires = [
     "cloudpickle~=0.6.1",
-    "gevent~=1.2",
+    "gevent~=1.3",
     "klein~=17.10",
-    "boto3~=1.5",
+    "boto3~=1.9",
     "packaging~=18.0",
     "typing~=3.6",
     "future~=0.17.1",
     "tqdm~=4.19",
     "requests~=2.20",
     "jsonschema~=2.6",
-    "matplotlib~=2.0",
-    "numpy>=1.13",
+    "matplotlib~=2.2",
+    "numpy>=1.16",
     "simplejson~=3.13",
     "ruamel.yaml~=0.15.7",
     "coloredlogs~=10.0",
@@ -45,14 +45,12 @@ install_requires = [
 extras_requires = {
     'test': tests_requires,
     'spacy': ["sklearn-crfsuite~=0.3.6",
-              "scipy~=1.1",
+              "scipy~=1.2",
               "spacy<=2.0.18,>2.0",
               ],
     'tensorflow': ["sklearn-crfsuite~=0.3.6",
-                   "scipy~=1.1",
-                   "tensorflow~=1.12.0",
-                   "keras-applications==1.0.6",
-                   "keras-preprocessing==1.0.5"
+                   "scipy~=1.2",
+                   "tensorflow~=1.13.0"
                    ],
     'mitie': ["mitie"],
 }
@@ -68,6 +66,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
     ],
     version=__version__,
