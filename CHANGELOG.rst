@@ -10,8 +10,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 - Added a detailed warning showing which entities are overlapping
-- Authentication token can be also set with env variable `RASA_NLU_TOKEN`.
-- `SpacyEntityExtractor` supports same entity filtering as `DucklingHTTPExtractor`
+- Authentication token can be also set with env variable ``RASA_NLU_TOKEN``.
+- ``SpacyEntityExtractor`` supports same entity filtering as ``DucklingHTTPExtractor``
 - **added support for python 3.7**
 
 Changed
