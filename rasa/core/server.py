@@ -627,7 +627,7 @@ def create_app(
                 raise ErrorResponse(
                     400,
                     "FailedIntentEvaluation",
-                    "Evaluation could not be created. " "Error: {}".format(e),
+                    "Evaluation could not be created. Error: {}".format(e),
                 )
         else:
             raise ErrorResponse(

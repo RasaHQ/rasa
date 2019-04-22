@@ -4,6 +4,7 @@ import logging
 import signal
 import sys
 from multiprocessing import get_context
+from secrets import token_urlsafe, token_hex
 from typing import List, Text
 
 import rasa.cli.run
@@ -22,13 +23,15 @@ def add_subparser(
     }
 
     if is_rasa_x_installed():
-        # only if rasa x is installed, we show the command on the CLI
+        # we'll only show the help msg for the command if Rasa X is actually installed
         up_parser_args["help"] = "Start Rasa X and the Interface"
 
     shell_parser = subparsers.add_parser("up", **up_parser_args)
 
     shell_parser.add_argument(
-        "--production", action="store_true", help="Run Rasa in a production environment"
+        "--production",
+        action="store_true",
+        help="Run Rasa in a production " "environment",
     )
 
     shell_parser.add_argument("--auth_token", type=str, help="Rasa API auth token")
@@ -43,10 +46,8 @@ def add_subparser(
     shell_parser.add_argument(
         "--model_endpoint_url",
         type=str,
-        default=(
-            "http://localhost:5002/api/projects/" "default/models/tags/production"
-        ),
-        help="Rasa Stack model endpoint URL",
+        default=("http://localhost:5002/api/projects/default/models/tags/production"),
+        help="Rasa model endpoint URL",
     )
 
     shell_parser.add_argument(
@@ -62,9 +63,6 @@ def add_subparser(
         help="Path to the directory containing Rasa NLU training data "
         "and Rasa Core stories",
     )
-    shell_parser.add_argument(
-        "--vvvv", default=False, action="store_true", help="Verbose mode"
-    )
 
     rasa.cli.run.add_run_arguments(shell_parser)
 
@@ -74,6 +72,7 @@ def add_subparser(
 
 
 def _event_service():
+    """Start the event service."""
     # noinspection PyUnresolvedReferences
     from rasa_platform.community.services.event_service import main
 
@@ -81,6 +80,8 @@ def _event_service():
 
 
 def start_event_service():
+    """Run the event service in a separate process."""
+
     ctx = get_context("spawn")
     p = ctx.Process(target=_event_service)
     p.start()
@@ -112,17 +113,17 @@ def _core_service(args: argparse.Namespace, endpoints: "AvailableEndpoints" = No
     )
 
 
-def start_core_for_local_platform(args: argparse.Namespace, platform_token: Text):
-    """Starts the Rasa API with Rasa Core as a background process."""
+def start_core_for_local_platform(args: argparse.Namespace, rasa_x_token: Text):
+    """Starts the Rasa X API with Rasa as a background process."""
 
     from rasa.core.utils import AvailableEndpoints
     from rasa.utils.endpoints import EndpointConfig
 
     endpoints = AvailableEndpoints(
         model=EndpointConfig(
-            args.model_endpoint_url, token=platform_token, wait_time_between_pulls=2
+            args.model_endpoint_url, token=rasa_x_token, wait_time_between_pulls=2
         ),
-        nlg=EndpointConfig(args.nlg, token=platform_token),
+        nlg=EndpointConfig(args.nlg, token=rasa_x_token),
         tracker_store=EndpointConfig(type="sql", db="tracker.db"),
     )
 
@@ -163,17 +164,11 @@ def up(args: argparse.Namespace):
     logging.getLogger("engineio").setLevel(logging.WARNING)
     logging.getLogger("socketio").setLevel(logging.ERROR)
 
-    if not args.vvvv:
+    if args.debug:
         logging.getLogger().setLevel(logging.ERROR)
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
         logging.getLogger("rasa.cli").setLevel(logging.ERROR)
         logging.getLogger("sanic.root").setLevel(logging.ERROR)
-        logging.getLogger("rasa.core").setLevel(logging.ERROR)
-        logging.getLogger("rasa.nlu").setLevel(logging.ERROR)
-
-        # TODO: remove once https://github.com/RasaHQ/rasa_nlu/issues/3120
-        # is fixed
-        logging.getLogger("apscheduler").setLevel(logging.ERROR)
 
     configure_colored_logging(args.loglevel)
     configure_file_logging(args.loglevel, args.log_file)
@@ -188,15 +183,16 @@ def up(args: argparse.Namespace):
                 "Rasa X is not installed. The `rasa up` "
                 "command requires an installation of Rasa X."
             )
-            sys.exit()
-
-        # noinspection PyUnresolvedReferences
-        from rasa_platform.community import config
+            sys.exit(1)
 
         # noinspection PyUnresolvedReferences
         from rasa_platform.community.api.local import main_local
 
         start_event_service()
-        start_core_for_local_platform(args, config.platform_token)
 
-        main_local(args.project_path, args.data_path)
+        # generate a token used to authenticate against the Rasa X API
+        rasa_x_token = token_hex(16)
+
+        start_core_for_local_platform(args, rasa_x_token=rasa_x_token)
+
+        main_local(args.project_path, args.data_path, token=rasa_x_token)
