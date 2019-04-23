@@ -32,20 +32,6 @@ async def test_moodbot_example(trained_moodbot_path):
     assert len(responses) == 4
 
 
-async def test_restaurantbot_example():
-    sys.path.append("examples/restaurantbot/")
-    from bot import train_dialogue
-
-    p = "examples/restaurantbot/"
-    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
-    agent = await train_dialogue(
-        os.path.join(p, "domain.yml"), os.path.join(p, "models", "dialogue"), stories
-    )
-
-    responses = await agent.handle_text("/greet")
-    assert responses[0]["text"] == "how can I help you?"
-
-
 async def test_formbot_example():
     sys.path.append("examples/formbot/")
 
@@ -100,13 +86,20 @@ async def test_formbot_example():
         assert responses[0]["text"] == "chitchat"
 
 
-async def test_concertbot_training():
-    from examples.concertbot.train import train_dialogue
+async def test_restaurantbot_example():
+    sys.path.append("examples/restaurantbot/")
+    from run import train_core, train_nlu, parse
 
-    r = await train_dialogue(
-        domain_file="examples/concertbot/domain.yml",
-        stories_file="examples/concertbot/data/stories.md",
-        model_path="examples/concertbot/models/dialogue",
-        policy_config="examples/concertbot/config.yml",
+    p = "examples/restaurantbot/"
+    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
+    nlu_data = os.path.join(p, "data", "nlu.md")
+    core_model_path = await train_core(
+        os.path.join(p, "domain.yml"), os.path.join(p, "models", "core"), stories
     )
-    assert r is not None
+    nlu_model_path = train_nlu(
+        os.path.join(p, "config.yml"), os.path.join(p, "models", "nlu"), nlu_data
+    )
+
+    responses = await parse("hello", core_model_path, nlu_model_path)
+
+    assert responses[0]["text"] == "how can I help you?"
