@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 1.0.
 
 Added
 -----
+- added arguments to set the file paths for interactive training
 - added quick reply representation for command-line output
 - added option to specify custom button type for Facebook buttons
 - added tracker store persisting trackers into a SQL database

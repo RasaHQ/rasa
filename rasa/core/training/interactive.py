@@ -1473,6 +1473,15 @@ def run_interactive_learning(
 
     server_args = server_args or {}
 
+    if server_args.get('nlu_data'):
+        PATHS['nlu'] = server_args['nlu_data']
+
+    if server_args.get('stories'):
+        PATHS['stories'] = server_args['stories']
+
+    if server_args.get('domain'):
+        PATHS['domain'] = server_args['domain']
+
     if not skip_visualization:
         p = Process(target=start_visualization, args=("story_graph.dot",))
         p.deamon = True
