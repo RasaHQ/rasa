@@ -43,7 +43,7 @@ Training Script Options
 Data Augmentation
 ^^^^^^^^^^^^^^^^^
 
-By default, Rasa Core will create longer stories by randomly glueing together
+By default, Rasa Core will create longer stories by randomly gluing together
 the ones in your stories file. This is because if you have stories like:
 
 .. code-block:: story
@@ -62,10 +62,20 @@ when it isn't relevant and just respond with the same action no matter
 what happened before.
 
 You can alter this behaviour with the ``--augmentation`` flag.
-``--augmentation 0`` disables this behavior.
+Which allows you to set the ``augmentation_factor``.
+The ``augmentation_factor`` determines how many augmented stories are
+subsampled during training. Subsampling of the augmented stories is done in order to
+not get too many stories from augmentation, since it can become very large quickly.
+The number of sampled stories is ``augmentation_factor``x10.
+
+``--augmentation 0`` disables all augmentation behavior.
+The :ref:`memoization_policy` is not affected by augmentation
+(independent on the ``augmentation_factor``) and will automatically
+ignore all augmented stories.
 
 In python, you can pass the ``augmentation_factor`` argument to the
 ``Agent.load_data`` method.
+By default augmentation is set to 20, resulting in a maximum of 200 augmented stories.
 
 Policies
 --------
@@ -397,6 +407,8 @@ It is recommended to use
           the original starspace algorithm in the case
           ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``. See
           `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
+.. _memoization_policy:
 
 Memoization Policy
 ^^^^^^^^^^^^^^^^^^
