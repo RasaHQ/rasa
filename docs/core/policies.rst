@@ -65,7 +65,8 @@ You can alter this behaviour with the ``--augmentation`` flag.
 Which allows you to set the ``augmentation_factor``.
 The ``augmentation_factor`` determines how many augmented stories are
 subsampled during training. Subsampling of the augmented stories is done in order to
-not get too many stories from augmentation, since it can become very large quickly.
+not get too many stories from augmentation, since their number
+can become very large quickly.
 The number of sampled stories is ``augmentation_factor``x10.
 
 ``--augmentation 0`` disables all augmentation behavior.
