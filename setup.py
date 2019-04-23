@@ -26,7 +26,7 @@ tests_requires = [
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
     "aioresponses~=0.5.2",
-    "moto~=1.2",
+    "moto~=1.3.8",
     "mock~=2.0",
 ]
 
