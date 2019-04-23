@@ -9,7 +9,6 @@ import rasa.utils.io
 from rasa.core import server, train, utils
 from rasa.core.agent import Agent
 from rasa.core.channels import CollectingOutputChannel, RestInput, channel
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain
 from rasa.core.interpreter import RegexInterpreter
 from rasa.core.nlg import TemplatedNaturalLanguageGenerator
@@ -19,7 +18,7 @@ from rasa.core.policies.memoization import (
     MemoizationPolicy,
     Policy,
 )
-from rasa.core.processor import MessageProcessor
+from rasa.core.processor import MessageProcessor, Dispatcher
 from rasa.core.slots import Slot
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker

@@ -9,6 +9,7 @@ import rasa.utils.io
 import rasa.core
 from rasa.core import jobs, utils
 from rasa.core.agent import Agent
+from rasa.core.channels.channel import UserMessage
 from rasa.core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa.core.policies.memoization import AugmentedMemoizationPolicy
 from rasa.utils.endpoints import EndpointConfig
@@ -79,11 +80,18 @@ async def test_agent_train(tmpdir, default_domain):
     ]
 
 
+async def test_agent_handle_text(default_agent):
+    text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
+    result = await default_agent.handle_text(text, sender_id="test_agent_handle_text")
+    assert result == [
+        {"recipient_id": "test_agent_handle_text", "text": "hey there Rasa!"}
+    ]
+
+
 async def test_agent_handle_message(default_agent):
-    message = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
-    result = await default_agent.handle_message(
-        message, sender_id="test_agent_handle_message"
-    )
+    text = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
+    message = UserMessage(text, sender_id="test_agent_handle_message")
+    result = await default_agent.handle_message(message)
     assert result == [
         {"recipient_id": "test_agent_handle_message", "text": "hey there Rasa!"}
     ]

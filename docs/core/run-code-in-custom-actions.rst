@@ -1,5 +1,5 @@
 :desc: Read more about how to run custom actions and code with open source Rasa
-       Stack to integrate your contextual Assistant in your processes and databases. 
+       Stack to integrate your contextual Assistant in your processes and databases.
 
 .. _actions:
 
@@ -13,14 +13,14 @@ There are three kinds of actions in Rasa Core:
 
  1. **default actions** (``action_listen``, ``action_restart``,
     ``action_default_fallback``)
- 2. **utter actions**, starting with ``utter_``, which just sends a message
+ 2. **utterance actions**, starting with ``utter_``, which just send a message
     to the user (see :ref:`responses`).
  3. **custom actions** - any other action, these actions can run arbitrary code
 
-Utter Actions
--------------
+Utterance Actions
+-----------------
 
-To define an ``UtterAction``, add an utterance template to the domain file,
+To define an utterance action (``ActionUtterTemplate``), add an utterance template to the domain file
 that starts with ``utter_``:
 
 .. code-block:: yaml
@@ -29,7 +29,7 @@ that starts with ``utter_``:
       utter_my_message:
         - "this is what I want my action to say!"
 
-It is conventional to start the name of an ``UtterAction`` with ``utter_``.
+It is conventional to start the name of an utterance action with ``utter_``.
 If this prefix is missing, you can still use the template in your custom
 actions, but the template can not be directly predicted as its own action.
 See :ref:`responses` for more details.

@@ -5,9 +5,9 @@ from aioresponses import aioresponses
 
 import asyncio
 import rasa.utils.io
+from rasa.core.actions.action import ActionUtterTemplate
 from rasa.core import jobs
 from rasa.core.channels import CollectingOutputChannel, UserMessage
-from rasa.core.dispatcher import Button, Dispatcher
 from rasa.core.events import (
     ReminderScheduled,
     ReminderCancelled,
@@ -16,14 +16,14 @@ from rasa.core.events import (
     BotUttered,
     Restarted,
 )
-from rasa.core.processor import MessageProcessor
+from rasa.core.processor import MessageProcessor, Dispatcher
 from rasa.core.interpreter import RasaNLUHttpInterpreter
 from rasa.utils.endpoints import EndpointConfig
 
 from tests.utilities import json_of_latest_request, latest_request
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def loop():
     from pytest_sanic.plugin import loop as sanic_loop
 
@@ -188,21 +188,19 @@ async def test_reminder_restart(default_processor: MessageProcessor):
 
 
 async def test_logging_of_bot_utterances_on_tracker(
-    default_processor, default_dispatcher_collecting, default_agent
+    default_processor, default_dispatcher_collecting, default_agent, default_domain
 ):
     sender_id = "test_logging_of_bot_utterances_on_tracker"
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
-    buttons = [
-        Button(title="Btn1", payload="_btn1"),
-        Button(title="Btn2", payload="_btn2"),
-    ]
 
-    await default_dispatcher_collecting.utter_template("utter_goodbye", tracker)
-    await default_dispatcher_collecting.utter_attachment("http://my-attachment")
-    await default_dispatcher_collecting.utter_message("my test message")
-    await default_dispatcher_collecting.utter_button_message("my message", buttons)
+    await ActionUtterTemplate("utter_goodbye").run(
+        default_dispatcher_collecting, tracker, default_domain
+    )
+    await ActionUtterTemplate("utter_channel").run(
+        default_dispatcher_collecting, tracker, default_domain
+    )
 
-    assert len(default_dispatcher_collecting.latest_bot_messages) == 4
+    assert len(default_dispatcher_collecting.latest_bot_messages) == 2
 
     default_processor.log_bot_utterances_on_tracker(
         tracker, default_dispatcher_collecting

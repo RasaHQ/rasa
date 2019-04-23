@@ -9,14 +9,12 @@ import time
 from rasa.core import jobs
 from rasa.core.actions import Action
 from rasa.core.actions.action import ACTION_LISTEN_NAME, ActionExecutionRejection
-from rasa.core.channels import CollectingOutputChannel, UserMessage
+from rasa.core.channels import CollectingOutputChannel, UserMessage, OutputChannel
 from rasa.core.constants import ACTION_NAME_SENDER_ID_CONNECTOR_STR, USER_INTENT_RESTART
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain
 from rasa.core.events import (
     ActionExecuted,
     ActionExecutionRejected,
-    BotUttered,
     Event,
     ReminderCancelled,
     ReminderScheduled,
@@ -35,6 +33,22 @@ from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.utils.endpoints import EndpointConfig
 
 logger = logging.getLogger(__name__)
+
+
+class Dispatcher(object):
+    """Send messages back to user"""
+
+    def __init__(
+        self,
+        sender_id: Text,
+        output_channel: OutputChannel,
+        nlg: NaturalLanguageGenerator,
+    ) -> None:
+
+        self.sender_id = sender_id
+        self.output_channel = output_channel
+        self.nlg = nlg
+        self.latest_bot_messages = []
 
 
 class MessageProcessor(object):
@@ -303,7 +317,9 @@ class MessageProcessor(object):
             or tracker.latest_message.intent.get("name") == USER_INTENT_RESTART
         )
 
-    async def _predict_and_execute_next_action(self, message, tracker):
+    async def _predict_and_execute_next_action(
+        self, message: UserMessage, tracker: DialogueStateTracker
+    ):
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0

@@ -13,7 +13,6 @@ import aiohttp
 from rasa.core import constants, jobs, training, utils
 from rasa.core.channels import InputChannel, OutputChannel, UserMessage
 from rasa.core.constants import DEFAULT_REQUEST_TIMEOUT
-from rasa.core.dispatcher import Dispatcher
 from rasa.core.domain import Domain, InvalidDomain, check_domain_sanity
 from rasa.core.exceptions import AgentNotReady
 from rasa.core.interpreter import NaturalLanguageInterpreter
@@ -21,7 +20,7 @@ from rasa.core.nlg import NaturalLanguageGenerator
 from rasa.core.policies import FormPolicy, Policy
 from rasa.core.policies.ensemble import PolicyEnsemble, SimplePolicyEnsemble
 from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.processor import MessageProcessor
+from rasa.core.processor import MessageProcessor, Dispatcher
 from rasa.core.tracker_store import InMemoryTrackerStore
 from rasa.core.trackers import DialogueStateTracker
 from rasa.utils.endpoints import EndpointConfig
@@ -403,14 +402,13 @@ class Agent(object):
         self,
         sender_id: Text,
         action: Text,
-        output_channel: OutputChannel,
+        dispatcher: Dispatcher,
         policy: Text,
         confidence: float,
     ) -> DialogueStateTracker:
         """Handle a single message."""
 
         processor = self.create_processor()
-        dispatcher = Dispatcher(sender_id, output_channel, self.nlg)
         return await processor.execute_action(
             sender_id, action, dispatcher, policy, confidence
         )

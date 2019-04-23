@@ -22,6 +22,7 @@ from rasa.core.channels import CollectingOutputChannel, UserMessage
 from rasa.core.domain import Domain
 from rasa.core.events import Event
 from rasa.core.policies import PolicyEnsemble
+from rasa.core.processor import Dispatcher
 from rasa.core.test import test
 from rasa.core.trackers import DialogueStateTracker, EventVerbosity
 from rasa.core.utils import dump_obj_as_str_to_file, write_request_body_to_file
@@ -303,8 +304,9 @@ def create_app(
 
         try:
             out = CollectingOutputChannel()
+            dispatcher = Dispatcher(sender_id, out, agent.nlg)
             await app.agent.execute_action(
-                sender_id, action_to_execute, out, policy, confidence
+                sender_id, action_to_execute, dispatcher, policy, confidence
             )
 
             # retrieve tracker and set to requested state
