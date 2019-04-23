@@ -176,10 +176,13 @@ def up(args: argparse.Namespace):
     logging.getLogger("engineio").setLevel(logging.WARNING)
     logging.getLogger("socketio").setLevel(logging.ERROR)
 
-    if args.debug:
+    if not args.loglevel == logging.DEBUG:
         logging.getLogger().setLevel(logging.ERROR)
         logging.getLogger("py.warnings").setLevel(logging.ERROR)
+        logging.getLogger("apscheduler").setLevel(logging.ERROR)
         logging.getLogger("rasa.cli").setLevel(logging.ERROR)
+        logging.getLogger("rasa.nlu").setLevel(logging.ERROR)
+        logging.getLogger("rasa.core").setLevel(logging.ERROR)
         logging.getLogger("sanic.root").setLevel(logging.ERROR)
 
     configure_colored_logging(args.loglevel)
