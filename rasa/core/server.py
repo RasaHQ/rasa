@@ -304,7 +304,7 @@ def create_app(
 
         try:
             out = CollectingOutputChannel()
-            dispatcher = Dispatcher(sender_id, out, agent.nlg)
+            dispatcher = Dispatcher(sender_id, out, app.agent.nlg)
             await app.agent.execute_action(
                 sender_id, action_to_execute, dispatcher, policy, confidence
             )
