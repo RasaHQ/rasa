@@ -34,8 +34,8 @@ Set a Slot
 :Short: Event to set a slot on a tracker
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER SetSlot
       :end-before: # DOCS END
 :Class:
@@ -54,8 +54,8 @@ Restart a conversation
 :Short: Resets anything logged on the tracker.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER Restarted
       :end-before: # DOCS END
 :Class:
@@ -74,8 +74,8 @@ Reset all Slots
 :Short: Resets all the slots of a conversation.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER AllSlotsReset
       :end-before: # DOCS END
 :Class:
@@ -94,8 +94,8 @@ Schedule a reminder
 :Short: Schedule an action to be executed in the future.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER ReminderScheduled
       :end-before: # DOCS END
 :Class:
@@ -112,8 +112,8 @@ Pause a conversation
         will be halted until resumed.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER ConversationPaused
       :end-before: # DOCS END
 :Class:
@@ -133,8 +133,8 @@ Resume a conversation
         predicting actions again.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER ConversationResumed
       :end-before: # DOCS END
 :Class:
@@ -154,8 +154,8 @@ Force a followup action
         to be a fixed one.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER FollowupAction
       :end-before: # DOCS END
 :Class:
@@ -178,8 +178,8 @@ User sent message
 :Short: Message a user sent to the bot.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER UserUttered
       :end-before: # DOCS END
 :Class:
@@ -198,8 +198,8 @@ Bot responded message
 :Short: Message a bot sent to the user.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER BotUttered
       :end-before: # DOCS END
 :Class:
@@ -219,8 +219,8 @@ Undo a user message
         (including the ``user`` event of the message).
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER UserUtteranceReverted
       :end-before: # DOCS END
 :Class:
@@ -240,8 +240,8 @@ Undo an action
         (including the ``action`` event of the action).
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER ActionReverted
       :end-before: # DOCS END
 :Class:
@@ -261,8 +261,8 @@ Log an executed action
         action created are logged separately.
 :JSON:
     .. literalinclude:: ../../../tests/core/test_events.py
-      :lines: 2-
-      :dedent: 8
+      :lines: 1-
+      :dedent: 4
       :start-after: # DOCS MARKER ActionExecuted
       :end-before: # DOCS END
 :Class:

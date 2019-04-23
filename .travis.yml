@@ -1,5 +1,6 @@
 language: python
 sudo: enabled
+dist: xenial
 cache:
   directories:
   - $HOME/.cache/pip
@@ -23,7 +24,7 @@ install:
   - python -m spacy link en_core_web_md en
   - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > jnk
   - python -m spacy link de_core_news_sm de
-  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then 
+  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then
     travis_wait wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
     fi
   - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
@@ -35,6 +36,10 @@ after_success:
   - coveralls
 jobs:
   include:
+  - stage: test
+    name: "Black Formatting"
+    python: 3.6
+    script: pip install black; black --check .
   - stage: test
     name: "Test Codestyle"
     python: 3.6
@@ -49,6 +54,9 @@ jobs:
   - <<: *test-core
     name: "Test Core 3.5"
     python: '3.5'
+  - <<: *test-core
+    name: "Test Core 3.7"
+    python: '3.7'
   - &test-nlu-base
     stage: test
     name: "Test NLU 3.6"
@@ -58,6 +66,9 @@ jobs:
   - <<: *test-nlu-base
     name: "Test NLU 3.5"
     python: '3.5'
+  - <<: *test-nlu-base
+    name: "Test NLU 3.7"
+    python: '3.7'
   - &test-nlu-training
     stage: test
     name: "Test NLU training 3.6"
@@ -67,6 +78,9 @@ jobs:
   - <<: *test-nlu-training
     name: "Test NLU training 3.5"
     python: '3.5'
+  - <<: *test-nlu-training
+    name: "Test NLU training 3.7"
+    python: '3.7'
   - stage: integration
     name: "Test API specification"
     language: python
@@ -77,16 +91,6 @@ jobs:
     - swagger-cli validate docs/core/_static/spec/action_server.yml
     after_success:
     - coveralls
-  - stage: test
-    if: fork = false
-    name: Check Dependency Licenses
-    before_script:
-    - "curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install.sh | sudo bash"
-    script:
-    - pip freeze > requirements.txt
-    - fossa init
-    - fossa analyze
-    - fossa test
   - stage: test
     if: branch =~ /(\d+\.\d+\.x)/ or branch = "master" # only new version PRs & PRs to master will test starter packs
     name: "NLU starter pack (NLU only)"
