@@ -150,10 +150,10 @@ There are four default actions:
 |                             | did not send it) and utters a message that the |
 |                             | bot did not understand. See :ref:`fallbacks`.  |
 +-----------------------------+------------------------------------------------+
-|``action_back``              | Triggered by typing ``/back`` undoes the last  |
-|                             | user message (as if the user did not send it). |
-|                             | Utters a message to the user if one is provided|
-|                             | as ``utter_back`` in the domain.               |
+|``action_back``              | Triggered by typing ``/back``. Undoes the last |
+|                             | user message (as if the user did not send it)  |
+|                             | and utters a message to the user if one is     |
+|                             | provided as ``utter_back`` in the domain.      |
 +-----------------------------+------------------------------------------------+
 
 All the default actions can be overwritten. To do so, add the action name
