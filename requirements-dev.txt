@@ -15,10 +15,9 @@ freezegun==0.3.10
 nbsphinx==0.3.2
 aioresponses==0.5.2
 mock==2.0.0
-git+https://github.com/spulec/moto.git@734a39b3e46267fb4b8ffb4c1b69c2027218abf6#egg=moto
+moto==1.3.8
 
 # pipeline dependencies
-moto==1.3.8
 spacy==2.0.18
 jieba==0.39
 
