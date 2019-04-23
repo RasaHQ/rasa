@@ -46,8 +46,8 @@ Facebook Setup
 
 You first need to retrieve some credentials to connect to the
 Facebook Messenger. Once you have them you can
-**either** attach the input channel running the provided ``rasa.core.run``
-script, or you can attach it in your own code.
+**either** attach the input channel running the ``rasa run core``
+command, or you can attach it in your own code.
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
@@ -69,7 +69,7 @@ You need to set up a Facebook app and a page.
      This will be your ``secret``.
   5. Use the collected ``secret`` and ``page-access-token`` in your
      ``credentials.yml``, and add a field called ``verify`` containing
-     a string of your choice. Start ``rasa.core.run`` with the
+     a string of your choice. Start ``rasa run core`` with the
      ``--credentials credentials.yml`` option.
   6. Set up a *Webhook* and select at least the *messaging* and
      *messaging_postback* subscriptions. Insert your callback URL which will
@@ -88,8 +88,7 @@ If you want to connect to facebook using the run script, e.g. using:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-      --port 5002 --credentials credentials.yml
+  rasa run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -128,8 +127,8 @@ Cisco Webex Teams Setup
 -----------------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the provided ``rasa.core.run``
-script, or you can attach it in your own code.
+**either** attach the input channel running the ``rasa run core``
+command, or you can attach it in your own code.
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
@@ -156,8 +155,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-      --port 5002 --credentials credentials.yml
+  rasa run core -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -201,8 +199,8 @@ Slack Setup
 -----------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the provided ``rasa.core.run``
-script, or you can attach it in your own code.
+**either** attach the input channel running the ``rasa run core``
+command, or you can attach it in your own code.
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
@@ -231,8 +229,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-      --port 5002 --credentials credentials.yml
+  rasa run core -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -276,8 +273,8 @@ Mattermost Setup
 ----------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the provided ``rasa.core.run``
-script, or you can attach it in your own code.
+**either** attach the input channel running the ``rasa run core``
+command, or you can attach it in your own code.
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
@@ -308,8 +305,7 @@ run script, e.g. using:
 
 .. code-block:: bash
 
- python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-     --port 5002 --credentials credentials.yml
+ rasa core run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -348,8 +344,8 @@ Telegram Setup
 --------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the provided ``rasa.core.run``
-script, or you can attach it in your own code.
+**either** attach the input channel running the ``rasa run core``
+command, or you can attach it in your own code.
 
 Getting Credentials
 ^^^^^^^^^^^^^^^^^^^
@@ -375,8 +371,7 @@ If you want to connect to telegram using the run script, e.g. using:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current
-      --port 5002 --credentials credentials.yml
+  rasa run core -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -416,7 +411,7 @@ Twilio Setup
 --------------
 
 You first need to retrieve some credentials, once you have them you can
-**either** attach the input channel running the provided ``rasa.core.run``
+**either** attach the input channel running the provided ``rasa run core``
 script, or you can attach it in your own code.
 
 Getting Credentials
@@ -445,8 +440,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current
-      --port 5002 --credentials credentials.yml
+  rasa core run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -515,8 +509,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current
-      --port 5002 --credentials credentials.yml
+  rasa run core -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -559,8 +552,7 @@ run script, e.g. using:
 
 .. code-block:: bash
 
- python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-     --port 5002 --credentials credentials.yml
+ rasa run core -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -595,8 +587,8 @@ add in your microsoft bot service configuration.
 SocketIO Setup
 --------------
 
-You can **either** attach the input channel running the provided
-``rasa.core.run`` script, or you can attach the channel in your
+You can **either** attach the input channel running the
+``rasa run core`` command, or you can attach the channel in your
 own code.
 
 Using run script
@@ -607,8 +599,7 @@ script, e.g. using:
 
 .. code-block:: bash
 
-  python3 -m rasa.core.run -d models/dialogue -u models/nlu/current
-      --port 5002 --credentials credentials.yml
+  rasa run core -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -696,8 +687,7 @@ using the run script:
 
 .. code-block:: bash
 
- python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-     --port 5002 --credentials credentials.yml
+ rasa core run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 
@@ -739,8 +729,7 @@ Here is an example on how to connect the
 
 .. code-block:: bash
 
- python3 -m rasa.core.run -d models/dialogue -u models/nlu/current \
-     --port 5002 --credentials credentials.yml
+ rasa core run -m models --port 5002 --credentials credentials.yml
 
 you need to supply a ``credentials.yml`` with the following content:
 

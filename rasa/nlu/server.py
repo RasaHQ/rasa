@@ -1,100 +1,133 @@
 import argparse
-import io
+import asyncio
 import logging
 import os
 from functools import wraps
-
-import simplejson
-from klein import Klein
-from twisted.internet import reactor, threads
-from twisted.internet.defer import inlineCallbacks, returnValue
+from inspect import isawaitable
+from sanic import Sanic, response
+from sanic.request import Request
+from sanic_cors import CORS
+from typing import Any, Callable, Optional, Text, Dict
 
 import rasa
-from rasa.nlu import config, utils
+import rasa.utils.io
+import rasa.utils.common
+import rasa.utils.endpoints
+from rasa.nlu import config, utils, constants
 import rasa.nlu.cli.server as cli
 from rasa.nlu.config import RasaNLUModelConfig
-from rasa.nlu.data_router import (
-    DataRouter, InvalidProjectError, MaxTrainingError)
+from rasa.nlu.data_router import DataRouter, InvalidProjectError, MaxWorkerProcessError
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
 from rasa.nlu.train import TrainingException
-from rasa.nlu.utils import json_to_string, read_endpoints
+from rasa.nlu.utils import read_endpoints
 
 logger = logging.getLogger(__name__)
 
 
+class ErrorResponse(Exception):
+    def __init__(
+        self,
+        status: int,
+        reason: Text,
+        message: Text,
+        details: Optional[Dict] = None,
+        help_url: Optional[Text] = None,
+    ):
+        self.error_info = {
+            "version": rasa.__version__,
+            "status": "failure",
+            "message": message,
+            "reason": reason,
+            "details": details or {},
+            "help": help_url,
+            "code": status,
+        }
+        self.status = status
+
+
+def _docs(sub_url: Text) -> Text:
+    """Create a url to a subpart of the docs."""
+    return constants.DOCS_BASE_URL + sub_url
+
+
 def create_argument_parser():
-    parser = argparse.ArgumentParser(description='parse incoming text')
+    parser = argparse.ArgumentParser(description="parse incoming text")
     cli.add_server_arguments(parser)
     utils.add_logging_option_arguments(parser)
 
     return parser
 
 
-def check_cors(f):
-    """Wraps a request handler with CORS headers checking."""
-
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        self = args[0]
-        request = args[1]
-        origin = request.getHeader('Origin')
-
-        if origin:
-            if '*' in self.cors_origins:
-                request.setHeader('Access-Control-Allow-Origin', '*')
-                request.setHeader(
-                    'Access-Control-Allow-Headers', 'Content-Type')
-                request.setHeader(
-                    'Access-Control-Allow-Methods',
-                    'POST, GET, OPTIONS, PUT, DELETE')
-            elif origin in self.cors_origins:
-                request.setHeader('Access-Control-Allow-Origin', origin)
-                request.setHeader(
-                    'Access-Control-Allow-Headers', 'Content-Type')
-                request.setHeader(
-                    'Access-Control-Allow-Methods',
-                    'POST, GET, OPTIONS, PUT, DELETE')
-            else:
-                request.setResponseCode(403)
-                return 'forbidden'
-
-        if request.method.decode('utf-8', 'strict') == 'OPTIONS':
-            return ''  # if this is an options call we skip running `f`
-        else:
-            return f(*args, **kwargs)
-
-    return decorated
-
-
-def requires_auth(f):
+def requires_auth(app: Sanic, token: Optional[Text] = None) -> Callable[[Any], Any]:
     """Wraps a request handler with token authentication."""
 
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        self = args[0]
-        request = args[1]
-        token = request.args.get(b'token', [b''])[0].decode("utf8")
-        if self.access_token is None or token == self.access_token:
-            return f(*args, **kwargs)
-        request.setResponseCode(401)
-        return 'unauthorized'
+    def decorator(f: Callable[[Any, Any, Any], Any]) -> Callable[[Any, Any], Any]:
+        def sender_id_from_args(args: Any, kwargs: Any) -> Optional[Text]:
+            argnames = rasa.utils.common.arguments_of(f)
+            try:
+                sender_id_arg_idx = argnames.index("sender_id")
+                if "sender_id" in kwargs:  # try to fetch from kwargs first
+                    return kwargs["sender_id"]
+                if sender_id_arg_idx < len(args):
+                    return args[sender_id_arg_idx]
+                return None
+            except ValueError:
+                return None
 
-    return decorated
+        def sufficient_scope(request, *args: Any, **kwargs: Any) -> Optional[bool]:
+            jwt_data = request.app.auth.extract_payload(request)
+            user = jwt_data.get("user", {})
 
+            username = user.get("username", None)
+            role = user.get("role", None)
 
-def decode_parameters(request):
-    """Make sure all the parameters have the same encoding."""
+            if role == "admin":
+                return True
+            elif role == "user":
+                sender_id = sender_id_from_args(args, kwargs)
+                return sender_id is not None and username == sender_id
+            else:
+                return False
 
-    return {
-        key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
-        for key, value in request.args.items()}
+        @wraps(f)
+        async def decorated(request: Request, *args: Any, **kwargs: Any) -> Any:
+            provided = request.args.get("token", None)
+            # noinspection PyProtectedMember
+            if token is not None and provided == token:
+                result = f(request, *args, **kwargs)
+                if isawaitable(result):
+                    result = await result
+                return result
+            elif app.config.get("USE_JWT") and request.app.auth.is_authenticated(
+                request
+            ):
+                if sufficient_scope(request, *args, **kwargs):
+                    result = f(request, *args, **kwargs)
+                    if isawaitable(result):
+                        result = await result
+                    return result
+                raise ErrorResponse(
+                    403,
+                    "NotAuthorized",
+                    "User has insufficient permissions.",
+                    help_url=_docs("/server.html#security-considerations"),
+                )
+            elif token is None and app.config.get("USE_JWT") is None:
+                # authentication is disabled
+                result = f(request, *args, **kwargs)
+                if isawaitable(result):
+                    result = await result
+                return result
+            raise ErrorResponse(
+                401,
+                "NotAuthenticated",
+                "User is not authenticated.",
+                help_url=_docs("/server.html#security-considerations"),
+            )
 
+        return decorated
 
-def parameter_or_default(request, name, default=None):
-    """Return a parameters value if part of the request, or the default."""
-
-    request_params = decode_parameters(request)
-    return request_params.get(name, default)
+    return decorator
 
 
 def dump_to_data_file(data):
@@ -106,241 +139,223 @@ def dump_to_data_file(data):
     return utils.create_temporary_file(data_string, "_training_data")
 
 
-class RasaNLU(object):
-    """Class representing Rasa NLU http server"""
+def _configure_logging(loglevel, logfile):
+    logging.basicConfig(filename=logfile, level=loglevel)
+    logging.captureWarnings(True)
 
-    app = Klein()
 
-    def __init__(self,
-                 data_router,
-                 loglevel='INFO',
-                 logfile=None,
-                 num_threads=1,
-                 token=None,
-                 cors_origins=None,
-                 testing=False,
-                 default_config_path=None):
+def _load_default_config(path: Optional[Text]) -> Dict:
+    if path:
+        return config.load(path).as_dict()
+    else:
+        return {}
 
-        self._configure_logging(loglevel, logfile)
 
-        self.default_model_config = self._load_default_config(
-            default_config_path)
+# configure async loop logging
+async def configure_logging():
+    if logger.isEnabledFor(logging.DEBUG):
+        rasa.utils.io.enable_async_loop_debugging(asyncio.get_event_loop())
 
-        self.data_router = data_router
-        self._testing = testing
-        self.cors_origins = cors_origins if cors_origins else ["*"]
-        self.access_token = token
-        reactor.suggestThreadPoolSize(num_threads * 5)
 
-    @staticmethod
-    def _load_default_config(path):
-        if path:
-            return config.load(path).as_dict()
+def create_app(
+    data_router: DataRouter,
+    loglevel: Text = "INFO",
+    logfile: Optional[Text] = None,
+    token: Optional[Text] = None,
+    cors_origins: Optional[Text] = None,
+):
+    """Class representing Rasa NLU http server."""
+    app = Sanic(__name__)
+    CORS(
+        app, resources={r"/*": {"origins": cors_origins or ""}}, automatic_options=True
+    )
+
+    _configure_logging(loglevel, logfile)
+
+    @app.exception(ErrorResponse)
+    async def handle_error_response(request: Request, exception: ErrorResponse):
+        return response.json(exception.error_info, status=exception.status)
+
+    @app.get("/")
+    async def hello(request):
+        """Main Rasa route to check if the server is online."""
+        return response.text("Hello from Rasa NLU: " + rasa.__version__)
+
+    async def parse_response(request_params):
+        data = data_router.extract(request_params)
+        try:
+            return response.json(await data_router.parse(data), status=200)
+        except InvalidProjectError as e:
+            raise ErrorResponse(
+                404, "InvalidProject", "Project is invalid.", details={"error": str(e)}
+            )
+        except Exception as e:
+            logger.exception(e)
+            raise ErrorResponse(
+                500,
+                "ServerError",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
+
+    @app.get("/parse")
+    @requires_auth(app, token)
+    async def parse(request):
+        request_params = request.args
+
+        if "q" not in request_params:
+            request_params["q"] = request_params.pop("query", "")
+
+        return await parse_response(request_params)
+
+    @app.post("/parse")
+    @requires_auth(app, token)
+    async def parse(request):
+        request_params = request.json
+
+        if "query" in request_params:
+            request_params["q"] = request_params.pop("query")
+
+        if "q" not in request_params:
+            raise ErrorResponse(
+                404, "MessageNotFound", "Invalid parse parameter specified."
+            )
         else:
-            return {}
+            return await parse_response(request_params)
 
-    @staticmethod
-    def _configure_logging(loglevel, logfile):
-        logging.basicConfig(filename=logfile,
-                            level=loglevel)
-        logging.captureWarnings(True)
-
-    @app.route("/", methods=['GET', 'OPTIONS'])
-    @check_cors
-    def hello(self, request):
-        """Main Rasa route to check if the server is online"""
-        return "hello from Rasa NLU: " + rasa.__version__
-
-    @app.route("/parse", methods=['GET', 'POST', 'OPTIONS'])
-    @requires_auth
-    @check_cors
-    @inlineCallbacks
-    def parse(self, request):
-        request.setHeader('Content-Type', 'application/json')
-        if request.method.decode('utf-8', 'strict') == 'GET':
-            request_params = decode_parameters(request)
-        else:
-            request_params = simplejson.loads(
-                request.content.read().decode('utf-8', 'strict'))
-
-        if 'query' in request_params:
-            request_params['q'] = request_params.pop('query')
-
-        if 'q' not in request_params:
-            request.setResponseCode(404)
-            dumped = json_to_string(
-                {"error": "Invalid parse parameter specified"})
-            returnValue(dumped)
-        else:
-            data = self.data_router.extract(request_params)
-            try:
-                request.setResponseCode(200)
-                response = yield (self.data_router.parse(data) if self._testing
-                                  else threads.deferToThread(
-                    self.data_router.parse, data))
-                returnValue(json_to_string(response))
-            except InvalidProjectError as e:
-                request.setResponseCode(404)
-                returnValue(json_to_string({"error": "{}".format(e)}))
-            except Exception as e:
-                request.setResponseCode(500)
-                logger.exception(e)
-                returnValue(json_to_string({"error": "{}".format(e)}))
-
-    @app.route("/version", methods=['GET', 'OPTIONS'])
-    @requires_auth
-    @check_cors
-    def version(self, request):
+    @app.get("/version")
+    @requires_auth(app, token)
+    async def version(request):
         """Returns the Rasa server's version"""
 
-        request.setHeader('Content-Type', 'application/json')
-        return json_to_string(
-            {'version': rasa.__version__,
-             'minimum_compatible_version': MINIMUM_COMPATIBLE_VERSION}
+        return response.json(
+            {
+                "version": rasa.__version__,
+                "minimum_compatible_version": MINIMUM_COMPATIBLE_VERSION,
+            }
         )
 
-    @app.route("/status", methods=['GET', 'OPTIONS'])
-    @requires_auth
-    @check_cors
-    def status(self, request):
-        request.setHeader('Content-Type', 'application/json')
-        return json_to_string(self.data_router.get_status())
+    @app.get("/status")
+    @requires_auth(app, token)
+    async def status(request):
+        return response.json(data_router.get_status())
 
-    def extract_json(self, content):
-        # test if json has config structure
-        json_config = simplejson.loads(content).get("data")
+    def extract_data_and_config(request):
 
-        # if it does then this results in correct format.
-        if json_config:
+        request_content = request.body.decode("utf-8", "strict")
 
-            model_config = simplejson.loads(content)
-            data = json_config
-
-        # otherwise use defaults.
-        else:
-
-            model_config = self.default_model_config
-            data = content
-
-        return model_config, data
-
-    def extract_data_and_config(self, request):
-
-        request_content = request.content.read().decode('utf-8', 'strict')
-        content_type = self.get_request_content_type(request)
-
-        if 'yml' in content_type:
+        if "yml" in request.content_type:
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
 
-            model_config = utils.read_yaml(request_content)
+            model_config = rasa.utils.io.read_yaml(request_content)
             data = model_config.get("data")
 
-        elif 'json' in content_type:
-
-            model_config, data = self.extract_json(request_content)
+        elif "json" in request.content_type:
+            model_config = request.json
+            data = model_config.get("data")
 
         else:
-
-            raise Exception("Content-Type must be 'application/x-yml' "
-                            "or 'application/json'")
+            raise Exception(
+                "Content-Type must be 'application/x-yml' or 'application/json'"
+            )
 
         return model_config, data
 
-    def get_request_content_type(self, request):
-        content_type = request.requestHeaders.getRawHeaders("Content-Type", [])
-
-        if len(content_type) is not 1:
-            raise Exception("The request must have exactly one content type")
-        else:
-            return content_type[0]
-
-    @app.route("/train", methods=['POST', 'OPTIONS'], branch=True)
-    @requires_auth
-    @check_cors
-    @inlineCallbacks
-    def train(self, request):
+    @app.post("/train")
+    @requires_auth(app, token)
+    async def train(request):
         # if not set will use the default project name, e.g. "default"
-        project = parameter_or_default(request, "project", default=None)
+        project = request.args.get("project", None)
         # if set will not generate a model name but use the passed one
-        model_name = parameter_or_default(request, "model", default=None)
+        model_name = request.args.get("model", None)
 
         try:
-            model_config, data = self.extract_data_and_config(request)
-
+            model_config, data = extract_data_and_config(request)
         except Exception as e:
-            request.setResponseCode(400)
-            returnValue(json_to_string({"error": "{}".format(e)}))
+            raise ErrorResponse(
+                500,
+                "ServerError",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
 
         data_file = dump_to_data_file(data)
 
-        request.setHeader('Content-Type', 'application/zip')
-
         try:
-            request.setResponseCode(200)
-            request.setHeader("Content-Disposition", "attachment")
-            path_to_model = yield self.data_router.start_train_process(
-                data_file, project,
-                RasaNLUModelConfig(model_config), model_name)
-            zipped_path = utils.zip_folder(path_to_model)
-
-            zip_content = io.open(zipped_path, 'r+b').read()
-            return returnValue(zip_content)
-
-        except MaxTrainingError as e:
-            request.setResponseCode(403)
-            returnValue(json_to_string({"error": "{}".format(e)}))
-        except InvalidProjectError as e:
-            request.setResponseCode(404)
-            returnValue(json_to_string({"error": "{}".format(e)}))
-        except TrainingException as e:
-            request.setResponseCode(500)
-            returnValue(json_to_string({"error": "{}".format(e)}))
-
-    @app.route("/evaluate", methods=['POST', 'OPTIONS'])
-    @requires_auth
-    @check_cors
-    @inlineCallbacks
-    def evaluate(self, request):
-        data_string = request.content.read().decode('utf-8', 'strict')
-        params = {
-            key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
-            for key, value in request.args.items()
-        }
-
-        request.setHeader('Content-Type', 'application/json')
-
-        try:
-            request.setResponseCode(200)
-            response = yield self.data_router.evaluate(data_string,
-                                                       params.get('project'),
-                                                       params.get('model'))
-            returnValue(json_to_string(response))
-        except Exception as e:
-            request.setResponseCode(500)
-            returnValue(json_to_string({"error": "{}".format(e)}))
-
-    @app.route("/models", methods=['DELETE', 'OPTIONS'])
-    @requires_auth
-    @check_cors
-    def unload_model(self, request):
-        params = {
-            key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
-            for key, value in request.args.items()
-        }
-
-        request.setHeader('Content-Type', 'application/json')
-        try:
-            request.setResponseCode(200)
-            response = self.data_router.unload_model(
-                params.get('project', RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
-                params.get('model')
+            path_to_model = await data_router.start_train_process(
+                data_file, project, RasaNLUModelConfig(model_config), model_name
             )
-            return simplejson.dumps(response)
+            zipped_path = utils.zip_folder(path_to_model)
+            return await response.file(zipped_path)
+
+        except MaxWorkerProcessError as e:
+            raise ErrorResponse(
+                403,
+                "NoFreeProcess",
+                "No process available for training.",
+                details={"error": str(e)},
+            )
+        except InvalidProjectError as e:
+            raise ErrorResponse(
+                404,
+                "ProjectNotFound",
+                "Project '{}' not found.".format(project),
+                details={"error": str(e)},
+            )
+        except TrainingException as e:
+            raise ErrorResponse(
+                500,
+                "ServerError",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
+
+    @app.post("/evaluate")
+    @requires_auth(app, token)
+    async def evaluate(request):
+        data_string = request.body.decode("utf-8", "strict")
+
+        try:
+            payload = await data_router.evaluate(
+                data_string, request.args.get("project"), request.args.get("model")
+            )
+            return response.json(payload)
+
+        except MaxWorkerProcessError as e:
+            raise ErrorResponse(
+                403,
+                "Forbidden",
+                "No process available for training.",
+                details={"error": str(e)},
+            )
         except Exception as e:
-            request.setResponseCode(500)
+            raise ErrorResponse(
+                500,
+                "ServerError",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
+
+    @app.delete("/models")
+    @requires_auth(app, token)
+    async def unload_model(request):
+        try:
+            payload = await data_router.unload_model(
+                request.args.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
+                request.args.get("model"),
+            )
+            return response.json(payload)
+        except Exception as e:
             logger.exception(e)
-            return simplejson.dumps({"error": "{}".format(e)})
+            raise ErrorResponse(
+                500,
+                "ServerError",
+                "An unexpected error occurred.",
+                details={"error": str(e)},
+            )
+
+    return app
 
 
 def get_token(_clitoken: str) -> str:
@@ -352,15 +367,14 @@ def get_token(_clitoken: str) -> str:
             " with value `{}`, and with an environment variable, "
             "with value `{}`. "
             "Please set the token with just one method "
-            "to avoid unexpected behaviours.".format(
-                _clitoken, _envtoken))
+            "to avoid unexpected behaviours.".format(_clitoken, _envtoken)
+        )
 
     token = _clitoken or _envtoken
     return token
 
 
 def main(args):
-    utils.configure_colored_logging(args.loglevel)
     pre_load = args.pre_load
 
     _endpoints = read_endpoints(args.endpoints)
@@ -372,29 +386,33 @@ def main(args):
         args.emulate,
         args.storage,
         model_server=_endpoints.model,
-        wait_time_between_pulls=args.wait_time_between_pulls
+        wait_time_between_pulls=args.wait_time_between_pulls,
     )
+
     if pre_load:
-        logger.debug('Preloading....')
-        if 'all' in pre_load:
+        logger.debug("Preloading....")
+        if "all" in pre_load:
             pre_load = router.project_store.keys()
         router._pre_load(pre_load)
 
-    rasa = RasaNLU(
-        router,
-        args.loglevel,
-        args.write,
-        args.num_threads,
-        get_token(cmdline_args.token),
-        args.cors,
-        default_config_path=args.config
+    rasa = create_app(
+        router, args.loglevel, args.write, get_token(args.token), args.cors
+    )
+    rasa.add_task(configure_logging)
+
+    logger.info("Started http server on port %s" % args.port)
+
+    rasa.run(
+        host="0.0.0.0",
+        port=args.port,
+        workers=1,
+        access_log=logger.isEnabledFor(logging.DEBUG),
     )
 
-    logger.info('Started http server on port %s' % args.port)
-    rasa.app.run('0.0.0.0', args.port)
 
-
-if __name__ == '__main__':
-    # Running as standalone python application
-    cmdline_args = create_argument_parser().parse_args()
-    main(cmdline_args)
+if __name__ == "__main__":
+    raise RuntimeError(
+        "Calling `rasa.nlu.server` directly is "
+        "no longer supported. "
+        "Please use `rasa run nlu` instead."
+    )

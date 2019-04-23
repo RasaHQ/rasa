@@ -1,7 +1,7 @@
 :desc: Read more about how to run custom actions and code with open source Rasa
        Stack to integrate your contextual Assistant in your processes and databases. 
 
-.. _customactions:
+.. _actions:
 
 Actions
 =======
@@ -37,6 +37,8 @@ See :ref:`responses` for more details.
 If you use an external NLG service, you don't need to specify the
 templates in the domain, but you still need to add the utterance names
 to the actions list of the domain.
+
+.. _customactions:
 
 Custom Actions
 --------------

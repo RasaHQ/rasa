@@ -45,11 +45,11 @@ endpoint configuration, e.g. ``endpoints.yml``:
 .. literalinclude:: ../../data/test_endpoints/event_brokers/pika_endpoint.yml
 
 Then instruct Rasa Core to use the endpoint configuration and Pika producer by adding
-``--event_broker pika_producer`` and ``--endpoints <path to your endpoint configuration`` as following example:
+``--endpoints <path to your endpoint configuration`` as following example:
 
 .. code-block:: shell
 
-    python3 -m rasa.core.run -d models/dialogue -u models/nlu/current --event_broker pika_producer --endpoints endpoints.yml
+    rasa run core -m models --endpoints endpoints.yml
 
 Adding a Pika Event Broker in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -120,11 +120,11 @@ all events to this event broker. To do it, add the following section to your
 endpoint configuration.
 
 Pass the ``endpoints.yml`` file as argument with ``--endpoints <path to your endpoint configuration>``
-when running Rasa, and select Kafka producer with ``--kafka_broker kafka_producer``, as following example:
+when running Rasa, as following example:
 
 .. code-block:: shell
 
-    python3 -m rasa.core.run -d models/dialogue -u models/nlu/current --event_broker kafka_producer --endpoints endpoints.yml
+    rasa run core -m models --endpoints endpoints.yml
 
 Using ``SASL_PLAINTEXT`` protocol the endpoints file must have the following entries:
 
