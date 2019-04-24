@@ -207,8 +207,6 @@ def model_fingerprint(
         The fingerprint.
 
     """
-    import rasa.core
-    import rasa.nlu
     import rasa
     import time
 
