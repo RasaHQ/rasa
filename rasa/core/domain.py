@@ -425,32 +425,28 @@ class Domain(object):
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def prev_action_states(self):
-        # type: () -> List[Text]
+    def prev_action_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return [PREV_PREFIX + a for a in self.action_names]
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def intent_states(self):
-        # type: () -> List[Text]
+    def intent_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return ["intent_{0}".format(i) for i in self.intents]
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def entity_states(self):
-        # type: () -> List[Text]
+    def entity_states(self) -> List[Text]:
         """Returns all available previous action state strings."""
 
         return ["entity_{0}".format(e) for e in self.entities]
 
     # noinspection PyTypeChecker
     @utils.lazyproperty
-    def form_states(self):
-        # type: () -> List[Text]
+    def form_states(self) -> List[Text]:
         return ["active_form_{0}".format(f) for f in self.form_names]
 
     def index_of_state(self, state_name: Text) -> Optional[int]:
@@ -459,14 +455,12 @@ class Domain(object):
         return self.input_state_map.get(state_name)
 
     @utils.lazyproperty
-    def input_state_map(self):
-        # type: () -> Dict[Text, int]
+    def input_state_map(self) -> Dict[Text, int]:
         """Provides a mapping from state names to indices."""
         return {f: i for i, f in enumerate(self.input_states)}
 
     @utils.lazyproperty
-    def input_states(self):
-        # type: () -> List[Text]
+    def input_states(self) -> List[Text]:
         """Returns all available states."""
 
         return (
@@ -478,7 +472,6 @@ class Domain(object):
         )
 
     def get_parsing_states(self, tracker: "DialogueStateTracker") -> Dict[Text, float]:
-
         state_dict = {}
 
         # Set all found entities with the state value 1.0, unless they should
@@ -620,9 +613,7 @@ class Domain(object):
     def _slot_definitions(self):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
-    def as_dict(self):
-        # type: () -> Dict[Text, Any]
-
+    def as_dict(self) -> Dict[Text, Any]:
         additional_config = {"store_entities_as_slots": self.store_entities_as_slots}
 
         return {
