@@ -9,9 +9,8 @@ import re
 import sys
 import tarfile
 import tempfile
-import warnings
 import zipfile
-from asyncio import AbstractEventLoop, Future
+from asyncio import Future
 from hashlib import md5, sha1
 from io import BytesIO as IOReader, StringIO
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING, Text, Tuple, Callable
@@ -23,7 +22,6 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.views import CompositionView
 
-import rasa.utils.endpoints
 from rasa.utils.endpoints import read_endpoint_config
 
 logger = logging.getLogger(__name__)
