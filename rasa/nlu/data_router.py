@@ -83,7 +83,7 @@ class DataRouter(object):
 
         if model_dir is None:
             model_dir = tempfile.gettempdir()
-        self.model_dir = config.make_path_absolute(model_dir)
+        self.model_dir = os.path.abspath(model_dir)
 
         self.emulator = self._create_emulator(emulation_mode)
         self.remote_storage = remote_storage

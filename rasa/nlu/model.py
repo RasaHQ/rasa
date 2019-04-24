@@ -10,13 +10,9 @@ from typing import Text
 
 import rasa.nlu
 from rasa.constants import MINIMUM_COMPATIBLE_VERSION
-from rasa.nlu import components, utils, constants
+from rasa.nlu import components, utils
 from rasa.nlu.components import Component, ComponentBuilder
-from rasa.nlu.config import (
-    RasaNLUModelConfig,
-    component_config_from_pipeline,
-    make_path_absolute,
-)
+from rasa.nlu.config import RasaNLUModelConfig, component_config_from_pipeline
 from rasa.nlu.persistor import Persistor
 from rasa.nlu.training_data import TrainingData, Message
 from rasa.nlu.utils import create_dir, write_json_to_file
@@ -220,7 +216,7 @@ class Trainer(object):
         else:
             model_name = "nlu_" + timestamp
 
-        path = make_path_absolute(path)
+        path = os.path.abspath(path)
         dir_name = os.path.join(path, model_name)
 
         create_dir(dir_name)

@@ -55,13 +55,6 @@ def override_defaults(
     return cfg
 
 
-def make_path_absolute(path: Text) -> Text:
-    if path and not os.path.isabs(path):
-        return os.path.join(os.getcwd(), path)
-    else:
-        return path
-
-
 def component_config_from_pipeline(
     index: int,
     pipeline: List[Dict[Text, Any]],
