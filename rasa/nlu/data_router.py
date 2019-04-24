@@ -103,12 +103,6 @@ class DataRouter(object):
         # -258934405
         multiprocessing.set_start_method("spawn", force=True)
 
-        self.pool = ProcessPoolExecutor(max_workers=self._worker_processes)
-
-    def __del__(self):
-        """Terminates workers pool processes"""
-        self.pool.shutdown()
-
     @staticmethod
     def _create_emulator(mode: Optional[Text]) -> NoEmulator:
         """Create emulator for specified mode.
@@ -246,12 +240,13 @@ class DataRouter(object):
 
         loop = asyncio.get_event_loop()
 
+        self._current_worker_processes += 1
+        pool = ProcessPoolExecutor(max_workers=self._worker_processes)
+
         logger.debug("New training queued")
 
-        self._current_worker_processes += 1
-
         task = loop.run_in_executor(
-            self.pool,
+            pool,
             do_train_in_worker,
             train_config,
             data_file,
@@ -264,6 +259,7 @@ class DataRouter(object):
             return await task
         finally:
             self._current_worker_processes -= 1
+            pool.shutdown()
 
     def unload_model(self, model: Text):
         """Unload a model from server memory."""
@@ -289,15 +285,19 @@ class DataRouter(object):
             raise UnsupportedModelError("No model is loaded. Cannot evaluate.")
 
         loop = asyncio.get_event_loop()
+
         self._current_worker_processes += 1
+        pool = ProcessPoolExecutor(max_workers=self._worker_processes)
+
         task = loop.run_in_executor(
-            self.pool, run_evaluation, data_file, self.nlu_model.path
+            pool, run_evaluation, data_file, self.nlu_model.path
         )
 
         try:
             return await task
         finally:
             self._current_worker_processes -= 1
+            pool.shutdown()
 
     def _format_response(self, data: Dict[Text, Any]) -> Dict[Text, Any]:
         return self.emulator.normalise_response_json(data)

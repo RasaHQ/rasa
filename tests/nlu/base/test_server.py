@@ -26,24 +26,10 @@ def app_without_model():
 
 
 @pytest.fixture()
-def data_router():
-
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        loop = asyncio.new_event_loop()
-
-    router = loop.run_until_complete(create_data_router(NLU_MODEL_PATH))
-
-    loop.close()
-
-    yield router
-    del router
-
-
-@pytest.fixture()
-def app(tmpdir_factory, trained_nlu_model, data_router):
+async def app(tmpdir_factory, trained_nlu_model):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
+    data_router = await create_data_router(NLU_MODEL_PATH)
     rasa = create_app(data_router, logfile=nlu_log_file)
 
     return rasa.test_client
